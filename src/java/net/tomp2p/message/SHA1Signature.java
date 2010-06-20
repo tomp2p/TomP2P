@@ -1,0 +1,91 @@
+package net.tomp2p.message;
+import java.io.IOException;
+
+import net.tomp2p.peers.Number160;
+
+
+public class SHA1Signature
+{
+	private Number160 number1;
+	private Number160 number2;
+
+	public SHA1Signature()
+	{
+	}
+
+	public SHA1Signature(Number160 number1, Number160 number2)
+	{
+		this.number1 = number1;
+		this.number2 = number2;
+	}
+
+	public void decode(byte[] encodedData) throws IOException
+	{
+		if (encodedData[0] != 0x30)
+			throw new IOException("expected sequence with value 48, but got " + encodedData[0]);
+		int seqLen = encodedData[1];
+		if (seqLen > 127)
+			throw new IOException("cannot handle seq legth > than 127, got " + seqLen);
+		if (encodedData[2] != 0x02)
+			throw new IOException("expected sequence with value 2, but got " + encodedData[2]);
+		int intLen1 = encodedData[3];
+		if (intLen1 > 127)
+			throw new IOException("cannot handle int legth > than 127, got " + intLen1);
+		number1 = encodeNumber(encodedData, 4, intLen1);
+		// System.err.println("got1 " +getNumber1()+" here "+number1);
+		//
+		if (encodedData[4 + intLen1] != 0x02)
+			throw new IOException("expected sequence with value 2, but got "
+					+ encodedData[4 + intLen1]);
+		int intLen2 = encodedData[5 + intLen1];
+		if (intLen2 > 127)
+			throw new IOException("cannot handle int legth > than 127, got " + intLen2);
+		number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);
+		// System.err.println("got2 " +getNumber2()+" here "+number2);
+	}
+
+	private Number160 encodeNumber(byte[] encodedData, int offset, int len) throws IOException
+	{
+		if (len > 20)
+		{
+			int bias = len - 20;
+			for (int i = 0; i < bias; i++)
+			{
+				if (encodedData[offset + i] != 0)
+					throw new IOException(
+							"we did not expect such a large number, it should be 160bit");
+			}
+			return new Number160(encodedData, offset + bias, 20);
+		}
+		else
+		{
+			if(len<19)
+				System.err.println("YESS");
+			return new Number160(encodedData, offset, len);
+		}
+	}
+
+	public byte[] encode() throws IOException
+	{
+		byte me[] = new byte[2 + (2 * (20 + 2))];
+		me[0] = 0x30;
+		me[1] = 2 * (20 + 2);
+		me[2] = 0x02;
+		me[3] = 20;
+		number1.toByteArray(me, 4);
+		me[24] = 0x02;
+		me[25] = 20;
+		number2.toByteArray(me, 26);
+		return me;
+	}
+
+	public Number160 getNumber1()
+	{
+		return number1;
+	}
+
+	public Number160 getNumber2()
+	{
+		return number2;
+	}
+}

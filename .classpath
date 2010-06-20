@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="src" path="src/conf"/>
+	<classpathentry kind="src" path="src/examples"/>
+	<classpathentry kind="src" path="src/test"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
+	<classpathentry kind="lib" path="lib/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-api-1.5.5.jar"/>
+	<classpathentry kind="lib" path="lib/slf4j-jdk14-1.5.5.jar"/>
+	<classpathentry kind="lib" path="lib/netty-3.2.0.CR1.jar" sourcepath="lib/src/netty-3.2.0.CR1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/je-4.0.103.jar" sourcepath="lib/src"/>
+	<classpathentry kind="lib" path="lib/sbbi-upnplib-1.0.4.jar" sourcepath="lib/src/sbbi-upnplib-1.0.4-sources.zip"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

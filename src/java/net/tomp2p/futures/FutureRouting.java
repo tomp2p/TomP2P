@@ -1,0 +1,67 @@
+/*
+ * Copyright 2009 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+package net.tomp2p.futures;
+import java.util.SortedSet;
+
+import net.tomp2p.peers.PeerAddress;
+
+
+public class FutureRouting extends BaseFutureImpl
+{
+	private SortedSet<PeerAddress> potentialHits;
+	private SortedSet<PeerAddress> directHits;
+
+	public void setNeighbors(final SortedSet<PeerAddress> directHits,
+			final SortedSet<PeerAddress> potentialHits)
+	{
+		synchronized (lock)
+		{
+			if (!setCompletedAndNotify())
+				return;
+			this.potentialHits = potentialHits;
+			this.directHits = directHits;
+			this.type = ((potentialHits.size() == 0) && (directHits.size() == 0))
+					? BaseFuture.FutureType.FAILED : BaseFuture.FutureType.OK;
+		}
+		notifyListerenrs();
+	}
+
+	public SortedSet<PeerAddress> getPotentialHits()
+	{
+		synchronized (lock)
+		{
+			return potentialHits;
+		}
+	}
+
+	public SortedSet<PeerAddress> getDirectHits()
+	{
+		synchronized (lock)
+		{
+			return directHits;
+		}
+	}
+
+	@Override
+	public String getFailedReason()
+	{
+		synchronized (lock)
+		{
+			return "FutureRouting -> complete:" + completed + ", type:" + type.toString()
+					+ ", direct:" + directHits.size() + ", neighbors:" + potentialHits.size();
+		}
+	}
+}

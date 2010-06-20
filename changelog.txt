@@ -1,0 +1,175 @@
+Changelog for Beta2 (until 2.8.2009):
+* add support for move/size (done)
+* change parallel to parallelDiff (done) 
+
+Changelog for Beta3 (until 9.8.2009):
+* extend message format to support port forwarding and NAT (done)
+* Remove security, as this changes anyway when I implement this (done)
+* Remove ttl except Data, as this changes anyway when I implement this (done)
+* add move/copy if absent (done)
+* bootstrap broadcast (done)
+* investigate in cancel issue (done, fixed in Netty upstream)
+* investigate routing testcase problems (done)
+* investigate testPutGetRemove2 (done)
+
+Changelog for Beta4 (until 16.8.2009):
+* improved broadcast and added new methods for confortable use (done)
+* bootstrap broadcast has timeout issues (done)
+* removed nonblockinghash to remove dependencies (done)
+* added initial resource limiter in Peer.java (done)
+* use backports for navigablemap and set (done)
+* CLOSE/QUIT message (done)
+* remove skiplistset and remove the need for concurrent utils (done)
+* ADD example not working and fixed remove (done)
+* support for direct arbitrary data transfer between peers (done)
+
+Changelog for Beta5 (until 23.8.2009):
+* majority voting for different GET, PUT (done)
+* fixed decoder bug (done)
+* object decoder/encoder (done)
+* TCP/UDP broadcast cleanups (done)
+* Object serialization corrupted (done)
+* fixed connection timeout bug in Netty (done)
+* added NAT (port forwarding) example (done)
+* removed replication template (done)
+* fixed shutdown issues (done)
+
+Changelog for Beta6 (until 30.8.2009):
+* simplified storage interface (done)
+* major change: set blocking to true!! (done)
+* GET_DIGEST (done)
+* fixed endless bug in close method in Netty (done in upstream)
+* redesign resource limiter (done)
+* fixed bug in dispatcher after peer failure (done)
+
+Changelog for 3.0 (until 31.10.2009):
+* simplified fork/join (done)
+* simplified resource limiter (done)
+* remove debug output (done)
+* UDP 768 in Netty limitation resolved (done)
+* backports to Android, removed automatic broadcast discovery (done)
+* testPutMoveCopyIfAbsent fails (done)
+* rename neighbor_get / request in routing (done)
+* rename all getters to get (done)
+* tracker supports attachements (done)
+* change to Apache license (done)
+
+Changelog for 3.0.0 - 3.0.4
+* various bugfixes
+
+Changelog for 3.0.5
+* fixed bug: added channel to channelgroup in dispatcher
+* fixed bug: priority to IPv4
+
+Changelog for 3.0.5 - 3.0.8
+* fixed minor bugs
+* changed to Netty 3.2
+* added secure keys
+
+Changelog for 3.0.9
+* added listener for peer offline
+* removed JDK depended code for use with android
+* changed name in peermap
+
+Changelog for 3.0.10
+* Added deadlock checker in future listener
+
+Changelog for 3.0.11
+* Added configurable offline peer detector
+
+Changelog for 3.0.12
+* Fixed bug in messagecodec
+
+Changelog for 3.0.13
+* Added execution handler for incoming (from the sender) messages
+
+Changelog for 3.0.14
+* Changed order of shutdown sequence
+
+Changelog for 3.0.15
+* Added getAll in peermap
+
+Changelog for 3.1.0
+* Add security (signatures for protecting entries, domains)
+* First-class support for trackers with load-balancing
+
+Changelog for 3.1.1
+* Added new contstructors in Peer.java for easy initlialization
+* Added more fine-graind protection mechanism for entry and domain
+
+Changelog for 3.1.2
+* Fixes in the security part
+
+Changelog for 3.1.3
+* built against netty 3.2 BETA1
+
+Changelog for 3.1.4
+* Added hash creators in Number160
+
+Changelog for 3.1.5
+* Bug fixed in DistributedHashHashMap
+
+Changelog for 3.1.6
+* Added experimental support for get, which returns data with a certain public key
+
+Changelog for 3.1.7
+* Split add/remove future methods in FutureDHT
+
+Changelog for 3.1.8
+* Added filter for IPs in peermap
+* Shared udpChannelFactory, tcpServerChannelFactory, tcpClientChannelFactory
+
+Changelog for 3.1.9
+* Added warning message if a content key is set when using add
+
+Changelog for 3.1.14
+* Added better support for deadlock detection
+
+Changelog for 3.1.15
+* Added shiftleft, shiftright for Number160
+* Added support for indirect replication
+* Added maintenance support for trackers
+* Increased aggressivity of maintenance interval
+* merged tracker and dht storage to one class
+* Fixed bug in short int conversion
+* Added disk-based storage
+* changed package name from ch.uzh.csg.tomp2p to net.tomp2p
+
+
+Roadmap for 3.2:
+* keep-alive connections for TCP (for reusing open connections)
+* expiring entries with proper refresh handling for responsible peer (passive replication)
+* active replication, configurable
+
+Long-term roadmap
+
+high priority:
+* investigate all exceptioncaught to handle the cases correctly
+* close is blocking
+* early voting evaluation and simple multiget
+* start statistics package, estimation of number of peers
+* Allow in peermap only firsthand peers, do not propagate others depending 
+on a peer failure threshold
+
+* Enable active replication (DRFS)
+* Disk-based hashmap (DRFS, Dalibor is implementing it)
+* Write examples
+* Complete JavaDocs
+* Port forwarding identification
+
+low priority:
+* Document how to use TomP2P (proper project site)
+* Enforce TTL and add TTLListener, conditional get and caching
+* Adapt timing values to conditions of network (fast timings in LAN,
+slow in Internet). This requires to collect data of the P2P network. 
+Idea use a score system for peers rather than lastseenonline.
+* GET from multiple sources
+* support versioning in Data and have a simple conflict resolver (UPDATE command). Idea: have 
+a conflictsWith in Data, and a VersionList<Version<Number160 content>>. Each time, 
+a value gets updated it adds its new content hash to the version list. 
+If a Data is stored where the list conflicts, then this data is added to the 
+conflictsWith. The next time a user wants to update and there is a conflict, 
+which the user is not aware, then fail (CONFLICT). The user has to download the data, 
+see it and modify this data. Then send it together with the version list that
+show the conflict, which then resolves the conflict. Make this consitency checks
+optional. 

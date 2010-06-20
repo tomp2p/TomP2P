@@ -1,0 +1,84 @@
+<project name="TomP2P" default="dist" basedir=".">
+	<description>TomP2P</description>
+	<!-- set global properties for this build -->
+	<property name="src" location="src" />
+	<property name="lib" location="lib" />
+	<!-- made by this script -->
+	<property name="build" location="build" />
+	<property name="dist" location="dist" />
+	<property name="release" location="release" />
+
+	<!-- set version numbers for the components -->
+	<property name="version" value="3.2.1-beta" />
+	<property name="creator" value="Thomas Bocek" />
+
+	<path id="class.path">
+		<fileset dir=".">
+			<include name="lib/*.jar" />
+		</fileset>
+	</path>
+	<pathconvert property="class-path" dirsep="/" pathsep=" " refid="class.path">
+		<map from="${basedir}${file.separator}lib" to="lib" />
+	</pathconvert>
+
+	<target name="clean" description="clean up">
+		<!-- Delete the all created directories -->
+		<delete dir="${build}" />
+		<delete dir="${dist}" />
+		<delete dir="${release}" />
+	</target>
+
+	<!-- after we set the version we are ready to compile -->
+	<target name="compile" depends="clean" description="compile the source ">
+		<mkdir dir="${build}" />
+		<!-- Compile the java code from ${src} into ${build} -->
+		<javac debug="true" srcdir="${src}/java" destdir="${build}" target="1.5" includes="net/**">
+			<classpath>
+				<pathelement path="${classpath}" />
+				<fileset dir="lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+		</javac>
+	</target>
+
+
+	<target name="dist" depends="compile" description="generate the distribution">
+		<!-- Create the distribution directory -->
+		<mkdir dir="${dist}" />
+		<mkdir dir="${dist}/lib" />
+		<mkdir dir="${release}" />
+		<!-- make all jar files. Note that some files are needed form other projects, for example the wizard.-->
+		<jar jarfile="${dist}/tomp2p-${version}.jar" basedir="${build}">
+			<manifest>
+				<attribute name="Built-By" value="${creator}" />
+				<attribute name="Created-By" value="${creator}" />
+				<attribute name="Main-Class" value="net.tomp2p.Example" />
+				<attribute name="Class-Path" value="${class-path}" />
+			</manifest>
+		</jar>
+		<jar jarfile="${dist}/tomp2p-${version}-sources.jar" basedir="${src}/java" includes="net/**" />
+		<copy todir="${dist}/lib">
+			<fileset dir="${lib}">
+				<include name="*.jar" />
+			</fileset>
+			<fileset dir="${lib}/src">
+				<exclude name="**/*" />
+			</fileset>
+		</copy>
+		<copy todir="${dist}">
+			<fileset dir="${src}">
+				<include name="examples/**" />
+			</fileset>
+		</copy>
+		<copy todir="${dist}">
+			<fileset dir=".">
+				<include name="LICENSE.txt" />
+				<include name="NOTICE.txt" />
+			</fileset>
+		</copy>
+		
+		<zip zipfile="${release}/tomp2p-${version}.zip" basedir="${dist}" />
+	</target>
+
+</project>

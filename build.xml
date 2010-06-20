@@ -77,8 +77,6 @@
 				<include name="NOTICE.txt" />
 			</fileset>
 		</copy>
-		
 		<zip zipfile="${release}/tomp2p-${version}.zip" basedir="${dist}" />
 	</target>
-
 </project>

@@ -1,0 +1,9 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>net.tomp2p</groupId>
+  <artifactId>TomP2P</artifactId>
+  <name>TomP2P</name>
+  <version>3.2</version>
+  <description>TomP2P, a high speed P2P key-value pair storage library</description>
+  <url>http://tomp2p.net</url>
+</project>

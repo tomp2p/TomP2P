@@ -33,14 +33,12 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Is able to send messages (as a request) and processes incoming replies.
  * 
  * @author Thomas Bocek
  * 
  */
-
 public class RequestHandler extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(RequestHandler.class);
@@ -63,7 +61,8 @@ public class RequestHandler extends SimpleChannelHandler
 	 * @param objectHolder the bean representing the node this handler belongs
 	 *        to
 	 */
-	public RequestHandler(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
+	public RequestHandler(FutureResponse futureResponse, PeerBean peerBean,
+			ConnectionBean connectionBean, Message message)
 	{
 		this.peerBean = peerBean;
 		this.connectionBean = connectionBean;
@@ -100,7 +99,7 @@ public class RequestHandler extends SimpleChannelHandler
 		connectionBean.getSender().fireAndForgetUDP(message);
 		return futureResponse;
 	}
-	
+
 	public FutureResponse fireAndForgetTCP()
 	{
 		connectionBean.getSender().fireAndForgetTCP(message);
@@ -111,7 +110,6 @@ public class RequestHandler extends SimpleChannelHandler
 	{
 		return peerBean.getPeerMap();
 	}
-	
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
@@ -136,8 +134,8 @@ public class RequestHandler extends SimpleChannelHandler
 		}
 		else
 		{
-			//e.getCause().printStackTrace();
-			logger.debug("exception caugth, but handled properly: "+e.toString());
+			// e.getCause().printStackTrace();
+			logger.debug("exception caugth, but handled properly: " + e.toString());
 			futureResponse.setFailed(e.toString());
 			if (e.getCause() instanceof PeerException)
 			{
@@ -160,7 +158,7 @@ public class RequestHandler extends SimpleChannelHandler
 				}
 			}
 			else
-			{	
+			{
 				getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
 			}
 		}
@@ -181,17 +179,22 @@ public class RequestHandler extends SimpleChannelHandler
 			MessageID recvMessageID = new MessageID(message);
 			if (message.getType() == Message.Type.UNKNOWN_ID)
 			{
-				String msg = "Message [" + this.message + "] was not delivered successfully.";
+				String msg = "Message was not delivered successfully: " + this.message;
+				exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+						PeerException.AbortCause.PEER_ABORT, msg)));
+			}
+			else if (message.getType() == Message.Type.EXCEPTION)
+			{
+				String msg = "Message caused an exception on the other side, handle as peer_abort: " + this.message;
 				exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 						PeerException.AbortCause.PEER_ABORT, msg)));
 			}
 			else if (!sendMessageID.equals(recvMessageID))
 			{
-				
 				String msg = "Message [" + message
 						+ "] sent to the node is not the same as we expect. We sent ["
 						+ this.message + "]";
-				if(logger.isWarnEnabled())
+				if (logger.isWarnEnabled())
 					logger.warn(msg);
 				exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 						PeerException.AbortCause.PEER_ABORT, msg)));
@@ -224,20 +227,18 @@ public class RequestHandler extends SimpleChannelHandler
 		}
 		ctx.sendUpstream(e);
 	}
-
-	//IDEA reduce timeout to 1sec if channel closed
-	/*@Override
-	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
-	{
-		if (ctx.getAttachment()==null && handlingMessage.compareAndSet(false, true))
-		{
-			futureResponse.cancelTimeout();
-			getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), false);
-			futureResponse.setFailed("Closed channel before answer received "+futureResponse.isCompleted());
-			throw new RuntimeException("why");
-		}
-		ctx.sendUpstream(e);
-	}*/
+	// IDEA reduce timeout to 1sec if channel closed
+	/*
+	 * @Override public void channelClosed(ChannelHandlerContext ctx,
+	 * ChannelStateEvent e) throws Exception { if (ctx.getAttachment()==null &&
+	 * handlingMessage.compareAndSet(false, true)) {
+	 * futureResponse.cancelTimeout();
+	 * getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
+	 * false);
+	 * futureResponse.setFailed("Closed channel before answer received "+
+	 * futureResponse.isCompleted()); throw new RuntimeException("why"); }
+	 * ctx.sendUpstream(e); }
+	 */
 }
 
 interface Release

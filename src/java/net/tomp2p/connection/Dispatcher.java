@@ -243,8 +243,15 @@ public class Dispatcher extends SimpleChannelHandler
 			if (logger.isDebugEnabled())
 				logger.debug("about to respond to " + message);
 			responseMessage = myHandler.forwardMessage(message);
+			if (responseMessage == null)
+			{
+				logger.warn("Repsonse message was null, probaly a custom handler failed " + message);
+				message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress()).setType(
+						Type.EXCEPTION);
+				responseMessage = message;
+			}
 		}
-		if (myHandler == null || responseMessage == null)
+		else
 		{
 			logger.warn("No handler found for " + message);
 			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress()).setType(

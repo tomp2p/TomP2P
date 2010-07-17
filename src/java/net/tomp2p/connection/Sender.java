@@ -271,7 +271,7 @@ public class Sender
 				}
 			});
 		}
-		catch (ChannelException ce)
+		catch (Exception ce)
 		{
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			logger.warn(ce.toString());
@@ -299,7 +299,7 @@ public class Sender
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
 			afterSend(writeFuture, futureResponse, replyHandler);
 		}
-		catch (ChannelException ce)
+		catch (Exception ce)
 		{
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			logger.warn(ce.toString());

@@ -70,7 +70,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 		ctx.getChannel().close();
 	}
 
-	public Message forwardMessage(Message message) throws Exception
+	public Message forwardMessage(Message message)
 	{
 		if (checkMessage(message))
 		{
@@ -78,17 +78,22 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			// if we can contact the peer with its address. The peer may be
 			// behind a NAT
 			peerBean.getPeerMap().peerOnline(message.getSender(), message.getSender());
-			Message reply = handleResponse(message);
-			if (sign)
-				reply.setPublicKeyAndSign(peerBean.getKeyPair());
-			return reply;
+			try
+			{
+				Message reply = handleResponse(message);
+				if (sign)
+					reply.setPublicKeyAndSign(peerBean.getKeyPair());
+				return reply;
+			}
+			catch (Throwable e)
+			{
+				if (logger.isWarnEnabled())
+					logger.error("Exception in custom handler: " + e.toString());
+			}
 		}
-		else
-		{
-			peerBean.getPeerMap().peerOffline(message.getSender(), true);
-			logger.error("Check failed: " + message);
-			return null;
-		}
+		peerBean.getPeerMap().peerOffline(message.getSender(), true);
+		logger.error("Check failed: " + message);
+		return null;
 	}
 
 	/**

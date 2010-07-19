@@ -4,6 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.ChannelChache;
 import net.tomp2p.connection.ConnectionCollector;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.message.Message;
@@ -53,6 +54,7 @@ public class TestConnectionPool
 	{
 		try
 		{
+			ChannelChache cache=new ChannelChache();
 			setupServerNettyTCP();
 			ConnectionCollector cp = new ConnectionCollector(tcpClientChannelFactory,
 					udpChannelFactory,
@@ -63,7 +65,7 @@ public class TestConnectionPool
 				{
 					final ChannelFuture cf = cp.channelTCP(new SimpleChannelHandler(),
 							new SimpleChannelHandler(), new InetSocketAddress("127.0.0.1", 8080),
-							500);
+							500, cache);
 					cf.awaitUninterruptibly();
 					Message m = Utils2.createDummyMessage();
 					m.setMessageId(m.getMessageId() + i);

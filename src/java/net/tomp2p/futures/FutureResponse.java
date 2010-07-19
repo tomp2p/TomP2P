@@ -14,6 +14,9 @@
  * the License.
  */
 package net.tomp2p.futures;
+import org.jboss.netty.channel.Channel;
+
+import net.tomp2p.connection.ChannelChache;
 import net.tomp2p.connection.ReplyTimeoutHandler;
 import net.tomp2p.message.Message;
 
@@ -30,6 +33,8 @@ public class FutureResponse extends BaseFutureImpl
 	final private Message requestMessage;
 	private Message responseMessage;
 	volatile private ReplyTimeoutHandler replyTimeoutHandler;
+	volatile private Channel channel;
+	volatile private ChannelChache channelChache;
 
 	public FutureResponse(final Message requestMessage)
 	{
@@ -101,6 +106,22 @@ public class FutureResponse extends BaseFutureImpl
 	public void cancelTimeout()
 	{
 		this.replyTimeoutHandler.cancel();
+	}
+
+	public void prepareRelease(Channel channel, ChannelChache channelChache)
+	{
+		this.channel=channel;
+		this.channelChache=channelChache;
+	}
+
+	public boolean release()
+	{
+		if(channel!=null && channelChache!=null)
+		{
+			channelChache.release(channel);
+			return true;
+		}
+		return false;
 	}
 
 }

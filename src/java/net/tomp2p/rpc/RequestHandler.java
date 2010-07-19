@@ -171,7 +171,9 @@ public class RequestHandler extends SimpleChannelHandler
 		if (handlingMessage.compareAndSet(false, true))
 		{
 			futureResponse.cancelTimeout();
-			ctx.getChannel().close();
+			//keep-alive
+			if(!futureResponse.release())
+				ctx.getChannel().close();
 		}
 		if (e.getMessage() instanceof Message)
 		{
@@ -216,29 +218,6 @@ public class RequestHandler extends SimpleChannelHandler
 		}
 		ctx.sendUpstream(e);
 	}
-
-	@Override
-	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
-	{
-		if (futureResponse.isCompleted())
-		{
-			futureResponse.cancelTimeout();
-			ctx.getChannel().close();
-		}
-		ctx.sendUpstream(e);
-	}
-	// IDEA reduce timeout to 1sec if channel closed
-	/*
-	 * @Override public void channelClosed(ChannelHandlerContext ctx,
-	 * ChannelStateEvent e) throws Exception { if (ctx.getAttachment()==null &&
-	 * handlingMessage.compareAndSet(false, true)) {
-	 * futureResponse.cancelTimeout();
-	 * getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
-	 * false);
-	 * futureResponse.setFailed("Closed channel before answer received "+
-	 * futureResponse.isCompleted()); throw new RuntimeException("why"); }
-	 * ctx.sendUpstream(e); }
-	 */
 }
 
 interface Release

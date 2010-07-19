@@ -25,14 +25,12 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandler;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Handles sending of messages
@@ -49,9 +47,11 @@ public class Sender
 	final private ConnectionConfiguration configuration;
 	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
 	final private Thread senderThread;
+	final private ChannelChache channelChache = new ChannelChache();
 	volatile private boolean running = true;
 
-	public Sender(final ConnectionCollector connectionCollector, final ConnectionConfiguration configuration)
+	public Sender(final ConnectionCollector connectionCollector,
+			final ConnectionConfiguration configuration)
 	{
 		this.connectionCollector = connectionCollector;
 		this.configuration = configuration;
@@ -94,7 +94,7 @@ public class Sender
 	{
 		sendUDP(message.getRecipient(), null, message, false);
 	}
-	
+
 	public void fireAndForgetTCP(final Message message)
 	{
 		sendTCP(message.getRecipient(), null, message);
@@ -116,11 +116,12 @@ public class Sender
 	}
 
 	public void shutdown()
-	{	
+	{
 		timer.stop();
 		running = false;
 		senderThread.interrupt();
 		connectionCollector.shutdown();
+		channelChache.shutdown();
 	}
 
 	public ConnectionCollector getConnectionCollector()
@@ -225,11 +226,19 @@ public class Sender
 					remoteNode);
 			futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
 		}
+		Channel channel = channelChache.acquire(remoteNode.createSocketTCP());
+		if (channel != null)
+		{
+			final ChannelFuture writeFuture = channel.write(message);
+			futureResponse.prepareRelease(channel, channelChache);
+			afterSend(writeFuture, futureResponse, replyHandler);
+			return;
+		}
 		try
 		{
 			final ChannelFuture channelFuture = connectionCollector.channelTCP(replyTimeoutHandler,
 					replyHandler, remoteNode.createSocketTCP(), configuration
-							.getConnectTimeoutMillis());
+							.getConnectTimeoutMillis(), channelChache);
 			final Cancellable cancel1 = new Cancellable()
 			{
 				@Override
@@ -249,8 +258,12 @@ public class Sender
 					{
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
+						channelChache.add(remoteNode.createSocketTCP(), future.getChannel());
+						// place channel into cache
 						final ChannelFuture writeFuture = future.getChannel().write(message);
+						futureResponse.prepareRelease(future.getChannel(), channelChache);
 						afterSend(writeFuture, futureResponse, replyHandler);
+						return;
 					}
 					else
 					{

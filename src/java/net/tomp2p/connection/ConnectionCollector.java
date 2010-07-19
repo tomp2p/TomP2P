@@ -17,6 +17,7 @@ package net.tomp2p.connection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -41,7 +42,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * The connection pool limits the connection used in the application. If too
@@ -68,19 +68,21 @@ public class ConnectionCollector
 	final private ExecutionHandler executionHandlerSender;
 
 	public ConnectionCollector(ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration, ExecutionHandler executionHandlerSender)
+			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
+			ExecutionHandler executionHandlerSender)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
 		this.semaphoreUDPMessages = new Semaphore(configuration.getMaxOutgoingUDP());
 		this.semaphoreTCPMessages = new Semaphore(configuration.getMaxOutgoingTCP());
 		this.maxMessageSize = configuration.getMaxMessageSize();
-		this.executionHandlerSender=executionHandlerSender;
+		this.executionHandlerSender = executionHandlerSender;
 	}
 
 	/**
 	 * Returns a channel that is managed by this pool. Once the channel is
 	 * closed, the channel will be added to the pool.
+	 * @param channelChache 
 	 * 
 	 * @param connectTimeout
 	 * 
@@ -88,9 +90,18 @@ public class ConnectionCollector
 	 * @return A channel with the handler or null if disposed or interrupted
 	 */
 	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler replyHandler,
-			SocketAddress remoteAddress, int connectTimeoutMillis) throws ChannelException
+			SocketAddress remoteAddress, int connectTimeoutMillis, ChannelChache channelChache) throws ChannelException
 	{
-		semaphoreTCPMessages.acquireUninterruptibly();
+		try
+		{
+			while(!semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS))
+				channelChache.expireCache();
+		}
+		catch (InterruptedException e)
+		{
+			throw new ChannelException(e);
+		}
+		
 		int failCounter = 0;
 		for (;;)
 		{

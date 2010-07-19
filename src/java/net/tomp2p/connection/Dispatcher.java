@@ -30,8 +30,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.ReplyHandler;
 
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -272,23 +270,22 @@ public class Dispatcher extends SimpleChannelHandler
 			// channel for UDP during a reply. This is our server socket!
 			e.getChannel().write(response, e.getRemoteAddress());
 		}
-		else if (ctx.getChannel().isConnected())
+		else
 		{
 			if (logger.isDebugEnabled())
 				logger.debug("reply TCP message " + response);
-			ChannelFuture wf = ctx.getChannel().write(response);
-			wf.addListener(new ChannelFutureListener()
-			{
-				@Override
-				public void operationComplete(ChannelFuture future)
-				{
-					future.getChannel().close();
-				}
-			});
+			ctx.getChannel().write(response);
+			// keep-alive
+			//
+			//wf.addListener(new ChannelFutureListener()
+			//{
+			//	@Override
+			//	public void operationComplete(ChannelFuture future)
+			//	{
+			//		future.getChannel().close();
+			//	}
+			//});
 		}
-		else
-			// just in case
-			ctx.getChannel().close();
 	}
 
 	private static void close(ChannelHandlerContext ctx)

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
+import java.net.InetSocketAddress;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ public class Sender
 	final private ConnectionConfiguration configuration;
 	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
 	final private Thread senderThread;
-	final private ChannelChache channelChache = new ChannelChache();
+	final private TCPChannelChache channelChache = new TCPChannelChache();
 	volatile private boolean running = true;
 
 	public Sender(final ConnectionCollector connectionCollector,
@@ -89,7 +90,7 @@ public class Sender
 		});
 		this.senderThread.start();
 	}
-
+	//TODO: fire and forget does not work!!
 	public void fireAndForgetUDP(final Message message)
 	{
 		sendUDP(message.getRecipient(), null, message, false);
@@ -121,7 +122,6 @@ public class Sender
 		running = false;
 		senderThread.interrupt();
 		connectionCollector.shutdown();
-		channelChache.shutdown();
 	}
 
 	public ConnectionCollector getConnectionCollector()
@@ -151,7 +151,7 @@ public class Sender
 		{
 			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
-			if (waitForConnection(replyHandler.getFutureResponse()))
+			if (waitForConnection(replyHandler))
 				sendTCP0(remoteNode, replyHandler, message);
 		}
 	}
@@ -178,12 +178,12 @@ public class Sender
 		{
 			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
-			if (waitForConnection(replyHandler.getFutureResponse()))
+			if (waitForConnection(replyHandler))
 				sendUDP0(remoteNode, replyHandler, message, broadcast);
 		}
 	}
 
-	private boolean waitForConnection(FutureResponse futureResponse)
+	private boolean waitForConnection(RequestHandler requestHandler)
 	{
 		// why 100? well its a nice number. The queue size with 100 can go up to
 		// 100*exploding factor. The exploding factor is how much threads a main
@@ -205,7 +205,8 @@ public class Sender
 				{
 					logger.error("error in waitforconn");
 					e.printStackTrace();
-					futureResponse.setFailed("Interrupted");
+					if(requestHandler!=null)
+						requestHandler.getFutureResponse().setFailed("Interrupted");
 					return false;
 				}
 			}
@@ -226,16 +227,18 @@ public class Sender
 					remoteNode);
 			futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
 		}
-		Channel channel = channelChache.acquire(remoteNode.createSocketTCP());
-		if (channel != null)
-		{
-			final ChannelFuture writeFuture = channel.write(message);
-			futureResponse.prepareRelease(channel, channelChache);
-			afterSend(writeFuture, futureResponse, replyHandler);
-			return;
-		}
+		final InetSocketAddress remoteSocket = remoteNode.createSocketTCP();
 		try
 		{
+			Channel channel = channelChache.acquire(remoteSocket, futureResponse);
+			if (channel != null)
+			{
+				channel.getPipeline().replace("timeout", "timeout", replyTimeoutHandler);
+				channel.getPipeline().replace("reply", "reply", replyHandler);
+				final ChannelFuture writeFuture = channel.write(message);
+				afterSend(writeFuture, futureResponse, replyHandler);
+				return;
+			}
 			final ChannelFuture channelFuture = connectionCollector.channelTCP(replyTimeoutHandler,
 					replyHandler, remoteNode.createSocketTCP(), configuration
 							.getConnectTimeoutMillis(), channelChache);
@@ -258,10 +261,9 @@ public class Sender
 					{
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
-						channelChache.add(remoteNode.createSocketTCP(), future.getChannel());
-						// place channel into cache
+						//add channel to cache
+						channelChache.addAndAcquire(remoteNode.createSocketTCP(), future.getChannel(), futureResponse);
 						final ChannelFuture writeFuture = future.getChannel().write(message);
-						futureResponse.prepareRelease(future.getChannel(), channelChache);
 						afterSend(writeFuture, futureResponse, replyHandler);
 						return;
 					}

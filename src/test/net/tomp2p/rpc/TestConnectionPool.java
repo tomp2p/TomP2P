@@ -4,7 +4,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection.ChannelChache;
+import net.tomp2p.connection.TCPChannelChache;
 import net.tomp2p.connection.ConnectionCollector;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.message.Message;
@@ -54,7 +54,7 @@ public class TestConnectionPool
 	{
 		try
 		{
-			ChannelChache cache=new ChannelChache();
+			TCPChannelChache cache=new TCPChannelChache();
 			setupServerNettyTCP();
 			ConnectionCollector cp = new ConnectionCollector(tcpClientChannelFactory,
 					udpChannelFactory,

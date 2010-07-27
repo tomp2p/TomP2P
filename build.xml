@@ -9,7 +9,7 @@
 	<property name="release" location="release" />
 
 	<!-- set version numbers for the components -->
-	<property name="version" value="3.2.1-beta" />
+	<property name="version" value="3.2.2-beta" />
 	<property name="creator" value="Thomas Bocek" />
 
 	<path id="class.path">

@@ -166,6 +166,40 @@ public class TestPing
 				recv1.shutdown();
 		}
 	}
+	
+	@Test
+	public void testPingTCPPool() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x9876"));
+			sender.listen(2424, 2424);
+			Utils.sleep(100);
+			// sender.setBlocking(false);
+			recv1 = new Peer(55, new Number160("0x1234"));
+			recv1.listen(8088, 8088);
+			List<FutureResponse> list = new ArrayList<FutureResponse>(10000);
+			for(int i=0;i<100;i++)
+			{
+				FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+				list.add(fr);
+			}			
+			for (FutureResponse fr2 : list)
+			{
+				fr2.awaitUninterruptibly();
+			}
+				
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
 
 	@Test
 	public void testPingTime() throws Exception

@@ -162,9 +162,6 @@ public class MessageCodec
 				buffers.add(buffer);
 				for (Map.Entry<Number160, Data> entry : message.getDataMap().entrySet())
 				{
-					Number160 tmp = entry.getKey();
-					if (tmp == null)
-						System.err.println("blub");
 					buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().toByteArray()));
 					count += 20;
 					// count += encodeData(buffers, message, entry.getValue());

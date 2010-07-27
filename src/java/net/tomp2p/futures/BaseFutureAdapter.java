@@ -14,11 +14,16 @@
  * the License.
  */
 package net.tomp2p.futures;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public abstract class BaseFutureAdapter<F extends BaseFuture> implements BaseFutureListener<F>
 {
+	final private static Logger logger = LoggerFactory.getLogger(BaseFutureAdapter.class);
 	public void exceptionCaught(final Throwable t) throws Exception
 	{
-		System.err.println("exception in "+getClass().getName());
+		logger.error("exception in "+getClass().getName());
 		t.printStackTrace();
 	}
 }

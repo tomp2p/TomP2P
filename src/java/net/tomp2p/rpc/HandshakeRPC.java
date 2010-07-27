@@ -69,7 +69,7 @@ public class HandshakeRPC extends ReplyHandler
 
 	public FutureResponse fireTCP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).sendTCP();
+		return createHandler(remoteNode).fireAndForgetTCP();
 	}
 
 	private RequestHandler createHandler(final PeerAddress remoteNode)

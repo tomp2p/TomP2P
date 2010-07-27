@@ -351,7 +351,7 @@ public class PeerMapKadImpl implements PeerMap
 
 	private boolean remove(PeerAddress remotePeer)
 	{
-		System.err.println("remove");
+		//System.err.println("remove");
 		final int classMember = classMember(remotePeer.getID());
 		final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 		final boolean retVal = map.remove(remotePeer.getID()) != null;

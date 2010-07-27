@@ -25,7 +25,6 @@ import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerMap;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.DefaultExceptionEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
@@ -131,6 +130,7 @@ public class RequestHandler extends SimpleChannelHandler
 			logger.warn("Got exception, but ignored "
 					+ "(future response completed), still shown below. "
 					+ futureResponse.getFailedReason());
+			e.getCause().printStackTrace();
 		}
 		else
 		{
@@ -153,7 +153,7 @@ public class RequestHandler extends SimpleChannelHandler
 				}
 				else if (logger.isWarnEnabled())
 				{
-					logger.debug("error in request");
+					logger.warn("error in request");
 					e.getCause().printStackTrace();
 				}
 			}
@@ -168,13 +168,6 @@ public class RequestHandler extends SimpleChannelHandler
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
-		if (handlingMessage.compareAndSet(false, true))
-		{
-			futureResponse.cancelTimeout();
-			//keep-alive
-			if(!futureResponse.release())
-				ctx.getChannel().close();
-		}
 		if (e.getMessage() instanceof Message)
 		{
 			Message message = (Message) e.getMessage();
@@ -203,6 +196,8 @@ public class RequestHandler extends SimpleChannelHandler
 			}
 			else
 			{
+				if (logger.isDebugEnabled())
+					logger.debug("perfect: "+message);
 				// We got a good answer, let's mark the sender as alive
 				if (message.isOk() || message.isNotOk())
 					getPeerMap().peerOnline(message.getSender(), null);
@@ -216,8 +211,29 @@ public class RequestHandler extends SimpleChannelHandler
 			exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 					PeerException.AbortCause.PEER_ABORT, msg)));
 		}
+		if (handlingMessage.compareAndSet(false, true))
+		{
+			futureResponse.cancelTimeout();
+			//keep-alive
+			if(!futureResponse.release())
+				ctx.getChannel().close();
+		}
 		ctx.sendUpstream(e);
 	}
+	
+	/* public void closeRequested(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+	        ctx.sendDownstream(e);
+	        try
+	        {
+	        	throw new RuntimeException("");
+	        }
+	        catch(RuntimeException ee)
+	        {
+	        	ee.printStackTrace();
+	        }
+	        logger.error("CLOSE CALLED");
+	    }*/
+	 
 }
 
 interface Release

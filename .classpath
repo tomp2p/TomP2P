@@ -11,6 +11,6 @@
 	<classpathentry kind="lib" path="lib/slf4j-jdk14-1.5.5.jar"/>
 	<classpathentry kind="lib" path="lib/je-4.0.103.jar" sourcepath="lib/src"/>
 	<classpathentry kind="lib" path="lib/sbbi-upnplib-1.0.4.jar" sourcepath="lib/src/sbbi-upnplib-1.0.4-sources.zip"/>
-	<classpathentry kind="lib" path="lib/netty-3.2.1.Final.jar"/>
+	<classpathentry kind="lib" path="lib/netty-3.2.1.Final.jar" sourcepath="lib/src/netty-3.2.1.Final-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

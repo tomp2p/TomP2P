@@ -32,7 +32,6 @@ public class SHA1Signature
 		if (intLen1 > 127)
 			throw new IOException("cannot handle int legth > than 127, got " + intLen1);
 		number1 = encodeNumber(encodedData, 4, intLen1);
-		// System.err.println("got1 " +getNumber1()+" here "+number1);
 		//
 		if (encodedData[4 + intLen1] != 0x02)
 			throw new IOException("expected sequence with value 2, but got "
@@ -41,7 +40,6 @@ public class SHA1Signature
 		if (intLen2 > 127)
 			throw new IOException("cannot handle int legth > than 127, got " + intLen2);
 		number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);
-		// System.err.println("got2 " +getNumber2()+" here "+number2);
 	}
 
 	private Number160 encodeNumber(byte[] encodedData, int offset, int len) throws IOException
@@ -59,8 +57,6 @@ public class SHA1Signature
 		}
 		else
 		{
-			if(len<19)
-				System.err.println("YESS");
 			return new Number160(encodedData, offset, len);
 		}
 	}

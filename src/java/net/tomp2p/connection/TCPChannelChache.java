@@ -101,17 +101,21 @@ public class TCPChannelChache
 				{
 					cache.wait();
 				}
+				// in the meantime, the channel may have been removed
+				if(!cache.containsKey(createSocketTCP))
+					return null;
 				if (logger.isDebugEnabled())
 					logger.debug("acquire cached channel " + createSocketTCP);
 				active.add(createSocketTCP);
 				futureResponse.prepareRelease(createSocketTCP, this);
+				return channel;
 			}
 			else
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("no cached channel found " + createSocketTCP);
+				return null;
 			}
-			return channel;
 		}
 	}
 

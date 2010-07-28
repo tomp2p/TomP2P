@@ -168,6 +168,13 @@ public class RequestHandler extends SimpleChannelHandler
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
+		if (handlingMessage.compareAndSet(false, true))
+		{
+			futureResponse.cancelTimeout();
+			//keep-alive
+			if(!futureResponse.release())
+				ctx.getChannel().close();
+		}
 		if (e.getMessage() instanceof Message)
 		{
 			Message message = (Message) e.getMessage();
@@ -210,13 +217,6 @@ public class RequestHandler extends SimpleChannelHandler
 			logger.error(msg);
 			exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 					PeerException.AbortCause.PEER_ABORT, msg)));
-		}
-		if (handlingMessage.compareAndSet(false, true))
-		{
-			futureResponse.cancelTimeout();
-			//keep-alive
-			if(!futureResponse.release())
-				ctx.getChannel().close();
 		}
 		ctx.sendUpstream(e);
 	}

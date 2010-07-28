@@ -32,9 +32,9 @@ public class FutureResponse extends BaseFutureImpl
 {
 	final private Message requestMessage;
 	private Message responseMessage;
-	volatile private ReplyTimeoutHandler replyTimeoutHandler;
-	volatile private InetSocketAddress socketAddress;
-	volatile private TCPChannelChache channelChache;
+	private ReplyTimeoutHandler replyTimeoutHandler;
+	private volatile InetSocketAddress socketAddress;
+	private volatile TCPChannelChache channelChache;
 
 	public FutureResponse(final Message requestMessage)
 	{
@@ -122,12 +122,10 @@ public class FutureResponse extends BaseFutureImpl
 
 	public boolean release()
 	{
-		
-			if (socketAddress != null && channelChache != null)
-			{
-				return channelChache.release(socketAddress);
-			}
-			return false;
-		
+		if (socketAddress != null && channelChache != null)
+		{
+			return channelChache.release(socketAddress);
+		}
+		return false;
 	}
 }

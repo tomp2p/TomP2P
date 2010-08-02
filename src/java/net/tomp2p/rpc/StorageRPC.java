@@ -286,11 +286,7 @@ public class StorageRPC extends ReplyHandler
 		{
 			result = peerBean.getStorage().get(new Number320(locationKey, domainKey));
 		}
-		// TODO: remove this loop if possible, it seems unecessary
-		final Map<Number160, Data> result2 = new HashMap<Number160, Data>();
-		for (Map.Entry<Number480, Data> entry : result.entrySet())
-			result2.put(entry.getKey().getContentKey(), entry.getValue());
-		responseMessage.setDataMap(result2);
+		responseMessage.setDataMapConvert(result);
 		return responseMessage;
 	}
 

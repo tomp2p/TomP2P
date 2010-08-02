@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class StorageMemory extends Storage
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageMemory.class);
-	final private Object lock = new Object();
+	final protected Object lock = new Object();
 	// these data need to be consistent
 	final protected SortedMap<Number480, Data> dataMap = new TreeMap<Number480, Data>();
 	final protected Set<Number480> dataDirectReplication = new HashSet<Number480>();

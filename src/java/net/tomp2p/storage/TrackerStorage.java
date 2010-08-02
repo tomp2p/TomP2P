@@ -16,14 +16,10 @@
 package net.tomp2p.storage;
 import java.io.IOException;
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 
 /**
@@ -58,29 +54,13 @@ public class TrackerStorage extends StorageMemory
 		this.trackerTimoutSeconds = trackerTimoutSeconds;
 	}
 
-	public Map<PeerAddress, Data> get(Number160 locationKey, Number160 domainKey)
-			throws ClassNotFoundException, IOException
+	public boolean put(Number160 locationKey, Number160 domainKey, PublicKey publicKey, Data data)
+			throws IOException
 	{
-		Map<PeerAddress, Data> result = new HashMap<PeerAddress, Data>();
-		SortedMap<Number480, Data> tmp = get(new Number320(locationKey, domainKey));
-		for (Data data : tmp.values())
-		{
-			// TODO: deserializing and serializing is a waste, cache the object
-			// in Data
-			TrackerData trackerData = (TrackerData) data.getObject();
-			result.put(trackerData.getPeerAddress(), trackerData.getAttachement());
-		}
-		return result;
-	}
-
-	public boolean put(Number160 locationKey, Number160 domainKey, PeerAddress senderAddress,
-			PublicKey publicKey, Data attachement) throws IOException
-	{
-		Data data = new Data(new TrackerData(senderAddress, attachement));
 		// fixed ttl, not set by the user
 		data.setTTLSeconds(getTrackerTimoutSeconds());
-		return put(new Number480(locationKey, domainKey, senderAddress.getID()), data, publicKey,
-				false, publicKey != null);
+		Number480 number480 = new Number480(locationKey, domainKey, data.getPeerAddress().getID());
+		return put(number480, data, publicKey, false, publicKey != null);
 	}
 
 	public int size(Number160 locationKey, Number160 domainKey)

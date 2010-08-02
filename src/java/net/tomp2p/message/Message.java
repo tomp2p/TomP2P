@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Random;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -76,6 +77,7 @@ public class Message
 	private Collection<PeerAddress> neighbors = null;
 	private int useAtMostNeighbors = -1;
 	private Map<Number160, Data> dataMap = null;
+	private Map<Number480, Data> dataMapConvert = null;
 	private Number160 key1 = null;
 	private Number160 key2 = null;
 	private Number160 key3 = null;
@@ -96,6 +98,7 @@ public class Message
 	private volatile transient PrivateKey privateKey;
 	private volatile transient boolean hintDataPublickKey = false;
 	private volatile transient boolean hintSign = false;
+	private volatile transient boolean convertNumber480to160 = false;
 
 	// final private transient KeyPair keyPair;
 	// private volatile transient boolean sign=false;
@@ -484,6 +487,15 @@ public class Message
 	}
 
 	// /////////////////////////////////////////////
+	public Message setDataMapConvert(final Map<Number480, Data> dataMap)
+	{
+		if (dataMap == null)
+			throw new IllegalArgumentException("key cannot add null");
+		setConvertNumber480to160(true);
+		this.dataMapConvert = dataMap;
+		setContentType(Content.MAP_KEY_DATA);
+		return this;
+	}
 	public Message setDataMap(final Map<Number160, Data> dataMap)
 	{
 		if (dataMap == null)
@@ -501,6 +513,11 @@ public class Message
 	public Map<Number160, Data> getDataMap()
 	{
 		return dataMap;
+	}
+	
+	public Map<Number480, Data> getDataMapConvert()
+	{
+		return dataMapConvert;
 	}
 
 	// /////////////////////////////////////////////
@@ -705,5 +722,15 @@ public class Message
 	public boolean isHintSign()
 	{
 		return hintSign;
+	}
+
+	public void setConvertNumber480to160(boolean convertNumber480to160)
+	{
+		this.convertNumber480to160 = convertNumber480to160;
+	}
+
+	public boolean isConvertNumber480to160()
+	{
+		return convertNumber480to160;
 	}
 }

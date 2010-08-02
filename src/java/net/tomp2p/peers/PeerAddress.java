@@ -32,13 +32,14 @@ import java.net.UnknownHostException;
  */
 public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 {
-	final private static int NET6 = 1;
-	final private static int FORWARD = 2;
-	final private static int FIREWALL_UDP = 4;
-	final private static int FIREWALL_TCP = 8;
-	// final private static int RESERVED_3 = 16;
-	// final private static int RESERVED_4 = 32;
-	// final private static int RESERVED_5 = 64;
+	final private static int VALID = 1;
+	final private static int NET6 = 2;
+	final private static int FORWARD = 4;
+	final private static int FIREWALL_UDP = 8;
+	final private static int FIREWALL_TCP = 16;
+	// final private static int RESERVED_1 = 32;
+	// final private static int RESERVED_2 = 64;
+	// final private static int RESERVED_3 = 128;
 	final private static long serialVersionUID = -1316622724169272306L;
 	final private Number160 id;
 	// a peer can change its IP, so this is not final.
@@ -88,38 +89,44 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	 * @throws UnknownHostException Using InetXAddress.getByAddress creates this
 	 *         exception.
 	 */
+	
 	public PeerAddress(final byte[] me, int offset) throws UnknownHostException
 	{
-		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
-		System.arraycopy(me, offset, tmp, 0, Number160.BYTE_ARRAY_SIZE);
-		this.id = new Number160(tmp);
-		this.portTCP = ((me[offset + Number160.BYTE_ARRAY_SIZE] & 0xff) << 8)
-				+ (me[offset + Number160.BYTE_ARRAY_SIZE + 1] & 0xff);
-		this.portUDP = ((me[offset + Number160.BYTE_ARRAY_SIZE + 2] & 0xff) << 8)
-				+ (me[offset + Number160.BYTE_ARRAY_SIZE + 3] & 0xff);
-		int types = me[offset + Number160.BYTE_ARRAY_SIZE + 4] & 0xff;
-		//
+		int types = me[offset] & 0xff;
 		this.net6 = (types & NET6) > 0;
 		this.forwarded = (types & FORWARD) > 0;
 		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
 		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		offset++;
+		//
+		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
+		System.arraycopy(me, offset, tmp, 0, Number160.BYTE_ARRAY_SIZE);
+		this.id = new Number160(tmp);
+		offset+=Number160.BYTE_ARRAY_SIZE;
+		//
+		this.portTCP = ((me[offset] & 0xff) << 8)
+				+ (me[offset  + 1] & 0xff);
+		this.portUDP = ((me[offset + 2] & 0xff) << 8)
+				+ (me[offset + 3] & 0xff);
+		offset+=4;
 		//
 		if (!isIPv6())
 		{
 			// IPv4
 			tmp = new byte[4];
-			System.arraycopy(me, offset + Number160.BYTE_ARRAY_SIZE + 5, tmp, 0, 4);
+			System.arraycopy(me, offset, tmp, 0, 4);
 			this.address = Inet4Address.getByAddress(tmp);
-			this.offset = offset + Number160.BYTE_ARRAY_SIZE + 5 + 4;
+			offset += 4;
 		}
 		else
 		{
 			// IPv6
 			tmp = new byte[16];
-			System.arraycopy(me, offset + Number160.BYTE_ARRAY_SIZE + 5, tmp, 0, 16);
+			System.arraycopy(me, offset, tmp, 0, 16);
 			this.address = Inet6Address.getByAddress(tmp);
-			this.offset = offset + Number160.BYTE_ARRAY_SIZE + 5 + 16;
+			offset += 16;
 		}
+		this.offset = offset;
 		this.hashCode = id.hashCode();
 	}
 
@@ -199,15 +206,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		byte[] me;
 		if (address instanceof Inet4Address)
-			me = new byte[20 + 4 + 1 + 4];
+			me = new byte[1 + 20 + 4 + 4];
 		else
-			me = new byte[20 + 4 + 1 + 16];
+			me = new byte[1 + 20 + 4 + 16];
 		toByteArray(me, 0);
 		return me;
 	}
 
 	/**
-	 * Serializes to an existing array
+	 * Serializes to an existing array. Please note, that a serialized peeraddress can never start with 0 for the first byte
 	 * 
 	 * @param me The array where the result should be stored
 	 * @param offset The offset where to start to save the result in the byte
@@ -216,28 +223,30 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	 */
 	public int toByteArray(byte[] me, int offset)
 	{
-		int delta;
+		// save the type
+		me[offset] = createType();
+		int delta = 1;
+		// save the peer id
+		System.arraycopy(id.toByteArray(), 0, me, offset + 1, Number160.BYTE_ARRAY_SIZE);
+		delta += Number160.BYTE_ARRAY_SIZE;
+		// save ports tcp
+		int tmp = offset + delta;
+		me[tmp + 0] = (byte) (portTCP >>> 8);
+		me[tmp + 1] = (byte) portTCP;
+		me[tmp + 2] = (byte) (portUDP >>> 8);
+		me[tmp + 3] = (byte) portUDP;
+		delta += 4;
+		// save the ip address
 		if (address instanceof Inet4Address)
 		{
-			me[offset + Number160.BYTE_ARRAY_SIZE + 4] = createType();
-			System
-					.arraycopy(address.getAddress(), 0, me, offset + Number160.BYTE_ARRAY_SIZE + 5,
-							4);
-			delta = Number160.BYTE_ARRAY_SIZE + 5 + 4;
+			System.arraycopy(address.getAddress(), 0, me, offset + delta, 4);
+			delta += 4;
 		}
 		else
 		{
-			me[offset + Number160.BYTE_ARRAY_SIZE + 4] = createType();
-			System.arraycopy(address.getAddress(), 0, me, offset + Number160.BYTE_ARRAY_SIZE + 5,
-					16);
-			delta = Number160.BYTE_ARRAY_SIZE + 5 + 16;
+			System.arraycopy(address.getAddress(), 0, me, offset + delta, 16);
+			delta += 16;
 		}
-		System.arraycopy(id.toByteArray(), 0, me, offset + 0, Number160.BYTE_ARRAY_SIZE);
-		// save ports tcp
-		me[offset + Number160.BYTE_ARRAY_SIZE + 0] = (byte) (portTCP >>> 8);
-		me[offset + Number160.BYTE_ARRAY_SIZE + 1] = (byte) portTCP;
-		me[offset + Number160.BYTE_ARRAY_SIZE + 2] = (byte) (portUDP >>> 8);
-		me[offset + Number160.BYTE_ARRAY_SIZE + 3] = (byte) portUDP;
 		return offset + delta;
 	}
 
@@ -285,7 +294,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 
 	public byte createType()
 	{
-		byte result = 0;
+		byte result = VALID;
 		if (net6)
 			result |= NET6;
 		if (forwarded)
@@ -315,6 +324,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	public static boolean isFirewalledUDP(int type)
 	{
 		return ((type & 0xff) & FIREWALL_UDP) > 0;
+	}
+	
+	public static int expectedLength(int type)
+	{
+		if(isNet6(type))
+			return 1 + 20 + 4 + 16;
+		else return 1 + 20 + 4 + 4;
 	}
 
 	@Override
@@ -398,6 +414,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 
 	public PeerAddress forward(InetAddress inetAddress)
 	{
-		return new PeerAddress(id, inetAddress, portTCP, portUDP, true, firewalledUDP, firewalledTCP);
+		return new PeerAddress(id, inetAddress, portTCP, portUDP, true, firewalledUDP,
+				firewalledTCP);
 	}
 }

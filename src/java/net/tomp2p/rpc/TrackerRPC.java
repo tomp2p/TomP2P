@@ -17,6 +17,7 @@ package net.tomp2p.rpc;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.SortedMap;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -26,14 +27,14 @@ import net.tomp2p.message.MessageCodec;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.TrackerData;
 import net.tomp2p.storage.TrackerStorage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class TrackerRPC extends ReplyHandler
 {
@@ -53,7 +54,7 @@ public class TrackerRPC extends ReplyHandler
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.TRACKER_ADD, Command.TRACKER_GET);
 	}
-	
+
 	public PeerAddress getPeerAddress()
 	{
 		return peerBean.getServerPeerAddress();
@@ -128,11 +129,11 @@ public class TrackerRPC extends ReplyHandler
 		Number160 domainKey = message.getKey2();
 		if (direct)
 		{
-			Map<PeerAddress, Data> peerDataMap = trackerStorage.get(locationKey, domainKey);
+			SortedMap<Number480, Data> peerDataMap = trackerStorage.get(new Number320(locationKey, domainKey));
 			if (peerDataMap == null)
 				responseMessage.setPeerDataMap(new HashMap<PeerAddress, Data>());
 			else
-				responseMessage.setPeerDataMap(peerDataMap);
+				responseMessage.setDataMapConvert(peerDataMap);
 			PeerAddress senderAddress = message.getSender();
 			if (message.getCommand() == Command.TRACKER_ADD)
 			{
@@ -146,11 +147,12 @@ public class TrackerRPC extends ReplyHandler
 					Map<Number160, Data> dataMap = message.getDataMap();
 					// Collection<Data> c = .values();
 					final Data attachement = (dataMap != null && dataMap.size() >= 1) ? dataMap
-							.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY);
+							.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY,
+							null);
+					attachement.setPeerAddress(senderAddress);
 					// public key is not set in the data, but in the message
 					PublicKey publicKey = message.getPublicKey();
-					if (!trackerStorage.put(locationKey, domainKey, senderAddress, publicKey,
-							attachement))
+					if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
 						responseMessage.setType(Message.Type.DENIED);
 				}
 				else
@@ -166,14 +168,13 @@ public class TrackerRPC extends ReplyHandler
 					responseMessage.setType(Message.Type.NOT_FOUND);
 			}
 		}
-		// this is for replication. If we got something here, the other peer thinks that I'm responible
+		// this is for replication. If we got something here, the other peer
+		// thinks that I'm responible
 		else
 		{
 			Map<Number160, Data> dataMap = message.getDataMap();
 			Data data = dataMap.values().iterator().next();
-			TrackerData trackerData=(TrackerData)data.getObject();
-			if (!trackerStorage.put(locationKey, domainKey, trackerData.getPeerAddress(), null,
-					trackerData.getAttachement()))
+			if (!trackerStorage.put(locationKey, domainKey, null, data))
 				responseMessage.setType(Message.Type.DENIED);
 		}
 		return responseMessage;

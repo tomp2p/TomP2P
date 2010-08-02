@@ -25,8 +25,8 @@ import java.security.Signature;
 import java.security.SignatureException;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
-
 
 /**
  * This class holds the data for the transport. The data is already serialized
@@ -54,23 +54,27 @@ public class Data implements Serializable
 	// to avoid redundant objects, use the same object
 	private PublicKey dataPublicKey;
 	private byte[] signature;
+	// if null, the data has been sent directly, otherwise this field shows the
+	// originator of this data
+	private PeerAddress originator;
 
-	public Data(Object object) throws IOException
+	public Data(Object object, PeerAddress originator) throws IOException
 	{
-		this(Utils.encodeJavaObject(object));
+		this(Utils.encodeJavaObject(object), originator);
 	}
 
-	public Data(byte[] data)
+	public Data(byte[] data, PeerAddress originator)
 	{
-		this(data, 0, data.length);
+		this(data, 0, data.length, originator);
 	}
 
-	public Data(byte[] data, int offset, int length)
+	public Data(byte[] data, int offset, int length, PeerAddress originator)
 	{
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
 		this.validFromMillis = System.currentTimeMillis();
+		this.originator = originator;
 	}
 
 	public byte[] getData()
@@ -173,7 +177,9 @@ public class Data implements Serializable
 	{
 		return signature;
 	}
-	//TODO: get rid of this. If the data key is set, we can assume that we always want to protect an entry
+
+	// TODO: get rid of this. If the data key is set, we can assume that we
+	// always want to protect an entry
 	public boolean isProtectedEntry()
 	{
 		return protectedEntry;
@@ -205,6 +211,16 @@ public class Data implements Serializable
 		sb.append(",ttl:");
 		sb.append(getTTLSeconds());
 		return sb.toString();
+	}
+
+	public PeerAddress getPeerAddress()
+	{
+		return originator;
+	}
+
+	public void setPeerAddress(PeerAddress originator)
+	{
+		this.originator = originator;
 	}
 	private static class EmptyPublicKey implements PublicKey
 	{

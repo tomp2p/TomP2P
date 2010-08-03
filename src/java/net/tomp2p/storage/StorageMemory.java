@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 public class StorageMemory extends Storage
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageMemory.class);
-	final protected Object lock = new Object();
 	// these data need to be consistent
 	final protected SortedMap<Number480, Data> dataMap = new TreeMap<Number480, Data>();
 	final protected Set<Number480> dataDirectReplication = new HashSet<Number480>();
@@ -62,7 +61,7 @@ public class StorageMemory extends Storage
 	public boolean put(Number480 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 			boolean domainProtection)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			if (!securityDomainCheck(key, publicKey, domainProtection))
@@ -166,7 +165,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Data get(Number480 key)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			return dataMap.get(key);
@@ -176,7 +175,7 @@ public class StorageMemory extends Storage
 	@Override
 	public SortedMap<Number480, Data> get(Number480 fromKey, Number480 toKey)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			if (fromKey == null && toKey == null)
@@ -193,7 +192,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Data remove(Number480 key, PublicKey publicKey)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			return remove(key, publicKey, false);
@@ -223,7 +222,7 @@ public class StorageMemory extends Storage
 	@Override
 	public SortedMap<Number480, Data> remove(Number480 fromKey, Number480 toKey, PublicKey publicKey)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			// we remove only if locationkey and domain key are the same
@@ -264,7 +263,7 @@ public class StorageMemory extends Storage
 	@Override
 	public boolean contains(Number480 key)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			return dataMap.containsKey(key);
@@ -274,7 +273,7 @@ public class StorageMemory extends Storage
 	@Override
 	public DigestInfo digest(Number480 fromKey, Number480 toKey)
 	{
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			SortedMap<Number480, Data> tmp = get(fromKey, toKey);
@@ -290,7 +289,7 @@ public class StorageMemory extends Storage
 	{
 		Number160 hash = Number160.ZERO;
 		int size = 0;
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			for (Number480 key : keys)
@@ -310,7 +309,7 @@ public class StorageMemory extends Storage
 	{
 		Number480 min = new Number480(locationKey, Number160.ZERO, Number160.ZERO);
 		Number480 max = new Number480(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-		synchronized (lock)
+		synchronized (dataMap)
 		{
 			checkTimeout();
 			for (Map.Entry<Number480, Data> entry : dataMap.subMap(min, max).entrySet())
@@ -324,7 +323,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Collection<Number160> findResponsibleData(Number160 peerID)
 	{
-		synchronized (lock)
+		synchronized (responsibilityMap)
 		{
 			return responsibilityMapRev.get(peerID);
 		}
@@ -333,7 +332,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Number160 findResponsiblePeerID(Number160 key)
 	{
-		synchronized (lock)
+		synchronized (responsibilityMap)
 		{
 			return responsibilityMap.get(key);
 		}
@@ -342,7 +341,7 @@ public class StorageMemory extends Storage
 	@Override
 	public boolean updateResponsibilities(Number160 key, Number160 closest)
 	{
-		synchronized (lock)
+		synchronized (responsibilityMap)
 		{
 			boolean isNew = false;
 			Number160 old = responsibilityMap.put(key, closest);

@@ -16,7 +16,6 @@
 package net.tomp2p.rpc;
 import java.io.IOException;
 import java.security.PublicKey;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -313,18 +312,18 @@ public class StorageRPC extends ReplyHandler
 		{
 			result = peerBean.getStorage().remove(new Number320(locationKey, domainKey), publicKey);
 		}
-		final Map<Number160, Data> result2 = new HashMap<Number160, Data>();
-		for (Map.Entry<Number480, Data> entry : result.entrySet())
-			result2.put(entry.getKey().getContentKey(), entry.getValue());
-		responseMessage.setDataMap(result2);
-		if (!sendBackResults)
+		if (!sendBackResults) 
+		{
 			// make a copy, so the iterator in the codec wont conflict with
 			// concurrent calls
-			responseMessage.setKeys(new ArrayList<Number160>(result2.keySet()));
+			responseMessage.setKeysConvert(result.keySet());
+		}
 		else
+		{
 			// make a copy, so the iterator in the codec wont conflict with
 			// concurrent calls
-			responseMessage.setDataMap(result2);
+			responseMessage.setDataMapConvert(result);
+		}
 		return responseMessage;
 	}
 }

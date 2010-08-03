@@ -84,6 +84,7 @@ public class Message
 	private Map<Number160, Number160> keyMap = null;
 	private Map<PeerAddress, Data> peerDataMap = null;
 	private Collection<Number160> keys = null;
+	private Collection<Number480> keysConvert = null;
 	private ChannelBuffer payload = null;
 	private long long_number = 0;
 	private int int_number = 0;
@@ -466,6 +467,16 @@ public class Message
 	{
 		return useAtMostNeighbors;
 	}
+	
+	public Message setKeysConvert(final Collection<Number480> keysConvert)
+	{
+		if (keys == null)
+			throw new IllegalArgumentException("key cannot add null");
+		setConvertNumber480to160(true);
+		this.keysConvert = keysConvert;
+		setContentType(Content.SET_KEYS);
+		return this;
+	}
 
 	public Message setKeys(final Collection<Number160> keys)
 	{
@@ -484,6 +495,11 @@ public class Message
 	public Collection<Number160> getKeys()
 	{
 		return keys;
+	}
+	
+	public Collection<Number480> getKeysConvert()
+	{
+		return keysConvert;
 	}
 
 	// /////////////////////////////////////////////

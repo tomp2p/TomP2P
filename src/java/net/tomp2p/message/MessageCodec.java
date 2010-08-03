@@ -159,21 +159,28 @@ public class MessageCodec
 			case MAP_KEY_DATA:
 				count = 4;
 				buffer = ChannelBuffers.buffer(4);
-				//TODO: getDataMapConvert needs to be thread safe!!
 				if (message.isConvertNumber480to160())
 				{
-					buffer.writeInt(message.getDataMapConvert().size());
-					buffers.add(buffer);
-					for (Map.Entry<Number480, Data> entry : message.getDataMapConvert().entrySet())
+					Map<Number480, Data> dataMap = message.getDataMapConvert();
+					// synrchonization is important, since a remove in
+					// StorageMemory might interfere and a concurrent
+					// modification exception might be thrown.
+					synchronized (dataMap)
 					{
-						buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().getContentKey().toByteArray()));
-						count += 20;
-						Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
-						count += encodeData(tmp2, factory, message, entry.getValue());
-						for (DataOutput output : tmp2)
-							buffers.add(((ChannelEncoder) output).getChannelBuffer());
+						buffer.writeInt(dataMap.size());
+						buffers.add(buffer);
+						for (Map.Entry<Number480, Data> entry : dataMap.entrySet())
+						{
+							buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().getContentKey()
+									.toByteArray()));
+							count += 20;
+							Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
+							count += encodeData(tmp2, factory, message, entry.getValue());
+							for (DataOutput output : tmp2)
+								buffers.add(((ChannelEncoder) output).getChannelBuffer());
+						}
+						return count;
 					}
-					return count;
 				}
 				else
 				{
@@ -205,13 +212,34 @@ public class MessageCodec
 				}
 				return 4 + (size * (20 + 20));
 			case SET_KEYS:
-				size = message.getKeys().size();
-				buffer = ChannelBuffers.buffer(4);
-				buffer.writeInt(size);
-				buffers.add(buffer);
-				for (Number160 key : message.getKeys())
-					buffers.add(ChannelBuffers.wrappedBuffer(key.toByteArray()));
-				return 4 + (size * 20);
+				if (message.isConvertNumber480to160())
+				{
+					Collection<Number480> keys = message.getKeysConvert();
+					// synrchonization is important, since a remove in
+					// StorageMemory might interfere and a concurrent
+					// modification exception might be thrown.
+					synchronized (keys)
+					{
+						size = keys.size();
+						buffer = ChannelBuffers.buffer(4);
+						buffer.writeInt(size);
+						buffers.add(buffer);
+						for (Number480 key : keys)
+							buffers.add(ChannelBuffers.wrappedBuffer(key.getContentKey()
+									.toByteArray()));
+						return 4 + (size * 20);
+					}
+				}
+				else
+				{
+					size = message.getKeys().size();
+					buffer = ChannelBuffers.buffer(4);
+					buffer.writeInt(size);
+					buffers.add(buffer);
+					for (Number160 key : message.getKeys())
+						buffers.add(ChannelBuffers.wrappedBuffer(key.toByteArray()));
+					return 4 + (size * 20);
+				}
 			case SET_NEIGHBORS:
 				count = 1;
 				size = Math.min(message.getNeighbors().size(), Math.min(message

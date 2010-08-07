@@ -43,7 +43,7 @@ public class Message
 	// 2 x 4 bit -> 8 bit
 	public enum Content
 	{
-		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, MAP_PEER_DATA, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, RESERVED1, RESERVED2, RESERVED3
+		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, RESERVED1, RESERVED2, RESERVED3, RESERVED4
 	};
 	// 1 x 4 bit
 	public enum Type
@@ -82,7 +82,6 @@ public class Message
 	private Number160 key2 = null;
 	private Number160 key3 = null;
 	private Map<Number160, Number160> keyMap = null;
-	private Map<PeerAddress, Data> peerDataMap = null;
 	private Collection<Number160> keys = null;
 	private Collection<Number480> keysConvert = null;
 	private ChannelBuffer payload = null;
@@ -470,7 +469,7 @@ public class Message
 	
 	public Message setKeysConvert(final Collection<Number480> keysConvert)
 	{
-		if (keys == null)
+		if (keysConvert == null)
 			throw new IllegalArgumentException("key cannot add null");
 		setConvertNumber480to160(true);
 		this.keysConvert = keysConvert;
@@ -667,26 +666,6 @@ public class Message
 	public int getInteger()
 	{
 		return int_number;
-	}
-
-	// ///////////////////////////////
-	public Map<PeerAddress, Data> getPeerDataMap()
-	{
-		return peerDataMap;
-	}
-
-	void setPeerDataMap0(Map<PeerAddress, Data> peerDataMap)
-	{
-		this.peerDataMap = peerDataMap;
-	}
-
-	public Message setPeerDataMap(Map<PeerAddress, Data> peerDataMap)
-	{
-		if (peerDataMap == null)
-			throw new RuntimeException("peerDataMap cannot add null");
-		this.peerDataMap = peerDataMap;
-		setContentType(Content.MAP_PEER_DATA);
-		return this;
 	}
 
 	// for internal use only

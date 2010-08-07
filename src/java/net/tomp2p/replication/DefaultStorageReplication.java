@@ -64,7 +64,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 		if (logger.isDebugEnabled())
 			logger.debug("[storage] I (" + storageRPC.getPeerAddress() + ") now responsible for "
 					+ locationKey);
-		// do nothing. This will be handled by the Peer class
+		//TODO: we could speed this up a little and trigger the maintenance right away
 	}
 
 	@Override

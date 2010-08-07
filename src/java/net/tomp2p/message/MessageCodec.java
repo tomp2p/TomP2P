@@ -162,25 +162,19 @@ public class MessageCodec
 				if (message.isConvertNumber480to160())
 				{
 					Map<Number480, Data> dataMap = message.getDataMapConvert();
-					// synrchonization is important, since a remove in
-					// StorageMemory might interfere and a concurrent
-					// modification exception might be thrown.
-					synchronized (dataMap)
+					buffer.writeInt(dataMap.size());
+					buffers.add(buffer);
+					for (Map.Entry<Number480, Data> entry : dataMap.entrySet())
 					{
-						buffer.writeInt(dataMap.size());
-						buffers.add(buffer);
-						for (Map.Entry<Number480, Data> entry : dataMap.entrySet())
-						{
-							buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().getContentKey()
-									.toByteArray()));
-							count += 20;
-							Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
-							count += encodeData(tmp2, factory, message, entry.getValue());
-							for (DataOutput output : tmp2)
-								buffers.add(((ChannelEncoder) output).getChannelBuffer());
-						}
-						return count;
+						buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().getContentKey()
+								.toByteArray()));
+						count += 20;
+						Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
+						count += encodeData(tmp2, factory, message, entry.getValue());
+						for (DataOutput output : tmp2)
+							buffers.add(((ChannelEncoder) output).getChannelBuffer());
 					}
+					return count;
 				}
 				else
 				{
@@ -215,20 +209,15 @@ public class MessageCodec
 				if (message.isConvertNumber480to160())
 				{
 					Collection<Number480> keys = message.getKeysConvert();
-					// synrchonization is important, since a remove in
-					// StorageMemory might interfere and a concurrent
-					// modification exception might be thrown.
-					synchronized (keys)
-					{
-						size = keys.size();
-						buffer = ChannelBuffers.buffer(4);
-						buffer.writeInt(size);
-						buffers.add(buffer);
-						for (Number480 key : keys)
-							buffers.add(ChannelBuffers.wrappedBuffer(key.getContentKey()
-									.toByteArray()));
-						return 4 + (size * 20);
-					}
+					size = keys.size();
+					buffer = ChannelBuffers.buffer(4);
+					buffer.writeInt(size);
+					buffers.add(buffer);
+					for (Number480 key : keys)
+						buffers
+								.add(ChannelBuffers
+										.wrappedBuffer(key.getContentKey().toByteArray()));
+					return 4 + (size * 20);
 				}
 				else
 				{
@@ -273,24 +262,6 @@ public class MessageCodec
 				buffer.writeInt(message.getInteger());
 				buffers.add(buffer);
 				return 4;
-			case MAP_PEER_DATA:
-				count = 1;
-				size = Math.min(message.getPeerDataMap().size(), MAX_BYTE);
-				buffer = ChannelBuffers.buffer(1);
-				buffer.writeByte(size);
-				buffers.add(buffer);
-				for (final Map.Entry<PeerAddress, Data> entry : message.getPeerDataMap().entrySet())
-				{
-					ChannelBuffer buffer2 = writePeerAddress(entry.getKey());
-					buffers.add(buffer2);
-					count += buffer2.capacity();
-					// count += encodeData(buffers, message, entry.getValue());
-					Collection<DataOutput> tmp = new ArrayList<DataOutput>(4);
-					count += encodeData(tmp, factory, message, entry.getValue());
-					for (DataOutput output : tmp)
-						buffers.add(((ChannelEncoder) output).getChannelBuffer());
-				}
-				return count;
 			case PUBLIC_KEY:
 				data = message.getPublicKey().getEncoded();
 				size = data.length;
@@ -346,8 +317,9 @@ public class MessageCodec
 	public static int encodeData(Collection<DataOutput> result, DataOutputFactory factory,
 			final Message message, Data data)
 	{
-		int count = 4 + 4 + 2 + 1;
-		DataOutput output1 = factory.create(count);
+		int dataHeaderLength = 4 + 4 + 2 + 1;
+		int count = dataHeaderLength;
+		DataOutput output1 = factory.create(dataHeaderLength);
 		// encode entry protection in millis as the sign bit. Thus the max value
 		// of millis is 2^31, which is more than enough
 		int seconds = data.getTTLSeconds();
@@ -370,7 +342,7 @@ public class MessageCodec
 			int publicKeyLength = serializedPublicKey.length;
 			output1.writeShort(publicKeyLength);
 			count += publicKeyLength;
-			// here we do the third array
+			// here we do the fourth array
 		}
 		// signature
 		byte[] signature = data.getSignature();
@@ -381,14 +353,15 @@ public class MessageCodec
 			int signatureLength = signature.length;
 			output1.writeByte(signatureLength);
 			count += signatureLength;
-			// here we do the fourth array
+			// here we do the fifth array
 		}
 		// second array
 		if (data.getPeerAddress() == null)
 		{
 			// writing a zero indicates that there is no peeraddress. This is
 			// ok, since there cannot be a peeraddress that starts with a zeros
-			output1.writeByte(0);
+			DataOutput outputPeerAddress = factory.create(new byte[1]);
+			result.add(outputPeerAddress);
 			count++;
 		}
 		else
@@ -407,12 +380,16 @@ public class MessageCodec
 		{
 			DataOutput output3 = factory.create(serializedPublicKey);
 			result.add(output3);
+			// do not add anything to the counter here, since we did it in the
+			// data header
 		}
 		// fifth array
 		if (signature != null && signature.length > 0)
 		{
 			DataOutput output4 = factory.create(signature);
 			result.add(output4);
+			// do not add anything to the counter here, since we did it in the
+			// data header
 		}
 		return count;
 	}
@@ -556,17 +533,6 @@ public class MessageCodec
 			case INTEGER:
 				message.setInteger0(buffer.readInt());
 				break;
-			case MAP_PEER_DATA:
-				len = buffer.readUnsignedByte();
-				final Map<PeerAddress, Data> peerDataMap = new HashMap<PeerAddress, Data>(len);
-				for (int i = 0; i < len; i++)
-				{
-					PeerAddress peerAddress = readPeerAddress(buffer);
-					final Data data = decodeData(new ChannelDecoder(buffer), message);
-					peerDataMap.put(peerAddress, data);
-				}
-				message.setPeerDataMap0(peerDataMap);
-				break;
 			case PUBLIC_KEY:
 				len = buffer.readUnsignedShort();
 				me = new byte[len];
@@ -597,9 +563,6 @@ public class MessageCodec
 				// set data maps
 				if (message.isHintDataPublickKey())
 				{
-					for (Data data : message.getPeerDataMap().values())
-						if (Data.FROM_MESSAGE.equals(data.getDataPublicKey()))
-							data.setDataPublicKey(receivedPublicKey);
 					for (Data data : message.getDataMap().values())
 						if (Data.FROM_MESSAGE.equals(data.getDataPublicKey()))
 							data.setDataPublicKey(receivedPublicKey);
@@ -625,9 +588,13 @@ public class MessageCodec
 		int publicKeyLength = buffer.readUnsignedShort();
 		int sigLength = buffer.readUnsignedByte();
 		//
-		int type = buffer.readUnsignedByte();
+		int type = buffer.getUnsignedByte();
 		PeerAddress originator = message.getSender();
-		if (type != 0)
+		if (type == 0)
+		{
+			buffer.skipBytes(1);
+		}
+		else
 		{
 			int len = PeerAddress.expectedLength(type);
 			byte[] me = new byte[len];
@@ -846,6 +813,12 @@ public class MessageCodec
 		public int readUnsignedByte()
 		{
 			return buffer.readUnsignedByte();
+		}
+
+		@Override
+		public int getUnsignedByte()
+		{
+			return buffer.getUnsignedByte(buffer.readerIndex());
 		}
 
 		@Override

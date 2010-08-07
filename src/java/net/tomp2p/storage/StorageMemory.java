@@ -37,6 +37,7 @@ public class StorageMemory extends Storage
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageMemory.class);
 	// these data need to be consistent
+	final private Object lock = new Object();
 	final protected SortedMap<Number480, Data> dataMap = new TreeMap<Number480, Data>();
 	final protected Set<Number480> dataDirectReplication = new HashSet<Number480>();
 	final private Map<Number320, PublicKey> protectedMap = new HashMap<Number320, PublicKey>();
@@ -61,7 +62,7 @@ public class StorageMemory extends Storage
 	public boolean put(Number480 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 			boolean domainProtection)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			if (!securityDomainCheck(key, publicKey, domainProtection))
@@ -165,7 +166,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Data get(Number480 key)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			return dataMap.get(key);
@@ -175,24 +176,30 @@ public class StorageMemory extends Storage
 	@Override
 	public SortedMap<Number480, Data> get(Number480 fromKey, Number480 toKey)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			if (fromKey == null && toKey == null)
 				return null;
 			else if (toKey == null)
-				return dataMap.tailMap(fromKey);
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new TreeMap<Number480, Data>(dataMap.tailMap(fromKey));
 			else if (fromKey == null)
-				return dataMap.headMap(toKey);
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new TreeMap<Number480, Data>(dataMap.headMap(toKey));
 			else
-				return dataMap.subMap(fromKey, toKey);
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new TreeMap<Number480, Data>(dataMap.subMap(fromKey, toKey));
 		}
 	}
 
 	@Override
 	public Data remove(Number480 key, PublicKey publicKey)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			return remove(key, publicKey, false);
@@ -222,7 +229,7 @@ public class StorageMemory extends Storage
 	@Override
 	public SortedMap<Number480, Data> remove(Number480 fromKey, Number480 toKey, PublicKey publicKey)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			// we remove only if locationkey and domain key are the same
@@ -263,7 +270,7 @@ public class StorageMemory extends Storage
 	@Override
 	public boolean contains(Number480 key)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			return dataMap.containsKey(key);
@@ -273,7 +280,7 @@ public class StorageMemory extends Storage
 	@Override
 	public DigestInfo digest(Number480 fromKey, Number480 toKey)
 	{
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			SortedMap<Number480, Data> tmp = get(fromKey, toKey);
@@ -289,7 +296,7 @@ public class StorageMemory extends Storage
 	{
 		Number160 hash = Number160.ZERO;
 		int size = 0;
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			for (Number480 key : keys)
@@ -309,7 +316,7 @@ public class StorageMemory extends Storage
 	{
 		Number480 min = new Number480(locationKey, Number160.ZERO, Number160.ZERO);
 		Number480 max = new Number480(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-		synchronized (dataMap)
+		synchronized (lock)
 		{
 			checkTimeout();
 			for (Map.Entry<Number480, Data> entry : dataMap.subMap(min, max).entrySet())
@@ -323,7 +330,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Collection<Number160> findResponsibleData(Number160 peerID)
 	{
-		synchronized (responsibilityMap)
+		synchronized (lock)
 		{
 			return responsibilityMapRev.get(peerID);
 		}
@@ -332,7 +339,7 @@ public class StorageMemory extends Storage
 	@Override
 	public Number160 findResponsiblePeerID(Number160 key)
 	{
-		synchronized (responsibilityMap)
+		synchronized (lock)
 		{
 			return responsibilityMap.get(key);
 		}
@@ -341,7 +348,7 @@ public class StorageMemory extends Storage
 	@Override
 	public boolean updateResponsibilities(Number160 key, Number160 closest)
 	{
-		synchronized (responsibilityMap)
+		synchronized (lock)
 		{
 			boolean isNew = false;
 			Number160 old = responsibilityMap.put(key, closest);
@@ -395,9 +402,10 @@ public class StorageMemory extends Storage
 	// TODO: make check timeout time based in a thread, but for now its ok.
 	private Collection<Number480> checkTimeout()
 	{
+		long time=System.currentTimeMillis();
 		List<Number480> toRemove = new ArrayList<Number480>();
 		for (Map.Entry<Long, Set<Number480>> entry : timeoutMapRev.subMap(0L,
-				System.currentTimeMillis()).entrySet())
+				time).entrySet())
 		{
 			toRemove.addAll(entry.getValue());
 		}

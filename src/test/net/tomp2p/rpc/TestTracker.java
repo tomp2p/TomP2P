@@ -7,6 +7,7 @@ import net.tomp2p.Utils2;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerStorage;
@@ -39,9 +40,10 @@ public class TestTracker
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
 					false);
 			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
-			Assert.assertEquals(sender.getPeerAddress(), fr.getResponse().getPeerDataMap().keySet()
-					.iterator().next());
+			PeerAddress peerAddress=fr.getResponse().getDataMap().values().iterator().next().getPeerAddress();
+			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
 		}
 		finally
 		{
@@ -56,17 +58,23 @@ public class TestTracker
 	public void testTrackerMap() throws Exception
 	{
 		TrackerStorage ts = new TrackerStorage();
+		ts.setTrackerTimoutSeconds(1);
 		Number160 loc = new Number160(rnd);
 		Number160 dom = new Number160(rnd);
 		PeerAddress pa1 = Utils2.createAddress("0x1");
 		PeerAddress pa2 = Utils2.createAddress("0x2");
-		Data data = new Data(new String("data"));
-		data.setTTLSeconds(1);
-		ts.put(loc, dom, pa1, null, data);
-		ts.put(loc, dom, pa2, null, data);
+		Data data1 = new Data(new String("data"));
+		data1.setTTLSeconds(1);
+		data1.setPeerAddress(pa1);
+		ts.put(loc, dom, null, data1);
+		//
+		Data data2 = new Data(new String("data"));
+		data2.setTTLSeconds(1);
+		data2.setPeerAddress(pa2);
+		ts.put(loc, dom, null, data2);
 		Utils.sleep(500);
-		Assert.assertEquals(2, ts.get(loc, dom).size());
+		Assert.assertEquals(2, ts.get(new Number320(loc, dom)).size());
 		Utils.sleep(500);
-		Assert.assertEquals(0, ts.get(loc, dom).size());
+		Assert.assertEquals(0, ts.get(new Number320(loc, dom)).size());
 	}
 }

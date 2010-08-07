@@ -64,7 +64,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.replication.DefaultStorageReplication;
-import net.tomp2p.replication.DefaultTrackerReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
@@ -326,9 +325,6 @@ public class Peer
 		peerMap.addPeerMapChangeListener(replicationStorage);
 		TrackerStorage storageTracker = new TrackerStorage();
 		peerBean.setTrackerStorage(storageTracker);
-		Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
-		peerBean.setReplicationTracker(replicationTracker);
-		peerMap.addPeerMapChangeListener(replicationTracker);
 		// RPC communication
 		handshakeRCP = new HandshakeRPC(peerBean, connectionBean);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
@@ -341,7 +337,6 @@ public class Peer
 		dht = new DistributedHashHashMap(routing, storageRPC, directDataRPC);
 		tracker = new DistributedTracker(peerBean, routing, trackerRPC);
 		// maintenance
-		init(peerBean.getTrackerStorage());
 		if (peerConfiguration.isStartMaintenance())
 			startMaintainance();
 		for (PeerListener listener : listeners)
@@ -356,12 +351,6 @@ public class Peer
 				replicationStorage.getStorage(), storageRPC, pendingFutures);
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
-	}
-
-	private void init(final TrackerStorage trackerStorage)
-	{
-		getPeerBean().getReplicationTracker().addResponsibilityListener(
-				new DefaultTrackerReplication(trackerStorage, trackerRPC, pendingFutures));
 	}
 
 	public Map<BaseFuture, Long> getPendingFutures()

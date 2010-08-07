@@ -131,7 +131,7 @@ public class TrackerRPC extends ReplyHandler
 		{
 			SortedMap<Number480, Data> peerDataMap = trackerStorage.get(new Number320(locationKey, domainKey));
 			if (peerDataMap == null)
-				responseMessage.setPeerDataMap(new HashMap<PeerAddress, Data>());
+				responseMessage.setDataMap(new HashMap<Number160, Data>());
 			else
 				responseMessage.setDataMapConvert(peerDataMap);
 			PeerAddress senderAddress = message.getSender();

@@ -8,16 +8,11 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.TrackerConfiguration;
-import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.p2p.config.ConfigurationTrackerGet;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.peers.ShortString;
 import net.tomp2p.storage.Data;
 
@@ -309,61 +304,6 @@ public class TestTracker
 			System.err.println(future2.getFailedReason());
 			Assert.assertTrue(future2.isSuccess());
 			Assert.assertEquals(future2.getPeersOnTracker().size(), 1);
-		}
-		finally
-		{
-			master.shutdown();
-		}
-	}
-
-	// test tracker replication
-	@Test
-	public void testTrackerReplication() throws Exception
-	{
-		// final Random rnd = new Random(42L);
-		Peer master = null;
-		try
-		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
-			Peer[] nodes = createNodes(master, 500);
-			RoutingConfiguration rc = new RoutingConfiguration(0, 1, 1);
-			TrackerConfiguration tc = new TrackerConfiguration(1, 1, 1, 0);
-			Number160 trackerID = new Number160(rnd);
-			// find closest...
-			TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(master.getPeerBean().getPeerMap()
-					.createPeerComparator(trackerID));
-			for (int i = 0; i < nodes.length; i++)
-				tmp.add(nodes[i].getPeerAddress());
-			PeerAddress closest = tmp.iterator().next();
-			System.err.println("closest to " + trackerID + " is " + closest);
-			// store something on master
-			ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
-			Number160 domainKey = new ShortString("test").toNumber160();
-			cts.setDomain(domainKey);
-			cts.setRoutingConfiguration(rc);
-			cts.setTrackerConfiguration(tc);
-			FutureTracker ft = nodes[0].addToTracker(trackerID, cts);
-			ft.awaitUninterruptibly();
-			Assert.assertEquals(true, ft.isSuccess());
-			// perfect routing
-			for (int i = 0; i < nodes.length; i++)
-			{
-				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
-			}
-			// by now, we should have forwarded it several times... lets see if
-			// its with the closest...
-			//Thread.sleep(2000);
-			for (int i = 0; i < nodes.length; i++)
-			{
-				for(BaseFuture future:nodes[i].getPendingFutures().keySet())
-					future.awaitUninterruptibly();
-			}
-			FutureResponse fr = nodes[0].getTrackerRPC().getFromTracker(closest, trackerID,
-					domainKey, false, false);
-			fr.awaitUninterruptibly();
-			Assert.assertEquals(1, fr.getResponse().getPeerDataMap().size());
 		}
 		finally
 		{

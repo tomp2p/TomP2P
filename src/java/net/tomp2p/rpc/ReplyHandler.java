@@ -89,6 +89,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			{
 				if (logger.isWarnEnabled())
 					logger.error("Exception in custom handler: " + e.toString());
+				e.printStackTrace();
 			}
 		}
 		peerBean.getPeerMap().peerOffline(message.getSender(), true);

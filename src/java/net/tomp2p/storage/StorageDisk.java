@@ -856,6 +856,15 @@ public class StorageDisk extends Storage
 		{
 			return input.readByte() & 0xff;
 		}
+		
+		@Override
+		public int getUnsignedByte()
+		{
+			input.mark(1);
+			int b=input.readByte() & 0xff;
+			input.reset();
+			return b;
+		}
 
 		@Override
 		public int readUnsignedShort()
@@ -874,5 +883,7 @@ public class StorageDisk extends Storage
 		{
 			input.skipFast(size);
 		}
+
+		
 	}
 }

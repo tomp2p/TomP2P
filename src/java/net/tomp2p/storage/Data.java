@@ -57,10 +57,20 @@ public class Data implements Serializable
 	// if null, the data has been sent directly, otherwise this field shows the
 	// originator of this data
 	private PeerAddress originator;
+	
+	public Data(Object object) throws IOException
+	{
+		this(object, null);
+	}
 
 	public Data(Object object, PeerAddress originator) throws IOException
 	{
 		this(Utils.encodeJavaObject(object), originator);
+	}
+	
+	public Data(byte[] data)
+	{
+		this(data, null);
 	}
 
 	public Data(byte[] data, PeerAddress originator)

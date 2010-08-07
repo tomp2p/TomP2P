@@ -33,10 +33,10 @@ import net.tomp2p.rpc.DigestInfo;
 public class TrackerStorage extends StorageMemory
 {
 	// once you call listen, changing this value has no effect unless a new
-	// TrackerRPC is created. The value is chosen to be 1+x*(45+0)<udpLength=
-	// -> x=29. This means that the attached data must be 0, otherwise you have
+	// TrackerRPC is created. The value is chosen to fit into one single UDP
+	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
-	final private int trackerSize = 29;
+	final private int trackerSize = 20;
 	private volatile int trackerTimoutSeconds = Integer.MAX_VALUE;
 
 	public int getTrackerSize()

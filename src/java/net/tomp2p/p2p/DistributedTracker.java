@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.PeerBean;
@@ -211,10 +210,10 @@ public class DistributedTracker
 						&& future.getLast().getResponse().isNotOk();
 				if (future.isSuccess() || success)
 				{
-					Map<PeerAddress, Data> newPeerDataMap = futureResponse.getResponse()
-							.getPeerDataMap();
-					merge(secondaryQueue, newPeerDataMap.keySet(), alreadyAsked);
-					merge(peerOnTracker, newPeerDataMap, futureResponse.getRequest().getRecipient());
+					Map<Number160, Data> newDataMap = futureResponse.getResponse()
+							.getDataMap();
+					mergeC(secondaryQueue, newDataMap.values(), alreadyAsked);
+					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient());
 					int successRequests = success ? successfulRequests.get() : successfulRequests
 							.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
@@ -279,18 +278,28 @@ public class DistributedTracker
 	}
 
 	static void merge(Map<PeerAddress, Map<PeerAddress, Data>> peerOnTracker,
-			Map<PeerAddress, Data> newPeerDataMap, PeerAddress reporter)
+			Map<Number160, Data> newDataMap, PeerAddress reporter)
 	{
-		for (Entry<PeerAddress, Data> entry : newPeerDataMap.entrySet())
+		for (Data data : newDataMap.values())
 		{
-			Map<PeerAddress, Data> data = peerOnTracker.get(entry.getKey());
-			if (data == null)
+			PeerAddress peer=data.getPeerAddress();
+			Map<PeerAddress, Data> peerOnTrackerEntry = peerOnTracker.get(peer);
+			if (peerOnTrackerEntry == null)
 			{
-				data = new HashMap<PeerAddress, Data>();
-				peerOnTracker.put(entry.getKey(), data);
+				peerOnTrackerEntry = new HashMap<PeerAddress, Data>();
+				peerOnTracker.put(peer, peerOnTrackerEntry);
 			}
-			data.put(reporter, entry.getValue());
+			peerOnTrackerEntry.put(reporter, data);
 		}
+	}
+	
+	static boolean mergeC(Collection<PeerAddress> queueToAsk, Collection<Data> newData,
+			Set<PeerAddress> alreadyAsked)
+	{
+		Collection<PeerAddress> newNeighbors=new HashSet<PeerAddress>();
+		for(Data data:newData)
+			newNeighbors.add(data.getPeerAddress());
+		return merge(queueToAsk, newNeighbors, alreadyAsked);
 	}
 
 	static boolean merge(Collection<PeerAddress> queueToAsk, Collection<PeerAddress> newNeighbors,

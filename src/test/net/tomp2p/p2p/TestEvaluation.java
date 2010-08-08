@@ -43,7 +43,7 @@ public class TestEvaluation
 		test3.add(new Number160(14));
 		rawKeys.put(pa3, test3);
 		VotingSchemeDHT evs = new VotingSchemeDHT();
-		Collection<Number160> tmp = evs.evaluate(rawKeys);
+		Collection<Number160> tmp = evs.evaluate1(rawKeys);
 		Assert.assertEquals(false, tmp.contains(new Number160(11)));
 		Assert.assertEquals(true, tmp.contains(new Number160(12)));
 		Assert.assertEquals(true, tmp.contains(new Number160(13)));
@@ -78,7 +78,7 @@ public class TestEvaluation
 		test3.put(new Number160(14), new Data(me14));
 		rawData.put(pa3, test3);
 		VotingSchemeDHT evs = new VotingSchemeDHT();
-		Map<Number160, Data> tmp = evs.evaluate(rawData);
+		Map<Number160, Data> tmp = evs.evaluate2(rawData);
 		Assert.assertEquals(false, tmp.containsKey(new Number160(11)));
 		Assert.assertEquals(true, tmp.containsKey(new Number160(12)));
 		Assert.assertEquals(true, tmp.containsKey(new Number160(13)));
@@ -113,7 +113,7 @@ public class TestEvaluation
 		test3.put(new Number160(14), new Data(me14));
 		rawData.put(pa3, test3);
 		VotingSchemeDHT evs = new VotingSchemeDHT();
-		Map<Number160, Data> tmp = evs.evaluate(rawData);
+		Map<Number160, Data> tmp = evs.evaluate2(rawData);
 		Assert.assertEquals(false, tmp.containsKey(new Number160(11)));
 		Assert.assertEquals(false, tmp.containsKey(new Number160(12)));
 		Assert.assertEquals(true, tmp.containsKey(new Number160(13)));

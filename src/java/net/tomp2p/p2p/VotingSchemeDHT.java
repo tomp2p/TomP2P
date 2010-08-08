@@ -30,7 +30,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 public class VotingSchemeDHT implements EvaluatingSchemeDHT
 {
 	@Override
-	public Collection<Number160> evaluate(Map<PeerAddress, Collection<Number160>> rawKeys)
+	public Collection<Number160> evaluate1(Map<PeerAddress, Collection<Number160>> rawKeys)
 	{
 		if (rawKeys == null)
 			throw new IllegalArgumentException("cannot evaluate, as no result provided");
@@ -56,7 +56,7 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT
 	}
 
 	@Override
-	public Map<Number160, Data> evaluate(Map<PeerAddress, Map<Number160, Data>> rawData)
+	public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawData)
 	{
 		if (rawData == null)
 			throw new IllegalArgumentException("cannot evaluate, as no result provided");
@@ -84,13 +84,13 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT
 	}
 
 	@Override
-	public Object evaluate(Map<PeerAddress, Object> rawKeys)
+	public Object evaluate3(Map<PeerAddress, Object> rawKeys)
 	{
 		return evaluate0(rawKeys);
 	}
 
 	@Override
-	public ChannelBuffer evaluate(Map<PeerAddress, ChannelBuffer> rawKeys)
+	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawKeys)
 	{
 		return evaluate0(rawKeys);
 	}

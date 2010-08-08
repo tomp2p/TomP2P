@@ -30,7 +30,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 public class CumulativeScheme implements EvaluatingSchemeDHT
 {
 	@Override
-	public Collection<Number160> evaluate(Map<PeerAddress, Collection<Number160>> rawKeys)
+	public Collection<Number160> evaluate1(Map<PeerAddress, Collection<Number160>> rawKeys)
 	{
 		Set<Number160> result = new HashSet<Number160>();
 		for (Collection<Number160> tmp : rawKeys.values())
@@ -39,7 +39,7 @@ public class CumulativeScheme implements EvaluatingSchemeDHT
 	}
 
 	@Override
-	public Map<Number160, Data> evaluate(Map<PeerAddress, Map<Number160, Data>> rawKeys)
+	public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawKeys)
 	{
 		Map<Number160, Data> result = new HashMap<Number160, Data>();
 		for (Map<Number160, Data> tmp : rawKeys.values())
@@ -48,13 +48,13 @@ public class CumulativeScheme implements EvaluatingSchemeDHT
 	}
 
 	@Override
-	public Object evaluate(Map<PeerAddress, Object> rawKeys)
+	public Object evaluate3(Map<PeerAddress, Object> rawKeys)
 	{
 		throw new UnsupportedOperationException("cannot cumulate");
 	}
 
 	@Override
-	public ChannelBuffer evaluate(Map<PeerAddress, ChannelBuffer> rawKeys)
+	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawKeys)
 	{
 		throw new UnsupportedOperationException("cannot cumulate");
 	}

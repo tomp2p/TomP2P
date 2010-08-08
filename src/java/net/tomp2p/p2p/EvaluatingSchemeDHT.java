@@ -26,11 +26,11 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 public interface EvaluatingSchemeDHT
 {
-	public Collection<Number160> evaluate(Map<PeerAddress, Collection<Number160>> rawKeys);
+	public Collection<Number160> evaluate1(Map<PeerAddress, Collection<Number160>> rawKeys);
 
-	public Map<Number160, Data> evaluate(Map<PeerAddress, Map<Number160, Data>> rawData);
+	public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawData);
 
-	public Object evaluate(Map<PeerAddress, Object> rawObjects);
+	public Object evaluate3(Map<PeerAddress, Object> rawObjects);
 
-	public ChannelBuffer evaluate(Map<PeerAddress, ChannelBuffer> rawChannels);
+	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawChannels);
 }

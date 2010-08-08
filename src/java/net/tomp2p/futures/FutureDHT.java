@@ -142,7 +142,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return evaluationScheme.evaluate(rawKeys);
+			return evaluationScheme.evaluate1(rawKeys);
 		}
 	}
 
@@ -158,7 +158,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return evaluationScheme.evaluate(rawData);
+			return evaluationScheme.evaluate2(rawData);
 		}
 	}
 
@@ -238,7 +238,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return this.evaluationScheme.evaluate(rawObjects);
+			return this.evaluationScheme.evaluate3(rawObjects);
 		}
 	}
 
@@ -246,7 +246,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return this.evaluationScheme.evaluate(rawChannels);
+			return this.evaluationScheme.evaluate4(rawChannels);
 		}
 	}
 }

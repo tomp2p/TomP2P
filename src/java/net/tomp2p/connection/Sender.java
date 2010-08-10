@@ -236,7 +236,9 @@ public class Sender
 		final InetSocketAddress remoteSocket = remoteNode.createSocketTCP();
 		try
 		{
-			Channel channel = channelChache.acquire(remoteSocket, futureResponse);
+			if(logger.isDebugEnabled()) logger.debug("about to acquire TCP channel from the cache");
+		        Channel channel = channelChache.acquire(remoteSocket, futureResponse);
+		        if(logger.isDebugEnabled()) logger.debug("acquired TCP channel from the cache");
 			if (channel != null)
 			{
 				channel.getPipeline().replace("timeout", "timeout", replyTimeoutHandler);

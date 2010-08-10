@@ -33,6 +33,7 @@ public class TCPChannelChache
 	final private static Logger logger = LoggerFactory.getLogger(TCPChannelChache.class);
 	private Map<InetSocketAddress, Channel> cache = new HashMap<InetSocketAddress, Channel>();
 	private Set<InetSocketAddress> active = new HashSet<InetSocketAddress>();
+	private Map<InetSocketAddress, Thread> tt = new HashMap<InetSocketAddress, Thread>();
 
 	/**
 	 * Add an open channel to the cache.
@@ -57,6 +58,7 @@ public class TCPChannelChache
 				return;
 			}
 			cache.put(createSocketTCP, channel);
+			tt.put(createSocketTCP, Thread.currentThread());
 			// we are using it right now, so mark as active
 			active.add(createSocketTCP);
 			// remove from cache if someone closes the connection
@@ -97,9 +99,20 @@ public class TCPChannelChache
 			if (channel != null)
 			{
 				// we have a cached channel! lets see if its busy
+			        long start=System.currentTimeMillis();
 				while (active.contains(createSocketTCP))
 				{
-					cache.wait();
+					cache.wait(500);
+					if(System.currentTimeMillis()-start>5000)
+					{
+					  //channel still busy...
+					  Thread t=tt.get(createSocketTCP);
+					  System.err.println("current channel is used here: ");
+					  for(StackTraceElement ste:t.getStackTrace())
+					  {
+					    System.err.println(ste.getClassName()+", "+ste.getMethodName()+", "+ste.getLineNumber());
+					  }
+					}
 				}
 				// in the meantime, the channel may have been removed
 				if(!cache.containsKey(createSocketTCP))

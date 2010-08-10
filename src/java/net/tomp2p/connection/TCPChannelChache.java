@@ -167,7 +167,10 @@ public class TCPChannelChache
 					closeme = entry.getValue();
 			}
 			if (closeme != null)
-				closeme.close();
+			{
+				logger.debug("closing expired channel");
+			        closeme.close();
+			}
 		}
 	}
 }

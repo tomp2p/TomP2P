@@ -152,7 +152,16 @@ public class Sender
 			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
 			if (waitForConnection(replyHandler))
-				sendTCP0(remoteNode, replyHandler, message);
+			{
+			        sendTaskQueue.offer(new Runnable()
+	                        {
+	                                @Override
+	                                public void run()
+	                                {
+	                                        sendTCP0(remoteNode, replyHandler, message);
+	                                }
+	                        });
+			}
 		}
 	}
 
@@ -179,7 +188,16 @@ public class Sender
 			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
 			if (waitForConnection(replyHandler))
-				sendUDP0(remoteNode, replyHandler, message, broadcast);
+			{
+			        sendTaskQueue.offer(new Runnable()
+	                        {
+	                                @Override
+	                                public void run()
+	                                {
+	                                        sendUDP0(remoteNode, replyHandler, message, broadcast);
+	                                }
+	                        });
+			}
 		}
 	}
 

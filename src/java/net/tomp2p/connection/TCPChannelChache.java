@@ -98,7 +98,6 @@ public class TCPChannelChache
 			Channel channel = cache.get(createSocketTCP);
 			if (channel != null)
 			{
-				tt.put(createSocketTCP, Thread.currentThread());
 			        // we have a cached channel! lets see if its busy
 			        long start=System.currentTimeMillis();
 				while (active.contains(createSocketTCP))
@@ -120,6 +119,7 @@ public class TCPChannelChache
 					return null;
 				if (logger.isDebugEnabled())
 					logger.debug("acquire cached channel " + createSocketTCP);
+				tt.put(createSocketTCP, Thread.currentThread());
 				active.add(createSocketTCP);
 				futureResponse.prepareRelease(createSocketTCP, this);
 				return channel;

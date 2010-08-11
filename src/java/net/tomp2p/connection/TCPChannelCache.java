@@ -137,11 +137,20 @@ public class TCPChannelCache
 			CachedChannel freeCachedChannel = this.getFreeChannelFromCache(createSocketTCP);
 			if (freeCachedChannel != null)
 			{
+				if (!freeCachedChannel.channel.isOpen()) {
+					if (logger.isDebugEnabled())
+						logger.debug("removing expired channel " + createSocketTCP + " ["+freeCachedChannel.id+"]");
+
+					freeCachedChannel.channel.close();  //TODO not sure this is necessary, since its not open, but I felt that I should free resources
+					this.cache.get(createSocketTCP).remove(freeCachedChannel);
+				}
+
 				if (logger.isDebugEnabled())
 					logger.debug("acquire cached channel " + createSocketTCP + " ["+freeCachedChannel.id+"]");
-				
+
 				freeCachedChannel.setActive(true);
 				futureResponse.prepareRelease(createSocketTCP, this, freeCachedChannel.channel);
+				
 				
 				return freeCachedChannel.channel;
 			}
@@ -200,7 +209,6 @@ public class TCPChannelCache
 						logger.debug("closing expired channel ["+cachedChannel.id+"]");
 						
 						cachedChannel.channel.close();
-
 						cachedChannelIterator.remove();
 					}
 				}

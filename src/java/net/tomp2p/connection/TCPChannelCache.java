@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -190,15 +191,17 @@ public class TCPChannelCache
 		{
 			for (Entry<InetSocketAddress, Set<CachedChannel>> entry : cache.entrySet())
 			{
-				for (CachedChannel cachedChannel : entry.getValue()) {
+				Iterator<CachedChannel> cachedChannelIterator = entry.getValue().iterator();  
+				while (cachedChannelIterator.hasNext()) {
+					CachedChannel cachedChannel = cachedChannelIterator.next();
+					
 					if (!cachedChannel.isActive() && cachedChannel.getInactiveForMillis() > CONNECTION_KEEP_ALIVE_MILLIS) {
 						
 						logger.debug("closing expired channel ["+cachedChannel.id+"]");
 						
 						cachedChannel.channel.close();
 
-						//TODO remove from set? or someone else does it?
-						
+						cachedChannelIterator.remove();
 					}
 				}
 			}

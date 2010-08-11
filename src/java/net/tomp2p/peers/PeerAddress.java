@@ -186,6 +186,47 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 				isFirewalledTCP(optionType));
 	}
 
+	public PeerAddress(byte[] peerAddress, byte[] socketAddress) throws UnknownHostException {
+		
+		int offsetPeerAddress = 0, offsetSocketAddress = 0;
+		int types = socketAddress[offsetSocketAddress] & 0xff;
+		this.net6 = (types & NET6) > 0;
+		this.forwarded = (types & FORWARD) > 0;
+		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
+		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		offsetSocketAddress++;
+		//
+		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
+		System.arraycopy(peerAddress, offsetPeerAddress, tmp, 0, Number160.BYTE_ARRAY_SIZE);
+		this.id = new Number160(tmp);
+		offsetPeerAddress+=Number160.BYTE_ARRAY_SIZE;
+		//
+		this.portTCP = ((socketAddress[offsetSocketAddress] & 0xff) << 8)
+				+ (socketAddress[offsetSocketAddress  + 1] & 0xff);
+		this.portUDP = ((socketAddress[offsetSocketAddress + 2] & 0xff) << 8)
+				+ (socketAddress[offsetSocketAddress + 3] & 0xff);
+		offsetSocketAddress+=4;
+		//
+		if (!isIPv6())
+		{
+			// IPv4
+			tmp = new byte[4];
+			System.arraycopy(socketAddress, offsetSocketAddress, tmp, 0, 4);
+			this.address = Inet4Address.getByAddress(tmp);
+			offsetSocketAddress += 4;
+		}
+		else
+		{
+			// IPv6
+			tmp = new byte[16];
+			System.arraycopy(socketAddress, offsetSocketAddress, tmp, 0, 16);
+			this.address = Inet6Address.getByAddress(tmp);
+			offsetSocketAddress += 16;
+		}
+		this.offset = offsetSocketAddress + offsetPeerAddress;
+		this.hashCode = id.hashCode();
+	}
+
 	/**
 	 * When deserializeg, we need to know how much we deserialized from the
 	 * constructor call.
@@ -229,6 +270,43 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		// save the peer id
 		System.arraycopy(id.toByteArray(), 0, me, offset + 1, Number160.BYTE_ARRAY_SIZE);
 		delta += Number160.BYTE_ARRAY_SIZE;
+		// save ports tcp
+		int tmp = offset + delta;
+		me[tmp + 0] = (byte) (portTCP >>> 8);
+		me[tmp + 1] = (byte) portTCP;
+		me[tmp + 2] = (byte) (portUDP >>> 8);
+		me[tmp + 3] = (byte) portUDP;
+		delta += 4;
+		// save the ip address
+		if (address instanceof Inet4Address)
+		{
+			System.arraycopy(address.getAddress(), 0, me, offset + delta, 4);
+			delta += 4;
+		}
+		else
+		{
+			System.arraycopy(address.getAddress(), 0, me, offset + delta, 16);
+			delta += 16;
+		}
+		return offset + delta;
+	}
+
+
+	public byte[] getSocketAddress()
+	{
+		byte[] me;
+		if (address instanceof Inet4Address)
+			me = new byte[1 + 4 + 4];
+		else
+			me = new byte[1 + 4 + 16];
+		getSocketAddress(me, 0);
+		return me;
+	}
+	
+	public int getSocketAddress(byte[] me, int offset) {
+		// save the type
+		me[offset] = createType();
+		int delta = 1;
 		// save ports tcp
 		int tmp = offset + delta;
 		me[tmp + 0] = (byte) (portTCP >>> 8);

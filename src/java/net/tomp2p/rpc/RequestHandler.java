@@ -116,7 +116,9 @@ public class RequestHandler extends SimpleChannelHandler
 		if (handlingMessage.compareAndSet(false, true))
 		{
 			futureResponse.cancelTimeout();
-			ctx.getChannel().close();
+			//keep-alive
+			if(!futureResponse.release())
+				ctx.getChannel().close();
 		}
 		if (logger.isDebugEnabled())
 		{
@@ -168,13 +170,7 @@ public class RequestHandler extends SimpleChannelHandler
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
-		if (handlingMessage.compareAndSet(false, true))
-		{
-			futureResponse.cancelTimeout();
-			//keep-alive
-			if(!futureResponse.release())
-				ctx.getChannel().close();
-		}
+		
 		if (e.getMessage() instanceof Message)
 		{
 			Message message = (Message) e.getMessage();
@@ -203,6 +199,14 @@ public class RequestHandler extends SimpleChannelHandler
 			}
 			else
 			{
+				if (handlingMessage.compareAndSet(false, true))
+				{
+					futureResponse.cancelTimeout();
+					//keep-alive
+					if(!futureResponse.release())
+						ctx.getChannel().close();
+				}
+				
 				if (logger.isDebugEnabled())
 					logger.debug("perfect: "+message);
 				// We got a good answer, let's mark the sender as alive

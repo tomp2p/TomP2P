@@ -14,11 +14,15 @@
  * the License.
  */
 package net.tomp2p.connection;
+
 import java.net.InetSocketAddress;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.FutureResponse;
 
@@ -31,10 +35,46 @@ import org.slf4j.LoggerFactory;
 public class TCPChannelCache
 {
 	final private static Logger logger = LoggerFactory.getLogger(TCPChannelCache.class);
-	private Map<InetSocketAddress, Channel> cache = new HashMap<InetSocketAddress, Channel>();
-	private Set<InetSocketAddress> active = new HashSet<InetSocketAddress>();
-	private Map<InetSocketAddress, Thread> tt = new HashMap<InetSocketAddress, Thread>();
 
+	private static final long	CONNECTION_KEEP_ALIVE_MILLIS = 5000L;
+	final static AtomicInteger lastGivenId = new AtomicInteger();
+	
+	private Map<InetSocketAddress, Set<CachedChannel>> cache = new HashMap<InetSocketAddress, Set<CachedChannel>>();
+	
+	private class CachedChannel {
+		final Channel channel;
+		final int id;	//for debugging only (relating cached channels)
+		private boolean active = true;
+		private long inactiveSince;
+		
+		CachedChannel (final Channel channel) {
+			this.channel = channel;
+			this.id = lastGivenId.getAndIncrement();
+		}
+		
+		void setActive(final boolean active) {
+			if (!active)
+				this.inactiveSince = Calendar.getInstance().getTimeInMillis();
+			this.active = active;
+		}
+		boolean isActive() {
+			return this.active;
+		}
+		long getInactiveForMillis() {
+			return Calendar.getInstance().getTimeInMillis() - this.inactiveSince;
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof CachedChannel)
+				return channel.equals(((CachedChannel)obj).channel);
+			else if (obj instanceof Channel) 
+				return channel.equals((Channel)obj);
+			else
+				return false;
+		}
+	}
+	
 	/**
 	 * Add an open channel to the cache.
 	 * 
@@ -44,23 +84,14 @@ public class TCPChannelCache
 	 * @return True if channel could be added, which means, that we need to
 	 *         release the channel if not used anymore. False otherwise
 	 */
-	public void addAndAcquire(final InetSocketAddress createSocketTCP, Channel channel,
+	public void addAndAcquire(final InetSocketAddress createSocketTCP, final Channel channel,
 			FutureResponse futureResponse)
 	{
 		synchronized (cache)
 		{
-			if (cache.containsKey(createSocketTCP))
-			{
-				if (logger.isDebugEnabled())
-					logger
-							.debug("could not add channel to cache, since there is already a cached channel for "
-									+ createSocketTCP);
-				return;
-			}
-			cache.put(createSocketTCP, channel);
-			tt.put(createSocketTCP, Thread.currentThread());
-			// we are using it right now, so mark as active
-			active.add(createSocketTCP);
+			//adds to cache
+			this.addToCache(createSocketTCP, channel);
+			
 			// remove from cache if someone closes the connection
 			channel.getCloseFuture().addListener(new ChannelFutureListener()
 			{
@@ -69,21 +100,28 @@ public class TCPChannelCache
 				{
 					synchronized (cache)
 					{
-						if (logger.isDebugEnabled())
-							logger.debug("remove from cache, since connection closed "
-									+ createSocketTCP);
-						cache.remove(createSocketTCP);
-						active.remove(createSocketTCP);
+						Set<CachedChannel> cachedChannels = cache.get(createSocketTCP); 
+						if (cachedChannels!=null) {
+							
+							if (logger.isDebugEnabled())
+								for (CachedChannel cachedChannel : cachedChannels)
+									if (cachedChannel.equals(channel))
+										logger.debug("remove from cache, since connection closed " + createSocketTCP + " ["+cachedChannel.id+"]");
+							
+							cachedChannels.remove(channel);
+						}
+						if (cachedChannels.isEmpty())
+							cache.remove(createSocketTCP);
 					}
 				}
 			});
-			futureResponse.prepareRelease(createSocketTCP, this);
+			futureResponse.prepareRelease(createSocketTCP, this, channel);
 		}
 	}
 
 	/**
-	 * Try to acquire a cached channel. This operation may block if the
-	 * connection is active
+	 * Try to acquire a cached channel.
+	 * If all existing channels are busy, a new one is created and returned. 
 	 * 
 	 * @param createSocketTCP The identifier
 	 * @param futureResponse The reference for the release
@@ -95,39 +133,22 @@ public class TCPChannelCache
 	{
 		synchronized (cache)
 		{
-			Channel channel = cache.get(createSocketTCP);
-			if (channel != null)
+			CachedChannel freeCachedChannel = this.getFreeChannelFromCache(createSocketTCP);
+			if (freeCachedChannel != null)
 			{
-			        // we have a cached channel! lets see if its busy
-			        long start=System.currentTimeMillis();
-				while (active.contains(createSocketTCP))
-				{
-					cache.wait(500);
-					if(System.currentTimeMillis()-start>5000)
-					{
-					  //channel still busy...
-					  Thread t=tt.get(createSocketTCP);
-					  System.err.println("current channel is used here: ");
-					  for(StackTraceElement ste:t.getStackTrace())
-					  {
-					    System.err.println(ste.getClassName()+", "+ste.getMethodName()+", "+ste.getLineNumber());
-					  }
-					}
-				}
-				// in the meantime, the channel may have been removed
-				if(!cache.containsKey(createSocketTCP))
-					return null;
 				if (logger.isDebugEnabled())
-					logger.debug("acquire cached channel " + createSocketTCP);
-				tt.put(createSocketTCP, Thread.currentThread());
-				active.add(createSocketTCP);
-				futureResponse.prepareRelease(createSocketTCP, this);
-				return channel;
+					logger.debug("acquire cached channel " + createSocketTCP + " ["+freeCachedChannel.id+"]");
+				
+				freeCachedChannel.setActive(true);
+				futureResponse.prepareRelease(createSocketTCP, this, freeCachedChannel.channel);
+				
+				return freeCachedChannel.channel;
 			}
 			else
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("no cached channel found " + createSocketTCP);
+					logger.debug("no free cached channel found " + createSocketTCP);
+				
 				return null;
 			}
 		}
@@ -137,41 +158,82 @@ public class TCPChannelCache
 	 * If the connection is done, release the channel to the cache
 	 * 
 	 * @param createSocketTCP The identifier
+	 * @param channel 
 	 * @return True if the channel could be released
 	 */
-	public boolean release(InetSocketAddress createSocketTCP)
+	public boolean release(final InetSocketAddress createSocketTCP, final Channel channel)
 	{
 		synchronized (cache)
 		{
-			if (logger.isDebugEnabled())
-				logger.debug("release " + createSocketTCP);
-			boolean result = active.remove(createSocketTCP);
-			if (!result)
-				logger.warn("could not release channel " + createSocketTCP);
-			cache.notifyAll();
-			return result;
+			Set<CachedChannel> cachedChannels = cache.get(createSocketTCP); 
+			if (cachedChannels!=null)
+				for (CachedChannel cachedChannel : cachedChannels)
+					if (cachedChannel.channel.equals(channel)) {
+						if (logger.isDebugEnabled())
+							logger.debug("release " + createSocketTCP + " ["+cachedChannel.id+"]");
+
+						cachedChannel.setActive(false);
+						return true;
+					}
+			
+			logger.warn("could not release channel " + createSocketTCP);
+			return false;
 		}
 	}
 
 	/**
-	 * Iterate over cached connections and close the ones not being used. In
-	 * future there a least recently used would make sense.
+	 * Iterate over cached connections and close the ones not being used that have expired.
 	 */
 	public void expireCache()
 	{
 		synchronized (cache)
 		{
-			Channel closeme = null;
-			for (Map.Entry<InetSocketAddress, Channel> entry : cache.entrySet())
+			for (Entry<InetSocketAddress, Set<CachedChannel>> entry : cache.entrySet())
 			{
-				if (!active.contains(entry.getKey()))
-					closeme = entry.getValue();
-			}
-			if (closeme != null)
-			{
-				logger.debug("closing expired channel");
-			        closeme.close();
+				for (CachedChannel cachedChannel : entry.getValue()) {
+					if (!cachedChannel.isActive() && cachedChannel.getInactiveForMillis() > CONNECTION_KEEP_ALIVE_MILLIS) {
+						
+						logger.debug("closing expired channel ["+cachedChannel.id+"]");
+						
+						cachedChannel.channel.close();
+
+						//TODO remove from set? or someone else does it?
+						
+					}
+				}
 			}
 		}
 	}
+	
+	private void addToCache(final InetSocketAddress createSocketTCP, final Channel channel) {
+		synchronized (cache)
+		{
+			Set<CachedChannel> cachedChannels = cache.get(createSocketTCP); 
+			if (cachedChannels==null) {
+				cachedChannels = new HashSet<CachedChannel>();
+				cache.put(createSocketTCP, cachedChannels);
+			}
+			CachedChannel cachedChannel = new CachedChannel(channel);
+			cachedChannels.add(cachedChannel);
+			
+			logger.debug("added new cachedChannel "+createSocketTCP+" ["+cachedChannel.id+"]");
+
+		}
+	}
+	
+	private CachedChannel getFreeChannelFromCache(final InetSocketAddress createSocketTCP) {
+		synchronized (cache)
+		{
+			Set<CachedChannel> cachedChannels = cache.get(createSocketTCP); 
+			if (cachedChannels==null)
+				return null;
+			
+			for (CachedChannel cachedChannel : cachedChannels)
+				if (!cachedChannel.isActive())
+					return cachedChannel;
+			
+			return null;
+		}
+	}
+	
 }

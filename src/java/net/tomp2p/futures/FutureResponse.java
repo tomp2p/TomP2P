@@ -17,7 +17,7 @@ package net.tomp2p.futures;
 import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.ReplyTimeoutHandler;
-import net.tomp2p.connection.TCPChannelChache;
+import net.tomp2p.connection.TCPChannelCache;
 import net.tomp2p.message.Message;
 
 /**
@@ -34,7 +34,7 @@ public class FutureResponse extends BaseFutureImpl
 	private Message responseMessage;
 	private ReplyTimeoutHandler replyTimeoutHandler;
 	private volatile InetSocketAddress socketAddress;
-	private volatile TCPChannelChache channelChache;
+	private volatile TCPChannelCache channelChache;
 
 	public FutureResponse(final Message requestMessage)
 	{
@@ -114,7 +114,7 @@ public class FutureResponse extends BaseFutureImpl
 		}
 	}
 
-	public void prepareRelease(InetSocketAddress socketAddress, TCPChannelChache channelChache)
+	public void prepareRelease(InetSocketAddress socketAddress, TCPChannelCache channelChache)
 	{
 		this.socketAddress = socketAddress;
 		this.channelChache = channelChache;

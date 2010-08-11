@@ -90,7 +90,7 @@ public class ConnectionCollector
 	 * @return A channel with the handler or null if disposed or interrupted
 	 */
 	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler replyHandler,
-			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache) throws ChannelException
+			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelCache channelChache) throws ChannelException
 	{
 		try
 		{

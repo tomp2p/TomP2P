@@ -48,7 +48,7 @@ public class Sender
 	final private ConnectionConfiguration configuration;
 	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
 	final private Thread senderThread;
-	final private TCPChannelChache channelChache = new TCPChannelChache();
+	final private TCPChannelCache channelChache = new TCPChannelCache();
 	volatile private boolean running = true;
 
 	public Sender(final ConnectionCollector connectionCollector,

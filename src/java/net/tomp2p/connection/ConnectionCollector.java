@@ -16,6 +16,7 @@
 package net.tomp2p.connection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Calendar;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -73,8 +74,8 @@ public class ConnectionCollector
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
-		this.semaphoreUDPMessages = new Semaphore(configuration.getMaxOutgoingUDP());
-		this.semaphoreTCPMessages = new Semaphore(configuration.getMaxOutgoingTCP());
+		this.semaphoreUDPMessages = new Semaphore(configuration.getMaxOutgoingUDP(), true);
+		this.semaphoreTCPMessages = new Semaphore(configuration.getMaxOutgoingTCP(), true);
 		this.maxMessageSize = configuration.getMaxMessageSize();
 		this.executionHandlerSender = executionHandlerSender;
 	}
@@ -82,7 +83,7 @@ public class ConnectionCollector
 	/**
 	 * Returns a channel that is managed by this pool. Once the channel is
 	 * closed, the channel will be added to the pool.
-	 * @param channelChache 
+	 * @param channelCache 
 	 * 
 	 * @param connectTimeout
 	 * 
@@ -90,17 +91,29 @@ public class ConnectionCollector
 	 * @return A channel with the handler or null if disposed or interrupted
 	 */
 	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler replyHandler,
-			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelCache channelChache) throws ChannelException
+			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelCache channelCache) throws ChannelException
 	{
+		
+		final long t0 = Calendar.getInstance().getTimeInMillis();
+		
+		/* disabled because it was acquiring new permits even when reusing connections that did not have their permits freed when returned to cache
+		
+		if (logger.isDebugEnabled()) logger.debug("will try from semaphore -- available permits: "+semaphoreTCPMessages.availablePermits());
+		
 		try
 		{
 			while(!semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS))
-				channelChache.expireCache();
+				channelCache.expireCache();
+				
 		}
 		catch (InterruptedException e)
 		{
 			throw new ChannelException(e);
 		}
+		
+		if (logger.isDebugEnabled()) logger.debug("passed semaphore, took "+(Calendar.getInstance().getTimeInMillis()-t0));
+		
+		*/
 		
 		int failCounter = 0;
 		for (;;)
@@ -110,15 +123,26 @@ public class ConnectionCollector
 			{
 				if (disposeTCP)
 				{
-					logger.warn("tpc disposed, not returning a channel");
+					logger.warn("tcp disposed, not returning a channel");
+					
+					logger.debug("releasing channel, disposeTCP, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
+
 					semaphoreTCPMessages.release();
-					throw new ChannelException("tpc disposed, not returning a channel");
+					throw new ChannelException("tcp disposed, not returning a channel");
 				}
 				try
 				{
+					if (logger.isDebugEnabled()) logger.debug("in sync");
+
 					ChannelFuture channelFuture = createChannelTCP(timeoutHandler, replyHandler,
 							remoteAddress, new InetSocketAddress(0), connectTimeoutMillis);
+					
+					if (logger.isDebugEnabled()) logger.debug("after createChannelTCP");
+
 					channel = channelFuture.getChannel();
+
+					if (logger.isDebugEnabled()) logger.debug("after channelFuture.getChannel()");
+
 					channelsTCP.add(channel);
 					channel.getCloseFuture().addListener(new ChannelFutureListener()
 					{
@@ -128,6 +152,8 @@ public class ConnectionCollector
 							// no need to remove from channel group, as this is
 							// already done in channel group,
 							// channelsTCP.remove(channelFuture.getChannel());
+							logger.debug("releasing channel, operation complete, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
+
 							semaphoreTCPMessages.release();
 						}
 					});
@@ -143,6 +169,7 @@ public class ConnectionCollector
 					if (failCounter > 5)
 					{
 						logger.error("tried 5 times " + ce.toString());
+						logger.debug("releasing channel, ChannelException, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
 						ce.printStackTrace();
 						semaphoreTCPMessages.release();
 						throw ce;

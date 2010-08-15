@@ -14,11 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
-import java.net.InetSocketAddress;
-import org.jboss.netty.channel.Channel;
-
 import net.tomp2p.connection.ReplyTimeoutHandler;
-import net.tomp2p.connection.TCPChannelCache;
 import net.tomp2p.message.Message;
 
 /**
@@ -34,9 +30,7 @@ public class FutureResponse extends BaseFutureImpl
 	final private Message requestMessage;
 	private Message responseMessage;
 	private ReplyTimeoutHandler replyTimeoutHandler;
-	private volatile InetSocketAddress socketAddress;
-	private volatile TCPChannelCache channelCache;
-	private volatile Channel channel;
+	private long replyTimeoutMillis=Long.MAX_VALUE;
 
 	public FutureResponse(final Message requestMessage)
 	{
@@ -116,19 +110,19 @@ public class FutureResponse extends BaseFutureImpl
 		}
 	}
 
-	public void prepareRelease(InetSocketAddress socketAddress, TCPChannelCache channelCache, Channel channel)
+	public void setReplyTimeout(long replyTimeoutMillis)
 	{
-		this.socketAddress = socketAddress;
-		this.channelCache = channelCache;
-		this.channel = channel;
+		synchronized (lock)
+		{
+			this.replyTimeoutMillis=replyTimeoutMillis;
+		}
 	}
 
-	public boolean release()
+	public long getReplyTimeout()
 	{
-		if (socketAddress != null && channelCache != null)
+		synchronized (lock)
 		{
-			return channelCache.release(socketAddress, channel);
+			return replyTimeoutMillis;
 		}
-		return false;
 	}
 }

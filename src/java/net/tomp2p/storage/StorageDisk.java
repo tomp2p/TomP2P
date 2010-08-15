@@ -255,8 +255,8 @@ public class StorageDisk extends Storage
 		try
 		{
 			if (!force
-					&& isDomainProtectedByOthers(new Number320(key.getLocationKey(), key.getDomainKey()),
-							publicKey))
+					&& isDomainProtectedByOthers(new Number320(key.getLocationKey(), key
+							.getDomainKey()), publicKey))
 			{
 				txn.abort();
 				return null;
@@ -301,8 +301,8 @@ public class StorageDisk extends Storage
 				txn.abort();
 				return null;
 			}
-			if (isDomainProtectedByOthers(new Number320(fromKey.getLocationKey(), fromKey.getDomainKey()),
-					publicKey))
+			if (isDomainProtectedByOthers(new Number320(fromKey.getLocationKey(), fromKey
+					.getDomainKey()), publicKey))
 			{
 				txn.abort();
 				return null;
@@ -387,8 +387,8 @@ public class StorageDisk extends Storage
 		checkTimeout();
 		for (Map.Entry<Number480, Data> entry : dataMap.subMap(min, max).entrySet())
 		{
-			runner.call(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry.getKey()
-					.getContentKey(), entry.getValue());
+			runner.call(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry
+					.getKey().getContentKey(), entry.getValue());
 		}
 	}
 
@@ -413,11 +413,11 @@ public class StorageDisk extends Storage
 	@Override
 	public boolean updateResponsibilities(Number160 locationKey, Number160 peerID)
 	{
-		Number160Number160 old=responsibilityMap.put(locationKey, new Number160Number160(locationKey, peerID));
-		if(old==null)
+		Number160Number160 old = responsibilityMap.put(locationKey, new Number160Number160(
+				locationKey, peerID));
+		if (old == null)
 			return true;
 		return !old.numberPeerID.equals(peerID);
-			
 	}
 
 	@Override
@@ -800,22 +800,19 @@ public class StorageDisk extends Storage
 		@Override
 		public void writeByte(int intVal)
 		{
-			// System.err.println("Wbyte  " + intVal);
-			output.writeByte(intVal);
+			output.writeUnsignedByte(intVal);
 		}
 
 		@Override
 		public void writeInt(int intVal)
 		{
-			// System.err.println("Wint   " + intVal);
 			output.writeInt(intVal);
 		}
 
 		@Override
 		public void writeShort(int intVal)
 		{
-			// System.err.println("Wshort " + intVal);
-			output.writeShort(intVal);
+			output.writeUnsignedShort(intVal);
 		}
 	}
 	private static class TupleDecoder implements DataInput
@@ -854,22 +851,19 @@ public class StorageDisk extends Storage
 		@Override
 		public int readUnsignedByte()
 		{
-			return input.readByte() & 0xff;
+			return input.readUnsignedByte() & 0xff;
 		}
-		
+
 		@Override
 		public int getUnsignedByte()
 		{
-			input.mark(1);
-			int b=input.readByte() & 0xff;
-			input.reset();
-			return b;
+			return input.getBufferBytes()[input.getBufferOffset() & 0xff];
 		}
 
 		@Override
 		public int readUnsignedShort()
 		{
-			return input.readShort() & 0xffff;
+			return input.readUnsignedShort() & 0xffff;
 		}
 
 		@Override
@@ -883,7 +877,5 @@ public class StorageDisk extends Storage
 		{
 			input.skipFast(size);
 		}
-
-		
 	}
 }

@@ -84,7 +84,7 @@ public class StorageRPC extends ReplyHandler
 		message.setDataMap(dataMap);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler request = new RequestHandler(peerBean, connectionBean, message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
 
@@ -104,7 +104,7 @@ public class StorageRPC extends ReplyHandler
 		message.setDataMap(dataMap);
 		if (protectDomain || signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler request = new RequestHandler(peerBean, connectionBean, message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
 
@@ -121,7 +121,7 @@ public class StorageRPC extends ReplyHandler
 			message.setPublicKey(protectedDomains);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler request = new RequestHandler(peerBean, connectionBean, message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
 
@@ -137,7 +137,7 @@ public class StorageRPC extends ReplyHandler
 			message.setKeys(contentKeys);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler request = new RequestHandler(peerBean, connectionBean, message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
 
@@ -312,7 +312,7 @@ public class StorageRPC extends ReplyHandler
 		{
 			result = peerBean.getStorage().remove(new Number320(locationKey, domainKey), publicKey);
 		}
-		if (!sendBackResults) 
+		if (!sendBackResults)
 		{
 			// make a copy, so the iterator in the codec wont conflict with
 			// concurrent calls

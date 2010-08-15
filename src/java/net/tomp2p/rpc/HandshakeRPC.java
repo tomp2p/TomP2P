@@ -24,6 +24,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,50 +33,58 @@ public class HandshakeRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(HandshakeRPC.class);
 	final private boolean enable;
+	final private boolean wait;
 
 	public HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
-		this(peerBean, connectionBean, true, true);
+		this(peerBean, connectionBean, true, true, false);
 	}
 
 	HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, final boolean enable,
-			final boolean register)
+			final boolean register, final boolean wait)
 	{
 		super(peerBean, connectionBean);
 		this.enable = enable;
+		this.wait = wait;
 		if (register)
 			registerIoHandler(Command.PING);
 	}
 
 	public FutureResponse pingBroadcastUDP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).sendBroadcastUDP();
+		return createHandlerUDP(remoteNode).sendBroadcastUDP();
 	}
 
 	public FutureResponse pingUDP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).sendUDP();
+		return createHandlerUDP(remoteNode).sendUDP();
 	}
 
 	public FutureResponse pingTCP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).sendTCP();
+		return createHandlerTCP(remoteNode).sendTCP();
 	}
 
 	public FutureResponse fireUDP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).fireAndForgetUDP();
+		return createHandlerUDP(remoteNode).fireAndForgetUDP();
 	}
 
 	public FutureResponse fireTCP(final PeerAddress remoteNode)
 	{
-		return createHandler(remoteNode).fireAndForgetTCP();
+		return createHandlerTCP(remoteNode).fireAndForgetTCP();
 	}
 
-	private RequestHandler createHandler(final PeerAddress remoteNode)
+	private RequestHandlerUDP createHandlerUDP(final PeerAddress remoteNode)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
-		return new RequestHandler(peerBean, connectionBean, message);
+		return new RequestHandlerUDP(peerBean, connectionBean, message);
+	}
+
+	private RequestHandlerTCP createHandlerTCP(final PeerAddress remoteNode)
+	{
+		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
+		return new RequestHandlerTCP(peerBean, connectionBean, message);
 	}
 
 	public FutureResponse pingUDPDiscover(final PeerAddress remoteNode)
@@ -84,7 +93,7 @@ public class HandshakeRPC extends ReplyHandler
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
-		return new RequestHandler(peerBean, connectionBean, message).sendUDP();
+		return new RequestHandlerUDP(peerBean, connectionBean, message).sendUDP();
 	}
 
 	public FutureResponse pingTCPDiscover(final PeerAddress remoteNode)
@@ -93,19 +102,19 @@ public class HandshakeRPC extends ReplyHandler
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
-		return new RequestHandler(peerBean, connectionBean, message).sendTCP();
+		return new RequestHandlerTCP(peerBean, connectionBean, message).sendTCP();
 	}
 
 	public FutureResponse pingUDPProbe(final PeerAddress remoteNode)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
-		return new RequestHandler(peerBean, connectionBean, message).sendUDP();
+		return new RequestHandlerUDP(peerBean, connectionBean, message).sendUDP();
 	}
 
 	public FutureResponse pingTCPProbe(final PeerAddress remoteNode)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
-		return new RequestHandler(peerBean, connectionBean, message).sendTCP();
+		return new RequestHandlerTCP(peerBean, connectionBean, message).sendTCP();
 	}
 
 	@Override
@@ -147,11 +156,15 @@ public class HandshakeRPC extends ReplyHandler
 				final Message responseMessage = createMessage(message.getSender(), Command.PING,
 						Type.OK);
 				responseMessage.setMessageId(message.getMessageId());
+				if (wait)
+					Utils.sleep(10 * 1000);
 				return responseMessage;
 			}
 			else
 			{
 				logger.debug("do not reply");
+				if (wait)
+					Utils.sleep(10 * 1000);
 				return null;
 			}
 		}

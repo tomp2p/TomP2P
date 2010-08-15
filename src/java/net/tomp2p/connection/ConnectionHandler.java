@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.sbbi.upnp.impls.InternetGatewayDevice;
@@ -46,7 +44,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -54,8 +51,12 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+import org.jboss.netty.handler.timeout.IdleStateHandler;
+import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
+import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,8 +77,10 @@ public class ConnectionHandler
 	// Used to calculate the throughput
 	final private static PerformanceFilter performanceFilter = new PerformanceFilter();
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
-	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesUDP=new HashMap<InternetGatewayDevice, InetSocketAddress>();
-	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesTCP=new HashMap<InternetGatewayDevice, InetSocketAddress>();
+	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
+	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
+	final private TCPChannelChache channelChache;
+	final private Timer timer;
 	final private boolean master;
 	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
 	final private static TomP2PEncoderStage1 encoder1 = new TomP2PEncoderStage1();
@@ -94,33 +97,24 @@ public class ConnectionHandler
 			}
 		});
 	}
-	final private ExecutionHandler executionHandlerUDP;
-	final private ExecutionHandler executionHandlerTCP;
-	final private ExecutionHandler executionHandlerSender;
+	final private ExecutionHandler executionHandler;
 	//
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
 	final private ChannelFactory tcpClientChannelFactory;
 	//
 	final private MessageLogger messageLoggerFilter;
+	final private ConnectionConfiguration configuration;
 
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair,
 			PeerMap peerMap, List<PeerListener> listeners) throws Exception
 	{
-		//
-		ThreadPoolExecutor threadPoolExecutorUDP = new ThreadPoolExecutor(0, configuration
-				.getMaxIncomingUDP(), 30, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-		threadPoolExecutorUDP
-				.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		executionHandlerUDP = new ExecutionHandler(threadPoolExecutorUDP);
-		//
-		ThreadPoolExecutor threadPoolExecutorTCP = new ThreadPoolExecutor(0, configuration
-				.getMaxIncomingTCP(), 30, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
-		threadPoolExecutorTCP
-				.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		executionHandlerTCP = new ExecutionHandler(threadPoolExecutorTCP);
-		executionHandlerSender = new ExecutionHandler(Executors.newCachedThreadPool());
+		this.configuration = configuration;
+		this.timer = new HashedWheelTimer();
+		executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
+				configuration.getMaxThreads(), configuration.getMaxMemoryPerChannel(),
+				configuration.getMaxMemory()));
 		//
 		udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 		tcpServerChannelFactory = new NioServerSocketChannelFactory(
@@ -150,20 +144,24 @@ public class ConnectionHandler
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
-		Dispatcher messageServer = new Dispatcher(p2pID, peerBean,
-				configuration.getIdleUDPMillis(), configuration.getIdleTCPMillis(), channelGroup,
-				peerMap, listeners);
-		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory,
-				udpChannelFactory, configuration, executionHandlerSender);
-		Sender sender = new Sender(connectionPool, configuration);
-		connectionBean = new ConnectionBean(p2pID, messageServer, sender, channelGroup);
+				udpChannelFactory, configuration, executionHandler);
+		// Dispatcher setup start
+		this.channelChache = new TCPChannelChache(connectionPool, timer);
+		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration
+				.getIdleUDPMillis(), configuration.getTimeoutTCPMillis(), channelGroup, peerMap,
+				listeners, channelChache);
+		this.channelChache.setDispatcherRequest(dispatcherRequest);
+		// Dispatcher setup stop
+		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
+		Sender sender = new Sender(connectionPool, configuration, channelChache, timer);
+		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup);
 		if (bindings.isListenBroadcast())
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
-			if (!startupTCP(new InetSocketAddress(tcpPort), messageServer, configuration
+			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, configuration
 					.getMaxMessageSize())
-					|| !startupUDP(new InetSocketAddress(udpPort), messageServer))
+					|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
 				throw new IOException("cannot bind TCP or UDP");
 		}
 		else
@@ -172,9 +170,9 @@ public class ConnectionHandler
 			{
 				logger.info("Listening on address: " + addr + " on port udp: " + udpPort
 						+ " and tcp:" + tcpPort);
-				if (!startupTCP(new InetSocketAddress(addr, tcpPort), messageServer, configuration
-						.getMaxMessageSize())
-						|| !startupUDP(new InetSocketAddress(addr, udpPort), messageServer))
+				if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest,
+						configuration.getMaxMessageSize())
+						|| !startupUDP(new InetSocketAddress(addr, udpPort), dispatcherRequest))
 					throw new IOException("cannot bind TCP or UDP");
 			}
 		}
@@ -187,8 +185,7 @@ public class ConnectionHandler
 	 * @param parent
 	 * @param id
 	 */
-	public ConnectionHandler(ConnectionHandler parent, Number160 id,
-			ConnectionConfiguration configuration, KeyPair keyPair, PeerMap peerMap)
+	public ConnectionHandler(ConnectionHandler parent, Number160 id, KeyPair keyPair, PeerMap peerMap)
 	{
 		parent.childConnections.add(this);
 		this.connectionBean = parent.connectionBean;
@@ -196,13 +193,14 @@ public class ConnectionHandler
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);
-		this.executionHandlerUDP = parent.executionHandlerUDP;
-		this.executionHandlerTCP = parent.executionHandlerTCP;
-		this.executionHandlerSender = parent.executionHandlerSender;
+		this.executionHandler = parent.executionHandler;
 		this.messageLoggerFilter = parent.messageLoggerFilter;
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
+		this.channelChache = parent.channelChache;
+		this.configuration = parent.configuration;
+		this.timer = parent.timer;
 		this.master = false;
 	}
 
@@ -211,38 +209,10 @@ public class ConnectionHandler
 		return connectionBean;
 	}
 
-	public boolean startupUDP(InetSocketAddress listenAddressesUDP, Dispatcher dispatcher)
-			throws Exception
+	public boolean startupUDP(InetSocketAddress listenAddressesUDP,
+			final DispatcherRequest dispatcher) throws Exception
 	{
 		ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(udpChannelFactory);
-		setupBootstrap(bootstrap, dispatcher, -1, executionHandlerUDP, new TomP2PDecoderUDP());
-		Channel channel = bootstrap.bind(listenAddressesUDP);
-		logger.info("Listening on UDP socket: " + listenAddressesUDP);
-		connectionBean.getChannelGroup().add(channel);
-		return channel.isBound();
-	}
-
-	/**
-	 * Creates TCP channels and listens on them
-	 * 
-	 * @param listenAddressesTCP the addresses which we will listen on
-	 * @throws Exception
-	 */
-	public boolean startupTCP(InetSocketAddress listenAddressesTCP, Dispatcher dispatcher,
-			int maxMessageSize) throws Exception
-	{
-		ServerBootstrap bootstrap = new ServerBootstrap(tcpServerChannelFactory);
-		setupBootstrap(bootstrap, dispatcher, maxMessageSize, executionHandlerTCP, null);
-		Channel channel = bootstrap.bind(listenAddressesTCP);
-		connectionBean.getChannelGroup().add(channel);
-		logger.info("Listening on TCP socket: " + listenAddressesTCP);
-		return channel.isBound();
-	}
-
-	private void setupBootstrap(Bootstrap bootstrap, final Dispatcher dispatcher,
-			final int maxMessageSize, final ExecutionHandler executionHandler2,
-			final ChannelUpstreamHandler decoder)
-	{
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory()
 		{
 			@Override
@@ -255,13 +225,65 @@ public class ConnectionHandler
 							.addLast("loggerDownstream", messageLoggerFilter
 									.getChannelDownstreamHandler());
 				p.addLast("encoder1", encoder1);
-				p.addLast("decoder", decoder != null ? decoder : new TomP2PDecoderTCP(
-						maxMessageSize));
+				p.addLast("decoder", new TomP2PDecoderUDP());
 				if (messageLoggerFilter != null)
 					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
 				p.addLast("performance", performanceFilter);
-				p.addLast("executor", executionHandler2);
+				p.addLast("executor", executionHandler);
 				p.addLast("handler", dispatcher);
+				return p;
+			}
+		});
+		bootstrap.setOption("broadcast", "false");
+		Channel channel = bootstrap.bind(listenAddressesUDP);
+		logger.info("Listening on UDP socket: " + listenAddressesUDP);
+		connectionBean.getChannelGroup().add(channel);
+		return channel.isBound();
+	}
+
+	/**
+	 * Creates TCP channels and listens on them
+	 * 
+	 * @param listenAddressesTCP the addresses which we will listen on
+	 * @throws Exception
+	 */
+	public boolean startupTCP(InetSocketAddress listenAddressesTCP, DispatcherRequest dispatcher,
+			int maxMessageSize) throws Exception
+	{
+		ServerBootstrap bootstrap = new ServerBootstrap(tcpServerChannelFactory);
+		setupBootstrapTCP(bootstrap, dispatcher, maxMessageSize);
+		Channel channel = bootstrap.bind(listenAddressesTCP);
+		connectionBean.getChannelGroup().add(channel);
+		logger.info("Listening on TCP socket: " + listenAddressesTCP);
+		return channel.isBound();
+	}
+
+	private void setupBootstrapTCP(Bootstrap bootstrap, final DispatcherRequest dispatcher,
+			final int maxMessageSize)
+	{
+		bootstrap.setPipelineFactory(new ChannelPipelineFactory()
+		{
+			@Override
+			public ChannelPipeline getPipeline() throws Exception
+			{
+				ChannelPipeline p = Channels.pipeline();
+				IdleStateHandler timeoutHandler = new IdleStateHandler(timer, 0, 0, configuration
+						.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
+				p.addLast("timeout", timeoutHandler);
+				p.addLast("encoder2", encoder2);
+				if (messageLoggerFilter != null)
+					p
+							.addLast("loggerDownstream", messageLoggerFilter
+									.getChannelDownstreamHandler());
+				p.addLast("encoder1", encoder1);
+				p.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
+				if (messageLoggerFilter != null)
+					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
+				p.addLast("performance", performanceFilter);
+				p.addLast("executor", executionHandler);
+				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration
+						.getIdleTCPMillis(), dispatcher);
+				p.addLast("reply", dispatcherReply);
 				return p;
 			}
 		});
@@ -298,13 +320,15 @@ public class ConnectionHandler
 		if (master)
 			logger.debug("shutdown in progress...");
 		// deregister in dispatcher
-		connectionBean.getDispatcher()
-				.removeIoHandler(getPeerBean().getServerPeerAddress().getID());
+		connectionBean.getDispatcherRequest().removeIoHandler(
+				getPeerBean().getServerPeerAddress().getID());
 		// shutdown all children
 		for (ConnectionHandler handler : childConnections)
 			handler.shutdown();
 		if (master)
 		{
+			timer.stop();
+			// channelChache.shutdown();
 			if (messageLoggerFilter != null)
 				messageLoggerFilter.close();
 			// close server first, then all connected clients. This is only done
@@ -314,47 +338,49 @@ public class ConnectionHandler
 			// close client
 			connectionBean.getSender().shutdown();
 			// release resources
-			executionHandlerUDP.releaseExternalResources();
-			executionHandlerTCP.releaseExternalResources();
-			executionHandlerSender.releaseExternalResources();
+			executionHandler.releaseExternalResources();
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
 			logger.debug("shutdown complete");
 		}
 	}
-	
+
 	public void mapUPNP() throws IOException, UPNPResponseException
 	{
-		for(Map.Entry<InternetGatewayDevice, InetSocketAddress> entry:internetGatewayDevicesTCP.entrySet())
+		for (Map.Entry<InternetGatewayDevice, InetSocketAddress> entry : internetGatewayDevicesTCP
+				.entrySet())
 		{
-			entry.getKey().deletePortMapping(entry.getValue().getHostName(), entry.getValue().getPort(), "TCP");
-			logger.info("removed TCP mapping "+entry.toString());
+			entry.getKey().deletePortMapping(entry.getValue().getHostName(),
+					entry.getValue().getPort(), "TCP");
+			logger.info("removed TCP mapping " + entry.toString());
 		}
-		for(Map.Entry<InternetGatewayDevice, InetSocketAddress> entry:internetGatewayDevicesUDP.entrySet())
+		for (Map.Entry<InternetGatewayDevice, InetSocketAddress> entry : internetGatewayDevicesUDP
+				.entrySet())
 		{
-			entry.getKey().deletePortMapping(entry.getValue().getHostName(), entry.getValue().getPort(), "UDP");
-			logger.info("removed UDP mapping "+entry.toString());
+			entry.getKey().deletePortMapping(entry.getValue().getHostName(),
+					entry.getValue().getPort(), "UDP");
+			logger.info("removed UDP mapping " + entry.toString());
 		}
 	}
-	
-	public void mapUPNP(InetAddress oldAddress, InetAddress newAddress, int portUDP, int portTCP) throws IOException, UPNPResponseException
+
+	public void mapUPNP(InetAddress oldAddress, InetAddress newAddress, int portUDP, int portTCP)
+			throws IOException, UPNPResponseException
 	{
 		// 2.5 secs to receive a response from devices
 		int discoveryTimeoutMillis = 2500;
 		InternetGatewayDevice[] IGDs = InternetGatewayDevice.getDevices(discoveryTimeoutMillis);
-		for(InternetGatewayDevice igd:IGDs)
+		for (InternetGatewayDevice igd : IGDs)
 		{
 			logger.info("Found device " + igd.getIGDRootDevice().getModelName());
 			boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", newAddress.toString(),
 					portUDP, portUDP, oldAddress.toString(), 0, "UDP");
-			if(mappedUDP)
+			if (mappedUDP)
 				addMappingUDP(igd, newAddress, portUDP);
 			boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", newAddress.toString(),
 					portTCP, portTCP, oldAddress.toString(), 0, "TCP");
-			if(mappedTCP)
+			if (mappedTCP)
 				addMappingTCP(igd, newAddress, portTCP);
-			
 		}
 	}
 

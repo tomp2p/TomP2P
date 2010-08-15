@@ -89,8 +89,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e)
 			throws Exception
 	{
-		logger.equals("error in decoder tcp " + e.toString());
-		e.getCause().printStackTrace();
 		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
 		ctx.sendUpstream(e);

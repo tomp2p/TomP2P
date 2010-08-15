@@ -74,7 +74,7 @@ public class TestTracker
 		ts.put(loc, dom, null, data2);
 		Utils.sleep(500);
 		Assert.assertEquals(2, ts.get(new Number320(loc, dom)).size());
-		Utils.sleep(500);
+		Utils.sleep(600);
 		Assert.assertEquals(0, ts.get(new Number320(loc, dom)).size());
 	}
 }

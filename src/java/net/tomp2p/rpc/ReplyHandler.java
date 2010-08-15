@@ -42,7 +42,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 
 	protected void registerIoHandler(Command... names)
 	{
-		connectionBean.getDispatcher().registerIoHandler(peerBean.getServerPeerAddress(), this,
+		connectionBean.getDispatcherRequest().registerIoHandler(peerBean.getServerPeerAddress(), this,
 				names);
 	}
 
@@ -61,7 +61,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
 		logger.equals("error in reply " + e.toString());
-		if (logger.isErrorEnabled())
+		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
 		// TODO: we never attach the message to the context!
 		Message message = (Message) ctx.getAttachment();
@@ -79,7 +79,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			// behind a NAT
 			peerBean.getPeerMap().peerOnline(message.getSender(), message.getSender());
 			try
-			{
+			{//
 				Message reply = handleResponse(message);
 				if (sign)
 					reply.setPublicKeyAndSign(peerBean.getKeyPair());

@@ -40,14 +40,14 @@ public class DirectDataRPC extends ReplyHandler
 		registerIoHandler(Command.DIRECT_DATA);
 	}
 
-	public FutureData send(final PeerAddress remoteNode, final ChannelBuffer buffer, boolean raw)
+	public FutureData send(final String channelName, final PeerAddress remoteNode, final ChannelBuffer buffer, boolean raw)
 	{
 		final Message message = createMessage(remoteNode, Command.DIRECT_DATA, raw ? Type.REQUEST_1
 				: Type.REQUEST_2);
 		message.setPayload(buffer);
 		final FutureData futureData = new FutureData(message, raw);
-		final RequestHandler requestHandler = new RequestHandler(futureData, peerBean, connectionBean, message);
-		requestHandler.sendTCP();
+		final RequestHandlerTCP requestHandler = new RequestHandlerTCP(futureData, peerBean, connectionBean, message);
+		requestHandler.sendTCP(channelName);
 		return futureData;
 	}
 

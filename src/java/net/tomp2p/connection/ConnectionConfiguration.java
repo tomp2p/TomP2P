@@ -18,24 +18,20 @@ public class ConnectionConfiguration
 {
 	private int udpLength = 1400;
 	private int defaultPort = 7700;
-	// timeouts
+	// idle needs to be larger than timeout for TCP
 	private int idleTCPMillis = 4 * 1000;
+	private int timeoutTCPMillis = 3 * 1000;
 	private int idleUDPMillis = 2 * 1000;
 	private int connectTimeouMillis = 1 * 1000;
 	//
 	private int maxOutgoingUDP = 20;
 	private int maxOutgoingTCP = 20;
-	private int maxIncomingUDP = 500;
-	private int maxIncomingTCP = 500;
+	//
+	private int maxThreads = 500;
+	private int maxMemoryPerChannel =  5 * 1024 * 1024;
 	private int maxMessageSize = 2 * 1024 * 1024;
+	private int maxMemory = 100 * 1024 * 1024;
 	private int maxNrBeforeExclude = 2;
-
-	//public ConfigurationConnection(int idleTCPMillis, int idleUDPMillis, int connectTimeouMillis)
-	//{
-	//	this.idleTCPMillis = idleTCPMillis;
-	//	this.idleUDPMillis = idleUDPMillis;
-	//	this.connectTimeouMillis = connectTimeouMillis;
-	//}
 
 	public int getIdleTCPMillis()
 	{
@@ -107,25 +103,7 @@ public class ConnectionConfiguration
 		return maxOutgoingTCP;
 	}
 
-	public void setMaxIncomingUDP(int maxIncomingUDP)
-	{
-		this.maxIncomingUDP = maxIncomingUDP;
-	}
 
-	public int getMaxIncomingUDP()
-	{
-		return maxIncomingUDP;
-	}
-
-	public void setMaxIncomingTCP(int maxIncomingTCP)
-	{
-		this.maxIncomingTCP = maxIncomingTCP;
-	}
-
-	public int getMaxIncomingTCP()
-	{
-		return maxIncomingTCP;
-	}
 
 	public void setMaxMessageSize(int maxMessageSize)
 	{
@@ -145,5 +123,45 @@ public class ConnectionConfiguration
 	public int getMaxNrBeforeExclude()
 	{
 		return maxNrBeforeExclude;
+	}
+
+	public void setMaxThreads(int maxThreads)
+	{
+		this.maxThreads = maxThreads;
+	}
+
+	public int getMaxThreads()
+	{
+		return maxThreads;
+	}
+
+	public void setMaxMemoryPerChannel(int maxMemoryPerChannel)
+	{
+		this.maxMemoryPerChannel = maxMemoryPerChannel;
+	}
+
+	public int getMaxMemoryPerChannel()
+	{
+		return maxMemoryPerChannel;
+	}
+
+	public void setMaxMemory(int maxMemory)
+	{
+		this.maxMemory = maxMemory;
+	}
+
+	public int getMaxMemory()
+	{
+		return maxMemory;
+	}
+
+	public void setTimeoutTCPMillis(int timeoutTCPMillis)
+	{
+		this.timeoutTCPMillis = timeoutTCPMillis;
+	}
+
+	public int getTimeoutTCPMillis()
+	{
+		return timeoutTCPMillis;
 	}
 }

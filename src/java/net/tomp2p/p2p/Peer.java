@@ -39,6 +39,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.TCPChannelChache;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -306,8 +307,7 @@ public class Peer
 				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
 				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
 						.getWaitingTimeBetweenNodeMaintenenceSeconds());
-		init(new ConnectionHandler(master.getConnectionHandler(), peerId, connectionConfiguration,
-				keyPair, peerMap));
+		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap));
 	}
 
 	protected void init(final ConnectionHandler connectionHandler)
@@ -499,13 +499,26 @@ public class Peer
 	// custom messages
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
 	{
-		return getDirectDataRPC().send(remotePeer, requestBuffer.slice(), true);
+		return send(TCPChannelChache.DEFAULT_CHANNEL_NAME, remotePeer, requestBuffer);
+	}
+
+	public FutureData send(final String channelName, final PeerAddress remotePeer,
+			final ChannelBuffer requestBuffer)
+	{
+		return getDirectDataRPC().send(channelName, remotePeer, requestBuffer.slice(), true);
 	}
 
 	public FutureData send(final PeerAddress remotePeer, final Object object) throws IOException
 	{
+		return send(TCPChannelChache.DEFAULT_CHANNEL_NAME, remotePeer, object);
+	}
+
+	public FutureData send(final String channelName, final PeerAddress remotePeer,
+			final Object object) throws IOException
+	{
 		byte[] me = Utils.encodeJavaObject(object);
-		return getDirectDataRPC().send(remotePeer, ChannelBuffers.wrappedBuffer(me), false);
+		return getDirectDataRPC().send(channelName, remotePeer, ChannelBuffers.wrappedBuffer(me),
+				false);
 	}
 
 	// Boostrap and ping
@@ -608,7 +621,8 @@ public class Peer
 
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
-		final FutureDiscover futureDiscover = new FutureDiscover(peerConfiguration.getDiscoverTimeoutSec());
+		final FutureDiscover futureDiscover = new FutureDiscover(peerConfiguration
+				.getDiscoverTimeoutSec());
 		FutureLateJoin<FutureResponse> late = new FutureLateJoin<FutureResponse>(2);
 		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress);
 		final FutureResponse futureResponseUDP = getHandshakeRPC().pingUDPDiscover(peerAddress);
@@ -621,17 +635,15 @@ public class Peer
 			{
 				futureDiscover.done(peerAddress);
 			}
-			
+
 			@Override
 			public void notifyOnStart()
 			{
-				
 			}
-			
+
 			@Override
 			public void notifyOnShutdown()
 			{
-				
 			}
 		});
 		late.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
@@ -639,7 +651,7 @@ public class Peer
 			@Override
 			public void operationComplete(FutureLateJoin<FutureResponse> future) throws Exception
 			{
-				boolean mapped=false;
+				boolean mapped = false;
 				PeerAddress serverAddress = getPeerBean().getServerPeerAddress();
 				if (futureResponseTCP.isSuccess())
 				{
@@ -649,9 +661,10 @@ public class Peer
 						PeerAddress seenAs = tmp.iterator().next();
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs.getInetAddress(),
-									serverAddress.portUDP(), serverAddress.portTCP());
-							mapped=true;
+							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
+									.getInetAddress(), serverAddress.portUDP(), serverAddress
+									.portTCP());
+							mapped = true;
 							// we did not announce how the other peer sees us,
 							// correct it and set forward flag to true
 							getPeerBean().setServerPeerAddress(
@@ -680,10 +693,13 @@ public class Peer
 					if (tmp.size() == 1)
 					{
 						PeerAddress seenAs = tmp.iterator().next();
-						if (!mapped && !getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
+						if (!mapped
+								&& !getPeerAddress().getInetAddress().equals(
+										seenAs.getInetAddress()))
 						{
-							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs.getInetAddress(),
-									serverAddress.portUDP(), serverAddress.portTCP());
+							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
+									.getInetAddress(), serverAddress.portUDP(), serverAddress
+									.portTCP());
 							// we did not announce how the other peer sees us,
 							// correct it and set forward flag to true
 							getPeerBean().setServerPeerAddress(
@@ -703,7 +719,6 @@ public class Peer
 		});
 		return futureDiscover;
 	}
-	
 
 	// ////////////////// from here, DHT calls
 	// PUT

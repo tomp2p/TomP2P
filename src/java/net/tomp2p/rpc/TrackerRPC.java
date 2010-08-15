@@ -68,7 +68,8 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler requestHandler = new RequestHandler(peerBean, connectionBean, message);
+		final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean, connectionBean,
+				message);
 		Map<Number160, Data> c = new HashMap<Number160, Data>(1);
 		c.put(data.getHash(), data);
 		message.setDataMap(c);
@@ -83,16 +84,21 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler requestHandler = new RequestHandler(peerBean, connectionBean, message);
 		if (attachement != null)
 		{
+			final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean,
+					connectionBean, message);
 			Map<Number160, Data> c = new HashMap<Number160, Data>(1);
 			c.put(attachement.getHash(), attachement);
 			message.setDataMap(c);
 			return requestHandler.sendTCP();
 		}
 		else
+		{
+			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean,
+					connectionBean, message);
 			return requestHandler.sendUDP();
+		}
 	}
 
 	public FutureResponse getFromTracker(final PeerAddress remoteNode, final Number160 locationKey,
@@ -103,11 +109,18 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandler requestHandler = new RequestHandler(peerBean, connectionBean, message);
 		if (expectAttachement)
+		{
+			final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean,
+					connectionBean, message);
 			return requestHandler.sendTCP();
+		}
 		else
+		{
+			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean,
+					connectionBean, message);
 			return requestHandler.sendUDP();
+		}
 	}
 
 	@Override
@@ -129,7 +142,8 @@ public class TrackerRPC extends ReplyHandler
 		Number160 domainKey = message.getKey2();
 		if (direct)
 		{
-			SortedMap<Number480, Data> peerDataMap = trackerStorage.get(new Number320(locationKey, domainKey));
+			SortedMap<Number480, Data> peerDataMap = trackerStorage.get(new Number320(locationKey,
+					domainKey));
 			if (peerDataMap == null)
 				responseMessage.setDataMap(new HashMap<Number160, Data>());
 			else

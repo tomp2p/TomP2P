@@ -44,7 +44,7 @@ import org.junit.Test;
 public class TestStorage
 {
 	final private static Number160 domainKey = new Number160(20);
-	final private static String DIR = "/tmp/blub";
+	final private static String DIR = "/tmp/blub2";
 	static
 	{
 		Handler fh;

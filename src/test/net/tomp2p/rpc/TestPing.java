@@ -13,7 +13,6 @@ import net.tomp2p.utils.Utils;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class TestPing
 {
 	static Bindings bindings = new Bindings();
@@ -36,6 +35,32 @@ public class TestPing
 			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
+	public void testPingTCP2() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x9876"));
+			sender.listen(2424, 2424);
+			recv1 = new Peer(55, new Number160("0x1234"));
+			recv1.listen(8088, 8088);
+			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+			fr.awaitUninterruptibly();
+			FutureResponse fr2 = recv1.getHandshakeRPC().pingTCP(sender.getPeerAddress());
+			fr2.awaitUninterruptibly();
+			Assert.assertEquals(true, fr2.isSuccess());
 		}
 		finally
 		{
@@ -98,7 +123,8 @@ public class TestPing
 		{
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
-			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean());
+			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
+					.getConnectionBean());
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean());
@@ -124,13 +150,43 @@ public class TestPing
 		{
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
-			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean(), false, true);
+			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
+					.getConnectionBean(), false, true, false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
 			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress());
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
+	public void testPingTimeoutTCP2() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x9876"));
+			sender.listen(2424, 2424);
+			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
+					.getConnectionBean(), false, true, true);
+			recv1 = new Peer(55, new Number160("0x1234"));
+			recv1.listen(8088, 8088);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
+			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress());
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(false, fr.isSuccess());
+			Assert.assertEquals("complete=true/Timeout! type=FAILED",fr.getFailedReason());
+			System.err.println("done");
 		}
 		finally
 		{
@@ -150,10 +206,11 @@ public class TestPing
 		{
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
-			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean(), false, true);
+			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
+					.getConnectionBean(), false, true, false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
 			FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().getServerPeerAddress());
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
@@ -166,7 +223,7 @@ public class TestPing
 				recv1.shutdown();
 		}
 	}
-	
+
 	@Test
 	public void testPingTCPPool() throws Exception
 	{
@@ -181,16 +238,16 @@ public class TestPing
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			List<FutureResponse> list = new ArrayList<FutureResponse>(10000);
-			for(int i=0;i<100;i++)
+			for (int i = 0; i < 100; i++)
 			{
 				FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
 				list.add(fr);
-			}			
+			}
 			for (FutureResponse fr2 : list)
 			{
 				fr2.awaitUninterruptibly();
+				Assert.assertTrue(fr2.isSuccess());
 			}
-				
 		}
 		finally
 		{
@@ -198,6 +255,44 @@ public class TestPing
 				sender.shutdown();
 			if (recv1 != null)
 				recv1.shutdown();
+		}
+	}
+
+	@Test
+	public void testPingTCPPool2() throws Exception
+	{
+		Peer p[] = new Peer[50];
+		try
+		{
+			for (int i = 0; i < p.length; i++)
+			{
+				p[i] = new Peer(55, Number160.createHash(i));
+				p[i].listen(2424 + i, 2424 + i);
+			}
+			List<FutureResponse> list = new ArrayList<FutureResponse>();
+			for (int i = 0; i < p.length; i++)
+			{
+				FutureResponse fr = p[0].getHandshakeRPC().pingTCP(p[i].getPeerAddress());
+				list.add(fr);
+			}
+			for (FutureResponse fr2 : list)
+			{
+				fr2.awaitUninterruptibly();
+				boolean success = fr2.isSuccess();
+				if (!success)
+				{
+					System.err.println("FAIL.");
+					Assert.fail();
+				}
+			}
+			System.err.println("DONE.");
+		}
+		finally
+		{
+			for (int i = 0; i < p.length; i++)
+			{
+				p[0].shutdown();
+			}
 		}
 	}
 

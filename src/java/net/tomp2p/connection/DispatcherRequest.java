@@ -54,9 +54,9 @@ import org.slf4j.LoggerFactory;
  * 
  */
 @Sharable
-public class Dispatcher extends SimpleChannelHandler
+public class DispatcherRequest extends SimpleChannelHandler
 {
-	final private static Logger logger = LoggerFactory.getLogger(Dispatcher.class);
+	final private static Logger logger = LoggerFactory.getLogger(DispatcherRequest.class);
 	// Stores all registered handlers, DIY copy on write map
 	private volatile Map<Number160, Map<Command, ReplyHandler>> listenersRequest = null;
 	private volatile Set<ReplyHandler> handlers = null;
@@ -76,6 +76,7 @@ public class Dispatcher extends SimpleChannelHandler
 	final private ChannelGroup channelGroup;
 	final private PeerMap peerMap;
 	final private List<PeerListener> listeners;
+	final private TCPChannelChache channelChache;
 
 	/**
 	 * Constructor
@@ -83,8 +84,8 @@ public class Dispatcher extends SimpleChannelHandler
 	 * @param p2pID the p2p ID the dispatcher is looking for in messages
 	 * @param routing
 	 */
-	public Dispatcher(int p2pID, PeerBean peerBean, int timeoutUPDMillis, int timeoutTCPMillis,
-			ChannelGroup channelGroup, PeerMap peerMap, List<PeerListener> listeners)
+	public DispatcherRequest(int p2pID, PeerBean peerBean, int timeoutUPDMillis, int timeoutTCPMillis,
+			ChannelGroup channelGroup, PeerMap peerMap, List<PeerListener> listeners, TCPChannelChache channelChache)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
@@ -95,6 +96,7 @@ public class Dispatcher extends SimpleChannelHandler
 		this.channelGroup = channelGroup;
 		this.peerMap = peerMap;
 		this.listeners=listeners;
+		this.channelChache=channelChache;
 	}
 
 	/**
@@ -176,8 +178,8 @@ public class Dispatcher extends SimpleChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
-		logger.warn("error in dispatcher " + e.toString());
-		if (logger.isWarnEnabled())
+		logger.warn("error in dispatcher request" + e.toString());
+		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
 		ctx.sendUpstream(e);
 	}
@@ -260,7 +262,7 @@ public class Dispatcher extends SimpleChannelHandler
 	}
 
 	// respond within a session
-	private static void response(ChannelHandlerContext ctx, MessageEvent e, final Message response)
+	private void response(ChannelHandlerContext ctx, MessageEvent e, final Message response)
 	{
 		if (ctx.getChannel() instanceof DatagramChannel)
 		{
@@ -272,19 +274,10 @@ public class Dispatcher extends SimpleChannelHandler
 		}
 		else
 		{
+			channelChache.addChannel(response.getRecipient().getID(), response.getRecipient().getInetAddress(), ctx.getChannel());
 			if (logger.isDebugEnabled())
 				logger.debug("reply TCP message " + response);
 			ctx.getChannel().write(response);
-			// keep-alive
-			//
-			//wf.addListener(new ChannelFutureListener()
-			//{
-			//	@Override
-			//	public void operationComplete(ChannelFuture future)
-			//	{
-			//		future.getChannel().close();
-			//	}
-			//});
 		}
 	}
 

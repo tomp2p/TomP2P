@@ -179,11 +179,11 @@ public abstract class BaseFutureImpl implements BaseFuture
 	@Override
 	public void setFailed(final String reason)
 	{
-		logger.warn("set failed reason: " + reason);
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
 				return;
+			logger.warn("set failed reason: " + reason);
 			this.reason = reason;
 			this.type = FutureType.FAILED;
 		}

@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.connection.TCPChannelChache;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
@@ -40,7 +41,6 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class DistributedHashHashMap
 {
@@ -138,7 +138,9 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
-									return directDataRPC.send(address, buffer, raw);
+									return directDataRPC.send(
+											TCPChannelChache.DEFAULT_CHANNEL_NAME, address, buffer,
+											raw);
 								}
 
 								@Override

@@ -479,7 +479,7 @@ final public class Number160 extends Number implements Comparable<Number160>
 
 	/**
 	 * Create a new Number160 from the integer, which fills all the 160bits. A
-	 * new random object will be created, thus, its thread safe
+	 * new random object will be created.
 	 * 
 	 * @param integerValue The value to hash from
 	 * @return A hash from based on pseudo random, to fill the 160bits

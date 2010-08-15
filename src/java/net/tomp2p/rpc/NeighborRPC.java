@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerException;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
@@ -28,6 +29,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -69,11 +71,16 @@ public class NeighborRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey == null ? Number160.ZERO : domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
-		NeighborsRequest request = new NeighborsRequest(peerBean, connectionBean, message);
 		if (!forceSocket)
+		{
+			NeighborsRequestUDP request = new NeighborsRequestUDP(peerBean, connectionBean, message);
 			return request.sendUDP();
+		}
 		else
+		{
+			NeighborsRequestTCP request = new NeighborsRequestTCP(peerBean, connectionBean, message);
 			return request.sendTCP();
+		}
 	}
 
 	@Override
@@ -133,12 +140,58 @@ public class NeighborRPC extends ReplyHandler
 		}
 		return responseMessage;
 	}
-	static public class NeighborsRequest extends RequestHandler
+
+	private void preHandleMessage(Message message, PeerMap peerMap, PeerAddress referrer)
 	{
-		final private static Logger logger = LoggerFactory.getLogger(NeighborsRequest.class);
+		if (message.getType() == Type.OK
+				&& (message.getCommand() == Command.NEIGHBORS_STORAGE || message.getCommand() == Command.NEIGHBORS_TRACKER))
+		{
+			Collection<PeerAddress> tmp = message.getNeighbors();
+			if (tmp != null)
+			{
+				Iterator<PeerAddress> iterator = tmp.iterator();
+				while (iterator.hasNext())
+				{
+					PeerAddress addr = iterator.next();
+					// if peer is removed due to failure, don't consider
+					// that peer for routing anymore
+					if (peerMap.isPeerRemovedTemporarly(addr))
+					{
+						iterator.remove();
+					}
+					// otherwise try to add it to the map
+					else
+						peerMap.peerOnline(addr, referrer);
+				}
+			}
+			else
+				logger.warn("Neighbor message received, but does not contain any neighbors.");
+		}
+		else
+			logger.warn("Message not of type Neighbor, ignoring");
+	}
+	private class NeighborsRequestTCP extends RequestHandlerTCP
+	{
 		final private Message message;
 
-		public NeighborsRequest(PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		public NeighborsRequestTCP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		{
+			super(peerBean, connectionBean, message);
+			this.message = message;
+		}
+
+		@Override
+		public void messageReceived(Message message) throws PeerException
+		{
+			preHandleMessage(message, getPeerMap(), this.message.getRecipient());
+			super.messageReceived(message);
+		}
+	}
+	private class NeighborsRequestUDP extends RequestHandlerUDP
+	{
+		final private Message message;
+
+		public NeighborsRequestUDP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
 		{
 			super(peerBean, connectionBean, message);
 			this.message = message;
@@ -149,38 +202,7 @@ public class NeighborRPC extends ReplyHandler
 		{
 			Object object = e.getMessage();
 			if (object instanceof Message)
-			{
-				final Message message = (Message) object;
-				if (message.getType() == Type.OK
-						&& (message.getCommand() == Command.NEIGHBORS_STORAGE || message
-								.getCommand() == Command.NEIGHBORS_TRACKER))
-				{
-					Collection<PeerAddress> tmp = message.getNeighbors();
-					if (tmp != null)
-					{
-						PeerAddress referrer = this.message.getRecipient();
-						Iterator<PeerAddress> iterator = tmp.iterator();
-						while (iterator.hasNext())
-						{
-							PeerAddress addr = iterator.next();
-							// if peer is removed due to failure, don't consider
-							// that peer for routing anymore
-							if (getPeerMap().isPeerRemovedTemporarly(addr))
-							{
-								iterator.remove();
-							}
-							// otherwise try to add it to the map
-							else
-								getPeerMap().peerOnline(addr, referrer);
-						}
-					}
-					else
-						logger
-								.warn("Neighbor message received, but does not contain any neighbors.");
-				}
-				else
-					logger.warn("Message not of type Neighbor, ignoring");
-			}
+				preHandleMessage((Message) object, getPeerMap(), this.message.getRecipient());
 			else
 				logger.error("Response received, but not a message: " + object);
 			super.messageReceived(ctx, e);

@@ -589,10 +589,12 @@ public class MessageCodec
 		int sigLength = buffer.readUnsignedByte();
 		//
 		int type = buffer.getUnsignedByte();
-		PeerAddress originator = message.getSender();
+		PeerAddress originator = null;
 		if (type == 0)
 		{
 			buffer.skipBytes(1);
+			if(message!=null)
+				message.getSender();
 		}
 		else
 		{

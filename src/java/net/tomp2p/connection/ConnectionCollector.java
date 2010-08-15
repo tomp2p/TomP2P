@@ -16,7 +16,6 @@
 package net.tomp2p.connection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Calendar;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -83,38 +82,27 @@ public class ConnectionCollector
 	/**
 	 * Returns a channel that is managed by this pool. Once the channel is
 	 * closed, the channel will be added to the pool.
-	 * @param channelCache 
+	 * @param channelChache 
 	 * 
 	 * @param connectTimeout
 	 * 
 	 * @param ioHandler The handler that is
 	 * @return A channel with the handler or null if disposed or interrupted
+	 * @throws InterruptedException 
 	 */
-	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler replyHandler,
-			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelCache channelCache) throws ChannelException
+	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler dispatcherReply,
+			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache) throws ChannelException, InterruptedException
 	{
-		
-		final long t0 = Calendar.getInstance().getTimeInMillis();
-		
-		/* disabled because it was acquiring new permits even when reusing connections that did not have their permits freed when returned to cache
-		
-		if (logger.isDebugEnabled()) logger.debug("will try from semaphore -- available permits: "+semaphoreTCPMessages.availablePermits());
-		
-		try
+		//semaphoreTCPMessages.acquireUninterruptibly();
+		boolean acquired=false;
+		while(!acquired)
 		{
-			while(!semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS))
-				channelCache.expireCache();
-				
-		}
-		catch (InterruptedException e)
-		{
-			throw new ChannelException(e);
+			acquired=semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS);
+			if(!acquired)
+				channelChache.expireCache();
 		}
 		
-		if (logger.isDebugEnabled()) logger.debug("passed semaphore, took "+(Calendar.getInstance().getTimeInMillis()-t0));
-		
-		*/
-		
+		//System.err.println("HERE1:" +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;
 		for (;;)
 		{
@@ -123,26 +111,15 @@ public class ConnectionCollector
 			{
 				if (disposeTCP)
 				{
-					logger.warn("tcp disposed, not returning a channel");
-					
-					logger.debug("releasing channel, disposeTCP, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
-
+					logger.warn("tpc disposed, not returning a channel");
 					semaphoreTCPMessages.release();
-					throw new ChannelException("tcp disposed, not returning a channel");
+					throw new ChannelException("tpc disposed, not returning a channel");
 				}
 				try
 				{
-					if (logger.isDebugEnabled()) logger.debug("in sync");
-
-					ChannelFuture channelFuture = createChannelTCP(timeoutHandler, replyHandler,
+					ChannelFuture channelFuture = createChannelTCP(timeoutHandler, dispatcherReply,
 							remoteAddress, new InetSocketAddress(0), connectTimeoutMillis);
-					
-					if (logger.isDebugEnabled()) logger.debug("after createChannelTCP");
-
 					channel = channelFuture.getChannel();
-
-					if (logger.isDebugEnabled()) logger.debug("after channelFuture.getChannel()");
-
 					channelsTCP.add(channel);
 					channel.getCloseFuture().addListener(new ChannelFutureListener()
 					{
@@ -152,8 +129,6 @@ public class ConnectionCollector
 							// no need to remove from channel group, as this is
 							// already done in channel group,
 							// channelsTCP.remove(channelFuture.getChannel());
-							logger.debug("releasing channel, operation complete, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
-
 							semaphoreTCPMessages.release();
 						}
 					});
@@ -169,7 +144,6 @@ public class ConnectionCollector
 					if (failCounter > 5)
 					{
 						logger.error("tried 5 times " + ce.toString());
-						logger.debug("releasing channel, ChannelException, in total took "+(Calendar.getInstance().getTimeInMillis()-t0));
 						ce.printStackTrace();
 						semaphoreTCPMessages.release();
 						throw ce;
@@ -183,6 +157,7 @@ public class ConnectionCollector
 			boolean allowBroadcast) throws ChannelException
 	{
 		semaphoreUDPMessages.acquireUninterruptibly();
+		//System.err.println("HERE2:" +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;
 		for (;;)
 		{
@@ -255,7 +230,7 @@ public class ConnectionCollector
 	 * @return The newly created handler
 	 */
 	private ChannelFuture createChannelTCP(ChannelHandler timeoutHandler,
-			ChannelHandler replyHandler, SocketAddress remoteAddress, SocketAddress localAddress,
+			ChannelHandler dispatcherReply, SocketAddress remoteAddress, SocketAddress localAddress,
 			int connectionTimoutMillis)
 	{
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
@@ -264,7 +239,7 @@ public class ConnectionCollector
 		bootstrap.setOption("soLinger", 0);
 		// bootstrap.setOption("reuseAddress", true);
 		// bootstrap.setOption("keepAlive", true);
-		setupBootstrap(bootstrap, timeoutHandler, replyHandler,
+		setupBootstrap(bootstrap, timeoutHandler, dispatcherReply,
 				new TomP2PDecoderTCP(maxMessageSize));
 		return bootstrap.connect(remoteAddress);
 	}
@@ -284,7 +259,7 @@ public class ConnectionCollector
 	}
 
 	private void setupBootstrap(Bootstrap bootstrap, ChannelHandler timeoutHandler,
-			ChannelHandler replyHandler, ChannelUpstreamHandler decoder)
+			ChannelHandler dispatcherReply, ChannelUpstreamHandler decoder)
 	{
 		ChannelPipeline pipe = bootstrap.getPipeline();
 		if (timeoutHandler != null)
@@ -292,10 +267,10 @@ public class ConnectionCollector
 		pipe.addLast("encoder2", encoder2);
 		pipe.addLast("encoder1", encoder1);
 		pipe.addLast("decoder", decoder);
-		if (replyHandler != null)
+		if (dispatcherReply != null)
 		{
 			pipe.addLast("executor", executionHandlerSender);
-			pipe.addLast("reply", replyHandler);
+			pipe.addLast("reply", dispatcherReply);
 		}
 	}
 

@@ -59,7 +59,11 @@ public class TCPChannelChache
 		synchronized (cache)
 		{
 			if (!cache.containsKey(identifier) && running)
+			{
+				if(logger.isDebugEnabled())
+					logger.debug("add to TCP cache (add) "+identifier);
 				cache.put(identifier, future);
+			}
 		}
 	}
 
@@ -107,6 +111,8 @@ public class TCPChannelChache
 						}
 					}
 				});
+				if(logger.isDebugEnabled())
+					logger.debug("add to TCP cache (get) "+identifier);
 				cache.put(identifier, future);
 				return future;
 			}

@@ -91,7 +91,10 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	{
 		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
-		ctx.sendUpstream(e);
+		if(!e.getCause().getMessage().equals("Connection reset by peer"))
+		{
+			ctx.sendUpstream(e);
+		}
 	}
 
 	/**

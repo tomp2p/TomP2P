@@ -485,8 +485,7 @@ public class MessageCodec
 				Map<Number160, Data> result = new HashMap<Number160, Data>(size);
 				for (int i = 0; i < size; i++)
 				{
-					Number160 key = new Number160(buffer.readInt(), buffer.readInt(), buffer
-							.readInt(), buffer.readInt(), buffer.readInt());
+					Number160 key = readID(buffer);
 					final Data data = decodeData(new ChannelDecoder(buffer), message);
 					result.put(key, data);
 				}
@@ -523,7 +522,9 @@ public class MessageCodec
 				break;
 			case CHANNEL_BUFFER:
 				len = buffer.readInt();
-				final ChannelBuffer tmpBuffer = buffer.slice(buffer.readerIndex(), len);
+				//final ChannelBuffer tmpBuffer = buffer.slice(buffer.readerIndex(), len);
+				//you can only use slice if no execution handler is in place, otherwise, you will overwrite stuff
+				final ChannelBuffer tmpBuffer = buffer.copy(buffer.readerIndex(), len);
 				buffer.skipBytes(len);
 				message.setPayload0(tmpBuffer);
 				break;
@@ -642,7 +643,9 @@ public class MessageCodec
 			// waste of space and we should copy, otherwise, tatke the backing
 			// array.
 			// TODO: find good values for this. This is just a guess
-			final boolean copy = me.length / length > 1;
+			final boolean copy = true;
+			//final boolean copy = me.length / length > 1;
+			// we have to use copy if we use an exectution handler, otherwise the buffer will have different data.
 			if (copy)
 			{
 				final byte[] me2 = new byte[length];

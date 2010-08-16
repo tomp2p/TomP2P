@@ -147,7 +147,7 @@ public class ConnectionHandler
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory,
 				udpChannelFactory, configuration, executionHandler);
 		// Dispatcher setup start
-		this.channelChache = new TCPChannelChache(connectionPool, timer);
+		this.channelChache = new TCPChannelChache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration
 				.getIdleUDPMillis(), configuration.getTimeoutTCPMillis(), channelGroup, peerMap,
 				listeners, channelChache);
@@ -185,7 +185,8 @@ public class ConnectionHandler
 	 * @param parent
 	 * @param id
 	 */
-	public ConnectionHandler(ConnectionHandler parent, Number160 id, KeyPair keyPair, PeerMap peerMap)
+	public ConnectionHandler(ConnectionHandler parent, Number160 id, KeyPair keyPair,
+			PeerMap peerMap)
 	{
 		parent.childConnections.add(this);
 		this.connectionBean = parent.connectionBean;
@@ -282,7 +283,7 @@ public class ConnectionHandler
 				p.addLast("performance", performanceFilter);
 				p.addLast("executor", executionHandler);
 				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration
-						.getIdleTCPMillis(), dispatcher);
+						.getIdleTCPMillis(), dispatcher, getConnectionBean().getChannelGroup());
 				p.addLast("reply", dispatcherReply);
 				return p;
 			}

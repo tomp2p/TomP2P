@@ -84,8 +84,9 @@ public class DispatcherRequest extends SimpleChannelHandler
 	 * @param p2pID the p2p ID the dispatcher is looking for in messages
 	 * @param routing
 	 */
-	public DispatcherRequest(int p2pID, PeerBean peerBean, int timeoutUPDMillis, int timeoutTCPMillis,
-			ChannelGroup channelGroup, PeerMap peerMap, List<PeerListener> listeners, TCPChannelChache channelChache)
+	public DispatcherRequest(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
+			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap,
+			List<PeerListener> listeners, TCPChannelChache channelChache)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
@@ -95,8 +96,8 @@ public class DispatcherRequest extends SimpleChannelHandler
 		this.timeoutTCPMillis = timeoutTCPMillis;
 		this.channelGroup = channelGroup;
 		this.peerMap = peerMap;
-		this.listeners=listeners;
-		this.channelChache=channelChache;
+		this.listeners = listeners;
+		this.channelChache = channelChache;
 	}
 
 	/**
@@ -166,7 +167,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 	}
 
 	@Override
-	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
+	public void channelOpen(final ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
 	{
 		channelGroup.add(ctx.getChannel());
 		ctx.sendUpstream(e);
@@ -219,20 +220,20 @@ public class DispatcherRequest extends SimpleChannelHandler
 			close(ctx);
 			return;
 		}
-		//confirm our outside address, that we can receive messages.
-		PeerAddress serverAddress=peerBean.getServerPeerAddress();
-		if(serverAddress.isFirewalledUDP() && ctx.getChannel() instanceof DatagramChannel)
+		// confirm our outside address, that we can receive messages.
+		PeerAddress serverAddress = peerBean.getServerPeerAddress();
+		if (serverAddress.isFirewalledUDP() && ctx.getChannel() instanceof DatagramChannel)
 		{
-			PeerAddress newServerAddress=serverAddress.notFirewalledUDP();
+			PeerAddress newServerAddress = serverAddress.notFirewalledUDP();
 			peerBean.setServerPeerAddress(newServerAddress);
-			for(PeerListener listener:listeners)
+			for (PeerListener listener : listeners)
 				listener.serverAddressChanged(newServerAddress);
 		}
-		else if(serverAddress.isFirewalledTCP() && !(ctx.getChannel() instanceof DatagramChannel))
+		else if (serverAddress.isFirewalledTCP() && !(ctx.getChannel() instanceof DatagramChannel))
 		{
-			PeerAddress newServerAddress=serverAddress.notFirewalledTCP();
+			PeerAddress newServerAddress = serverAddress.notFirewalledTCP();
 			peerBean.setServerPeerAddress(newServerAddress);
-			for(PeerListener listener:listeners)
+			for (PeerListener listener : listeners)
 				listener.serverAddressChanged(newServerAddress);
 		}
 		Message responseMessage = null;
@@ -245,17 +246,19 @@ public class DispatcherRequest extends SimpleChannelHandler
 			responseMessage = myHandler.forwardMessage(message);
 			if (responseMessage == null)
 			{
-				logger.warn("Repsonse message was null, probaly a custom handler failed " + message);
-				message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress()).setType(
-						Type.EXCEPTION);
+				logger
+						.warn("Repsonse message was null, probaly a custom handler failed "
+								+ message);
+				message.setRecipient(message.getSender())
+						.setSender(peerBean.getServerPeerAddress()).setType(Type.EXCEPTION);
 				responseMessage = message;
 			}
 		}
 		else
 		{
 			logger.warn("No handler found for " + message);
-			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress()).setType(
-					Type.UNKNOWN_ID);
+			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress())
+					.setType(Type.UNKNOWN_ID);
 			responseMessage = message;
 		}
 		response(ctx, e, responseMessage);
@@ -274,7 +277,8 @@ public class DispatcherRequest extends SimpleChannelHandler
 		}
 		else
 		{
-			channelChache.addChannel(response.getRecipient().getID(), response.getRecipient().getInetAddress(), ctx.getChannel());
+			channelChache.addChannel(response.getRecipient().getID(), response.getRecipient()
+					.getInetAddress(), ctx.getChannel());
 			if (logger.isDebugEnabled())
 				logger.debug("reply TCP message " + response);
 			ctx.getChannel().write(response);
@@ -329,5 +333,4 @@ public class DispatcherRequest extends SimpleChannelHandler
 			return null;
 		}
 	}
-
 }

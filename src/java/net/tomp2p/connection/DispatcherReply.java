@@ -13,6 +13,7 @@ import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
+import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.handler.timeout.IdleStateAwareChannelHandler;
 import org.jboss.netty.handler.timeout.IdleStateEvent;
@@ -29,6 +30,7 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	final private Map<MessageID, RequestHandlerTCP> waitingForAnswer = new LinkedHashMap<MessageID, RequestHandlerTCP>();
 	final private int tcpIdleTimeoutMillis;
 	final private DispatcherRequest dispatcherRequest;
+	final private ChannelGroup channelGroup;
 	//
 	final Timer timer;
 	private volatile Timeout idleTimeout;
@@ -36,11 +38,12 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 
 	//
 	public DispatcherReply(Timer timer, int tcpIdleTimeoutMillis,
-			DispatcherRequest dispatcherRequest)
+			DispatcherRequest dispatcherRequest, ChannelGroup channelGroup)
 	{
 		this.timer = timer;
 		this.tcpIdleTimeoutMillis = tcpIdleTimeoutMillis;
 		this.dispatcherRequest = dispatcherRequest;
+		this.channelGroup = channelGroup;
 		idleTimeout = timer.newTimeout(new TimeoutTask(), tcpIdleTimeoutMillis,
 				TimeUnit.MILLISECONDS);
 	}
@@ -129,6 +132,13 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 				e.getCause().printStackTrace();
 		}
 		shutdown(e.toString());
+	}
+	
+	@Override
+	public void channelOpen(final ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
+	{
+		channelGroup.add(ctx.getChannel());
+		ctx.sendUpstream(e);
 	}
 
 	@Override

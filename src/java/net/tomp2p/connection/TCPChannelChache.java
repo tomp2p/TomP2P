@@ -27,6 +27,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandler;
 import org.jboss.netty.channel.DefaultChannelFuture;
+import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +39,16 @@ public class TCPChannelChache
 	final private Map<Identifier, ChannelFuture> cache = new HashMap<Identifier, ChannelFuture>();
 	final private ConnectionCollector connectionCollector;
 	final private Timer timer;
+	final private ChannelGroup channelGroup;
 	private boolean running = true;
 	private DispatcherRequest dispatcherRequest;
 
-	public TCPChannelChache(ConnectionCollector connectionCollector, Timer timer)
+	public TCPChannelChache(ConnectionCollector connectionCollector, Timer timer,
+			ChannelGroup channelGroup)
 	{
 		this.connectionCollector = connectionCollector;
 		this.timer = timer;
+		this.channelGroup = channelGroup;
 	}
 
 	public void addChannel(Number160 peerId, InetAddress inetAddress, Channel channel)
@@ -89,7 +93,7 @@ public class TCPChannelChache
 							+ recipientAddress);
 				// create channel
 				DispatcherReply dispatcherReply = new DispatcherReply(timer, tcpIdleTimeoutMillis,
-						getDispatcherRequest());
+						getDispatcherRequest(), channelGroup);
 				future = connectionCollector.channelTCP(timeoutHandler, dispatcherReply,
 						recipientAddress, connectTimeoutMillis, this);
 				future.getChannel().getCloseFuture().addListener(new ChannelFutureListener()

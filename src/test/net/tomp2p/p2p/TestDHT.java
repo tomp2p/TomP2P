@@ -955,6 +955,7 @@ public class TestDHT
 		finally
 		{
 			master1.shutdown();
+			master2.shutdown();
 			master3.shutdown();
 		}
 	}

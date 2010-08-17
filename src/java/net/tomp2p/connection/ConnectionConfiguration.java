@@ -32,6 +32,10 @@ public class ConnectionConfiguration
 	private int maxMessageSize = 2 * 1024 * 1024;
 	private int maxMemory = 100 * 1024 * 1024;
 	private int maxNrBeforeExclude = 2;
+	//
+	//bandwith shaping in bytes/s
+	private long readLimit=0;
+	private long writeLimit=0;
 
 	public int getIdleTCPMillis()
 	{
@@ -163,5 +167,25 @@ public class ConnectionConfiguration
 	public int getTimeoutTCPMillis()
 	{
 		return timeoutTCPMillis;
+	}
+
+	public long getReadLimit()
+	{
+		return readLimit;
+	}
+
+	public long getWriteLimit()
+	{
+		return writeLimit;
+	}
+
+	public void setReadLimit(long readLimit)
+	{
+		this.readLimit = readLimit;
+	}
+
+	public void setWriteLimit(long writeLimit)
+	{
+		this.writeLimit = writeLimit;
 	}
 }

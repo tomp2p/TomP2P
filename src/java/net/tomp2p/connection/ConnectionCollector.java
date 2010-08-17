@@ -40,6 +40,7 @@ import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,10 +67,12 @@ public class ConnectionCollector
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
 	final private ExecutionHandler executionHandlerSender;
+	final private GlobalTrafficShapingHandler globalTrafficShapingHandler;
 
 	public ConnectionCollector(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
-			ExecutionHandler executionHandlerSender)
+			ExecutionHandler executionHandlerSender,
+			GlobalTrafficShapingHandler globalTrafficShapingHandler)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
@@ -77,32 +80,35 @@ public class ConnectionCollector
 		this.semaphoreTCPMessages = new Semaphore(configuration.getMaxOutgoingTCP(), true);
 		this.maxMessageSize = configuration.getMaxMessageSize();
 		this.executionHandlerSender = executionHandlerSender;
+		this.globalTrafficShapingHandler = globalTrafficShapingHandler;
 	}
 
 	/**
 	 * Returns a channel that is managed by this pool. Once the channel is
 	 * closed, the channel will be added to the pool.
-	 * @param channelChache 
+	 * 
+	 * @param channelChache
 	 * 
 	 * @param connectTimeout
 	 * 
 	 * @param ioHandler The handler that is
 	 * @return A channel with the handler or null if disposed or interrupted
-	 * @throws InterruptedException 
+	 * @throws InterruptedException
 	 */
 	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler dispatcherReply,
-			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache) throws ChannelException, InterruptedException
+			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache)
+			throws ChannelException, InterruptedException
 	{
-		//semaphoreTCPMessages.acquireUninterruptibly();
-		boolean acquired=false;
-		while(!acquired)
+		// semaphoreTCPMessages.acquireUninterruptibly();
+		boolean acquired = false;
+		while (!acquired)
 		{
-			acquired=semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS);
-			if(!acquired)
+			acquired = semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS);
+			if (!acquired)
 				channelChache.expireCache();
 		}
-		
-		//System.err.println("HERE1:" +semaphoreTCPMessages.availablePermits());
+		// System.err.println("HERE1:"
+		// +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;
 		for (;;)
 		{
@@ -157,7 +163,8 @@ public class ConnectionCollector
 			boolean allowBroadcast) throws ChannelException
 	{
 		semaphoreUDPMessages.acquireUninterruptibly();
-		//System.err.println("HERE2:" +semaphoreTCPMessages.availablePermits());
+		// System.err.println("HERE2:"
+		// +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;
 		for (;;)
 		{
@@ -230,8 +237,8 @@ public class ConnectionCollector
 	 * @return The newly created handler
 	 */
 	private ChannelFuture createChannelTCP(ChannelHandler timeoutHandler,
-			ChannelHandler dispatcherReply, SocketAddress remoteAddress, SocketAddress localAddress,
-			int connectionTimoutMillis)
+			ChannelHandler dispatcherReply, SocketAddress remoteAddress,
+			SocketAddress localAddress, int connectionTimoutMillis)
 	{
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
@@ -239,8 +246,8 @@ public class ConnectionCollector
 		bootstrap.setOption("soLinger", 0);
 		// bootstrap.setOption("reuseAddress", true);
 		// bootstrap.setOption("keepAlive", true);
-		setupBootstrap(bootstrap, timeoutHandler, dispatcherReply,
-				new TomP2PDecoderTCP(maxMessageSize));
+		setupBootstrap(bootstrap, timeoutHandler, dispatcherReply, new TomP2PDecoderTCP(
+				maxMessageSize));
 		return bootstrap.connect(remoteAddress);
 	}
 
@@ -269,6 +276,8 @@ public class ConnectionCollector
 		pipe.addLast("decoder", decoder);
 		if (dispatcherReply != null)
 		{
+			if (globalTrafficShapingHandler.hasLimit())
+				pipe.addLast("trafficShaping", globalTrafficShapingHandler);
 			pipe.addLast("executor", executionHandlerSender);
 			pipe.addLast("reply", dispatcherReply);
 		}
@@ -282,9 +291,5 @@ public class ConnectionCollector
 		sb.append("; available permits = tcp:").append(semaphoreTCPMessages.availablePermits());
 		sb.append(", udp:").append(semaphoreUDPMessages.availablePermits());
 		return sb.toString();
-	}
-	// private class CloseHandler extends SimpleChannelUpstreamHandler
-	{
-		// TODO: add keep alive connections, find out if up or downstream
 	}
 }

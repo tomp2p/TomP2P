@@ -53,6 +53,7 @@ import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.handler.timeout.IdleStateHandler;
+import org.jboss.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
@@ -105,6 +106,7 @@ public class ConnectionHandler
 	//
 	final private MessageLogger messageLoggerFilter;
 	final private ConnectionConfiguration configuration;
+	final private GlobalTrafficShapingHandler globalTrafficShapingHandler;
 
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair,
@@ -121,6 +123,9 @@ public class ConnectionHandler
 				Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
 		tcpClientChannelFactory = new NioClientSocketChannelFactory(
 				Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+		globalTrafficShapingHandler = new GlobalTrafficShapingHandler(Executors
+				.newCachedThreadPool(), configuration.getWriteLimit(),
+				configuration.getReadLimit(), 500);
 		//
 		String status = bindings.discoverLocalInterfaces();
 		logger.info("Status of interface search: " + status);
@@ -145,7 +150,7 @@ public class ConnectionHandler
 		logger.info("Visible address to other peers: " + self);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory,
-				udpChannelFactory, configuration, executionHandler);
+				udpChannelFactory, configuration, executionHandler, globalTrafficShapingHandler);
 		// Dispatcher setup start
 		this.channelChache = new TCPChannelChache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration
@@ -202,6 +207,7 @@ public class ConnectionHandler
 		this.channelChache = parent.channelChache;
 		this.configuration = parent.configuration;
 		this.timer = parent.timer;
+		this.globalTrafficShapingHandler = parent.globalTrafficShapingHandler;
 		this.master = false;
 	}
 
@@ -281,6 +287,8 @@ public class ConnectionHandler
 				if (messageLoggerFilter != null)
 					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
 				p.addLast("performance", performanceFilter);
+				if (globalTrafficShapingHandler.hasLimit())
+					p.addLast("trafficShaping", globalTrafficShapingHandler);
 				p.addLast("executor", executionHandler);
 				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration
 						.getIdleTCPMillis(), dispatcher, getConnectionBean().getChannelGroup());

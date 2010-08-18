@@ -16,6 +16,10 @@
 package net.tomp2p.storage;
 import java.io.IOException;
 import java.security.PublicKey;
+import java.util.List;
+import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
@@ -37,6 +41,7 @@ public class TrackerStorage extends StorageMemory
 	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
 	final private int trackerSize = 20;
+	final private static Random rnd = new Random();
 	private volatile int trackerTimoutSeconds = Integer.MAX_VALUE;
 
 	public int getTrackerSize()
@@ -67,5 +72,19 @@ public class TrackerStorage extends StorageMemory
 	{
 		DigestInfo digest = digest(new Number320(locationKey, domainKey));
 		return digest.getSize();
+	}
+
+	public SortedMap<Number480, Data> getSelection(Number320 number320, int nr)
+	{
+		// we have a copy here, so no need to sync
+		List<Number480> keys = getKeys(number320);
+		int size = keys.size();
+		SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
+		for (int i = 0; i < nr && i < size; i++)
+		{
+			Number480 rndKey = keys.remove(rnd.nextInt(size - i));
+			result.put(rndKey, get(rndKey));
+		}
+		return result;
 	}
 }

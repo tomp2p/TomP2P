@@ -142,8 +142,8 @@ public class TrackerRPC extends ReplyHandler
 		Number160 domainKey = message.getKey2();
 		if (direct)
 		{
-			SortedMap<Number480, Data> peerDataMap = trackerStorage.get(new Number320(locationKey,
-					domainKey));
+			SortedMap<Number480, Data> peerDataMap = trackerStorage.getSelection(new Number320(
+					locationKey, domainKey), trackerStorage.getTrackerSize());
 			if (peerDataMap == null)
 				responseMessage.setDataMap(new HashMap<Number160, Data>());
 			else
@@ -155,21 +155,13 @@ public class TrackerRPC extends ReplyHandler
 					logger.debug("tracker put on(" + peerBean.getServerPeerAddress()
 							+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
 							+ ", address:" + senderAddress);
-				// TODO: make a good selection here!
-				if (trackerStorage.size(locationKey, domainKey) < trackerStorage.getTrackerSize())
-				{
-					Map<Number160, Data> dataMap = message.getDataMap();
-					// Collection<Data> c = .values();
-					final Data attachement = (dataMap != null && dataMap.size() >= 1) ? dataMap
-							.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY,
-							null);
-					attachement.setPeerAddress(senderAddress);
-					// public key is not set in the data, but in the message
-					PublicKey publicKey = message.getPublicKey();
-					if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
-						responseMessage.setType(Message.Type.DENIED);
-				}
-				else
+				Map<Number160, Data> dataMap = message.getDataMap();
+				final Data attachement = (dataMap != null && dataMap.size() >= 1) ? dataMap
+						.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY, null);
+				attachement.setPeerAddress(senderAddress);
+				// public key is not set in the data, but in the message
+				PublicKey publicKey = message.getPublicKey();
+				if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
 					responseMessage.setType(Message.Type.DENIED);
 			}
 			else
@@ -183,7 +175,7 @@ public class TrackerRPC extends ReplyHandler
 			}
 		}
 		// this is for replication. If we got something here, the other peer
-		// thinks that I'm responible
+		// thinks that I'm responsible
 		else
 		{
 			Map<Number160, Data> dataMap = message.getDataMap();

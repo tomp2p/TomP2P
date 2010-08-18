@@ -172,6 +172,33 @@ public class StorageMemory extends Storage
 			return dataMap.get(key);
 		}
 	}
+	
+	public List<Number480> getKeys(Number320 key)
+	{
+		return getKeys(key.min(), key.max());
+	}
+	
+	public List<Number480> getKeys(Number480 fromKey, Number480 toKey)
+	{
+		synchronized (lock)
+		{
+			checkTimeout();
+			if (fromKey == null && toKey == null)
+				return null;
+			else if (toKey == null)
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new ArrayList<Number480>(dataMap.tailMap(fromKey).keySet());
+			else if (fromKey == null)
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new ArrayList<Number480>(dataMap.headMap(toKey).keySet());
+			else
+				// make copy, otherwise we see concurrent modification
+				// excteption
+				return new ArrayList<Number480>(dataMap.subMap(fromKey, toKey).keySet());
+		}
+	}
 
 	@Override
 	public SortedMap<Number480, Data> get(Number480 fromKey, Number480 toKey)

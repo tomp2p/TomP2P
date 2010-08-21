@@ -92,7 +92,6 @@ public class TCPChannelChache
 				{
 				  IdleStateHandler timeoutHandlerOld=(IdleStateHandler) future.getChannel().getPipeline().get("timeout");
 				  timeoutHandlerOld.reset();
-				  
 				  if(!future.getChannel().isOpen())
 				    return createNewChannel(recipientID, recipientAddress, timeoutHandler,
 	                                  connectTimeoutMillis, tcpIdleTimeoutMillis, identifier);

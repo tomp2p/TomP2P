@@ -98,7 +98,8 @@ public class ConnectionCollector
 			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache)
 			throws ChannelException, InterruptedException
 	{
-	  synchronized (semaphoreTCPMessages)
+	  final Object lock=new Object();
+	  synchronized (lock)
           {
 		boolean acquired = false;
 		long start=System.currentTimeMillis();
@@ -109,7 +110,7 @@ public class ConnectionCollector
 			if (!acquired)
 			  channelChache.expireCache(); 
 			waitTime=System.currentTimeMillis()-start;
-			semaphoreTCPMessages.wait(connectTimeoutMillis/2);
+			lock.wait(connectTimeoutMillis/2);
 		}
 		if (!acquired)
 		  return null;
@@ -125,9 +126,9 @@ public class ConnectionCollector
 				if (disposeTCP)
 				{
 					logger.warn("tpc disposed, not returning a channel");
-					 synchronized (semaphoreTCPMessages) {
+					 synchronized (lock) {
 					semaphoreTCPMessages.release();
-					 semaphoreTCPMessages.notifyAll();
+					lock.notifyAll();
                                          }
 					throw new ChannelException("tpc disposed, not returning a channel");
 				}
@@ -145,9 +146,9 @@ public class ConnectionCollector
 							// no need to remove from channel group, as this is
 							// already done in channel group,
 							// channelsTCP.remove(channelFuture.getChannel());
-						  synchronized (semaphoreTCPMessages) {
+						  synchronized (lock) {
                                                     semaphoreTCPMessages.release();
-                                                    semaphoreTCPMessages.notifyAll();
+                                                    lock.notifyAll();
                                                   }
 							
 						}
@@ -165,9 +166,9 @@ public class ConnectionCollector
 					{
 						logger.error("tried 5 times " + ce.toString());
 						ce.printStackTrace();
-						 synchronized (semaphoreTCPMessages) {
+						 synchronized (lock) {
 						   semaphoreTCPMessages.release();
-						 semaphoreTCPMessages.notifyAll();
+						   lock.notifyAll();
                                                  }
 						throw ce;
 					}

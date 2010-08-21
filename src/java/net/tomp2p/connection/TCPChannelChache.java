@@ -61,7 +61,7 @@ public class TCPChannelChache
 			if (!cache.containsKey(identifier) && running)
 			{
 				if(logger.isDebugEnabled())
-					logger.debug("add to TCP cache (add) "+identifier);
+					logger.debug("add to TCP cache (add) "+identifier+ "/"+channel);
 				cache.put(identifier, future);
 			}
 		}

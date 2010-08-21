@@ -98,8 +98,8 @@ public class ConnectionCollector
 			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache)
 			throws ChannelException, InterruptedException
 	{
-	  final Object lock=new Object();
-	  synchronized (lock)
+	  //do this one at a time
+	  synchronized (semaphoreTCPMessages)
           {
 		boolean acquired = false;
 		long start=System.currentTimeMillis();
@@ -110,7 +110,7 @@ public class ConnectionCollector
 			if (!acquired)
 			  channelChache.expireCache(); 
 			waitTime=System.currentTimeMillis()-start;
-			lock.wait(connectTimeoutMillis/2);
+			semaphoreTCPMessages.wait(connectTimeoutMillis/2);
 		}
 		if (!acquired)
 		  return null;
@@ -126,9 +126,9 @@ public class ConnectionCollector
 				if (disposeTCP)
 				{
 					logger.warn("tpc disposed, not returning a channel");
-					 synchronized (lock) {
-					semaphoreTCPMessages.release();
-					lock.notifyAll();
+					 synchronized (semaphoreTCPMessages) {
+					     semaphoreTCPMessages.release();
+					      semaphoreTCPMessages.notifyAll();
                                          }
 					throw new ChannelException("tpc disposed, not returning a channel");
 				}
@@ -146,9 +146,9 @@ public class ConnectionCollector
 							// no need to remove from channel group, as this is
 							// already done in channel group,
 							// channelsTCP.remove(channelFuture.getChannel());
-						  synchronized (lock) {
-                                                    semaphoreTCPMessages.release();
-                                                    lock.notifyAll();
+						  synchronized (semaphoreTCPMessages) {
+						      semaphoreTCPMessages.release();
+                                                      semaphoreTCPMessages.notifyAll();
                                                   }
 							
 						}
@@ -166,9 +166,9 @@ public class ConnectionCollector
 					{
 						logger.error("tried 5 times " + ce.toString());
 						ce.printStackTrace();
-						 synchronized (lock) {
-						   semaphoreTCPMessages.release();
-						   lock.notifyAll();
+						 synchronized (semaphoreTCPMessages) {
+						     semaphoreTCPMessages.release();
+						     semaphoreTCPMessages.notifyAll();
                                                  }
 						throw ce;
 					}

@@ -124,6 +124,8 @@ public class TCPChannelChache
     		recipientAddress, connectTimeoutMillis, this);
     if(future==null)
       return null;
+    if (logger.isDebugEnabled())
+      logger.debug("created channel "+future.getChannel());
     future.getChannel().getCloseFuture().addListener(new ChannelFutureListener()
     {
     	@Override

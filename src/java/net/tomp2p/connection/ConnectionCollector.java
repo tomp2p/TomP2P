@@ -253,7 +253,7 @@ public class ConnectionCollector
 	{
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
-		// bootstrap.setOption("tcpNoDelay", true);
+		bootstrap.setOption("tcpNoDelay", true);
 		bootstrap.setOption("soLinger", 0);
 		// bootstrap.setOption("reuseAddress", true);
 		// bootstrap.setOption("keepAlive", true);

@@ -363,5 +363,9 @@ public class IdleStateHandler extends SimpleChannelUpstreamHandler
             }
         }
     }
+
+    public void reset() {
+      lastReadTime = lastWriteTime = System.currentTimeMillis();
+    }
 }
 

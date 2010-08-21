@@ -88,38 +88,59 @@ public class TCPChannelChache
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("reuse connection " + future.getChannel());
+				if(future.getChannel()!=null)
+				{
+				  IdleStateHandler timeoutHandlerOld=(IdleStateHandler) future.getChannel().getPipeline().get("timeout");
+				  timeoutHandlerOld.reset();
+				  
+				  if(!future.getChannel().isOpen())
+				    return createNewChannel(recipientID, recipientAddress, timeoutHandler,
+	                                  connectTimeoutMillis, tcpIdleTimeoutMillis, identifier);
+				}
+				
 				return future;
 			}
 			else
 			{
-				if (logger.isDebugEnabled())
-					logger.debug("no cached channel found, create one to " + recipientID + ", "
-							+ recipientAddress);
-				// create channel
-				DispatcherReply dispatcherReply = new DispatcherReply(timer, tcpIdleTimeoutMillis,
-						getDispatcherRequest(), channelGroup);
-				future = connectionCollector.channelTCP(timeoutHandler, dispatcherReply,
-						recipientAddress, connectTimeoutMillis, this);
-				if(future==null)
-				  return null;
-				future.getChannel().getCloseFuture().addListener(new ChannelFutureListener()
-				{
-					@Override
-					public void operationComplete(ChannelFuture future) throws Exception
-					{
-						synchronized (cache)
-						{
-							cache.remove(identifier);
-						}
-					}
-				});
-				if(logger.isDebugEnabled())
-					logger.debug("add to TCP cache (get) "+identifier);
-				cache.put(identifier, future);
-				return future;
+				return createNewChannel(recipientID, recipientAddress, timeoutHandler,
+                                  connectTimeoutMillis, tcpIdleTimeoutMillis, identifier);
 			}
 		}
 	}
+
+  private ChannelFuture createNewChannel(Number160 recipientID,
+      InetSocketAddress recipientAddress,
+      ChannelHandler timeoutHandler,
+      int connectTimeoutMillis,
+      int tcpIdleTimeoutMillis,
+      final Identifier identifier) throws InterruptedException {
+    ChannelFuture future;
+    if (logger.isDebugEnabled())
+    	logger.debug("no cached channel found, create one to " + recipientID + ", "
+    			+ recipientAddress);
+    // create channel
+    DispatcherReply dispatcherReply = new DispatcherReply(timer, tcpIdleTimeoutMillis,
+    		getDispatcherRequest(), channelGroup);
+    future = connectionCollector.channelTCP(timeoutHandler, dispatcherReply,
+    		recipientAddress, connectTimeoutMillis, this);
+    if(future==null)
+      return null;
+    future.getChannel().getCloseFuture().addListener(new ChannelFutureListener()
+    {
+    	@Override
+    	public void operationComplete(ChannelFuture future) throws Exception
+    	{
+    		synchronized (cache)
+    		{
+    			cache.remove(identifier);
+    		}
+    	}
+    });
+    if(logger.isDebugEnabled())
+    	logger.debug("add to TCP cache (get) "+identifier);
+    cache.put(identifier, future);
+    return future;
+  }
 
 	public boolean expireCache()
 	{

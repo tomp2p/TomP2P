@@ -298,10 +298,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	public byte[] getSocketAddress()
 	{
 		byte[] me;
-		if (address instanceof Inet4Address)
-			me = new byte[1 + 4 + 4];
-		else
-			me = new byte[1 + 4 + 16];
+		me = new byte[this.getSocketAddressSize()];
 		getSocketAddress(me, 0);
 		return me;
 	}
@@ -497,5 +494,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		return new PeerAddress(id, inetAddress, portTCP, portUDP, true, firewalledUDP,
 				firewalledTCP);
+	}
+
+	public int getSocketAddressSize() {
+		if (address instanceof Inet4Address)
+			return 1 + 4 + 4;
+		else
+			return 1 + 4 + 16;
 	}
 }

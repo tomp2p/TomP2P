@@ -287,7 +287,7 @@ final public class Number160 extends Number implements Comparable<Number160>
 	 * 
 	 * @param me
 	 */
-	public void toByteArray(byte[] me, int offset)
+	public int toByteArray(byte[] me, int offset)
 	{
 		if (offset + BYTE_ARRAY_SIZE > me.length)
 			throw new RuntimeException("array too small");
@@ -299,6 +299,7 @@ final public class Number160 extends Number implements Comparable<Number160>
 			me[idx + 2] = (byte) (val[i] >> 8);
 			me[idx + 3] = (byte) (val[i]);
 		}
+		return offset+BYTE_ARRAY_SIZE;
 	}
 
 	/**

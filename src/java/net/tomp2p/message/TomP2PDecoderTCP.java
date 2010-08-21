@@ -66,6 +66,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				throw new DecoderException("Messag too large :"
 						+ (message.getContentLength() + MessageCodec.HEADER_SIZE)
 						+ " allowed are: " + maxMessageSize);
+			if(logger.isDebugEnabled())
+				logger.debug("got header in decoder "+message);
 		}
 		else if (message != null)
 			buffer.readerIndex(MessageCodec.HEADER_SIZE);
@@ -112,6 +114,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 		message = null;
 		// set finished time at the end since the sender starts its timer after
 		// sending the last packet
+		if(logger.isDebugEnabled())
+			logger.debug("cleanupAndReturnMessage "+tmp);
 		tmp.setTCP();
 		tmp.finished();
 		return tmp;

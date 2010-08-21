@@ -91,6 +91,8 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			return;
 		}
 		final Message message = (Message) e.getMessage();
+		if (logger.isDebugEnabled())
+			logger.debug("received reply " + message);
 		// check if its a request or reply
 		if (message.isRequest())
 		{
@@ -192,8 +194,9 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 					long requestTimeout = entry.getValue().getFutureResponse().getReplyTimeout();
 					if (now > requestTimeout)
 					{
-						entry.getValue().getFutureResponse().setFailed("Timeout!");
+						entry.getValue().getFutureResponse().setFailed("Timeout by "+(now-requestTimeout)+ "for "+entry.getValue().getFutureResponse().getRequest());
 						iterator.remove();
+						
 					}
 					else
 					{

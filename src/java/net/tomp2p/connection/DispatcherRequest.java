@@ -201,7 +201,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 		}
 		final Message message = (Message) e.getMessage();
 		if (logger.isDebugEnabled())
-			logger.debug("received " + message);
+			logger.debug("received request " + message);
 		// We don't want to receive messages from other p2p networks
 		if (message.getVersion() != p2pID)
 		{

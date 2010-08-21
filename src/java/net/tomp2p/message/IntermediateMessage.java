@@ -13,6 +13,11 @@ public class IntermediateMessage
 		this.buffers=buffers;
 		this.message = message;
 	}
+	
+	public Message getMessage()
+	{
+		return message;
+	}
 
 	public List<ChannelBuffer> getBuffers()
 	{

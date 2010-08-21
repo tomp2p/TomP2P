@@ -22,10 +22,13 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.handler.codec.oneone.OneToOneEncoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Sharable
 public class TomP2PEncoderStage2 extends OneToOneEncoder
 {
+	final private static Logger logger = LoggerFactory.getLogger(TomP2PEncoderStage2.class);
 	@Override
 	protected Object encode(final ChannelHandlerContext ctx, final Channel channel, final Object msg)
 			throws Exception
@@ -35,6 +38,8 @@ public class TomP2PEncoderStage2 extends OneToOneEncoder
 		final IntermediateMessage message = (IntermediateMessage) msg;
 		//we created the buffer ourselfs, so we can pick the first one
 		ByteOrder order=message.getBuffers().get(0).order();
+		if(logger.isDebugEnabled())
+			logger.debug("sending message over the wire "+message.getMessage());
 		return new CompositeChannelBuffer(order, message.getBuffers());
 	}
 }

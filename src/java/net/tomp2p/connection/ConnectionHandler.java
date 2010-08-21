@@ -51,7 +51,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.handler.timeout.IdleStateHandler;
 import org.jboss.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.jboss.netty.util.HashedWheelTimer;
@@ -98,7 +97,8 @@ public class ConnectionHandler
 			}
 		});
 	}
-	final private ExecutionHandler executionHandler;
+	final private ExecutionHandler executionHandler1;
+	final private ExecutionHandler executionHandler2;
 	//
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
@@ -114,9 +114,11 @@ public class ConnectionHandler
 	{
 		this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
-		executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
-				configuration.getMaxThreads(), configuration.getMaxMemoryPerChannel(),
-				configuration.getMaxMemory()));
+		//executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
+		//		configuration.getMaxThreads(), configuration.getMaxMemoryPerChannel(),
+		//		configuration.getMaxMemory()));
+		executionHandler1 = new ExecutionHandler(Executors.newCachedThreadPool());
+		executionHandler2 = new ExecutionHandler(Executors.newCachedThreadPool());
 		//
 		udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 		tcpServerChannelFactory = new NioServerSocketChannelFactory(
@@ -150,7 +152,7 @@ public class ConnectionHandler
 		logger.info("Visible address to other peers: " + self);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory,
-				udpChannelFactory, configuration, executionHandler, globalTrafficShapingHandler);
+				udpChannelFactory, configuration, executionHandler1, globalTrafficShapingHandler);
 		// Dispatcher setup start
 		this.channelChache = new TCPChannelChache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration
@@ -199,7 +201,8 @@ public class ConnectionHandler
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);
-		this.executionHandler = parent.executionHandler;
+		this.executionHandler1 = parent.executionHandler1;
+		this.executionHandler2 = parent.executionHandler2;
 		this.messageLoggerFilter = parent.messageLoggerFilter;
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
@@ -236,7 +239,7 @@ public class ConnectionHandler
 				if (messageLoggerFilter != null)
 					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
 				p.addLast("performance", performanceFilter);
-				p.addLast("executor", executionHandler);
+				p.addLast("executor", executionHandler2);
 				p.addLast("handler", dispatcher);
 				return p;
 			}
@@ -279,8 +282,7 @@ public class ConnectionHandler
 				p.addLast("timeout", timeoutHandler);
 				p.addLast("encoder2", encoder2);
 				if (messageLoggerFilter != null)
-					p
-							.addLast("loggerDownstream", messageLoggerFilter
+					p.addLast("loggerDownstream", messageLoggerFilter
 									.getChannelDownstreamHandler());
 				p.addLast("encoder1", encoder1);
 				p.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
@@ -289,7 +291,7 @@ public class ConnectionHandler
 				p.addLast("performance", performanceFilter);
 				if (globalTrafficShapingHandler.hasLimit())
 					p.addLast("trafficShaping", globalTrafficShapingHandler);
-				p.addLast("executor", executionHandler);
+				p.addLast("executor", executionHandler2);
 				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration
 						.getIdleTCPMillis(), dispatcher, getConnectionBean().getChannelGroup());
 				p.addLast("reply", dispatcherReply);
@@ -347,7 +349,8 @@ public class ConnectionHandler
 			// close client
 			connectionBean.getSender().shutdown();
 			// release resources
-			executionHandler.releaseExternalResources();
+			executionHandler1.releaseExternalResources();
+			executionHandler2.releaseExternalResources();
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();

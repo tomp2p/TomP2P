@@ -17,7 +17,6 @@ package net.tomp2p.connection;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -99,20 +98,16 @@ public class ConnectionCollector
 			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache)
 			throws ChannelException, InterruptedException
 	{
-		// semaphoreTCPMessages.acquireUninterruptibly();
-	  synchronized (channelsTCP)
+	  synchronized (semaphoreTCPMessages)
           {
 		boolean acquired = false;
 		long start=System.currentTimeMillis();
 		long waitTime=0;
 		while (!acquired && waitTime<connectTimeoutMillis)
 		{
-			acquired = semaphoreTCPMessages.tryAcquire(100, TimeUnit.MILLISECONDS);
+			acquired = semaphoreTCPMessages.tryAcquire();
 			if (!acquired)
-			{
-				channelChache.expireCache();
-				
-			}    
+			  channelChache.expireCache(); 
 			waitTime=System.currentTimeMillis()-start;
 		}
 		if (!acquired)

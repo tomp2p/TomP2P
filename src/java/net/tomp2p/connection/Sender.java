@@ -150,7 +150,7 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendTCP0(channelName, remoteNode, replyHandler, message);
+					sendTCP0(channelName, replyHandler, message);
 				}
 			});
 		}
@@ -161,7 +161,7 @@ public class Sender
 			if (waitForConnection(replyHandler.getFutureResponse()))
 			{
 				if(logger.isDebugEnabled()) logger.debug("send TCP " + Thread.currentThread().getName());
-				sendTCP0(channelName, remoteNode, replyHandler, message);
+				sendTCP0(channelName, replyHandler, message);
 			}
 		}
 	}
@@ -227,17 +227,19 @@ public class Sender
 		return true;
 	}
 
-	private void sendTCP0(String channelName, final PeerAddress remoteNode,
-			final RequestHandlerTCP replyHandler, final Message message)
+	private void sendTCP0(String channelName, final RequestHandlerTCP replyHandler, final Message message)
 	{
 		final FutureResponse futureResponse = replyHandler.getFutureResponse();
 		if (futureResponse.isCompleted())
 			return;
 		try
 		{
-			IdleStateHandler timeoutHandler = new IdleStateHandler(timer, 0, 0, configuration
+		  
+		  final PeerAddress remoteNode=message.getRecipient();
+		  final PeerAddress localNode=message.getSender();
+		  IdleStateHandler timeoutHandler = new IdleStateHandler(timer, 0, 0, configuration
 					.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
-			final ChannelFuture channelFuture = channelChache.getChannel(remoteNode.getID(),
+			final ChannelFuture channelFuture = channelChache.getChannel(remoteNode.getID(),localNode.getID(),
 					remoteNode.createSocketTCP(), channelName, timeoutHandler, futureResponse,
 					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis());
 			if(channelFuture==null) {

@@ -277,7 +277,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 		}
 		else
 		{
-			channelChache.addChannel(response.getRecipient().getID(), response.getRecipient()
+			channelChache.addChannel(response.getSender().getID(),response.getRecipient().getID(), response.getRecipient()
 					.getInetAddress(), ctx.getChannel());
 			if (logger.isDebugEnabled())
 				logger.debug("reply TCP message " + response);

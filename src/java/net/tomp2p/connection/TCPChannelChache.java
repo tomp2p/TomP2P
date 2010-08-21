@@ -51,9 +51,9 @@ public class TCPChannelChache
 		this.channelGroup = channelGroup;
 	}
 
-	public void addChannel(Number160 peerId, InetAddress inetAddress, Channel channel)
+	public void addChannel(Number160 recipientID, Number160 senderID, InetAddress inetAddress, Channel channel)
 	{
-		Identifier identifier = new Identifier(peerId, inetAddress, DEFAULT_CHANNEL_NAME);
+		Identifier identifier = new Identifier(recipientID, senderID, inetAddress, DEFAULT_CHANNEL_NAME);
 		ChannelFuture future = new DefaultChannelFuture(channel, false);
 		future.setSuccess();
 		synchronized (cache)
@@ -67,19 +67,19 @@ public class TCPChannelChache
 		}
 	}
 
-	public ChannelFuture getChannel(Number160 recipientID, InetSocketAddress recipientAddress,
+	public ChannelFuture getChannel(Number160 recipientID, Number160 senderID, InetSocketAddress recipientAddress,
 			ChannelHandler timeoutHandler, FutureResponse futureResponse, int connectTimeoutMillis,
 			int tcpIdleTimeoutMillis) throws InterruptedException
 	{
-		return getChannel(recipientID, recipientAddress, DEFAULT_CHANNEL_NAME, timeoutHandler,
+		return getChannel(recipientID, senderID, recipientAddress, DEFAULT_CHANNEL_NAME, timeoutHandler,
 				futureResponse, connectTimeoutMillis, tcpIdleTimeoutMillis);
 	}
 
-	public ChannelFuture getChannel(Number160 recipientID, InetSocketAddress recipientAddress,
+	public ChannelFuture getChannel(Number160 recipientID, Number160 senderID, InetSocketAddress recipientAddress,
 			String channelName, ChannelHandler timeoutHandler, FutureResponse futureResponse,
 			int connectTimeoutMillis, int tcpIdleTimeoutMillis) throws InterruptedException
 	{
-		final Identifier identifier = new Identifier(recipientID, recipientAddress.getAddress(),
+		final Identifier identifier = new Identifier(recipientID, senderID, recipientAddress.getAddress(),
 				channelName);
 		synchronized (cache)
 		{
@@ -185,21 +185,25 @@ public class TCPChannelChache
 	}
 	private static class Identifier
 	{
-		final private Number160 peerId;
+		final private Number160 recipientId;
+		final private Number160 senderId;
 		final private InetAddress inetAddress;
 		final private String channelName;
+		final private Number160 both;
 
-		public Identifier(Number160 peerId, InetAddress inetAddress, String channelName)
+		public Identifier(Number160 recipientId, Number160 senderId, InetAddress inetAddress, String channelName)
 		{
-			this.peerId = peerId;
+			this.recipientId = recipientId;
+			this.senderId=senderId;
 			this.inetAddress = inetAddress;
 			this.channelName = channelName;
+			this.both=senderId.xor(recipientId);
 		}
 
 		@Override
 		public int hashCode()
 		{
-			return peerId.hashCode() ^ inetAddress.hashCode() ^ channelName.hashCode();
+			return both.hashCode() ^ inetAddress.hashCode() ^ channelName.hashCode();
 		}
 
 		@Override
@@ -208,15 +212,15 @@ public class TCPChannelChache
 			if (!(obj instanceof Identifier))
 				return false;
 			Identifier i = (Identifier) obj;
-			return i.peerId.equals(peerId) && i.inetAddress.equals(inetAddress)
+			return i.both.equals(both) && i.inetAddress.equals(inetAddress)
 					&& i.channelName.equals(channelName);
 		}
 
 		@Override
 		public String toString()
 		{
-			StringBuilder sb = new StringBuilder("peerID:");
-			sb.append(peerId).append(",inet:").append(inetAddress).append(",name:").append(
+			StringBuilder sb = new StringBuilder("recipientID:");
+			sb.append(recipientId).append(",senderID:").append(senderId).append(",inet:").append(inetAddress).append(",name:").append(
 					channelName);
 			return sb.toString();
 		}

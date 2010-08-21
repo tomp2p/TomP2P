@@ -404,4 +404,10 @@ public class ConnectionHandler
 	{
 		internetGatewayDevicesUDP.put(igd, new InetSocketAddress(newAddress, portUDP));
 	}
+
+	public boolean isListening() 
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

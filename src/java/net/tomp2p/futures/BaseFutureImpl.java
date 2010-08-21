@@ -241,7 +241,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 		return this;
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void callOperationComplete(final BaseFutureListener listener)
 	{
 		try

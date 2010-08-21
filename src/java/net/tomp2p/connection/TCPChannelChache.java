@@ -133,7 +133,9 @@ public class TCPChannelChache
     	{
     		synchronized (cache)
     		{
-    			cache.remove(identifier);
+    		  if(logger.isDebugEnabled())
+    		      logger.debug("connection was closed, so remove "+future.getChannel());
+    		  cache.remove(identifier);
     		}
     	}
     });

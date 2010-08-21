@@ -241,6 +241,10 @@ public class Sender
 			final ChannelFuture channelFuture = channelChache.getChannel(remoteNode.getID(),
 					remoteNode.createSocketTCP(), channelName, timeoutHandler, futureResponse,
 					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis());
+			if(channelFuture==null) {
+			  futureResponse.setFailed("could not get channel in time");
+			  return;
+			}
 			DispatcherReply dispatcherReply = (DispatcherReply) channelFuture.getChannel()
 					.getPipeline().get("reply");
 			dispatcherReply.add(message, replyHandler);

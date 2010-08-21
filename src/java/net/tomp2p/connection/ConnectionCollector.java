@@ -100,6 +100,8 @@ public class ConnectionCollector
 			throws ChannelException, InterruptedException
 	{
 		// semaphoreTCPMessages.acquireUninterruptibly();
+	  synchronized (channelsTCP)
+          {
 		boolean acquired = false;
 		long start=System.currentTimeMillis();
 		long waitTime=0;
@@ -107,9 +109,15 @@ public class ConnectionCollector
 		{
 			acquired = semaphoreTCPMessages.tryAcquire(100, TimeUnit.MILLISECONDS);
 			if (!acquired)
+			{
 				channelChache.expireCache();
+				
+			}    
 			waitTime=System.currentTimeMillis()-start;
 		}
+		if (!acquired)
+		  return null;
+          }
 		// System.err.println("HERE1:"
 		// +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;

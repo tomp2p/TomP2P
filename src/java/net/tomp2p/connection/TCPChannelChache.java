@@ -100,6 +100,8 @@ public class TCPChannelChache
 						getDispatcherRequest(), channelGroup);
 				future = connectionCollector.channelTCP(timeoutHandler, dispatcherReply,
 						recipientAddress, connectTimeoutMillis, this);
+				if(future==null)
+				  return null;
 				future.getChannel().getCloseFuture().addListener(new ChannelFutureListener()
 				{
 					@Override
@@ -119,7 +121,7 @@ public class TCPChannelChache
 		}
 	}
 
-	public void expireCache()
+	public boolean expireCache()
 	{
 		synchronized (cache)
 		{
@@ -131,11 +133,16 @@ public class TCPChannelChache
 				// TODO: search for the longest idle one...
 				if (!dispatcherReply.isWaiting())
 				{
-					channel.close();
-					return;
+				    if(logger.isDebugEnabled())
+		                          logger.debug("expire channel");	
+				      channel.close();
+				return true;
 				}
 			}
+			if(logger.isDebugEnabled())
+			  logger.debug("could not expire any channel");
 		}
+		return false;
 	}
 
 	/*

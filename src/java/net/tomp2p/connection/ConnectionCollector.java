@@ -101,11 +101,14 @@ public class ConnectionCollector
 	{
 		// semaphoreTCPMessages.acquireUninterruptibly();
 		boolean acquired = false;
-		while (!acquired)
+		long start=System.currentTimeMillis();
+		long waitTime=0;
+		while (!acquired && waitTime<connectTimeoutMillis)
 		{
-			acquired = semaphoreTCPMessages.tryAcquire(200, TimeUnit.MILLISECONDS);
+			acquired = semaphoreTCPMessages.tryAcquire(100, TimeUnit.MILLISECONDS);
 			if (!acquired)
 				channelChache.expireCache();
+			waitTime=System.currentTimeMillis()-start;
 		}
 		// System.err.println("HERE1:"
 		// +semaphoreTCPMessages.availablePermits());

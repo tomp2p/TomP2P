@@ -185,7 +185,7 @@ public class TestPing
 			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress());
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
-			Assert.assertEquals("complete=true/Timeout! type=FAILED",fr.getFailedReason());
+			Assert.assertEquals(fr.getFailedReason().indexOf("complete=true/Timeout"),0);
 			System.err.println("done");
 		}
 		finally

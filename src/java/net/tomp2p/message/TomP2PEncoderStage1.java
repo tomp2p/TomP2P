@@ -32,7 +32,7 @@ public class TomP2PEncoderStage1 extends OneToOneEncoder
 	protected Object encode(final ChannelHandlerContext ctx, final Channel channel, final Object msg)
 			throws Exception
 	{
-		if (!(msg instanceof Message))
+		if (!(msg instanceof Message) || !channel.isBound())
 			return msg;
 		final Message message = (Message) msg;
 		final List<ChannelBuffer> buffers = new ArrayList<ChannelBuffer>();

@@ -61,9 +61,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	// if deserialized from a byte array using the constructor, then we need to
 	// report how many data we processed.
 	final private int offset;
-	// 5 is one byte for type and two time two shorts for the ports
-	final public static int SIZE_IPv6 = 16 + 5 + Number160.BYTE_ARRAY_SIZE;
-	final public static int SIZE_IPv4 = 4 + 5 + Number160.BYTE_ARRAY_SIZE;
+	// one byte for type and two time two shorts for the ports, plus IP
+	final public static int SIZE_IP_SOCKv6 = 1 + 4 + 16;
+	final public static int SIZE_IP_SOCKv4 = 1 + 4 + 4;
+	final public static int SIZE_IPv6 = SIZE_IP_SOCKv6 + Number160.BYTE_ARRAY_SIZE;
+	final public static int SIZE_IPv4 = SIZE_IP_SOCKv4 + Number160.BYTE_ARRAY_SIZE;
 
 	/**
 	 * Creates a new peeraddress, where the byte array has to be in the rigth
@@ -89,7 +91,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	 * @throws UnknownHostException Using InetXAddress.getByAddress creates this
 	 *         exception.
 	 */
-	
 	public PeerAddress(final byte[] me, int offset) throws UnknownHostException
 	{
 		int types = me[offset] & 0xff;
@@ -102,13 +103,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
 		System.arraycopy(me, offset, tmp, 0, Number160.BYTE_ARRAY_SIZE);
 		this.id = new Number160(tmp);
-		offset+=Number160.BYTE_ARRAY_SIZE;
+		offset += Number160.BYTE_ARRAY_SIZE;
 		//
-		this.portTCP = ((me[offset] & 0xff) << 8)
-				+ (me[offset  + 1] & 0xff);
-		this.portUDP = ((me[offset + 2] & 0xff) << 8)
-				+ (me[offset + 3] & 0xff);
-		offset+=4;
+		this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
+		this.portUDP = ((me[offset + 2] & 0xff) << 8) + (me[offset + 3] & 0xff);
+		offset += 4;
 		//
 		if (!isIPv6())
 		{
@@ -129,10 +128,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.offset = offset;
 		this.hashCode = id.hashCode();
 	}
-	
-	public PeerAddress(byte[] peerAddress, byte[] socketAddress) throws UnknownHostException 
+
+	public PeerAddress(byte[] peerAddress, byte[] socketAddress) throws UnknownHostException
 	{
-		
 		int offsetPeerAddress = 0, offsetSocketAddress = 0;
 		int types = socketAddress[offsetSocketAddress] & 0xff;
 		this.net6 = (types & NET6) > 0;
@@ -144,13 +142,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
 		System.arraycopy(peerAddress, offsetPeerAddress, tmp, 0, Number160.BYTE_ARRAY_SIZE);
 		this.id = new Number160(tmp);
-		offsetPeerAddress+=Number160.BYTE_ARRAY_SIZE;
+		offsetPeerAddress += Number160.BYTE_ARRAY_SIZE;
 		//
 		this.portTCP = ((socketAddress[offsetSocketAddress] & 0xff) << 8)
-				+ (socketAddress[offsetSocketAddress  + 1] & 0xff);
+				+ (socketAddress[offsetSocketAddress + 1] & 0xff);
 		this.portUDP = ((socketAddress[offsetSocketAddress + 2] & 0xff) << 8)
 				+ (socketAddress[offsetSocketAddress + 3] & 0xff);
-		offsetSocketAddress+=4;
+		offsetSocketAddress += 4;
 		//
 		if (!isIPv6())
 		{
@@ -228,8 +226,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 				isFirewalledTCP(optionType));
 	}
 
-	
-
 	/**
 	 * When deserializeg, we need to know how much we deserialized from the
 	 * constructor call.
@@ -258,7 +254,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	}
 
 	/**
-	 * Serializes to an existing array. Please note, that a serialized peeraddress can never start with 0 for the first byte
+	 * Serializes to an existing array. Please note, that a serialized
+	 * peeraddress can never start with 0 for the first byte
 	 * 
 	 * @param me The array where the result should be stored
 	 * @param offset The offset where to start to save the result in the byte
@@ -294,16 +291,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		return offset + delta;
 	}
 
-
 	public byte[] getSocketAddress()
 	{
-		byte[] me;
-		me = new byte[this.getSocketAddressSize()];
+		byte[] me = new byte[getSocketAddressSize()];
 		getSocketAddress(me, 0);
 		return me;
 	}
-	
-	public int getSocketAddress(byte[] me, int offset) {
+
+	public int getSocketAddress(byte[] me, int offset)
+	{
 		// save the type
 		me[offset] = createType();
 		int delta = 1;
@@ -403,12 +399,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		return ((type & 0xff) & FIREWALL_UDP) > 0;
 	}
-	
+
 	public static int expectedLength(int type)
 	{
-		if(isNet6(type))
+		if (isNet6(type))
 			return 1 + 20 + 4 + 16;
-		else return 1 + 20 + 4 + 4;
+		else
+			return 1 + 20 + 4 + 4;
 	}
 
 	@Override
@@ -496,10 +493,15 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 				firewalledTCP);
 	}
 
-	public int getSocketAddressSize() {
+	public int getSocketAddressSize()
+	{
 		if (address instanceof Inet4Address)
-			return 1 + 4 + 4;
+		{
+			return SIZE_IP_SOCKv4;
+		}
 		else
-			return 1 + 4 + 16;
+		{
+			return SIZE_IP_SOCKv6;
+		}
 	}
 }

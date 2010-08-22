@@ -56,7 +56,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			final ChannelBuffer buffer) throws Exception
 	{
 		buffer.markReaderIndex();
-		//System.err.println("got decoder"+buffer.readableBytes()+" "+channel.isOpen());
+		// System.err.println("got decoder"+buffer.readableBytes()+" "+channel.isOpen());
 		if (message == null && buffer.readableBytes() >= MessageCodec.HEADER_SIZE)
 		{
 			final SocketAddress sa = channel.getRemoteAddress();
@@ -66,8 +66,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				throw new DecoderException("Messag too large :"
 						+ (message.getContentLength() + MessageCodec.HEADER_SIZE)
 						+ " allowed are: " + maxMessageSize);
-			if(logger.isDebugEnabled())
-				logger.debug("got header in decoder "+message);
+			if (logger.isDebugEnabled())
+				logger.debug("got header in decoder " + message);
 		}
 		else if (message != null)
 			buffer.readerIndex(MessageCodec.HEADER_SIZE);
@@ -93,9 +93,15 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	{
 		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
-		if(e.getCause().getMessage()!=null && !e.getCause().getMessage().equals("Connection reset by peer"))
+		if (e.getCause().getMessage() == null)
 		{
 			ctx.sendUpstream(e);
+			return;
+		}
+		if (e.getCause().getMessage().equals("Connection reset by peer"))
+		{
+			ctx.sendUpstream(e);
+			return;
 		}
 	}
 
@@ -114,8 +120,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 		message = null;
 		// set finished time at the end since the sender starts its timer after
 		// sending the last packet
-		if(logger.isDebugEnabled())
-			logger.debug("cleanupAndReturnMessage "+tmp);
+		if (logger.isDebugEnabled())
+			logger.debug("cleanupAndReturnMessage " + tmp);
 		tmp.setTCP();
 		tmp.finished();
 		return tmp;

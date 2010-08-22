@@ -39,7 +39,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.TCPChannelChache;
+import net.tomp2p.connection.TCPChannelCache;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -499,7 +499,7 @@ public class Peer
 	// custom messages
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
 	{
-		return send(TCPChannelChache.DEFAULT_CHANNEL_NAME, remotePeer, requestBuffer);
+		return send(TCPChannelCache.DEFAULT_CHANNEL_NAME, remotePeer, requestBuffer);
 	}
 
 	public FutureData send(final String channelName, final PeerAddress remotePeer,
@@ -510,7 +510,7 @@ public class Peer
 
 	public FutureData send(final PeerAddress remotePeer, final Object object) throws IOException
 	{
-		return send(TCPChannelChache.DEFAULT_CHANNEL_NAME, remotePeer, object);
+		return send(TCPChannelCache.DEFAULT_CHANNEL_NAME, remotePeer, object);
 	}
 
 	public FutureData send(final String channelName, final PeerAddress remotePeer,

@@ -47,11 +47,11 @@ public class Sender
 	final private ConnectionConfiguration configuration;
 	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
 	final private Thread senderThread;
-	final private TCPChannelChache channelChache;
+	final private TCPChannelCache channelChache;
 	volatile private boolean running = true;
 
 	public Sender(final ConnectionCollector connectionCollector,
-			final ConnectionConfiguration configuration, TCPChannelChache channelChache, Timer timer)
+			final ConnectionConfiguration configuration, TCPChannelCache channelChache, Timer timer)
 	{
 		this.channelChache = channelChache;
 		this.connectionCollector = connectionCollector;
@@ -92,20 +92,9 @@ public class Sender
 		this.senderThread.start();
 	}
 
-	// TODO: fire and forget does not work!!
-	public void fireAndForgetUDP(final Message message)
-	{
-		sendUDP(message.getRecipient(), null, message, false);
-	}
-
-	public void fireAndForgetTCP(final Message message)
-	{
-		sendTCP(TCPChannelChache.DEFAULT_CHANNEL_NAME, message.getRecipient(), null, message);
-	}
-
 	public void sendTCP(final Message message, final RequestHandlerTCP handler)
 	{
-		sendTCP(TCPChannelChache.DEFAULT_CHANNEL_NAME, message, handler);
+		sendTCP(TCPChannelCache.DEFAULT_CHANNEL_NAME, message, handler);
 	}
 
 	public void sendTCP(final String channelName, final Message message,
@@ -137,7 +126,7 @@ public class Sender
 	}
 
 	private void sendTCP(final String channelName, final PeerAddress remoteNode,
-			final RequestHandlerTCP replyHandler, final Message message)
+			final RequestHandlerTCP requestHandler, final Message message)
 	{
 		// do not block if we came from the netty thread
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -150,7 +139,7 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendTCP0(channelName, replyHandler, message);
+					sendTCP0(channelName, requestHandler, message);
 				}
 			});
 		}
@@ -158,15 +147,18 @@ public class Sender
 		{
 			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
-			if (waitForConnection(replyHandler.getFutureResponse()))
+			FutureResponse futureResponse = requestHandler == null ? null : requestHandler
+					.getFutureResponse();
+			if (waitForConnection(futureResponse))
 			{
-				if(logger.isDebugEnabled()) logger.debug("send TCP " + Thread.currentThread().getName());
-				sendTCP0(channelName, replyHandler, message);
+				if (logger.isDebugEnabled())
+					logger.debug("send TCP " + Thread.currentThread().getName());
+				sendTCP0(channelName, requestHandler, message);
 			}
 		}
 	}
 
-	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP replyHandler,
+	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
 			final Message message, final boolean broadcast)
 	{
 		// do not block if we came from the netty thread
@@ -180,18 +172,21 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendUDP0(remoteNode, replyHandler, message, broadcast);
+					sendUDP0(remoteNode, requestHandler, message, broadcast);
 				}
 			});
 		}
 		else
 		{
 			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
+			FutureResponse futureResponse = requestHandler == null ? null : requestHandler
+					.getFutureResponse();
 			// this may block if its from the user directly
-			if (waitForConnection(replyHandler.getFutureResponse()))
+			if (waitForConnection(futureResponse))
 			{
-				if(logger.isDebugEnabled()) logger.debug("send UDP " + Thread.currentThread().getName());
-				sendUDP0(remoteNode, replyHandler, message, broadcast);
+				if (logger.isDebugEnabled())
+					logger.debug("send UDP " + Thread.currentThread().getName());
+				sendUDP0(remoteNode, requestHandler, message, broadcast);
 			}
 		}
 	}
@@ -227,28 +222,25 @@ public class Sender
 		return true;
 	}
 
-	private void sendTCP0(String channelName, final RequestHandlerTCP replyHandler, final Message message)
+	private void sendTCP0(String channelName, final RequestHandlerTCP requestHandler,
+			final Message message)
 	{
-		final FutureResponse futureResponse = replyHandler.getFutureResponse();
+		final FutureResponse futureResponse = requestHandler.getFutureResponse();
 		if (futureResponse.isCompleted())
 			return;
 		try
 		{
-		  
-		  final PeerAddress remoteNode=message.getRecipient();
-		  final PeerAddress localNode=message.getSender();
-		  IdleStateHandler timeoutHandler = new IdleStateHandler(timer, 0, 0, configuration
+			IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration
 					.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
-			final ChannelFuture channelFuture = channelChache.getChannel(remoteNode.getID(),localNode.getID(),
-					remoteNode.createSocketTCP(), channelName, timeoutHandler, futureResponse,
-					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis());
-			if(channelFuture==null) {
-			  futureResponse.setFailed("could not get channel in time");
-			  return;
+			final ChannelFuture channelFuture = channelChache.getChannel(channelName,
+					timeoutHandler, futureResponse, configuration.getConnectTimeoutMillis(),
+					configuration.getIdleTCPMillis(), message, requestHandler);
+			if (channelFuture == null)
+			{
+				futureResponse.setFailed("could not get channel in "
+						+ configuration.getConnectTimeoutMillis() + "ms");
+				return;
 			}
-			DispatcherReply dispatcherReply = (DispatcherReply) channelFuture.getChannel()
-					.getPipeline().get("reply");
-			dispatcherReply.add(message, replyHandler);
 			final Cancellable cancel1 = new Cancellable()
 			{
 				@Override
@@ -269,7 +261,7 @@ public class Sender
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
 						final ChannelFuture writeFuture = future.getChannel().write(message);
-						afterSend(writeFuture, futureResponse, replyHandler, true);
+						afterSend(writeFuture, futureResponse, true, message);
 					}
 					else
 					{
@@ -281,7 +273,8 @@ public class Sender
 							logger.warn("Failed to connect channel " + connectionCollector + "/"
 									+ future.getChannel().isBound() + "/"
 									+ future.getChannel().isConnected() + "/"
-									+ future.getChannel().isOpen() + " / " + future.isCancelled());
+									+ future.getChannel().isOpen() + " / " + future.isCancelled()
+									+ " /ch:" + channelFuture.getChannel());
 							if (future.getCause() != null)
 								future.getCause().printStackTrace();
 							futureResponse.setFailed("Connect failed " + future);
@@ -295,7 +288,7 @@ public class Sender
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			if (logger.isWarnEnabled())
 				logger.warn(ce.toString());
-			if(logger.isDebugEnabled())
+			if (logger.isDebugEnabled())
 				ce.printStackTrace();
 			return;
 		}
@@ -319,7 +312,7 @@ public class Sender
 			final Channel channel = connectionCollector.channelUDP(replyTimeoutHandler,
 					replyHandler, broadcast);
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
-			afterSend(writeFuture, futureResponse, replyHandler, false);
+			afterSend(writeFuture, futureResponse, false, message);
 		}
 		catch (Exception ce)
 		{
@@ -332,7 +325,7 @@ public class Sender
 	}
 
 	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse,
-			final Object handler, boolean tcp)
+			final boolean tcp, final Message message)
 	{
 		final Cancellable cancel2 = new Cancellable()
 		{
@@ -363,11 +356,17 @@ public class Sender
 				}
 				else
 				{
-					futureResponse.setReplyTimeout(System.currentTimeMillis()
-							+ configuration.getTimeoutTCPMillis());
+					if (tcp && !message.isFireAndForget())
+					{
+						futureResponse.setReplyTimeout(System.currentTimeMillis()
+								+ configuration.getTimeoutTCPMillis());
+					}
 				}
-				if (handler == null)
+				if (message.isFireAndForget())
 					futureResponse.setResponse(null);
+				DispatcherReply dispatcherReply = (DispatcherReply) writeFuture.getChannel()
+						.getPipeline().get("reply");
+				dispatcherReply.setUsed(false);
 			}
 		});
 	}

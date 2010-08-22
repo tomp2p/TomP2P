@@ -60,7 +60,7 @@ public class ConnectionCollector
 	final private static ChannelHandler encoder1 = new TomP2PEncoderStage1();
 	final private static ChannelHandler encoder2 = new TomP2PEncoderStage2();
 	final private Semaphore semaphoreUDPMessages;
-	final private Semaphore semaphoreTCPMessages;
+	final private MySemaphoreTCP semaphoreTCPMessages;
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionCollector.class);
 	final private int maxMessageSize;
 	final private ChannelFactory tcpClientChannelFactory;
@@ -76,7 +76,7 @@ public class ConnectionCollector
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
 		this.semaphoreUDPMessages = new Semaphore(configuration.getMaxOutgoingUDP(), true);
-		this.semaphoreTCPMessages = new Semaphore(configuration.getMaxOutgoingTCP(), true);
+		this.semaphoreTCPMessages = new MySemaphoreTCP(configuration.getMaxOutgoingTCP());
 		this.maxMessageSize = configuration.getMaxMessageSize();
 		this.executionHandlerSender = executionHandlerSender;
 		this.globalTrafficShapingHandler = globalTrafficShapingHandler;
@@ -95,26 +95,29 @@ public class ConnectionCollector
 	 * @throws InterruptedException
 	 */
 	public ChannelFuture channelTCP(ChannelHandler timeoutHandler, ChannelHandler dispatcherReply,
-			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelChache channelChache)
+			SocketAddress remoteAddress, int connectTimeoutMillis, TCPChannelCache channelChache)
 			throws ChannelException, InterruptedException
 	{
-	  //do this one at a time
-	  synchronized (semaphoreTCPMessages)
-          {
+		// do this one at a time
 		boolean acquired = false;
-		long start=System.currentTimeMillis();
-		long waitTime=0;
-		while (!acquired && waitTime<connectTimeoutMillis)
+		long start = System.currentTimeMillis();
+		long waitTime = 0;
+		synchronized (semaphoreTCPMessages)
 		{
-			acquired = semaphoreTCPMessages.tryAcquire();
+			while (!acquired && waitTime < connectTimeoutMillis)
+			{
+				acquired = semaphoreTCPMessages.tryAcquire();
+				if (!acquired)
+				{
+					channelChache.expireCache();
+					waitTime = System.currentTimeMillis() - start;
+					//waitTime=0;
+					semaphoreTCPMessages.wait(connectTimeoutMillis / 2);
+				}
+			}
 			if (!acquired)
-			  channelChache.expireCache(); 
-			waitTime=System.currentTimeMillis()-start;
-			semaphoreTCPMessages.wait(connectTimeoutMillis/2);
+				return null;
 		}
-		if (!acquired)
-		  return null;
-          }
 		// System.err.println("HERE1:"
 		// +semaphoreTCPMessages.availablePermits());
 		int failCounter = 0;
@@ -126,10 +129,11 @@ public class ConnectionCollector
 				if (disposeTCP)
 				{
 					logger.warn("tpc disposed, not returning a channel");
-					 synchronized (semaphoreTCPMessages) {
-					     semaphoreTCPMessages.release();
-					      semaphoreTCPMessages.notifyAll();
-                                         }
+					synchronized (semaphoreTCPMessages)
+					{
+						semaphoreTCPMessages.release();
+						semaphoreTCPMessages.notifyAll();
+					}
 					throw new ChannelException("tpc disposed, not returning a channel");
 				}
 				try
@@ -146,11 +150,11 @@ public class ConnectionCollector
 							// no need to remove from channel group, as this is
 							// already done in channel group,
 							// channelsTCP.remove(channelFuture.getChannel());
-						  synchronized (semaphoreTCPMessages) {
-						      semaphoreTCPMessages.release();
-                                                      semaphoreTCPMessages.notifyAll();
-                                                  }
-							
+							synchronized (semaphoreTCPMessages)
+							{
+								semaphoreTCPMessages.release();
+								semaphoreTCPMessages.notifyAll();
+							}
 						}
 					});
 					return channelFuture;
@@ -166,10 +170,11 @@ public class ConnectionCollector
 					{
 						logger.error("tried 5 times " + ce.toString());
 						ce.printStackTrace();
-						 synchronized (semaphoreTCPMessages) {
-						     semaphoreTCPMessages.release();
-						     semaphoreTCPMessages.notifyAll();
-                                                 }
+						synchronized (semaphoreTCPMessages)
+						{
+							semaphoreTCPMessages.release();
+							semaphoreTCPMessages.notifyAll();
+						}
 						throw ce;
 					}
 				}
@@ -222,7 +227,7 @@ public class ConnectionCollector
 					{
 						logger.error("tried 5 times " + ce.toString());
 						ce.printStackTrace();
-						semaphoreTCPMessages.release();
+						semaphoreUDPMessages.release();
 						throw ce;
 					}
 				}
@@ -309,5 +314,37 @@ public class ConnectionCollector
 		sb.append("; available permits = tcp:").append(semaphoreTCPMessages.availablePermits());
 		sb.append(", udp:").append(semaphoreUDPMessages.availablePermits());
 		return sb.toString();
+	}
+	private static class MySemaphoreTCP
+	{
+		final private int maxPermits;
+		private int currentPermits;
+
+		public MySemaphoreTCP(int maxPermits)
+		{
+			this.maxPermits = maxPermits;
+			this.currentPermits = 0;
+		}
+
+		public Object availablePermits()
+		{
+			return maxPermits-currentPermits;
+		}
+
+		public void release()
+		{
+			currentPermits--;
+		}
+
+		public boolean tryAcquire()
+		{
+			if (currentPermits < maxPermits)
+			{
+				currentPermits++;
+				return true;
+			}
+			else
+				return false;
+		}
 	}
 }

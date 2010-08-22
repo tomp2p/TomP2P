@@ -69,7 +69,7 @@ public class TestDHT
 					.getLogManager()
 					.readConfiguration(
 							new FileInputStream(
-									"/home/draft/workspace/TomP2P_v3/src/conf/tomp2plog.properties"));
+									"/home/draft/Private/workspace/TomP2P_v3/src/conf/tomp2plog.properties"));
 		}
 		catch (Exception e)
 		{
@@ -831,6 +831,10 @@ public class TestDHT
 			{
 				e.printStackTrace();
 			}
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 		finally
 		{

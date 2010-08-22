@@ -101,4 +101,11 @@ public class MessageID implements Comparable<MessageID>
 	{
 		return id ^ peerAddress.hashCode();
 	}
+
+	@Override
+	public String toString()
+	{
+		return new StringBuilder("MessageId:").append(id).append("/").append(peerAddress)
+				.toString();
+	}
 }

@@ -66,7 +66,7 @@ public class RequestHandlerTCP
 	{
 		return futureResponse;
 	}
-	
+
 	public FutureResponse sendTCP()
 	{
 		connectionBean.getSender().sendTCP(message, this);
@@ -81,7 +81,8 @@ public class RequestHandlerTCP
 
 	public FutureResponse fireAndForgetTCP()
 	{
-		connectionBean.getSender().fireAndForgetTCP(message);
+		message.setFireAndForget(true);
+		connectionBean.getSender().sendTCP(message, this);
 		return futureResponse;
 	}
 
@@ -99,6 +100,7 @@ public class RequestHandlerTCP
 			{
 				String msg = "Message was not delivered successfully: " + this.message;
 				futureResponse.setFailed(msg);
+				getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
 				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
 			}
 			else if (message.getType() == Message.Type.EXCEPTION)
@@ -106,6 +108,8 @@ public class RequestHandlerTCP
 				String msg = "Message caused an exception on the other side, handle as peer_abort: "
 						+ this.message;
 				futureResponse.setFailed(msg);
+				// getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
+				// true);
 				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
 			}
 			else if (!sendMessageID.equals(recvMessageID))
@@ -116,6 +120,8 @@ public class RequestHandlerTCP
 				if (logger.isWarnEnabled())
 					logger.warn(msg);
 				futureResponse.setFailed(msg);
+				// getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
+				// true);
 				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
 			}
 			else
@@ -130,7 +136,7 @@ public class RequestHandlerTCP
 		}
 		finally
 		{
-			futureResponse.setFailed("unexpected exception...");
+			futureResponse.setFailed("very unexpected exception...");
 		}
 	}
 }

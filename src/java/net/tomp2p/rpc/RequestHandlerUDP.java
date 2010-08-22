@@ -89,7 +89,8 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 
 	public FutureResponse fireAndForgetUDP()
 	{
-		connectionBean.getSender().fireAndForgetUDP(message);
+		message.setFireAndForget(true);
+		connectionBean.getSender().sendUDP(message, this);
 		return futureResponse;
 	}
 
@@ -115,8 +116,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		}
 		if (futureResponse.isCompleted())
 		{
-			logger.warn("Got exception, but ignored "
-					+ "(future response completed): "
+			logger.warn("Got exception, but ignored " + "(future response completed): "
 					+ futureResponse.getFailedReason());
 			if (logger.isDebugEnabled())
 				e.getCause().printStackTrace();
@@ -142,7 +142,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 				}
 				else if (logger.isWarnEnabled())
 				{
-					logger.warn("error in request "+e.toString());
+					logger.warn("error in request " + e.toString());
 					if (logger.isDebugEnabled())
 						e.getCause().printStackTrace();
 				}

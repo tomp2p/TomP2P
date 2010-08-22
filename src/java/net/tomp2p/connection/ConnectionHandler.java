@@ -23,7 +23,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.sbbi.upnp.impls.InternetGatewayDevice;
@@ -78,7 +81,7 @@ public class ConnectionHandler
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
 	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
 	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
-	final private TCPChannelChache channelChache;
+	final private TCPChannelCache channelChache;
 	final private Timer timer;
 	final private boolean master;
 	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
@@ -96,8 +99,8 @@ public class ConnectionHandler
 			}
 		});
 	}
-	final private ExecutionHandler executionHandler1;
-	final private ExecutionHandler executionHandler2;
+	final private ExecutionHandler executionHandlerSend;
+	final private ExecutionHandler executionHandlerRcv;
 	//
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
@@ -113,11 +116,14 @@ public class ConnectionHandler
 	{
 		this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
-		//executionHandler = new ExecutionHandler(new OrderedMemoryAwareThreadPoolExecutor(
-		//		configuration.getMaxThreads(), configuration.getMaxMemoryPerChannel(),
-		//		configuration.getMaxMemory()));
-		executionHandler1 = new ExecutionHandler(Executors.newCachedThreadPool());
-		executionHandler2 = new ExecutionHandler(Executors.newCachedThreadPool());
+		ThreadPoolExecutor t1 = new ThreadPoolExecutor(5, configuration.getMaxIncomingThreads(),
+				60L, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(configuration
+						.getMaxIncomingThreads(), true));
+		t1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		//for sending, this should never be blocking!
+		Executor t2= Executors.newCachedThreadPool();
+		executionHandlerRcv = new ExecutionHandler(t1);
+		executionHandlerSend = new ExecutionHandler(t2);
 		//
 		udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 		tcpServerChannelFactory = new NioServerSocketChannelFactory(
@@ -151,9 +157,9 @@ public class ConnectionHandler
 		logger.info("Visible address to other peers: " + self);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory,
-				udpChannelFactory, configuration, executionHandler1, globalTrafficShapingHandler);
+				udpChannelFactory, configuration, executionHandlerSend, globalTrafficShapingHandler);
 		// Dispatcher setup start
-		this.channelChache = new TCPChannelChache(connectionPool, timer, channelGroup);
+		this.channelChache = new TCPChannelCache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration
 				.getIdleUDPMillis(), configuration.getTimeoutTCPMillis(), channelGroup, peerMap,
 				listeners, channelChache);
@@ -200,8 +206,8 @@ public class ConnectionHandler
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);
-		this.executionHandler1 = parent.executionHandler1;
-		this.executionHandler2 = parent.executionHandler2;
+		this.executionHandlerSend = parent.executionHandlerSend;
+		this.executionHandlerRcv = parent.executionHandlerRcv;
 		this.messageLoggerFilter = parent.messageLoggerFilter;
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
@@ -238,7 +244,7 @@ public class ConnectionHandler
 				if (messageLoggerFilter != null)
 					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
 				p.addLast("performance", performanceFilter);
-				p.addLast("executor", executionHandler2);
+				p.addLast("executor", executionHandlerRcv);
 				p.addLast("handler", dispatcher);
 				return p;
 			}
@@ -276,12 +282,13 @@ public class ConnectionHandler
 			public ChannelPipeline getPipeline() throws Exception
 			{
 				ChannelPipeline p = Channels.pipeline();
-				IdleStateHandler timeoutHandler = new IdleStateHandler(timer, 0, 0, configuration
+				IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration
 						.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
 				p.addLast("timeout", timeoutHandler);
 				p.addLast("encoder2", encoder2);
 				if (messageLoggerFilter != null)
-					p.addLast("loggerDownstream", messageLoggerFilter
+					p
+							.addLast("loggerDownstream", messageLoggerFilter
 									.getChannelDownstreamHandler());
 				p.addLast("encoder1", encoder1);
 				p.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
@@ -290,7 +297,7 @@ public class ConnectionHandler
 				p.addLast("performance", performanceFilter);
 				if (globalTrafficShapingHandler.hasLimit())
 					p.addLast("trafficShaping", globalTrafficShapingHandler);
-				p.addLast("executor", executionHandler2);
+				p.addLast("executor", executionHandlerRcv);
 				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration
 						.getIdleTCPMillis(), dispatcher, getConnectionBean().getChannelGroup());
 				p.addLast("reply", dispatcherReply);
@@ -348,8 +355,8 @@ public class ConnectionHandler
 			// close client
 			connectionBean.getSender().shutdown();
 			// release resources
-			executionHandler1.releaseExternalResources();
-			executionHandler2.releaseExternalResources();
+			executionHandlerSend.releaseExternalResources();
+			executionHandlerRcv.releaseExternalResources();
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
@@ -405,7 +412,7 @@ public class ConnectionHandler
 		internetGatewayDevicesUDP.put(igd, new InetSocketAddress(newAddress, portUDP));
 	}
 
-	public boolean isListening() 
+	public boolean isListening()
 	{
 		// TODO Auto-generated method stub
 		return false;

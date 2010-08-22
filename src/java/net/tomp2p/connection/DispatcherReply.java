@@ -1,3 +1,18 @@
+/*
+ * Copyright 2009 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package net.tomp2p.connection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -8,6 +23,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.rpc.RequestHandlerTCP;
 
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -34,7 +50,9 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	//
 	final Timer timer;
 	private volatile Timeout idleTimeout;
-	private volatile boolean running = true;
+	// private volatile boolean used = false;
+	// debug, remove me
+	private Channel channel;
 
 	//
 	public DispatcherReply(Timer timer, int tcpIdleTimeoutMillis,
@@ -50,7 +68,6 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 
 	public void shutdown(String message)
 	{
-		running = false;
 		timeoutAll(message);
 		if (idleTimeout != null)
 			idleTimeout.cancel();
@@ -59,17 +76,11 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 
 	public void add(Message message, RequestHandlerTCP requestHandler)
 	{
-		if (!running)
+		synchronized (waitingForAnswer)
 		{
-			requestHandler.getFutureResponse().setFailed(
-					"This channel already closed... cannot process.");
-		}
-		else
-		{
-			synchronized (waitingForAnswer)
-			{
-				waitingForAnswer.put(new MessageID(message), requestHandler);
-			}
+			if (logger.isDebugEnabled())
+				logger.debug("adding message " + message);
+			waitingForAnswer.put(new MessageID(message), requestHandler);
 		}
 	}
 
@@ -77,7 +88,8 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception
 	{
 		logger.info("closing channel (idle)");
-		ctx.getChannel().close();
+		if (ctx.getChannel().isOpen())
+			ctx.getChannel().close();
 	}
 
 	@Override
@@ -91,14 +103,14 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			return;
 		}
 		final Message message = (Message) e.getMessage();
-		if (logger.isDebugEnabled())
-			logger.debug("received reply " + message);
 		// check if its a request or reply
 		if (message.isRequest())
 		{
 			dispatcherRequest.messageReceived(ctx, e);
 			return;
 		}
+		if (logger.isDebugEnabled())
+			logger.debug("received reply " + message);
 		MessageID messageID = new MessageID(message);
 		RequestHandlerTCP requestHandler;
 		synchronized (waitingForAnswer)
@@ -125,20 +137,22 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception
 	{
-		String cause=e.getCause().getMessage().toString();
-		//do not show connection reset by peer!
-		if(!cause.equals("Connection reset by peer"))
+		String cause = e.getCause().getMessage() == null ? null : e.getCause().getMessage()
+				.toString();
+		// do not show connection reset by peer!
+		if (!"Connection reset by peer".equals(cause))
 		{
 			logger.warn("error in dispatcher reply" + e.toString());
-			if(logger.isDebugEnabled())
+			if (logger.isDebugEnabled())
 				e.getCause().printStackTrace();
 		}
 		shutdown(e.toString());
 	}
-	
+
 	@Override
 	public void channelOpen(final ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
 	{
+		channel = ctx.getChannel();
 		channelGroup.add(ctx.getChannel());
 		ctx.sendUpstream(e);
 	}
@@ -147,7 +161,7 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
 	{
 		shutdown(e.toString());
-		super.channelClosed(ctx, e);
+		ctx.sendUpstream(e);
 	}
 
 	private void timeoutAll(String reason)
@@ -159,16 +173,10 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			{
 				Map.Entry<MessageID, RequestHandlerTCP> entry = iterator.next();
 				iterator.remove();
-				entry.getValue().getFutureResponse().setFailed("Timeout: " + reason);
+				entry.getValue().getFutureResponse().setFailed(
+						"Timeout all: " + reason + " / " + entry.getKey());
 			}
 		}
-	}
-
-	@Override
-	public void closeRequested(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
-	{
-		// TODO Auto-generated method stub
-		super.closeRequested(ctx, e);
 	}
 
 	private static void close(ChannelHandlerContext ctx)
@@ -194,9 +202,10 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 					long requestTimeout = entry.getValue().getFutureResponse().getReplyTimeout();
 					if (now > requestTimeout)
 					{
-						entry.getValue().getFutureResponse().setFailed("Timeout by "+(now-requestTimeout)+ "for "+entry.getValue().getFutureResponse().getRequest());
+						entry.getValue().getFutureResponse().setFailed(
+								"Timeout by " + (now - requestTimeout) + " for "
+										+ entry.getValue().getFutureResponse().getRequest());
 						iterator.remove();
-						
 					}
 					else
 					{
@@ -214,8 +223,17 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	{
 		synchronized (waitingForAnswer)
 		{
-			return !waitingForAnswer.isEmpty();
+			boolean isWaiting = !waitingForAnswer.isEmpty();
+			if (!isWaiting)
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("I'm not waiting " + channel);
+			}
+			return isWaiting;
 		}
 	}
-	
+	// public void setUsed(boolean used)
+	// {
+	// this.used = used;
+	// }
 }

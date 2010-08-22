@@ -30,6 +30,8 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.ReplyHandler;
 
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -76,7 +78,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 	final private ChannelGroup channelGroup;
 	final private PeerMap peerMap;
 	final private List<PeerListener> listeners;
-	final private TCPChannelChache channelChache;
+	final private TCPChannelCache channelChache;
 
 	/**
 	 * Constructor
@@ -86,7 +88,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 	 */
 	public DispatcherRequest(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
 			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap,
-			List<PeerListener> listeners, TCPChannelChache channelChache)
+			List<PeerListener> listeners, TCPChannelCache channelChache)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
@@ -265,7 +267,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 	}
 
 	// respond within a session
-	private void response(ChannelHandlerContext ctx, MessageEvent e, final Message response)
+	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response)
 	{
 		if (ctx.getChannel() instanceof DatagramChannel)
 		{
@@ -277,11 +279,29 @@ public class DispatcherRequest extends SimpleChannelHandler
 		}
 		else
 		{
-			channelChache.addChannel(response.getSender().getID(),response.getRecipient().getID(), response.getRecipient()
-					.getInetAddress(), ctx.getChannel());
-			if (logger.isDebugEnabled())
-				logger.debug("reply TCP message " + response);
-			ctx.getChannel().write(response);
+			try
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("reply TCP message " + response);
+				ChannelFuture cf = ctx.getChannel().write(response);
+				cf.addListener(new ChannelFutureListener()
+				{
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception
+					{
+						if (future.isSuccess())
+						{
+							channelChache.addChannel(response.getSender().getID(), response
+									.getRecipient().getID(), response.getRecipient()
+									.getInetAddress(), ctx.getChannel());
+						}
+					}
+				});
+			}
+			catch (Throwable e1)
+			{
+				e1.printStackTrace();
+			}
 		}
 	}
 

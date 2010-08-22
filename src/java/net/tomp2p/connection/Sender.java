@@ -364,9 +364,6 @@ public class Sender
 				}
 				if (message.isFireAndForget())
 					futureResponse.setResponse(null);
-				DispatcherReply dispatcherReply = (DispatcherReply) writeFuture.getChannel()
-						.getPipeline().get("reply");
-				dispatcherReply.setUsed(false);
 			}
 		});
 	}

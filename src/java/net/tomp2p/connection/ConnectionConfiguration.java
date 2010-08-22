@@ -26,11 +26,9 @@ public class ConnectionConfiguration
 	//
 	private int maxOutgoingUDP = 20;
 	private int maxOutgoingTCP = 20;
+	private int maxIncomingThreads = 100;
 	//
-	private int maxThreads = 500;
-	private int maxMemoryPerChannel =  5 * 1024 * 1024;
 	private int maxMessageSize = 2 * 1024 * 1024;
-	private int maxMemory = 100 * 1024 * 1024;
 	private int maxNrBeforeExclude = 2;
 	//
 	//bandwith shaping in bytes/s
@@ -129,36 +127,6 @@ public class ConnectionConfiguration
 		return maxNrBeforeExclude;
 	}
 
-	public void setMaxThreads(int maxThreads)
-	{
-		this.maxThreads = maxThreads;
-	}
-
-	public int getMaxThreads()
-	{
-		return maxThreads;
-	}
-
-	public void setMaxMemoryPerChannel(int maxMemoryPerChannel)
-	{
-		this.maxMemoryPerChannel = maxMemoryPerChannel;
-	}
-
-	public int getMaxMemoryPerChannel()
-	{
-		return maxMemoryPerChannel;
-	}
-
-	public void setMaxMemory(int maxMemory)
-	{
-		this.maxMemory = maxMemory;
-	}
-
-	public int getMaxMemory()
-	{
-		return maxMemory;
-	}
-
 	public void setTimeoutTCPMillis(int timeoutTCPMillis)
 	{
 		this.timeoutTCPMillis = timeoutTCPMillis;
@@ -188,4 +156,15 @@ public class ConnectionConfiguration
 	{
 		this.writeLimit = writeLimit;
 	}
+
+	public void setMaxIncomingThreads(int maxIncomingThreads)
+	{
+		this.maxIncomingThreads = maxIncomingThreads;
+	}
+
+	public int getMaxIncomingThreads()
+	{
+		return maxIncomingThreads;
+	}
+
 }

@@ -152,7 +152,7 @@ public class Peer
 	private List<ScheduledFuture<?>> scheduledFutures = Collections
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
-	private volatile boolean running = false;
+	//private volatile boolean running = false;
 
 	public Peer(final KeyPair keyPair)
 	{
@@ -202,7 +202,7 @@ public class Peer
 
 	public void addPeerListener(PeerListener listener)
 	{
-		if (running)
+		if (isRunning())
 			listener.notifyOnStart();
 		listeners.add(listener);
 	}
@@ -232,7 +232,7 @@ public class Peer
 		getConnectionHandler().shutdown();
 		for (PeerListener listener : listeners)
 			listener.notifyOnShutdown();
-		running = false;
+		connectionHandler=null;
 	}
 
 	public void listen() throws Exception
@@ -341,7 +341,6 @@ public class Peer
 			startMaintainance();
 		for (PeerListener listener : listeners)
 			listener.notifyOnStart();
-		running = true;
 	}
 
 	public void setDefaultStorageReplication()
@@ -357,10 +356,15 @@ public class Peer
 	{
 		return pendingFutures;
 	}
+	
+	public boolean isRunning()
+	{
+		return connectionHandler!=null;
+	}
 
 	public boolean isListening()
 	{
-		if (connectionHandler==null)
+		if (!isRunning())
 			return false;
 		return connectionHandler.isListening();
 	}

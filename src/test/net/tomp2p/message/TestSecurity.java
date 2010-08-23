@@ -64,6 +64,7 @@ public class TestSecurity
 		}
 		catch (Exception e)
 		{
+			e.printStackTrace();
 			Assert.fail();
 		}
 	}

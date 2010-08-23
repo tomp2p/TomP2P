@@ -377,34 +377,4 @@ public class TestNumber160
 		}
 	}
 
-	@Test
-	public void testDistance()
-	{
-		Random rnd = new Random(43L);
-		//0x93b73715acef24540418e396d70173c015190d55
-		Number160 iam = new Number160("0x96b6d553da61e5e6292b5aae02fc4e2f42b98020");
-		Number160 cls = new Number160("0x9701b6ed4f716f2fbedafc4462346ae921cb4453");
-		for (int i = 0; i < 1000; i++)
-		{
-			
-			Number160 key = new Number160(rnd);
-			System.err.println("key "+key);
-			//
-			int dist1 = key.xor(iam).bitLength();
-			System.err.println("distance1 " + dist1);
-			int dist2 = key.xor(cls).bitLength();
-			System.err.println("distance2 " + dist2);
-			int dist3 = iam.xor(cls).bitLength();
-			System.err.println("distance3 " + dist3);
-			
-			//
-			System.err.println("distance1 " + key.xor(iam));
-			System.err.println("distance2 " + key.xor(cls));
-			System.err.println("distance3 " + iam.xor(cls));
-			if(key.xor(iam).compareTo(key.xor(cls))<0)
-				Assert.assertEquals(true, dist3<=dist1);
-			else
-				Assert.assertEquals(true, dist3>=dist1);
-		}
-	}
 }

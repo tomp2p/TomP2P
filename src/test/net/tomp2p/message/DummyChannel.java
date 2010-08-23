@@ -109,8 +109,7 @@ public class DummyChannel implements Channel
 	@Override
 	public boolean isBound()
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return true;
 	}
 
 	@Override

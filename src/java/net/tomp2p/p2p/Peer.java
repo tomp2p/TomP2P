@@ -360,7 +360,9 @@ public class Peer
 
 	public boolean isListening()
 	{
-		return running;
+		if (connectionHandler==null)
+			return false;
+		return connectionHandler.isListening();
 	}
 
 	void startMaintainance()

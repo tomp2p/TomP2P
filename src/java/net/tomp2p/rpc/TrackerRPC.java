@@ -151,7 +151,13 @@ public class TrackerRPC extends ReplyHandler
 			PeerAddress senderAddress = message.getSender();
 			if (message.getCommand() == Command.TRACKER_ADD)
 			{
-				if (logger.isDebugEnabled())
+			  if (trackerStorage.size(locationKey, domainKey) >= trackerStorage.getTrackerSize()*2)
+			  {
+                            responseMessage.setType(Message.Type.DENIED);
+			  }
+			  else
+			  {
+			  if (logger.isDebugEnabled())
 					logger.debug("tracker put on(" + peerBean.getServerPeerAddress()
 							+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
 							+ ", address:" + senderAddress);
@@ -163,7 +169,8 @@ public class TrackerRPC extends ReplyHandler
 				PublicKey publicKey = message.getPublicKey();
 				if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
 					responseMessage.setType(Message.Type.DENIED);
-			}
+				
+			}}
 			else
 			{
 				if (logger.isDebugEnabled())

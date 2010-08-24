@@ -41,6 +41,7 @@ public class TrackerStorage extends StorageMemory
 	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
 	final private int trackerSize = 20;
+	private int trackerStoreSize = 40;
 	final private static Random rnd = new Random();
 	private volatile int trackerTimoutSeconds = Integer.MAX_VALUE;
 
@@ -87,4 +88,12 @@ public class TrackerStorage extends StorageMemory
 		}
 		return result;
 	}
+
+  public int getTrackerStoreSize() {
+    return trackerStoreSize;
+  }
+
+  public void setTrackerStoreSize(int trackerStoreSize) {
+    this.trackerStoreSize = trackerStoreSize;
+  }
 }

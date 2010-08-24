@@ -192,7 +192,8 @@ public class TestTracker
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				for (int j = 0; j < nodes.length; j++)
+				nodes[i].getPeerBean().getTrackerStorage().setTrackerStoreSize(nodes[i].getPeerBean().getTrackerStorage().getTrackerSize());
+			    for (int j = 0; j < nodes.length; j++)
 					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
 			}
 			RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);

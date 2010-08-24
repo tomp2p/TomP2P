@@ -151,7 +151,7 @@ public class TrackerRPC extends ReplyHandler
 			PeerAddress senderAddress = message.getSender();
 			if (message.getCommand() == Command.TRACKER_ADD)
 			{
-			  if (trackerStorage.size(locationKey, domainKey) >= trackerStorage.getTrackerSize()*2)
+			  if (trackerStorage.size(locationKey, domainKey) >= trackerStorage.getTrackerStoreSize())
 			  {
                             responseMessage.setType(Message.Type.DENIED);
 			  }

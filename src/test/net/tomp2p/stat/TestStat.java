@@ -1,5 +1,6 @@
 package net.tomp2p.stat;
 import java.net.UnknownHostException;
+import java.util.Random;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.peers.Number160;
@@ -22,7 +23,7 @@ public class TestStat
 		Number160 id6 = new Number160("11");
 		Number160 id7 = new Number160("13");
 		Number160 id8 = new Number160("15");
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4,20,0,0,0,new int[0]);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4, 20, 0, 0, 0, new int[0]);
 		PeerAddress remoteNode1 = Utils2.createAddress(id1);
 		kadRouting.peerOnline(remoteNode1, null); // 
 		PeerAddress remoteNode2 = Utils2.createAddress(id2);
@@ -42,5 +43,20 @@ public class TestStat
 		System.err.println("We have 8 nodes, we esimate " + kadRouting.expectedNumberOfNodes());
 	}
 
-	
+	@Test
+	public void testNodesEstimation2() throws UnknownHostException
+	{
+		int maxNr = 1000;
+		Random rnd = new Random(42L);
+		Number160 id = new Number160(rnd);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0]);
+		for (int i = 0; i < maxNr; i++)
+		{
+			Number160 id1 = new Number160(rnd);
+			PeerAddress remoteNode1 = Utils2.createAddress(id1);
+			kadRouting.peerOnline(remoteNode1, null);
+		}
+		System.err.println("We have " + maxNr + " nodes, we esimate "
+				+ kadRouting.expectedNumberOfNodes());
+	}
 }

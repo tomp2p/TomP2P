@@ -57,8 +57,7 @@ public class PeerMapKadImpl implements PeerMap
 	final private List<Map<Number160, PeerAddress>> peerMap = new ArrayList<Map<Number160, PeerAddress>>();
 	// this is used to find bags that are oversized. We could also iterate, but
 	// this is faster to keep track of them.
-	final private Map<Integer, Object> overSizeBagIndex = new ConcurrentHashMap<Integer, Object>(
-			16, 0.75f, 1);
+	final private Map<Integer, Object> overSizeBagIndex = new ConcurrentHashMap<Integer, Object>(16, 0.75f, 1);
 	// In this bag, peers are temporarily stored that have been removed in order
 	// to not reappear again.
 	final private Map<PeerAddress, Log> peerOfflineLogs;
@@ -75,6 +74,9 @@ public class PeerMapKadImpl implements PeerMap
 	final private Collection<InetAddress> filteredAddresses = Collections
 			.synchronizedSet(new HashSet<InetAddress>());
 	final private PeerMapStat peerMapStat;
+	
+	private int	estimatedNumberOfNodes = -1;
+	
 	class Log
 	{
 		private int counter;
@@ -752,69 +754,34 @@ public class PeerMapKadImpl implements PeerMap
 	
 	private void triggerStatUpdate(PeerAddress remotePeer, boolean insert)
 	{
-		// TODO: Fabio, here goes the estimation
-		
+		this.estimatedNumberOfNodes = -1;
 	}
 	
-	public double averageDistance()
+	public int getEstimatedNumberOfNodes()
 	{
-		// TODO: Fabio, here goes the estimation
+		// TODO: synchronized {} where necessary
+		
+		if (this.estimatedNumberOfNodes != -1)
+			return this.estimatedNumberOfNodes;
+		
 		int currentSize=size();
 		int maxSize=this.maxPeers;
-		int bagSize=this.bagSize;
-		//all peers getAll();
-		Map<Number160, PeerAddress> peers=peerMap.get(160);
-		synchronized (peers)
-		{
-			//do stuff with peers
-		}
-		return 0;
-	}
 
-	public double expectedNumberOfNodes()
-	{
-		// TODO: Fabio, here goes the estimation
-		int totalSize=size();
-		return 0;
+		if (currentSize < maxSize)
+			return this.estimatedNumberOfNodes=currentSize+1;
+
+		double avg=0D;
+		int avgCount=0;
+		for (int i=159; i>=0; i--) {
+			Map<Number160, PeerAddress> peers=this.peerMap.get(i);
+			
+			int numPeers = peers.size();
+			if (numPeers > 10) {  //the small ones give very imprecise estimations TODO < 
+				avg += numPeers * Math.pow(2,160-i) * i;
+				avgCount+=i;  //the larger ones count more on the average
+			}
+		}
+		return this.estimatedNumberOfNodes=(int) (avg/avgCount);
+		
 	}
-	
-	// Here is an early implementation, I don't know if its acurate:
-	
-	/*
-	 * kadRouting.add(pa1, true); public double expectedNumberOfNodes() {
-	 * BigInteger mean = getMeanDistance(); if (mean != BigInteger.ZERO) {
-	 * BigInteger totalNodes = BigInteger.valueOf(2); totalNodes =
-	 * totalNodes.pow(Number160.BITS); return
-	 * totalNodes.divide(mean).doubleValue(); } else return 0; }
-	 * 
-	 * private BigInteger getMeanDistance() { // there is a high chance to not
-	 * have dropped nodes that are close to // me. If the bag is full, then we
-	 * know, that the first BAG_SIZE 2 // entries have no dropped nodes.
-	 * However, if the bag is not full, then // this assumption does not hold
-	 * anymore. But I think that a worst case // scenario,
-	 * SortedSet<PeerAddress> list = getAtMostCloseNodes(BAG_SIZE 2); BigInteger
-	 * oldDistance = BigInteger.ZERO; // System.err.print("["); List<BigInteger>
-	 * distances = new ArrayList<BigInteger>(); for (PeerAddress nodeAddress :
-	 * list) { Number160 distance = distance(self(), nodeAddress.getID());
-	 * BigInteger diff = distance.subtract(oldDistance); distances.add(diff);
-	 * oldDistance = distance; // SkadRouting.add(pa1,
-	 * true);ystem.err.print(diff); // System.err.print(","); }
-	 * Collections.sort(distances); // System.err.println("]"); final int
-	 * removeNr = (int) ((BAG_SIZE 2) .15); if (distances.size() > removeNr 2) {
-	 * for (int i = 0; i < removeNr; i++) { distances.remove(0);
-	 * distances.remove(distances.size() - 1); } BigInteger cumulatedDistance =
-	 * BigInteger.ZERO; for (BigInteger distance : distances) cumulatedDistance
-	 * = cumulatedDistance.add(distance); // System.err.println("FF " +
-	 * cumulatedDistance + "nr " + // distances.size()); cumulatedDistance =
-	 * cumulatedDistance.divide(BigInteger.valueOf(distances.size())); //
-	 * System.err.println("TT " + cumulatedDistance + "nr " + //
-	 * distances.size()); return cumulatedDistance; } else return
-	 * BigInteger.ZERO; }
-	 * 
-	 * private SortedSet<PeerAddress> getAtMostCloseNodes(int nr) {
-	 * SortedSet<PeerAddress> set = createCloseNodesSet2(self()); for (int i =
-	 * 0; i < Number160.BITS; i++) { Set<PeerAddress> list2 = peerMap.get(i);
-	 * for (PeerAddress nodeAddress : list2) { set.add(nodeAddress); if
-	 * (list.size() >= nr) return set; } } return set; }
-	 */
 }

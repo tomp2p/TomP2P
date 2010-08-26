@@ -15,14 +15,14 @@ public class TestStat
 	@Test
 	public void testNodesEstimation1() throws UnknownHostException
 	{
-		Number160 id1 = new Number160("1");
-		Number160 id2 = new Number160("3");
-		Number160 id3 = new Number160("5");
-		Number160 id4 = new Number160("7");
-		Number160 id5 = new Number160("9");
-		Number160 id6 = new Number160("11");
-		Number160 id7 = new Number160("13");
-		Number160 id8 = new Number160("15");
+		Number160 id1 = new Number160("0x1");
+		Number160 id2 = new Number160("0x3");
+		Number160 id3 = new Number160("0x5");
+		Number160 id4 = new Number160("0x7");
+		Number160 id5 = new Number160("0x9");
+		Number160 id6 = new Number160("0x11");
+		Number160 id7 = new Number160("0x13");
+		Number160 id8 = new Number160("0x15");
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4, 20, 0, 0, 0, new int[0]);
 		PeerAddress remoteNode1 = Utils2.createAddress(id1);
 		kadRouting.peerOnline(remoteNode1, null); // 
@@ -40,14 +40,14 @@ public class TestStat
 		kadRouting.peerOnline(remoteNode7, null);
 		PeerAddress remoteNode8 = Utils2.createAddress(id8);
 		kadRouting.peerOnline(remoteNode8, null);
-		System.err.println("We have 8 nodes, we esimate " + kadRouting.expectedNumberOfNodes());
+		System.err.println("We have 8 nodes, we esimate " + kadRouting.getEstimatedNumberOfNodes());
 	}
 
 	@Test
 	public void testNodesEstimation2() throws UnknownHostException
 	{
 		int maxNr = 1000;
-		Random rnd = new Random(42L);
+		Random rnd = new Random();
 		Number160 id = new Number160(rnd);
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0]);
 		for (int i = 0; i < maxNr; i++)
@@ -56,7 +56,7 @@ public class TestStat
 			PeerAddress remoteNode1 = Utils2.createAddress(id1);
 			kadRouting.peerOnline(remoteNode1, null);
 		}
-		System.err.println("We have " + maxNr + " nodes, we esimate "
-				+ kadRouting.expectedNumberOfNodes());
+		System.err.println("We have " + (maxNr+1) + " nodes, we esimate "
+				+ kadRouting.getEstimatedNumberOfNodes());
 	}
 }

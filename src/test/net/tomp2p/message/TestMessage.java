@@ -17,6 +17,7 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PEncoderStage1;
 import net.tomp2p.message.TomP2PEncoderStage2;
 import net.tomp2p.message.Message.Command;
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -330,7 +331,7 @@ public class TestMessage
 		PeerAddress n2 = new PeerAddress(b2);
 		PeerAddress n3 = new PeerAddress(b3);
 		PeerAddress n4 = new PeerAddress(b4);
-		PeerMap routingMap = new PeerMapKadImpl(b1, 2,100,60*1000,3,new int[]{});
+		PeerMap routingMap = new PeerMapKadImpl(b1, 2,100,60*1000,3,new int[]{}, new Statistics());
 		final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(routingMap
 				.createPeerComparator(b3));
 		queue.add(n1);

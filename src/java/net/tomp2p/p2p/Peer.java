@@ -65,6 +65,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.replication.DefaultStorageReplication;
+import net.tomp2p.replication.DefaultTrackerReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
@@ -152,8 +153,8 @@ public class Peer
 	private List<ScheduledFuture<?>> scheduledFutures = Collections
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
-	//private volatile boolean running = false;
 
+	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
 	{
 		this(Utils.makeSHAHash(keyPair.getPublic().getEncoded()), keyPair);
@@ -232,7 +233,7 @@ public class Peer
 		getConnectionHandler().shutdown();
 		for (PeerListener listener : listeners)
 			listener.notifyOnShutdown();
-		connectionHandler=null;
+		connectionHandler = null;
 	}
 
 	public void listen() throws Exception
@@ -288,12 +289,13 @@ public class Peer
 				.newScheduledThreadPool(peerConfiguration.getMaintenanceThreads());
 		this.scheduledExecutorServiceReplication = Executors
 				.newScheduledThreadPool(peerConfiguration.getReplicationThreads());
+		Statistics statistics = new Statistics();
 		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
 				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
 				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds());
+						.getWaitingTimeBetweenNodeMaintenenceSeconds(), statistics);
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				connectionConfiguration, messageLogger, keyPair, peerMap, listeners));
+				connectionConfiguration, messageLogger, keyPair, peerMap, listeners), statistics);
 	}
 
 	public void listen(final Peer master) throws Exception
@@ -303,28 +305,35 @@ public class Peer
 		this.bindings = master.bindings;
 		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
 		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
+		Statistics statistics = new Statistics();
 		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
 				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
 				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds());
-		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap));
+						.getWaitingTimeBetweenNodeMaintenenceSeconds(), statistics);
+		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap),
+				statistics);
 	}
 
-	protected void init(final ConnectionHandler connectionHandler)
+	protected void init(final ConnectionHandler connectionHandler, Statistics statistics)
 	{
 		this.connectionHandler = connectionHandler;
 		PeerBean peerBean = connectionHandler.getPeerBean();
+		peerBean.setStatistics(statistics);
+		// peerBean.
 		ConnectionBean connectionBean = connectionHandler.getConnectionBean();
 		//
-		StorageMemory storage = new StorageMemory();
-		peerBean.setStorage(storage);
 		PeerAddress selfAddress = getPeerAddress();
 		PeerMap peerMap = connectionHandler.getPeerBean().getPeerMap();
+		// create storage and add replication feature
+		StorageMemory storage = new StorageMemory();
+		peerBean.setStorage(storage);
 		Replication replicationStorage = new Replication(storage, selfAddress, peerMap);
 		peerBean.setReplicationStorage(replicationStorage);
-		peerMap.addPeerMapChangeListener(replicationStorage);
+		// create tracker and add replication feature
 		TrackerStorage storageTracker = new TrackerStorage();
 		peerBean.setTrackerStorage(storageTracker);
+		Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
+		peerBean.setReplicationTracker(replicationTracker);
 		// RPC communication
 		handshakeRCP = new HandshakeRPC(peerBean, connectionBean);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
@@ -352,14 +361,23 @@ public class Peer
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}
 
+	public void setDefaultTrackerReplication()
+	{
+		Replication replicationTracker = getPeerBean().getReplicationTracker();
+		DefaultTrackerReplication defaultTrackerReplication = new DefaultTrackerReplication(
+				replicationTracker.getStorage(), trackerRPC, pendingFutures, getPeerBean()
+						.getStatistics());
+		replicationTracker.addResponsibilityListener(defaultTrackerReplication);
+	}
+
 	public Map<BaseFuture, Long> getPendingFutures()
 	{
 		return pendingFutures;
 	}
-	
+
 	public boolean isRunning()
 	{
-		return connectionHandler!=null;
+		return connectionHandler != null;
 	}
 
 	public boolean isListening()

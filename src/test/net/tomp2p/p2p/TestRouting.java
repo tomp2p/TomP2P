@@ -26,7 +26,6 @@ import net.tomp2p.utils.Utils;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class TestRouting
 {
 	final private static Random rnd = new Random(43L);
@@ -34,15 +33,16 @@ public class TestRouting
 	@Test
 	public void testDifference() throws UnknownHostException
 	{
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2,100,60*1000, 3,new int[] {});
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
+				new int[] {}, new Statistics());
 		Collection<PeerAddress> newC = new ArrayList<PeerAddress>();
 		newC.add(Utils2.createAddress(12));
 		newC.add(Utils2.createAddress(15));
 		newC.add(Utils2.createAddress(88));
 		newC.add(Utils2.createAddress(90));
 		newC.add(Utils2.createAddress(91));
-		SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(test.createPeerComparator(new Number160(
-				88)));
+		SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(test
+				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
 		already.add(Utils2.createAddress(90));
@@ -55,9 +55,10 @@ public class TestRouting
 	@Test
 	public void testMerge() throws UnknownHostException
 	{
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2,100,60*1000, 3,new int[] {});
-		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test.createPeerComparator(new Number160(
-				88)));
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
+				new int[] {}, new Statistics());
+		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
+				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(test
@@ -86,9 +87,10 @@ public class TestRouting
 	@Test
 	public void testEvaluate() throws UnknownHostException
 	{
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2,100,60*1000, 3,new int[] {});
-		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test.createPeerComparator(new Number160(
-				88)));
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
+				new int[] {}, new Statistics());
+		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
+				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> already = new TreeSet<PeerAddress>(test
@@ -841,8 +843,8 @@ public class TestRouting
 			{
 				Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 				peerAddresses.add(nodes[0].getPeerAddress());
-				FutureBootstrap fm = nodes[i].getRouting().bootstrap(peerAddresses, 5, 100,
-						1, true);
+				FutureBootstrap fm = nodes[i].getRouting()
+						.bootstrap(peerAddresses, 5, 100, 1, true);
 				fm.awaitUninterruptibly();
 				Assert.assertEquals(true, fm.isSuccess());
 			}
@@ -870,8 +872,8 @@ public class TestRouting
 			{
 				Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 				peerAddresses.add(nodes[0].getPeerAddress());
-				FutureBootstrap fm = nodes[i].getRouting().bootstrap(peerAddresses,
-						5, 100, 1, false);
+				FutureBootstrap fm = nodes[i].getRouting().bootstrap(peerAddresses, 5, 100, 1,
+						false);
 				fm.awaitUninterruptibly();
 				Assert.assertEquals(true, fm.isSuccess());
 			}

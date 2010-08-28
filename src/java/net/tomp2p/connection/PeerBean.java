@@ -16,6 +16,7 @@
 package net.tomp2p.connection;
 import java.security.KeyPair;
 
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.Replication;
@@ -33,6 +34,8 @@ public class PeerBean
 	private volatile Storage storage;
 	private volatile TrackerStorage trackerStorage;
 	private volatile Replication replicationStorage;
+	private volatile Replication replicationTracker;
+	private volatile Statistics statistics;
 
 	public PeerBean(KeyPair keyPair)
 	{
@@ -98,5 +101,25 @@ public class PeerBean
 	public Replication getReplicationStorage()
 	{
 		return replicationStorage;
+	}
+
+	public void setReplicationTracker(Replication replicationTracker)
+	{
+		this.replicationTracker = replicationTracker;
+	}
+
+	public Replication getReplicationTracker()
+	{
+		return replicationTracker;
+	}
+
+	public void setStatistics(Statistics statistics)
+	{
+		this.statistics = statistics;
+	}
+
+	public Statistics getStatistics()
+	{
+		return statistics;
 	}
 }

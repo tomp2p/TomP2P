@@ -34,7 +34,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new Data(new String("data")), false);
+					dom, new Data(new String("data")), false, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,

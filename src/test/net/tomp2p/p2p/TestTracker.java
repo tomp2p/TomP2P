@@ -1,12 +1,11 @@
 package net.tomp2p.p2p;
 import java.io.FileInputStream;
+import java.util.Map;
 import java.util.Random;
-import java.util.TreeSet;
 import java.util.logging.LogManager;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.config.ConfigurationTrackerGet;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
@@ -15,6 +14,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.ShortString;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -311,14 +311,88 @@ public class TestTracker
 			master.shutdown();
 		}
 	}
+	
+	@Test
+	public void testTrackerReplication() throws Exception
+	{
+		Peer master = null;
+		try
+		{
+			master = new Peer(1, new Number160(rnd), CONFIGURATION);
+			master.listen(4001, 4001);
+			master.setDefaultTrackerReplication();
+			ConfigurationTrackerStore cts=Configurations.defaultTrackerStoreConfiguration();
+			Number160 locationKey=new Number160(rnd);
+			master.addToTracker(locationKey, cts);
+			Peer[] nodes = createNodes(master, 500, true);
+			// perfect routing
+			for (int i = 0; i < nodes.length; i++)
+			{
+				master.getPeerBean().getPeerMap().peerOnline(nodes[i].getPeerAddress(), null);
+			}
+			for (int i = 0; i < nodes.length; i++)
+			{
+				for (int j = 0; j < nodes.length; j++)
+					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+			}
+			// WAIT HERE
+			for(Map.Entry<BaseFuture, Long> entry:master.getPendingFutures().entrySet())
+			{
+				entry.getKey().awaitUninterruptibly();
+				Assert.assertEquals(true, entry.getKey().isSuccess());
+			}
+			for (int i = 0; i < nodes.length; i++)
+			{
+				for(Map.Entry<BaseFuture, Long> entry:nodes[i].getPendingFutures().entrySet())
+				{
+					entry.getKey().awaitUninterruptibly();
+					Assert.assertEquals(true, entry.getKey().isSuccess());
+				}
+			}
+			
+			
+			Number160 tmp=Number160.MAX_VALUE;
+			Number160 id=Number160.MAX_VALUE;
+			for (int i = 0; i < nodes.length; i++)
+			{
+				Number160 test=locationKey.xor(nodes[i].getPeerID());
+				if(test.compareTo(tmp)<0)
+				{
+					tmp=test;
+					id=nodes[i].getPeerID();
+				}
+			}
+			ConfigurationTrackerGet ctg=Configurations.defaultTrackerGetConfiguration();
+			FutureTracker ft=nodes[300].getFromTracker(locationKey, ctg);
+			ft.awaitUninterruptibly();
+			Assert.assertEquals(true, ft.isSuccess());
+			boolean set=false;
+			for(PeerAddress pa:ft.getDirectTrackers())
+			{
+				if(pa.getID().equals(id))
+					set=true;
+			}
+			Assert.assertEquals(true, set);
+		}
+		finally
+		{
+			master.shutdown();
+		}
+	}
+	private Peer[] createNodes(Peer master, int nr ) throws Exception
+	{
+		return createNodes(master, nr, false);
+	}
 
-	private Peer[] createNodes(Peer master, int nr) throws Exception
+	private Peer[] createNodes(Peer master, int nr, boolean replication) throws Exception
 	{
 		Peer[] nodes = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
 			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
 			nodes[i].listen(master);
+			if(replication)
+				nodes[i].setDefaultTrackerReplication();
 		}
 		return nodes;
 	}

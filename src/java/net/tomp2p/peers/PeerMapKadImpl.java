@@ -30,6 +30,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.utils.CacheMap;
 
 import org.slf4j.Logger;
@@ -57,7 +58,8 @@ public class PeerMapKadImpl implements PeerMap
 	final private List<Map<Number160, PeerAddress>> peerMap = new ArrayList<Map<Number160, PeerAddress>>();
 	// this is used to find bags that are oversized. We could also iterate, but
 	// this is faster to keep track of them.
-	final private Map<Integer, Object> overSizeBagIndex = new ConcurrentHashMap<Integer, Object>(16, 0.75f, 1);
+	final private Map<Integer, Object> overSizeBagIndex = new ConcurrentHashMap<Integer, Object>(
+			16, 0.75f, 1);
 	// In this bag, peers are temporarily stored that have been removed in order
 	// to not reappear again.
 	final private Map<PeerAddress, Log> peerOfflineLogs;
@@ -74,9 +76,7 @@ public class PeerMapKadImpl implements PeerMap
 	final private Collection<InetAddress> filteredAddresses = Collections
 			.synchronizedSet(new HashSet<InetAddress>());
 	final private PeerMapStat peerMapStat;
-	
-	private int	estimatedNumberOfNodes = -1;
-	
+	final private Statistics statistics;
 	class Log
 	{
 		private int counter;
@@ -120,7 +120,7 @@ public class PeerMapKadImpl implements PeerMap
 	 *        added or removed.
 	 */
 	public PeerMapKadImpl(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
-			int maxFail, int[] maintenanceTimeoutsSeconds)
+			int maxFail, int[] maintenanceTimeoutsSeconds, Statistics statistics)
 	{
 		if (self == null || self.isZero())
 			throw new IllegalArgumentException("Zero or null are not a valid IDs");
@@ -132,6 +132,7 @@ public class PeerMapKadImpl implements PeerMap
 		this.maxFail = maxFail;
 		this.maintenanceTimeoutsSeconds = maintenanceTimeoutsSeconds;
 		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cacheSize);
+		this.statistics = statistics;
 		for (int i = 0; i < Number160.BITS; i++)
 		{
 			// I made some experiments here and concurrent sets are not
@@ -150,37 +151,25 @@ public class PeerMapKadImpl implements PeerMap
 	@Override
 	public void addPeerMapChangeListener(PeerMapChangeListener peerMapChangeListener)
 	{
-		synchronized (peerMapChangeListeners)
-		{
-			peerMapChangeListeners.add(peerMapChangeListener);
-		}
+		peerMapChangeListeners.add(peerMapChangeListener);
 	}
 
 	@Override
 	public void removePeerMapChangeListener(PeerMapChangeListener peerMapChangeListener)
 	{
-		synchronized (peerMapChangeListeners)
-		{
-			peerMapChangeListeners.add(peerMapChangeListener);
-		}
+		peerMapChangeListeners.add(peerMapChangeListener);
 	}
 
 	@Override
 	public void addPeerOfflineListener(PeerOfflineListener peerListener)
 	{
-		synchronized (peerListeners)
-		{
-			peerListeners.add(peerListener);
-		}
+		peerListeners.add(peerListener);
 	}
 
 	@Override
 	public void removePeerOfflineListener(PeerOfflineListener peerListener)
 	{
-		synchronized (peerListeners)
-		{
-			peerListeners.remove(peerListener);
-		}
+		peerListeners.remove(peerListener);
 	}
 
 	/**
@@ -191,11 +180,9 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private void notifyInsert(PeerAddress peerAddress)
 	{
-		synchronized (peerMapChangeListeners)
-		{
-			for (PeerMapChangeListener listener : peerMapChangeListeners)
-				listener.peerInserted(peerAddress);
-		}
+		statistics.triggerStatUpdate(peerMap, peerAddress, true, size(), maxPeers, bagSize);
+		for (PeerMapChangeListener listener : peerMapChangeListeners)
+			listener.peerInserted(peerAddress);
 	}
 
 	/**
@@ -206,12 +193,9 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private void notifyRemove(PeerAddress peerAddress)
 	{
-		triggerStatUpdate(peerAddress, false);
-		synchronized (peerMapChangeListeners)
-		{
-			for (PeerMapChangeListener listener : peerMapChangeListeners)
-				listener.peerRemoved(peerAddress);
-		}
+		statistics.triggerStatUpdate(peerMap, peerAddress, false, size(), maxPeers, bagSize);
+		for (PeerMapChangeListener listener : peerMapChangeListeners)
+			listener.peerRemoved(peerAddress);
 	}
 
 	/**
@@ -221,30 +205,20 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private void notifyUpdate(PeerAddress peerAddress)
 	{
-		synchronized (peerMapChangeListeners)
-		{
-			for (PeerMapChangeListener listener : peerMapChangeListeners)
-				listener.peerUpdated(peerAddress);
-		}
+		for (PeerMapChangeListener listener : peerMapChangeListeners)
+			listener.peerUpdated(peerAddress);
 	}
 
 	private void notifyOffline(PeerAddress peerAddress)
 	{
-		triggerStatUpdate(peerAddress, true);
-		synchronized (peerListeners)
-		{
-			for (PeerOfflineListener listener : peerListeners)
-				listener.peerOffline(peerAddress);
-		}
+		for (PeerOfflineListener listener : peerListeners)
+			listener.peerOffline(peerAddress);
 	}
 
 	private void notifyPeerFail(PeerAddress peerAddress)
 	{
-		synchronized (peerListeners)
-		{
-			for (PeerOfflineListener listener : peerListeners)
-				listener.peerFail(peerAddress);
-		}
+		for (PeerOfflineListener listener : peerListeners)
+			listener.peerFail(peerAddress);
 	}
 
 	/**
@@ -355,7 +329,7 @@ public class PeerMapKadImpl implements PeerMap
 
 	private boolean remove(PeerAddress remotePeer)
 	{
-		//System.err.println("remove");
+		// System.err.println("remove");
 		final int classMember = classMember(remotePeer.getID());
 		final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 		final boolean retVal = map.remove(remotePeer.getID()) != null;
@@ -475,8 +449,6 @@ public class PeerMapKadImpl implements PeerMap
 		}
 		return retVal;
 	}
-
-	
 
 	/**
 	 * This method returns peers that are over sized. The peers that have been
@@ -738,7 +710,7 @@ public class PeerMapKadImpl implements PeerMap
 		Collection<PeerAddress> all = new ArrayList<PeerAddress>();
 		for (Map<Number160, PeerAddress> map : peerMap)
 		{
-			synchronized (peerMap)
+			synchronized (map)
 			{
 				all.addAll(map.values());
 			}
@@ -750,38 +722,5 @@ public class PeerMapKadImpl implements PeerMap
 	public void addAddressFilter(InetAddress address)
 	{
 		filteredAddresses.add(address);
-	}
-	
-	private void triggerStatUpdate(PeerAddress remotePeer, boolean insert)
-	{
-		this.estimatedNumberOfNodes = -1;
-	}
-	
-	public int getEstimatedNumberOfNodes()
-	{
-		// TODO: synchronized {} where necessary
-		
-		if (this.estimatedNumberOfNodes != -1)
-			return this.estimatedNumberOfNodes;
-		
-		int currentSize=size();
-		int maxSize=this.maxPeers;
-
-		if (currentSize < maxSize)
-			return this.estimatedNumberOfNodes=currentSize+1;
-
-		double avg=0D;
-		int avgCount=0;
-		for (int i=159; i>=0; i--) {
-			Map<Number160, PeerAddress> peers=this.peerMap.get(i);
-			
-			int numPeers = peers.size();
-			if (numPeers > 10) {  //the small ones give very imprecise estimations TODO < 
-				avg += numPeers * Math.pow(2,160-i) * i;
-				avgCount+=i;  //the larger ones count more on the average
-			}
-		}
-		return this.estimatedNumberOfNodes=(int) (avg/avgCount);
-		
 	}
 }

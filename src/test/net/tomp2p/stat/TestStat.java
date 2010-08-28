@@ -2,11 +2,12 @@ package net.tomp2p.stat;
 import java.net.UnknownHostException;
 import java.util.Random;
 
+import junit.framework.Assert;
 import net.tomp2p.Utils2;
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapKadImpl;
-import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
 
@@ -23,7 +24,8 @@ public class TestStat
 		Number160 id6 = new Number160("0x11");
 		Number160 id7 = new Number160("0x13");
 		Number160 id8 = new Number160("0x15");
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4, 20, 0, 0, 0, new int[0]);
+		Statistics statistics=new Statistics();
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4, 20, 0, 0, 0, new int[0], statistics);
 		PeerAddress remoteNode1 = Utils2.createAddress(id1);
 		kadRouting.peerOnline(remoteNode1, null); // 
 		PeerAddress remoteNode2 = Utils2.createAddress(id2);
@@ -40,23 +42,31 @@ public class TestStat
 		kadRouting.peerOnline(remoteNode7, null);
 		PeerAddress remoteNode8 = Utils2.createAddress(id8);
 		kadRouting.peerOnline(remoteNode8, null);
-		System.err.println("We have 8 nodes, we esimate " + kadRouting.getEstimatedNumberOfNodes());
+		System.err.println("We have 8 nodes, we esimate " + statistics.getEstimatedNumberOfNodes());
+		Assert.assertEquals(8d,  statistics.getEstimatedNumberOfNodes());
 	}
 
 	@Test
 	public void testNodesEstimation2() throws UnknownHostException
 	{
-		int maxNr = 1000;
-		Random rnd = new Random();
-		Number160 id = new Number160(rnd);
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0]);
-		for (int i = 0; i < maxNr; i++)
+		for (int j = 1; j < 200; j++)
 		{
-			Number160 id1 = new Number160(rnd);
-			PeerAddress remoteNode1 = Utils2.createAddress(id1);
-			kadRouting.peerOnline(remoteNode1, null);
+			int maxNr = 1000 * j;
+			Random rnd = new Random(42L);
+			Number160 id = new Number160(rnd);
+			Statistics statistics=new Statistics();
+			PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0], statistics);
+			for (int i = 0; i < maxNr; i++)
+			{
+				Number160 id1 = new Number160(rnd);
+				PeerAddress remoteNode1 = Utils2.createAddress(id1);
+				kadRouting.peerOnline(remoteNode1, null);
+			}
+			double diff=(maxNr + 1)/statistics.getEstimatedNumberOfNodes();
+			System.err.println("We have " + (maxNr + 1) + " nodes, we esimate "
+					+ statistics.getEstimatedNumberOfNodes()+", diff:"+diff);
+			
+			Assert.assertEquals(true, diff<1.5 && diff> 0.7);
 		}
-		System.err.println("We have " + (maxNr+1) + " nodes, we esimate "
-				+ kadRouting.getEstimatedNumberOfNodes());
 	}
 }

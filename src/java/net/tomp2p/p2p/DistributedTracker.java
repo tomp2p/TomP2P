@@ -40,7 +40,6 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class DistributedTracker
 {
 	final private static Logger logger = LoggerFactory.getLogger(DistributedTracker.class);
@@ -82,7 +81,7 @@ public class DistributedTracker
 							trackerConfiguration, futureTracker, true, new Operation()
 							{
 								@Override
-								public FutureResponse create(PeerAddress remoteNode)
+								public FutureResponse create(PeerAddress remoteNode, boolean primary)
 								{
 									if (logger.isDebugEnabled())
 										logger.debug("tracker get: " + remoteNode + " location="
@@ -124,13 +123,13 @@ public class DistributedTracker
 							trackerConfiguration, futureTracker, false, new Operation()
 							{
 								@Override
-								public FutureResponse create(PeerAddress remoteNode)
+								public FutureResponse create(PeerAddress remoteNode, boolean primary)
 								{
 									if (logger.isDebugEnabled())
 										logger.debug("tracker add: " + remoteNode + " location="
 												+ locationKey);
 									return trackerRPC.addToTracker(remoteNode, locationKey,
-											domainKey, attachement, signMessage);
+											domainKey, attachement, signMessage, primary);
 								}
 							});
 				}
@@ -174,15 +173,19 @@ public class DistributedTracker
 			if (futureResponses[i] == null)
 			{
 				// TODO: make this more smart
+				boolean primary = true;
 				PeerAddress next = Utils.pollFirst(queueToAsk);
 				if (next == null)
+				{
 					next = Utils.pollFirst(secondaryQueue);
+					primary = false;
+				}
 				// PeerAddress next = queueToAsk.pollFirst();
 				if (next != null)
 				{
 					alreadyAsked.add(next);
 					active++;
-					futureResponses[i] = operation.create(next);
+					futureResponses[i] = operation.create(next, primary);
 				}
 			}
 			else if (futureResponses[i] != null)
@@ -210,8 +213,7 @@ public class DistributedTracker
 						&& future.getLast().getResponse().isNotOk();
 				if (future.isSuccess() || success)
 				{
-					Map<Number160, Data> newDataMap = futureResponse.getResponse()
-							.getDataMap();
+					Map<Number160, Data> newDataMap = futureResponse.getResponse().getDataMap();
 					mergeC(secondaryQueue, newDataMap.values(), alreadyAsked);
 					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient());
 					int successRequests = success ? successfulRequests.get() : successfulRequests
@@ -257,10 +259,12 @@ public class DistributedTracker
 			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
 			TrackerConfiguration trackerConfiguration, boolean isDigest)
 	{
-		return routing.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
-				routingConfiguration.getDirectHits(), routingConfiguration
-						.getMaxNoNewInfo(trackerConfiguration.getAtLeastSucessfulRequestes()),
-				routingConfiguration.getMaxFailures(), routingConfiguration.getParallel(), isDigest);
+		return routing
+				.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
+						routingConfiguration.getDirectHits(), routingConfiguration
+								.getMaxNoNewInfo(trackerConfiguration
+										.getAtLeastSucessfulRequestes()), routingConfiguration
+								.getMaxFailures(), routingConfiguration.getParallel(), isDigest);
 	}
 
 	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors,
@@ -282,7 +286,7 @@ public class DistributedTracker
 	{
 		for (Data data : newDataMap.values())
 		{
-			PeerAddress peer=data.getPeerAddress();
+			PeerAddress peer = data.getPeerAddress();
 			Map<PeerAddress, Data> peerOnTrackerEntry = peerOnTracker.get(peer);
 			if (peerOnTrackerEntry == null)
 			{
@@ -292,12 +296,12 @@ public class DistributedTracker
 			peerOnTrackerEntry.put(reporter, data);
 		}
 	}
-	
+
 	static boolean mergeC(Collection<PeerAddress> queueToAsk, Collection<Data> newData,
 			Set<PeerAddress> alreadyAsked)
 	{
-		Collection<PeerAddress> newNeighbors=new HashSet<PeerAddress>();
-		for(Data data:newData)
+		Collection<PeerAddress> newNeighbors = new HashSet<PeerAddress>();
+		for (Data data : newData)
 			newNeighbors.add(data.getPeerAddress());
 		return merge(queueToAsk, newNeighbors, alreadyAsked);
 	}
@@ -317,6 +321,6 @@ public class DistributedTracker
 	}
 	public interface Operation
 	{
-		public abstract FutureResponse create(PeerAddress address);
+		public abstract FutureResponse create(PeerAddress address, boolean primary);
 	}
 }

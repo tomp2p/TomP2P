@@ -77,10 +77,11 @@ public class TrackerRPC extends ReplyHandler
 	}
 
 	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, final Data attachement, boolean signMessage)
+			final Number160 domainKey, final Data attachement, boolean signMessage, boolean primary)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, primary
+				? Type.REQUEST_3 : Type.REQUEST_1);
 		message.setKeyKey(locationKey, domainKey);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
@@ -126,7 +127,8 @@ public class TrackerRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(Message message)
 	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
+		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message
+				.getType() == Type.REQUEST_3)
 				&& message.getKey1() != null && message.getKey2() != null;
 	}
 
@@ -134,13 +136,15 @@ public class TrackerRPC extends ReplyHandler
 	public Message handleResponse(Message message) throws Exception
 	{
 		boolean direct = message.getType() == Type.REQUEST_1;
+		// boolean replication= message.getType() == Type.REQUEST_2;
+		boolean primary = message.getType() == Type.REQUEST_3;
 		final Message responseMessage = createMessage(message.getSender(), message.getCommand(),
 				Type.OK);
 		responseMessage.setMessageId(message.getMessageId());
 		final TrackerStorage trackerStorage = peerBean.getTrackerStorage();
 		Number160 locationKey = message.getKey1();
 		Number160 domainKey = message.getKey2();
-		if (direct)
+		if (direct || primary)
 		{
 			SortedMap<Number480, Data> peerDataMap = trackerStorage.getSelection(new Number320(
 					locationKey, domainKey), trackerStorage.getTrackerSize());
@@ -151,26 +155,47 @@ public class TrackerRPC extends ReplyHandler
 			PeerAddress senderAddress = message.getSender();
 			if (message.getCommand() == Command.TRACKER_ADD)
 			{
-			  if (trackerStorage.size(locationKey, domainKey) >= trackerStorage.getTrackerStoreSize())
-			  {
-                            responseMessage.setType(Message.Type.DENIED);
-			  }
-			  else
-			  {
-			  if (logger.isDebugEnabled())
-					logger.debug("tracker put on(" + peerBean.getServerPeerAddress()
-							+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
-							+ ", address:" + senderAddress);
-				Map<Number160, Data> dataMap = message.getDataMap();
-				final Data attachement = (dataMap != null && dataMap.size() >= 1) ? dataMap
-						.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY, null);
-				attachement.setPeerAddress(senderAddress);
-				// public key is not set in the data, but in the message
-				PublicKey publicKey = message.getPublicKey();
-				if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
+				if (trackerStorage.size(locationKey, domainKey) >= trackerStorage
+						.getTrackerStoreSize())
+				{
 					responseMessage.setType(Message.Type.DENIED);
-				
-			}}
+				}
+				else
+				{
+					if (logger.isDebugEnabled())
+						logger.debug("tracker put on(" + peerBean.getServerPeerAddress()
+								+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
+								+ ", address:" + senderAddress);
+					// here we set the map with the close peers. If we get data
+					// by a sender
+					// and the sender is closer than us, we assume that the
+					// sender has the
+					// data and we don't need to transfer data to the closest
+					// (sender) peer.
+					if (primary && peerBean.getReplicationTracker() != null)
+					{
+						peerBean.getReplicationTracker().updatePeerMapIfCloser(locationKey,
+								message.getSender().getID());
+					}
+					Map<Number160, Data> dataMap = message.getDataMap();
+					final Data attachement = (dataMap != null && dataMap.size() >= 1) ? dataMap
+							.values().iterator().next() : new Data(MessageCodec.EMPTY_BYTE_ARRAY,
+							null);
+					attachement.setPeerAddress(senderAddress);
+					// public key is not set in the data, but in the message
+					PublicKey publicKey = message.getPublicKey();
+					if (!trackerStorage.put(locationKey, domainKey, publicKey, attachement))
+						responseMessage.setType(Message.Type.DENIED);
+					else
+					{
+						// check the responsibility of the newly added data, do
+						// something
+						// (notify) if we are responsible
+						if (primary && peerBean.getReplicationTracker() != null)
+							peerBean.getReplicationTracker().checkResponsibility(locationKey);
+					}
+				}
+			}
 			else
 			{
 				if (logger.isDebugEnabled())
@@ -185,10 +210,31 @@ public class TrackerRPC extends ReplyHandler
 		// thinks that I'm responsible
 		else
 		{
+			// here we set the map with the close peers. If we get data
+			// by a sender
+			// and the sender is closer than us, we assume that the
+			// sender has the
+			// data and we don't need to transfer data to the closest
+			// (sender) peer.
+			if (peerBean.getReplicationTracker() != null)
+				peerBean.getReplicationTracker().updatePeerMapIfCloser(locationKey,
+						message.getSender().getID());
+			if (logger.isDebugEnabled())
+				logger.debug("tracker replication on(" + peerBean.getServerPeerAddress()
+						+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
+						+ ", address:" + message.getSender());
 			Map<Number160, Data> dataMap = message.getDataMap();
 			Data data = dataMap.values().iterator().next();
 			if (!trackerStorage.put(locationKey, domainKey, null, data))
 				responseMessage.setType(Message.Type.DENIED);
+			else
+			{
+				// check the responsibility of the newly added data, do
+				// something
+				// (notify) if we are responsible
+				if (peerBean.getReplicationTracker() != null)
+					peerBean.getReplicationTracker().checkResponsibility(locationKey);
+			}
 		}
 		return responseMessage;
 	}

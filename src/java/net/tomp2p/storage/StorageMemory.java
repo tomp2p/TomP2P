@@ -17,6 +17,7 @@ package net.tomp2p.storage;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -359,7 +360,11 @@ public class StorageMemory extends Storage
 	{
 		synchronized (lock)
 		{
-			return responsibilityMapRev.get(peerID);
+			Collection<Number160> result = responsibilityMapRev.get(peerID);
+			if(result==null)
+				return Collections.<Number160>emptyList();
+			else
+				return new ArrayList<Number160>(result);
 		}
 	}
 

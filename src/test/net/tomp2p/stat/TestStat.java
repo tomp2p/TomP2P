@@ -24,7 +24,7 @@ public class TestStat
 		Number160 id6 = new Number160("0x11");
 		Number160 id7 = new Number160("0x13");
 		Number160 id8 = new Number160("0x15");
-		Statistics statistics=new Statistics();
+		Statistics statistics = new Statistics();
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id4, 20, 0, 0, 0, new int[0], statistics);
 		PeerAddress remoteNode1 = Utils2.createAddress(id1);
 		kadRouting.peerOnline(remoteNode1, null); // 
@@ -43,7 +43,7 @@ public class TestStat
 		PeerAddress remoteNode8 = Utils2.createAddress(id8);
 		kadRouting.peerOnline(remoteNode8, null);
 		System.err.println("We have 8 nodes, we esimate " + statistics.getEstimatedNumberOfNodes());
-		Assert.assertEquals(8d,  statistics.getEstimatedNumberOfNodes());
+		Assert.assertEquals(8d, statistics.getEstimatedNumberOfNodes());
 	}
 
 	@Test
@@ -54,7 +54,7 @@ public class TestStat
 			int maxNr = 1000 * j;
 			Random rnd = new Random(42L);
 			Number160 id = new Number160(rnd);
-			Statistics statistics=new Statistics();
+			Statistics statistics = new Statistics();
 			PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0], statistics);
 			for (int i = 0; i < maxNr; i++)
 			{
@@ -62,11 +62,10 @@ public class TestStat
 				PeerAddress remoteNode1 = Utils2.createAddress(id1);
 				kadRouting.peerOnline(remoteNode1, null);
 			}
-			double diff=(maxNr + 1)/statistics.getEstimatedNumberOfNodes();
+			double diff = (maxNr + 1) / statistics.getEstimatedNumberOfNodes();
 			System.err.println("We have " + (maxNr + 1) + " nodes, we esimate "
-					+ statistics.getEstimatedNumberOfNodes()+", diff:"+diff);
-			
-			Assert.assertEquals(true, diff<1.5 && diff> 0.7);
+					+ statistics.getEstimatedNumberOfNodes() + ", diff:" + diff);
+			Assert.assertEquals(true, diff < 1.5 && diff > 0.5);
 		}
 	}
 }

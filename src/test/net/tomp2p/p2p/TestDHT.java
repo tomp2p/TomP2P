@@ -779,7 +779,7 @@ public class TestDHT
 	@Test
 	public void testObjectLoop() throws Exception
 	{
-		for (int i = 0; i < 1000; i++)
+		for (int i = 0; i < 100; i++)
 		{
 			testObject();
 		}

@@ -414,7 +414,6 @@ public class ConnectionHandler
 
 	public boolean isListening()
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return !getConnectionBean().getChannelGroup().isEmpty();
 	}
 }

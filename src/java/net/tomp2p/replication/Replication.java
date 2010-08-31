@@ -81,8 +81,6 @@ public class Replication implements PeerMapChangeListener
 		// check if we should change responibility.
 		Collection<Number160> myResponsibleLocations = storage.findResponsibleData(selfAddress
 				.getID());
-		if (myResponsibleLocations == null)
-			return;
 		for (Number160 myResponsibleLocation : myResponsibleLocations)
 		{
 			PeerAddress closest = closest(myResponsibleLocation);

@@ -646,7 +646,7 @@ public class Message
 		final StringBuilder sb = new StringBuilder("Message: id=");
 		sb.append(getMessageId());
 		sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString())
-				.append(",l=").append(getContentLength()).append(",s=").append(getSender()).append(
+				.append(",l=").append(getContentLength()+MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(
 						",r=").append(getRecipient()).append(",k=").append(keys);
 		return sb.toString();
 	}

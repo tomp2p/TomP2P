@@ -639,7 +639,7 @@ public class TestDHT
 					}
 				});
 			}
-			FutureDHT f = nodes[400].send(nodes[500].getPeerID(), "hallo");
+			FutureDHT f = nodes[400].send(new Number160(rnd), "hallo");
 			f.awaitUninterruptibly();
 			Assert.assertEquals(true, f.isSuccess());
 			Assert.assertEquals(true, ai.get() >= 3 && ai.get() <= 6);
@@ -1345,6 +1345,40 @@ public class TestDHT
 			slave2.shutdown();
 		}
 	}
+	
+	@Test
+	public void testObjectSendExample() throws Exception
+	{
+		Peer p1 = null;
+		Peer p2 = null;
+		try
+		{
+			p1 = new Peer(new Number160(rnd));
+			p1.listen(4001, 4001);
+			p2 = new Peer(new Number160(rnd));
+			p2.listen(4002, 4002);
+			//attach reply handler
+			p2.setObjectDataReply(new ObjectDataReply()
+			{
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception
+				{
+					System.out.println("request ["+request+"]");
+					return "world";
+				}
+			});
+			FutureData futureData=p1.send(p2.getPeerAddress(), "hello");
+			futureData.awaitUninterruptibly();
+			System.out.println("reply ["+futureData.getObject()+"]");
+		}
+		finally
+		{
+			p1.shutdown();
+			p2.shutdown();
+		}
+	}
+	
+	
 
 	@Test
 	public void testObjectSend() throws Exception

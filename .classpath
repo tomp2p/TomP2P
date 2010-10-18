@@ -1,16 +1,11 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src/java"/>
-	<classpathentry kind="src" path="src/conf"/>
-	<classpathentry kind="src" path="src/examples"/>
-	<classpathentry kind="src" path="src/test"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry exported="true" kind="lib" path="lib/commons-logging-1.1.1.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/slf4j-api-1.5.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/slf4j-jdk14-1.5.5.jar"/>
-	<classpathentry exported="true" kind="lib" path="lib/je-4.0.103.jar" sourcepath="lib/src"/>
-	<classpathentry exported="true" kind="lib" path="lib/sbbi-upnplib-1.0.4.jar" sourcepath="lib/src/sbbi-upnplib-1.0.4-sources.zip"/>
-	<classpathentry exported="true" kind="lib" path="lib/netty-3.2.1.Final.jar" sourcepath="lib/src/netty-3.2.1.Final-sources.jar"/>
-	<classpathentry kind="output" path="bin"/>
+  <classpathentry kind="src" path="src/test/java" output="target/test-classes" including="**/*.java"/>
+  <classpathentry kind="src" path="src/main/java" including="**/*.java"/>
+  <classpathentry kind="output" path="target/classes"/>
+  <classpathentry kind="var" path="M2_REPO/com/sleepycat/je/4.0.103/je-4.0.103.jar" sourcepath="M2_REPO/com/sleepycat/je/4.0.103/je-4.0.103-sources.jar"/>
+  <classpathentry kind="var" path="M2_REPO/junit/junit/4.8.2/junit-4.8.2.jar" sourcepath="M2_REPO/junit/junit/4.8.2/junit-4.8.2-sources.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/jboss/netty/netty/3.2.2.Final/netty-3.2.2.Final.jar" sourcepath="M2_REPO/org/jboss/netty/netty/3.2.2.Final/netty-3.2.2.Final-sources.jar"/>
+  <classpathentry kind="var" path="M2_REPO/org/slf4j/slf4j-api/1.5.11/slf4j-api-1.5.11.jar" sourcepath="M2_REPO/org/slf4j/slf4j-api/1.5.11/slf4j-api-1.5.11-sources.jar"/>
+  <classpathentry kind="lib" path="lib/sbbi-upnplib-1.0.4.jar"/>
+  <classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 </classpath>

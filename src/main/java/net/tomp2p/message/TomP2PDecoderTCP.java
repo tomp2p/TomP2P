@@ -55,8 +55,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	protected Object decode(final ChannelHandlerContext ctx, final Channel channel,
 			final ChannelBuffer buffer) throws Exception
 	{
-		buffer.markReaderIndex();
-		// System.err.println("got decoder"+buffer.readableBytes()+" "+channel.isOpen());
+		//read header if possible and not already read
 		if (message == null && buffer.readableBytes() >= MessageCodec.HEADER_SIZE)
 		{
 			final SocketAddress sa = channel.getRemoteAddress();
@@ -69,8 +68,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			if (logger.isDebugEnabled())
 				logger.debug("got header in decoder " + message);
 		}
-		else if (message != null)
-			buffer.readerIndex(MessageCodec.HEADER_SIZE);
+		
+		
 		if (message != null && message.getContentLength() == 0)
 		{
 			return cleanupAndReturnMessage();
@@ -83,8 +82,10 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			MessageCodec.decodePayload(message.getContentType4(), buffer, message);
 			return cleanupAndReturnMessage();
 		}
-		buffer.resetReaderIndex();
-		return null;
+		else
+		{
+			return null;
+		}
 	}
 
 	@Override

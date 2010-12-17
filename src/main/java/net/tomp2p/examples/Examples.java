@@ -37,6 +37,8 @@ import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.Bindings.Protocol;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
@@ -141,6 +143,28 @@ public class Examples
 		System.out.println("got: " + new String(iterator.next().getData()) + " ("
 				+ futureDHT.isSuccess() + ")");
 	}
+	
+	public static void exampleGetBlocking(Peer[] nodes,  Number160 nr)
+        {
+	  FutureDHT futureDHT = nodes[77].get(nr);
+	  //blocking operation
+          futureDHT.awaitUninterruptibly();
+          System.out.println("result: "+futureDHT.getObject());
+          System.out.println("this may *not* happen before printing the result");
+        }
+	
+	public static void exampleGetNonBlocking(Peer[] nodes,  Number160 nr)
+        {
+          FutureDHT futureDHT = nodes[77].get(nr);
+          //non-blocking operation
+          futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() {
+            @Override
+            public void operationComplete(FutureDHT future) throws Exception {
+              System.out.println("result: "+future.getObject());
+            }
+          });
+          System.out.println("this may happen before printing the result");
+        }
 
 	private static Peer[] createAndAttachNodes(Peer master, int nr) throws Exception
 	{

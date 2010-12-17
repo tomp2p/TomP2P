@@ -50,7 +50,18 @@
         <exclude>${project.build.finalName}*-javadoc.jar</exclude>
       </excludes>
     </fileSet>
-
+    
+    <!-- Dependencies -->
+    <fileSet>
+      <directory>target/dependencies</directory>
+      <outputDirectory>lib</outputDirectory>
+       <includes>
+        <include>*.jar</include>
+      </includes>
+      <excludes>
+        <exclude>org.osgi.core*.jar</exclude>
+      </excludes>
+    </fileSet>
     <!-- Documentation (API) -->
     <fileSet>
       <directory>target/api</directory>

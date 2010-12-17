@@ -9,7 +9,7 @@
   <groupId>net.tomp2p</groupId>
   <artifactId>TomP2P</artifactId>
   <name>TomP2P</name>
-  <version>3.2.4</version>
+  <version>3.2.4-SNAPSHOT</version>
   <description>TomP2P, a high speed P2P key-value pair storage library</description>
   <url>http://tomp2p.net</url>
 
@@ -21,8 +21,8 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://tomp2p.net/svn/TomP2P/tags/TomP2P-3.2.4</connection>
-    <developerConnection>scm:svn:https://tomp2p.net/svn/TomP2P/tags/TomP2P-3.2.4</developerConnection>
+    <connection>scm:svn:http://tomp2p.net/svn/TomP2P/trunk</connection>
+    <developerConnection>scm:svn:https://tomp2p.net/svn/TomP2P/trunk</developerConnection>
   </scm>
 
   <distributionManagement>

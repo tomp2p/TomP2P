@@ -23,8 +23,7 @@ public class TestKadRouting
 	public void testAdd()
 	{
 		Number160 id = new Number160("0x1");
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 2, 100, 60 * 1000, 3, new int[] {},
-				new Statistics());
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 2, 100, 60 * 1000, 3, new int[] {});
 		Number160 id1 = new Number160("0x2");
 		Number160 id2 = new Number160("0x3");
 		Number160 id3 = new Number160("0x4");
@@ -88,7 +87,7 @@ public class TestKadRouting
 		PeerAddress rn2 = new PeerAddress(new Number160("0x40"));
 		Number160 key = new Number160("0xff");
 		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160("0x1"), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		Assert.assertEquals(-1, routing.isCloser(key, rn1, rn2));
 		//
 		rn1 = new PeerAddress(new Number160("0x10"));
@@ -106,7 +105,7 @@ public class TestKadRouting
 		PeerAddress rn2 = new PeerAddress(new Number160(66));
 		PeerAddress rn3 = new PeerAddress(new Number160(67));
 		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160(999), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		SortedSet<PeerAddress> rc = routing.closePeers(new Number160(98), 3);
 		rc.add(rn2);
 		rc.add(rn1);
@@ -118,7 +117,7 @@ public class TestKadRouting
 	public void testAddNode() throws UnknownHostException
 	{
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i));
@@ -134,7 +133,7 @@ public class TestKadRouting
 	public void testAddNode2() throws UnknownHostException
 	{
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
@@ -150,7 +149,7 @@ public class TestKadRouting
 	public void testRemove() throws UnknownHostException
 	{
 		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -166,7 +165,7 @@ public class TestKadRouting
 	public void testRemoveConcurrent() throws UnknownHostException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
-				60 * 1000, 3, new int[] {}, new Statistics());
+				60 * 1000, 3, new int[] {});
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -204,7 +203,7 @@ public class TestKadRouting
 	public void testAddConcurrent() throws UnknownHostException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
-				60 * 1000, 3, new int[] {}, new Statistics());
+				60 * 1000, 3, new int[] {});
 		new Thread(new Runnable()
 		{
 			@Override
@@ -235,7 +234,7 @@ public class TestKadRouting
 	public void testRandomAddRemove()
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
-				60 * 1000, 3, new int[] {}, new Statistics());
+				60 * 1000, 3, new int[] {});
 		new Thread(new Runnable()
 		{
 			@Override
@@ -270,7 +269,7 @@ public class TestKadRouting
 	public void testPerformance() throws IOException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
-				60 * 1000, 3, new int[] {}, new Statistics());
+				60 * 1000, 3, new int[] {});
 		final Random random = new Random();
 		final List<PeerAddress> listAdded = new ArrayList<PeerAddress>();
 		final List<PeerAddress> listRemoved = new ArrayList<PeerAddress>();
@@ -317,7 +316,7 @@ public class TestKadRouting
 		for (int j = 0; j < 10000; j++)
 		{
 			PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160(rnd), 5, 100, 60 * 1000,
-					3, new int[] {}, new Statistics());
+					3, new int[] {});
 			List<PeerAddress> peers = new ArrayList<PeerAddress>();
 			for (int i = 1; i < 160 * 5; i++)
 			{

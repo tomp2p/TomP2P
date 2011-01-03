@@ -34,7 +34,7 @@ public class TestRouting
 	public void testDifference() throws UnknownHostException
 	{
 		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		Collection<PeerAddress> newC = new ArrayList<PeerAddress>();
 		newC.add(Utils2.createAddress(12));
 		newC.add(Utils2.createAddress(15));
@@ -56,7 +56,7 @@ public class TestRouting
 	public void testMerge() throws UnknownHostException
 	{
 		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(test
@@ -88,7 +88,7 @@ public class TestRouting
 	public void testEvaluate() throws UnknownHostException
 	{
 		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 100, 60 * 1000, 3,
-				new int[] {}, new Statistics());
+				new int[] {});
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
 		SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>(test

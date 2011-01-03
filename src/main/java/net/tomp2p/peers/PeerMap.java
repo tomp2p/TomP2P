@@ -19,6 +19,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.SortedSet;
 
+import net.tomp2p.p2p.Statistics;
+
 /**
  * Defines a map to store neighbor peers. The metric is defined in the
  * implementation.
@@ -140,4 +142,6 @@ public interface PeerMap
 	public Collection<PeerAddress> getAll();
 
 	public void addAddressFilter(InetAddress address);
+	
+	public Statistics getStatistics();
 }

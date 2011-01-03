@@ -289,11 +289,12 @@ public class Peer
 				.newScheduledThreadPool(peerConfiguration.getMaintenanceThreads());
 		this.scheduledExecutorServiceReplication = Executors
 				.newScheduledThreadPool(peerConfiguration.getReplicationThreads());
-		Statistics statistics = new Statistics();
+		
 		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
 				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
 				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds(), statistics);
+						.getWaitingTimeBetweenNodeMaintenenceSeconds());
+		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
 				connectionConfiguration, messageLogger, keyPair, peerMap, listeners), statistics);
 	}
@@ -305,11 +306,11 @@ public class Peer
 		this.bindings = master.bindings;
 		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
 		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
-		Statistics statistics = new Statistics();
 		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
 				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
 				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds(), statistics);
+						.getWaitingTimeBetweenNodeMaintenenceSeconds());
+		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap),
 				statistics);
 	}

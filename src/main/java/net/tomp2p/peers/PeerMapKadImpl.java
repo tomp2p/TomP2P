@@ -56,10 +56,6 @@ public class PeerMapKadImpl implements PeerMap
 	final private Number160 self;
 	// go for variable bag size. Much more performance for small networks
 	final private List<Map<Number160, PeerAddress>> peerMap = new ArrayList<Map<Number160, PeerAddress>>();
-	// this is used to find bags that are oversized. We could also iterate, but
-	// this is faster to keep track of them.
-	final private Map<Integer, Object> overSizeBagIndex = new ConcurrentHashMap<Integer, Object>(
-			16, 0.75f, 1);
 	// In this bag, peers are temporarily stored that have been removed in order
 	// to not reappear again.
 	final private Map<PeerAddress, Log> peerOfflineLogs;
@@ -120,7 +116,7 @@ public class PeerMapKadImpl implements PeerMap
 	 *        added or removed.
 	 */
 	public PeerMapKadImpl(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
-			int maxFail, int[] maintenanceTimeoutsSeconds, Statistics statistics)
+			int maxFail, int[] maintenanceTimeoutsSeconds)
 	{
 		if (self == null || self.isZero())
 			throw new IllegalArgumentException("Zero or null are not a valid IDs");
@@ -132,7 +128,7 @@ public class PeerMapKadImpl implements PeerMap
 		this.maxFail = maxFail;
 		this.maintenanceTimeoutsSeconds = maintenanceTimeoutsSeconds;
 		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cacheSize);
-		this.statistics = statistics;
+		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
 		for (int i = 0; i < Number160.BITS; i++)
 		{
 			// I made some experiments here and concurrent sets are not
@@ -171,6 +167,12 @@ public class PeerMapKadImpl implements PeerMap
 	{
 		peerListeners.remove(peerListener);
 	}
+	
+	@Override
+	public Statistics getStatistics()
+	{
+	    return statistics;
+	}
 
 	/**
 	 * Notifies on insert. Since listeners are never changed, this is thread
@@ -180,7 +182,7 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private void notifyInsert(PeerAddress peerAddress)
 	{
-		statistics.triggerStatUpdate(peerMap, peerAddress, true, size(), maxPeers, bagSize);
+		statistics.triggerStatUpdate(true, size());
 		for (PeerMapChangeListener listener : peerMapChangeListeners)
 			listener.peerInserted(peerAddress);
 	}
@@ -193,7 +195,7 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private void notifyRemove(PeerAddress peerAddress)
 	{
-		statistics.triggerStatUpdate(peerMap, peerAddress, false, size(), maxPeers, bagSize);
+		statistics.triggerStatUpdate(false, size());
 		for (PeerMapChangeListener listener : peerMapChangeListeners)
 			listener.peerRemoved(peerAddress);
 	}
@@ -270,16 +272,16 @@ public class PeerMapKadImpl implements PeerMap
 		}
 		else
 		{
-			// check if we should add a node and remove another node
-			if (map.size() < bagSize)
+		    	// the class is not full, remove other nodes!
+			PeerAddress toRemove=removeLatestEntryExceedingBagSize();
+			if(classMember(toRemove.getID()) > classMember(remotePeer.getID())) 
 			{
-				// the class is not full, remove other nodes!
-				if (removeLatestEntryExceedingBagSize())
-				{
-					// this updates stats and schedules peer for maintenance
-					prepareInsertOrUpdate(remotePeer, firstHand);
-					return insertOrUpdate(map, remotePeer, classMember);
-				}
+			    if(remove(toRemove))
+			    {
+				// this updates stats and schedules peer for maintenance
+				prepareInsertOrUpdate(remotePeer, firstHand);
+				return insertOrUpdate(map, remotePeer, classMember);
+			    }    
 			}
 		}
 		return false;
@@ -335,8 +337,6 @@ public class PeerMapKadImpl implements PeerMap
 		final boolean retVal = map.remove(remotePeer.getID()) != null;
 		if (retVal)
 		{
-			if (map.size() <= bagSize)
-				overSizeBagIndex.remove(classMember);
 			removeFromMaintenance(remotePeer);
 			peerCount.decrementAndGet();
 			notifyRemove(remotePeer);
@@ -435,8 +435,6 @@ public class PeerMapKadImpl implements PeerMap
 		{
 			retVal = !map.containsKey(remotePeer.getID());
 			map.put(remotePeer.getID(), remotePeer);
-			if (retVal && map.size() > bagSize)
-				overSizeBagIndex.put(classMember, this);
 		}
 		if (retVal)
 		{
@@ -456,11 +454,9 @@ public class PeerMapKadImpl implements PeerMap
 	 * 
 	 * @return True if we could remove an oversized peer
 	 */
-	private boolean removeLatestEntryExceedingBagSize()
+	private PeerAddress removeLatestEntryExceedingBagSize()
 	{
-		// I think this is good enough for checking.
-		// final int CHECK_AT_MOST = bagSize * 2;
-		for (int classMember : overSizeBagIndex.keySet())
+		for (int classMember = Number160.BITS-1; classMember >=0; classMember--)
 		{
 			final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 			if (map.size() > bagSize)
@@ -487,20 +483,11 @@ public class PeerMapKadImpl implements PeerMap
 				}
 				if (removePeerAddress != null)
 				{
-					final boolean retVal = map.remove(removePeerAddress.getID()) != null;
-					if (retVal)
-					{
-						if (map.size() <= bagSize)
-							overSizeBagIndex.remove(classMember);
-						removeFromMaintenance(removePeerAddress);
-						peerCount.decrementAndGet();
-						notifyRemove(removePeerAddress);
-					}
-					return retVal;
+					return removePeerAddress;
 				}
 			}
 		}
-		return false;
+		return null;
 	}
 
 	private boolean shouldPeerBeRemoved(Log log)

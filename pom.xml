@@ -40,7 +40,7 @@
   <distributionManagement>
     <repository>
       <id>ssh-tomp2p</id>
-      <url>scp://tomp2p.net/var/www/tomp2p.net/mvn/</url>
+      <url>scp://tomp2p.net/home/draft/maven/</url>
     </repository>
   </distributionManagement>
 

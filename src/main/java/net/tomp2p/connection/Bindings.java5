@@ -17,7 +17,6 @@ package net.tomp2p.connection;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -177,9 +176,14 @@ public class Bindings
 	private StringBuilder discoverNetwork(NetworkInterface networkInterface)
 	{
 		StringBuilder sb = new StringBuilder();
-		for (InterfaceAddress iface : networkInterface.getInterfaceAddresses())
+		// only for 1.6!
+		// for (InterfaceAddress iface :
+		// networkInterface.getInterfaceAddresses())
+		for (Enumeration<InetAddress> e = networkInterface.getInetAddresses(); e.hasMoreElements();)
 		{
-			InetAddress inet = iface.getAddress();
+			// only for 1.6!
+			// InetAddress inet = iface.getAddress();
+			InetAddress inet = e.nextElement();
 			if (getAddresses().contains(inet))
 				continue;
 			if (useAllProtocols())
@@ -200,8 +204,9 @@ public class Bindings
 					addAddress(inet);
 				}
 			}
-			if (iface.getBroadcast() != null)
-				addBroadcastAddress(iface.getBroadcast());
+			// only for 1.6! add broadcast addresses
+			// if (iface.getBroadcast() != null)
+			// addBroadcastAddress(iface.getBroadcast());
 		}
 		return sb.replace(0, 1, "(").append(")");
 	}

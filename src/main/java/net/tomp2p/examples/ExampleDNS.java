@@ -6,6 +6,9 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
+/**
+ * See http://tomp2p.net/doc/quick/ for more information on this
+ */
 public class ExampleDNS
 {
 	final private Peer peer;

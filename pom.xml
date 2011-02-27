@@ -39,7 +39,8 @@
   <distributionManagement>
     <repository>
       <id>ssh-tomp2p</id>
-      <url>scp://tomp2p.net/home/draft/maven/</url>
+      <!-- The URL is CMS specific -->
+      <url>scp://tomp2p.net/home/draft/tomp2p/8-Development [url=dev]/4-Maven [url=mvn].mvn</url>
     </repository>
   </distributionManagement>
 

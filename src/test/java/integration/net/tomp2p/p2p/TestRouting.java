@@ -892,9 +892,9 @@ public class TestRouting
 		Peer client = new Peer(new Number160(rnd));
 		try
 		{
-			master.listen();
+			master.listen(4000, 4000);
 			client.listen(4001, 4001);
-			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast();
+			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast(4000);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
 			Assert.assertEquals(1, client.getPeerBean().getPeerMap().size());
@@ -916,7 +916,7 @@ public class TestRouting
 		{
 			master.listen(4002, 4002);
 			client.listen(4001, 4001);
-			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast();
+			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast(4001);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 			Assert.assertEquals(0, client.getPeerBean().getPeerMap().size());

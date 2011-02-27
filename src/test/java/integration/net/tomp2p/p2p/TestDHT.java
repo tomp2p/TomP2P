@@ -11,7 +11,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
@@ -43,7 +42,6 @@ import net.tomp2p.peers.ShortString;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.Storage.ProtectionEnable;
 import net.tomp2p.storage.Storage.ProtectionEntryInDomain;
@@ -179,10 +177,10 @@ public class TestDHT
 		try
 		{
 			master = new Peer(new Number160(rnd));
-			master.listen();
+			master.listen(4001, 4001);
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
-			FutureForkJoin<FutureResponse> res = slave.pingBroadcast();
+			FutureForkJoin<FutureResponse> res = slave.pingBroadcast(4001);
 			res.awaitUninterruptibly();
 			Assert.assertEquals(true, res.isSuccess());
 		}

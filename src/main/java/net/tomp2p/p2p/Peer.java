@@ -547,11 +547,16 @@ public class Peer
 	}
 
 	// Boostrap and ping
+	
 	public FutureBootstrap bootstrapBroadcast()
+	{
+		return bootstrapBroadcast(connectionConfiguration.getDefaultPort());
+	}
+	public FutureBootstrap bootstrapBroadcast(int port)
 	{
 		final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
 		// limit after
-		final FutureForkJoin<FutureResponse> tmp = pingBroadcast();
+		final FutureForkJoin<FutureResponse> tmp = pingBroadcast(port);
 		tmp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>()
 		{
 			@Override
@@ -572,7 +577,7 @@ public class Peer
 		return result;
 	}
 
-	FutureForkJoin<FutureResponse> pingBroadcast()
+	FutureForkJoin<FutureResponse> pingBroadcast(int port)
 	{
 		final int size = bindings.getBroadcastAddresses().size();
 		if (size > 0)
@@ -582,8 +587,7 @@ public class Peer
 			{
 				final InetAddress broadcastAddress = bindings.getBroadcastAddresses().get(i);
 				final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
-						connectionConfiguration.getDefaultPort(), connectionConfiguration
-								.getDefaultPort());
+						port, port);
 				validBroadcast[i] = getHandshakeRPC().pingBroadcastUDP(peerAddress);
 				logger.debug("ping broadcast to " + broadcastAddress);
 			}

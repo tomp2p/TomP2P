@@ -98,7 +98,7 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT
 	private static <K> K evaluate0(Map<PeerAddress, K> raw)
 	{
 		if (raw == null)
-			throw new IllegalArgumentException("cannot evaluate, as no result provided");
+			throw new IllegalArgumentException("cannot evaluate, as no result provided. Most likely you are not using direct messages, but rather put() or add(). For put and add, you have to use getData()");
 		Map<K, Integer> counter = new HashMap<K, Integer>();
 		K best = null;
 		int count = 0;

@@ -40,7 +40,7 @@
     <repository>
       <id>ssh-tomp2p</id>
       <!-- The URL is CMS specific -->
-      <url>scp://tomp2p.net/home/draft/tomp2p/maven</url>
+      <url>scp://tomp2p.net/home/draft/maven</url>
     </repository>
   </distributionManagement>
 

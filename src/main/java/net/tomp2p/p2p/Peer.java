@@ -688,9 +688,10 @@ public class Peer
 					if (tmp.size() == 1)
 					{
 						PeerAddress seenAs = tmp.iterator().next();
+						logger.debug("I'm seen as "+seenAs+" by peer "+peerAddress);
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
+						    	connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
 									.getInetAddress(), serverAddress.portUDP(), serverAddress
 									.portTCP());
 							mapped = true;

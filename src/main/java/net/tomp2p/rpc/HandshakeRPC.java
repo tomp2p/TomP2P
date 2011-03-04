@@ -128,7 +128,8 @@ public class HandshakeRPC extends ReplyHandler
 	@Override
 	public Message handleResponse(final Message message) throws Exception
 	{
-		if (message.getType() == Type.REQUEST_3)
+	    //probe
+	    if (message.getType() == Type.REQUEST_3)
 		{
 			final Message responseMessage = createMessage(message.getSender(), Command.PING,
 					Type.OK);
@@ -139,6 +140,7 @@ public class HandshakeRPC extends ReplyHandler
 				fireTCP(message.getSender());
 			return responseMessage;
 		}
+	    	//discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
 			final Message responseMessage = createMessage(message.getSender(), Command.PING,

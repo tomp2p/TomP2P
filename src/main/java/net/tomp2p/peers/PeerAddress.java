@@ -206,7 +206,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 
 	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP)
 	{
-		this(id, address, portTCP, portUDP, false, false, false);
+		this(id, address, portTCP, portUDP, false, true, true);
 	}
 
 	public PeerAddress(Number160 id, InetSocketAddress inetSocketAddress)

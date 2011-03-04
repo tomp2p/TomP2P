@@ -17,6 +17,7 @@ public class TestNAT {
 	Random r=new Random(42L);
 	Peer peer=new Peer(new Number160(r));
 	peer.listen(4000, 4000);
+	Thread.sleep(Integer.MAX_VALUE);
     }
     @Test
     public void startClient() throws Exception

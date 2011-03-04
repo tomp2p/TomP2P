@@ -80,6 +80,12 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>1.6.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
       <version>4.1.6</version>

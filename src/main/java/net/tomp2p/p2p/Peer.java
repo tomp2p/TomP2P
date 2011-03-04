@@ -297,6 +297,7 @@ public class Peer
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
 				connectionConfiguration, messageLogger, keyPair, peerMap, listeners), statistics);
+		logger.debug("init done");
 	}
 
 	public void listen(final Peer master) throws Exception

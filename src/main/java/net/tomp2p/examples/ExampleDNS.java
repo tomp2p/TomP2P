@@ -1,6 +1,8 @@
 package net.tomp2p.examples;
 
 import java.io.IOException;
+
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -13,9 +15,12 @@ public class ExampleDNS
 {
 	final private Peer peer;
 	public ExampleDNS(int nodeId) throws Exception {
-		this.peer=new Peer(Number160.createHash(nodeId));
-		this.peer.listen(4000+nodeId, 4000+nodeId);
-		this.peer.bootstrapBroadcast(4001).awaitUninterruptibly();
+		peer=new Peer(Number160.createHash(nodeId));
+		peer.listen(4000+nodeId, 4000+nodeId);
+		FutureBootstrap fb=this.peer.bootstrapBroadcast(4001);
+		fb.awaitUninterruptibly();
+		peer.discover(fb.getBootstrapTo().iterator().next()).awaitUninterruptibly();
+		
 	}
 	public static void main(String[] args) throws NumberFormatException, Exception {
 		ExampleDNS dns=new ExampleDNS(Integer.parseInt(args[0]));

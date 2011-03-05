@@ -691,12 +691,15 @@ public class Peer
 						logger.debug("I'm seen as "+seenAs+" by peer "+peerAddress);
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-							int portUDP=-1;
-							if (futureResponseUDP.isSuccess())
-								portUDP=serverAddress.portUDP();
-							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
-									.getInetAddress(), portUDP, serverAddress
-									.portTCP());
+							if(connectionConfiguration.isEnabledUPNPNAT()) 
+							{
+								int portUDP=-1;
+								if (futureResponseUDP.isSuccess())
+									portUDP=serverAddress.portUDP();
+								connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP, serverAddress
+										.portTCP(), seenAs
+										.getInetAddress(), connectionConfiguration.getPortNATUDP(), connectionConfiguration.getPortNATTCP());
+							}
 							// we did not announce how the other peer sees us,
 							// correct it and set forward flag to true
 							getPeerBean().setServerPeerAddress(

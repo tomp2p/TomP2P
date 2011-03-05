@@ -384,8 +384,18 @@ public class ConnectionHandler
 			logger.info("removed UDP mapping " + entry.toString());
 		}
 	}
-
-	public void mapUPNP(InetAddress oldAddress, InetAddress newAddress, int portUDP, int portTCP) throws IOException,
+	/**
+	 * Adds a port forearding policy to UPNP enabled devices. Internal is the peer, while external is the router
+	 * @param internalAddress
+	 * @param internalPortUDP
+	 * @param internalPortTCP
+	 * @param externalAddress
+	 * @param externalPortUDP
+	 * @param externalPortTCP
+	 * @throws IOException
+	 * @throws UPNPResponseException
+	 */
+	public void mapUPNP(InetAddress internalAddress, int internalPortUDP, int internalPortTCP, InetAddress externalAddress, int externalPortUDP, int externalPortTCP) throws IOException,
 			UPNPResponseException
 	{
 		// 2.5 secs to receive a response from devices
@@ -395,26 +405,26 @@ public class ConnectionHandler
 		for (InternetGatewayDevice igd : IGDs)
 		{
 			logger.info("Found device " + igd);
-			if(portUDP!=-1) 
+			if(externalPortUDP!=-1) 
 			{
-				boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", newAddress.getHostName(), portUDP,
-					oldAddress.getHostAddress(), portUDP, 0);
-				if (mappedUDP) addMappingUDP(igd, newAddress, portUDP);
+				boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", externalAddress.getHostName(), externalPortUDP,
+					internalAddress.getHostAddress(), internalPortUDP, 0);
+				if (mappedUDP) addMappingUDP(igd, externalAddress, externalPortUDP);
 			}
-			boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", newAddress.getHostName(), portTCP,
-					oldAddress.getHostAddress(), portTCP, 0);
-			if (mappedTCP) addMappingTCP(igd, newAddress, portTCP);
+			boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", externalAddress.getHostName(), externalPortTCP,
+					internalAddress.getHostAddress(), internalPortTCP, 0);
+			if (mappedTCP) addMappingTCP(igd, externalAddress, externalPortTCP);
 		}
 	}
 
-	private void addMappingTCP(InternetGatewayDevice igd, InetAddress newAddress, int portTCP)
+	private void addMappingTCP(InternetGatewayDevice igd, InetAddress externalAddress, int externalPortTCP)
 	{
-		internetGatewayDevicesTCP.put(igd, new InetSocketAddress(newAddress, portTCP));
+		internetGatewayDevicesTCP.put(igd, new InetSocketAddress(externalAddress, externalPortTCP));
 	}
 
-	private void addMappingUDP(InternetGatewayDevice igd, InetAddress newAddress, int portUDP)
+	private void addMappingUDP(InternetGatewayDevice igd, InetAddress externalAddress, int externalPortUDP)
 	{
-		internetGatewayDevicesUDP.put(igd, new InetSocketAddress(newAddress, portUDP));
+		internetGatewayDevicesUDP.put(igd, new InetSocketAddress(externalAddress, externalPortUDP));
 	}
 
 	public boolean isListening()

@@ -34,7 +34,10 @@ public class ConnectionConfiguration
 	//bandwith shaping in bytes/s
 	private long readLimit=0;
 	private long writeLimit=0;
-
+	//NAT
+	private int portNATUDP=4000;
+	private int portNATTCP=4000;
+	private boolean enabledUPNPNAT=true;
 	public int getIdleTCPMillis()
 	{
 		return idleTCPMillis;
@@ -167,4 +170,27 @@ public class ConnectionConfiguration
 		return maxIncomingThreads;
 	}
 
+	public void setEnabledUPNPNAT(boolean enabledUPNPNAT) {
+		this.enabledUPNPNAT = enabledUPNPNAT;
+	}
+
+	public boolean isEnabledUPNPNAT() {
+		return enabledUPNPNAT;
+	}
+
+	public void setPortNATUDP(int portNATUDP) {
+		this.portNATUDP = portNATUDP;
+	}
+
+	public int getPortNATUDP() {
+		return portNATUDP;
+	}
+
+	public void setPortNATTCP(int portNATTCP) {
+		this.portNATTCP = portNATTCP;
+	}
+
+	public int getPortNATTCP() {
+		return portNATTCP;
+	}
 }

@@ -399,9 +399,8 @@ public class ConnectionHandler
 	public void mapUPNP(InetAddress internalAddress, int internalPortUDP, int internalPortTCP, InetAddress externalAddress, int externalPortUDP, int externalPortTCP) throws IOException,
 			UPNPResponseException
 	{
-		// 2.5 secs to receive a response from devices
-		int discoveryTimeoutMillis = 2500;
-		Collection<InternetGatewayDevice> IGDs = InternetGatewayDevice.getDevices(discoveryTimeoutMillis);
+		// -1 sets the default timeout to 1500 ms
+		Collection<InternetGatewayDevice> IGDs = InternetGatewayDevice.getDevices(-1);
 		if (IGDs == null) return;
 		for (InternetGatewayDevice igd : IGDs)
 		{

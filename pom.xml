@@ -53,11 +53,6 @@
       <id>download.oracle.com</id>
       <url>http://download.oracle.com/maven</url>
     </repository>
-    <!-- not the official repository, but good enough for sbbi -->
-    <repository>
-      <id>maven.nuiton.org</id>
-      <url>http://maven.nuiton.org/nexus/content/groups/releases/</url>
-    </repository>
   </repositories>
 
   <dependencies>
@@ -89,13 +84,6 @@
       <groupId>com.sleepycat</groupId>
       <artifactId>je</artifactId>
       <version>4.1.6</version>
-      <scope>compile</scope>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>net.sbbi</groupId>
-      <artifactId>sbbi-upnplib</artifactId>
-      <version>1.0.4</version>
       <scope>compile</scope>
       <optional>true</optional>
     </dependency>

@@ -34,5 +34,7 @@ public class TestNAT {
 	else {
 	    System.out.println("failed "+fd.getFailedReason());
 	}
+	Thread.sleep(15000);
+	peer.shutdown();
     }
 }

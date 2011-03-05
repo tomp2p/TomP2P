@@ -699,6 +699,8 @@ public class Peer
 								connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP, serverAddress
 										.portTCP(), seenAs
 										.getInetAddress(), connectionConfiguration.getPortNATUDP(), connectionConfiguration.getPortNATTCP());
+								getPeerBean().setServerPeerAddress(
+										serverAddress.ports(connectionConfiguration.getPortNATUDP(), connectionConfiguration.getPortNATTCP()));
 							}
 							// we did not announce how the other peer sees us,
 							// correct it and set forward flag to true

@@ -1,6 +1,5 @@
 package net.tomp2p.p2p;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -10,13 +9,12 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.LogManager;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
@@ -27,9 +25,6 @@ import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.RequestP2PConfiguration;
-import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
 import net.tomp2p.p2p.config.ConfigurationStore;
@@ -42,10 +37,10 @@ import net.tomp2p.peers.ShortString;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.Storage.ProtectionEnable;
 import net.tomp2p.storage.Storage.ProtectionEntryInDomain;
 import net.tomp2p.storage.Storage.ProtectionMode;
+import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -61,19 +56,6 @@ public class TestDHT
 	{
 		CONFIGURATION.setIdleTCPMillis(3000000);
 		CONFIGURATION.setIdleUDPMillis(3000000);
-		try
-		{
-			LogManager
-					.getLogManager()
-					.readConfiguration(
-							new FileInputStream(
-									"/home/draft/Private/workspace/TomP2P_v3/src/conf/tomp2plog.properties"));
-		}
-		catch (Exception e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	@Test
@@ -1686,12 +1668,22 @@ public class TestDHT
 		{
 			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
 			nodes[i].listen(master);
+			setNotFirewalled(nodes[i]);
 		}
 		return nodes;
 	}
 
 	private Peer[] createNodes(Peer master, int nr) throws Exception
 	{
+		setNotFirewalled(master);
 		return createNodes(master, nr, rnd);
+	}
+	
+	private void setNotFirewalled(Peer peer)
+	{
+		PeerAddress pa=peer.getPeerBean().getServerPeerAddress();
+		pa=pa.notFirewalledTCP();
+		pa=pa.notFirewalledUDP();
+		peer.getPeerBean().setServerPeerAddress(pa);
 	}
 }

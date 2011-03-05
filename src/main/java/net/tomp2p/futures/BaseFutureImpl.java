@@ -19,7 +19,6 @@ import java.util.List;
 
 import net.tomp2p.connection.ConnectionHandler;
 
-import org.jboss.netty.util.internal.IoWorkerRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -264,8 +263,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	private void checkDeadlock()
 	{
 		String currentName = Thread.currentThread().getName();
-		if (currentName.startsWith(ConnectionHandler.THREAD_NAME)
-				|| IoWorkerRunnable.IN_IO_THREAD.get())
+		if (currentName.startsWith(ConnectionHandler.THREAD_NAME))
 		{
 			throw new IllegalStateException("await*() in Netty I/O thread causes a dead lock or "
 					+ "sudden performance drop. Use addListener() instead or "

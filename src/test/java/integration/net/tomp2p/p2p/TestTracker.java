@@ -31,17 +31,6 @@ public class TestTracker
 	{
 		CONFIGURATION.setIdleTCPMillis(3000000);
 		CONFIGURATION.setIdleUDPMillis(3000000);
-		try
-		{
-			LogManager.getLogManager().readConfiguration(
-					new FileInputStream(
-							"/home/draft/Private/workspace/TomP2P_v3/src/conf/tomp2plog.properties"));
-		}
-		catch (Exception e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	@Test

@@ -40,6 +40,7 @@ import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -95,13 +96,21 @@ public class Examples
 
 	private static void bootstrap(Peer master, Peer[] nodes)
 	{
-		List<FutureBootstrap> futures = new ArrayList<FutureBootstrap>();
+		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
+		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
+		for (int i = 1; i < nodes.length; i++)
+		{
+			FutureDiscover tmp=nodes[i].discover(master.getPeerAddress());
+			futures2.add(tmp);
+		}
+		for (FutureDiscover future : futures2)
+			future.awaitUninterruptibly();
 		for (int i = 1; i < nodes.length; i++)
 		{
 			FutureBootstrap tmp = nodes[i].bootstrap(master.getPeerAddress());
-			futures.add(tmp);
+			futures1.add(tmp);
 		}
-		for (FutureBootstrap future : futures)
+		for (FutureBootstrap future : futures1)
 			future.awaitUninterruptibly();
 	}
 
@@ -115,12 +124,12 @@ public class Examples
 		System.out.println("stored: " + toStore + " (" + futureDHT.isSuccess() + ")");
 		futureDHT = nodes[77].get(nr);
 		futureDHT.awaitUninterruptibly();
-		System.out.println("got: "
+		System.out.println("got from put get: "
 				+ new String(futureDHT.getRawData().values().iterator().next().values().iterator()
 						.next().getData()) + " (" + futureDHT.isSuccess() + ")");
 	}
 
-	private static void exampleAddGet(Peer[] nodes) throws IOException
+	private static void exampleAddGet(Peer[] nodes) throws IOException, ClassNotFoundException
 	{
 		Number160 nr = new Number160(rnd);
 		String toStore1 = "hallo1";
@@ -137,9 +146,9 @@ public class Examples
 		futureDHT.awaitUninterruptibly();
 		System.out.println("size" + futureDHT.getData().size());
 		Iterator<Data> iterator = futureDHT.getData().values().iterator();
-		System.out.println("got: " + new String(iterator.next().getData()) + " ("
+		System.out.println("got: " + iterator.next().getObject() + " ("
 				+ futureDHT.isSuccess() + ")");
-		System.out.println("got: " + new String(iterator.next().getData()) + " ("
+		System.out.println("got: " + iterator.next().getObject() + " ("
 				+ futureDHT.isSuccess() + ")");
 	}
 	
@@ -176,34 +185,4 @@ public class Examples
 		}
 		return nodes;
 	}
-	/*
-	 * public static void examplePutGet() throws IOException { Node[] n =
-	 * createNodes(); int data = 1234567890; // store the data under the key 6
-	 * n[2].put(new Number160("6"), data); // get the result, this is a blocking
-	 * operation, you may want to use the // non-blocking method int result =
-	 * (Integer) n[8].get(new Number160("6"));
-	 * System.out.println("Node 2  stored " + data + " and node 8 back " +
-	 * result); shutdown(n); }
-	 * 
-	 * public static void exampleAddGet() throws IOException { Node[] n =
-	 * createNodes(); int data = 1234567890; int data2 = 234567890; // store the
-	 * data under the key 6 n[2].add(new Number160("6"), data); n[4].add(new
-	 * Number160("6"), data2); // get the result, this is a blocking operation,
-	 * you may want to use the // non-blocking method Collection<Object> results
-	 * = n[8].getAll(new Number160("6")); for (Object o : results)
-	 * System.out.println("Node 2 and 4  stored " + data + " and " + data2 +
-	 * ". Node 8 returns " + o); shutdown(n); }
-	 * 
-	 * private static Node[] createNodes() throws IOException { Node[] n = new
-	 * Node[10]; for (int i = 0; i < n.length; i++) { n[i] = new
-	 * Node(Utils.createRandomNodeID()); // listen on UDP and TCP port 4000
-	 * n[i].listen(4000, 4000); // the bootstrap node does not want to bootstrap
-	 * to itself if (i != 0) { FutureRouting futureBootstrap =
-	 * n[i].bootstrap(n[0]); // wait until the bootstrap is done
-	 * futureBootstrap.awaitUninterruptibly(); } } return n; }
-	 * 
-	 * private static void shutdown(Node[] n) { for (int i = 0; i < n.length;
-	 * i++) n[i].shutdown(); // release all resources. There are some executors
-	 * still active. }
-	 */
 }

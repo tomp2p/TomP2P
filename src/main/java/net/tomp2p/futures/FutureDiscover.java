@@ -1,23 +1,21 @@
 package net.tomp2p.futures;
 import java.util.concurrent.TimeUnit;
 
-import org.jboss.netty.util.HashedWheelTimer;
+import net.tomp2p.peers.PeerAddress;
+
 import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 
-import net.tomp2p.peers.PeerAddress;
-
 public class FutureDiscover extends BaseFutureImpl
 {
-	final private Timer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
 	final private Timeout timeout;
 	//
 	private boolean goodUDP;
 	private boolean goodTCP;
 	private PeerAddress peerAddress;
 
-	public FutureDiscover(int delaySec)
+	public FutureDiscover(Timer timer, int delaySec)
 	{
 		timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
 	}
@@ -26,7 +24,6 @@ public class FutureDiscover extends BaseFutureImpl
 	public void cancel()
 	{
 		timeout.cancel();
-		timer.stop();
 		super.cancel();
 	}
 
@@ -64,7 +61,7 @@ public class FutureDiscover extends BaseFutureImpl
 
 	public void done(PeerAddress peerAddress)
 	{
-		timer.stop();
+		timeout.cancel();
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
@@ -86,8 +83,7 @@ public class FutureDiscover extends BaseFutureImpl
 		@Override
 		public void run(Timeout timeout) throws Exception
 		{
-			timer.stop();
-			setFailed("Timeout");
+			setFailed("Timeout in Discover");
 		}
 	}
 }

@@ -83,6 +83,8 @@ import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,7 +155,7 @@ public class Peer
 	private List<ScheduledFuture<?>> scheduledFutures = Collections
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
-
+	private Timer timer;
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
 	{
@@ -226,6 +228,8 @@ public class Peer
 			for (ScheduledFuture<?> scheduledFuture : scheduledFutures)
 				scheduledFuture.cancel(true);
 		}
+		if (masterFlag && timer!=null)
+			timer.stop();
 		if (masterFlag && scheduledExecutorServiceMaintenance != null)
 			scheduledExecutorServiceMaintenance.shutdownNow();
 		if (masterFlag && scheduledExecutorServiceReplication != null)
@@ -284,6 +288,7 @@ public class Peer
 	{
 		// I'm the master
 		masterFlag = true;
+		this.timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
 		this.bindings = bindings;
 		this.scheduledExecutorServiceMaintenance = Executors
 				.newScheduledThreadPool(peerConfiguration.getMaintenanceThreads());
@@ -304,6 +309,7 @@ public class Peer
 	{
 		// I'm a slave
 		masterFlag = false;
+		this.timer=master.timer;
 		this.bindings = master.bindings;
 		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
 		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
@@ -651,7 +657,7 @@ public class Peer
 
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
-		final FutureDiscover futureDiscover = new FutureDiscover(peerConfiguration
+		final FutureDiscover futureDiscover = new FutureDiscover(timer, peerConfiguration
 				.getDiscoverTimeoutSec());
 		FutureLateJoin<FutureResponse> late = new FutureLateJoin<FutureResponse>(2);
 		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress);
@@ -706,12 +712,16 @@ public class Peer
 							// correct it and set forward flag to true
 							getPeerBean().setServerPeerAddress(
 									serverAddress.forward(seenAs.getInetAddress()));
+							getHandshakeRPC().pingTCPProbe(peerAddress);
+							if (futureResponseUDP.isSuccess())
+								getHandshakeRPC().pingUDPProbe(peerAddress);
 						}
 						// else -> we announce exactly how the other peer sees
 						// us
-						getHandshakeRPC().pingTCPProbe(peerAddress);
-						if (futureResponseUDP.isSuccess())
-							getHandshakeRPC().pingUDPProbe(peerAddress);
+						else
+						{
+							futureDiscover.done(seenAs);
+						}
 					}
 					else
 					{

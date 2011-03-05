@@ -345,6 +345,7 @@ public class ConnectionHandler
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
+			globalTrafficShapingHandler.releaseExternalResources();
 			logger.debug("shutdown complete");
 		}
 	}

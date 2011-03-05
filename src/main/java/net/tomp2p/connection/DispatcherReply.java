@@ -87,7 +87,8 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	@Override
 	public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception
 	{
-		logger.info("closing channel (idle)");
+		if (logger.isDebugEnabled())
+			logger.debug("closing channel (idle) udp="+(ctx.getChannel()instanceof DatagramChannel)+" channel "+ctx.getChannel());
 		if (ctx.getChannel().isOpen())
 			ctx.getChannel().close();
 	}

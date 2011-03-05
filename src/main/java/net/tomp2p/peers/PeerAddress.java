@@ -492,6 +492,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		return new PeerAddress(id, inetAddress, portTCP, portUDP, true, firewalledUDP,
 				firewalledTCP);
 	}
+	
+	public PeerAddress ports(int portUDP, int portTCP)
+	{
+		return new PeerAddress(id, address, portTCP, portUDP, forwarded, firewalledUDP,
+				firewalledTCP);
+	}
 
 	public int getSocketAddressSize()
 	{

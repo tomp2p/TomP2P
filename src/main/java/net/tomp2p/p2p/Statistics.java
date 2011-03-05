@@ -13,7 +13,7 @@ public class Statistics {
     private double avgGap = MAX / 2;
     //
     private final List<Map<Number160, PeerAddress>> peerMap;
-    private final Number160 remotePeer;
+    //private final Number160 remotePeer;
     private final int maxSize;
     private final int bagSize;
 
@@ -23,7 +23,7 @@ public class Statistics {
     public Statistics(List<Map<Number160, PeerAddress>> peerMap,
 	    Number160 remotePeer, int maxSize, int bagSize) {
 	this.peerMap = peerMap;
-	this.remotePeer = remotePeer;
+	//this.remotePeer = remotePeer;
 	this.maxSize = maxSize;
 	this.bagSize = bagSize;
     }

@@ -38,7 +38,6 @@ import java.util.Random;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;

@@ -1,13 +1,12 @@
-TomP2P
-======
+TomP2P - http://tomp2p.net
+==========================
+TomP2P is an extended DHT, which stores multiple values for a key. Each peer
+has a table (either disk-based or memory-based) to store its values. A single
+value can be queried / updated with a secondary key. The underlying
+communication framework uses Java NIO to handle many concurrent connections.
 
-TomP2P is a distributed hash sorted table (DHST). A DHST is an extended DHT, 
-which stores values for a location key in a sorted table. Each peer has such 
-a sorted table, and its values are accessed with a content key. A DHST can 
-store multiple values for a location key.
-
-Release
-=======
+Release Management
+==================
 To make a release, use the maven plugin:
 mvn release:prepare -Dusername=xxx -Dpassword=yyy
 mvn release:perform

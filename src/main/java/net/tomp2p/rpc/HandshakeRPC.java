@@ -131,7 +131,8 @@ public class HandshakeRPC extends ReplyHandler
 	    //probe
 	    if (message.getType() == Type.REQUEST_3)
 		{
-			final Message responseMessage = createMessage(message.getSender(), Command.PING,
+			logger.debug("reply to probing, fire message to "+message.getSender());
+	    	final Message responseMessage = createMessage(message.getSender(), Command.PING,
 					Type.OK);
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP())
@@ -143,12 +144,13 @@ public class HandshakeRPC extends ReplyHandler
 	    	//discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
+			logger.debug("reply to discover, found "+message.getRealSender());
 			final Message responseMessage = createMessage(message.getSender(), Command.PING,
 					Type.OK);
 			responseMessage.setMessageId(message.getMessageId());
 			Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 			self.add(message.getRealSender());
-			message.setNeighbors(self);
+			responseMessage.setNeighbors(self);
 			return responseMessage;
 		}
 		else

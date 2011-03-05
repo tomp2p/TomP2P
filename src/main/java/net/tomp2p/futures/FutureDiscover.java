@@ -15,8 +15,8 @@ public class FutureDiscover extends BaseFutureImpl
 	private boolean onGoingUDP;
 	private boolean onGoingTCP;
 	//
-	private boolean privateUDP;
-	private boolean privateTCP;
+	private boolean goodUDP;
+	private boolean goodTCP;
 	private PeerAddress peerAddress;
 
 	public FutureDiscover(int delaySec)
@@ -32,27 +32,35 @@ public class FutureDiscover extends BaseFutureImpl
 		super.cancel();
 	}
 
-	public void setPrivateUPD(boolean privateUDP)
+	public void setGoodUDP(boolean goodUDP)
 	{
 		synchronized (lock)
 		{
-			this.privateUDP = privateUDP;
+			this.goodUDP = goodUDP;
 		}
 	}
 
-	public boolean getPrivateUPD()
+	public boolean getGoodUPD()
 	{
 		synchronized (lock)
 		{
-			return privateUDP;
+			return goodUDP;
+		}
+	}
+	
+	public void setGoodTCP(boolean goodTCP)
+	{
+		synchronized (lock)
+		{
+			this.goodTCP=goodTCP;
 		}
 	}
 
-	public boolean getPrivateTCP()
+	public boolean getGoodTCP()
 	{
 		synchronized (lock)
 		{
-			return privateTCP;
+			return goodTCP;
 		}
 	}
 

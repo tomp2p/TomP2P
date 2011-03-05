@@ -103,7 +103,7 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			return;
 		}
 		final Message message = (Message) e.getMessage();
-		// check if its a request or reply
+		// check if its a request or reply. This is implemented to have the TCP channel opened both ways
 		if (message.isRequest())
 		{
 			dispatcherRequest.messageReceived(ctx, e);

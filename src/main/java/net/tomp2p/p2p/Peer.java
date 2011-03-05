@@ -655,7 +655,7 @@ public class Peer
 				.getDiscoverTimeoutSec());
 		FutureLateJoin<FutureResponse> late = new FutureLateJoin<FutureResponse>(2);
 		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress);
-		final FutureResponse futureResponseUDP = getHandshakeRPC().pingUDPDiscover(peerAddress);
+		final FutureResponse futureResponseUDP = getHandshakeRPC().pingUDP(peerAddress);
 		late.add(futureResponseTCP);
 		late.add(futureResponseUDP);
 		addPeerListener(new PeerListener()
@@ -681,7 +681,6 @@ public class Peer
 			@Override
 			public void operationComplete(FutureLateJoin<FutureResponse> future) throws Exception
 			{
-				boolean mapped = false;
 				PeerAddress serverAddress = getPeerBean().getServerPeerAddress();
 				if (futureResponseTCP.isSuccess())
 				{
@@ -692,10 +691,12 @@ public class Peer
 						logger.debug("I'm seen as "+seenAs+" by peer "+peerAddress);
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-						    	connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
-									.getInetAddress(), serverAddress.portUDP(), serverAddress
+							int portUDP=-1;
+							if (futureResponseUDP.isSuccess())
+								portUDP=serverAddress.portUDP();
+							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
+									.getInetAddress(), portUDP, serverAddress
 									.portTCP());
-							mapped = true;
 							// we did not announce how the other peer sees us,
 							// correct it and set forward flag to true
 							getPeerBean().setServerPeerAddress(
@@ -704,6 +705,8 @@ public class Peer
 						// else -> we announce exactly how the other peer sees
 						// us
 						getHandshakeRPC().pingTCPProbe(peerAddress);
+						if (futureResponseUDP.isSuccess())
+							getHandshakeRPC().pingUDPProbe(peerAddress);
 					}
 					else
 					{
@@ -717,35 +720,6 @@ public class Peer
 					futureDiscover.setFailed("We need at least the TCP connection");
 					return;
 				}
-				serverAddress = getPeerBean().getServerPeerAddress();
-				if (futureResponseUDP.isSuccess())
-				{
-					Collection<PeerAddress> tmp = futureResponseUDP.getResponse().getNeighbors();
-					if (tmp.size() == 1)
-					{
-						PeerAddress seenAs = tmp.iterator().next();
-						if (!mapped
-								&& !getPeerAddress().getInetAddress().equals(
-										seenAs.getInetAddress()))
-						{
-							connectionHandler.mapUPNP(serverAddress.getInetAddress(), seenAs
-									.getInetAddress(), serverAddress.portUDP(), serverAddress
-									.portTCP());
-							// we did not announce how the other peer sees us,
-							// correct it and set forward flag to true
-							getPeerBean().setServerPeerAddress(
-									serverAddress.forward(seenAs.getInetAddress()));
-						}
-						// else -> we announce exactly how the other peer sees
-						// us
-						getHandshakeRPC().pingUDPProbe(peerAddress);
-						futureDiscover.onGoing(true, true);
-					}
-					else
-						futureDiscover.onGoing(false, true);
-				}
-				else
-					futureDiscover.onGoing(false, true);
 			}
 		});
 		return futureDiscover;

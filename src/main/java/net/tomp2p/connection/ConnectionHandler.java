@@ -395,11 +395,14 @@ public class ConnectionHandler
 		for (InternetGatewayDevice igd : IGDs)
 		{
 			logger.info("Found device " + igd);
-			boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", newAddress.getHostName(), portUDP,
+			if(portUDP!=-1) 
+			{
+				boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", newAddress.getHostName(), portUDP,
 					oldAddress.getHostAddress(), portUDP, 0);
+				if (mappedUDP) addMappingUDP(igd, newAddress, portUDP);
+			}
 			boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", newAddress.getHostName(), portTCP,
 					oldAddress.getHostAddress(), portTCP, 0);
-			if (mappedUDP) addMappingUDP(igd, newAddress, portUDP);
 			if (mappedTCP) addMappingTCP(igd, newAddress, portTCP);
 		}
 	}

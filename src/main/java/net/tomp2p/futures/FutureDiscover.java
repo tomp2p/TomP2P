@@ -12,8 +12,6 @@ public class FutureDiscover extends BaseFutureImpl
 {
 	final private Timer timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
 	final private Timeout timeout;
-	private boolean onGoingUDP;
-	private boolean onGoingTCP;
 	//
 	private boolean goodUDP;
 	private boolean goodTCP;
@@ -64,15 +62,6 @@ public class FutureDiscover extends BaseFutureImpl
 		}
 	}
 
-	public void onGoing(boolean onGoingUDP, boolean onGoingTCP)
-	{
-		synchronized (lock)
-		{
-			this.onGoingUDP = onGoingUDP;
-			this.onGoingTCP = onGoingTCP;
-		}
-	}
-
 	public void done(PeerAddress peerAddress)
 	{
 		timer.stop();
@@ -83,22 +72,6 @@ public class FutureDiscover extends BaseFutureImpl
 			this.peerAddress = peerAddress;
 		}
 		notifyListerenrs();
-	}
-
-	public boolean isUDPOngoing()
-	{
-		synchronized (lock)
-		{
-			return onGoingUDP;
-		}
-	}
-
-	public boolean isTCPOngoing()
-	{
-		synchronized (lock)
-		{
-			return onGoingTCP;
-		}
 	}
 
 	public PeerAddress getPeerAddress()

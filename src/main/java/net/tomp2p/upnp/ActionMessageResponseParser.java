@@ -41,11 +41,9 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
+package net.tomp2p.upnp;
 
-import net.sbbi.upnp.services.Action;
-import net.sbbi.upnp.services.Argument;
-import net.sbbi.upnp.services.Argument.Direction;
+import net.tomp2p.upnp.Argument.Direction;
 
 import org.xml.sax.Attributes;
 

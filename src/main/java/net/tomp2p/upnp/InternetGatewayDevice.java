@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.impls;
+package net.tomp2p.upnp;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -52,18 +52,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import net.sbbi.upnp.Discovery;
-import net.sbbi.upnp.devices.Device;
-import net.sbbi.upnp.devices.RootDevice;
-import net.sbbi.upnp.messages.ActionMessage;
-import net.sbbi.upnp.messages.ActionResponse;
-import net.sbbi.upnp.messages.StateVariableMessage;
-import net.sbbi.upnp.messages.StateVariableResponse;
-import net.sbbi.upnp.messages.UPNPMessageFactory;
-import net.sbbi.upnp.messages.UPNPResponseException;
-import net.sbbi.upnp.services.Action;
-import net.sbbi.upnp.services.Service;
-import net.sbbi.upnp.services.StateVariable;
 
 /**
  * This class can be used to access some functionalities on the
@@ -300,10 +288,10 @@ public class InternetGatewayDevice
 	 *            default value
 	 * @param ttl
 	 *            the discovery ttl such as
-	 *            {@link net.sbbi.upnp.Discovery#DEFAULT_TTL}
+	 *            {@link net.tomp2p.upnp.Discovery#DEFAULT_TTL}
 	 * @param mx
 	 *            the discovery mx such as
-	 *            {@link net.sbbi.upnp.Discovery#DEFAULT_MX}
+	 *            {@link net.tomp2p.upnp.Discovery#DEFAULT_MX}
 	 * @param ni
 	 *            the network interface where to lookup IGD devices
 	 * @return an array of devices to play with or null if nothing found.

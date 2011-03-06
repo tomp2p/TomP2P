@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.services;
+package net.tomp2p.upnp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,8 +51,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import net.sbbi.upnp.XMLUtil;
-import net.sbbi.upnp.services.Argument.Direction;
+import net.tomp2p.upnp.Argument.Direction;
 
 import org.w3c.dom.Node;
 

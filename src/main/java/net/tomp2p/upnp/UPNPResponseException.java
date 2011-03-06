@@ -41,74 +41,79 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
-
-import net.sbbi.upnp.services.Action;
-import net.sbbi.upnp.services.Service;
-import net.sbbi.upnp.services.StateVariable;
+package net.tomp2p.upnp;
 
 /**
- * Factory to create UPNP messages to access and communicate with a
- * given UPNPDevice service capabilities
+ * An exception throws when parsing a message if a SOAP fault
+ * exception is returned.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-
-public class UPNPMessageFactory
+public class UPNPResponseException extends Exception
 {
-	/***/
-	public final Service service;
+	private static final long serialVersionUID = 8313107558129180594L;
 
-	/**
-	 * @param service
-	 *           the UPNPService that will be used to generate messages
-	 *           by thid factory
-	 */
-	public UPNPMessageFactory( Service service )
+	String faultCode;
+
+	String faultString;
+
+	int detailErrorCode;
+
+	String detailErrorDescription;
+
+	UPNPResponseException()
 	{
-		this.service = service;
+	}
+
+	UPNPResponseException( int detailErrorCode, String detailErrorDescription )
+	{
+		this.detailErrorCode = detailErrorCode;
+		this.detailErrorDescription = detailErrorDescription;
 	}
 
 	/**
-	 * Creation of a new ActionMessage to communicate with the UPNP
-	 * device
-	 * 
-	 * @param serviceActionName
-	 *           the name of a service action, this name is case
-	 *           sensitive and matches exactly the name provided by the
-	 *           UPNP device in the XML definition file
-	 * @return a ActionMessage object or null if the action is unknown
-	 *         for this service messages factory
+	 * @return fault code
 	 */
-	public ActionMessage getMessage( String serviceActionName )
+	public String getFaultCode()
 	{
-		Action serviceAction = service.getUPNPServiceAction( serviceActionName );
-		if( serviceAction != null )
-		{
-			return new ActionMessage( service, serviceAction );
-		}
-		return null;
+		return faultCode == null ? "Client" : faultCode;
 	}
 
 	/**
-	 * Creation of a new StateVariableMessage to communicate with the
-	 * UPNP device, for a service state variable query
-	 * 
-	 * @param serviceStateVariable
-	 *           the name of a service state variable, this name is
-	 *           case sensitive and matches exactly the name provided
-	 *           by the UPNP device in the XML definition file
-	 * @return a StateVariableMessage object or null if the state
-	 *         variable is unknown for this service mesages factory
+	 * @return fault string
 	 */
-	public StateVariableMessage getStateVariableMessage( String serviceStateVariable )
+	public String getFaultString()
 	{
-		StateVariable stateVar = service.getUPNPServiceStateVariable( serviceStateVariable );
-		if( stateVar != null )
-		{
-			return new StateVariableMessage( service, stateVar );
-		}
-		return null;
+		return faultString == null ? "UPnPError" : faultString;
+	}
+
+	/**
+	 * @return error code
+	 */
+	public int getDetailErrorCode()
+	{
+		return detailErrorCode;
+	}
+
+	/**
+	 * @return error description
+	 */
+	public String getDetailErrorDescription()
+	{
+		return detailErrorDescription;
+	}
+
+	@Override
+	public String getMessage()
+	{
+		return "Detailed error code :" + detailErrorCode + ", Detailed error description :"
+				+ detailErrorDescription;
+	}
+
+	@Override
+	public String getLocalizedMessage()
+	{
+		return getMessage();
 	}
 }

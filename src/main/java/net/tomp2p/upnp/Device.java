@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.devices;
+package net.tomp2p.upnp;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -51,8 +51,6 @@ import java.util.List;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import net.sbbi.upnp.XMLUtil;
-import net.sbbi.upnp.services.Service;
 
 import org.w3c.dom.Node;
 

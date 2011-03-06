@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.services;
+package net.tomp2p.upnp;
 
 import java.util.Calendar;
 import java.util.Date;

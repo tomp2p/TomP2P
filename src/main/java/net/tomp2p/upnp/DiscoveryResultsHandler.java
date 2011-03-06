@@ -41,79 +41,37 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
+package net.tomp2p.upnp;
 
 /**
- * An exception throws when parsing a message if a SOAP fault
- * exception is returned.
+ * This interface can be use to register against the DiscoveryListener
+ * class to receive SSDP search responses.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class UPNPResponseException extends Exception
+
+public interface DiscoveryResultsHandler
 {
-	private static final long serialVersionUID = 8313107558129180594L;
-
-	String faultCode;
-
-	String faultString;
-
-	int detailErrorCode;
-
-	String detailErrorDescription;
-
-	UPNPResponseException()
-	{
-	}
-
-	UPNPResponseException( int detailErrorCode, String detailErrorDescription )
-	{
-		this.detailErrorCode = detailErrorCode;
-		this.detailErrorDescription = detailErrorDescription;
-	}
 
 	/**
-	 * @return fault code
+	 * Method called by the DiscoveryListener class when a search
+	 * response message has been received from the network
+	 * 
+	 * @param usn
+	 *           the device USN
+	 * @param udn
+	 *           the device UDN
+	 * @param nt
+	 *           the device NT
+	 * @param maxAge
+	 *           the message max age
+	 * @param location
+	 *           the device location
+	 * @param firmware
+	 *           the device firmware
 	 */
-	public String getFaultCode()
-	{
-		return faultCode == null ? "Client" : faultCode;
-	}
+	public void discoveredDevice( String usn, String udn, String nt, String maxAge,
+			java.net.URL location, String firmware );
 
-	/**
-	 * @return fault string
-	 */
-	public String getFaultString()
-	{
-		return faultString == null ? "UPnPError" : faultString;
-	}
-
-	/**
-	 * @return error code
-	 */
-	public int getDetailErrorCode()
-	{
-		return detailErrorCode;
-	}
-
-	/**
-	 * @return error description
-	 */
-	public String getDetailErrorDescription()
-	{
-		return detailErrorDescription;
-	}
-
-	@Override
-	public String getMessage()
-	{
-		return "Detailed error code :" + detailErrorCode + ", Detailed error description :"
-				+ detailErrorDescription;
-	}
-
-	@Override
-	public String getLocalizedMessage()
-	{
-		return getMessage();
-	}
 }

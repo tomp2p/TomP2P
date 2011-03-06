@@ -41,9 +41,8 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
+package net.tomp2p.upnp;
 
-import net.sbbi.upnp.services.StateVariable;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;

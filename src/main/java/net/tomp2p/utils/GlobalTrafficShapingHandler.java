@@ -13,13 +13,10 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package org.jboss.netty.handler.traffic;
+package net.tomp2p.utils;
 
 import java.util.concurrent.Executor;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.execution.MemoryAwareThreadPoolExecutor;
@@ -27,21 +24,19 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 import org.jboss.netty.util.ObjectSizeEstimator;
 
 /**
- * This implementation of the {@link AbstractTrafficShapingHandler} is for channel
- * traffic shaping, that is to say a per channel limitation of the bandwidth.<br><br>
+ * This implementation of the {@link AbstractTrafficShapingHandler} is for global
+ * traffic shaping, that is to say a global limitation of the bandwidth, whatever
+ * the number of opened channels.<br><br>
  *
  * The general use should be as follow:<br>
  * <ul>
- * <li>Add in your pipeline a new ChannelTrafficShapingHandler, before a recommended {@link ExecutionHandler} (like
- * {@link OrderedMemoryAwareThreadPoolExecutor} or {@link MemoryAwareThreadPoolExecutor}).<br>
- * <tt>ChannelTrafficShapingHandler myHandler = new ChannelTrafficShapingHandler(executor);</tt><br>
+ * <li>Create your unique GlobalTrafficShapingHandler like:<br><br>
+ * <tt>GlobalTrafficShapingHandler myHandler = new GlobalTrafficShapingHandler(executor);</tt><br><br>
  * executor could be created using <tt>Executors.newCachedThreadPool();<tt><br>
- * <tt>pipeline.addLast("CHANNEL_TRAFFIC_SHAPING", myHandler);</tt><br><br>
+ * <tt>pipeline.addLast("GLOBAL_TRAFFIC_SHAPING", myHandler);</tt><br><br>
  *
- * <b>Note that this handler has a Pipeline Coverage of "one" which means a new handler must be created
- * for each new channel as the counter cannot be shared among all channels.</b> For instance, if you have a
- * {@link ChannelPipelineFactory}, you should create a new ChannelTrafficShapingHandler in this
- * {@link ChannelPipelineFactory} each time getPipeline() method is called.<br><br>
+ * <b>Note that this handler has a Pipeline Coverage of "all" which means only one such handler must be created
+ * and shared among all channels as the counter must be shared among all channels.</b><br><br>
  *
  * Other arguments can be passed like write or read limitation (in bytes/s where 0 means no limitation)
  * or the check interval (in millisecond) that represents the delay between two computations of the
@@ -53,6 +48,10 @@ import org.jboss.netty.util.ObjectSizeEstimator;
  * the less precise the traffic shaping will be. It is suggested as higher value something close
  * to 5 or 10 minutes.<br>
  * </li>
+ * <li>Add it in your pipeline, before a recommended {@link ExecutionHandler} (like
+ * {@link OrderedMemoryAwareThreadPoolExecutor} or {@link MemoryAwareThreadPoolExecutor}).<br>
+ * <tt>pipeline.addLast("GLOBAL_TRAFFIC_SHAPING", myHandler);</tt><br><br>
+ * </li>
  * <li>When you shutdown your application, release all the external resources like the executor
  * by calling:<br>
  * <tt>myHandler.releaseExternalResources();</tt><br>
@@ -61,9 +60,19 @@ import org.jboss.netty.util.ObjectSizeEstimator;
  *
  * @author The Netty Project (netty-dev@lists.jboss.org)
  * @author Frederic Bregier
+ * @version $Rev$, $Date$
  */
 @Sharable
-public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler {
+public class GlobalTrafficShapingHandler extends AbstractTrafficShapingHandler {
+    /**
+     * Create the global TrafficCounter
+     */
+    void createGlobalTrafficCounter() {
+        TrafficCounter tc = new TrafficCounter(this, executor, "GlobalTC",
+                checkInterval);
+        setTrafficCounter(tc);
+        tc.start();
+    }
 
     /**
      * @param executor
@@ -71,9 +80,10 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
      * @param readLimit
      * @param checkInterval
      */
-    public ChannelTrafficShapingHandler(Executor executor, long writeLimit,
+    public GlobalTrafficShapingHandler(Executor executor, long writeLimit,
             long readLimit, long checkInterval) {
         super(executor, writeLimit, readLimit, checkInterval);
+        createGlobalTrafficCounter();
     }
 
     /**
@@ -81,24 +91,27 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
      * @param writeLimit
      * @param readLimit
      */
-    public ChannelTrafficShapingHandler(Executor executor, long writeLimit,
+    public GlobalTrafficShapingHandler(Executor executor, long writeLimit,
             long readLimit) {
         super(executor, writeLimit, readLimit);
+        createGlobalTrafficCounter();
     }
 
     /**
      * @param executor
      * @param checkInterval
      */
-    public ChannelTrafficShapingHandler(Executor executor, long checkInterval) {
+    public GlobalTrafficShapingHandler(Executor executor, long checkInterval) {
         super(executor, checkInterval);
+        createGlobalTrafficCounter();
     }
 
     /**
      * @param executor
      */
-    public ChannelTrafficShapingHandler(Executor executor) {
+    public GlobalTrafficShapingHandler(Executor executor) {
         super(executor);
+        createGlobalTrafficCounter();
     }
 
     /**
@@ -108,11 +121,12 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
      * @param readLimit
      * @param checkInterval
      */
-    public ChannelTrafficShapingHandler(
-            ObjectSizeEstimator objectSizeEstimator, Executor executor,
-            long writeLimit, long readLimit, long checkInterval) {
+    public GlobalTrafficShapingHandler(ObjectSizeEstimator objectSizeEstimator,
+            Executor executor, long writeLimit, long readLimit,
+            long checkInterval) {
         super(objectSizeEstimator, executor, writeLimit, readLimit,
                 checkInterval);
+        createGlobalTrafficCounter();
     }
 
     /**
@@ -121,10 +135,10 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
      * @param writeLimit
      * @param readLimit
      */
-    public ChannelTrafficShapingHandler(
-            ObjectSizeEstimator objectSizeEstimator, Executor executor,
-            long writeLimit, long readLimit) {
+    public GlobalTrafficShapingHandler(ObjectSizeEstimator objectSizeEstimator,
+            Executor executor, long writeLimit, long readLimit) {
         super(objectSizeEstimator, executor, writeLimit, readLimit);
+        createGlobalTrafficCounter();
     }
 
     /**
@@ -132,49 +146,20 @@ public class ChannelTrafficShapingHandler extends AbstractTrafficShapingHandler 
      * @param executor
      * @param checkInterval
      */
-    public ChannelTrafficShapingHandler(
-            ObjectSizeEstimator objectSizeEstimator, Executor executor,
-            long checkInterval) {
+    public GlobalTrafficShapingHandler(ObjectSizeEstimator objectSizeEstimator,
+            Executor executor, long checkInterval) {
         super(objectSizeEstimator, executor, checkInterval);
+        createGlobalTrafficCounter();
     }
 
     /**
      * @param objectSizeEstimator
      * @param executor
      */
-    public ChannelTrafficShapingHandler(
-            ObjectSizeEstimator objectSizeEstimator, Executor executor) {
+    public GlobalTrafficShapingHandler(ObjectSizeEstimator objectSizeEstimator,
+            Executor executor) {
         super(objectSizeEstimator, executor);
-    }
-
-    @Override
-    public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
-            throws Exception {
-        if (trafficCounter != null) {
-            trafficCounter.stop();
-            trafficCounter = null;
-        }
-        super.channelClosed(ctx, e);
-    }
-
-    @Override
-    public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
-            throws Exception {
-        // readSuspended = true;
-        ctx.setAttachment(Boolean.TRUE);
-        ctx.getChannel().setReadable(false);
-        if (trafficCounter == null) {
-            // create a new counter now
-            trafficCounter = new TrafficCounter(this, executor, "ChannelTC" +
-                    ctx.getChannel().getId(), checkInterval);
-        }
-        if (trafficCounter != null) {
-            trafficCounter.start();
-        }
-        super.channelConnected(ctx, e);
-        // readSuspended = false;
-        ctx.setAttachment(null);
-        ctx.getChannel().setReadable(true);
+        createGlobalTrafficCounter();
     }
 
 }

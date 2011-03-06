@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp;
+package net.tomp2p.upnp;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

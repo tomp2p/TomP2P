@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
+package net.tomp2p.upnp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,8 +53,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
-import net.sbbi.upnp.services.Service;
-import net.sbbi.upnp.services.StateVariable;
 
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;

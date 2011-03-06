@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp;
+package net.tomp2p.upnp;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -55,7 +55,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sbbi.upnp.devices.RootDevice;
 
 /**
  * Class to discover an UPNP device on the network.</br> A multicast

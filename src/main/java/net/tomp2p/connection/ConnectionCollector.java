@@ -22,6 +22,7 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
 import net.tomp2p.message.TomP2PEncoderStage1;
 import net.tomp2p.message.TomP2PEncoderStage2;
+import net.tomp2p.utils.GlobalTrafficShapingHandler;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.bootstrap.Bootstrap;
@@ -39,7 +40,6 @@ import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.handler.execution.ExecutionHandler;
-import org.jboss.netty.handler.traffic.GlobalTrafficShapingHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

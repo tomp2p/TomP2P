@@ -41,67 +41,34 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.services;
+package net.tomp2p.upnp;
 
-import javax.xml.xpath.XPathExpressionException;
-
-import net.sbbi.upnp.XMLUtil;
-
-import org.w3c.dom.Node;
 
 /**
- * An argument for a service action
+ * This class contains data returned by a state variable query
+ * response
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class Argument
+public class StateVariableResponse
 {
-	/**
-	 * @author ryanm
-	 */
-	public enum Direction
+	/***/
+	public final StateVariable stateVar;
+
+	String stateVariableValue;
+
+	StateVariableResponse( StateVariable var )
 	{
-		/***/
-		in,
-		/***/
-		out
-	};
-
-	StateVariable relatedStateVariable;
-
-	/***/
-	public final String name;
-
-	/***/
-	public final Direction direction;
-
-	/***/
-	public final String relatedStateVariableName;
-
-	Argument( Node xml ) throws XPathExpressionException
-	{
-		name = XMLUtil.xpath.evaluate( "name", xml );
-		direction = Direction.valueOf( XMLUtil.xpath.evaluate( "direction", xml ) );
-		relatedStateVariableName = XMLUtil.xpath.evaluate( "relatedStateVariable", xml );
+		stateVar = var;
 	}
 
 	/**
-	 * The related service state variable for this
-	 * ServiceActionArgument
-	 * 
-	 * @return The related service state variable for this
-	 *         ServiceActionArgument
+	 * @return the variable's value
 	 */
-	public StateVariable getRelatedStateVariable()
+	public String getStateVariableValue()
 	{
-		return relatedStateVariable;
-	}
-
-	@Override
-	public String toString()
-	{
-		return direction + ":" + name + " - " + relatedStateVariableName;
+		return stateVariableValue;
 	}
 
 }

@@ -41,37 +41,83 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp;
+package net.tomp2p.upnp;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 
 /**
- * This interface can be use to register against the DiscoveryListener
- * class to receive SSDP search responses.
+ * An action response container Object
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-
-public interface DiscoveryResultsHandler
+public class ActionResponse
 {
+	private Map<String, Argument> outArguments = new HashMap<String, Argument>();
+
+	private Map<String, String> outArgumentsVals = new HashMap<String, String>();
 
 	/**
-	 * Method called by the DiscoveryListener class when a search
-	 * response message has been received from the network
-	 * 
-	 * @param usn
-	 *           the device USN
-	 * @param udn
-	 *           the device UDN
-	 * @param nt
-	 *           the device NT
-	 * @param maxAge
-	 *           the message max age
-	 * @param location
-	 *           the device location
-	 * @param firmware
-	 *           the device firmware
+	 * @param actionArgumentName
+	 * @return The named {@link Argument}
 	 */
-	public void discoveredDevice( String usn, String udn, String nt, String maxAge,
-			java.net.URL location, String firmware );
+	public Argument getOutActionArgument( String actionArgumentName )
+	{
+		return outArguments.get( actionArgumentName );
+	}
+
+	/**
+	 * @param actionArgumentName
+	 * @return The named {@link Argument}'s value
+	 */
+	public String getOutActionArgumentValue( String actionArgumentName )
+	{
+		return outArgumentsVals.get( actionArgumentName );
+	}
+
+	/**
+	 * @return {@link Argument} names
+	 */
+	public Set<String> getOutActionArgumentNames()
+	{
+		return outArguments.keySet();
+	}
+
+	/**
+	 * Adds a result to the response, adding an existing result
+	 * ServiceActionArgument will override the ServiceActionArgument
+	 * value
+	 * 
+	 * @param arg
+	 *           the service action argument
+	 * @param value
+	 *           the arg value
+	 */
+	void addResult( Argument arg, String value )
+	{
+		outArguments.put( arg.name, arg );
+		outArgumentsVals.put( arg.name, value );
+	}
+
+	@Override
+	public String toString()
+	{
+		StringBuilder rtrVal = new StringBuilder();
+		for( Iterator<String> i = outArguments.keySet().iterator(); i.hasNext(); )
+		{
+			String name = i.next();
+			String value = outArgumentsVals.get( name );
+			rtrVal.append( name ).append( "=" ).append( value );
+			if( i.hasNext() )
+			{
+				rtrVal.append( "\n" );
+			}
+		}
+		return rtrVal.toString();
+	}
 
 }

@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.services;
+package net.tomp2p.upnp;
 
 /**
  * Interface to defined allowed values for service state variables

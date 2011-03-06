@@ -41,84 +41,66 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.messages;
+package net.tomp2p.upnp;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import javax.xml.xpath.XPathExpressionException;
 
-import net.sbbi.upnp.services.Argument;
+
+import org.w3c.dom.Node;
 
 /**
- * An action response container Object
+ * An argument for a service action
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class ActionResponse
+public class Argument
 {
-	private Map<String, Argument> outArguments = new HashMap<String, Argument>();
-
-	private Map<String, String> outArgumentsVals = new HashMap<String, String>();
-
 	/**
-	 * @param actionArgumentName
-	 * @return The named {@link Argument}
+	 * @author ryanm
 	 */
-	public Argument getOutActionArgument( String actionArgumentName )
+	public enum Direction
 	{
-		return outArguments.get( actionArgumentName );
+		/***/
+		in,
+		/***/
+		out
+	};
+
+	StateVariable relatedStateVariable;
+
+	/***/
+	public final String name;
+
+	/***/
+	public final Direction direction;
+
+	/***/
+	public final String relatedStateVariableName;
+
+	Argument( Node xml ) throws XPathExpressionException
+	{
+		name = XMLUtil.xpath.evaluate( "name", xml );
+		direction = Direction.valueOf( XMLUtil.xpath.evaluate( "direction", xml ) );
+		relatedStateVariableName = XMLUtil.xpath.evaluate( "relatedStateVariable", xml );
 	}
 
 	/**
-	 * @param actionArgumentName
-	 * @return The named {@link Argument}'s value
-	 */
-	public String getOutActionArgumentValue( String actionArgumentName )
-	{
-		return outArgumentsVals.get( actionArgumentName );
-	}
-
-	/**
-	 * @return {@link Argument} names
-	 */
-	public Set<String> getOutActionArgumentNames()
-	{
-		return outArguments.keySet();
-	}
-
-	/**
-	 * Adds a result to the response, adding an existing result
-	 * ServiceActionArgument will override the ServiceActionArgument
-	 * value
+	 * The related service state variable for this
+	 * ServiceActionArgument
 	 * 
-	 * @param arg
-	 *           the service action argument
-	 * @param value
-	 *           the arg value
+	 * @return The related service state variable for this
+	 *         ServiceActionArgument
 	 */
-	void addResult( Argument arg, String value )
+	public StateVariable getRelatedStateVariable()
 	{
-		outArguments.put( arg.name, arg );
-		outArgumentsVals.put( arg.name, value );
+		return relatedStateVariable;
 	}
 
 	@Override
 	public String toString()
 	{
-		StringBuilder rtrVal = new StringBuilder();
-		for( Iterator<String> i = outArguments.keySet().iterator(); i.hasNext(); )
-		{
-			String name = i.next();
-			String value = outArgumentsVals.get( name );
-			rtrVal.append( name ).append( "=" ).append( value );
-			if( i.hasNext() )
-			{
-				rtrVal.append( "\n" );
-			}
-		}
-		return rtrVal.toString();
+		return direction + ":" + name + " - " + relatedStateVariableName;
 	}
 
 }

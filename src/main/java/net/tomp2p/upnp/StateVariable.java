@@ -41,7 +41,7 @@
  * <http://www.sbbi.net/>.
  */
 
-package net.sbbi.upnp.services;
+package net.tomp2p.upnp;
 
 import java.io.IOException;
 import java.net.URI;
@@ -52,10 +52,6 @@ import java.util.Set;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import net.sbbi.upnp.XMLUtil;
-import net.sbbi.upnp.messages.StateVariableMessage;
-import net.sbbi.upnp.messages.UPNPMessageFactory;
-import net.sbbi.upnp.messages.UPNPResponseException;
 
 import org.w3c.dom.Node;
 

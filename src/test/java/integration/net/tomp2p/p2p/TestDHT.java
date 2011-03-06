@@ -761,6 +761,7 @@ public class TestDHT
 	{
 		for (int i = 0; i < 100; i++)
 		{
+			System.err.println("nr: "+i);
 			testObject();
 		}
 	}

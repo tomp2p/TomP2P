@@ -150,7 +150,6 @@ public class DistributedTracker
 			FutureTracker futureTracker, boolean cancelOnFinish, Operation operation, Number160 compareTo)
 	{
 		FutureResponse[] futureResponses = new FutureResponse[trackerConfiguration.getParallel()];
-		// make pollfirst not equal for all peers
 		SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
 				.createPeerComparator(compareTo));
 		loopRec(queueToAsk, secondaryQueue, new HashSet<PeerAddress>(),

@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -48,6 +49,7 @@ public class DistributedTracker
 	// 30 as max_trackers and 5 direct hits, this results in (30*5)+30^4=810150.
 	// 810150 is enough for a tracker I think.
 	final private static int MAX_FULL_TRACKERS = 4;
+	final private static Random rnd=new Random();
 	final private Routing routing;
 	final private PeerBean peerBean;
 	final private TrackerRPC trackerRPC;
@@ -67,6 +69,7 @@ public class DistributedTracker
 		final FutureTracker futureTracker = new FutureTracker(evaluatingScheme);
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, trackerConfiguration, true);
+		final Number160 searchTrackerCloseTo=new Number160(rnd);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -89,7 +92,7 @@ public class DistributedTracker
 									return trackerRPC.getFromTracker(remoteNode, locationKey,
 											domainKey, expectAttachement, signMessage);
 								}
-							});
+							}, searchTrackerCloseTo);
 				}
 				else
 				{
@@ -131,7 +134,7 @@ public class DistributedTracker
 									return trackerRPC.addToTracker(remoteNode, locationKey,
 											domainKey, attachement, signMessage, primary);
 								}
-							});
+							},  peerBean.getServerPeerAddress().getID());
 				}
 				else
 				{
@@ -144,12 +147,12 @@ public class DistributedTracker
 
 	private void loop(Number160 locationKey, final Number160 domainKey,
 			SortedSet<PeerAddress> queueToAsk, TrackerConfiguration trackerConfiguration,
-			FutureTracker futureTracker, boolean cancelOnFinish, Operation operation)
+			FutureTracker futureTracker, boolean cancelOnFinish, Operation operation, Number160 compareTo)
 	{
 		FutureResponse[] futureResponses = new FutureResponse[trackerConfiguration.getParallel()];
 		// make pollfirst not equal for all peers
 		SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
-				.createPeerComparator());
+				.createPeerComparator(compareTo));
 		loopRec(queueToAsk, secondaryQueue, new HashSet<PeerAddress>(),
 				new HashMap<PeerAddress, Map<PeerAddress, Data>>(), operation, trackerConfiguration
 						.getParallel(), new AtomicInteger(0), trackerConfiguration.getMaxFailure(),

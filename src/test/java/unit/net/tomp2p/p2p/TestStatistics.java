@@ -14,7 +14,6 @@
  * the License.
  */
 package net.tomp2p.p2p;
-
 import java.net.UnknownHostException;
 import java.util.Random;
 
@@ -26,56 +25,56 @@ import net.tomp2p.peers.PeerMapKadImpl;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestStatistics {
-    @Test
-    public void testCountPeers1() throws UnknownHostException {
-	Random rnd = new Random(42L);
-	Number160 n = new Number160(rnd);
-	PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 100, 50, 10,
-		new int[0]);
-	Statistics statistics = peerMapKadImpl.getStatistics();
-	for (int i = 0; i < 100; i++) {
-	    PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-	    peerMapKadImpl.peerOnline(pa, null);
+public class TestStatistics
+{
+	@Test
+	public void testCountPeers1() throws UnknownHostException
+	{
+		Random rnd = new Random(42L);
+		Number160 n = new Number160(rnd);
+		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 100, 50, 10, new int[0]);
+		Statistics statistics = peerMapKadImpl.getStatistics();
+		for (int i = 0; i < 100; i++)
+		{
+			PeerAddress pa = Utils2.createAddress(new Number160(rnd));
+			peerMapKadImpl.peerOnline(pa, null);
+		}
+		Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
 	}
-	Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
-    }
 
-    @Test
-    public void testCountPeers2() throws UnknownHostException {
-	Random rnd = new Random(42L);
-	Number160 n = new Number160(rnd);
-	PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 100, 50, 10,
-		new int[0]);
-	Statistics statistics = peerMapKadImpl.getStatistics();
-	for (int i = 0; i < 100; i++) {
-	    PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-	    peerMapKadImpl.peerOnline(pa, null);
+	@Test
+	public void testCountPeers2() throws UnknownHostException
+	{
+		Random rnd = new Random(42L);
+		Number160 n = new Number160(rnd);
+		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 100, 50, 10, new int[0]);
+		Statistics statistics = peerMapKadImpl.getStatistics();
+		for (int i = 0; i < 100; i++)
+		{
+			PeerAddress pa = Utils2.createAddress(new Number160(rnd));
+			peerMapKadImpl.peerOnline(pa, null);
+		}
+		Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
 	}
-	Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
-    }
 
-    @Test
-    public void testNodesEstimation() throws UnknownHostException {
-	for (int j = 1; j < 5; j++) {
-	    int maxNr = 10000 * j;
-	    Random rnd = new Random(42L);
-	    Number160 id = new Number160(rnd);
-	    PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0,
-		    new int[0]);
-	    Statistics statistics = kadRouting.getStatistics();
-	    for (int i = 0; i < maxNr; i++) {
-		Number160 id1 = new Number160(rnd);
-		PeerAddress remoteNode1 = Utils2.createAddress(id1);
-		kadRouting.peerOnline(remoteNode1, null);
-	    }
-	    double diff = (maxNr + 1) / statistics.getEstimatedNumberOfNodes();
-	    // System.err
-	    // .println("We have " + (maxNr + 1) + " nodes, we esimate "
-	    // + statistics.getEstimatedNumberOfNodes()
-	    // + ", diff:" + diff);
-	    Assert.assertEquals(true, diff < 1.1 && diff > 0.9);
+	@Test
+	public void testNodesEstimation() throws UnknownHostException
+	{
+		for (int j = 1; j < 5; j++)
+		{
+			int maxNr = 10000 * j;
+			Random rnd = new Random(42L);
+			Number160 id = new Number160(rnd);
+			PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, 0, new int[0]);
+			Statistics statistics = kadRouting.getStatistics();
+			for (int i = 0; i < maxNr; i++)
+			{
+				Number160 id1 = new Number160(rnd);
+				PeerAddress remoteNode1 = Utils2.createAddress(id1);
+				kadRouting.peerOnline(remoteNode1, null);
+			}
+			double diff = (maxNr + 1) / statistics.getEstimatedNumberOfNodes();
+			Assert.assertEquals(true, diff < 1.1 && diff > 0.9);
+		}
 	}
-    }
-
 }

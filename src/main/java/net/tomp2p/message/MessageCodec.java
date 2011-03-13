@@ -214,9 +214,7 @@ public class MessageCodec
 					buffer.writeInt(size);
 					buffers.add(buffer);
 					for (Number480 key : keys)
-						buffers
-								.add(ChannelBuffers
-										.wrappedBuffer(key.getContentKey().toByteArray()));
+						buffers.add(ChannelBuffers.wrappedBuffer(key.getContentKey().toByteArray()));
 					return 4 + (size * 20);
 				}
 				else
@@ -231,8 +229,8 @@ public class MessageCodec
 				}
 			case SET_NEIGHBORS:
 				count = 1;
-				size = Math.min(message.getNeighbors().size(), Math.min(message
-						.getUseAtMostNeighbors(), MAX_BYTE));
+				size = Math.min(message.getNeighbors().size(),
+						Math.min(message.getUseAtMostNeighbors(), MAX_BYTE));
 				buffer = ChannelBuffers.buffer(1);
 				buffer.writeByte(size);
 				buffers.add(buffer);
@@ -297,13 +295,19 @@ public class MessageCodec
 			return;
 		Signature signature = Signature.getInstance("SHA1withDSA");
 		signature.initSign(message.getPrivateKey());
+		//System.err.println("private key for encoding is " + message.getPrivateKey());
+		//System.err.println("public key for encoding is " + message.getPublicKey());
 		for (ChannelBuffer buffer2 : buffers)
 		{
 			signature.update(buffer2.array(), buffer2.arrayOffset(), buffer2.writerIndex());
-			// System.err.println("\nI do the update starting from encode "+buffer2.arrayOffset()+" to "+
-			// buffer2.writerIndex());
-			// for(int i=buffer2.arrayOffset();i<buffer2.writerIndex();i++)
-			// System.err.format("%1$02x,",buffer2.array()[i]);
+			//System.err.println("\nI do the update starting from encode " + buffer2.arrayOffset()
+			//		+ " to " + buffer2.writerIndex());
+			//for (int i = buffer2.arrayOffset(); i < buffer2.writerIndex(); i++)
+			//{
+			//	System.err.format("%1$02x,", buffer2.array()[i]);
+			//	if (i % 1000 == 0 && i != 0)
+			//		System.err.print("\n");
+			//}
 		}
 		byte[] signatureData = signature.sign();
 		SHA1Signature decodedSignature = new SHA1Signature();
@@ -522,8 +526,10 @@ public class MessageCodec
 				break;
 			case CHANNEL_BUFFER:
 				len = buffer.readInt();
-				//final ChannelBuffer tmpBuffer = buffer.slice(buffer.readerIndex(), len);
-				//you can only use slice if no execution handler is in place, otherwise, you will overwrite stuff
+				// final ChannelBuffer tmpBuffer =
+				// buffer.slice(buffer.readerIndex(), len);
+				// you can only use slice if no execution handler is in place,
+				// otherwise, you will overwrite stuff
 				final ChannelBuffer tmpBuffer = buffer.copy(buffer.readerIndex(), len);
 				buffer.skipBytes(len);
 				message.setPayload0(tmpBuffer);
@@ -546,12 +552,17 @@ public class MessageCodec
 				// get signature
 				final Signature signatureAlgorithm = Signature.getInstance("SHA1withDSA");
 				signatureAlgorithm.initVerify(receivedPublicKey);
-				signatureAlgorithm.update(buffer.array(), buffer.arrayOffset(), buffer
-						.readerIndex());
-				// System.err.println("\nI do the update starting from docede "+buffer.arrayOffset()+" to "+
-				// buffer.readerIndex());
-				// for(int i=buffer.arrayOffset();i<buffer.readerIndex();i++)
-				// System.err.format("%1$02x,",buffer.array()[i]);
+				signatureAlgorithm.update(buffer.array(), buffer.arrayOffset(),
+						buffer.readerIndex());
+				//System.err.println("\nI do the update starting from docede " + buffer.arrayOffset()
+				//		+ " to " + buffer.readerIndex());
+				//System.err.println("public key is"+receivedPublicKey);
+				//for (int i = buffer.arrayOffset(); i < buffer.readerIndex(); i++)
+				//{
+				//	System.err.format("%1$02x,", buffer.array()[i]);
+				//	if (i % 1000 == 0 && i != 0)
+				//		System.err.print("\n");
+				//}
 				Number160 number1 = readID(buffer);
 				Number160 number2 = readID(buffer);
 				// System.err.println("n1 "+number1);
@@ -594,7 +605,7 @@ public class MessageCodec
 		if (type == 0)
 		{
 			buffer.skipBytes(1);
-			if(message!=null)
+			if (message != null)
 				message.getSender();
 		}
 		else
@@ -644,8 +655,9 @@ public class MessageCodec
 			// array.
 			// TODO: find good values for this. This is just a guess
 			final boolean copy = true;
-			//final boolean copy = me.length / length > 1;
-			// we have to use copy if we use an exectution handler, otherwise the buffer will have different data.
+			// final boolean copy = me.length / length > 1;
+			// we have to use copy if we use an exectution handler, otherwise
+			// the buffer will have different data.
 			if (copy)
 			{
 				final byte[] me2 = new byte[length];

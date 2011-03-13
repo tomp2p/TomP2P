@@ -58,6 +58,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 		//read header if possible and not already read
 		if (message == null && buffer.readableBytes() >= MessageCodec.HEADER_SIZE)
 		{
+			//we need to backup the reader index, since read data may vanish.
+			buffer.markReaderIndex();
 			final SocketAddress sa = channel.getRemoteAddress();
 			// System.err.println("tcp decoder"+sa);
 			message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) sa).getAddress());
@@ -67,15 +69,20 @@ public class TomP2PDecoderTCP extends FrameDecoder
 						+ " allowed are: " + maxMessageSize);
 			if (logger.isDebugEnabled())
 				logger.debug("got header in decoder " + message);
+			//set that we did not read data, otherwise it gets lost.
+			buffer.resetReaderIndex();
 		}
-		
 		
 		if (message != null && message.getContentLength() == 0)
 		{
+			//skip the header, since we read it
+			buffer.skipBytes(MessageCodec.HEADER_SIZE);
 			return cleanupAndReturnMessage();
 		}
-		else if (message != null && buffer.readableBytes() >= message.getContentLength())
+		else if (message != null && buffer.readableBytes() >= message.getContentLength()+MessageCodec.HEADER_SIZE)
 		{
+			//skip the header, since we read it
+			buffer.skipBytes(MessageCodec.HEADER_SIZE);
 			MessageCodec.decodePayload(message.getContentType1(), buffer, message);
 			MessageCodec.decodePayload(message.getContentType2(), buffer, message);
 			MessageCodec.decodePayload(message.getContentType3(), buffer, message);

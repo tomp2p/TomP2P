@@ -147,7 +147,7 @@ public class ConnectionHandler
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, false, bindings.isBehindFirewall(), bindings.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, true, bindings.isBehindFirewall(), bindings.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);

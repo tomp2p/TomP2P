@@ -218,7 +218,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 		// no need to reply, we are late anyway
 		if (System.currentTimeMillis() > message.getFinished() + timeout)
 		{
-			logger.info("We are very busy and cannto reply in time, so we drop:" + message);
+			logger.info("We are very busy and cannto reply in time (timeout="+timeout+"), so we drop:" + message);
 			close(ctx);
 			return;
 		}

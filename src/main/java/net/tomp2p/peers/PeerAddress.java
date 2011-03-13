@@ -510,4 +510,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 			return SIZE_IP_SOCKv6;
 		}
 	}
+
+	public PeerAddress copyWithDifferentId(Number160 id2)
+	{
+		return new PeerAddress(id2, address, portTCP, portUDP, forwarded, firewalledUDP,
+				firewalledTCP);
+	}
 }

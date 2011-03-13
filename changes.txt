@@ -1,2 +1,1 @@
-3.2.8: 
- * distinguished tracker add, which adds itself to close trackers to place itself always on the same peers, and get tracker, which searches for trackers close to a random id
+3.2.9:

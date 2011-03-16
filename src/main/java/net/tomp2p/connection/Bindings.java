@@ -178,34 +178,33 @@ public class Bindings
 
 	private StringBuilder discoverNetwork(NetworkInterface networkInterface)
 	{
-		StringBuilder sb = new StringBuilder();
-		for (InterfaceAddress iface : networkInterface.getInterfaceAddresses())
+		//I don't like this at all, the best thing would be to test if its Java 1.5
+		if(System.getProperty("java.vm.name").equals("Dalvik") || System.getProperty("java.version").startsWith("1.5"))
 		{
-			InetAddress inet = iface.getAddress();
-			if (getAddresses().contains(inet))
-				continue;
-			if (useAllProtocols())
+			//we are Java 1.5 or running on Android, which is comparable to 1.5
+			try
 			{
-				sb.append(",").append(inet);
-				addAddress(inet);
+				Class<?> dn=Class.forName("net.tomp2p.connection.DiscoverNetwork5");
+				
 			}
-			else
+			catch (ClassNotFoundException e)
 			{
-				if (inet instanceof Inet4Address && getProtocols().contains(Protocol.IPv4))
-				{
-					sb.append(",").append(inet);
-					addAddress(inet);
-				}
-				if (inet instanceof Inet6Address && getProtocols().contains(Protocol.IPv6))
-				{
-					sb.append(",").append(inet);
-					addAddress(inet);
-				}
+				// TODO Auto-generated catch block
 			}
-			if (iface.getBroadcast() != null)
-				addBroadcastAddress(iface.getBroadcast());
 		}
-		return sb.replace(0, 1, "(").append(")");
+		else 
+		{
+			//we are most likely Java 1.6, if not, you'll see an error here
+			try
+			{
+				Class<?> dn=Class.forName("net.tomp2p.connection.DiscoverNetwork6");
+			}
+			catch (ClassNotFoundException e)
+			{
+				// TODO Auto-generated catch block
+			}
+		}
+		return null;
 	}
 
 	public String discoverLocalInterfaces() throws SocketException, UnknownHostException

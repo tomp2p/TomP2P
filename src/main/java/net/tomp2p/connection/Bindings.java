@@ -15,12 +15,8 @@
  */
 package net.tomp2p.connection;
 import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -176,38 +172,26 @@ public class Bindings
 		return useAllProtocols() || listenInterfaceHints.contains(Protocol.IPv6);
 	}
 
-	private StringBuilder discoverNetwork(NetworkInterface networkInterface)
+	private StringBuilder discoverNetwork(NetworkInterface networkInterface) throws Exception
 	{
+		final Class<?> dn;
 		//I don't like this at all, the best thing would be to test if its Java 1.5
 		if(System.getProperty("java.vm.name").equals("Dalvik") || System.getProperty("java.version").startsWith("1.5"))
 		{
 			//we are Java 1.5 or running on Android, which is comparable to 1.5
-			try
-			{
-				Class<?> dn=Class.forName("net.tomp2p.connection.DiscoverNetwork5");
-				
-			}
-			catch (ClassNotFoundException e)
-			{
-				// TODO Auto-generated catch block
-			}
+			dn=Class.forName("net.tomp2p.connection.DiscoverNetwork5");
 		}
 		else 
 		{
 			//we are most likely Java 1.6, if not, you'll see an error here
-			try
-			{
-				Class<?> dn=Class.forName("net.tomp2p.connection.DiscoverNetwork6");
-			}
-			catch (ClassNotFoundException e)
-			{
-				// TODO Auto-generated catch block
-			}
+			dn=Class.forName("net.tomp2p.connection.DiscoverNetwork6");
 		}
-		return null;
+		DiscoverNetwork discoverNetwork=(DiscoverNetwork)dn.newInstance();
+		discoverNetwork.init(this);
+		return discoverNetwork.discoverNetwork(networkInterface);
 	}
 
-	public String discoverLocalInterfaces() throws SocketException, UnknownHostException
+	public String discoverLocalInterfaces() throws Exception
 	{
 		StringBuilder sb = new StringBuilder("Status: ");
 		Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();

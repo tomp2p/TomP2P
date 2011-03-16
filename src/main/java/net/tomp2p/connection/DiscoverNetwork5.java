@@ -10,9 +10,10 @@ import net.tomp2p.connection.Bindings.Protocol;
 
 public class DiscoverNetwork5 implements DiscoverNetwork
 {
-	final private Bindings bindings;
+	private Bindings bindings;
 
-	public DiscoverNetwork5(Bindings bindings)
+	@Override
+	public void init(Bindings bindings)
 	{
 		this.bindings = bindings;
 	}

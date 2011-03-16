@@ -5,5 +5,6 @@ import java.net.NetworkInterface;
 
 public interface DiscoverNetwork
 {
-	StringBuilder discoverNetwork(NetworkInterface networkInterface);
+	public void init(Bindings bindings);
+	public StringBuilder discoverNetwork(NetworkInterface networkInterface);
 }

@@ -34,19 +34,19 @@ public class DiscoverNetwork6 implements DiscoverNetwork
 				bindings.addBroadcastAddress(iface.getBroadcast());
 			if (bindings.useAllProtocols())
 			{
-				sb.append(",").append(inet);
+				sb.append(",All:").append(inet);
 				bindings.addAddress(inet);
 			}
 			else
 			{
 				if (inet instanceof Inet4Address && bindings.getProtocols().contains(Protocol.IPv4))
 				{
-					sb.append(",").append(inet);
+					sb.append(",IPv4:").append(inet);
 					bindings.addAddress(inet);
 				}
 				if (inet instanceof Inet6Address && bindings.getProtocols().contains(Protocol.IPv6))
 				{
-					sb.append(",").append(inet);
+					sb.append(",IPv6:").append(inet);
 					bindings.addAddress(inet);
 				}
 			}

@@ -164,12 +164,12 @@ public class Bindings
 
 	public boolean useIPv4()
 	{
-		return useAllProtocols() || listenInterfaceHints.contains(Protocol.IPv4);
+		return useAllProtocols() || listenProtocolHints.contains(Protocol.IPv4);
 	}
 
 	public boolean useIPv6()
 	{
-		return useAllProtocols() || listenInterfaceHints.contains(Protocol.IPv6);
+		return useAllProtocols() || listenProtocolHints.contains(Protocol.IPv6);
 	}
 
 	private StringBuilder discoverNetwork(NetworkInterface networkInterface) throws Exception

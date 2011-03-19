@@ -14,6 +14,7 @@
  */
 package net.tomp2p.p2p;
 
+import java.net.InetSocketAddress;
 import java.util.Random;
 
 import org.junit.Test;
@@ -68,7 +69,7 @@ public class TestIPv6
 		Peer peer = new Peer(new Number160(r));
 		Bindings b=new Bindings(Protocol.IPv6);
 		peer.listen(4000, 4000, b);
-		FutureBootstrap fb=peer.bootstrapBroadcast(4000);
+		FutureBootstrap fb=peer.bootstrap(new InetSocketAddress("2001:620:10:10c1:201:6cff:feca:426d", 4000));
 		fb.awaitUninterruptibly();
 		System.out.println("Got it: "+fb.isSuccess());
 		Thread.sleep(10000);

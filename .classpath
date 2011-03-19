@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" output="target/classes" path="src/main/java"/>
+	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="src/main/config"/>
 	<classpathentry kind="src" path="src/test/java/unit"/>
 	<classpathentry kind="src" path="src/test/java/integration"/>

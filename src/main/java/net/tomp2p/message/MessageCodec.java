@@ -48,7 +48,7 @@ public class MessageCodec
 {
 	final public static byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 	final public static int MAX_BYTE = 255;
-	final public static int HEADER_SIZE = 64;
+	final public static int HEADER_SIZE = 60;
 	final private static ChannelFactory factory = new ChannelFactory();
 
 	/**
@@ -57,8 +57,8 @@ public class MessageCodec
 	 * 32bit p2p version - 32bit id - 4bit message type - 4bit message name -
 	 * 160bit sender id - 16bit tcp port - 16bit udp port - 160bit recipient id
 	 * - 32bit message length - 16bit (4x4)content type - 8bit network address
-	 * information - 32bit network information. It total, the header is of size
-	 * 64 bytes.
+	 * information. It total, the header is of size
+	 * 60 bytes.
 	 * 
 	 * 
 	 * @param buffer The Netty buffer to fill
@@ -81,10 +81,6 @@ public class MessageCodec
 		buffer.writeShort((short) content); // 59
 		// options
 		buffer.writeByte(message.getSender().createType()); // 60
-		if (message.getSender().isForwarded() && !message.getSender().isIPv6())
-			buffer.writeBytes(message.getSender().getInetAddress().getAddress());
-		else
-			buffer.writeInt(0); // 64
 		return buffer;
 	}
 
@@ -430,28 +426,10 @@ public class MessageCodec
 		// identification
 		message.setRealSender(new PeerAddress(senderID, sender, portTCP, portUDP));
 		final byte optionType = buffer.readByte();
-		final byte[] options = new byte[4];
-		buffer.readBytes(options);
-		if (!isNumber((byte) 0, options))
-		{
-			try
-			{
-				sender = InetAddress.getByAddress(options);
-			}
-			catch (final UnknownHostException e)
-			{
-				throw new DecoderException(e.toString());
-			}
-		}
 		final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
 				optionType);
 		message.setSender(peerAddress);
 		return message;
-	}
-
-	private static boolean isNumber(final byte nr, final byte[] me)
-	{
-		return me[0] == nr && me[1] == nr && me[2] == nr && me[3] == nr;
 	}
 
 	/**

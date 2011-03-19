@@ -1162,6 +1162,7 @@ public class TestDHT
 							toStore1, 100);
 					send2(nodes[rnd.nextInt(nodes.length)], nodes[rnd.nextInt(nodes.length)],
 							ChannelBuffers.wrappedBuffer(toStore1), 100);
+					System.err.println("round1 "+i);
 				}
 			}
 			System.err.println("DONE");

@@ -1125,10 +1125,11 @@ public class TestDHT
 		{
 			master = new Peer(new Number160(rnd));
 			master.listen(4001, 4001);
-			Peer[] nodes = createNodes(master, 4000);
+			Peer[] nodes = createNodes(master, 1000);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
+				System.err.println("node "+i);
 				for (int j = 0; j < nodes.length; j++)
 					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
 				nodes[i].setObjectDataReply(new ObjectDataReply()
@@ -1149,10 +1150,12 @@ public class TestDHT
 					}
 				});
 			}
+			System.err.println("round start");
 			Random rnd = new Random(42L);
 			byte[] toStore1 = new byte[10 * 1024];
 			for (int j = 0; j < 100; j++)
 			{
+				System.err.println("round "+j);
 				for (int i = 0; i < nodes.length - 1; i++)
 				{
 					send1(nodes[rnd.nextInt(nodes.length)], nodes[rnd.nextInt(nodes.length)],
@@ -1162,6 +1165,10 @@ public class TestDHT
 				}
 			}
 			System.err.println("DONE");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
 		}
 		finally
 		{

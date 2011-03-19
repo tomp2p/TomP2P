@@ -18,6 +18,8 @@ import java.util.Random;
 
 import org.junit.Test;
 
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
@@ -37,7 +39,8 @@ public class TestIPv6
 	{
 		Random r = new Random(42L);
 		Peer peer = new Peer(new Number160(r));
-		peer.listen(4000, 4000);
+		Bindings b=new Bindings(Protocol.IPv6);
+		peer.listen(4000, 4000, b);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
 				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa);
@@ -63,7 +66,8 @@ public class TestIPv6
 	{
 		Random r = new Random(43L);
 		Peer peer = new Peer(new Number160(r));
-		peer.listen(4000, 4000);
+		Bindings b=new Bindings(Protocol.IPv6);
+		peer.listen(4000, 4000, b);
 		FutureBootstrap fb=peer.bootstrapBroadcast(4000);
 		fb.awaitUninterruptibly();
 		System.out.println("Got it: "+fb.isSuccess());

@@ -307,7 +307,7 @@ public class TestStorage
 	@Test
 	public void testTracker() throws Exception
 	{
-		final TrackerStorage ts = new TrackerStorage();
+		final TrackerStorage ts = new TrackerStorage(42L);
 		ts.setTrackerTimoutSeconds(1);
 		final AtomicBoolean cond = new AtomicBoolean(true);
 		new Thread(new Runnable()

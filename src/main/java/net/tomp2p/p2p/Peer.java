@@ -73,6 +73,7 @@ import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
@@ -156,6 +157,7 @@ public class Peer
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
+	final public static int BLOOMFILTER_SIZE=4096;
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
 	{
@@ -338,7 +340,7 @@ public class Peer
 		Replication replicationStorage = new Replication(storage, selfAddress, peerMap);
 		peerBean.setReplicationStorage(replicationStorage);
 		// create tracker and add replication feature
-		TrackerStorage storageTracker = new TrackerStorage();
+		TrackerStorage storageTracker = new TrackerStorage(peerBean.getServerPeerAddress().getID().hashCode());
 		peerBean.setTrackerStorage(storageTracker);
 		Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
 		peerBean.setReplicationTracker(replicationTracker);
@@ -1160,24 +1162,43 @@ public class Peer
 		scheduledFutures.add(tmp);
 		return tmp;
 	}
-
+	
 	// GET TRACKER
 	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config)
 	{
+		// make a good guess based on the config and the maxium tracker that can be found
+		return getFromTracker(locationKey, config, new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1000));
+	}
+	
+	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config, Collection<PeerAddress> knownPeers)
+	{
+		// make a good guess based on the config and the maxium tracker that can be found
+		SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
+		for(PeerAddress peerAddress:knownPeers)
+		{
+			bloomFilter.add(peerAddress.getID());
+		}
+		return getFromTracker(locationKey, config, bloomFilter);
+	}
+	
+	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config, SimpleBloomFilter<Number160> knownPeers)
+	{
 		return getTracker().getFromTracker(locationKey, config.getDomain(),
 				config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-				config.isExpectAttachement(), config.getEvaluationScheme(), config.isSignMessage());
+				config.isExpectAttachement(), config.getEvaluationScheme(), config.isSignMessage(), knownPeers);
 	}
 
 	public FutureTracker addToTracker(final Number160 locationKey,
 			final ConfigurationTrackerStore config)
 	{
+		// make a good guess based on the config and the maxium tracker that can be found
+		SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
 		if (!config.isSignMessage())
 			config.setSignMessage(config.getAttachement() != null
 					&& config.getAttachement().isProtectedEntry());
 		final FutureTracker futureTracker = getTracker().addToTracker(locationKey,
 				config.getDomain(), config.getAttachement(), config.getRoutingConfiguration(),
-				config.getTrackerConfiguration(), config.isSignMessage(), config.getFutureCreate());
+				config.getTrackerConfiguration(), config.isSignMessage(), config.getFutureCreate(), bloomFilter);
 		if (getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleAddTracker(locationKey, config, futureTracker);
@@ -1194,10 +1215,12 @@ public class Peer
 			@Override
 			public void run()
 			{
+				// make a good guess based on the config and the maxium tracker that can be found
+				SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
 				FutureTracker futureTracker2 = getTracker().addToTracker(locationKey,
 						config.getDomain(), config.getAttachement(),
 						config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-						config.isSignMessage(), config.getFutureCreate());
+						config.isSignMessage(), config.getFutureCreate(), bloomFilter);
 				futureTracker.repeated(futureTracker2);
 			}
 		};

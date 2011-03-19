@@ -69,7 +69,7 @@ public class Configurations
 	public static ConfigurationTrackerGet defaultTrackerGetConfiguration()
 	{
 		ConfigurationTrackerGet config= new ConfigurationTrackerGet();
-		config.setTrackerConfiguration(new TrackerConfiguration(5, 2, 2, 30));
+		config.setTrackerConfiguration(new TrackerConfiguration(5, 2, 4, 30));
 		config.setRoutingConfiguration(new RoutingConfiguration(4, 5, 10, 2));
 		config.setDomain(DEFAULT_TRACKER_DOMAIN);
 		config.setEvaluationScheme(new VotingSchemeTracker());

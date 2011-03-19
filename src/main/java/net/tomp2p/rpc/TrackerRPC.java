@@ -23,9 +23,9 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.MessageCodec;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.MessageCodec;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
@@ -33,13 +33,14 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerStorage;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TrackerRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerRPC.class);
-
 	// final private TrackerStorage trackerStorage;
 	// final private int trackerSize;
 	// final private int ttlMillis;
@@ -77,12 +78,13 @@ public class TrackerRPC extends ReplyHandler
 	}
 
 	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, final Data attachement, boolean signMessage, boolean primary)
+			final Number160 domainKey, final Data attachement, boolean signMessage, boolean primary, SimpleBloomFilter<Number160> knownPeers)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, primary
 				? Type.REQUEST_3 : Type.REQUEST_1);
 		message.setKeyKey(locationKey, domainKey);
+		message.setPayload(ChannelBuffers.wrappedBuffer(knownPeers.toByteArray()));
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (attachement != null)
@@ -103,11 +105,12 @@ public class TrackerRPC extends ReplyHandler
 	}
 
 	public FutureResponse getFromTracker(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, boolean expectAttachement, boolean signMessage)
+			final Number160 domainKey, boolean expectAttachement, boolean signMessage, SimpleBloomFilter<Number160> knownPeers)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_GET, Type.REQUEST_1);
 		message.setKeyKey(locationKey, domainKey);
+		message.setPayload(ChannelBuffers.wrappedBuffer(knownPeers.toByteArray()));
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (expectAttachement)
@@ -146,8 +149,15 @@ public class TrackerRPC extends ReplyHandler
 		Number160 domainKey = message.getKey2();
 		if (direct || primary)
 		{
+			SimpleBloomFilter<Number160> knownPeers = null;
+			if(message.getPayload()!=null)
+			{
+				ChannelBuffer buffer=message.getPayload();
+				int length=buffer.writerIndex();
+				knownPeers=new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset(), length);
+			}
 			SortedMap<Number480, Data> peerDataMap = trackerStorage.getSelection(new Number320(
-					locationKey, domainKey), trackerStorage.getTrackerSize());
+					locationKey, domainKey), trackerStorage.getTrackerSize(), knownPeers);
 			if (peerDataMap == null)
 				responseMessage.setDataMap(new HashMap<Number160, Data>());
 			else
@@ -158,6 +168,10 @@ public class TrackerRPC extends ReplyHandler
 				if (trackerStorage.size(locationKey, domainKey) >= trackerStorage
 						.getTrackerStoreSize())
 				{
+					if (logger.isDebugEnabled())
+						logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress()
+								+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
+								+ ", address:" + senderAddress);
 					responseMessage.setType(Message.Type.DENIED);
 				}
 				else

@@ -16,15 +16,20 @@
 package net.tomp2p.storage;
 import java.io.IOException;
 import java.security.PublicKey;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
  * The maintenance for the tracker is done by the client peer. Thus the peers on
@@ -36,14 +41,20 @@ import net.tomp2p.rpc.DigestInfo;
  */
 public class TrackerStorage extends StorageMemory
 {
+	final private static Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
 	// once you call listen, changing this value has no effect unless a new
 	// TrackerRPC is created. The value is chosen to fit into one single UDP
 	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
 	final private int trackerSize = 20;
 	private int trackerStoreSize = 40;
-	final private static Random rnd = new Random();
+	final private Random rnd;
 	private volatile int trackerTimoutSeconds = Integer.MAX_VALUE;
+	
+	public TrackerStorage(long seed)
+	{
+		rnd = new Random(seed);
+	}
 
 	public int getTrackerSize()
 	{
@@ -75,10 +86,24 @@ public class TrackerStorage extends StorageMemory
 		return digest.getSize();
 	}
 
-	public SortedMap<Number480, Data> getSelection(Number320 number320, int nr)
+	public SortedMap<Number480, Data> getSelection(Number320 number320, int nr, SimpleBloomFilter<Number160> knownPeers)
 	{
 		// we have a copy here, so no need to sync
 		List<Number480> keys = getKeys(number320);
+		// the peer is not interested in those peers! filter them
+		if(knownPeers!=null) 
+		{
+			for(Iterator<Number480> i=keys.iterator();i.hasNext();)
+			{
+				Number480 number480=i.next();
+				if(knownPeers.contains(number480.getContentKey()))
+				{
+					if(logger.isDebugEnabled())
+						logger.debug("We won't deliver "+number480.getContentKey()+" as the peer indicates that its already known.");
+					i.remove();
+				}
+			}
+		}
 		int size = keys.size();
 		SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
 		for (int i = 0; i < nr && i < size; i++)

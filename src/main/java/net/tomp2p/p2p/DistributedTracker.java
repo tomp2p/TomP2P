@@ -34,6 +34,7 @@ import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
@@ -49,27 +50,30 @@ public class DistributedTracker
 	// 30 as max_trackers and 5 direct hits, this results in (30*5)+30^4=810150.
 	// 810150 is enough for a tracker I think.
 	final private static int MAX_FULL_TRACKERS = 4;
-	final private static Random rnd=new Random();
+	
 	final private Routing routing;
 	final private PeerBean peerBean;
 	final private TrackerRPC trackerRPC;
+	final private Random rnd;
 
 	public DistributedTracker(PeerBean peerBean, Routing routing, TrackerRPC trackerRPC)
 	{
 		this.routing = routing;
 		this.trackerRPC = trackerRPC;
 		this.peerBean = peerBean;
+		this.rnd=new Random(peerBean.getServerPeerAddress().getID().hashCode());
+		
 	}
 
 	public FutureTracker getFromTracker(final Number160 locationKey, final Number160 domainKey,
 			RoutingConfiguration routingConfiguration,
 			final TrackerConfiguration trackerConfiguration, final boolean expectAttachement,
-			EvaluatingSchemeTracker evaluatingScheme, final boolean signMessage)
+			EvaluatingSchemeTracker evaluatingScheme, final boolean signMessage, final SimpleBloomFilter<Number160> knownPeers)
 	{
 		final FutureTracker futureTracker = new FutureTracker(evaluatingScheme);
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, trackerConfiguration, true);
-		final Number160 searchTrackerCloseTo=new Number160(rnd);
+		final Number160 searchCloseTo=new Number160(rnd);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -90,9 +94,9 @@ public class DistributedTracker
 										logger.debug("tracker get: " + remoteNode + " location="
 												+ locationKey);
 									return trackerRPC.getFromTracker(remoteNode, locationKey,
-											domainKey, expectAttachement, signMessage);
+											domainKey, expectAttachement, signMessage, knownPeers);
 								}
-							}, searchTrackerCloseTo);
+							}, searchCloseTo, knownPeers);
 				}
 				else
 				{
@@ -106,7 +110,7 @@ public class DistributedTracker
 	public FutureTracker addToTracker(final Number160 locationKey, final Number160 domainKey,
 			final Data attachement, RoutingConfiguration routingConfiguration,
 			final TrackerConfiguration trackerConfiguration, final boolean signMessage,
-			final FutureCreate<FutureTracker> futureCreate)
+			final FutureCreate<FutureTracker> futureCreate, final SimpleBloomFilter<Number160> knownPeers)
 	{
 		final FutureTracker futureTracker = new FutureTracker();
 		futureTracker.setFutureCreate(futureCreate);
@@ -132,9 +136,9 @@ public class DistributedTracker
 										logger.debug("tracker add: " + remoteNode + " location="
 												+ locationKey);
 									return trackerRPC.addToTracker(remoteNode, locationKey,
-											domainKey, attachement, signMessage, primary);
+											domainKey, attachement, signMessage, primary, knownPeers);
 								}
-							},  peerBean.getServerPeerAddress().getID());
+							},  peerBean.getServerPeerAddress().getID(), knownPeers);
 				}
 				else
 				{
@@ -147,7 +151,7 @@ public class DistributedTracker
 
 	private void loop(Number160 locationKey, final Number160 domainKey,
 			SortedSet<PeerAddress> queueToAsk, TrackerConfiguration trackerConfiguration,
-			FutureTracker futureTracker, boolean cancelOnFinish, Operation operation, Number160 compareTo)
+			FutureTracker futureTracker, boolean cancelOnFinish, Operation operation, Number160 compareTo, final SimpleBloomFilter<Number160> knownPeers)
 	{
 		FutureResponse[] futureResponses = new FutureResponse[trackerConfiguration.getParallel()];
 		SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
@@ -157,7 +161,7 @@ public class DistributedTracker
 						.getParallel(), new AtomicInteger(0), trackerConfiguration.getMaxFailure(),
 				new AtomicInteger(0), queueToAsk.size() + MAX_FULL_TRACKERS, new AtomicInteger(0),
 				trackerConfiguration.getAtLeastSucessfulRequestes(), trackerConfiguration
-						.getAtLeastTrackers(), futureResponses, futureTracker, cancelOnFinish);
+						.getAtLeastTrackers(), futureResponses, futureTracker, cancelOnFinish, knownPeers);
 	}
 
 	private void loopRec(final SortedSet<PeerAddress> queueToAsk,
@@ -167,7 +171,7 @@ public class DistributedTracker
 			final int maxFailures, final AtomicInteger trackerFull, final int maxTrackerFull,
 			final AtomicInteger successfulRequests, final int atLeastSuccessfullRequests,
 			final int atLeastPeersOnTrackers, final FutureResponse[] futureResponses,
-			final FutureTracker futureTracker, final boolean cancelOnFinish)
+			final FutureTracker futureTracker, final boolean cancelOnFinish, final SimpleBloomFilter<Number160> knownPeers)
 	{
 		int active = 0;
 		for (int i = 0; i < parallel; i++)
@@ -217,7 +221,7 @@ public class DistributedTracker
 				{
 					Map<Number160, Data> newDataMap = futureResponse.getResponse().getDataMap();
 					mergeC(secondaryQueue, newDataMap.values(), alreadyAsked);
-					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient());
+					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
 					int successRequests = success ? successfulRequests.get() : successfulRequests
 							.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
@@ -244,7 +248,7 @@ public class DistributedTracker
 					loopRec(queueToAsk, secondaryQueue, alreadyAsked, peerOnTracker, operation,
 							parallel, nrFailures, maxFailures, trackerFull, maxTrackerFull,
 							successfulRequests, atLeastSuccessfullRequests, atLeastPeersOnTrackers,
-							futureResponses, futureTracker, cancelOnFinish);
+							futureResponses, futureTracker, cancelOnFinish, knownPeers);
 				}
 			}
 		});
@@ -284,11 +288,13 @@ public class DistributedTracker
 	}
 
 	static void merge(Map<PeerAddress, Map<PeerAddress, Data>> peerOnTracker,
-			Map<Number160, Data> newDataMap, PeerAddress reporter)
+			Map<Number160, Data> newDataMap, PeerAddress reporter, SimpleBloomFilter<Number160> knownPeers)
 	{
 		for (Data data : newDataMap.values())
 		{
 			PeerAddress peer = data.getPeerAddress();
+			knownPeers.add(peer.getID());
+			knownPeers.add(reporter.getID());
 			Map<PeerAddress, Data> peerOnTrackerEntry = peerOnTracker.get(peer);
 			if (peerOnTrackerEntry == null)
 			{

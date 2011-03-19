@@ -168,18 +168,9 @@ public class ConnectionHandler
 		if (bindings.isListenBroadcast())
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
-			if(bindings.useIPv4())
-			{
-				if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, configuration.getMaxMessageSize())
-						|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
-					throw new IOException("cannot bind TCP or UDP");
-			}
-			if(bindings.useIPv6())
-			{
-				if (!startupTCP(new InetSocketAddress(InetAddress.getByAddress(new byte[16]), tcpPort), dispatcherRequest, configuration.getMaxMessageSize())
-						|| !startupUDP(new InetSocketAddress(InetAddress.getByAddress(new byte[16]), udpPort), dispatcherRequest))
-					throw new IOException("cannot bind TCP or UDP");
-			}
+			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, configuration.getMaxMessageSize())
+					|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
+				throw new IOException("cannot bind TCP or UDP");
 		}
 		else
 		{

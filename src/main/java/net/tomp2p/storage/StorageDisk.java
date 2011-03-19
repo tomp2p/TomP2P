@@ -307,18 +307,7 @@ public class StorageDisk extends Storage
 				txn.abort();
 				return null;
 			}
-			SortedMap<Number480, Data> tmp;
-			if (fromKey == null && toKey == null)
-			{
-				txn.abort();
-				return null;
-			}
-			else if (toKey == null)
-				tmp = dataMap.tailMap(fromKey);
-			else if (fromKey == null)
-				tmp = dataMap.headMap(toKey);
-			else
-				tmp = dataMap.subMap(fromKey, toKey);
+			SortedMap<Number480, Data> tmp = dataMap.subMap(fromKey, toKey);
 			Collection<Number480> keys = new ArrayList<Number480>(tmp.keySet());
 			SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
 			for (Number480 key : keys)

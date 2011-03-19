@@ -17,7 +17,7 @@ package net.tomp2p.p2p;
 import java.net.InetSocketAddress;
 import java.util.Random;
 
-import org.junit.Test;
+//import org.junit.Test;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.Bindings.Protocol;
@@ -35,7 +35,7 @@ import net.tomp2p.peers.PeerAddress;
  */
 public class TestIPv6
 {
-	@Test
+	//@Test
 	public void startServer() throws Exception
 	{
 		Random r = new Random(42L);
@@ -62,7 +62,7 @@ public class TestIPv6
 		}
 	}
 	
-	@Test
+	//@Test
 	public void startClient() throws Exception 
 	{
 		Random r = new Random(43L);

@@ -1,1 +1,1 @@
-3.2.9:removed dead code, made it work with Android, tracker improvements with BF, removed IP from header, the header size is now 60
+3.2.9:removed dead code, made it work with Android, tracker improvements with BF, removed IP from header - the header size is now 60, IPv6 fixes and tests

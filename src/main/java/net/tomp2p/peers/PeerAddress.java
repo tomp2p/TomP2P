@@ -129,47 +129,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.hashCode = id.hashCode();
 	}
 
-	public PeerAddress(byte[] peerAddress, byte[] socketAddress) throws UnknownHostException
-	{
-		int offsetPeerAddress = 0, offsetSocketAddress = 0;
-		int types = socketAddress[offsetSocketAddress] & 0xff;
-		this.net6 = (types & NET6) > 0;
-		this.forwarded = (types & FORWARD) > 0;
-		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
-		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
-		offsetSocketAddress++;
-		//
-		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
-		System.arraycopy(peerAddress, offsetPeerAddress, tmp, 0, Number160.BYTE_ARRAY_SIZE);
-		this.id = new Number160(tmp);
-		offsetPeerAddress += Number160.BYTE_ARRAY_SIZE;
-		//
-		this.portTCP = ((socketAddress[offsetSocketAddress] & 0xff) << 8)
-				+ (socketAddress[offsetSocketAddress + 1] & 0xff);
-		this.portUDP = ((socketAddress[offsetSocketAddress + 2] & 0xff) << 8)
-				+ (socketAddress[offsetSocketAddress + 3] & 0xff);
-		offsetSocketAddress += 4;
-		//
-		if (!isIPv6())
-		{
-			// IPv4
-			tmp = new byte[4];
-			System.arraycopy(socketAddress, offsetSocketAddress, tmp, 0, 4);
-			this.address = Inet4Address.getByAddress(tmp);
-			offsetSocketAddress += 4;
-		}
-		else
-		{
-			// IPv6
-			tmp = new byte[16];
-			System.arraycopy(socketAddress, offsetSocketAddress, tmp, 0, 16);
-			this.address = Inet6Address.getByAddress(tmp);
-			offsetSocketAddress += 16;
-		}
-		this.offset = offsetSocketAddress + offsetPeerAddress;
-		this.hashCode = id.hashCode();
-	}
-
 	/**
 	 * This is usually used for debugging, the address will be null and ports -1
 	 * 

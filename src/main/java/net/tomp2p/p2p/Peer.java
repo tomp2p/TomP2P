@@ -239,6 +239,7 @@ public class Peer
 		getConnectionHandler().shutdown();
 		for (PeerListener listener : listeners)
 			listener.notifyOnShutdown();
+		getPeerBean().getStorage().close();
 		connectionHandler = null;
 	}
 
@@ -710,10 +711,6 @@ public class Peer
 								getPeerBean().setServerPeerAddress(
 										serverAddress.ports(connectionConfiguration.getPortNATUDP(), connectionConfiguration.getPortNATTCP()));
 							}
-							// we did not announce how the other peer sees us,
-							// correct it and set forward flag to true
-							getPeerBean().setServerPeerAddress(
-									serverAddress.forward(seenAs.getInetAddress()));
 							getHandshakeRPC().pingTCPProbe(peerAddress);
 							if (futureResponseUDP.isSuccess())
 								getHandshakeRPC().pingUDPProbe(peerAddress);

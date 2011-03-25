@@ -221,8 +221,14 @@ public class StorageRPC extends ReplyHandler
 		// (notify) if we are responsible
 		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
 			peerBean.getReplicationStorage().checkResponsibility(locationKey);
-		if (result.size() == 0)
+		if (result.size() == 0 && !putIfAbsent)
 			responseMessage.setType(Type.DENIED);
+		else if(result.size() == 0 && putIfAbsent)
+		{
+			// put if absent does not return an error if it did not work!
+			responseMessage.setType(Type.OK);
+			responseMessage.setKeys(result);
+		}
 		else
 		{
 			responseMessage.setKeys(result);

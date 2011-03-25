@@ -17,7 +17,6 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PEncoderStage1;
 import net.tomp2p.message.TomP2PEncoderStage2;
 import net.tomp2p.message.Message.Command;
-import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -157,7 +156,7 @@ public class TestMessage
 		DummyChannel dc = new DummyChannel(sock);
 		DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
 		// encode
-		Message m1 = Utils2.createDummyMessage(true, true, true);
+		Message m1 = Utils2.createDummyMessage(true, true);
 		m1.setType(Message.Type.DENIED);
 		IntermediateMessage im = (IntermediateMessage) new TomP2PEncoderStage1().encode(dchc, dc, m1);
 		ChannelBuffer buffer = (ChannelBuffer)new TomP2PEncoderStage2().encode(dchc, dc, im);
@@ -165,7 +164,6 @@ public class TestMessage
 		Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
 		// test
 		Message m2 = (Message) obj;
-		Assert.assertEquals(m1.getSender().isForwarded(), m2.getSender().isForwarded());
 		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender().isFirewalledTCP());
 		Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender().isFirewalledUDP());
 		compareMessage(m1, m2);
@@ -179,7 +177,7 @@ public class TestMessage
 		DummyChannel dc = new DummyChannel(sock);
 		DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
 		// encode
-		Message m1 = Utils2.createDummyMessage(false, true, false);
+		Message m1 = Utils2.createDummyMessage(true, false);
 		m1.setType(Message.Type.DENIED);
 		IntermediateMessage im = (IntermediateMessage) new TomP2PEncoderStage1().encode(dchc, dc, m1);
 		ChannelBuffer buffer = (ChannelBuffer)new TomP2PEncoderStage2().encode(dchc, dc, im);
@@ -187,7 +185,6 @@ public class TestMessage
 		Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
 		// test
 		Message m2 = (Message) obj;
-		Assert.assertEquals(m1.getSender().isForwarded(), m2.getSender().isForwarded());
 		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender().isFirewalledTCP());
 		Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender().isFirewalledUDP());
 		compareMessage(m1, m2);

@@ -68,7 +68,7 @@ public class TestStorage
 	}
 	
 	@Before
-	public void befor()
+	public void before()
 	{
 		new File(DIR).mkdirs();
 	}
@@ -210,6 +210,7 @@ public class TestStorage
 			fr = smmSender.putIfAbsent(recv1.getPeerAddress(), new Number160(33), new ShortString(
 					"test").toNumber160(), tmp, false, false);
 			fr.awaitUninterruptibly();
+			// we cannot put anything there, since there already is 
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<Number160> putKeys = fr.getResponse().getKeys();
 			Assert.assertEquals(0, putKeys.size());
@@ -561,9 +562,11 @@ public class TestStorage
 		{
 			sender = new Peer(55, new Number160("0x50"));
 			sender.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			recv1.listen(8088, 8088);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -601,9 +604,11 @@ public class TestStorage
 		{
 			sender = new Peer(55, new Number160("0x50"));
 			sender.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			recv1.listen(8088, 8088);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -689,9 +694,11 @@ public class TestStorage
 		{
 			sender = new Peer(55, new Number160("0x50"));
 			sender.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.getConnectionConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			recv1.listen(8088, 8088);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -703,6 +710,7 @@ public class TestStorage
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false);
 			fr.awaitUninterruptibly();
+			System.err.println("XX:"+fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			//
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")

@@ -158,7 +158,7 @@ public class TestSecurity
 	@Test
 	public void testSecurity2() throws IOException
 	{
-		Random r = new Random(42L);
+		//Random r = new Random(42L);
 		Number160 n1 = new Number160(23);
 		Number160 n2 = new Number160(24);
 		SHA1Signature s1 = new SHA1Signature(n1, n2);

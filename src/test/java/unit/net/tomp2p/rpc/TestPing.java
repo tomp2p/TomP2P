@@ -291,7 +291,7 @@ public class TestPing
 		{
 			for (int i = 0; i < p.length; i++)
 			{
-				p[0].shutdown();
+				p[i].shutdown();
 			}
 		}
 	}

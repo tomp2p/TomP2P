@@ -139,15 +139,14 @@ public class ConnectionHandler
 		PeerAddress self;
 		if (outsideAddress != null)
 		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
-					false, bindings.isBehindFirewall(), bindings.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(), bindings.isBehindFirewall(), bindings.isBehindFirewall());
 		}
 		else
 		{
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, true, bindings.isBehindFirewall(), bindings.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, bindings.isBehindFirewall(), bindings.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);

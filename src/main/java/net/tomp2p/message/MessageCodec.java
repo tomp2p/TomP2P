@@ -366,7 +366,11 @@ public class MessageCodec
 		}
 		else
 		{
-			byte[] peerAddress = data.getPeerAddress().toByteArray();
+			int len=data.getPeerAddress().expectedLength();
+			//the length cannot be larger than 255
+			byte[] peerAddress = new byte[len +1];
+			peerAddress[0]=(byte)len;
+			data.getPeerAddress().toByteArray(peerAddress,1);
 			DataOutput outputPeerAddress = factory.create(peerAddress);
 			result.add(outputPeerAddress);
 			count += peerAddress.length;
@@ -578,20 +582,17 @@ public class MessageCodec
 		int publicKeyLength = buffer.readUnsignedShort();
 		int sigLength = buffer.readUnsignedByte();
 		//
-		int type = buffer.getUnsignedByte();
+		int length = buffer.readUnsignedByte();
 		PeerAddress originator = null;
-		if (type == 0)
+		if (length == 0)
 		{
-			buffer.skipBytes(1);
 			if (message != null)
 				message.getSender();
 		}
 		else
 		{
-			int len = PeerAddress.expectedLength(type);
-			byte[] me = new byte[len];
-			buffer.readBytes(me);
-			originator = new PeerAddress(me, 0);
+			originator=new PeerAddress(buffer.array(),buffer.arrayOffset()+buffer.readerIndex());
+			buffer.skipBytes(originator.readBytes());
 		}
 		//
 		final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
@@ -666,15 +667,7 @@ public class MessageCodec
 
 	private static ChannelBuffer writePeerAddress(PeerAddress peerAddress)
 	{
-		int size = peerAddress.isIPv6() ? PeerAddress.SIZE_IPv6 : PeerAddress.SIZE_IPv4;
-		ChannelBuffer result = ChannelBuffers.buffer(size);
-		result.writeBytes(peerAddress.getID().toByteArray());
-		result.writeShort(peerAddress.portTCP());
-		result.writeShort(peerAddress.portUDP());
-		byte type = peerAddress.createType();
-		result.writeByte(type);
-		result.writeBytes(peerAddress.getInetAddress().getAddress());
-		return result;
+		return ChannelBuffers.wrappedBuffer(peerAddress.toByteArray());
 	}
 
 	/**
@@ -688,26 +681,9 @@ public class MessageCodec
 	private static PeerAddress readPeerAddress(final ChannelBuffer buffer)
 			throws UnknownHostException
 	{
-		final Number160 id = readID(buffer);
-		// TODO: check why bytes are sent in reversed order
-		final int tcpPort = buffer.readUnsignedShort();
-		final int udpPort = buffer.readUnsignedShort();
-		final byte type = buffer.readByte();
-		byte[] tmp;
-		if (!PeerAddress.isNet6(type))
-		{
-			// IPv4
-			tmp = new byte[4];
-			buffer.readBytes(tmp);
-			return new PeerAddress(id, InetAddress.getByAddress(tmp), tcpPort, udpPort);
-		}
-		else
-		{
-			// IPv6
-			tmp = new byte[16];
-			buffer.readBytes(tmp);
-			return new PeerAddress(id, InetAddress.getByAddress(tmp), tcpPort, udpPort);
-		}
+		PeerAddress peerAddress= new PeerAddress(buffer.array(), buffer.arrayOffset()+buffer.readerIndex());
+		buffer.skipBytes(peerAddress.readBytes());
+		return peerAddress;
 	}
 
 	public static PublicKey decodePublicKey(DataInput buffer, byte[] receivedRawPublicKey)

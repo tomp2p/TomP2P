@@ -53,7 +53,7 @@ public class TestNAT {
 		peer.getP2PConfiguration().setBehindFirewall(true);
 		peer.listen(4000, 4000);
 		PeerAddress pa = new PeerAddress(Number160.ZERO,
-				InetAddress.getByName("130.60.156.176"), 4000, 4000);
+				InetAddress.getByName("130.60.156.187"), 4000, 4000);
 		FutureDiscover fd = peer.discover(pa);
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) {

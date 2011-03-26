@@ -29,6 +29,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.utils.CacheMap;
 
@@ -72,6 +73,7 @@ public class PeerMapKadImpl implements PeerMap
 			.synchronizedSet(new HashSet<InetAddress>());
 	final private PeerMapStat peerMapStat;
 	final private Statistics statistics;
+	final private boolean assumeBehindFirewall;
 	class Log
 	{
 		private int counter;
@@ -101,19 +103,54 @@ public class PeerMapKadImpl implements PeerMap
 	}
 
 	/**
-	 * Creates a bag of peers
+	 * Creates the bag for the peers. This peer knows a lot about close peers
+	 * and the further away the peers are, the less known they are. Distance is
+	 * measured with XOR of the peer ID. The distance of peer with ID 0x12 and
+	 * peer with Id 0x28 is 0x3a.
 	 * 
-	 * @param self The id of this peer
-	 * @param bagSize The size of a bag. The original Kademlia suggests 20, but
-	 *        we can go much lower, as we dont have a fixed limit for a bag. The
-	 *        bagSize is a suggestion and if maxpeers has not been reached, the
-	 *        peer is added even though it exceeds the bag limit.
-	 * @param cacheSize The size of the cache of removed peers
-	 * @param cacheTimeout The time that a removed peer will be in the cache in
-	 *        milliseconds.
-	 * @param peerMapChangeListener Listeners that will be called if a peer is
-	 *        added or removed.
+	 * @param self The peer ID of this peer
+	 * @param configuration Configuration settings for this map
 	 */
+	public PeerMapKadImpl(final Number160 self, final P2PConfiguration configuration)
+	{
+		if (self == null || self.isZero())
+			throw new IllegalArgumentException("Zero or null are not a valid IDs");
+		this.self = self;
+		this.peerMapStat = new PeerMapStat();
+		// The original Kademlia suggests 20, butwe can go much lower, as we
+		// dont have a fixed limit for a bag. The bagSize is a suggestion and if
+		// maxpeers has not been reached, the peer is added even though it
+		// exceeds the bag limit.
+		this.bagSize = configuration.getBagSize();
+		this.maxPeers = bagSize * Number160.BITS;
+		// The time that a removed peer will be in the cache in milliseconds.
+		this.cacheTimeout = configuration.getCacheTimeoutMillis();
+		this.maxFail = configuration.getMaxNrBeforeExclude();
+		this.maintenanceTimeoutsSeconds = configuration
+				.getWaitingTimeBetweenNodeMaintenenceSeconds();
+		// The size of the cache of removed peers
+		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(configuration.getCacheSize());
+		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
+		this.assumeBehindFirewall = configuration.isBehindFirewall();
+		for (int i = 0; i < Number160.BITS; i++)
+		{
+			// I made some experiments here and concurrent sets are not
+			// necessary, as we divide similar to segments aNonBlockingHashSets
+			// in a
+			// concurrent map. In a full network, we have 160 segments, for
+			// smaller we see around 3-4 segments, growing with the number of
+			// peers. bags closer to 0 will see more read than write, and bags
+			// closer to 160 will see more writes than reads.
+			peerMap.add(Collections
+					.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
+		}
+	}
+
+	/**
+	 * Please use
+	 * {@link PeerMapKadImpl#PeerMapKadImpl(Number160, P2PConfiguration)}
+	 */
+	@Deprecated
 	public PeerMapKadImpl(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
 			int maxFail, int[] maintenanceTimeoutsSeconds)
 	{
@@ -128,6 +165,7 @@ public class PeerMapKadImpl implements PeerMap
 		this.maintenanceTimeoutsSeconds = maintenanceTimeoutsSeconds;
 		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cacheSize);
 		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
+		this.assumeBehindFirewall = false;
 		for (int i = 0; i < Number160.BITS; i++)
 		{
 			// I made some experiments here and concurrent sets are not
@@ -137,9 +175,8 @@ public class PeerMapKadImpl implements PeerMap
 			// smaller we see around 3-4 segments, growing with the number of
 			// peers. bags closer to 0 will see more read than write, and bags
 			// closer to 160 will see more writes than reads.
-			peerMap
-					.add(Collections
-							.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
+			peerMap.add(Collections
+					.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
 		}
 	}
 
@@ -166,11 +203,11 @@ public class PeerMapKadImpl implements PeerMap
 	{
 		peerListeners.remove(peerListener);
 	}
-	
+
 	@Override
 	public Statistics getStatistics()
 	{
-	    return statistics;
+		return statistics;
 	}
 
 	/**
@@ -255,9 +292,22 @@ public class PeerMapKadImpl implements PeerMap
 		// nodes marked as bad
 		if (remotePeer.getID().isZero() || self().equals(remotePeer.getID())
 				|| isPeerRemovedTemporarly(remotePeer)
-				|| filteredAddresses.contains(remotePeer.getInetAddress())
-				|| remotePeer.isFirewalledTCP())
+				|| filteredAddresses.contains(remotePeer.getInetAddress()))
 			return false;
+		if (!firstHand && !contains(remotePeer) && assumeBehindFirewall)
+		{
+			// TODO: put peers that come from a referrer in a list, which will
+			// be verified, once these peers are verified, having referrer null,
+			// they should go into this map. Make this optional, since for
+			// Intranet its not required but for Internet it is.
+			return false;
+		}
+		if (firstHand && assumeBehindFirewall && remotePeer.isFirewalledTCP())
+		{
+			// We contacted a peer directly and the peer told us, that it is not
+			// reachable. Thus, we ignore this peer.
+			return false;
+		}
 		final int classMember = classMember(remotePeer.getID());
 		final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 		if (size() < maxPeers || map.containsKey(remotePeer.getID()))
@@ -271,16 +321,16 @@ public class PeerMapKadImpl implements PeerMap
 		}
 		else
 		{
-		    	// the class is not full, remove other nodes!
-			PeerAddress toRemove=removeLatestEntryExceedingBagSize();
-			if(classMember(toRemove.getID()) > classMember(remotePeer.getID())) 
+			// the class is not full, remove other nodes!
+			PeerAddress toRemove = removeLatestEntryExceedingBagSize();
+			if (classMember(toRemove.getID()) > classMember(remotePeer.getID()))
 			{
-			    if(remove(toRemove))
-			    {
-				// this updates stats and schedules peer for maintenance
-				prepareInsertOrUpdate(remotePeer, firstHand);
-				return insertOrUpdate(map, remotePeer, classMember);
-			    }    
+				if (remove(toRemove))
+				{
+					// this updates stats and schedules peer for maintenance
+					prepareInsertOrUpdate(remotePeer, firstHand);
+					return insertOrUpdate(map, remotePeer, classMember);
+				}
 			}
 		}
 		return false;
@@ -455,7 +505,7 @@ public class PeerMapKadImpl implements PeerMap
 	 */
 	private PeerAddress removeLatestEntryExceedingBagSize()
 	{
-		for (int classMember = Number160.BITS-1; classMember >=0; classMember--)
+		for (int classMember = Number160.BITS - 1; classMember >= 0; classMember--)
 		{
 			final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 			if (map.size() > bagSize)

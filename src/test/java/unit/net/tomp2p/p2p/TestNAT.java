@@ -8,7 +8,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
-//import org.junit.Test;
+import org.junit.Test;
 
 /**
  * This class is not suitable for automated integration testing, since it
@@ -18,10 +18,11 @@ import net.tomp2p.peers.PeerAddress;
  * 
  */
 public class TestNAT {
-	// @Test
+	@Test
 	public void startServer() throws Exception {
 		Random r = new Random(42L);
 		Peer peer = new Peer(new Number160(r));
+		peer.getP2PConfiguration().setBehindFirewall(true);
 		peer.listen(4000, 4000);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
@@ -45,10 +46,11 @@ public class TestNAT {
 		peer.shutdown();
 	}
 
-	// @Test
+	@Test
 	public void startClient() throws Exception {
 		Random r = new Random(43L);
 		Peer peer = new Peer(new Number160(r));
+		peer.getP2PConfiguration().setBehindFirewall(true);
 		peer.listen(4000, 4000);
 		PeerAddress pa = new PeerAddress(Number160.ZERO,
 				InetAddress.getByName("130.60.156.176"), 4000, 4000);

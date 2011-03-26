@@ -15,6 +15,9 @@ public class P2PConfiguration
 	private int replicationRefreshMillis=60 * 1000;
 	// discover timeout
 	private int discoverTimeoutSec=5;
+	private int maxNrBeforeExclude = 2;
+	// The default is not to assume that you are behind firewall
+	private boolean behindFirewall=false;
 	public P2PConfiguration()
 	{
 		this.maintenanceThreads = 5;
@@ -101,5 +104,25 @@ public class P2PConfiguration
 	public int getDiscoverTimeoutSec()
 	{
 		return discoverTimeoutSec;
+	}
+	
+	public void setMaxNrBeforeExclude(int maxNrBeforeExclude)
+	{
+		this.maxNrBeforeExclude = maxNrBeforeExclude;
+	}
+
+	public int getMaxNrBeforeExclude()
+	{
+		return maxNrBeforeExclude;
+	}
+	
+	public void setBehindFirewall(boolean behindFirewall)
+	{
+		this.behindFirewall = behindFirewall;
+	}
+
+	public boolean isBehindFirewall()
+	{
+		return behindFirewall;
 	}
 }

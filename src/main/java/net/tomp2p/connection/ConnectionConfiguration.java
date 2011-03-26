@@ -29,14 +29,13 @@ public class ConnectionConfiguration
 	private int maxIncomingThreads = 100;
 	//
 	private int maxMessageSize = 2 * 1024 * 1024;
-	private int maxNrBeforeExclude = 2;
 	//
 	//bandwith shaping in bytes/s
 	private long readLimit=0;
 	private long writeLimit=0;
 	//NAT
-	private int portNATUDP=4000;
-	private int portNATTCP=4000;
+	private int portNATUDP = defaultPort;
+	private int portNATTCP = defaultPort;
 	private boolean enabledUPNPNAT=true;
 	public int getIdleTCPMillis()
 	{
@@ -118,16 +117,6 @@ public class ConnectionConfiguration
 	public int getMaxMessageSize()
 	{
 		return maxMessageSize;
-	}
-
-	public void setMaxNrBeforeExclude(int maxNrBeforeExclude)
-	{
-		this.maxNrBeforeExclude = maxNrBeforeExclude;
-	}
-
-	public int getMaxNrBeforeExclude()
-	{
-		return maxNrBeforeExclude;
 	}
 
 	public void setTimeoutTCPMillis(int timeoutTCPMillis)

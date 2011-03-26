@@ -38,8 +38,7 @@ public class Bindings
 	private InetAddress outsideAddress = null;
 	private int outsideTCPPort = 0;
 	private int outsideUDPPort = 0;
-	// The default is not to assume that you are behind firewall
-	private boolean behindFirewall=false;
+	
 
 	public Bindings()
 	{
@@ -247,15 +246,5 @@ public class Bindings
 	public int getOutsideUDPPort()
 	{
 		return outsideUDPPort;
-	}
-
-	public void setBehindFirewall(boolean behindFirewall)
-	{
-		this.behindFirewall = behindFirewall;
-	}
-
-	public boolean isBehindFirewall()
-	{
-		return behindFirewall;
 	}
 }

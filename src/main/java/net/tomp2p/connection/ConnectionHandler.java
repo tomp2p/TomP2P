@@ -35,6 +35,7 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
 import net.tomp2p.message.TomP2PEncoderStage1;
 import net.tomp2p.message.TomP2PEncoderStage2;
+import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -113,7 +114,7 @@ public class ConnectionHandler
 
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair, PeerMap peerMap,
-			List<PeerListener> listeners) throws Exception
+			List<PeerListener> listeners, P2PConfiguration peerConfiguration) throws Exception
 	{
 		this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
@@ -139,14 +140,14 @@ public class ConnectionHandler
 		PeerAddress self;
 		if (outsideAddress != null)
 		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(), bindings.isBehindFirewall(), bindings.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
 		else
 		{
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, bindings.isBehindFirewall(), bindings.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);

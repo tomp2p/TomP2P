@@ -1433,22 +1433,14 @@ public class TestDHT
 		{
 			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
 			nodes[i].listen(master);
-			setNotFirewalled(nodes[i]);
 		}
 		return nodes;
 	}
 
 	private Peer[] createNodes(Peer master, int nr) throws Exception
 	{
-		setNotFirewalled(master);
 		return createNodes(master, nr, rnd);
 	}
 	
-	private void setNotFirewalled(Peer peer)
-	{
-		PeerAddress pa=peer.getPeerBean().getServerPeerAddress();
-		pa=pa.notFirewalledTCP();
-		pa=pa.notFirewalledUDP();
-		peer.getPeerBean().setServerPeerAddress(pa);
-	}
+	
 }

@@ -98,14 +98,14 @@ import org.slf4j.LoggerFactory;
  * <li>remove(locationKey)</li>
  * </ul>
  * 
- * also the following DHHT operations:
+ * also the following operations:
  * <ul>
  * <li>value=get(locationKey,contentKey)</li>
  * <li>put(locationKey,contentKey,value)</li>
  * <li>remove(locationKey,contentKey)</li>
  * </ul>
  * 
- * The advantage of a DHHT is that multiple values can be stored in one
+ * The advantage of TomP2P is that multiple values can be stored in one
  * location. Furthermore, TomP2P also provides to store keys in different
  * domains to avoid key collisions.
  * 
@@ -298,13 +298,10 @@ public class Peer
 		this.scheduledExecutorServiceReplication = Executors
 				.newScheduledThreadPool(peerConfiguration.getReplicationThreads());
 		
-		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
-				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
-				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds());
+		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration);
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				connectionConfiguration, messageLogger, keyPair, peerMap, listeners), statistics);
+				connectionConfiguration, messageLogger, keyPair, peerMap, listeners, peerConfiguration), statistics);
 		logger.debug("init done");
 	}
 
@@ -316,10 +313,7 @@ public class Peer
 		this.bindings = master.bindings;
 		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
 		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
-		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration.getBagSize(),
-				peerConfiguration.getCacheSize(), peerConfiguration.getCacheTimeoutMillis(),
-				connectionConfiguration.getMaxNrBeforeExclude(), peerConfiguration
-						.getWaitingTimeBetweenNodeMaintenenceSeconds());
+		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration);
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap),
 				statistics);
@@ -575,10 +569,10 @@ public class Peer
 			{
 				if (future.isSuccess())
 				{
-					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>();
+					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 					final PeerAddress sender = future.getLast().getResponse().getSender();
 					peerAddresses.add(sender);
-					result.waitForBootstrap(bootstrap(peerAddresses), sender);
+					result.waitForBootstrap(bootstrap(peerAddresses));
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");
@@ -625,10 +619,10 @@ public class Peer
 			{
 				if (future.isSuccess())
 				{
-					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>();
+					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 					final PeerAddress sender = future.getResponse().getSender();
 					peerAddresses.add(sender);
-					result.waitForBootstrap(bootstrap(peerAddresses), sender);
+					result.waitForBootstrap(bootstrap(peerAddresses));
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");
@@ -643,12 +637,41 @@ public class Peer
 	}
 
 	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses,
-			ConfigurationStore config)
+			final ConfigurationStore config)
 	{
-		return routing.bootstrap(peerAddresses, config.getRoutingConfiguration().getMaxNoNewInfo(
+		
+		if(peerConfiguration.isBehindFirewall())
+		{
+			final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
+			FutureDiscover futureDiscover=discover(peerAddresses.iterator().next());
+			futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
+			{
+				@Override
+				public void operationComplete(FutureDiscover future) throws Exception
+				{
+					if (future.isSuccess())
+					{
+						FutureBootstrap futureBootstrap = routing.bootstrap(peerAddresses, config.getRoutingConfiguration().getMaxNoNewInfo(
+								config.getRequestP2PConfiguration().getMinimumResults()), config
+								.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
+								.getParallel(), false);
+						result.waitForBootstrap(futureBootstrap);
+					}
+					else
+						result.setFailed("Network discovery failed.");
+					
+				}
+			});
+			return result;
+		}
+		else
+		{
+			FutureBootstrap futureBootstrap = routing.bootstrap(peerAddresses, config.getRoutingConfiguration().getMaxNoNewInfo(
 				config.getRequestP2PConfiguration().getMinimumResults()), config
 				.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
 				.getParallel(), false);
+			return futureBootstrap;
+		}
 	}
 
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress)

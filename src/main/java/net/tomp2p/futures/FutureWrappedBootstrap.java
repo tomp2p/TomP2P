@@ -14,7 +14,6 @@
  * the License.
  */
 package net.tomp2p.futures;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import net.tomp2p.peers.PeerAddress;
@@ -25,12 +24,20 @@ public class FutureWrappedBootstrap extends FutureWrapper<FutureBootstrap> imple
 {
 	private Collection<PeerAddress> bootstrapTo;
 
+	public void waitForBootstrap(final FutureBootstrap bootstrap)
+	{
+		synchronized (lock)
+		{
+			this.bootstrapTo = bootstrap.getBootstrapTo();
+		}
+		waitFor(bootstrap);
+	}
+	@Deprecated
 	public void waitForBootstrap(final FutureBootstrap bootstrap, final PeerAddress bootstrapTo)
 	{
 		synchronized (lock)
 		{
-			this.bootstrapTo = new ArrayList<PeerAddress>(1);
-			this.bootstrapTo.add(bootstrapTo);
+			this.bootstrapTo = bootstrap.getBootstrapTo();
 		}
 		waitFor(bootstrap);
 	}

@@ -8,7 +8,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
-import org.junit.Test;
+//import org.junit.Test;
 
 /**
  * This class is not suitable for automated integration testing, since it
@@ -18,7 +18,7 @@ import org.junit.Test;
  * 
  */
 public class TestNAT {
-	@Test
+	//@Test
 	public void startServer() throws Exception {
 		Random r = new Random(42L);
 		Peer peer = new Peer(new Number160(r));
@@ -46,7 +46,7 @@ public class TestNAT {
 		peer.shutdown();
 	}
 
-	@Test
+	//@Test
 	public void startClient() throws Exception {
 		Random r = new Random(43L);
 		Peer peer = new Peer(new Number160(r));

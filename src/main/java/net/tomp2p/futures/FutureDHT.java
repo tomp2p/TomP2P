@@ -32,7 +32,8 @@ public class FutureDHT extends BaseFutureImpl
 {
 	final private int min;
 	final private EvaluatingSchemeDHT evaluationScheme;
-	private volatile FutureCreate<FutureDHT> futureCreate;
+	final private FutureCreate<FutureDHT> futureCreate;
+	final private FutureRouting futureRouting;
 	private Map<PeerAddress, Collection<Number160>> rawKeys;
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
 	private Map<PeerAddress, Object> rawObjects;
@@ -44,27 +45,22 @@ public class FutureDHT extends BaseFutureImpl
 	//
 	private boolean minReached;
 
-	public FutureDHT(final int min)
+	public FutureDHT()
 	{
-		this(min, new VotingSchemeDHT());
+		this(0, new VotingSchemeDHT(), null, null);
 	}
 
-	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme)
+	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme, FutureCreate<FutureDHT> futureCreate, FutureRouting futureRouting)
 	{
 		this.min = min;
 		this.evaluationScheme = evaluationScheme;
-	}
-
-	public void setFutureCreate(FutureCreate<FutureDHT> futureCreate)
-	{
-		if (futureCreate == null)
-			return;
 		this.futureCreate = futureCreate;
+		this.futureRouting = futureRouting;
 	}
 
 	public void created(FutureDHT futureDHT)
 	{
-		if (this.futureCreate != null)
+		if (futureCreate != null)
 			futureCreate.repeated(futureDHT);
 	}
 
@@ -205,6 +201,22 @@ public class FutureDHT extends BaseFutureImpl
 		synchronized (lock)
 		{
 			return rawObjects;
+		}
+	}
+	
+	public FutureCreate<FutureDHT> getFutureCreate()
+	{
+		synchronized (lock)
+		{
+			return futureCreate;
+		}
+	}
+	
+	public FutureRouting getFutureRouting()
+	{
+		synchronized (lock)
+		{
+			return futureRouting;
 		}
 	}
 

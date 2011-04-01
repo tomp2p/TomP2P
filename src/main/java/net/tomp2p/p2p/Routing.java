@@ -177,7 +177,7 @@ public class Routing
 		}
 		if (peerAddresses.size() == 0)
 		{
-			futureRouting.setNeighbors(directHits, potentialHits);
+			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
 		}
 		else
 		{
@@ -243,7 +243,7 @@ public class Routing
 		}
 		if (active == 0)
 		{
-			futureRouting.setNeighbors(directHits, potentialHits);
+			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
 			cancel(cancelOnFinish, parallel, futureResponses);
 			return;
 		}
@@ -293,7 +293,7 @@ public class Routing
 				{
 					logger.debug("done1 " + directHits);
 					logger.debug("done2 " + potentialHits);
-					futureRouting.setNeighbors(directHits, potentialHits);
+					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
 					cancel(cancelOnFinish, parallel, futureResponses);
 				}
 				else

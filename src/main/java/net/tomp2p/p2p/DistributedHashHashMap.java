@@ -61,10 +61,10 @@ public class DistributedHashHashMap
 			final RequestP2PConfiguration p2pConfiguration, final boolean protectDomain,
 			final boolean signMessage, final FutureCreate<FutureDHT> futureCreate)
 	{
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults());
-		futureDHT.setFutureCreate(futureCreate);
-		FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
+		
+		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -115,10 +115,10 @@ public class DistributedHashHashMap
 			final RequestP2PConfiguration p2pConfiguration,
 			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish)
 	{
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults());
-		futureDHT.setFutureCreate(futureCreate);
-		FutureRouting futureRouting = createRouting(locationKey, null, null, routingConfiguration,
+		
+		final FutureRouting futureRouting = createRouting(locationKey, null, null, routingConfiguration,
 				p2pConfiguration, Command.NEIGHBORS_STORAGE, false);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -180,10 +180,9 @@ public class DistributedHashHashMap
 			final boolean protectDomain, final boolean signMessage,
 			final FutureCreate<FutureDHT> futureCreate)
 	{
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults());
-		futureDHT.setFutureCreate(futureCreate);
-		FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
+		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(),futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -237,10 +236,9 @@ public class DistributedHashHashMap
 			final RequestP2PConfiguration p2pConfiguration,
 			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage)
 	{
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				evaluationScheme);
-		FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
+		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), evaluationScheme, null, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -288,10 +286,9 @@ public class DistributedHashHashMap
 			final RequestP2PConfiguration p2pConfiguration, final boolean returnResults,
 			final boolean signMessage, FutureCreate<FutureDHT> futureCreate)
 	{
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults());
-		futureDHT.setFutureCreate(futureCreate);
-		FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
+		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override

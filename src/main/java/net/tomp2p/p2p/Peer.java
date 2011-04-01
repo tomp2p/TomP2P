@@ -783,7 +783,7 @@ public class Peer
 			}
 			catch (Exception e)
 			{
-				FutureDHT futureDHT = new FutureDHT(0);
+				FutureDHT futureDHT = new FutureDHT();
 				futureDHT.setFailed("Error in put " + e);
 				logger.error("Error in put " + e);
 				e.printStackTrace();
@@ -806,7 +806,7 @@ public class Peer
 		}
 		catch (Exception e)
 		{
-			FutureDHT futureDHT = new FutureDHT(0);
+			FutureDHT futureDHT = new FutureDHT();
 			futureDHT.setFailed("Error in put " + e);
 			logger.error("Error in put " + e);
 			e.printStackTrace();

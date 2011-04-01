@@ -23,9 +23,10 @@ public class FutureRouting extends BaseFutureImpl
 {
 	private SortedSet<PeerAddress> potentialHits;
 	private SortedSet<PeerAddress> directHits;
+	private SortedSet<PeerAddress> routingPath;
 
 	public void setNeighbors(final SortedSet<PeerAddress> directHits,
-			final SortedSet<PeerAddress> potentialHits)
+			final SortedSet<PeerAddress> potentialHits, final SortedSet<PeerAddress> routingPath)
 	{
 		synchronized (lock)
 		{
@@ -33,6 +34,7 @@ public class FutureRouting extends BaseFutureImpl
 				return;
 			this.potentialHits = potentialHits;
 			this.directHits = directHits;
+			this.routingPath = routingPath;
 			this.type = ((potentialHits.size() == 0) && (directHits.size() == 0))
 					? BaseFuture.FutureType.FAILED : BaseFuture.FutureType.OK;
 		}
@@ -52,6 +54,14 @@ public class FutureRouting extends BaseFutureImpl
 		synchronized (lock)
 		{
 			return directHits;
+		}
+	}
+	
+	public SortedSet<PeerAddress> getRoutingPath()
+	{
+		synchronized (lock)
+		{
+			return routingPath;
 		}
 	}
 

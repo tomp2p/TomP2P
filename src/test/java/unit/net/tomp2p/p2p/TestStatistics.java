@@ -74,6 +74,7 @@ public class TestStatistics
 				kadRouting.peerOnline(remoteNode1, null);
 			}
 			double diff = (maxNr + 1) / statistics.getEstimatedNumberOfNodes();
+			//System.err.println("est:"+statistics.getEstimatedNumberOfNodes()+", real"+maxNr);
 			Assert.assertEquals(true, diff < 1.1 && diff > 0.9);
 		}
 	}

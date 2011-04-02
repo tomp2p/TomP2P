@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +27,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-
 
 public class FutureDHT extends BaseFutureImpl
 {
@@ -50,7 +50,8 @@ public class FutureDHT extends BaseFutureImpl
 		this(0, new VotingSchemeDHT(), null, null);
 	}
 
-	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme, FutureCreate<FutureDHT> futureCreate, FutureRouting futureRouting)
+	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme, FutureCreate<FutureDHT> futureCreate,
+			FutureRouting futureRouting)
 	{
 		this.min = min;
 		this.evaluationScheme = evaluationScheme;
@@ -60,28 +61,24 @@ public class FutureDHT extends BaseFutureImpl
 
 	public void created(FutureDHT futureDHT)
 	{
-		if (futureCreate != null)
-			futureCreate.repeated(futureDHT);
+		if (futureCreate != null) futureCreate.repeated(futureDHT);
 	}
 
 	public void setRemovedKeys(final Map<PeerAddress, Collection<Number160>> rawKeys)
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify())
-				return;
+			if (!setCompletedAndNotify()) return;
 			this.rawKeys = rawKeys;
 		}
 		notifyListerenrs();
 	}
 
-	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys,
-			boolean ifAbsent)
+	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys, boolean ifAbsent)
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify())
-				return;
+			if (!setCompletedAndNotify()) return;
 			this.rawKeys = rawKeys;
 			this.minReached = rawKeys.size() >= min;
 			// we cannot report a failure for store if absent, because a value
@@ -115,8 +112,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify())
-				return;
+			if (!setCompletedAndNotify()) return;
 			this.rawData = rawData;
 			final int size = rawData.size();
 			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
@@ -170,8 +166,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify())
-				return;
+			if (!setCompletedAndNotify()) return;
 			this.rawChannels = rawChannels;
 		}
 		notifyListerenrs();
@@ -189,8 +184,7 @@ public class FutureDHT extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify())
-				return;
+			if (!setCompletedAndNotify()) return;
 			this.rawObjects = rawObjects;
 		}
 		notifyListerenrs();
@@ -203,7 +197,7 @@ public class FutureDHT extends BaseFutureImpl
 			return rawObjects;
 		}
 	}
-	
+
 	public FutureCreate<FutureDHT> getFutureCreate()
 	{
 		synchronized (lock)
@@ -211,7 +205,14 @@ public class FutureDHT extends BaseFutureImpl
 			return futureCreate;
 		}
 	}
-	
+
+	/**
+	 * Returns the future object that was used for the routing. Before the
+	 * FutureDHT is used, FutureRouting has to be completed successfully.
+	 * 
+	 * @return The future object during the previous routing, or null if routing
+	 *         failed completely.
+	 */
 	public FutureRouting getFutureRouting()
 	{
 		synchronized (lock)
@@ -220,15 +221,13 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	public void setScheduledFuture(ScheduledFuture<?> scheduledFuture,
-			List<ScheduledFuture<?>> scheduledFutures)
+	public void setScheduledFuture(ScheduledFuture<?> scheduledFuture, List<ScheduledFuture<?>> scheduledFutures)
 	{
 		synchronized (lock)
 		{
 			this.scheduledFuture = scheduledFuture;
 			this.scheduledFutures = scheduledFutures;
-			if (cancelSchedule == true)
-				cancel();
+			if (cancelSchedule == true) cancel();
 		}
 	}
 
@@ -238,10 +237,8 @@ public class FutureDHT extends BaseFutureImpl
 		synchronized (lock)
 		{
 			cancelSchedule = true;
-			if (scheduledFuture != null)
-				scheduledFuture.cancel(false);
-			if (scheduledFutures != null)
-				scheduledFutures.remove(scheduledFuture);
+			if (scheduledFuture != null) scheduledFuture.cancel(false);
+			if (scheduledFutures != null) scheduledFutures.remove(scheduledFuture);
 		}
 		super.cancel();
 	}

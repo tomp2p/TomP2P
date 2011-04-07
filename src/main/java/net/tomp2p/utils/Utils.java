@@ -334,4 +334,23 @@ public class Utils
 		}
 		return digestInfo;
 	}
+
+	public static PeerAddress pollRandom(SortedSet<PeerAddress> queueToAsk, Random rnd)
+	{
+		int size=queueToAsk.size();
+		if(size==0)
+			return null;
+		int index=rnd.nextInt(size);
+		int i=0;
+		for (Iterator<PeerAddress> iterator = queueToAsk.iterator(); iterator.hasNext();)
+		{
+			PeerAddress newPeerAddress = iterator.next();
+			if(i++==index)
+			{
+				iterator.remove();
+				return newPeerAddress;
+			}
+		}
+		return null;
+	}
 }

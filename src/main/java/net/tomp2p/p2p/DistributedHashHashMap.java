@@ -45,11 +45,11 @@ import org.slf4j.LoggerFactory;
 public class DistributedHashHashMap
 {
 	final private static Logger logger = LoggerFactory.getLogger(DistributedHashHashMap.class);
-	final private Routing routing;
+	final private DistributedRouting routing;
 	final private StorageRPC store;
 	final private DirectDataRPC directDataRPC;
 
-	public DistributedHashHashMap(Routing routing, StorageRPC store, DirectDataRPC directDataRPC)
+	public DistributedHashHashMap(DistributedRouting routing, StorageRPC store, DirectDataRPC directDataRPC)
 	{
 		this.routing = routing;
 		this.store = store;
@@ -376,7 +376,7 @@ public class DistributedHashHashMap
 		if (active == 0)
 		{
 			operation.response(futureDHT);
-			Routing.cancel(cancelOnFinish, min + parallelDiff, futures);
+			DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 			return;
 		}
 		if (logger.isDebugEnabled())
@@ -399,14 +399,14 @@ public class DistributedHashHashMap
 				if (future.isSuccess())
 				{
 					operation.response(futureDHT);
-					Routing.cancel(cancelOnFinish, min + parallelDiff, futures);
+					DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 				}
 				else
 				{
 					if (nrFailure.incrementAndGet() > maxFailure)
 					{
 						operation.response(futureDHT);
-						Routing.cancel(cancelOnFinish, min + parallelDiff, futures);
+						DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 					}
 					else
 						loopRec(queue, min - future.getSuccessCounter(), nrFailure, maxFailure,
@@ -422,8 +422,8 @@ public class DistributedHashHashMap
 	{
 		return routing.route(locationKey, domainKey, contentKeys, command, routingConfiguration
 				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(p2pConfiguration
-				.getMinimumResults()), routingConfiguration.getMaxFailures(), routingConfiguration
-				.getParallel(), isDirect);
+				.getMinimumResults()), routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
+				routingConfiguration.getParallel(), isDirect);
 	}
 	public interface Operation
 	{

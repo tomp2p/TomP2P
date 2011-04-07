@@ -47,13 +47,13 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public class Routing
+public class DistributedRouting
 {
-	final private static Logger logger = LoggerFactory.getLogger(Routing.class);
+	final private static Logger logger = LoggerFactory.getLogger(DistributedRouting.class);
 	final private NeighborRPC neighbors;
 	final private PeerBean peerBean;
 
-	public Routing(PeerBean peerBean, NeighborRPC neighbors)
+	public DistributedRouting(PeerBean peerBean, NeighborRPC neighbors)
 	{
 		this.neighbors = neighbors;
 		this.peerBean = peerBean;
@@ -70,16 +70,16 @@ public class Routing
 	 * @return a FutureMulti object containing FutureRouting objects
 	 */
 	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo,
-			int maxFailures, int parallel, boolean forceSocket)
+			int maxFailures, int maxSuccess, int parallel, boolean forceSocket)
 	{
 		// search close peers
 		logger.debug("broadcast to " + peerAddresses);
 		FutureRouting futureRouting1 = routing(peerAddresses, peerBean.getServerPeerAddress()
-				.getID(), null, null, 0, maxNoNewInfo, maxFailures, parallel,
+				.getID(), null, null, 0, maxNoNewInfo, maxFailures, maxSuccess, parallel,
 				Command.NEIGHBORS_STORAGE, false, forceSocket);
 		// search far peers
 		FutureRouting futureRouting2 = routing(peerAddresses, peerBean.getServerPeerAddress()
-				.getID().xor(Number160.MAX_VALUE), null, null, 0, maxNoNewInfo, maxFailures,
+				.getID().xor(Number160.MAX_VALUE), null, null, 0, maxNoNewInfo, maxFailures, maxSuccess,
 				parallel, Command.NEIGHBORS_STORAGE, false, forceSocket);
 		return new FutureForkedBroadcast(peerAddresses, futureRouting1, futureRouting2);
 	}
@@ -102,21 +102,22 @@ public class Routing
 	 */
 	public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, Command command, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, int parallel, boolean isDigest)
+			int maxNoNewInfo, int maxFailures, int maxSuccess, int parallel, boolean isDigest)
 	{
 		return route(locationKey, domainKey, contentKeys, command, maxDirectHits, maxNoNewInfo,
-				maxFailures, parallel, isDigest, false);
+				maxFailures, maxSuccess, parallel, isDigest, false);
 	}
 
 	FutureRouting route(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, Command command, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, int parallel,  boolean isDigest, boolean forceSocket)
+			int maxNoNewInfo, int maxFailures, int maxSuccess, int parallel, boolean isDigest, 
+			boolean forceSocket)
 	{
 		// for bad distribution, use large NO_NEW_INFORMATION
 		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey,
 				parallel * 2);
 		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits,
-				maxNoNewInfo, maxFailures, parallel, command, isDigest, forceSocket);
+				maxNoNewInfo, maxFailures, maxSuccess, parallel, command, isDigest, forceSocket);
 	}
 
 	/**
@@ -137,7 +138,7 @@ public class Routing
 	 */
 	private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, final int parallel, Command command,
+			int maxNoNewInfo, int maxFailures, int maxSuccess, final int parallel, Command command,
 			boolean isDigest, boolean forceSocket)
 	{
 		if (peerAddresses == null)
@@ -182,9 +183,9 @@ public class Routing
 		else
 		{
 			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits,
-					potentialHits, new AtomicInteger(0), new AtomicInteger(0), maxDirectHits,
-					maxNoNewInfo, maxFailures, parallel, locationKey, domainKey, contentKeys, true,
-					command, isDigest, forceSocket, false);
+					potentialHits, new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), 
+					maxDirectHits, maxNoNewInfo, maxFailures, maxSuccess, parallel, locationKey, domainKey, 
+					contentKeys, true, command, isDigest, forceSocket, false);
 		}
 		return futureRouting;
 	}
@@ -201,12 +202,14 @@ public class Routing
 	 * @param queueToAsk all nodes which should be asked for routing information
 	 * @param alreadyAsked nodes which already have been asked
 	 * @param directHits stores direct hits received
-	 * @param noNewInfo number of nodes contacted without any new information
+	 * @param nrNoNewInfo number of nodes contacted without any new information
 	 * @param nrFailures number of nodes without a response
+	 * @param nrSucess number of peers that responded
 	 * @param maxDirectHits number of direct hits to stop at
 	 * @param maxNoNewInfo number of nodes asked without new information to stop
 	 *        at
 	 * @param maxFailures number of failures to stop at
+	 * @param maxSuccess number of successful requests. To avoid looping if every peer gives a new piece of information.
 	 * @param parallel number of routing requests performed concurrently
 	 * @param locationKey the node a route should be found to
 	 * @param domainKey the domain of the network the current node and
@@ -216,10 +219,10 @@ public class Routing
 	private void routingRec(final FutureResponse[] futureResponses,
 			final FutureRouting futureRouting, final SortedSet<PeerAddress> queueToAsk,
 			final SortedSet<PeerAddress> alreadyAsked, final SortedSet<PeerAddress> directHits,
-			final SortedSet<PeerAddress> potentialHits, final AtomicInteger noNewInfo,
-			final AtomicInteger nrFailures, final int maxDirectHits, final int maxNoNewInfo,
-			final int maxFailures, final int parallel, final Number160 locationKey,
-			final Number160 domainKey, final Collection<Number160> contentKeys,
+			final SortedSet<PeerAddress> potentialHits, final AtomicInteger nrNoNewInfo,
+			final AtomicInteger nrFailures, final AtomicInteger nrSuccess, final int maxDirectHits, 
+			final int maxNoNewInfo, final int maxFailures, final int maxSucess, final int parallel, 
+			final Number160 locationKey, final Number160 domainKey, final Collection<Number160> contentKeys,
 			final boolean cancelOnFinish, final Command command, final boolean isDigest,
 			final boolean forceSocket, final boolean stopCreatingNewFutures)
 	{
@@ -256,7 +259,7 @@ public class Routing
 			public void operationComplete(FutureForkJoin<FutureResponse> future) throws Exception
 			{
 				boolean finished;
-				boolean done;
+				boolean stopCreatingNewFutures;
 				if (future.isSuccess())
 				{
 					Message lastResponse = future.getLast().getResponse();
@@ -269,25 +272,34 @@ public class Routing
 					if (evaluateDirectHits(contentLength, keyMap, remotePeer, directHits,
 							maxDirectHits))
 					{
+						//stop immediately
 						finished = true;
-						done = finished;
+						stopCreatingNewFutures = true;
 					}
-					else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, noNewInfo,
+					else if (nrSuccess.incrementAndGet()>maxSucess)
+					{
+						//wait until pending futures are finished
+						finished = last;
+						stopCreatingNewFutures = true;
+					}
+					else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, nrNoNewInfo,
 							maxNoNewInfo))
 					{
+						//wait until pending futures are finished
 						finished = last;
-						done = true;
+						stopCreatingNewFutures = true;
 					}
 					else
 					{
+						//continue
 						finished = false;
-						done = finished;
+						stopCreatingNewFutures = false;
 					}
 				}
 				else
 				{
 					finished = nrFailures.incrementAndGet() > maxFailures;
-					done = finished;
+					stopCreatingNewFutures = finished;
 				}
 				if (finished)
 				{
@@ -299,9 +311,9 @@ public class Routing
 				else
 				{
 					routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked,
-							directHits, potentialHits, noNewInfo, nrFailures, maxDirectHits,
-							maxNoNewInfo, maxFailures, parallel, locationKey, domainKey,
-							contentKeys, cancelOnFinish, command, isDigest, forceSocket, done);
+							directHits, potentialHits, nrNoNewInfo, nrFailures, nrSuccess, maxDirectHits,
+							maxNoNewInfo, maxFailures, maxSucess, parallel, locationKey, domainKey,
+							contentKeys, cancelOnFinish, command, isDigest, forceSocket, stopCreatingNewFutures);
 				}
 			}
 		});

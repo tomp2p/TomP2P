@@ -1,3 +1,4 @@
+
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  * Copyright 2011 Thomas Bocek
@@ -105,10 +106,10 @@
         </exclusion>
       </exclusions>
     </dependency>
-
   </dependencies>
 
   <build>
+    <!-- testSourceDirectory>src/test/java/unit</testSourceDirectory -->
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>

@@ -48,6 +48,7 @@ public class QuitRPC extends ReplyHandler
 	public Message handleResponse(final Message message) throws Exception
 	{
 		peerBean.getPeerMap().peerOffline(message.getSender(), true);
-		return null;
+		//TODO: test this
+		return message;
 	}
 }

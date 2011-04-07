@@ -20,7 +20,6 @@ import java.util.Iterator;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerException;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
@@ -181,7 +180,7 @@ public class NeighborRPC extends ReplyHandler
 		}
 
 		@Override
-		public void messageReceived(Message message) throws PeerException
+		public void messageReceived(Message message) throws Exception
 		{
 			preHandleMessage(message, getPeerMap(), this.message.getRecipient());
 			super.messageReceived(message);

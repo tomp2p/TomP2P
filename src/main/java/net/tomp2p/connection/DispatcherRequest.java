@@ -263,7 +263,14 @@ public class DispatcherRequest extends SimpleChannelHandler
 					.setType(Type.UNKNOWN_ID);
 			responseMessage = message;
 		}
-		response(ctx, e, responseMessage);
+		if (responseMessage == message)
+		{
+			logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
+		}
+		else
+		{
+			response(ctx, e, responseMessage);
+		}
 	}
 
 	// respond within a session

@@ -91,7 +91,7 @@ public class RequestHandlerTCP
 		return peerBean.getPeerMap();
 	}
 
-	public void messageReceived(Message message) throws PeerException
+	public void messageReceived(Message message) throws Exception
 	{
 		try
 		{

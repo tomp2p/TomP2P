@@ -6,6 +6,7 @@ import net.tomp2p.peers.Number160;
 public class ConfigurationTrackerGet extends ConfigurationBase
 {
 	private boolean expectAttachement;
+	private boolean useSecondaryTrackers;
 	private EvaluatingSchemeTracker evaluationScheme;
 	private TrackerConfiguration trackerConfiguration;
 
@@ -52,5 +53,15 @@ public class ConfigurationTrackerGet extends ConfigurationBase
 	public Number160 getContentKey()
 	{
 		throw new UnsupportedOperationException("the tracker sets its own content key");
+	}
+
+	public void setUseSecondaryTrackers(boolean useSecondaryTrackers)
+	{
+		this.useSecondaryTrackers = useSecondaryTrackers;
+	}
+
+	public boolean isUseSecondaryTrackers()
+	{
+		return useSecondaryTrackers;
 	}
 }

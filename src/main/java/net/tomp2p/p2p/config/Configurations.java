@@ -75,6 +75,7 @@ public class Configurations
 		config.setEvaluationScheme(new VotingSchemeTracker());
 		config.setExpectAttachement(false);
 		config.setSignMessage(false);
+		config.setUseSecondaryTrackers(false);
 		return config;
 	}
 

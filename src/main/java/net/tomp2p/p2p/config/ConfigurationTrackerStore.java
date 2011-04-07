@@ -1,6 +1,6 @@
 package net.tomp2p.p2p.config;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureCreate;
-import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -9,7 +9,11 @@ public class ConfigurationTrackerStore extends ConfigurationBase
 {
 	private Data attachement;
 	private TrackerConfiguration trackerConfiguration;
-	private FutureCreate<FutureTracker> futureCreate;
+	private FutureCreate<BaseFuture> futureCreate;
+	// used for peer exchange
+	private int waitBeforeNextSendSeconds=0;
+	private int nrPeers=0;
+	
 
 	public ConfigurationTrackerStore setAttachement(Data attachement)
 	{
@@ -46,14 +50,34 @@ public class ConfigurationTrackerStore extends ConfigurationBase
 		throw new UnsupportedOperationException("the tracker sets its own content key");
 	}
 
-	public ConfigurationTrackerStore setFutureCreate(FutureCreate<FutureTracker> futureCreate)
+	public ConfigurationTrackerStore setFutureCreate(FutureCreate<BaseFuture> futureCreate)
 	{
 		this.futureCreate = futureCreate;
 		return this;
 	}
 
-	public FutureCreate<FutureTracker> getFutureCreate()
+	public FutureCreate<BaseFuture> getFutureCreate()
 	{
 		return futureCreate;
+	}
+
+	public void setWaitBeforeNextSendSeconds(int waitBeforeNextSendSeconds)
+	{
+		this.waitBeforeNextSendSeconds = waitBeforeNextSendSeconds;
+	}
+
+	public int getWaitBeforeNextSendSeconds()
+	{
+		return waitBeforeNextSendSeconds;
+	}
+
+	public void setNrPeers(int nrPeers)
+	{
+		this.nrPeers = nrPeers;
+	}
+
+	public int getNrPeers()
+	{
+		return nrPeers;
 	}
 }

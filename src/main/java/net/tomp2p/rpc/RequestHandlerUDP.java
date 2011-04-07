@@ -216,8 +216,3 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 	 * ee.printStackTrace(); } logger.error("CLOSE CALLED"); }
 	 */
 }
-
-interface Release
-{
-	public void release();
-}

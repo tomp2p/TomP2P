@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.rpc;
+import java.io.IOException;
 import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,7 +28,6 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageCodec;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -35,6 +35,8 @@ import net.tomp2p.storage.TrackerStorage;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,8 +71,7 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
-		final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean, connectionBean,
-				message);
+		final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message, locationKey, domainKey);
 		Map<Number160, Data> c = new HashMap<Number160, Data>(1);
 		c.put(data.getHash(), data);
 		message.setDataMap(c);
@@ -89,8 +90,7 @@ public class TrackerRPC extends ReplyHandler
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (attachement != null)
 		{
-			final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean,
-					connectionBean, message);
+			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message, locationKey, domainKey);
 			Map<Number160, Data> c = new HashMap<Number160, Data>(1);
 			c.put(attachement.getHash(), attachement);
 			message.setDataMap(c);
@@ -98,8 +98,7 @@ public class TrackerRPC extends ReplyHandler
 		}
 		else
 		{
-			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean,
-					connectionBean, message);
+			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(peerBean, connectionBean, message, locationKey, domainKey);
 			return requestHandler.sendUDP();
 		}
 	}
@@ -115,14 +114,12 @@ public class TrackerRPC extends ReplyHandler
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (expectAttachement)
 		{
-			final RequestHandlerTCP requestHandler = new RequestHandlerTCP(peerBean,
-					connectionBean, message);
+			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message, locationKey, domainKey);
 			return requestHandler.sendTCP();
 		}
 		else
 		{
-			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean,
-					connectionBean, message);
+			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(peerBean, connectionBean, message, locationKey, domainKey);
 			return requestHandler.sendUDP();
 		}
 	}
@@ -156,22 +153,30 @@ public class TrackerRPC extends ReplyHandler
 				int length=buffer.writerIndex();
 				knownPeers=new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset(), length);
 			}
-			SortedMap<Number480, Data> peerDataMap = trackerStorage.getSelection(new Number320(
-					locationKey, domainKey), trackerStorage.getTrackerSize(), knownPeers);
-			if (peerDataMap == null)
-				responseMessage.setDataMap(new HashMap<Number160, Data>());
-			else
-				responseMessage.setDataMapConvert(peerDataMap);
+			TrackerData trackerData1 = trackerStorage.getSelection(locationKey, domainKey, trackerStorage.getTrackerSize(), knownPeers);
+			if(trackerData1.couldProvideMoreData())
+				responseMessage.setType(Message.Type.PARTIALLY_OK);
+			SortedMap<Number480, Data> peerDataMap=trackerData1.getPeerDataMap();
+			// fill up with trackers provided by others peers
+			/*TrackerData trackerData2 = trackerStorage.getSelection(locationKey, domainKey.xor(Number160.ZERO), trackerStorage.getTrackerSize(), knownPeers);
+			for(Map.Entry<Number480, Data> entry:trackerData2.getPeerDataMap().entrySet())
+			{
+				if(trackerData1.getPeerDataMap().size()>=trackerStorage.getTrackerSize())
+					break;
+				trackerData1.getPeerDataMap().put(entry.getKey(), entry.getValue());
+			}*/
+			responseMessage.setDataMapConvert(trackerData1.getPeerDataMap());
 			PeerAddress senderAddress = message.getSender();
 			if (message.getCommand() == Command.TRACKER_ADD)
 			{
-				if (trackerStorage.size(locationKey, domainKey) >= trackerStorage
-						.getTrackerStoreSize())
+				int currentSize = trackerStorage.size(locationKey, domainKey);
+				if (currentSize >= trackerStorage
+						.getTrackerStoreSize(locationKey, domainKey))
 				{
 					if (logger.isDebugEnabled())
 						logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress()
 								+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
-								+ ", address:" + senderAddress);
+								+ ", address:" + senderAddress+", current size: "+currentSize);
 					responseMessage.setType(Message.Type.DENIED);
 				}
 				else
@@ -179,7 +184,7 @@ public class TrackerRPC extends ReplyHandler
 					if (logger.isDebugEnabled())
 						logger.debug("tracker put on(" + peerBean.getServerPeerAddress()
 								+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
-								+ ", address:" + senderAddress);
+								+ ", address:" + senderAddress+ "size: "+trackerStorage.size(locationKey, domainKey));
 					// here we set the map with the close peers. If we get data
 					// by a sender
 					// and the sender is closer than us, we assume that the
@@ -215,7 +220,7 @@ public class TrackerRPC extends ReplyHandler
 				if (logger.isDebugEnabled())
 					logger.debug("tracker get on(" + peerBean.getServerPeerAddress()
 							+ ") locationKey:" + locationKey + ", domainKey:" + domainKey
-							+ ", address:" + senderAddress);
+							+ ", address:" + senderAddress +" returning: "+(peerDataMap==null?"0":peerDataMap.size()));
 				if (peerDataMap == null)
 					responseMessage.setType(Message.Type.NOT_FOUND);
 			}
@@ -251,5 +256,70 @@ public class TrackerRPC extends ReplyHandler
 			}
 		}
 		return responseMessage;
+	}
+	
+	private class TrackerRequestTCP extends RequestHandlerTCP
+	{
+		final private Message message;
+		final private Number160 locationKey;
+		final private Number160 domainKey;
+
+		public TrackerRequestTCP(PeerBean peerBean, ConnectionBean connectionBean, Message message, Number160 locationKey, Number160 domainKey)
+		{
+			super(peerBean, connectionBean, message);
+			this.message = message;
+			this.locationKey = locationKey;
+			this.domainKey = domainKey;
+		}
+
+		@Override
+		public void messageReceived(Message message) throws Exception
+		{
+			preHandleMessage(message, peerBean.getTrackerStorage(), this.message.getRecipient(), locationKey, domainKey);
+			super.messageReceived(message);
+		}
+	}
+	private class TrackerRequestUDP extends RequestHandlerUDP
+	{
+		final private Message message;
+		final private Number160 locationKey;
+		final private Number160 domainKey;
+
+		public TrackerRequestUDP(PeerBean peerBean, ConnectionBean connectionBean, Message message, Number160 locationKey, Number160 domainKey)
+		{
+			super(peerBean, connectionBean, message);
+			this.message = message;
+			this.locationKey = locationKey;
+			this.domainKey = domainKey;
+		}
+
+		@Override
+		public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
+		{
+			Object object = e.getMessage();
+			if (object instanceof Message)
+				preHandleMessage((Message) object, peerBean.getTrackerStorage(), this.message.getRecipient(), locationKey, domainKey);
+			else
+				logger.error("Response received, but not a message: " + object);
+			super.messageReceived(ctx, e);
+		}
+	}
+	
+	private void preHandleMessage(Message message, TrackerStorage trackerStorage, PeerAddress referrer, Number160 locationKey, Number160 domainKey) throws IOException
+	{
+		//Since I might become a tracker as well, we keep this information about those trackers.
+		Map<Number160, Data> tmp=message.getDataMap();
+		if(tmp == null)
+		{
+			//TODO: find out why we send null messages
+			return;
+		}
+		for(Data data:tmp.values())
+		{
+			//we don't know the public key, since this is not first hand information.
+			//TTL will be set in trackerstorage, so don't worry about it here.
+			trackerStorage.putReferred(locationKey, domainKey, data);
+			//System.err.println("i want to add "+data.getPeerAddress());
+		}
 	}
 }

@@ -62,7 +62,7 @@ public class Message
 	// 1 x 4 bit
 	public enum Command
 	{
-		PING, PUT, GET, ADD, REMOVE, SYNC, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, USER1, USER2, USER3, USER4
+		PING, PUT, GET, ADD, REMOVE, SYNC, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, USER1, USER2, USER3
 	};
 	// header
 	private int messageId;
@@ -531,7 +531,12 @@ public class Message
 		return dataMap;
 	}
 	
-	public Map<Number480, Data> getDataMapConvert()
+	/**
+	 * Only used internally, we convert the Number480 to 160 before sending.
+	 * 
+	 * @return The data map that will be converted in MessageCodec.
+	 */
+	Map<Number480, Data> getDataMapConvert()
 	{
 		return dataMapConvert;
 	}

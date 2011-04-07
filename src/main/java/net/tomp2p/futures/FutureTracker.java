@@ -21,14 +21,17 @@ import java.util.concurrent.ScheduledFuture;
 
 import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.p2p.VotingSchemeTracker;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
 
 public class FutureTracker extends BaseFutureImpl
 {
 	final private EvaluatingSchemeTracker evaluatingSchemeTracker;
-	private volatile FutureCreate<FutureTracker> futureCreate;
+	final private SimpleBloomFilter<Number160> knownPeers;
+	private volatile FutureCreate<BaseFuture> futureCreate;
 	private Set<PeerAddress> potentialTrackers;
 	private Set<PeerAddress> directTrackers;
 	private Map<PeerAddress, Map<PeerAddress, Data>> peersOnTracker;
@@ -39,25 +42,26 @@ public class FutureTracker extends BaseFutureImpl
 
 	public FutureTracker()
 	{
-		this(new VotingSchemeTracker());
+		this(new VotingSchemeTracker(), null);
 	}
 
-	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker)
+	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, SimpleBloomFilter<Number160> knownPeers)
 	{
 		this.evaluatingSchemeTracker = evaluatingSchemeTracker;
+		this.knownPeers=knownPeers;
 	}
 
-	public void setFutureCreate(FutureCreate<FutureTracker> futureCreate)
+	public void setFutureCreate(FutureCreate<BaseFuture> futureCreate)
 	{
 		if (futureCreate == null)
 			return;
 		this.futureCreate = futureCreate;
 	}
 
-	public void repeated(FutureTracker futureDHT)
+	public void repeated(BaseFuture future)
 	{
-		if (this.futureCreate != null)
-			futureCreate.repeated(futureDHT);
+		if (futureCreate != null)
+			futureCreate.repeated(future);
 	}
 
 	public void setTrackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
@@ -121,6 +125,14 @@ public class FutureTracker extends BaseFutureImpl
 		synchronized (lock)
 		{
 			return evaluatingSchemeTracker.evaluate(peersOnTracker);
+		}
+	}
+	
+	public SimpleBloomFilter<Number160> getKnownPeers()
+	{
+		synchronized (lock)
+		{
+			return knownPeers;
 		}
 	}
 

@@ -36,6 +36,11 @@ public class FutureResponse extends BaseFutureImpl
 	{
 		this.requestMessage = requestMessage;
 	}
+	
+	public void setResponse()
+	{
+		setResponse(null);
+	}
 
 	/**
 	 * Gets called if a peer responds. Note that either this method or

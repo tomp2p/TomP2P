@@ -19,20 +19,27 @@ public class RoutingConfiguration
 	final private int directHits;
 	final private int maxNoNewInfoDiff;
 	final private int maxFailures;
+	final private int maxSuccess;
 	final private int parallel;
-
+	
 	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int parallel)
 	{
-		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, parallel);
+		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, 20, parallel);
 	}
 
-	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int parallel)
+	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel)
+	{
+		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel);
+	}
+
+	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel)
 	{
 		if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
 		this.directHits = directHits;
 		this.maxNoNewInfoDiff = maxNoNewInfoDiff;
 		this.maxFailures = maxFailures;
+		this.maxSuccess = maxSuccess;
 		this.parallel = parallel;
 	}
 
@@ -62,6 +69,11 @@ public class RoutingConfiguration
 	public int getMaxFailures()
 	{
 		return maxFailures;
+	}
+	
+	public int getMaxSuccess()
+	{
+		return maxSuccess;
 	}
 
 	public int getParallel()

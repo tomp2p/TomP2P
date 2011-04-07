@@ -19,17 +19,28 @@ public class TrackerConfiguration
 	final private int maxFailure;
 	final private int parallel;
 	final private int atLeastSuccessfulRequests;
-	final private int atLeastTrackers;
+	final private int atLeastEntriesFromTrackers;
+	//for tracker get, max full tracker is not relevant
+	final private int maxFullTrackers;
+	final private int maxPrimaryTrackers;
 
 	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
 			int atLeastTrackers)
 	{
-		if (maxFailure < 0 || parallel < 0 || atLeastSuccessfulRequests < 0 || atLeastTrackers < 0)
+		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastTrackers, 20, 5);
+	}
+	
+	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
+			int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers)
+	{
+		if (maxFailure < 0 || parallel < 0 || atLeastSuccessfulRequests < 0 || atLeastEntriesFromTrackers < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
 		this.maxFailure = maxFailure;
 		this.parallel = parallel;
 		this.atLeastSuccessfulRequests = atLeastSuccessfulRequests;
-		this.atLeastTrackers = atLeastTrackers;
+		this.atLeastEntriesFromTrackers = atLeastEntriesFromTrackers;
+		this.maxFullTrackers = maxFullTrackers;
+		this.maxPrimaryTrackers = maxPrimaryTrackers;
 	}
 
 	public int getMaxFailure()
@@ -47,8 +58,18 @@ public class TrackerConfiguration
 		return atLeastSuccessfulRequests;
 	}
 
-	public int getAtLeastTrackers()
+	public int getAtLeastEntriesFromTrackers()
 	{
-		return atLeastTrackers;
+		return atLeastEntriesFromTrackers;
+	}
+
+	public int getMaxFullTrackers()
+	{
+		return maxFullTrackers;
+	}
+	
+	public int getMaxPrimaryTrackers()
+	{
+		return maxPrimaryTrackers;
 	}
 }

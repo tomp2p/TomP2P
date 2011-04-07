@@ -265,6 +265,4 @@ public abstract class Storage
 	{
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
 	}
-
-	
 }

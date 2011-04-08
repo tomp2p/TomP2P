@@ -287,7 +287,7 @@ public class ConnectionHandler
 				p.addLast("performance", performanceFilter);
 				if (globalTrafficShapingHandler.hasLimit()) p.addLast("trafficShaping", globalTrafficShapingHandler);
 				p.addLast("executor", executionHandlerRcv);
-				DispatcherReply dispatcherReply = new DispatcherReply(timer, configuration.getIdleTCPMillis(),
+				DispatcherReplyTCP dispatcherReply = new DispatcherReplyTCP(timer, configuration.getIdleTCPMillis(),
 						dispatcher, getConnectionBean().getChannelGroup());
 				p.addLast("reply", dispatcherReply);
 				return p;

@@ -99,7 +99,6 @@ public class Message
 	private volatile transient boolean hintDataPublickKey = false;
 	private volatile transient boolean hintSign = false;
 	private volatile transient boolean convertNumber480to160 = false;
-	private volatile transient boolean fireAndForget = false;
 
 	// final private transient KeyPair keyPair;
 	// private volatile transient boolean sign=false;
@@ -733,15 +732,5 @@ public class Message
 	public boolean isConvertNumber480to160()
 	{
 		return convertNumber480to160;
-	}
-
-	public void setFireAndForget(boolean fireAndForget)
-	{
-		this.fireAndForget = fireAndForget;
-	}
-
-	public boolean isFireAndForget()
-	{
-		return fireAndForget;
 	}
 }

@@ -93,14 +93,14 @@ public class TCPChannelCache
 			IdleStateHandler timeoutHandlerOld = (IdleStateHandler) future.getChannel()
 					.getPipeline().get("timeout");
 			timeoutHandlerOld.reset();
-			DispatcherReply dispatcherReply = (DispatcherReply) future.getChannel().getPipeline()
+			DispatcherReplyTCP dispatcherReply = (DispatcherReplyTCP) future.getChannel().getPipeline()
 					.get("reply");
 			dispatcherReply.add(message, requestHandler);
 			// the channel could have timeout in the meantime, check for
 			// it
 			if (!future.getChannel().isOpen())
 			{
-				dispatcherReply = new DispatcherReply(timer, tcpIdleTimeoutMillis,
+				dispatcherReply = new DispatcherReplyTCP(timer, tcpIdleTimeoutMillis,
 						getDispatcherRequest(), channelGroup);
 				dispatcherReply.add(message, requestHandler);
 				return createNewChannel(recipientID, recipientAddress, timeoutHandler,
@@ -110,7 +110,7 @@ public class TCPChannelCache
 		}
 		else
 		{
-			DispatcherReply dispatcherReply = new DispatcherReply(timer, tcpIdleTimeoutMillis,
+			DispatcherReplyTCP dispatcherReply = new DispatcherReplyTCP(timer, tcpIdleTimeoutMillis,
 					getDispatcherRequest(), channelGroup);
 			dispatcherReply.add(message, requestHandler);
 			return createNewChannel(recipientID, recipientAddress, timeoutHandler,
@@ -121,7 +121,7 @@ public class TCPChannelCache
 	private ChannelFuture createNewChannel(Number160 recipientID,
 			InetSocketAddress recipientAddress, ChannelHandler timeoutHandler,
 			int connectTimeoutMillis, int tcpIdleTimeoutMillis, final Identifier identifier,
-			DispatcherReply dispatcherReply) throws InterruptedException
+			DispatcherReplyTCP dispatcherReply) throws InterruptedException
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("no cached channel found, create one to " + recipientID + ", "
@@ -158,7 +158,7 @@ public class TCPChannelCache
 		for (ChannelFuture future : cache.values())
 		{
 			Channel channel = future.getChannel();
-			DispatcherReply dispatcherReply = (DispatcherReply) channel.getPipeline().get("reply");
+			DispatcherReplyTCP dispatcherReply = (DispatcherReplyTCP) channel.getPipeline().get("reply");
 			// TODO: search for the longest idle one...
 			if (!dispatcherReply.isWaiting() && channel.isOpen())
 			{

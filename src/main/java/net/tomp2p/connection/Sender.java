@@ -92,25 +92,24 @@ public class Sender
 		this.senderThread.start();
 	}
 
-	public void sendTCP(final Message message, final RequestHandlerTCP handler)
+	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message)
 	{
-		sendTCP(TCPChannelCache.DEFAULT_CHANNEL_NAME, message, handler);
+		sendTCP(TCPChannelCache.DEFAULT_CHANNEL_NAME, handler, futureResponse, message);
 	}
 
-	public void sendTCP(final String channelName, final Message message,
-			final RequestHandlerTCP handler)
+	public void sendTCP(final String channelName, final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message)
 	{
-		sendTCP(channelName, message.getRecipient(), handler, message);
+		sendTCP(channelName, message.getRecipient(), handler, futureResponse, message);
 	}
 
-	public void sendUDP(final Message message, final RequestHandlerUDP handler)
+	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message)
 	{
-		sendUDP(message.getRecipient(), handler, message, false);
+		sendUDP(message.getRecipient(), handler, futureResponse, message, false);
 	}
 
-	public void sendBroadcastUDP(final Message message, final RequestHandlerUDP handler)
+	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message)
 	{
-		sendUDP(message.getRecipient(), handler, message, true);
+		sendUDP(message.getRecipient(), handler, futureResponse, message, true);
 	}
 
 	public void shutdown()
@@ -126,7 +125,7 @@ public class Sender
 	}
 
 	private void sendTCP(final String channelName, final PeerAddress remoteNode,
-			final RequestHandlerTCP requestHandler, final Message message)
+			final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message)
 	{
 		// do not block if we came from the netty thread
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -139,7 +138,7 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendTCP0(channelName, requestHandler, message);
+					sendTCP0(channelName, requestHandler, futureResponse, message);
 				}
 			});
 		}
@@ -147,19 +146,17 @@ public class Sender
 		{
 			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
-			FutureResponse futureResponse = requestHandler == null ? null : requestHandler
-					.getFutureResponse();
 			if (waitForConnection(futureResponse))
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("send TCP " + Thread.currentThread().getName());
-				sendTCP0(channelName, requestHandler, message);
+				sendTCP0(channelName, requestHandler, futureResponse,  message);
 			}
 		}
 	}
 
 	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
-			final Message message, final boolean broadcast)
+			final FutureResponse futureResponse, final Message message, final boolean broadcast)
 	{
 		// do not block if we came from the netty thread
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -172,21 +169,19 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendUDP0(remoteNode, requestHandler, message, broadcast);
+					sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast);
 				}
 			});
 		}
 		else
 		{
 			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
-			FutureResponse futureResponse = requestHandler == null ? null : requestHandler
-					.getFutureResponse();
 			// this may block if its from the user directly
 			if (waitForConnection(futureResponse))
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("send UDP " + Thread.currentThread().getName());
-				sendUDP0(remoteNode, requestHandler, message, broadcast);
+				sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast);
 			}
 		}
 	}
@@ -213,8 +208,7 @@ public class Sender
 				{
 					logger.error("error in waitforconn");
 					e.printStackTrace();
-					if (futureResponse != null)
-						futureResponse.setFailed("Interrupted");
+					futureResponse.setFailed("Interrupted");
 					return false;
 				}
 			}
@@ -223,9 +217,8 @@ public class Sender
 	}
 
 	private void sendTCP0(String channelName, final RequestHandlerTCP requestHandler,
-			final Message message)
+			final FutureResponse futureResponse, final Message message)
 	{
-		final FutureResponse futureResponse = requestHandler.getFutureResponse();
 		if (futureResponse.isCompleted())
 			return;
 		try
@@ -261,7 +254,7 @@ public class Sender
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
 						final ChannelFuture writeFuture = future.getChannel().write(message);
-						afterSend(writeFuture, futureResponse, true, message);
+						afterSend(writeFuture, futureResponse, true, message, requestHandler == null);
 					}
 					else
 					{
@@ -294,10 +287,9 @@ public class Sender
 		}
 	}
 
-	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP replyHandler,
-			final Message message, final boolean broadcast)
+	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP replyHandler, 
+			final FutureResponse futureResponse, final Message message, final boolean broadcast)
 	{
-		final FutureResponse futureResponse = replyHandler.getFutureResponse();
 		if (futureResponse.isCompleted())
 			return;
 		ReplyTimeoutHandler replyTimeoutHandler = null;
@@ -312,7 +304,7 @@ public class Sender
 			final Channel channel = connectionCollector.channelUDP(replyTimeoutHandler,
 					replyHandler, broadcast);
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
-			afterSend(writeFuture, futureResponse, false, message);
+			afterSend(writeFuture, futureResponse, false, message, replyHandler == null);
 		}
 		catch (Exception ce)
 		{
@@ -325,7 +317,7 @@ public class Sender
 	}
 
 	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse,
-			final boolean tcp, final Message message)
+			final boolean tcp, final Message message, final boolean isFireAndForget)
 	{
 		final Cancellable cancel2 = new Cancellable()
 		{
@@ -356,14 +348,17 @@ public class Sender
 				}
 				else
 				{
-					if (tcp && !message.isFireAndForget())
+					if (tcp && !isFireAndForget)
 					{
 						futureResponse.setReplyTimeout(System.currentTimeMillis()
 								+ configuration.getTimeoutTCPMillis());
 					}
 				}
-				if (message.isFireAndForget())
+				if (isFireAndForget)
+				{
 					futureResponse.setResponse(null);
+					writeFuture.getChannel().close();
+				}
 			}
 		});
 	}

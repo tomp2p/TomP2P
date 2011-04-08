@@ -213,6 +213,10 @@ public class DispatcherRequest extends SimpleChannelHandler
 			peerMap.peerOffline(message.getSender(), true);
 			return;
 		}
+		if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID()))
+		{
+			logger.info("Is it really required to send a message to ourself? " + message);
+		}
 		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? timeoutUPDMillis
 				: timeoutTCPMillis;
 		// no need to reply, we are late anyway
@@ -265,7 +269,8 @@ public class DispatcherRequest extends SimpleChannelHandler
 		}
 		if (responseMessage == message)
 		{
-			logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
+			if(logger.isDebugEnabled())
+				logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
 		}
 		else
 		{

@@ -69,20 +69,19 @@ public class RequestHandlerTCP
 
 	public FutureResponse sendTCP()
 	{
-		connectionBean.getSender().sendTCP(message, this);
+		connectionBean.getSender().sendTCP(this, futureResponse, message);
 		return futureResponse;
 	}
 
 	public FutureResponse sendTCP(String channelName)
 	{
-		connectionBean.getSender().sendTCP(channelName, message, this);
+		connectionBean.getSender().sendTCP(channelName, this, futureResponse, message);
 		return futureResponse;
 	}
 
 	public FutureResponse fireAndForgetTCP()
 	{
-		message.setFireAndForget(true);
-		connectionBean.getSender().sendTCP(message, this);
+		connectionBean.getSender().sendTCP(null, futureResponse, message);
 		return futureResponse;
 	}
 

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,10 +40,14 @@ import org.jboss.netty.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Since a TCP connection may be opened both ways, we need to distinguish who is
+ * the sender and recipient.
+ */
 @Sharable
-public class DispatcherReply extends IdleStateAwareChannelHandler
+public class DispatcherReplyTCP extends IdleStateAwareChannelHandler
 {
-	final private static Logger logger = LoggerFactory.getLogger(DispatcherReply.class);
+	final private static Logger logger = LoggerFactory.getLogger(DispatcherReplyTCP.class);
 	final private Map<MessageID, RequestHandlerTCP> waitingForAnswer = new LinkedHashMap<MessageID, RequestHandlerTCP>();
 	final private int tcpIdleTimeoutMillis;
 	final private DispatcherRequest dispatcherRequest;
@@ -55,15 +60,14 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	private Channel channel;
 
 	//
-	public DispatcherReply(Timer timer, int tcpIdleTimeoutMillis,
-			DispatcherRequest dispatcherRequest, ChannelGroup channelGroup)
+	public DispatcherReplyTCP(Timer timer, int tcpIdleTimeoutMillis, DispatcherRequest dispatcherRequest,
+			ChannelGroup channelGroup)
 	{
 		this.timer = timer;
 		this.tcpIdleTimeoutMillis = tcpIdleTimeoutMillis;
 		this.dispatcherRequest = dispatcherRequest;
 		this.channelGroup = channelGroup;
-		idleTimeout = timer.newTimeout(new TimeoutTask(), tcpIdleTimeoutMillis,
-				TimeUnit.MILLISECONDS);
+		idleTimeout = timer.newTimeout(new TimeoutTask(), tcpIdleTimeoutMillis, TimeUnit.MILLISECONDS);
 	}
 
 	public void shutdown(String message)
@@ -78,9 +82,17 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	{
 		synchronized (waitingForAnswer)
 		{
-			if (logger.isDebugEnabled())
-				logger.debug("adding message " + message);
-			waitingForAnswer.put(new MessageID(message), requestHandler);
+			if (requestHandler == null)
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("this is a fire and forget message " + message);
+			}
+			else
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("adding message " + message);
+				waitingForAnswer.put(new MessageID(message), requestHandler);
+			}
 		}
 	}
 
@@ -88,7 +100,8 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	public void channelIdle(ChannelHandlerContext ctx, IdleStateEvent e) throws Exception
 	{
 		if (logger.isDebugEnabled())
-			logger.debug("closing channel (idle) udp="+(ctx.getChannel()instanceof DatagramChannel)+" channel "+ctx.getChannel());
+			logger.debug("closing channel (idle) udp=" + (ctx.getChannel() instanceof DatagramChannel) + " channel "
+					+ ctx.getChannel());
 		if (ctx.getChannel().isOpen())
 			ctx.getChannel().close();
 	}
@@ -104,7 +117,8 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			return;
 		}
 		final Message message = (Message) e.getMessage();
-		// check if its a request or reply. This is implemented to have the TCP channel opened both ways
+		// check if its a request or reply. This is implemented to have the TCP
+		// channel opened both ways
 		if (message.isRequest())
 		{
 			dispatcherRequest.messageReceived(ctx, e);
@@ -138,8 +152,7 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception
 	{
-		String cause = e.getCause().getMessage() == null ? null : e.getCause().getMessage()
-				.toString();
+		String cause = e.getCause().getMessage() == null ? null : e.getCause().getMessage().toString();
 		// do not show connection reset by peer!
 		if (!"Connection reset by peer".equals(cause))
 		{
@@ -169,13 +182,12 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 	{
 		synchronized (waitingForAnswer)
 		{
-			for (Iterator<Map.Entry<MessageID, RequestHandlerTCP>> iterator = waitingForAnswer
-					.entrySet().iterator(); iterator.hasNext();)
+			for (Iterator<Map.Entry<MessageID, RequestHandlerTCP>> iterator = waitingForAnswer.entrySet().iterator(); iterator
+					.hasNext();)
 			{
 				Map.Entry<MessageID, RequestHandlerTCP> entry = iterator.next();
 				iterator.remove();
-				entry.getValue().getFutureResponse().setFailed(
-						"Timeout all: " + reason + " / " + entry.getKey());
+				entry.getValue().getFutureResponse().setFailed("Timeout all: " + reason + " / " + entry.getKey());
 			}
 		}
 	}
@@ -185,6 +197,7 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 		if (!(ctx.getChannel() instanceof DatagramChannel))
 			ctx.getChannel().close();
 	}
+
 	private final class TimeoutTask implements TimerTask
 	{
 		public void run(Timeout timeout) throws Exception
@@ -195,17 +208,19 @@ public class DispatcherReply extends IdleStateAwareChannelHandler
 			}
 			synchronized (waitingForAnswer)
 			{
-				for (Iterator<Map.Entry<MessageID, RequestHandlerTCP>> iterator = waitingForAnswer
-						.entrySet().iterator(); iterator.hasNext();)
+				for (Iterator<Map.Entry<MessageID, RequestHandlerTCP>> iterator = waitingForAnswer.entrySet()
+						.iterator(); iterator.hasNext();)
 				{
 					Map.Entry<MessageID, RequestHandlerTCP> entry = iterator.next();
 					long now = System.currentTimeMillis();
 					long requestTimeout = entry.getValue().getFutureResponse().getReplyTimeout();
 					if (now > requestTimeout)
 					{
-						entry.getValue().getFutureResponse().setFailed(
-								"Timeout by " + (now - requestTimeout) + " for "
-										+ entry.getValue().getFutureResponse().getRequest());
+						entry.getValue()
+								.getFutureResponse()
+								.setFailed(
+										"Timeout by " + (now - requestTimeout) + " for "
+												+ entry.getValue().getFutureResponse().getRequest());
 						iterator.remove();
 					}
 					else

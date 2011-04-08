@@ -318,7 +318,7 @@ public class TrackerRPC extends ReplyHandler
 		{
 			//we don't know the public key, since this is not first hand information.
 			//TTL will be set in trackerstorage, so don't worry about it here.
-			trackerStorage.putReferred(locationKey, domainKey, data);
+			trackerStorage.putReferred(locationKey, domainKey, data, referrer);
 			//System.err.println("i want to add "+data.getPeerAddress());
 		}
 	}

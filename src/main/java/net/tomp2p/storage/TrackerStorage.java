@@ -34,7 +34,6 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
-import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.TrackerData;
 
 /**
@@ -96,8 +95,9 @@ public class TrackerStorage extends StorageMemory
 		return retVal;
 	}
 
-	public boolean putReferred(Number160 locationKey, Number160 domainKey, Data data)
+	public boolean putReferred(Number160 locationKey, Number160 domainKey, Data data, PeerAddress referrer)
 	{
+		//TODO: do something with referrer...
 		data.setTTLSeconds(getTrackerTimoutSeconds());
 		Number480 number480 = new Number480(locationKey, domainKey.xor(Number160.MAX_VALUE), data.getPeerAddress().getID());
 		//Number480 number480 = new Number480(locationKey, domainKey, data.getPeerAddress().getID());
@@ -109,11 +109,10 @@ public class TrackerStorage extends StorageMemory
 		DigestInfo digest = digest(new Number320(locationKey, domainKey));
 		return digest.getSize();
 	}
-
+	
 	public TrackerData getSelection(Number160 locationKey, Number160 domainKey, int nr,
-			SimpleBloomFilter<Number160> knownPeers)
+			Set<Number160> knownPeers)
 	{
-		// we have a copy here, so no need to sync
 		Number320 number320 = new Number320(locationKey, domainKey);
 		List<Number480> keys = getKeys(number320);
 		// the peer is not interested in those peers! filter them
@@ -132,7 +131,6 @@ public class TrackerStorage extends StorageMemory
 			}
 		}
 		int size = keys.size();
-		//TODO: do I need a treemap here?
 		SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
 		for (int i = 0; i < nr && i < size; i++)
 		{

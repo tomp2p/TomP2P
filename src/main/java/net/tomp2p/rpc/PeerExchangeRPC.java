@@ -15,7 +15,10 @@
  */
 package net.tomp2p.rpc;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 
 import org.slf4j.Logger;
@@ -36,6 +39,8 @@ import net.tomp2p.storage.Data;
 public class PeerExchangeRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(PeerExchangeRPC.class);
+	//since PEX is push based, each peer needs to keep track what was sent to whom.
+	final private Map<Number160, Set<Number160>> sentPeers = new HashMap<Number160, Set<Number160>>();
 	
 	public PeerExchangeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
@@ -46,18 +51,19 @@ public class PeerExchangeRPC extends ReplyHandler
 	public FutureResponse peerExchange(final PeerAddress remoteNode, Number160 locationKey, Number160 domainKey)
 	{
 		final Message message = createMessage(remoteNode, Command.PEX, Type.REQUEST_1);
-		TrackerData trackerData1 = peerBean.getTrackerStorage().getSelection(locationKey, domainKey, peerBean.getTrackerStorage().getTrackerSize(), null);
-		/*TrackerData trackerData2 = peerBean.getTrackerStorage().getSelection(locationKey, domainKey.xor(Number160.MAX), peerBean.getTrackerStorage().getTrackerSize(), null);
-		for(Map.Entry<Number480, Data> entry:trackerData2.getPeerDataMap().entrySet())
+		Set<Number160> tmp1=sentPeers.get(remoteNode.getID());
+		TrackerData trackerData1 = peerBean.getTrackerStorage().getSelection(locationKey, domainKey, peerBean.getTrackerStorage().getTrackerSize(), tmp1);
+		if(tmp1==null)
 		{
-			if(trackerData1.getPeerDataMap().size()>=peerBean.getTrackerStorage().getTrackerSize())
-				break;
-			trackerData1.getPeerDataMap().put(entry.getKey(), entry.getValue());
-		}*/
-		SortedMap<Number480, Data> tmp = trackerData1.getPeerDataMap();
-		if(tmp.size()>0)
+			tmp1=new HashSet<Number160>();
+			sentPeers.put(remoteNode.getID(), tmp1);
+		}
+		SortedMap<Number480, Data> tmp2 = trackerData1.getPeerDataMap();
+		for(Number480 key:tmp2.keySet())
+			tmp1.add(key.getContentKey());
+		if(tmp2.size()>0)
 		{
-			message.setDataMapConvert(tmp);
+			message.setDataMapConvert(tmp2);
 			message.setKeyKey(locationKey, domainKey);
 			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean, connectionBean, message);
 			return requestHandler.fireAndForgetUDP();
@@ -88,7 +94,7 @@ public class PeerExchangeRPC extends ReplyHandler
 		{
 			for(Data data:tmp.values())
 			{
-				peerBean.getTrackerStorage().putReferred(locationKey, domainKey, data);
+				peerBean.getTrackerStorage().putReferred(locationKey, domainKey, data, message.getSender());
 				if(logger.isDebugEnabled())
 					logger.debug("Adding "+data.getPeerAddress()+" to the map. I'm "+message.getRecipient());
 			}

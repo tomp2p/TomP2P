@@ -52,6 +52,7 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
@@ -242,6 +243,8 @@ public class ConnectionHandler
 			}
 		});
 		bootstrap.setOption("broadcast", "false");
+		bootstrap.setOption("receiveBufferSizePredictor", new FixedReceiveBufferSizePredictor(
+				ConnectionHandler.UDP_LIMIT));
 		Channel channel = bootstrap.bind(listenAddressesUDP);
 		logger.info("Listening on UDP socket: " + listenAddressesUDP);
 		connectionBean.getChannelGroup().add(channel);

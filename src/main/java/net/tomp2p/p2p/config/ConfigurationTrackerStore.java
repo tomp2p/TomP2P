@@ -12,7 +12,6 @@ public class ConfigurationTrackerStore extends ConfigurationBase
 	private FutureCreate<BaseFuture> futureCreate;
 	// used for peer exchange
 	private int waitBeforeNextSendSeconds=0;
-	private int nrPeers=0;
 	
 
 	public ConfigurationTrackerStore setAttachement(Data attachement)
@@ -69,15 +68,5 @@ public class ConfigurationTrackerStore extends ConfigurationBase
 	public int getWaitBeforeNextSendSeconds()
 	{
 		return waitBeforeNextSendSeconds;
-	}
-
-	public void setNrPeers(int nrPeers)
-	{
-		this.nrPeers = nrPeers;
-	}
-
-	public int getNrPeers()
-	{
-		return nrPeers;
 	}
 }

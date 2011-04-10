@@ -1219,7 +1219,7 @@ public class Peer
 			public void run()
 			{
 				FutureForkJoin<FutureResponse> futureForkJoin = getTracker().startExchange(locationKey,
-						config.getDomain(), config.getNrPeers());
+						config.getDomain());
 				futureTracker.repeated(futureForkJoin);
 			}
 		};

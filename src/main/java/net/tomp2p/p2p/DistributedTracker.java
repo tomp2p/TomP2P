@@ -149,9 +149,9 @@ public class DistributedTracker
 		});
 	}
 
-	FutureForkJoin<FutureResponse> startExchange(final Number160 locationKey, final Number160 domainKey, int nrPeers)
+	public FutureForkJoin<FutureResponse> startExchange(final Number160 locationKey, final Number160 domainKey)
 	{
-		TrackerData trackerData = peerBean.getTrackerStorage().getSelection(locationKey, domainKey, nrPeers, null);
+		TrackerData trackerData = peerBean.getTrackerStorage().getSelection(locationKey, domainKey, peerBean.getTrackerStorage().getTrackerSize(), null);
 		SortedMap<Number480, Data> peers = trackerData.getPeerDataMap();
 		FutureResponse[] futureResponses = new FutureResponse[peers.size()];
 		int i = 0;

@@ -17,6 +17,7 @@ package net.tomp2p.rpc;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -59,8 +60,14 @@ public class PeerExchangeRPC extends ReplyHandler
 			sentPeers.put(remoteNode.getID(), tmp1);
 		}
 		SortedMap<Number480, Data> tmp2 = trackerData1.getPeerDataMap();
-		for(Number480 key:tmp2.keySet())
-			tmp1.add(key.getContentKey());
+		for(Iterator<Number480> it=tmp2.keySet().iterator();it.hasNext();)
+		{
+			Number480 next=it.next();
+			if(tmp1.contains(next.getContentKey()))
+				it.remove();
+			else
+				tmp1.add(next.getContentKey());	
+		}
 		if(tmp2.size()>0)
 		{
 			message.setDataMapConvert(tmp2);

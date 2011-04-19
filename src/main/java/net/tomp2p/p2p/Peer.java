@@ -1173,7 +1173,7 @@ public class Peer
 		return getFromTracker(locationKey, config, new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200));
 	}
 
-	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config,
+	public FutureTracker getFromTrackerCreateBloomfilter1(Number160 locationKey, ConfigurationTrackerGet config,
 			Collection<PeerAddress> knownPeers)
 	{
 		// make a good guess based on the config and the maxium tracker that can
@@ -1189,13 +1189,9 @@ public class Peer
 		return getFromTracker(locationKey, config, bloomFilter);
 	}
 
-	public FutureTracker getFromTracker0(Number160 locationKey, ConfigurationTrackerGet config,
+	public FutureTracker getFromTrackerCreateBloomfilter2(Number160 locationKey, ConfigurationTrackerGet config,
 			Collection<Number160> knownPeers)
 	{
-		if(knownPeers instanceof SimpleBloomFilter)
-			return getFromTracker(locationKey, config, (SimpleBloomFilter<Number160>)knownPeers);
-		// make a good guess based on the config and the maxium tracker that can
-		// be found
 		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200);
 		if (!knownPeers.isEmpty())
 		{
@@ -1208,7 +1204,7 @@ public class Peer
 	}
 
 	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config,
-			SimpleBloomFilter<Number160> knownPeers)
+			Set<Number160> knownPeers)
 	{
 		return getTracker().getFromTracker(locationKey, config.getDomain(), config.getRoutingConfiguration(),
 				config.getTrackerConfiguration(), config.isExpectAttachement(), config.getEvaluationScheme(),

@@ -159,7 +159,7 @@ public class SimulateTracker
 				ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
-				FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, tmp1);
+				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
 				list.add(ft);
 			}
 			for (FutureTracker ft : list)
@@ -198,7 +198,7 @@ public class SimulateTracker
 						ctg.setRoutingConfiguration(rc);
 						ctg.setTrackerConfiguration(tc);
 						ctg.setUseSecondaryTrackers(true);
-						FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<PeerAddress>());
+						FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
 						list.add(ft);
 						repeat = true;
 					}
@@ -262,7 +262,7 @@ public class SimulateTracker
 				ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
-				FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, tmp1);
+				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
 				list.add(ft);
 			}
 			for (FutureTracker ft : list)
@@ -294,14 +294,14 @@ public class SimulateTracker
 						ctg.setUseSecondaryTrackers(true);
 						if (!bf)
 						{
-							FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<PeerAddress>());
+							FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
 							list.add(ft);
 						}
 						else
 						{
 							Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 								.knownPeers(trackerID, domain);
-							FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, tmp1);
+							FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
 							list.add(ft);
 						}
 						repeat = true;
@@ -354,7 +354,7 @@ public class SimulateTracker
 				ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
-				FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, tmp1);
+				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
 				list.add(ft);
 			}
 			for (FutureTracker ft : list)
@@ -387,12 +387,12 @@ public class SimulateTracker
 						{
 							Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 								.knownPeers(trackerID, domain);
-							FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, tmp1);
+							FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
 							list.add(ft);
 						}
 						else
 						{
-							FutureTracker ft = nodes[300 + i].getFromTracker0(trackerID, ctg, new EmptySet<Number160>());
+							FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
 							list.add(ft);
 						}
 						repeat=true;

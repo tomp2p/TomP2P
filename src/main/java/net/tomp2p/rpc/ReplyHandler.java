@@ -77,7 +77,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			// here we need a referral, since we got contacted and we dont know
 			// if we can contact the peer with its address. The peer may be
 			// behind a NAT
-			peerBean.getPeerMap().peerOnline(message.getSender(), message.getSender());
+			peerBean.getPeerMap().peerFound(message.getSender(), message.getSender());
 			try
 			{//
 				Message reply = handleResponse(message);

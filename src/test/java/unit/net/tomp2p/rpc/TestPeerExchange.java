@@ -6,7 +6,6 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -27,9 +26,7 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			Data data=new Data(new byte[0]);
-			data.setPeerAddress(sender.getPeerAddress());
-			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, null, data);
+			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey,sender.getPeerAddress(), null, null);
 			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
@@ -58,24 +55,20 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			Data data1=new Data(new byte[0]);
-			data1.setPeerAddress(sender.getPeerAddress());
-			PeerAddress pa1= Utils2.createAddress(new Number160("0x1111"));
-			Data data2=new Data(new byte[0]);
-			data2.setPeerAddress(pa1);
-			PeerAddress pa2= Utils2.createAddress(new Number160("0x1112"));
-			Data data3=new Data(new byte[0]);
-			data3.setPeerAddress(pa2);
 			
-			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, null, data1);
-			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, null, data2);
-			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, null, data3);
+			PeerAddress pa1= Utils2.createAddress(new Number160("0x1111"));
+			PeerAddress pa2= Utils2.createAddress(new Number160("0x1112"));
+			
+			
+			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, sender.getPeerAddress(), null, null);
+			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, pa1, null, null);
+			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, pa2,  null, null);
 			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Utils.sleep(200);
 			Assert.assertEquals(1, recv1.getPeerBean().getTrackerStorage().size(locationKey, domainKey));
-			Assert.assertEquals(3, recv1.getPeerBean().getTrackerStorage().size(locationKey, domainKey.xor(Number160.MAX_VALUE)));
+			Assert.assertEquals(2, recv1.getPeerBean().getTrackerStorage().size(locationKey, domainKey.xor(Number160.MAX_VALUE)));
 		}
 		finally
 		{
@@ -99,9 +92,7 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			Data data=new Data(new byte[0]);
-			data.setPeerAddress(sender.getPeerAddress());
-			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, null, data);
+			sender.getPeerBean().getTrackerStorage().put(locationKey, domainKey, sender.getPeerAddress(), null, null);
 			for(int i=0;i<30;i++)
 			{
 				FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey);

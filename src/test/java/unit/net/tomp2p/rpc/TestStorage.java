@@ -816,7 +816,7 @@ public class TestStorage
 			//s1.put(location, Number160.ZERO, null, dataMap, false, false);
 			slave = new Peer(new Number160("0xfe"));
 			slave.listen(8000, 8000);
-			master.getPeerBean().getPeerMap().peerOnline(slave.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());

@@ -13,18 +13,20 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.p2p;
+package net.tomp2p.storage;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.TrackerData;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.rpc.DigestInfo;
 
-public interface EvaluatingSchemeTracker
+public interface Digest
 {
-	public Collection<TrackerData> evaluateSingle(Map<PeerAddress, Collection<TrackerData>> rawData);
-
-	//public Map<PeerAddress, Set<TrackerData>> evaluate(Map<PeerAddress, Collection<TrackerData>> rawData);
+	public abstract DigestInfo digest(Number320 key);
+	
+	public abstract DigestInfo digest(Number320 key, Collection<Number160> contentKeys);
+	
+	public abstract DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey);
+	
 }

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,18 +24,18 @@ import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.storage.Data;
+import net.tomp2p.storage.TrackerData;
+
 
 
 public class FutureTracker extends BaseFutureImpl
 {
 	final private EvaluatingSchemeTracker evaluatingSchemeTracker;
-	final private SimpleBloomFilter<Number160> knownPeers;
+	final private Set<Number160> knownPeers;
 	private volatile FutureCreate<BaseFuture> futureCreate;
 	private Set<PeerAddress> potentialTrackers;
 	private Set<PeerAddress> directTrackers;
-	private Map<PeerAddress, Map<PeerAddress, Data>> peersOnTracker;
+	private Map<PeerAddress, Collection<TrackerData>> peersOnTracker;
 	//
 	private ScheduledFuture<?> scheduledFuture;
 	private List<ScheduledFuture<?>> scheduledFutures;
@@ -45,7 +46,7 @@ public class FutureTracker extends BaseFutureImpl
 		this(new VotingSchemeTracker(), null);
 	}
 
-	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, SimpleBloomFilter<Number160> knownPeers)
+	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers)
 	{
 		this.evaluatingSchemeTracker = evaluatingSchemeTracker;
 		this.knownPeers=knownPeers;
@@ -65,7 +66,7 @@ public class FutureTracker extends BaseFutureImpl
 	}
 
 	public void setTrackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
-			Map<PeerAddress, Map<PeerAddress, Data>> peersOnTracker)
+			Map<PeerAddress, Collection<TrackerData>> peersOnTracker)
 	{
 		synchronized (lock)
 		{
@@ -96,7 +97,7 @@ public class FutureTracker extends BaseFutureImpl
 		}
 	}
 
-	public Map<PeerAddress, Map<PeerAddress, Data>> getRawPeersOnTracker()
+	public Map<PeerAddress, Collection<TrackerData>> getRawPeersOnTracker()
 	{
 		synchronized (lock)
 		{
@@ -112,23 +113,15 @@ public class FutureTracker extends BaseFutureImpl
 		}
 	}
 
-	public Map<PeerAddress, Data> getTrackers()
+	public Collection<TrackerData> getTrackers()
 	{
 		synchronized (lock)
 		{
 			return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
 		}
 	}
-
-	public Map<PeerAddress, Set<Data>> getCumulativeTrackers()
-	{
-		synchronized (lock)
-		{
-			return evaluatingSchemeTracker.evaluate(peersOnTracker);
-		}
-	}
 	
-	public SimpleBloomFilter<Number160> getKnownPeers()
+	public Set<Number160> getKnownPeers()
 	{
 		synchronized (lock)
 		{

@@ -24,10 +24,9 @@ import java.util.SortedMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
-import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.Utils;
 
-public abstract class Storage
+public abstract class Storage implements Digest
 {
 	public enum ProtectionEnable
 	{
@@ -75,10 +74,6 @@ public abstract class Storage
 
 	public abstract boolean contains(Number480 key);
 
-	public abstract DigestInfo digest(Number480 fromKey, Number480 toKey);
-
-	public abstract DigestInfo digest(Collection<Number480> keys);
-
 	public abstract void iterateAndRun(Number160 locationKey, StorageRunner runner);
 
 	public abstract void close();
@@ -91,11 +86,6 @@ public abstract class Storage
 	public abstract boolean updateResponsibilities(Number160 key, Number160 closest);
 
 	public abstract Collection<Number480> storedDirectReplication();
-
-	public DigestInfo digest(Number320 key)
-	{
-		return digest(key.min(), key.max());
-	}
 	
 	public Map<Number160, Data> get(Collection<Number480> keys)
 	{

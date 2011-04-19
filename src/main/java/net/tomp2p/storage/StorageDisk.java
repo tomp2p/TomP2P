@@ -339,29 +339,54 @@ public class StorageDisk extends Storage
 		checkTimeout();
 		return dataMap.containsKey(key);
 	}
-
+	
 	@Override
-	public DigestInfo digest(Number480 fromKey, Number480 toKey)
+	public DigestInfo digest(Number320 key)
 	{
 		checkTimeout();
-		SortedMap<Number480, Data> tmp = get(fromKey, toKey);
+		SortedMap<Number480, Data> tmp = get(key);
 		Number160 hash = Number160.ZERO;
-		for (Number480 key : tmp.keySet())
-			hash = hash.xor(key.getContentKey());
+		for (Number480 key2 : tmp.keySet())
+			hash = hash.xor(key2.getContentKey());
 		return new DigestInfo(hash, tmp.size());
 	}
 
 	@Override
-	public DigestInfo digest(Collection<Number480> keys)
+	public DigestInfo digest(Number320 key, Collection<Number160> contentKeys)
 	{
+		if (contentKeys == null)
+			return digest(key);
 		checkTimeout();
+		SortedMap<Number480, Data> tmp = get(key);
 		Number160 hash = Number160.ZERO;
 		int size = 0;
-		for (Number480 key : keys)
+		for (Number480 key2 : tmp.keySet())
 		{
-			if (contains(key))
+			if(contentKeys.contains(key2.getContentKey()))
 			{
-				hash = hash.xor(key.getContentKey());
+				hash = hash.xor(key2.getContentKey());
+				size++;
+			}
+		}
+		return new DigestInfo(hash, size);
+	}
+
+	@Override
+	public DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey)
+	{
+		if (fromKey == null)
+			fromKey = Number160.ZERO;
+		if (toKey == null)
+			toKey = Number160.MAX_VALUE;
+		checkTimeout();
+		SortedMap<Number480, Data> tmp = get(key);
+		Number160 hash = Number160.ZERO;
+		int size = 0;
+		for (Number480 key2 : tmp.keySet())
+		{
+			if(fromKey.compareTo(key2.getContentKey())<1 && toKey.compareTo(key2.getContentKey())>1)
+			{
+				hash = hash.xor(key2.getContentKey());
 				size++;
 			}
 		}

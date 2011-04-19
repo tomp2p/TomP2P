@@ -14,27 +14,37 @@
  */
 package net.tomp2p.rpc;
 
-import java.util.SortedMap;
+import java.util.Map;
 
-import net.tomp2p.peers.Number480;
-import net.tomp2p.storage.Data;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.storage.TrackerData;
 
-public class TrackerData
+public class TrackerDataResult
 {
-	final private SortedMap<Number480, Data> peerDataMap;
+	final private Map<Number160, TrackerData> peerDataMap;
 	final private boolean couldProvideMoreData;
-	public TrackerData(SortedMap<Number480, Data> peerDataMap, boolean couldProvideMoreData)
+
+	public TrackerDataResult(Map<Number160, TrackerData> peerDataMap, boolean couldProvideMoreData)
 	{
-		this.peerDataMap=peerDataMap;
-		this.couldProvideMoreData=couldProvideMoreData;
+		this.peerDataMap = peerDataMap;
+		this.couldProvideMoreData = couldProvideMoreData;
 	}
-	public SortedMap<Number480, Data> getPeerDataMap()
+
+	public Map<Number160, TrackerData> getPeerDataMap()
 	{
 		return peerDataMap;
 	}
+
 	public boolean couldProvideMoreData()
 	{
 		return couldProvideMoreData;
 	}
-	
+
+	public int size()
+	{
+		if(peerDataMap == null)
+			return 0;
+		return peerDataMap.size();
+	}
+
 }

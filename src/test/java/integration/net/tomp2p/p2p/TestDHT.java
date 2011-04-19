@@ -189,7 +189,7 @@ public class TestDHT
 				{
 					if (j == 718 && i == 30)
 						System.err.println("debug");
-					boolean add = nodes[i].getPeerBean().getPeerMap().peerOnline(
+					boolean add = nodes[i].getPeerBean().getPeerMap().peerFound(
 							nodes[j].getPeerAddress(), null);
 					if (i == 30)
 						System.err.println("adding " + nodes[j].getPeerAddress() + " flag " + add);
@@ -221,7 +221,7 @@ public class TestDHT
 			{
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
 			Data data = new Data(new byte[44444]);
@@ -304,7 +304,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(0, 0, 1);
@@ -358,7 +358,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
 			RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
@@ -403,7 +403,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
 			RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
@@ -448,7 +448,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -496,7 +496,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -549,7 +549,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -607,7 +607,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				nodes[i].setObjectDataReply(new ObjectDataReply()
 				{
 					@Override
@@ -643,7 +643,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Number160 nr = new Number160(rnd);
 			String toStore1 = "hallo1";
@@ -778,7 +778,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Number160 nr = new Number160(rnd);
 			String toStore1 = "hallo1";
@@ -835,7 +835,7 @@ public class TestDHT
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			Number160 nr = new Number160(rnd);
 			List<FutureDHT> list = new ArrayList<FutureDHT>();
@@ -877,12 +877,12 @@ public class TestDHT
 			master3 = new Peer(1, new Number160(rnd), c);
 			master3.listen(4003, 4003);
 			// perfect routing
-			master1.getPeerBean().getPeerMap().peerOnline(master2.getPeerAddress(), null);
-			master1.getPeerBean().getPeerMap().peerOnline(master3.getPeerAddress(), null);
-			master2.getPeerBean().getPeerMap().peerOnline(master1.getPeerAddress(), null);
-			master2.getPeerBean().getPeerMap().peerOnline(master3.getPeerAddress(), null);
-			master3.getPeerBean().getPeerMap().peerOnline(master1.getPeerAddress(), null);
-			master3.getPeerBean().getPeerMap().peerOnline(master2.getPeerAddress(), null);
+			master1.getPeerBean().getPeerMap().peerFound(master2.getPeerAddress(), null);
+			master1.getPeerBean().getPeerMap().peerFound(master3.getPeerAddress(), null);
+			master2.getPeerBean().getPeerMap().peerFound(master1.getPeerAddress(), null);
+			master2.getPeerBean().getPeerMap().peerFound(master3.getPeerAddress(), null);
+			master3.getPeerBean().getPeerMap().peerFound(master1.getPeerAddress(), null);
+			master3.getPeerBean().getPeerMap().peerFound(master2.getPeerAddress(), null);
 			Number160 id = master2.getPeerID();
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -1007,14 +1007,14 @@ public class TestDHT
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEntryInDomain.ENTRY_LEAVE);
 			// perfect routing
-			master.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
-			master.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave1.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave1.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave2.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave2.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			Number160 locationKey = new Number160(50);
 			ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();
 			Data data1 = new Data("test1");
@@ -1131,7 +1131,7 @@ public class TestDHT
 			{
 				System.err.println("node "+i);
 				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				nodes[i].setObjectDataReply(new ObjectDataReply()
 				{
 					@Override

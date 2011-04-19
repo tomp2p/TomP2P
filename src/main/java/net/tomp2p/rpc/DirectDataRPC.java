@@ -27,10 +27,8 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
-
 public class DirectDataRPC extends ReplyHandler
 {
-	//final private PeerBean peerInfo;
 	private volatile RawDataReply rawDataReply;
 	private volatile ObjectDataReply objectDataReply;
 
@@ -40,10 +38,10 @@ public class DirectDataRPC extends ReplyHandler
 		registerIoHandler(Command.DIRECT_DATA);
 	}
 
-	public FutureData send(final String channelName, final PeerAddress remoteNode, final ChannelBuffer buffer, boolean raw)
+	public FutureData send(final String channelName, final PeerAddress remoteNode, final ChannelBuffer buffer,
+			boolean raw)
 	{
-		final Message message = createMessage(remoteNode, Command.DIRECT_DATA, raw ? Type.REQUEST_1
-				: Type.REQUEST_2);
+		final Message message = createMessage(remoteNode, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);
 		final FutureData futureData = new FutureData(message, raw);
 		final RequestHandlerTCP requestHandler = new RequestHandlerTCP(futureData, peerBean, connectionBean, message);
@@ -72,7 +70,7 @@ public class DirectDataRPC extends ReplyHandler
 	{
 		return rawDataReply != null;
 	}
-	
+
 	public boolean hasObjectDataReply()
 	{
 		return objectDataReply != null;
@@ -81,8 +79,7 @@ public class DirectDataRPC extends ReplyHandler
 	@Override
 	public Message handleResponse(final Message message) throws Exception
 	{
-		final Message responseMessage = createMessage(message.getSender(), Command.DIRECT_DATA,
-				Type.OK);
+		final Message responseMessage = createMessage(message.getSender(), Command.DIRECT_DATA, Type.OK);
 		responseMessage.setMessageId(message.getMessageId());
 		final RawDataReply rawDataReply2 = rawDataReply;
 		final ObjectDataReply objectDataReply2 = objectDataReply;
@@ -92,14 +89,13 @@ public class DirectDataRPC extends ReplyHandler
 			responseMessage.setType(Type.NOT_FOUND);
 		else
 		{
-			final ChannelBuffer requestBuffer = message.getPayload();
+			final ChannelBuffer requestBuffer = message.getPayload1();
 			// the user can reply with null, indicating not found. Or
 			// returning the request buffer, which means nothing is
 			// returned. Or an exception can be thrown
 			if (message.getType() == Type.REQUEST_1)
 			{
-				final ChannelBuffer replyBuffer = rawDataReply2.reply(message.getSender(),
-						requestBuffer);
+				final ChannelBuffer replyBuffer = rawDataReply2.reply(message.getSender(), requestBuffer);
 				if (replyBuffer == null)
 					responseMessage.setType(Type.NOT_FOUND);
 				else if (replyBuffer == requestBuffer)
@@ -109,17 +105,18 @@ public class DirectDataRPC extends ReplyHandler
 			}
 			else
 			{
-                 Object obj = Utils.decodeJavaObject(requestBuffer.array(), requestBuffer.arrayOffset(), requestBuffer.capacity());
-                 Object reply=objectDataReply2.reply(message.getSender(), obj);
-                 if (reply == null)
- 					responseMessage.setType(Type.NOT_FOUND);
- 				else if (reply == obj)
- 					responseMessage.setType(Type.OK);
- 				else
- 				{
- 					byte[] me = Utils.encodeJavaObject(reply);
- 					responseMessage.setPayload(ChannelBuffers.wrappedBuffer(me));
- 				}
+				Object obj = Utils.decodeJavaObject(requestBuffer.array(), requestBuffer.arrayOffset(),
+						requestBuffer.capacity());
+				Object reply = objectDataReply2.reply(message.getSender(), obj);
+				if (reply == null)
+					responseMessage.setType(Type.NOT_FOUND);
+				else if (reply == obj)
+					responseMessage.setType(Type.OK);
+				else
+				{
+					byte[] me = Utils.encodeJavaObject(reply);
+					responseMessage.setPayload(ChannelBuffers.wrappedBuffer(me));
+				}
 			}
 		}
 		return responseMessage;

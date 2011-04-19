@@ -57,9 +57,9 @@ public class TestSecurity
 			});
 			// perfect routing
 			boolean peerInMap1 = master.getPeerBean().getPeerMap()
-					.peerOnline(slave1.getPeerAddress(), null);
+					.peerFound(slave1.getPeerAddress(), null);
 			boolean peerInMap2 = slave1.getPeerBean().getPeerMap()
-					.peerOnline(master.getPeerAddress(), null);
+					.peerFound(master.getPeerAddress(), null);
 			Assert.assertEquals(true, peerInMap1);
 			Assert.assertEquals(true, peerInMap2);
 			//
@@ -169,14 +169,14 @@ public class TestSecurity
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEntryInDomain.ENTRY_REMOVE_IF_DOMAIN_CLAIMED);
 			// perfect routing
-			master.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
-			master.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave1.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave1.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave2.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave2.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			Number160 locationKey = new Number160(50);
 			ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();
 			cs1.setProtectDomain(true);
@@ -253,14 +253,14 @@ public class TestSecurity
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEntryInDomain.ENTRY_LEAVE);
 			// perfect routing
-			master.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
-			master.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
+			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave1.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave1.getPeerBean().getPeerMap().peerOnline(slave2.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave1.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
 			//
-			slave2.getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
-			slave2.getPeerBean().getPeerMap().peerOnline(slave1.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+			slave2.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			Number160 locationKey = new Number160(50);
 			ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();
 			cs1.setProtectDomain(true);
@@ -326,9 +326,9 @@ public class TestSecurity
 			});
 			// perfect routing
 			boolean peerInMap1 = master.getPeerBean().getPeerMap()
-					.peerOnline(slave1.getPeerAddress(), null);
+					.peerFound(slave1.getPeerAddress(), null);
 			boolean peerInMap2 = slave1.getPeerBean().getPeerMap()
-					.peerOnline(master.getPeerAddress(), null);
+					.peerFound(master.getPeerAddress(), null);
 			Assert.assertEquals(true, peerInMap1);
 			Assert.assertEquals(true, peerInMap2);
 			ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();

@@ -3,15 +3,10 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
-import net.tomp2p.Utils2;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Data;
-import net.tomp2p.storage.TrackerStorage;
-import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
 
@@ -36,7 +31,7 @@ public class TestTracker
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new Data(new String("data")), false, false, bloomFilter);
+					dom, new String("data").getBytes(), false, false, bloomFilter);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
@@ -45,7 +40,7 @@ public class TestTracker
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
-			PeerAddress peerAddress=fr.getResponse().getDataMap().values().iterator().next().getPeerAddress();
+			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
 		}
 		finally
@@ -55,30 +50,6 @@ public class TestTracker
 			if (recv1 != null)
 				recv1.shutdown();
 		}
-	}
-
-	@Test
-	public void testTrackerMap() throws Exception
-	{
-		TrackerStorage ts = new TrackerStorage(42L);
-		ts.setTrackerTimoutSeconds(1);
-		Number160 loc = new Number160(rnd);
-		Number160 dom = new Number160(rnd);
-		PeerAddress pa1 = Utils2.createAddress("0x1");
-		PeerAddress pa2 = Utils2.createAddress("0x2");
-		Data data1 = new Data(new String("data"));
-		data1.setTTLSeconds(1);
-		data1.setPeerAddress(pa1);
-		ts.put(loc, dom, null, data1);
-		//
-		Data data2 = new Data(new String("data"));
-		data2.setTTLSeconds(1);
-		data2.setPeerAddress(pa2);
-		ts.put(loc, dom, null, data2);
-		Utils.sleep(500);
-		Assert.assertEquals(2, ts.get(new Number320(loc, dom)).size());
-		Utils.sleep(600);
-		Assert.assertEquals(0, ts.get(new Number320(loc, dom)).size());
 	}
 	
 	@Test
@@ -97,7 +68,7 @@ public class TestTracker
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new Data(new String("data")), false, false, bloomFilter);
+					dom, new String("data").getBytes(), false, false, bloomFilter);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter.add(sender.getPeerID());
@@ -106,7 +77,7 @@ public class TestTracker
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
-			Assert.assertEquals(0, fr.getResponse().getDataMap().size());
+			Assert.assertEquals(0, fr.getResponse().getTrackerData().size());
 		}
 		finally
 		{

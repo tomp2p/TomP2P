@@ -160,7 +160,7 @@ public class NeighborRPC extends ReplyHandler
 					}
 					// otherwise try to add it to the map
 					else
-						peerMap.peerOnline(addr, referrer);
+						peerMap.peerFound(addr, referrer);
 				}
 			}
 			else

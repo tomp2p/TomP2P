@@ -66,7 +66,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.replication.DefaultStorageReplication;
-import net.tomp2p.replication.DefaultTrackerReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
@@ -160,7 +159,7 @@ public class Peer
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
-	final public static int BLOOMFILTER_SIZE = 4096;
+	final public static int BLOOMFILTER_SIZE = 2880;
 
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
@@ -210,7 +209,8 @@ public class Peer
 
 	public void addPeerListener(PeerListener listener)
 	{
-		if (isRunning()) listener.notifyOnStart();
+		if (isRunning())
+			listener.notifyOnStart();
 		listeners.add(listener);
 	}
 
@@ -232,7 +232,8 @@ public class Peer
 			for (ScheduledFuture<?> scheduledFuture : scheduledFutures)
 				scheduledFuture.cancel(true);
 		}
-		if (masterFlag && timer != null) timer.stop();
+		if (masterFlag && timer != null)
+			timer.stop();
 		if (masterFlag && scheduledExecutorServiceMaintenance != null)
 			scheduledExecutorServiceMaintenance.shutdownNow();
 		if (masterFlag && scheduledExecutorServiceReplication != null)
@@ -337,8 +338,11 @@ public class Peer
 		// create tracker and add replication feature
 		TrackerStorage storageTracker = new TrackerStorage(peerBean.getServerPeerAddress().getID().hashCode());
 		peerBean.setTrackerStorage(storageTracker);
-		Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
-		peerBean.setReplicationTracker(replicationTracker);
+		peerMap.addPeerOfflineListener(storageTracker);
+		// TODO: do we need a replication tracker?
+		// Replication replicationTracker = new Replication(storageTracker,
+		// selfAddress, peerMap);
+		// peerBean.setReplicationTracker(replicationTracker);
 		// RPC communication
 		handshakeRCP = new HandshakeRPC(peerBean, connectionBean);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
@@ -352,7 +356,8 @@ public class Peer
 		dht = new DistributedHashHashMap(routing, storageRPC, directDataRPC);
 		tracker = new DistributedTracker(peerBean, routing, trackerRPC, peerExchangeRPC);
 		// maintenance
-		if (peerConfiguration.isStartMaintenance()) startMaintainance();
+		if (peerConfiguration.isStartMaintenance())
+			startMaintainance();
 		for (PeerListener listener : listeners)
 			listener.notifyOnStart();
 	}
@@ -364,14 +369,6 @@ public class Peer
 				replicationStorage.getStorage(), storageRPC, pendingFutures);
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
-	}
-
-	public void setDefaultTrackerReplication()
-	{
-		Replication replicationTracker = getPeerBean().getReplicationTracker();
-		DefaultTrackerReplication defaultTrackerReplication = new DefaultTrackerReplication(
-				replicationTracker.getStorage(), trackerRPC, pendingFutures, getPeerBean().getStatistics());
-		replicationTracker.addResponsibilityListener(defaultTrackerReplication);
 	}
 
 	public Map<BaseFuture, Long> getPendingFutures()
@@ -386,7 +383,8 @@ public class Peer
 
 	public boolean isListening()
 	{
-		if (!isRunning()) return false;
+		if (!isRunning())
+			return false;
 		return connectionHandler.isListening();
 	}
 
@@ -407,19 +405,22 @@ public class Peer
 	// }
 	public HandshakeRPC getHandshakeRPC()
 	{
-		if (handshakeRCP == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (handshakeRCP == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return handshakeRCP;
 	}
 
 	public StorageRPC getStoreRPC()
 	{
-		if (storageRPC == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (storageRPC == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return storageRPC;
 	}
 
 	public QuitRPC getQuitRPC()
 	{
-		if (quitRCP == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (quitRCP == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return quitRCP;
 	}
 
@@ -439,13 +440,15 @@ public class Peer
 
 	public TrackerRPC getTrackerRPC()
 	{
-		if (trackerRPC == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (trackerRPC == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return trackerRPC;
 	}
 
 	public DistributedRouting getRouting()
 	{
-		if (routing == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (routing == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return routing;
 	}
 
@@ -464,20 +467,23 @@ public class Peer
 
 	public ConnectionHandler getConnectionHandler()
 	{
-		if (connectionHandler == null) throw new RuntimeException(
-				"Not listening to anything. Use the listen method first");
-		else return connectionHandler;
+		if (connectionHandler == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		else
+			return connectionHandler;
 	}
 
 	public DistributedHashHashMap getDHT()
 	{
-		if (dht == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (dht == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return dht;
 	}
 
 	public DistributedTracker getTracker()
 	{
-		if (tracker == null) throw new RuntimeException("Not listening to anything. Use the listen method first");
+		if (tracker == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
 		return tracker;
 	}
 
@@ -568,7 +574,8 @@ public class Peer
 					peerAddresses.add(sender);
 					result.waitForBootstrap(bootstrap(peerAddresses));
 				}
-				else result.setFailed("could not reach anyone with the broadcast");
+				else
+					result.setFailed("could not reach anyone with the broadcast");
 			}
 		});
 		return result;
@@ -590,7 +597,8 @@ public class Peer
 			final FutureForkJoin<FutureResponse> pings = new FutureForkJoin<FutureResponse>(1, true, validBroadcast);
 			return pings;
 		}
-		else throw new IllegalArgumentException("No broadcast address found. Cannot ping nothing");
+		else
+			throw new IllegalArgumentException("No broadcast address found. Cannot ping nothing");
 	}
 
 	public FutureResponse ping(final InetSocketAddress address)
@@ -614,7 +622,8 @@ public class Peer
 					peerAddresses.add(sender);
 					result.waitForBootstrap(bootstrap(peerAddresses));
 				}
-				else result.setFailed("could not reach anyone with the broadcast");
+				else
+					result.setFailed("could not reach anyone with the broadcast");
 			}
 		});
 		return result;
@@ -643,11 +652,12 @@ public class Peer
 								peerAddresses,
 								config.getRoutingConfiguration().getMaxNoNewInfo(
 										config.getRequestP2PConfiguration().getMinimumResults()), config
-										.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
-										config.getRoutingConfiguration().getParallel(), false);
+										.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
+										.getMaxSuccess(), config.getRoutingConfiguration().getParallel(), false);
 						result.waitForBootstrap(futureBootstrap);
 					}
-					else result.setFailed("Network discovery failed.");
+					else
+						result.setFailed("Network discovery failed.");
 
 				}
 			});
@@ -657,7 +667,7 @@ public class Peer
 		{
 			FutureBootstrap futureBootstrap = routing.bootstrap(peerAddresses, config.getRoutingConfiguration()
 					.getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()), config
-					.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(), 
+					.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
 					config.getRoutingConfiguration().getParallel(), false);
 			return futureBootstrap;
 		}
@@ -714,7 +724,8 @@ public class Peer
 							if (connectionConfiguration.isEnabledUPNPNAT())
 							{
 								int portUDP = -1;
-								if (futureResponseUDP.isSuccess()) portUDP = serverAddress.portUDP();
+								if (futureResponseUDP.isSuccess())
+									portUDP = serverAddress.portUDP();
 								connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP,
 										serverAddress.portTCP(), seenAs.getInetAddress(),
 										connectionConfiguration.getPortNATUDP(),
@@ -724,7 +735,8 @@ public class Peer
 												connectionConfiguration.getPortNATTCP()));
 							}
 							getHandshakeRPC().pingTCPProbe(peerAddress);
-							if (futureResponseUDP.isSuccess()) getHandshakeRPC().pingUDPProbe(peerAddress);
+							if (futureResponseUDP.isSuccess())
+								getHandshakeRPC().pingUDPProbe(peerAddress);
 						}
 						// else -> we announce exactly how the other peer sees
 						// us
@@ -753,13 +765,15 @@ public class Peer
 	// PUT
 	public FutureDHT put(final Number160 locationKey, final Data data)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		return put(locationKey, data, Configurations.defaultStoreConfiguration());
 	}
 
 	public FutureDHT put(final Number160 locationKey, final Data data, ConfigurationStore config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		if (data.isProtectedEntry())
 		{
 			try
@@ -783,7 +797,8 @@ public class Peer
 	public FutureDHT put(final Number160 locationKey, final Map<Number160, Data> dataMap,
 			final ConfigurationStore config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		try
 		{
 			protectEntry(dataMap);
@@ -803,7 +818,8 @@ public class Peer
 			SignatureException
 	{
 		for (Data data : dataMap.values())
-			if (data.isProtectedEntry()) data.signAndSetPublicKey(keyPair);
+			if (data.isProtectedEntry())
+				data.signAndSetPublicKey(keyPair);
 	}
 
 	private FutureDHT put0(final Number160 locationKey, final Map<Number160, Data> dataMap,
@@ -855,13 +871,15 @@ public class Peer
 	// ADD
 	public FutureDHT add(final Number160 locationKey, final Data data)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		return add(locationKey, data, Configurations.defaultStoreConfiguration());
 	}
 
 	public FutureDHT add(final Number160 locationKey, final Data data, final ConfigurationStore config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		final Collection<Data> dataCollection = new ArrayList<Data>();
 		dataCollection.add(data);
 		return add(locationKey, dataCollection, config);
@@ -870,7 +888,8 @@ public class Peer
 	public FutureDHT add(final Number160 locationKey, final Collection<Data> dataCollection,
 			final ConfigurationStore config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		if (config.getContentKey() != null && !config.getContentKey().equals(Number160.ZERO))
 			logger.warn("Warning, setting a content key in add() does not have any effect");
 		if (!config.isSignMessage())
@@ -944,7 +963,8 @@ public class Peer
 
 	public FutureDHT get(final Number160 locationKey, final ConfigurationGet config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		Set<Number160> keyCollection = new HashSet<Number160>();
 		keyCollection.add(config.getContentKey());
 		return get(locationKey, keyCollection, config);
@@ -952,7 +972,8 @@ public class Peer
 
 	public FutureDHT get(final Number160 locationKey, Set<Number160> keyCollection, final ConfigurationGet config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		final FutureDHT futureDHT = getDHT().get(locationKey, config.getDomain(), keyCollection, config.getPublicKey(),
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.getEvaluationScheme(),
 				config.isSignMessage());
@@ -991,7 +1012,8 @@ public class Peer
 				getPeerBean().getStorage().remove(new Number480(locationKey, config.getDomain(), contentKey),
 						keyPair.getPublic());
 		}
-		else getPeerBean().getStorage().remove(new Number320(locationKey, config.getDomain()), keyPair.getPublic());
+		else
+			getPeerBean().getStorage().remove(new Number320(locationKey, config.getDomain()), keyPair.getPublic());
 		final FutureDHT futureDHT = getDHT().remove(locationKey, config.getDomain(), keyCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isReturnResults(),
 				config.isSignMessage(), config.getFutureCreate());
@@ -1025,7 +1047,8 @@ public class Peer
 					synchronized (this)
 					{
 						canceled = true;
-						if (future != null) future.cancel(false);
+						if (future != null)
+							future.cancel(false);
 					}
 				}
 			}
@@ -1034,8 +1057,10 @@ public class Peer
 			{
 				synchronized (this)
 				{
-					if (canceled == true) future.cancel(false);
-					else this.future = future;
+					if (canceled == true)
+						future.cancel(false);
+					else
+						this.future = future;
 				}
 			}
 		}
@@ -1050,13 +1075,15 @@ public class Peer
 	// Direct
 	public FutureDHT send(final Number160 locationKey, final ChannelBuffer buffer)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		return send(locationKey, buffer, Configurations.defaultConfigurationDirect());
 	}
 
 	public FutureDHT send(final Number160 locationKey, final ChannelBuffer buffer, final ConfigurationDirect config)
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, true, config.getRoutingConfiguration(),
 				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish());
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
@@ -1069,14 +1096,16 @@ public class Peer
 
 	public FutureDHT send(final Number160 locationKey, final Object object) throws IOException
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		return send(locationKey, object, Configurations.defaultConfigurationDirect());
 	}
 
 	public FutureDHT send(final Number160 locationKey, final Object object, final ConfigurationDirect config)
 			throws IOException
 	{
-		if (locationKey == null) throw new IllegalArgumentException("null in get not allowed in locationKey");
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		byte[] me = Utils.encodeJavaObject(object);
 		ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(me);
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, false, config.getRoutingConfiguration(),
@@ -1111,7 +1140,8 @@ public class Peer
 					synchronized (this)
 					{
 						canceled = true;
-						if (future != null) future.cancel(false);
+						if (future != null)
+							future.cancel(false);
 					}
 				}
 			}
@@ -1120,8 +1150,10 @@ public class Peer
 			{
 				synchronized (this)
 				{
-					if (canceled == true) future.cancel(false);
-					else this.future = future;
+					if (canceled == true)
+						future.cancel(false);
+					else
+						this.future = future;
 				}
 			}
 		}
@@ -1138,7 +1170,7 @@ public class Peer
 	{
 		// make a good guess based on the config and the maxium tracker that can
 		// be found
-		return getFromTracker(locationKey, config, new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1000));
+		return getFromTracker(locationKey, config, new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200));
 	}
 
 	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config,
@@ -1146,10 +1178,31 @@ public class Peer
 	{
 		// make a good guess based on the config and the maxium tracker that can
 		// be found
-		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1000);
-		for (PeerAddress peerAddress : knownPeers)
+		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200);
+		if (!knownPeers.isEmpty())
 		{
-			bloomFilter.add(peerAddress.getID());
+			for (PeerAddress peerAddress : knownPeers)
+			{
+				bloomFilter.add(peerAddress.getID());
+			}
+		}
+		return getFromTracker(locationKey, config, bloomFilter);
+	}
+
+	public FutureTracker getFromTracker0(Number160 locationKey, ConfigurationTrackerGet config,
+			Collection<Number160> knownPeers)
+	{
+		if(knownPeers instanceof SimpleBloomFilter)
+			return getFromTracker(locationKey, config, (SimpleBloomFilter<Number160>)knownPeers);
+		// make a good guess based on the config and the maxium tracker that can
+		// be found
+		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200);
+		if (!knownPeers.isEmpty())
+		{
+			for (Number160 number160 : knownPeers)
+			{
+				bloomFilter.add(number160);
+			}
 		}
 		return getFromTracker(locationKey, config, bloomFilter);
 	}
@@ -1168,8 +1221,6 @@ public class Peer
 		// be found
 		getPeerBean().getTrackerStorage().addAsSecondaryTracker(locationKey, config.getDomain());
 		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
-		if (!config.isSignMessage())
-			config.setSignMessage(config.getAttachement() != null && config.getAttachement().isProtectedEntry());
 		final FutureTracker futureTracker = getTracker().addToTracker(locationKey, config.getDomain(),
 				config.getAttachement(), config.getRoutingConfiguration(), config.getTrackerConfiguration(),
 				config.isSignMessage(), config.getFutureCreate(), bloomFilter);
@@ -1249,7 +1300,8 @@ public class Peer
 		{
 			// System.err.println("run!!!");
 			Collection<PeerAddress> nas = peerMap.peersForMaintenance();
-			if (logger.isDebugEnabled()) logger.debug("numbe of peers for maintenance: " + nas.size());
+			if (logger.isDebugEnabled())
+				logger.debug("numbe of peers for maintenance: " + nas.size());
 			for (PeerAddress na : nas)
 			{
 				result.put(na, handshakeRPC.pingUDP(na));

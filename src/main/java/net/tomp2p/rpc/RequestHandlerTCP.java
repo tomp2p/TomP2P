@@ -129,7 +129,7 @@ public class RequestHandlerTCP
 					logger.debug("perfect: " + message);
 				// We got a good answer, let's mark the sender as alive
 				if (message.isOk() || message.isNotOk())
-					getPeerMap().peerOnline(message.getSender(), null);
+					getPeerMap().peerFound(message.getSender(), null);
 				futureResponse.setResponse(message);
 			}
 		}

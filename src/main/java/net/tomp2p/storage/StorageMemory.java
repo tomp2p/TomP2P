@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.storage;
+
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,8 +61,7 @@ public class StorageMemory extends Storage
 	}
 
 	@Override
-	public boolean put(Number480 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-			boolean domainProtection)
+	public boolean put(Number480 key, Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 	{
 		synchronized (lock)
 		{
@@ -173,12 +173,12 @@ public class StorageMemory extends Storage
 			return dataMap.get(key);
 		}
 	}
-	
+
 	public List<Number480> getKeys(Number320 key)
 	{
 		return getKeys(key.min(), key.max());
 	}
-	
+
 	public List<Number480> getKeys(Number480 fromKey, Number480 toKey)
 	{
 		synchronized (lock)
@@ -236,15 +236,12 @@ public class StorageMemory extends Storage
 
 	private Data remove(Number480 key, PublicKey publicKey, boolean force)
 	{
-		if (!force
-				&& isDomainProtectedByOthers(
-						new Number320(key.getLocationKey(), key.getDomainKey()), publicKey))
+		if (!force && isDomainProtectedByOthers(new Number320(key.getLocationKey(), key.getDomainKey()), publicKey))
 			return null;
 		Data data = dataMap.get(key);
 		if (data != null)
 		{
-			if (force || data.getDataPublicKey() == null
-					|| data.getDataPublicKey().equals(publicKey))
+			if (force || data.getDataPublicKey() == null || data.getDataPublicKey().equals(publicKey))
 			{
 				removeTimeout(key);
 				removeResponsibility(key.getLocationKey());
@@ -264,8 +261,8 @@ public class StorageMemory extends Storage
 			if (!fromKey.getLocationKey().equals(toKey.getLocationKey())
 					|| !fromKey.getDomainKey().equals(toKey.getDomainKey()))
 				return null;
-			boolean domainProtectedByOthers = isDomainProtectedByOthers(new Number320(fromKey
-					.getLocationKey(), fromKey.getDomainKey()), publicKey);
+			boolean domainProtectedByOthers = isDomainProtectedByOthers(
+					new Number320(fromKey.getLocationKey(), fromKey.getDomainKey()), publicKey);
 			boolean cont = (!domainProtectedByOthers || (getProtectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && foreceOverrideDomain(
 					fromKey.getDomainKey(), publicKey)));
 			if (!cont)
@@ -298,37 +295,65 @@ public class StorageMemory extends Storage
 	}
 
 	@Override
-	public DigestInfo digest(Number480 fromKey, Number480 toKey)
+	public DigestInfo digest(Number320 key)
 	{
 		synchronized (lock)
 		{
 			checkTimeout();
-			SortedMap<Number480, Data> tmp = get(fromKey, toKey);
+			SortedMap<Number480, Data> tmp = get(key);
 			Number160 hash = Number160.ZERO;
-			for (Number480 key : tmp.keySet())
-				hash = hash.xor(key.getContentKey());
+			for (Number480 key2 : tmp.keySet())
+				hash = hash.xor(key2.getContentKey());
 			return new DigestInfo(hash, tmp.size());
 		}
 	}
 
 	@Override
-	public DigestInfo digest(Collection<Number480> keys)
+	public DigestInfo digest(Number320 key, Collection<Number160> contentKeys)
 	{
-		Number160 hash = Number160.ZERO;
-		int size = 0;
+		if (contentKeys == null)
+			return digest(key);
 		synchronized (lock)
 		{
 			checkTimeout();
-			for (Number480 key : keys)
+			SortedMap<Number480, Data> tmp = get(key);
+			Number160 hash = Number160.ZERO;
+			int size = 0;
+			for (Number480 key2 : tmp.keySet())
 			{
-				if (dataMap.containsKey(key))
+				if (contentKeys.contains(key2.getContentKey()))
 				{
-					hash = hash.xor(key.getContentKey());
+					hash = hash.xor(key2.getContentKey());
 					size++;
 				}
 			}
+			return new DigestInfo(hash, size);
 		}
-		return new DigestInfo(hash, size);
+	}
+
+	@Override
+	public DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey)
+	{
+		if (fromKey == null)
+			fromKey = Number160.ZERO;
+		if (toKey == null)
+			toKey = Number160.MAX_VALUE;
+		synchronized (lock)
+		{
+			checkTimeout();
+			SortedMap<Number480, Data> tmp = get(key);
+			Number160 hash = Number160.ZERO;
+			int size = 0;
+			for (Number480 key2 : tmp.keySet())
+			{
+				if (fromKey.compareTo(key2.getContentKey()) < 1 && toKey.compareTo(key2.getContentKey()) > 1)
+				{
+					hash = hash.xor(key2.getContentKey());
+					size++;
+				}
+			}
+			return new DigestInfo(hash, size);
+		}
 	}
 
 	@Override
@@ -341,8 +366,8 @@ public class StorageMemory extends Storage
 			checkTimeout();
 			for (Map.Entry<Number480, Data> entry : dataMap.subMap(min, max).entrySet())
 			{
-				runner.call(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry
-						.getKey().getContentKey(), entry.getValue());
+				runner.call(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry.getKey()
+						.getContentKey(), entry.getValue());
 			}
 		}
 	}
@@ -353,8 +378,8 @@ public class StorageMemory extends Storage
 		synchronized (lock)
 		{
 			Collection<Number160> result = responsibilityMapRev.get(peerID);
-			if(result==null)
-				return Collections.<Number160>emptyList();
+			if (result == null)
+				return Collections.<Number160> emptyList();
 			else
 				return new ArrayList<Number160>(result);
 		}
@@ -426,10 +451,9 @@ public class StorageMemory extends Storage
 	// TODO: make check timeout time based in a thread, but for now its ok.
 	private Collection<Number480> checkTimeout()
 	{
-		long time=System.currentTimeMillis();
+		long time = System.currentTimeMillis();
 		List<Number480> toRemove = new ArrayList<Number480>();
-		for (Map.Entry<Long, Set<Number480>> entry : timeoutMapRev.subMap(0L,
-				time).entrySet())
+		for (Map.Entry<Long, Set<Number480>> entry : timeoutMapRev.subMap(0L, time).entrySet())
 		{
 			toRemove.addAll(entry.getValue());
 		}
@@ -443,4 +467,5 @@ public class StorageMemory extends Storage
 		}
 		return toRemove;
 	}
+
 }

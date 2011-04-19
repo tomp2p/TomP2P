@@ -37,7 +37,7 @@ public class TestStatistics
 		for (int i = 0; i < 100; i++)
 		{
 			PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-			peerMapKadImpl.peerOnline(pa, null);
+			peerMapKadImpl.peerFound(pa, null);
 		}
 		Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
 	}
@@ -52,7 +52,7 @@ public class TestStatistics
 		for (int i = 0; i < 100; i++)
 		{
 			PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-			peerMapKadImpl.peerOnline(pa, null);
+			peerMapKadImpl.peerFound(pa, null);
 		}
 		Assert.assertEquals(100d, statistics.getEstimatedNumberOfNodes(), 0.01);
 	}
@@ -71,7 +71,7 @@ public class TestStatistics
 			{
 				Number160 id1 = new Number160(rnd);
 				PeerAddress remoteNode1 = Utils2.createAddress(id1);
-				kadRouting.peerOnline(remoteNode1, null);
+				kadRouting.peerFound(remoteNode1, null);
 			}
 			double diff = (maxNr + 1) / statistics.getEstimatedNumberOfNodes();
 			//System.err.println("est:"+statistics.getEstimatedNumberOfNodes()+", real"+maxNr);

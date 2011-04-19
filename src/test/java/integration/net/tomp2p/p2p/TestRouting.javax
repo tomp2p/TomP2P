@@ -17,7 +17,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.Routing;
+import net.tomp2p.p2p.DistributedRouting;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapKadImpl;
@@ -72,15 +72,15 @@ public class TestRouting
 		neighbors.add(Utils2.createAddress(16));
 		//
 		already.add(Utils2.createAddress(16));
-		boolean testb = Routing.merge(queue, neighbors, already);
+		boolean testb = DistributedRouting.merge(queue, neighbors, already);
 		Assert.assertEquals(true, testb);
 		// next one
 		neighbors.add(Utils2.createAddress(89));
-		testb = Routing.merge(queue, neighbors, already);
+		testb = DistributedRouting.merge(queue, neighbors, already);
 		Assert.assertEquals(false, testb);
 		// next one
 		neighbors.add(Utils2.createAddress(88));
-		testb = Routing.merge(queue, neighbors, already);
+		testb = DistributedRouting.merge(queue, neighbors, already);
 		Assert.assertEquals(false, testb);
 	}
 
@@ -107,29 +107,29 @@ public class TestRouting
 		already.add(Utils2.createAddress(16));
 		//
 		AtomicInteger nrNoNewInformation = new AtomicInteger();
-		boolean testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation,
+		boolean testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation,
 				0);
 		Assert.assertEquals(0, nrNoNewInformation.get());
 		Assert.assertEquals(false, testb);
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(1, nrNoNewInformation.get());
 		Assert.assertEquals(false, testb);
 		neighbors.add(Utils2.createAddress(11));
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(2, nrNoNewInformation.get());
 		Assert.assertEquals(true, testb);
 		neighbors.add(Utils2.createAddress(88));
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(0, nrNoNewInformation.get());
 		Assert.assertEquals(false, testb);
 		//
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(1, nrNoNewInformation.get());
 		neighbors.add(Utils2.createAddress(89));
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(2, nrNoNewInformation.get());
 		neighbors.add(Utils2.createAddress(88));
-		testb = Routing.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
+		testb = DistributedRouting.evaluateInformation(neighbors, queue, already, nrNoNewInformation, 2);
 		Assert.assertEquals(3, nrNoNewInformation.get());
 		Assert.assertEquals(true, testb);
 	}

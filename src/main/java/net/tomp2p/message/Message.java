@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.TrackerData;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
@@ -43,7 +44,7 @@ public class Message
 	// 2 x 4 bit -> 8 bit
 	public enum Content
 	{
-		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, RESERVED1, RESERVED2, RESERVED3, RESERVED4
+		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, SET_TRACKER_DATA, RESERVED1, RESERVED2, RESERVED3
 	};
 	// 1 x 4 bit
 	public enum Type
@@ -78,13 +79,15 @@ public class Message
 	private int useAtMostNeighbors = -1;
 	private Map<Number160, Data> dataMap = null;
 	private Map<Number480, Data> dataMapConvert = null;
+	private Collection<TrackerData> trackerData = null;
 	private Number160 key1 = null;
 	private Number160 key2 = null;
 	private Number160 key3 = null;
 	private Map<Number160, Number160> keyMap = null;
 	private Collection<Number160> keys = null;
 	private Collection<Number480> keysConvert = null;
-	private ChannelBuffer payload = null;
+	private ChannelBuffer payload1 = null;
+	private ChannelBuffer payload2 = null;
 	private long long_number = 0;
 	private int int_number = 0;
 	private Content contentType1 = Content.EMPTY;
@@ -629,19 +632,41 @@ public class Message
 	{
 		if (payload == null)
 			throw new RuntimeException("payload cannot add null");
-		this.payload = payload;
+		if(this.payload1==null)
+			this.payload1 = payload;
+		else if(this.payload2==null)
+			this.payload2 = payload;
+		else throw new RuntimeException("cannot store three times a payload");
 		setContentType(Content.CHANNEL_BUFFER);
 		return this;
 	}
 
 	void setPayload0(final ChannelBuffer payload)
 	{
-		this.payload = payload;
+		if(this.payload1==null)
+			this.payload1 = payload;
+		else if(this.payload2==null)
+			this.payload2 = payload;
+	}
+	
+	void setPayload1(final ChannelBuffer payload)
+	{
+		this.payload1 = payload;
+	}
+	
+	void setPayload2(final ChannelBuffer payload)
+	{
+		this.payload2 = payload;
 	}
 
-	public ChannelBuffer getPayload()
+	public ChannelBuffer getPayload1()
 	{
-		return payload;
+		return payload1;
+	}
+	
+	public ChannelBuffer getPayload2()
+	{
+		return payload2;
 	}
 
 	@Override
@@ -722,6 +747,26 @@ public class Message
 	public boolean isHintSign()
 	{
 		return hintSign;
+	}
+	
+	///////////////////////////////////////////
+	public Message setTrackerData(final Collection<TrackerData> trackerData)
+	{
+		if (trackerData == null)
+			throw new IllegalArgumentException("trackerData cannot add null");
+		this.trackerData = trackerData;
+		setContentType(Content.SET_TRACKER_DATA);
+		return this;
+	}
+
+	void setTrackerData0(final Collection<TrackerData> trackerData)
+	{
+		this.trackerData = trackerData;
+	}
+
+	public Collection<TrackerData> getTrackerData()
+	{
+		return trackerData;
 	}
 
 	public void setConvertNumber480to160(boolean convertNumber480to160)

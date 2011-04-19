@@ -22,15 +22,18 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream; // import java.math.BigInteger;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.SortedSet;
@@ -39,10 +42,10 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
-import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.Digest;
 
 public class Utils
 {
@@ -254,12 +257,12 @@ public class Utils
 		return obj;
 	}
 
-	public static void difference(Collection<PeerAddress> newNeighbors,
-			Collection<PeerAddress> alreadyAsked, Collection<PeerAddress> result)
+	public static<K> void difference(Collection<K> newNeighbors,
+			Collection<K> alreadyAsked, Collection<K> result)
 	{
-		for (Iterator<PeerAddress> iterator = newNeighbors.iterator(); iterator.hasNext();)
+		for (Iterator<K> iterator = newNeighbors.iterator(); iterator.hasNext();)
 		{
-			PeerAddress newPeerAddress = iterator.next();
+			K newPeerAddress = iterator.next();
 			if (!alreadyAsked.contains(newPeerAddress))
 				result.add(newPeerAddress);
 		}
@@ -316,41 +319,54 @@ public class Utils
 		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
 	}
 
-	public static DigestInfo digest(Storage storage, Number160 locationKey,
+	public static DigestInfo digest(Digest storage, Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys)
 	{
 		DigestInfo digestInfo;
 		if (contentKeys != null)
-		{
-			Collection<Number480> tmp = new HashSet<Number480>();
-			for (Number160 contentKey : contentKeys)
-				tmp.add(new Number480(locationKey, domainKey, contentKey));
-			digestInfo = storage.digest(tmp);
-		}
+			digestInfo = storage.digest(new Number320(locationKey, domainKey), contentKeys);
 		else
-		{
-			digestInfo = storage.digest(new Number480(locationKey, domainKey, Number160.ZERO),
-					new Number480(locationKey, domainKey, Number160.MAX_VALUE));
-		}
+			digestInfo = storage.digest(new Number320(locationKey, domainKey));
 		return digestInfo;
 	}
 
-	public static PeerAddress pollRandom(SortedSet<PeerAddress> queueToAsk, Random rnd)
+	public static<K> K pollRandom(SortedSet<K> queueToAsk, Random rnd)
 	{
 		int size=queueToAsk.size();
-		if(size==0)
+		if(size == 0)
 			return null;
 		int index=rnd.nextInt(size);
-		int i=0;
-		for (Iterator<PeerAddress> iterator = queueToAsk.iterator(); iterator.hasNext();)
+		List<K> values=new ArrayList<K>(queueToAsk);
+		return values.get(index);
+	}
+	
+	public static<K,V> Entry<K, V> pollRandomKey(Map<K,V> queueToAsk, Random rnd)
+	{
+		int size=queueToAsk.size();
+		if(size == 0)
+			return null;
+		List<K> keys=new ArrayList<K>();
+		keys.addAll(queueToAsk.keySet());
+		int index=rnd.nextInt(size);
+		final K key=keys.get(index);
+		final V value = queueToAsk.remove(key);
+		return new Entry<K, V>()
 		{
-			PeerAddress newPeerAddress = iterator.next();
-			if(i++==index)
+			@Override
+			public K getKey()
 			{
-				iterator.remove();
-				return newPeerAddress;
+				return key;
 			}
-		}
-		return null;
+			@Override
+			public V getValue()
+			{
+				return value;
+			}
+			@Override
+			public V setValue(V value)
+			{
+				return null;
+			}
+		};
 	}
 }

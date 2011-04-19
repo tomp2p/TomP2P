@@ -73,24 +73,31 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	{
 		this(rawBitArray, 0, rawBitArray.length);
 	}
-	
+
 	/**
 	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
 	 * number of bits in the Bloom Filter, and also you should specify the
 	 * number of items you expect to add. The latter is used to choose some
 	 * optimal internal values to minimize the false-positive rate (which can be
 	 * estimated with expectedFalsePositiveRate()).
-	 * @param bitArraySize The number of bits in the bit array (often called 'm' in the
+	 * 
+	 * @param bitArraySize
+	 *            The number of bits in the bit array (often called 'm' in the
 	 *            context of bloom filters).
-	 * @param expectedElements The typical number of items you expect to be added to the
+	 * @param expectedElements
+	 *            The typical number of items you expect to be added to the
 	 *            SimpleBloomFilter (often called 'n').
-	 * @param rawBitArray The data that will be used in the backing BitSet
-	 * @param offset The offset of the array
-	 * @param length The length of the array
+	 * @param rawBitArray
+	 *            The data that will be used in the backing BitSet
+	 * @param offset
+	 *            The offset of the array
+	 * @param length
+	 *            The length of the array
 	 */
 	public SimpleBloomFilter(byte[] rawBitArray, int offset, int length)
 	{
-		this(byteArrayToInt(rawBitArray, 4), byteArrayToInt(rawBitArray, 0), fromByteArray(new BitSet(), rawBitArray, offset+8, length-8));
+		this(byteArrayToInt(rawBitArray, 4), byteArrayToInt(rawBitArray, 0), fromByteArray(new BitSet(), rawBitArray,
+				offset + 8, length - 8));
 	}
 
 	/**
@@ -108,11 +115,12 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	 *            SimpleBloomFilter (often called 'n').
 	 * @param bitSet
 	 *            The data that will be used in the backing BitSet
-	 * @throws RuntimeException If bitArraySize is not a multiple of eight.
+	 * @throws RuntimeException
+	 *             If bitArraySize is not a multiple of eight.
 	 */
 	public SimpleBloomFilter(int bitArraySize, int expectedElements, BitSet bitSet)
 	{
-		if(bitArraySize % 8 != 0)
+		if (bitArraySize % 8 != 0)
 			throw new RuntimeException("BitArraySize must be a multiple of 8");
 		this.bitArraySize = bitArraySize;
 		this.expectedElements = expectedElements;
@@ -190,7 +198,8 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 		Random r = new Random(o.hashCode());
 		for (int x = 0; x < k; x++)
 		{
-			if (!bitSet.get(r.nextInt(bitArraySize))) return false;
+			if (!bitSet.get(r.nextInt(bitArraySize)))
+				return false;
 		}
 		return true;
 	}
@@ -199,7 +208,8 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	{
 		for (Object o : c)
 		{
-			if (!contains(o)) return false;
+			if (!contains(o))
+				return false;
 		}
 		return true;
 	}
@@ -306,16 +316,17 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	 * means the most significant bit is in element 0. The bit at index 0 of the
 	 * bit set is assumed to be the least significant bit.
 	 * 
-	 * @return a byte array representation of the bitset and the expected elements
+	 * @return a byte array representation of the bitset and the expected
+	 *         elements
 	 */
 	public byte[] toByteArray()
 	{
-		if (bitSet.length() == 0) 
+		if (bitSet.length() == 0)
 			return intToByteArray(expectedElements, bitArraySize, new byte[8]);
-		int length=(bitSet.length() / 8 + 1);
+		int length = (bitSet.length() / 8 + 1);
 		byte[] bytes = new byte[8 + length];
 		intToByteArray(expectedElements, bitArraySize, bytes);
-		
+
 		for (int i = 0; i < bitSet.length(); i++)
 		{
 			if (bitSet.get(i))
@@ -325,25 +336,32 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 		}
 		return bytes;
 	}
-	
-	public static final byte[] intToByteArray(int value1, int value2, byte[] me) 
+
+	public static final byte[] intToByteArray(int value1, int value2, byte[] me)
 	{
-        me[0]=(byte)(value1 >>> 24);
-        me[1]=(byte)(value1 >>> 16);
-        me[2]=(byte)(value1 >>> 8);
-        me[3]=(byte)(value1);
-        me[4]=(byte)(value2 >>> 24);
-        me[5]=(byte)(value2 >>> 16);
-        me[6]=(byte)(value2 >>> 8);
-        me[7]=(byte)(value2);
-        return me;
+		me[0] = (byte) (value1 >>> 24);
+		me[1] = (byte) (value1 >>> 16);
+		me[2] = (byte) (value1 >>> 8);
+		me[3] = (byte) (value1);
+		me[4] = (byte) (value2 >>> 24);
+		me[5] = (byte) (value2 >>> 16);
+		me[6] = (byte) (value2 >>> 8);
+		me[7] = (byte) (value2);
+		return me;
 	}
-	
-	public static final int byteArrayToInt(byte [] me, int offset) 
+
+	public static final int byteArrayToInt(byte[] me, int offset)
 	{
-        return (me[0 + offset] << 24)
-                + ((me[1 + offset] & 0xFF) << 16)
-                + ((me[2 + offset] & 0xFF) << 8)
-                + (me[3 + offset] & 0xFF);
+		return (me[0 + offset] << 24) + ((me[1 + offset] & 0xFF) << 16) + ((me[2 + offset] & 0xFF) << 8)
+				+ (me[3 + offset] & 0xFF);
+	}
+
+	public SimpleBloomFilter<E> merge(SimpleBloomFilter<E> toMerge)
+	{
+		if (toMerge.bitArraySize != bitArraySize)
+			throw new RuntimeException("this is not supposed to happen");
+		BitSet mergedBitSet = (BitSet) bitSet.clone();
+		mergedBitSet.or(toMerge.bitSet);
+		return new SimpleBloomFilter<E>(bitArraySize, expectedElements, mergedBitSet);
 	}
 }

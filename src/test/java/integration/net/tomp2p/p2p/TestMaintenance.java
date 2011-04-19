@@ -28,13 +28,13 @@ public class TestMaintenance
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				master.getPeerBean().getPeerMap().peerOnline(nodes[i].getPeerAddress(),
+				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(),
 						master.getPeerAddress());
-				nodes[i].getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(),
+				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(),
 						master.getPeerAddress());
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(),
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(),
 							master.getPeerAddress());
 				}
 			}
@@ -65,11 +65,11 @@ public class TestMaintenance
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				master.getPeerBean().getPeerMap().peerOnline(nodes[i].getPeerAddress(), null);
-				nodes[i].getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
+				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(), null);
+				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
 			//
@@ -103,11 +103,11 @@ public class TestMaintenance
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				master.getPeerBean().getPeerMap().peerOnline(nodes[i].getPeerAddress(), null);
-				nodes[i].getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
+				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(), null);
+				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
 			//
@@ -139,11 +139,11 @@ public class TestMaintenance
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				master.getPeerBean().getPeerMap().peerOnline(nodes[i].getPeerAddress(), null);
-				nodes[i].getPeerBean().getPeerMap().peerOnline(master.getPeerAddress(), null);
+				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(), null);
+				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerOnline(nodes[j].getPeerAddress(), null);
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
 			//

@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.Statistics;
+import net.tomp2p.peers.PeerStatusListener.Reason;
 import net.tomp2p.utils.CacheMap;
 
 import org.slf4j.Logger;
@@ -66,7 +67,7 @@ public class PeerMapKadImpl implements PeerMap
 	final private AtomicInteger peerCount = new AtomicInteger();
 	// stores listeners that will be notified if a peer gets removed or added
 	final private List<PeerMapChangeListener> peerMapChangeListeners = new ArrayList<PeerMapChangeListener>();
-	final private List<PeerOfflineListener> peerListeners = new ArrayList<PeerOfflineListener>();
+	final private List<PeerStatusListener> peerListeners = new ArrayList<PeerStatusListener>();
 	final private int[] maintenanceTimeoutsSeconds;
 	final private Map<PeerAddress, Long> maintenance = new LinkedHashMap<PeerAddress, Long>();
 	final private Collection<InetAddress> filteredAddresses = Collections
@@ -193,13 +194,13 @@ public class PeerMapKadImpl implements PeerMap
 	}
 
 	@Override
-	public void addPeerOfflineListener(PeerOfflineListener peerListener)
+	public void addPeerOfflineListener(PeerStatusListener peerListener)
 	{
 		peerListeners.add(peerListener);
 	}
 
 	@Override
-	public void removePeerOfflineListener(PeerOfflineListener peerListener)
+	public void removePeerOfflineListener(PeerStatusListener peerListener)
 	{
 		peerListeners.remove(peerListener);
 	}
@@ -247,16 +248,22 @@ public class PeerMapKadImpl implements PeerMap
 			listener.peerUpdated(peerAddress);
 	}
 
-	private void notifyOffline(PeerAddress peerAddress)
+	private void notifyOffline(PeerAddress peerAddress, Reason reason)
 	{
-		for (PeerOfflineListener listener : peerListeners)
-			listener.peerOffline(peerAddress);
+		for (PeerStatusListener listener : peerListeners)
+			listener.peerOffline(peerAddress, reason);
 	}
 
 	private void notifyPeerFail(PeerAddress peerAddress)
 	{
-		for (PeerOfflineListener listener : peerListeners)
+		for (PeerStatusListener listener : peerListeners)
 			listener.peerFail(peerAddress);
+	}
+	
+	private void notifyPeerOnline(PeerAddress peerAddress)
+	{
+		for (PeerStatusListener listener : peerListeners)
+			listener.peerOnline(peerAddress);
 	}
 
 	/**
@@ -277,12 +284,13 @@ public class PeerMapKadImpl implements PeerMap
 	}
 
 	@Override
-	public boolean peerOnline(final PeerAddress remotePeer, final PeerAddress referrer)
+	public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer)
 	{
 		boolean firstHand = referrer == null;
 		// always trust first hand information
 		if (firstHand)
 		{
+			notifyPeerOnline(remotePeer);
 			synchronized (peerOfflineLogs)
 			{
 				peerOfflineLogs.remove(remotePeer);
@@ -325,7 +333,7 @@ public class PeerMapKadImpl implements PeerMap
 			PeerAddress toRemove = removeLatestEntryExceedingBagSize();
 			if (classMember(toRemove.getID()) > classMember(remotePeer.getID()))
 			{
-				if (remove(toRemove))
+				if (remove(toRemove, Reason.REMOVED_FROM_MAP))
 				{
 					// this updates stats and schedules peer for maintenance
 					prepareInsertOrUpdate(remotePeer, firstHand);
@@ -360,7 +368,7 @@ public class PeerMapKadImpl implements PeerMap
 			{
 				if (shouldPeerBeRemoved(log))
 				{
-					remove(remotePeer);
+					remove(remotePeer, Reason.NOT_REACHABLE);
 					return true;
 				}
 				log.inc();
@@ -374,11 +382,11 @@ public class PeerMapKadImpl implements PeerMap
 			else
 				log.set(maxFail);
 		}
-		remove(remotePeer);
+		remove(remotePeer, Reason.NOT_REACHABLE);
 		return true;
 	}
 
-	private boolean remove(PeerAddress remotePeer)
+	private boolean remove(PeerAddress remotePeer, Reason reason)
 	{
 		// System.err.println("remove");
 		final int classMember = classMember(remotePeer.getID());
@@ -390,7 +398,7 @@ public class PeerMapKadImpl implements PeerMap
 			peerCount.decrementAndGet();
 			notifyRemove(remotePeer);
 		}
-		notifyOffline(remotePeer);
+		notifyOffline(remotePeer, reason);
 		return retVal;
 	}
 

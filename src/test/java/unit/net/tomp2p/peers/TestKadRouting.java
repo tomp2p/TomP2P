@@ -43,12 +43,12 @@ public class TestKadRouting
 		PeerAddress pa4 = new PeerAddress(id4);
 		PeerAddress pa5 = new PeerAddress(id5);
 		PeerAddress pa6 = new PeerAddress(id6);
-		kadRouting.peerOnline(pa1, null);
-		kadRouting.peerOnline(pa2, null);
-		kadRouting.peerOnline(pa3, null);
-		kadRouting.peerOnline(pa4, null);
-		kadRouting.peerOnline(pa5, null);
-		kadRouting.peerOnline(pa6, null);
+		kadRouting.peerFound(pa1, null);
+		kadRouting.peerFound(pa2, null);
+		kadRouting.peerFound(pa3, null);
+		kadRouting.peerFound(pa4, null);
+		kadRouting.peerFound(pa5, null);
+		kadRouting.peerFound(pa6, null);
 		SortedSet<PeerAddress> pa = kadRouting.closePeers(id, 2);
 		Assert.assertEquals(2, pa.size());
 		Iterator<PeerAddress> iterator = pa.iterator();
@@ -121,7 +121,7 @@ public class TestKadRouting
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i));
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		}
 		SortedSet<PeerAddress> close = kadRouting.closePeers(new Number160(2), 2);
 		Assert.assertEquals(2, close.size());
@@ -137,7 +137,7 @@ public class TestKadRouting
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		}
 		SortedSet<PeerAddress> close = kadRouting.closePeers(new Number160(2), 2);
 		Assert.assertEquals(2, close.size());
@@ -153,7 +153,7 @@ public class TestKadRouting
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		}
 		Assert.assertEquals(200, kadRouting.size());
 		kadRouting.peerOffline(new PeerAddress(new Number160(100)), true);
@@ -169,7 +169,7 @@ public class TestKadRouting
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		}
 		Assert.assertEquals(200, kadRouting.size());
 		new Thread(new Runnable()
@@ -211,7 +211,7 @@ public class TestKadRouting
 			{
 				for (int i = 1; i <= 50; i++)
 				{
-					kadRouting.peerOnline(new PeerAddress(new Number160(i + 1)), null);
+					kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
 				}
 			}
 		}).start();
@@ -222,7 +222,7 @@ public class TestKadRouting
 			{
 				for (int i = 1; i <= 100; i++)
 				{
-					kadRouting.peerOnline(new PeerAddress(new Number160(i + 1)), null);
+					kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
 				}
 			}
 		}).start();
@@ -242,7 +242,7 @@ public class TestKadRouting
 			{
 				for (int i = 1; i <= 5000; i++)
 				{
-					kadRouting.peerOnline(new PeerAddress(new Number160(i + 1)), null);
+					kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
 					if (i - 10 > 1)
 						kadRouting.peerOffline(new PeerAddress(new Number160(i - 10)), true);
 				}
@@ -255,7 +255,7 @@ public class TestKadRouting
 			{
 				for (int i = 1; i <= 5000; i++)
 				{
-					kadRouting.peerOnline(new PeerAddress(new Number160(i + 1)), null);
+					kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
 					if (i - 10 > 1)
 						kadRouting.peerOffline(new PeerAddress(new Number160(i - 10)), true);
 				}
@@ -281,9 +281,9 @@ public class TestKadRouting
 			listAdded.add(r1);
 		}
 		for (PeerAddress r1 : listAdded)
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		for (PeerAddress r1 : listAdded)
-			kadRouting.peerOnline(r1, null);
+			kadRouting.peerFound(r1, null);
 		for (int i = 0; i < 100; i++)
 		{
 			PeerAddress removed = listAdded.get(random.nextInt(i + 1));
@@ -291,7 +291,7 @@ public class TestKadRouting
 				listRemoved.add(removed);
 		}
 		for (PeerAddress r1 : listAdded)
-			kadRouting.peerOnline(r1, r1);
+			kadRouting.peerFound(r1, r1);
 		Assert.assertEquals(320, kadRouting.size());
 		for (PeerAddress r1 : listRemoved)
 			Assert.assertTrue(kadRouting.isPeerRemovedTemporarly(r1));
@@ -322,7 +322,7 @@ public class TestKadRouting
 			{
 				PeerAddress r1 = new PeerAddress(new Number160(rnd));
 				peers.add(r1);
-				kadRouting.peerOnline(r1, null);
+				kadRouting.peerFound(r1, null);
 			}
 			Number160 key = new Number160(rnd);
 			TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(kadRouting

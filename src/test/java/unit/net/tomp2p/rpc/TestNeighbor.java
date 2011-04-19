@@ -30,7 +30,7 @@ public class TestNeighbor
 			sender.listen(2424, 2424);
 			PeerAddress[] pa = createDummyAddress(100);
 			for (int i = 0; i < pa.length; i++)
-				sender.getPeerBean().getPeerMap().peerOnline(pa[i], null);
+				sender.getPeerBean().getPeerMap().peerFound(pa[i], null);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.listen(8088, 8088);

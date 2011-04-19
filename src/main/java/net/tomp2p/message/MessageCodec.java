@@ -40,6 +40,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.TrackerData;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -238,8 +239,44 @@ public class MessageCodec
 					count += buffer2.capacity();
 				}
 				return count;
+			case SET_TRACKER_DATA:
+				count = 1;
+				final Collection<TrackerData> trackerDatas=message.getTrackerData();
+				buffer = ChannelBuffers.buffer(1);
+				buffer.writeByte(trackerDatas.size());
+				buffers.add(buffer);
+				for(TrackerData trackerData:trackerDatas)
+				{
+					PeerAddress peerAddress=trackerData.getPeerAddress();
+					ChannelBuffer buffer2 = writePeerAddress(peerAddress);
+					buffers.add(buffer2);
+					count += buffer2.capacity();
+					if(trackerData.getAttachement()!=null)
+					{
+						ChannelBuffer buffer3 = ChannelBuffers.buffer(5);
+						buffer3.writeByte(1);
+						buffer3.writeInt(trackerData.getLength());
+						buffers.add(buffer3);
+						count += 5;
+						ChannelBuffer buffer4 = ChannelBuffers.wrappedBuffer(trackerData.getAttachement(), trackerData.getOffset(), trackerData.getLength());
+						buffers.add(buffer4);
+						count += buffer4.capacity();
+					}
+					else
+					{
+						ChannelBuffer buffer3 = ChannelBuffers.buffer(1);
+						buffer3.writeByte(0);
+						buffers.add(buffer3);
+						count += 1;
+					}
+				}
+				return count;
 			case CHANNEL_BUFFER:
-				final ChannelBuffer tmpBuffer = message.getPayload();
+				ChannelBuffer tmpBuffer= message.getPayload1();
+				if(tmpBuffer==null)
+					tmpBuffer= message.getPayload2();
+				else
+					message.setPayload1(null);
 				size = tmpBuffer.writerIndex();
 				buffer = ChannelBuffers.buffer(4);
 				buffer.writeInt(size);
@@ -505,6 +542,26 @@ public class MessageCodec
 				for (int i = 0; i < len; i++)
 					neighbors.add(readPeerAddress(buffer));
 				message.setNeighbors0(neighbors);
+				break;
+			case SET_TRACKER_DATA:
+				len = buffer.readUnsignedByte();
+				final Collection<TrackerData> trackerDatas = new ArrayList<TrackerData>(len);
+				for (int i = 0; i < len; i++)
+				{
+					PeerAddress peerAddress = readPeerAddress(buffer);
+					byte[] attachment = null;
+					int offset = 0;
+					int length = 0;
+					byte miniHeader = buffer.readByte();
+					if(miniHeader!=0)
+					{
+						length=buffer.readInt();
+						attachment = new byte[length];
+						buffer.readBytes(attachment);
+					}
+					trackerDatas.add(new TrackerData(peerAddress, message.getSender(), attachment, offset, length));
+				}
+				message.setTrackerData0(trackerDatas);
 				break;
 			case CHANNEL_BUFFER:
 				len = buffer.readInt();

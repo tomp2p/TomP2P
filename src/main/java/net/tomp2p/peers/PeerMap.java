@@ -48,7 +48,7 @@ public interface PeerMap
 	 *        party peers are always second hand and treated as such
 	 * @return True if the neighbor could be added, otherwise false.
 	 */
-	public boolean peerOnline(PeerAddress node, PeerAddress referer);
+	public boolean peerFound(PeerAddress node, PeerAddress referer);
 
 	/**
 	 * Remove a peer from the list. In order to not reappear, the node is put
@@ -129,9 +129,9 @@ public interface PeerMap
 
 	public void removePeerMapChangeListener(PeerMapChangeListener peerMapChangeListener);
 
-	public void addPeerOfflineListener(PeerOfflineListener peerListener);
+	public void addPeerOfflineListener(PeerStatusListener peerListener);
 
-	public void removePeerOfflineListener(PeerOfflineListener peerListener);
+	public void removePeerOfflineListener(PeerStatusListener peerListener);
 
 	/**
 	 * Return all addresses from the neighbor list. The collection is partially

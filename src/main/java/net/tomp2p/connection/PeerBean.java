@@ -34,7 +34,6 @@ public class PeerBean
 	private volatile Storage storage;
 	private volatile TrackerStorage trackerStorage;
 	private volatile Replication replicationStorage;
-	private volatile Replication replicationTracker;
 	private volatile Statistics statistics;
 
 	public PeerBean(KeyPair keyPair)
@@ -101,16 +100,6 @@ public class PeerBean
 	public Replication getReplicationStorage()
 	{
 		return replicationStorage;
-	}
-
-	public void setReplicationTracker(Replication replicationTracker)
-	{
-		this.replicationTracker = replicationTracker;
-	}
-
-	public Replication getReplicationTracker()
-	{
-		return replicationTracker;
 	}
 
 	public void setStatistics(Statistics statistics)

@@ -303,49 +303,4 @@ public class TestStorage
 		storage.close();
 		return size;
 	}
-
-	@Test
-	public void testTracker() throws Exception
-	{
-		final TrackerStorage ts = new TrackerStorage(42L);
-		ts.setTrackerTimoutSeconds(1);
-		final AtomicBoolean cond = new AtomicBoolean(true);
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				for (int i = 0; i < 200; i++)
-				{
-					try
-					{
-						for (int j = 0; j < 200; j++)
-						{
-							Number480 key = new Number480(locationKey, domainKey, new Number160(j));
-							ts.put(key, new Data("test1"), null, false, true);
-						}
-						ts.put(key2, new Data("test12"), null, false, true);
-						ts.put(key3, new Data("test123"), null, false, true);
-						ts.put(key4, new Data("test1234"), null, false, true);
-					}
-					catch (IOException e)
-					{
-						e.printStackTrace();
-					}
-					Utils.sleep(20);
-				}
-				cond.set(false);
-			}
-		}).start();
-		Number480 min = new Number480(locationKey, domainKey, new Number160(0));
-		Number480 max = new Number480(locationKey, domainKey, new Number160(Integer.MAX_VALUE));
-		while (cond.get())
-		{
-			Map<Number480, Data> data = ts.get(min, max);
-			for (Map.Entry<Number480, Data> entry : data.entrySet())
-			{
-				System.out.println("Number: " + entry.getKey() + ", Data: " + entry.getValue());
-			}
-		}
-	}
 }

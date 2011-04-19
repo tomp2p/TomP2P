@@ -48,7 +48,7 @@ public class FutureData extends FutureResponse
 		{
 			if (!setCompletedAndNotify())
 				return;
-			this.buffer = responseMessage.getPayload();
+			this.buffer = responseMessage.getPayload1();
 			// even though the buffer is null, the type can be OK. In that case
 			// an empty message was sent.
 			this.type = responseMessage.getType() == Message.Type.OK ? FutureType.OK

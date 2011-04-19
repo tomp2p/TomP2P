@@ -1,6 +1,9 @@
 package net.tomp2p;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
 
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
@@ -69,5 +72,5 @@ public class Utils2
 		message.setCommand(command);
 		return message;
 	}
-
+	
 }

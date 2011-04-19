@@ -3,24 +3,23 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.storage.Data;
 
 public class ConfigurationTrackerStore extends ConfigurationBase
 {
-	private Data attachement;
+	private byte[] attachement;
 	private TrackerConfiguration trackerConfiguration;
 	private FutureCreate<BaseFuture> futureCreate;
 	// used for peer exchange
 	private int waitBeforeNextSendSeconds=0;
 	
 
-	public ConfigurationTrackerStore setAttachement(Data attachement)
+	public ConfigurationTrackerStore setAttachement(byte[] attachement)
 	{
 		this.attachement = attachement;
 		return this;
 	}
 
-	public Data getAttachement()
+	public byte[] getAttachement()
 	{
 		return attachement;
 	}

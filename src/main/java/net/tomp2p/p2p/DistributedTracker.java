@@ -87,16 +87,15 @@ public class DistributedTracker
 		{
 			TrackerDataResult trackerDataResult = peerBean.getTrackerStorage().getSelection(locationKey, domainKey,
 					trackerConfiguration.getMaxPrimaryTrackers(), null);
-			// Collection<PeerAddress> queueToAsk =
-			// peerBean.getTrackerStorage().getSelectionSecondary(locationKey,
-			// domainKey, Integer.MAX_VALUE, null);
+			Collection<PeerAddress> queueToAsk =
+			peerBean.getTrackerStorage().getSelectionSecondary(locationKey, domainKey, Integer.MAX_VALUE, null);
 			SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
 					.createPeerComparator(stableRandom));
 			for (TrackerData trackerData : trackerDataResult.getPeerDataMap().values())
 			{
 				secondaryQueue.add(trackerData.getPeerAddress());
 			}
-			// secondaryQueue.addAll(queueToAsk);
+			secondaryQueue.addAll(queueToAsk);
 			startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage, knownPeers,
 					futureTracker, secondaryQueue);
 		}
@@ -252,10 +251,10 @@ public class DistributedTracker
 				PeerAddress next = null;
 				if (primaryTracker.incrementAndGet() <= maxPrimaryTracker)
 				{
-					if (isGet)
+					//if (isGet)
 						next = Utils.pollRandom(queueToAsk, rnd);
-					else
-						next = Utils.pollFirst(queueToAsk);
+					//else
+					//	next = Utils.pollFirst(queueToAsk);
 				}
 				else
 				{

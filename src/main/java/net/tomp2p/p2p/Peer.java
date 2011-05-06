@@ -159,7 +159,7 @@ public class Peer
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
-	final public static int BLOOMFILTER_SIZE = 2880;
+	final public static int BLOOMFILTER_SIZE = 1024;
 
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
@@ -728,11 +728,11 @@ public class Peer
 									portUDP = serverAddress.portUDP();
 								connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP,
 										serverAddress.portTCP(), seenAs.getInetAddress(),
-										connectionConfiguration.getPortNATUDP(),
-										connectionConfiguration.getPortNATTCP());
+										bindings.getOutsideUDPPort(),
+										bindings.getOutsideTCPPort());
 								getPeerBean().setServerPeerAddress(
-										serverAddress.ports(connectionConfiguration.getPortNATUDP(),
-												connectionConfiguration.getPortNATTCP()));
+										serverAddress.ports(bindings.getOutsideUDPPort(),
+												bindings.getOutsideTCPPort()));
 							}
 							getHandshakeRPC().pingTCPProbe(peerAddress);
 							if (futureResponseUDP.isSuccess())
@@ -1193,6 +1193,7 @@ public class Peer
 			Collection<Number160> knownPeers)
 	{
 		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 200);
+		//System.err.println("FP-Rate:"+bloomFilter.expectedFalsePositiveProbability());
 		if (!knownPeers.isEmpty())
 		{
 			for (Number160 number160 : knownPeers)

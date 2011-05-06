@@ -33,9 +33,7 @@ public class ConnectionConfiguration
 	//bandwith shaping in bytes/s
 	private long readLimit=0;
 	private long writeLimit=0;
-	//NAT
-	private int portNATUDP = defaultPort;
-	private int portNATTCP = defaultPort;
+	
 	private boolean enabledUPNPNAT=true;
 	public int getIdleTCPMillis()
 	{
@@ -167,19 +165,4 @@ public class ConnectionConfiguration
 		return enabledUPNPNAT;
 	}
 
-	public void setPortNATUDP(int portNATUDP) {
-		this.portNATUDP = portNATUDP;
-	}
-
-	public int getPortNATUDP() {
-		return portNATUDP;
-	}
-
-	public void setPortNATTCP(int portNATTCP) {
-		this.portNATTCP = portNATTCP;
-	}
-
-	public int getPortNATTCP() {
-		return portNATTCP;
-	}
 }

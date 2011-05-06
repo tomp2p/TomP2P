@@ -304,7 +304,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		return secondaryTracker.contains(new Number320(locationKey, domainKey));
 	}
 
-	public int getTrackerStoreSize(Number160 locationKey, Number160 domainKey)
+	public int getTrackerStoreSizeMax(Number160 locationKey, Number160 domainKey)
 	{
 		if (isSecondaryTracker(locationKey, domainKey))
 			return TRACKER_SIZE * getSecondaryFactor();

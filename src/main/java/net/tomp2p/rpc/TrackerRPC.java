@@ -190,7 +190,7 @@ public class TrackerRPC extends ReplyHandler
 							+ trackerStorage.size(locationKey, domainKey));
 			}
 			int currentSize = trackerStorage.size(locationKey, domainKey);
-			if (currentSize >= trackerStorage.getTrackerStoreSize(locationKey, domainKey))
+			if (currentSize >= trackerStorage.getTrackerStoreSizeMax(locationKey, domainKey))
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress() + ") locationKey:"

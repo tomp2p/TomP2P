@@ -637,7 +637,7 @@ public class Peer
 	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, final ConfigurationStore config)
 	{
 
-		if (peerConfiguration.isBehindFirewall())
+		if (peerConfiguration.isBehindFirewall() && !bindings.isOutsideAddressSet())
 		{
 			final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
 			FutureDiscover futureDiscover = discover(peerAddresses.iterator().next());

@@ -247,4 +247,9 @@ public class Bindings
 	{
 		return outsideUDPPort;
 	}
+
+	public boolean isOutsideAddressSet()
+	{
+		return outsideAddress!=null;
+	}
 }

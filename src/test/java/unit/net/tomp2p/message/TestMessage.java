@@ -17,6 +17,7 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PEncoderStage1;
 import net.tomp2p.message.TomP2PEncoderStage2;
 import net.tomp2p.message.Message.Command;
+import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -151,43 +152,25 @@ public class TestMessage
 	@Test
 	public void testEncodeDecode6() throws Exception
 	{
-		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
-		DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
-		// encode
-		Message m1 = Utils2.createDummyMessage(true, true);
-		m1.setType(Message.Type.DENIED);
-		IntermediateMessage im = (IntermediateMessage) new TomP2PEncoderStage1().encode(dchc, dc, m1);
-		ChannelBuffer buffer = (ChannelBuffer)new TomP2PEncoderStage2().encode(dchc, dc, im);
-		// decode
-		Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
-		// test
-		Message m2 = (Message) obj;
-		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender().isFirewalledTCP());
-		Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender().isFirewalledUDP());
-		compareMessage(m1, m2);
-	}
-
-	@Test
-	public void testEncodeDecode7() throws Exception
-	{
-		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
-		DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
-		// encode
-		Message m1 = Utils2.createDummyMessage(true, false);
-		m1.setType(Message.Type.DENIED);
-		IntermediateMessage im = (IntermediateMessage) new TomP2PEncoderStage1().encode(dchc, dc, m1);
-		ChannelBuffer buffer = (ChannelBuffer)new TomP2PEncoderStage2().encode(dchc, dc, im);
-		// decode
-		Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
-		// test
-		Message m2 = (Message) obj;
-		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender().isFirewalledTCP());
-		Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender().isFirewalledUDP());
-		compareMessage(m1, m2);
+		for(int i=0;i<8;i++)
+		{
+			// setup
+			SocketAddress sock = new InetSocketAddress(2000);
+			DummyChannel dc = new DummyChannel(sock);
+			DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
+			// encode and test for is firewallend and ipv4
+			Message m1 = Utils2.createDummyMessage((i & 1) > 0, (i & 2) > 0, (i & 4) > 0);
+			m1.setType(Message.Type.DENIED);
+			IntermediateMessage im = (IntermediateMessage) new TomP2PEncoderStage1().encode(dchc, dc, m1);
+			ChannelBuffer buffer = (ChannelBuffer)new TomP2PEncoderStage2().encode(dchc, dc, im);
+			// decode
+			Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
+			// test
+			Message m2 = (Message) obj;
+			Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender().isFirewalledTCP());
+			Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender().isFirewalledUDP());
+			compareMessage(m1, m2);
+		}
 	}
 
 	/**
@@ -328,7 +311,13 @@ public class TestMessage
 		PeerAddress n2 = new PeerAddress(b2);
 		PeerAddress n3 = new PeerAddress(b3);
 		PeerAddress n4 = new PeerAddress(b4);
-		PeerMap routingMap = new PeerMapKadImpl(b1, 2,100,60*1000,3,new int[]{});
+		
+		P2PConfiguration conf= new P2PConfiguration();
+		conf.setBagSize(2);
+		conf.setCacheSize(100);
+		conf.setCacheTimeoutMillis(60*1000);
+		conf.setMaxNrBeforeExclude(3);
+		PeerMap routingMap = new PeerMapKadImpl(b1, conf);
 		final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(routingMap
 				.createPeerComparator(b3));
 		queue.add(n1);

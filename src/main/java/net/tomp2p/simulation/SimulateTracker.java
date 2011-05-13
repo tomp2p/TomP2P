@@ -50,18 +50,16 @@ public class SimulateTracker
 
 	public static void main(String[] args) throws Exception
 	{
-		SimulateTracker simulateTracker = new SimulateTracker();
-		// simulateTracker.simulationParametersPull(1, 15, 1, 10, 1, 3);
-		// simulateTracker.simulationParametersPrimary(1, 15, 1, 10, 1, 3);
-		// simulateTracker.simulationParametersPEX(1, 15, 1, 10, 1, 3);
-		// simulateTracker.simulationParametersPullPex(1, 15, 1, 10, 1, 3);
+		SimpleBloomFilter<String> s=new SimpleBloomFilter<String>(1024,100);
 		
+		System.err.println(s.expectedFalsePositiveProbability());
+		SimulateTracker simulateTracker = new SimulateTracker();	
 		for(int j=50;j<=450;j+=200)
 		{
 			for(int i=1;i<5;i++)
 			{
 				simulateTracker.simulationParametersPEXChurn("pex-"+j+"-"+i, (int) (i*0.1*j), j);
-				simulateTracker.simulationParametersPrimaryChurn("primary-"+j+"-"+i, (int) (i*0.1*j), j, false);
+				simulateTracker.simulationParametersPrimaryChurn("primary-"+j+"-"+i, (int) (i*0.1*j), j);
 				simulateTracker.simulationParametersPullChurn("pull_bf-"+j+"-"+i, (int) (i*0.1*j), j, true);
 				simulateTracker.simulationParametersPullChurn("pull-"+j+"-"+i, (int) (i*0.1*j), j, false);
 			}
@@ -156,7 +154,7 @@ public class SimulateTracker
 				ctg.setDomain(domain);
 				ctg.setRoutingConfiguration(rc);
 				ctg.setTrackerConfiguration(tc);
-				ctg.setUseSecondaryTrackers(true);
+				//ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
 				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
@@ -170,7 +168,6 @@ public class SimulateTracker
 				System.err.println("size1x: " + nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain));
 				nodes[300+i].getTracker().startExchange(trackerID, domain);
 			}
-			Utils.sleep(10000);
 			// start measurements here!!!
 			master.getConnectionHandler().customLoggerMessage("$$$$$$$$$$$$$-Measure from here, the thing above is making everything ready");
 			goOffline(offline, nodes);
@@ -197,7 +194,7 @@ public class SimulateTracker
 						ctg.setDomain(domain);
 						ctg.setRoutingConfiguration(rc);
 						ctg.setTrackerConfiguration(tc);
-						ctg.setUseSecondaryTrackers(true);
+						//ctg.setUseSecondaryTrackers(true);
 						FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
 						list.add(ft);
 						repeat = true;
@@ -238,7 +235,7 @@ public class SimulateTracker
 	Number160 trackerID = new Number160(rnd);
 	Number160 masterID = new Number160(rnd);
 
-	public void simulationParametersPrimaryChurn(String name, int offline, int swarmSize, boolean bf) throws Exception
+	public void simulationParametersPrimaryChurn(String name, int offline, int swarmSize) throws Exception
 	{
 		Peer master = null;
 		try
@@ -259,7 +256,7 @@ public class SimulateTracker
 				ctg.setDomain(domain);
 				ctg.setRoutingConfiguration(rc);
 				ctg.setTrackerConfiguration(tc);
-				ctg.setUseSecondaryTrackers(true);
+				//ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
 				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
@@ -291,19 +288,10 @@ public class SimulateTracker
 						ctg.setDomain(domain);
 						ctg.setRoutingConfiguration(rc);
 						ctg.setTrackerConfiguration(tc);
-						ctg.setUseSecondaryTrackers(true);
-						if (!bf)
-						{
-							FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
-							list.add(ft);
-						}
-						else
-						{
-							Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
-								.knownPeers(trackerID, domain);
-							FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
-							list.add(ft);
-						}
+						//ctg.setUseSecondaryTrackers(true);
+						FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
+						list.add(ft);
+						
 						repeat = true;
 					}
 				}
@@ -345,13 +333,12 @@ public class SimulateTracker
 			List<FutureTracker> list = new ArrayList<FutureTracker>();
 			for (int i = 0; i < swarmSize; i++)
 			{
-				TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 35, -1, 5);
+				TrackerConfiguration tc = new TrackerConfiguration(1, 1, 30, 35, -1, 5);
 				RoutingConfiguration rc = new RoutingConfiguration(20, 1, 1);
 				ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();
 				ctg.setDomain(domain);
 				ctg.setRoutingConfiguration(rc);
 				ctg.setTrackerConfiguration(tc);
-				ctg.setUseSecondaryTrackers(true);
 				Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
 						.knownPeers(trackerID, domain);
 				FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
@@ -360,11 +347,50 @@ public class SimulateTracker
 			for (FutureTracker ft : list)
 				ft.awaitUninterruptibly();
 			list.clear();
+			for (int i = 0; i < swarmSize; i++)
+			{
+				System.err.println("size1x: " + nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain));
+			}
 			// start measurements here!!!
 			master.getConnectionHandler().customLoggerMessage("$$$$$$$$$$$$$-Measure from here, the thing above is making everything ready");
 			goOffline(offline, nodes);
-			goOnline(offline, master, nodes, 1);
+			goOnline(offline, master, nodes, 2);
 			// now check if we should add a new neighbor
+			for (int i = 0; i < swarmSize; i++)
+			{
+				int size = nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain);
+				if (size < 35)
+				{
+					System.err.println("size2: ("+i+")"
+							+ nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain));
+					TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 35 - size, -1, 20);
+					//RoutingConfiguration rc = new RoutingConfiguration(20, 1, 1);
+					ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();
+					ctg.setDomain(domain);
+					ctg.setRoutingConfiguration(null);
+					ctg.setTrackerConfiguration(tc);
+					ctg.setUseSecondaryTrackers(true);
+					if(bf)
+					{
+						Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
+							.knownPeers(trackerID, domain);
+						FutureTracker ft = nodes[300 + i].getFromTrackerCreateBloomfilter2(trackerID, ctg, tmp1);
+						list.add(ft);
+					}
+					else
+					{
+						FutureTracker ft = nodes[300 + i].getFromTracker(trackerID, ctg, new EmptySet<Number160>());
+						list.add(ft);
+					}
+				}
+			}
+			//List<Set<Number160>> known = new ArrayList<Set<Number160>>();
+			for (FutureTracker ft : list)
+			{
+				ft.awaitUninterruptibly();
+				//known.add(ft.getKnownPeers());
+			}
+			list.clear();
 			boolean repeat=true;
 			while(repeat)
 			{
@@ -374,15 +400,15 @@ public class SimulateTracker
 					int size = nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain);
 					if (size < 35)
 					{
-						System.err.println("size2: "
+						System.err.println("size2: ("+i+")"
 								+ nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain));
-						TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 35 - size, -1, 20);
-						//RoutingConfiguration rc = new RoutingConfiguration(20, 1, 1);
+						TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 35 - size, -1, 5);
+						RoutingConfiguration rc = new RoutingConfiguration(20, 1, 1);
 						ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();
 						ctg.setDomain(domain);
-						ctg.setRoutingConfiguration(null);
+						ctg.setRoutingConfiguration(rc);
 						ctg.setTrackerConfiguration(tc);
-						ctg.setUseSecondaryTrackers(true);
+						//ctg.setUseSecondaryTrackers(true);
 						if(bf)
 						{
 							Collection<Number160> tmp1 = nodes[300 + i].getPeerBean().getTrackerStorage()
@@ -444,14 +470,17 @@ public class SimulateTracker
 					nodes[300 + i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 			}
 			// online again
-			RoutingConfiguration rc = new RoutingConfiguration(20, 1, 20, 1);
-			TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 0, 20, maxPrimaryTracker);
-			ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
-			cts.setDomain(domain);
-			cts.setRoutingConfiguration(rc);
-			cts.setTrackerConfiguration(tc);
-			// nodes[300+i].getPeerBean().getTrackerStorage().setFillPrimaryStorageFast(true);
-			nodes[300 + i].addToTracker(trackerID, cts).awaitUninterruptibly();
+			//while(nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain)<35)
+			{
+				RoutingConfiguration rc = new RoutingConfiguration(20, 1, 20, 1);
+				TrackerConfiguration tc = new TrackerConfiguration(1, 1, 20, 0, 20, maxPrimaryTracker);
+				ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
+				cts.setDomain(domain);
+				cts.setRoutingConfiguration(rc);
+				cts.setTrackerConfiguration(tc);
+				nodes[300 + i].addToTracker(trackerID, cts).awaitUninterruptibly();
+			}
+			System.err.println("size2x ("+i+"):"+nodes[300 + i].getPeerBean().getTrackerStorage().size(trackerID, domain));
 		}
 	}
 	

@@ -313,9 +313,6 @@ public class DistributedTracker
 					// a tracker, we know that this tracker is alive and
 					// serving, so add it to the primary list
 					PublicKey pub = futureResponse.getResponse().getPublicKey();
-					// TODO, deal with meta data (attachment)
-					peerBean.getTrackerStorage().put(locationKey, domainKey,
-							futureResponse.getRequest().getRecipient(), pub, null);
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
 							atLeastEntriesFromTrackers, isGet);

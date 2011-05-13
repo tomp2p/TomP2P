@@ -141,14 +141,14 @@ public class ConnectionHandler
 		PeerAddress self;
 		if (outsideAddress != null)
 		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), true);
 		}
 		else
 		{
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), false);
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);
@@ -197,7 +197,7 @@ public class ConnectionHandler
 	{
 		parent.childConnections.add(this);
 		this.connectionBean = parent.connectionBean;
-		PeerAddress self = parent.getPeerBean().getServerPeerAddress().copyWithDifferentId(id);
+		PeerAddress self = parent.getPeerBean().getServerPeerAddress().changePeerId(id);
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);

@@ -230,14 +230,14 @@ public class DispatcherRequest extends SimpleChannelHandler
 		PeerAddress serverAddress = peerBean.getServerPeerAddress();
 		if (serverAddress.isFirewalledUDP() && ctx.getChannel() instanceof DatagramChannel)
 		{
-			PeerAddress newServerAddress = serverAddress.notFirewalledUDP();
+			PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
 			peerBean.setServerPeerAddress(newServerAddress);
 			for (PeerListener listener : listeners)
 				listener.serverAddressChanged(newServerAddress);
 		}
 		else if (serverAddress.isFirewalledTCP() && !(ctx.getChannel() instanceof DatagramChannel))
 		{
-			PeerAddress newServerAddress = serverAddress.notFirewalledTCP();
+			PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
 			peerBean.setServerPeerAddress(newServerAddress);
 			for (PeerListener listener : listeners)
 				listener.serverAddressChanged(newServerAddress);

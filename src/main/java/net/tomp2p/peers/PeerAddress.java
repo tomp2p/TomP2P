@@ -36,11 +36,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	final private static int NET6 = 1;
 	final private static int FIREWALL_UDP = 2;
 	final private static int FIREWALL_TCP = 4;
-	// final private static int RESERVED_1 = 8;
-	// final private static int RESERVED_2 = 16;
-	// final private static int RESERVED_3 = 32;
-	// final private static int RESERVED_4 = 64;
-	// final private static int RESERVED_5 = 128;
+	final private static int PRESET_IPv4 = 8;
+	// final private static int RESERVED_1 = 16;
+	// final private static int RESERVED_2 = 32;
+	// final private static int RESERVED_3 = 64;
+	// final private static int RESERVED_4 = 128;
 	final private static long serialVersionUID = -1316622724169272306L;
 	final private Number160 id;
 	// a peer can change its IP, so this is not final.
@@ -51,6 +51,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	final private boolean net6;
 	final private boolean firewalledUDP;
 	final private boolean firewalledTCP;
+	final private boolean presetIPv4;
 	// we can make the hash final as it never changes, and this class is used
 	// multiple times in maps. A new peer is always added to the peermap, so
 	// making this final saves CPU time. The maps used are removedPeerCache,
@@ -108,6 +109,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.net6 = (types & NET6) > 0;
 		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
 		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		this.presetIPv4 = (types & PRESET_IPv4) > 0;
 		offset++;	
 		// get the port for UDP and TCP
 		this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
@@ -152,6 +154,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.net6 = (types & NET6) > 0;
 		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
 		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		this.presetIPv4 = (types & PRESET_IPv4) > 0;
 		offsetSocketAddress++;
 		// get the peer ID
 		byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -210,7 +213,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	 * @param portUDP
 	 *            The udp port how to reach the peer
 	 */
-	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,	boolean firewalledUDP, boolean firewalledTCP)
+	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP,	boolean firewalledUDP, boolean firewalledTCP, boolean presetIPv4)
 	{
 		this.id = id;
 		this.address = address;
@@ -220,6 +223,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.net6 = address instanceof Inet6Address;
 		this.firewalledUDP = firewalledUDP;
 		this.firewalledTCP = firewalledTCP;
+		this.presetIPv4 = presetIPv4;
 		// unused here
 		this.offset = -1;
 		this.readBytes = -1;
@@ -227,7 +231,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 
 	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP)
 	{
-		this(id, address, portTCP, portUDP, false, false);
+		this(id, address, portTCP, portUDP, false, false, false);
 	}
 
 	public PeerAddress(Number160 id, InetSocketAddress inetSocketAddress)
@@ -242,7 +246,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 
 	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP, byte optionType)
 	{
-		this(id, address, portTCP, portUDP, isFirewalledUDP(optionType), isFirewalledTCP(optionType));
+		this(id, address, portTCP, portUDP, isFirewalledUDP(optionType), isFirewalledTCP(optionType), isPresetIPv4(optionType));
 	}
 
 	/**
@@ -408,6 +412,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		return ((type & 0xff) & FIREWALL_UDP) > 0;
 	}
+	
+	public static boolean isPresetIPv4(int type)
+	{
+		return ((type & 0xff) & PRESET_IPv4) > 0;
+	}
 
 	public static int expectedLength(int type)
 	{
@@ -485,29 +494,39 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		return !net6;
 	}
-
-	public PeerAddress notFirewalledUDP()
+	
+	public boolean isPresetIPv4()
 	{
-		return new PeerAddress(id, address, portTCP, portUDP, false, firewalledTCP);
+		return presetIPv4;
 	}
 
-	public PeerAddress notFirewalledTCP()
+	public PeerAddress changeFirewalledUDP(boolean status)
 	{
-		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, false);
+		return new PeerAddress(id, address, portTCP, portUDP, status, firewalledTCP, presetIPv4);
 	}
 
-	public PeerAddress ports(int portUDP, int portTCP)
+	public PeerAddress changeFirewalledTCP(boolean status)
 	{
-		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP);
+		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, status, presetIPv4);
 	}
 
+	public PeerAddress changePorts(int portUDP, int portTCP)
+	{
+		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP, presetIPv4);
+	}
+
+	public PeerAddress changePeerId(Number160 id2)
+	{
+		return new PeerAddress(id2, address, portTCP, portUDP, firewalledUDP, firewalledTCP, presetIPv4);
+	}
+	
+	public PeerAddress changePresetIPv4(boolean status)
+	{
+		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP, status);
+	}
+	
 	public int getSocketAddressSize()
 	{
 		return (address instanceof Inet4Address)? SIZE_IP_SOCKv4 : SIZE_IP_SOCKv6;
-	}
-
-	public PeerAddress copyWithDifferentId(Number160 id2)
-	{
-		return new PeerAddress(id2, address, portTCP, portUDP, firewalledUDP, firewalledTCP);
 	}
 }

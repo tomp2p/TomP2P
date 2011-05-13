@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
@@ -49,7 +50,7 @@ public class MessageCodec
 {
 	final public static byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 	final public static int MAX_BYTE = 255;
-	final public static int HEADER_SIZE = 60;
+	final public static int HEADER_SIZE = 64;
 	final private static ChannelFactory factory = new ChannelFactory();
 
 	/**
@@ -58,8 +59,8 @@ public class MessageCodec
 	 * 32bit p2p version - 32bit id - 4bit message type - 4bit message name -
 	 * 160bit sender id - 16bit tcp port - 16bit udp port - 160bit recipient id
 	 * - 32bit message length - 16bit (4x4)content type - 8bit network address
-	 * information. It total, the header is of size
-	 * 60 bytes.
+	 * information - 32bit IPv4 address to override address as seen in case of 
+	 * NAT issues. It total, the header is of size 64 bytes.
 	 * 
 	 * 
 	 * @param buffer The Netty buffer to fill
@@ -82,6 +83,12 @@ public class MessageCodec
 		buffer.writeShort((short) content); // 59
 		// options
 		buffer.writeByte(message.getSender().createType()); // 60
+		if(message.getSender().isPresetIPv4() && message.getSender().isIPv4()) {
+			buffer.writeBytes(message.getSender().getInetAddress().getAddress());
+		}
+		else {
+			buffer.writeInt(0);
+		}
 		return buffer;
 	}
 
@@ -442,9 +449,10 @@ public class MessageCodec
 	 * @param sender The sender of the packet, which has been set in the socket
 	 *        class
 	 * @return The partial message, only the header fields are filled
+	 * @throws UnknownHostException 
 	 */
-	public static Message decodeHeader(final ChannelBuffer buffer, InetAddress sender)
-			throws DecoderException
+	public static Message decodeHeader(final ChannelBuffer buffer, final InetAddress sender)
+			throws DecoderException, UnknownHostException
 	{
 		final Message message = new Message();
 		message.setVersion(buffer.readInt());
@@ -467,9 +475,20 @@ public class MessageCodec
 		// identification
 		message.setRealSender(new PeerAddress(senderID, sender, portTCP, portUDP));
 		final byte optionType = buffer.readByte();
-		final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
-				optionType);
-		message.setSender(peerAddress);
+		if(PeerAddress.isPresetIPv4(optionType)) {
+			byte[] me=new byte[4];
+			buffer.readBytes(me);
+			InetAddress senderAsReported=Inet4Address.getByAddress(me);
+			final PeerAddress peerAddress = new PeerAddress(senderID, senderAsReported, portTCP, portUDP,
+					optionType);
+			message.setSender(peerAddress);
+		}
+		else {
+			buffer.skipBytes(4);
+			final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
+					optionType);
+			message.setSender(peerAddress);
+		}
 		return message;
 	}
 

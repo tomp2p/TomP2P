@@ -36,6 +36,7 @@ public class TomP2PEncoderStage1 extends OneToOneEncoder
 			return msg;
 		final Message message = (Message) msg;
 		final List<ChannelBuffer> buffers = new ArrayList<ChannelBuffer>();
+		
 		MessageCodec.encodePayload(message,buffers);
 		// we need to call this before the header to find out the payload length
 		final ChannelBuffer headerBuffer= ChannelBuffers.buffer(MessageCodec.HEADER_SIZE);

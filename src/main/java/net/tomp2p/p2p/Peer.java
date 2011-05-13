@@ -731,7 +731,7 @@ public class Peer
 										bindings.getOutsideUDPPort(),
 										bindings.getOutsideTCPPort());
 								getPeerBean().setServerPeerAddress(
-										serverAddress.ports(bindings.getOutsideUDPPort(),
+										serverAddress.changePorts(bindings.getOutsideUDPPort(),
 												bindings.getOutsideTCPPort()));
 							}
 							getHandshakeRPC().pingTCPProbe(peerAddress);

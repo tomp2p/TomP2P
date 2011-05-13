@@ -93,6 +93,8 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
 			message.setPayload(ChannelBuffers.wrappedBuffer(((SimpleBloomFilter<Number160>) knownPeers).toByteArray()));
+		else
+			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (attachement != null)
@@ -118,6 +120,8 @@ public class TrackerRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
 			message.setPayload(ChannelBuffers.wrappedBuffer(((SimpleBloomFilter<Number160>) knownPeers).toByteArray()));
+		else
+			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
 		if (signMessage)
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		if (expectAttachement)
@@ -150,16 +154,17 @@ public class TrackerRPC extends ReplyHandler
 		Number160 locationKey = message.getKey1();
 		Number160 domainKey = message.getKey2();
 		SimpleBloomFilter<Number160> knownPeers = null;
-		if (message.getPayload1() != null)
-		{
-			ChannelBuffer buffer = message.getPayload1();
-			int length = buffer.writerIndex();
+		if (message.getPayload1() == null)
+			throw new RuntimeException("BF data may be empty but it has to be there.");
+		ChannelBuffer buffer = message.getPayload1();
+		int length = buffer.writerIndex();
+		if(length>0) {
 			knownPeers = new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset(), length);
 		}
 		byte[] attachement = null;
 		if (message.getPayload2() != null)
 		{
-			ChannelBuffer buffer = message.getPayload2();
+			buffer = message.getPayload2();
 			attachement = new byte[buffer.readableBytes()];
 			// make a copy of the attachement
 			buffer.readBytes(attachement);

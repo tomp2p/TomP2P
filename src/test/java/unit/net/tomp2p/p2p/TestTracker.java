@@ -244,7 +244,7 @@ public class TestTracker
 				tmp.remove(pa.getPeerAddress().getID());
 			}
 			ctg.setUseSecondaryTrackers(true);
-			FutureTracker ft2 = nodes[299].getFromTrackerCreateBloomfilter2(trackerID, ctg, ft1.getKnownPeers());
+			FutureTracker ft2 = nodes[299].getFromTracker(trackerID, ctg, ft1.getKnownPeers());
 			ft2.awaitUninterruptibly();
 			System.err.println("Reason: "+ft2.getFailedReason());
 			Assert.assertEquals(true, ft2.isSuccess());

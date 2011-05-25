@@ -147,7 +147,10 @@ public class DistributedTracker
 						@Override
 						public void operationComplete(FutureResponse future) throws Exception
 						{
-							logger.debug("found the following peers: " + future.getResponse().getTrackerData());
+							if(future.isSuccess())
+								logger.debug("found the following peers: " + future.getResponse().getTrackerData());
+							else
+								logger.debug("failed to find peers: " + future.getFailedReason());
 						}
 					});
 				}

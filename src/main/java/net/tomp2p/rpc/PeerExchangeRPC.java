@@ -15,7 +15,6 @@
  */
 package net.tomp2p.rpc;
 
-import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,7 +98,6 @@ public class PeerExchangeRPC extends ReplyHandler
 		Collection<TrackerData> tmp = message.getTrackerData();
 		Number160 locationKey = message.getKey1();
 		Number160 domainKey = message.getKey2();
-		PublicKey publicKey = message.getPublicKey();
 		Collection<Number160> removedKeys = message.getKeys();
 		if (tmp != null && tmp.size() > 0 && locationKey != null && domainKey != null)
 		{

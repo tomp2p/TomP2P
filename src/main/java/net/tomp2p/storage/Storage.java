@@ -86,23 +86,6 @@ public abstract class Storage implements Digest
 	public abstract boolean updateResponsibilities(Number160 key, Number160 closest);
 
 	public abstract Collection<Number480> storedDirectReplication();
-	
-	public Map<Number160, Data> get(Collection<Number480> keys)
-	{
-		return get(keys, null);
-	}
-
-	public Map<Number160, Data> get(Collection<Number480> keys, PublicKey publicKey)
-	{
-		Map<Number160, Data> result = new HashMap<Number160, Data>();
-		for (Number480 key : keys)
-		{
-			Data data = get(key);
-			if (data != null && (publicKey==null || publicKey.equals(data.getDataPublicKey())))
-				result.put(key.getContentKey(), data);
-		}
-		return result;
-	}
 
 	public SortedMap<Number480, Data> get(Number320 key)
 	{
@@ -239,16 +222,16 @@ public abstract class Storage implements Digest
 		{
 			if (oldData == null)
 				return true;
-			else if (oldData.getDataPublicKey() == null)
+			else if (oldData.getPublicKey() == null)
 				return true;
 			else
 			{
-				if (oldData.getDataPublicKey().equals(newData.getDataPublicKey()))
+				if (oldData.getPublicKey().equals(newData.getPublicKey()))
 					return true;
 			}
 		}
 		// we cannot protect, but maybe we have the rigth public key
-		return foreceOverrideEntry(key.getContentKey(), newData.getDataPublicKey());
+		return foreceOverrideEntry(key.getContentKey(), newData.getPublicKey());
 	}
 
 	static boolean isMine(Number160 key, PublicKey publicKey)

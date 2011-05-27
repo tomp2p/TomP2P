@@ -6,19 +6,12 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.ConcurrentModificationException;
-import java.util.Map;
 import java.util.SortedMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import junit.framework.Assert;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
-import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
-import net.tomp2p.storage.StorageMemory;
-import net.tomp2p.utils.Utils;
 
 import org.junit.After;
 import org.junit.Before;
@@ -27,7 +20,6 @@ import org.junit.Test;
 public class TestStorage
 {
 	final private static Number160 locationKey = new Number160(10);
-	final private static Number160 locationKey2 = new Number160(11);
 	final private static Number160 domainKey = new Number160(20);
 	final private static Number160 content1 = new Number160(50);
 	final private static Number160 content2 = new Number160(60);
@@ -218,43 +210,6 @@ public class TestStorage
 		storage.updateResponsibilities(content1, domainKey);
 		storage.updateResponsibilities(content2, locationKey);
 		Assert.assertEquals(domainKey, storage.findResponsiblePeerID(content1));
-		storage.close();
-	}
-
-	@Test
-	public void testPublicKeyEntry() throws Exception
-	{
-		testPublicKeyEntry(new StorageDisk(DIR));
-		testPublicKeyEntry(new StorageMemory());
-	}
-
-	private void testPublicKeyEntry(Storage storage) throws Exception
-	{
-		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
-		KeyPair pair1 = gen.generateKeyPair();
-		KeyPair pair2 = gen.generateKeyPair();
-		store(storage);
-		Data data1 = new Data("test4");
-		data1.setProtectedEntry(true);
-		data1.signAndSetPublicKey(pair1);
-		boolean result1 = storage.put(key3, data1, pair1.getPublic(), false, false);
-		Assert.assertEquals(true, result1);
-		//
-		Data data2 = new Data("test4");
-		data2.setProtectedEntry(true);
-		data2.signAndSetPublicKey(pair2);
-		//
-		boolean result2 = storage.put(key3, data2, pair2.getPublic(), false, false);
-		Assert.assertEquals(false, result2);
-		//
-		Data data3 = new Data("test5");
-		data3.setProtectedEntry(true);
-		data3.signAndSetPublicKey(pair1);
-		boolean result3 = storage.put(key3, data3, pair1.getPublic(), false, false);
-		Assert.assertEquals(true, result3);
-		//
-		Data result = storage.get(key3);
-		Assert.assertEquals("test5", result.getObject());
 		storage.close();
 	}
 

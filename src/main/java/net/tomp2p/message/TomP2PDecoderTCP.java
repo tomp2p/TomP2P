@@ -14,8 +14,11 @@
  * the License.
  */
 package net.tomp2p.message;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.Signature;
+
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -40,6 +43,9 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	// This var keeps the state of the decoding. If null, header not complete,
 	// if not null, header is complete
 	private volatile Message message = null;
+	private volatile byte[] rawHeader = new byte[MessageCodec.HEADER_SIZE];
+	private volatile Signature signature = null;
+	private volatile int step = 0;
 
 	public TomP2PDecoderTCP()
 	{
@@ -52,41 +58,105 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	}
 
 	@Override
-	protected Object decode(final ChannelHandlerContext ctx, final Channel channel,
-			final ChannelBuffer buffer) throws Exception
+	protected Object decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer)
+			throws Exception
 	{
-		//read header if possible and not already read
+		if (buffer.readableBytes() > maxMessageSize)
+		{
+			throw new DecoderException("Message size larger than " + maxMessageSize);
+		}
+		// read header if possible and not already read
 		if (message == null && buffer.readableBytes() >= MessageCodec.HEADER_SIZE)
 		{
-			//we need to backup the reader index, since read data may vanish.
+			// in case we want to check the signature, we need to keep the
+			// header for a while
+			buffer.getBytes(buffer.readerIndex(), rawHeader);
+			// we need to backup the reader index, since read data may vanish.
 			buffer.markReaderIndex();
 			final SocketAddress sa = channel.getRemoteAddress();
 			// System.err.println("tcp decoder"+sa);
 			message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) sa).getAddress());
-			if (message.getContentLength() + MessageCodec.HEADER_SIZE > maxMessageSize)
-				throw new DecoderException("Messag too large :"
-						+ (message.getContentLength() + MessageCodec.HEADER_SIZE)
-						+ " allowed are: " + maxMessageSize);
 			if (logger.isDebugEnabled())
 				logger.debug("got header in decoder " + message);
-			//set that we did not read data, otherwise it gets lost.
-			buffer.resetReaderIndex();
+			// set that we did not read data, otherwise it gets lost.
+			if (!message.hasContent())
+			{
+				return cleanupAndReturnMessage();
+			}
 		}
-		
-		if (message != null && message.getContentLength() == 0)
+		// go for the content. Since we don't have the length anymore, we decide
+		// on the fly when we are finished
+		if (message != null && message.hasContent())
 		{
-			//skip the header, since we read it
-			buffer.skipBytes(MessageCodec.HEADER_SIZE);
-			return cleanupAndReturnMessage();
-		}
-		else if (message != null && buffer.readableBytes() >= message.getContentLength()+MessageCodec.HEADER_SIZE)
-		{
-			//skip the header, since we read it
-			buffer.skipBytes(MessageCodec.HEADER_SIZE);
-			MessageCodec.decodePayload(message.getContentType1(), buffer, message);
-			MessageCodec.decodePayload(message.getContentType2(), buffer, message);
-			MessageCodec.decodePayload(message.getContentType3(), buffer, message);
-			MessageCodec.decodePayload(message.getContentType4(), buffer, message);
+			int readerIndex = buffer.readerIndex();
+			if (step == 0 && !MessageCodec.decodePayload(message.getContentType1(), buffer, message))
+			{
+				buffer.readerIndex(readerIndex);
+				return null;
+			}
+			else if (step == 0)
+			{
+				step++;
+				if (message.isHintSign())
+				{
+					signature = Signature.getInstance("SHA1withDSA");
+					signature.initVerify(message.getPublicKey());
+					signature.update(rawHeader);
+					int read = buffer.readerIndex() - readerIndex;
+					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				}
+			}
+
+			if (step == 1 && !MessageCodec.decodePayload(message.getContentType2(), buffer, message))
+			{
+				buffer.readerIndex(readerIndex);
+				return null;
+			}
+			else if (step == 1)
+			{
+				step++;
+				if (signature != null)
+				{
+					int read = buffer.readerIndex() - readerIndex;
+					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				}
+			}
+
+			if (step == 2 && !MessageCodec.decodePayload(message.getContentType3(), buffer, message))
+			{
+				buffer.readerIndex(readerIndex);
+				return null;
+			}
+			else if (step == 2)
+			{
+				step++;
+				if (signature != null)
+				{
+					int read = buffer.readerIndex() - readerIndex;
+					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				}
+			}
+			if (step == 3 && !MessageCodec.decodePayload(message.getContentType4(), buffer, message))
+			{
+				buffer.readerIndex(readerIndex);
+				return null;
+			}
+			else if (step == 3)
+			{
+				step++;
+				if (signature != null)
+				{
+					int read = buffer.readerIndex() - readerIndex;
+					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				}
+			}
+
+			if (step == 4 && signature != null && !MessageCodec.decodeSignature(signature, message, buffer))
+			{
+				buffer.readerIndex(readerIndex);
+				return null;
+			}
+
 			return cleanupAndReturnMessage();
 		}
 		else
@@ -96,8 +166,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	}
 
 	@Override
-	public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e)
-			throws Exception
+	public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception
 	{
 		if (logger.isDebugEnabled())
 			e.getCause().printStackTrace();
@@ -134,4 +203,5 @@ public class TomP2PDecoderTCP extends FrameDecoder
 		tmp.finished();
 		return tmp;
 	}
+
 }

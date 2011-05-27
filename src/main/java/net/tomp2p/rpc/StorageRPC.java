@@ -271,7 +271,6 @@ public class StorageRPC extends ReplyHandler
 		final Number160 locationKey = message.getKey1();
 		final Number160 domainKey = message.getKey2();
 		final Collection<Number160> contentKeys = message.getKeys();
-		final PublicKey publicKey = message.getPublicKey();
 		final Map<Number480, Data> result;
 		if (contentKeys != null)
 		{
@@ -282,8 +281,7 @@ public class StorageRPC extends ReplyHandler
 				Data data = peerBean.getStorage().get(key);
 				if (data != null)
 				{
-					if (publicKey == null || publicKey.equals(data.getDataPublicKey()))
-						result.put(key, data);
+					result.put(key, data);
 				}
 			}
 		}

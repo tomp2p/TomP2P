@@ -1,6 +1,8 @@
 package net.tomp2p.message;
 
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelConfig;
@@ -11,6 +13,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 public class DummyChannel implements Channel
 {
 	private final SocketAddress remoteAddress;
+	List<Object> objects=new ArrayList<Object>();
 
 	public DummyChannel(SocketAddress remoteAddress)
 	{
@@ -164,14 +167,14 @@ public class DummyChannel implements Channel
 	@Override
 	public ChannelFuture write(Object message)
 	{
-		// TODO Auto-generated method stub
+		objects.add(message);
 		return null;
 	}
 
 	@Override
 	public ChannelFuture write(Object message, SocketAddress remoteAddress)
 	{
-		// TODO Auto-generated method stub
+		objects.add(message);
 		return null;
 	}
 
@@ -180,5 +183,9 @@ public class DummyChannel implements Channel
 	{
 		// TODO Auto-generated method stub
 		return 0;
+	}
+	public List<Object> getObjects()
+	{
+		return objects;
 	}
 }

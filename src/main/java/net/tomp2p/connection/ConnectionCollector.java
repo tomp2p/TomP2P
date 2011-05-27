@@ -20,15 +20,15 @@ import java.util.concurrent.Semaphore;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
-import net.tomp2p.message.TomP2PEncoderStage1;
-import net.tomp2p.message.TomP2PEncoderStage2;
-import net.tomp2p.utils.GlobalTrafficShapingHandler;
+import net.tomp2p.message.TomP2PEncoderTCP;
+import net.tomp2p.message.TomP2PEncoderUDP;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.bootstrap.Bootstrap;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
@@ -40,6 +40,7 @@ import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,8 +58,6 @@ public class ConnectionCollector
 	private boolean disposeUDP = false;
 	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
 	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
-	final private static ChannelHandler encoder1 = new TomP2PEncoderStage1();
-	final private static ChannelHandler encoder2 = new TomP2PEncoderStage2();
 	final private Semaphore semaphoreUDPMessages;
 	final private MySemaphoreTCP semaphoreTCPMessages;
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionCollector.class);
@@ -66,12 +65,12 @@ public class ConnectionCollector
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
 	final private ExecutionHandler executionHandlerSender;
-	final private GlobalTrafficShapingHandler globalTrafficShapingHandler;
+	final private MessageLogger messageLoggerFilter;
 
 	public ConnectionCollector(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
 			ExecutionHandler executionHandlerSender,
-			GlobalTrafficShapingHandler globalTrafficShapingHandler)
+			 MessageLogger messageLoggerFilter)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
@@ -79,7 +78,7 @@ public class ConnectionCollector
 		this.semaphoreTCPMessages = new MySemaphoreTCP(configuration.getMaxOutgoingTCP());
 		this.maxMessageSize = configuration.getMaxMessageSize();
 		this.executionHandlerSender = executionHandlerSender;
-		this.globalTrafficShapingHandler = globalTrafficShapingHandler;
+		this.messageLoggerFilter = messageLoggerFilter;
 	}
 
 	/**
@@ -269,8 +268,7 @@ public class ConnectionCollector
 		bootstrap.setOption("soLinger", 0);
 		// bootstrap.setOption("reuseAddress", true);
 		// bootstrap.setOption("keepAlive", true);
-		setupBootstrap(bootstrap, timeoutHandler, dispatcherReply, new TomP2PDecoderTCP(
-				maxMessageSize));
+		setupBootstrap(bootstrap, timeoutHandler, dispatcherReply, new TomP2PDecoderTCP(maxMessageSize), new TomP2PEncoderTCP(), new ChunkedWriteHandler());
 		return bootstrap.connect(remoteAddress);
 	}
 
@@ -278,7 +276,7 @@ public class ConnectionCollector
 			boolean allowBroadcast)
 	{
 		ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(udpChannelFactory);
-		setupBootstrap(bootstrap, timeoutHandler, replyHandler, new TomP2PDecoderUDP());
+		setupBootstrap(bootstrap, timeoutHandler, replyHandler, new TomP2PDecoderUDP(), new TomP2PEncoderUDP(), null);
 		// enable per default, as we support a broadcast ping to find other
 		// peers.
 		bootstrap.setOption("broadcast", allowBroadcast ? true : false);
@@ -289,18 +287,19 @@ public class ConnectionCollector
 	}
 
 	private void setupBootstrap(Bootstrap bootstrap, ChannelHandler timeoutHandler,
-			ChannelHandler dispatcherReply, ChannelUpstreamHandler decoder)
+			ChannelHandler dispatcherReply, ChannelUpstreamHandler decoder, ChannelDownstreamHandler encoder, ChunkedWriteHandler streamer)
 	{
 		ChannelPipeline pipe = bootstrap.getPipeline();
 		if (timeoutHandler != null)
 			pipe.addLast("timeout", timeoutHandler);
-		pipe.addLast("encoder2", encoder2);
-		pipe.addLast("encoder1", encoder1);
+		if (streamer != null)
+			pipe.addLast("streamer", streamer);
+		pipe.addLast("encoder", encoder);
 		pipe.addLast("decoder", decoder);
+		if (messageLoggerFilter != null)
+			pipe.addLast("loggerUpstream", messageLoggerFilter);
 		if (dispatcherReply != null)
 		{
-			if (globalTrafficShapingHandler.hasLimit())
-				pipe.addLast("trafficShaping", globalTrafficShapingHandler);
 			pipe.addLast("executor", executionHandlerSender);
 			pipe.addLast("reply", dispatcherReply);
 		}

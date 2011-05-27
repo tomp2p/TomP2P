@@ -73,7 +73,7 @@ public class Message
 	private PeerAddress sender;
 	private PeerAddress realSender;
 	private PeerAddress recipient;
-	private int contentLength = 0;
+	private long length = 0;
 	// payload
 	private Collection<PeerAddress> neighbors = null;
 	private int useAtMostNeighbors = -1;
@@ -99,7 +99,6 @@ public class Message
 	private volatile transient long finished = 0;
 	private volatile transient boolean isUDP=true;
 	private volatile transient PrivateKey privateKey;
-	private volatile transient boolean hintDataPublickKey = false;
 	private volatile transient boolean hintSign = false;
 	private volatile transient boolean convertNumber480to160 = false;
 
@@ -313,9 +312,9 @@ public class Message
 	 * 
 	 * @return Length of the payload, if no payload set, returns 0.
 	 */
-	public int getContentLength()
+	public long getLength()
 	{
-		return contentLength;
+		return length;
 	}
 
 	/**
@@ -325,9 +324,9 @@ public class Message
 	 * 
 	 * @param contentLength The length of the payload
 	 */
-	public Message setContentLength(final int contentLength)
+	public Message setLength(final long length)
 	{
-		this.contentLength = contentLength;
+		this.length = length;
 		return this;
 	}
 
@@ -675,7 +674,7 @@ public class Message
 		final StringBuilder sb = new StringBuilder("Message: id=");
 		sb.append(getMessageId());
 		sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString())
-				.append(",l=").append(getContentLength()+MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(
+				.append(",l=").append(getLength()+MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(
 						",r=").append(getRecipient()).append(",k=").append(keys);
 		return sb.toString();
 	}
@@ -729,16 +728,6 @@ public class Message
 		return this;
 	}
 
-	boolean isHintDataPublickKey()
-	{
-		return hintDataPublickKey;
-	}
-
-	void setHintDataPublickKey(boolean hintDataPublickKey)
-	{
-		this.hintDataPublickKey = hintDataPublickKey;
-	}
-
 	public void setHintSign(boolean hintSign)
 	{
 		this.hintSign = hintSign;
@@ -777,5 +766,10 @@ public class Message
 	public boolean isConvertNumber480to160()
 	{
 		return convertNumber480to160;
+	}
+
+	public boolean hasContent()
+	{
+		return contentType1 != Content.EMPTY;
 	}
 }

@@ -19,10 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -774,69 +771,26 @@ public class Peer
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		if (data.isProtectedEntry())
-		{
-			try
-			{
-				data.signAndSetPublicKey(keyPair);
-			}
-			catch (Exception e)
-			{
-				FutureDHT futureDHT = new FutureDHT();
-				futureDHT.setFailed("Error in put " + e);
-				logger.error("Error in put " + e);
-				e.printStackTrace();
-				return futureDHT;
-			}
-		}
 		final Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 		dataMap.put(config.getContentKey(), data);
-		return put0(locationKey, dataMap, config);
+		return put(locationKey, dataMap, config);
 	}
 
 	public FutureDHT put(final Number160 locationKey, final Map<Number160, Data> dataMap,
 			final ConfigurationStore config)
 	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		try
-		{
-			protectEntry(dataMap);
-		}
-		catch (Exception e)
-		{
-			FutureDHT futureDHT = new FutureDHT();
-			futureDHT.setFailed("Error in put " + e);
-			logger.error("Error in put " + e);
-			e.printStackTrace();
-			return futureDHT;
-		}
-		return put(locationKey, dataMap, config);
-	}
-
-	private void protectEntry(Map<Number160, Data> dataMap) throws InvalidKeyException, NoSuchAlgorithmException,
-			SignatureException
-	{
-		for (Data data : dataMap.values())
-			if (data.isProtectedEntry())
-				data.signAndSetPublicKey(keyPair);
-	}
-
-	private FutureDHT put0(final Number160 locationKey, final Map<Number160, Data> dataMap,
-			final ConfigurationStore config)
-	{
 		final FutureDHT futureDHT = getDHT().put(locationKey, config.getDomain(), dataMap,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isStoreIfAbsent(),
 				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate());
-		if (config.getRefreshSeconds() > 0)
+		/*if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
-		}
+		}*/
 		return futureDHT;
 	}
 
-	private ScheduledFuture<?> schedulePut(final Number160 locationKey, Map<Number160, Data> dataMap,
+	/*private ScheduledFuture<?> schedulePut(final Number160 locationKey, Map<Number160, Data> dataMap,
 			final ConfigurationStore config, final FutureDHT futureDHT)
 	{
 		final Collection<Number480> keys = new HashSet<Number480>();
@@ -844,7 +798,6 @@ public class Peer
 		{
 			Number160 contentKey = entry.getKey();
 			Number480 key = new Number480(locationKey, config.getDomain(), contentKey);
-			entry.getValue().setDataPublicKey(keyPair.getPublic());
 			getPeerBean().getStorage().put(key, entry.getValue(), keyPair.getPublic(), config.isStoreIfAbsent(),
 					config.isProtectDomain());
 			keys.add(key);
@@ -866,7 +819,7 @@ public class Peer
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
-	}
+	}*/
 
 	// ADD
 	public FutureDHT add(final Number160 locationKey, final Data data)
@@ -906,22 +859,21 @@ public class Peer
 		final FutureDHT futureDHT = getDHT().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isProtectDomain(),
 				config.isSignMessage(), config.getFutureCreate());
-		if (config.getRefreshSeconds() > 0)
+		/*if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
-		}
+		}*/
 		return futureDHT;
 	}
 
-	private ScheduledFuture<?> scheduleAdd(final Number160 locationKey, Collection<Data> dataCollection,
+	/*private ScheduledFuture<?> scheduleAdd(final Number160 locationKey, Collection<Data> dataCollection,
 			final ConfigurationStore config, final FutureDHT futureDHT)
 	{
 		final Collection<Number480> keys = new HashSet<Number480>();
 		for (Data data : dataCollection)
 		{
 			Number160 contentKey = data.getHash();
-			data.setDataPublicKey(keyPair.getPublic());
 			Number480 key = new Number480(locationKey, config.getDomain(), contentKey);
 			getPeerBean().getStorage().put(key, data, keyPair.getPublic(), config.isStoreIfAbsent(),
 					config.isProtectDomain());
@@ -943,7 +895,7 @@ public class Peer
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
-	}
+	}*/
 
 	// GET
 	public FutureDHT getAll(final Number160 locationKey)

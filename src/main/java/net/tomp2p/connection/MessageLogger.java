@@ -21,66 +21,37 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
 
-import net.tomp2p.message.IntermediateMessage;
 import net.tomp2p.message.Message;
 
-import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MessageLogger
+@Sharable
+public class MessageLogger implements ChannelUpstreamHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(MessageLogger.class);
 	final private PrintWriter pw;
 	final private GZIPOutputStream gz;
 	private boolean open = false;
-	final private ChannelUpstreamHandler channelUpstreamHandler;
-	final private ChannelDownstreamHandler channelDownstreamHandler;
 
 	public MessageLogger(File messageLogger) throws FileNotFoundException, IOException
 	{
 		this.gz = new GZIPOutputStream(new FileOutputStream(messageLogger));
 		this.pw = new PrintWriter(gz);
 		open = true;
-		this.channelUpstreamHandler = new LoggerChannelUpstreamHandler();
-		this.channelDownstreamHandler = new LoggerChannelDownstreamHandler();
 	}
-	@Sharable
-	private class LoggerChannelUpstreamHandler implements ChannelUpstreamHandler
+	
+	@Override
+	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception
 	{
-		@Override
-		public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception
-		{
-			if (e instanceof MessageEvent)
-				messageReceived((MessageEvent) e);
-			ctx.sendUpstream(e);
-		}
-	}
-	@Sharable
-	private class LoggerChannelDownstreamHandler implements ChannelDownstreamHandler
-	{
-		@Override
-		public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception
-		{
-			if (e instanceof MessageEvent)
-				writeRequested((MessageEvent) e);
-			ctx.sendDownstream(e);
-		}
-	}
-
-	public ChannelUpstreamHandler getChannelUpstreamHandler()
-	{
-		return channelUpstreamHandler;
-	}
-
-	public ChannelDownstreamHandler getChannelDownstreamHandler()
-	{
-		return channelDownstreamHandler;
+		if (e instanceof MessageEvent)
+			messageReceived((MessageEvent) e);
+		ctx.sendUpstream(e);
 	}
 
 	public void customMessage(String customMessage)
@@ -102,18 +73,6 @@ public class MessageLogger
 			if (open && e.getMessage() instanceof Message)
 			{
 				pw.println("R:".concat(e.getMessage().toString()));
-				pw.flush();
-			}
-		}
-	}
-
-	private void writeRequested(MessageEvent e) throws Exception
-	{
-		synchronized (pw)
-		{
-			if (open && e.getMessage() instanceof IntermediateMessage)
-			{
-				pw.println("W:".concat(e.getMessage().toString()));
 				pw.flush();
 			}
 		}

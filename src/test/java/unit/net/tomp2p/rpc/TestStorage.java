@@ -125,10 +125,7 @@ public class TestStorage
 			Number320 key=new Number320(new Number160(33), new ShortString("test")
 			.toNumber160());
 			Set<Number480> tofetch = new HashSet<Number480>();
-			tofetch.add(new Number480(key, new Number160(77)));
-			Map<Number160, Data> result = storeRecv.get(tofetch);
-			Assert.assertEquals(result.size(), tofetch.size());
-			Data c = result.get(new Number160(77));
+			Data c = storeRecv.get(new Number480(key, new Number160(77)));
 			for (int i = 0; i < me1.length; i++)
 				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
 			//
@@ -194,11 +191,8 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Set<Number480> tofetch = new HashSet<Number480>();
-			tofetch.add(new Number480(new Number160(33), new ShortString("test")
+			Data c = storeRecv.get(new Number480(new Number160(33), new ShortString("test")
 			.toNumber160(), new Number160(77)));
-			Map<Number160, Data> result = storeRecv.get(tofetch);
-			Assert.assertEquals(result.size(), tofetch.size());
-			Data c = result.get(new Number160(77));
 			for (int i = 0; i < me1.length; i++)
 				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
 			//
@@ -215,11 +209,7 @@ public class TestStorage
 			Collection<Number160> putKeys = fr.getResponse().getKeys();
 			Assert.assertEquals(0, putKeys.size());
 			tofetch = new HashSet<Number480>();
-			tofetch.add(new Number480(new Number160(33), new ShortString("test").toNumber160(),new Number160(88)));
-			result = storeRecv.get(
-					tofetch);
-			Assert.assertEquals(result.size(), tofetch.size());
-			c = result.get(new Number160(88));
+			c = storeRecv.get(new Number480(new Number160(33), new ShortString("test").toNumber160(),new Number160(88)));
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
 		}

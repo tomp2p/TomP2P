@@ -241,7 +241,7 @@ public class StorageMemory extends Storage
 		Data data = dataMap.get(key);
 		if (data != null)
 		{
-			if (force || data.getDataPublicKey() == null || data.getDataPublicKey().equals(publicKey))
+			if (force || data.getPublicKey() == null || data.getPublicKey().equals(publicKey))
 			{
 				removeTimeout(key);
 				removeResponsibility(key.getLocationKey());
@@ -273,7 +273,7 @@ public class StorageMemory extends Storage
 			for (Number480 key : keys)
 			{
 				Data data = dataMap.get(key);
-				if (data.getDataPublicKey() == null || data.getDataPublicKey().equals(publicKey))
+				if (data.getPublicKey() == null || data.getPublicKey().equals(publicKey))
 				{
 					removeTimeout(key);
 					removeResponsibility(key.getLocationKey());

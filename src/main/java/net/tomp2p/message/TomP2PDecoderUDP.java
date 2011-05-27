@@ -14,10 +14,10 @@
  * the License.
  */
 package net.tomp2p.message;
-import static org.jboss.netty.channel.Channels.fireMessageReceived;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.security.Signature;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -32,8 +32,7 @@ import org.jboss.netty.channel.ChannelHandler.Sharable;
 public class TomP2PDecoderUDP implements ChannelUpstreamHandler
 {
 	@Override
-	public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent evt)
-			throws Exception
+	public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent evt) throws Exception
 	{
 		if (!(evt instanceof MessageEvent))
 		{
@@ -42,46 +41,72 @@ public class TomP2PDecoderUDP implements ChannelUpstreamHandler
 		}
 		final MessageEvent e = (MessageEvent) evt;
 		final Object originalMessage = e.getMessage();
-		final Object decodedMessage = decode(ctx, e.getChannel(), originalMessage, e
-				.getRemoteAddress());
-		if (originalMessage == decodedMessage)
+		if (!(originalMessage instanceof ChannelBuffer))
+		{
 			ctx.sendUpstream(evt);
-		else
-			fireMessageReceived(ctx, decodedMessage, e.getRemoteAddress());
+			return;
+		}
+		Message message = decode(ctx, e.getChannel(), (ChannelBuffer) originalMessage, e.getRemoteAddress());
+		if (message != null)
+			Channels.fireMessageReceived(ctx, message, e.getRemoteAddress());
 	}
 
-	private Object decode(final ChannelHandlerContext ctx, final Channel channel, final Object obj,
+	protected Message decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer,
 			final SocketAddress socketAddress) throws Exception
 	{
-		if (!(obj instanceof ChannelBuffer))
-			return obj;
-		final ChannelBuffer buffer = (ChannelBuffer) obj;
-		if (buffer.readableBytes() >= MessageCodec.HEADER_SIZE)
+		if (buffer.readableBytes() < MessageCodec.HEADER_SIZE)
 		{
-			final Message message = MessageCodec.decodeHeader(buffer,
-					((InetSocketAddress) socketAddress).getAddress());
-			//System.err.println("udp decoder"+socketAddress);
-			// set finished time before, as the sender already started its timer
-			message.setUDP();
-			message.finished();
-			if (message.getContentLength() > 0)
+			Channels.fireExceptionCaught(ctx,
+					new DecoderException("did not get all the data expected (1), got " + buffer.readableBytes()));
+			return null;
+		}
+
+		int readerIndex = buffer.readerIndex();
+		final Message message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) socketAddress).getAddress());
+		// set finished time before, as the sender already started its timer
+		message.setUDP();
+		message.finished();
+		if (message.hasContent())
+		{
+			if (!MessageCodec.decodePayload(message.getContentType1(), buffer, message))
 			{
-				if (buffer.readableBytes() >= message.getContentLength())
+				Channels.fireExceptionCaught(ctx, new DecoderException("did not get all the data expected (2), got "
+						+ buffer.readableBytes()));
+				return null;
+			}
+			if (!MessageCodec.decodePayload(message.getContentType2(), buffer, message))
+			{
+				Channels.fireExceptionCaught(ctx, new DecoderException("did not get all the data expected (3), got "
+						+ buffer.readableBytes()));
+				return null;
+			}
+			if (!MessageCodec.decodePayload(message.getContentType3(), buffer, message))
+			{
+				Channels.fireExceptionCaught(ctx, new DecoderException("did not get all the data expected (4), got "
+						+ buffer.readableBytes()));
+				return null;
+			}
+			if (!MessageCodec.decodePayload(message.getContentType4(), buffer, message))
+			{
+				Channels.fireExceptionCaught(ctx, new DecoderException("did not get all the data expected (5), got "
+						+ buffer.readableBytes()));
+				return null;
+			}
+			if (message.isHintSign())
+			{
+				Signature signature = Signature.getInstance("SHA1withDSA");
+				signature.initVerify(message.getPublicKey());
+				int read = buffer.readerIndex() - readerIndex;
+				signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				// dont worry about the return value
+				if (!MessageCodec.decodeSignature(signature, message, buffer))
 				{
-					MessageCodec.decodePayload(message.getContentType1(), buffer, message);
-					MessageCodec.decodePayload(message.getContentType2(), buffer, message);
-					MessageCodec.decodePayload(message.getContentType3(), buffer, message);
-					MessageCodec.decodePayload(message.getContentType4(), buffer, message);
-				}
-				else
-				{
-					Channels.fireExceptionCaught(ctx, new DecoderException(
-							"did not get all the data expected " + message.getContentLength()
-									+ " got " + buffer.readableBytes()));
+					Channels.fireExceptionCaught(ctx, new DecoderException("did not get all the data expected (6), got "
+							+ buffer.readableBytes()));
+					return null;
 				}
 			}
-			return message;
 		}
-		return obj;
+		return message;
 	}
 }

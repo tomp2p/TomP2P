@@ -33,8 +33,8 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
-import net.tomp2p.message.TomP2PEncoderStage1;
-import net.tomp2p.message.TomP2PEncoderStage2;
+import net.tomp2p.message.TomP2PEncoderTCP;
+import net.tomp2p.message.TomP2PEncoderUDP;
 import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
@@ -42,7 +42,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.upnp.InternetGatewayDevice;
 import net.tomp2p.upnp.UPNPResponseException;
-import net.tomp2p.utils.GlobalTrafficShapingHandler;
 
 import org.jboss.netty.bootstrap.Bootstrap;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
@@ -59,6 +58,7 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.ExecutionHandler;
+import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
@@ -89,8 +89,6 @@ public class ConnectionHandler
 	final private Timer timer;
 	final private boolean master;
 	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
-	final private static TomP2PEncoderStage1 encoder1 = new TomP2PEncoderStage1();
-	final private static TomP2PEncoderStage2 encoder2 = new TomP2PEncoderStage2();
 	static
 	{
 		ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer()
@@ -111,7 +109,6 @@ public class ConnectionHandler
 	//
 	final private MessageLogger messageLoggerFilter;
 	final private ConnectionConfiguration configuration;
-	final private GlobalTrafficShapingHandler globalTrafficShapingHandler;
 
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair, PeerMap peerMap,
@@ -132,8 +129,6 @@ public class ConnectionHandler
 				Executors.newCachedThreadPool());
 		tcpClientChannelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
-		globalTrafficShapingHandler = new GlobalTrafficShapingHandler(Executors.newCachedThreadPool(),
-				configuration.getWriteLimit(), configuration.getReadLimit(), 500);
 		//
 		String status = bindings.discoverLocalInterfaces();
 		logger.info("Status of interface search: " + status);
@@ -154,16 +149,16 @@ public class ConnectionHandler
 		peerBean.setServerPeerAddress(self);
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
+		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory, udpChannelFactory,
-				configuration, executionHandlerSend, globalTrafficShapingHandler);
+				configuration, executionHandlerSend, messageLoggerFilter);
 		// Dispatcher setup start
 		this.channelChache = new TCPChannelCache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration.getIdleUDPMillis(),
 				configuration.getTimeoutTCPMillis(), channelGroup, peerMap, listeners, channelChache);
 		this.channelChache.setDispatcherRequest(dispatcherRequest);
 		// Dispatcher setup stop
-		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
 		Sender sender = new Sender(connectionPool, configuration, channelChache, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup);
 		if (bindings.isListenBroadcast())
@@ -210,7 +205,6 @@ public class ConnectionHandler
 		this.channelChache = parent.channelChache;
 		this.configuration = parent.configuration;
 		this.timer = parent.timer;
-		this.globalTrafficShapingHandler = parent.globalTrafficShapingHandler;
 		this.master = false;
 	}
 
@@ -228,18 +222,15 @@ public class ConnectionHandler
 			@Override
 			public ChannelPipeline getPipeline() throws Exception
 			{
-				ChannelPipeline p = Channels.pipeline();
-				p.addLast("encoder2", encoder2);
+				ChannelPipeline pipe = Channels.pipeline();
+				pipe.addLast("encoder", new TomP2PEncoderUDP());
+				pipe.addLast("decoder", new TomP2PDecoderUDP());
 				if (messageLoggerFilter != null)
-					p.addLast("loggerDownstream", messageLoggerFilter.getChannelDownstreamHandler());
-				p.addLast("encoder1", encoder1);
-				p.addLast("decoder", new TomP2PDecoderUDP());
-				if (messageLoggerFilter != null)
-					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
-				p.addLast("performance", performanceFilter);
-				p.addLast("executor", executionHandlerRcv);
-				p.addLast("handler", dispatcher);
-				return p;
+					pipe.addLast("loggerUpstream", messageLoggerFilter);
+				pipe.addLast("performance", performanceFilter);
+				pipe.addLast("executor", executionHandlerRcv);
+				pipe.addLast("handler", dispatcher);
+				return pipe;
 			}
 		});
 		bootstrap.setOption("broadcast", "false");
@@ -276,24 +267,21 @@ public class ConnectionHandler
 			@Override
 			public ChannelPipeline getPipeline() throws Exception
 			{
-				ChannelPipeline p = Channels.pipeline();
+				ChannelPipeline pipe = Channels.pipeline();
 				IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration.getIdleTCPMillis(),
 						TimeUnit.MILLISECONDS);
-				p.addLast("timeout", timeoutHandler);
-				p.addLast("encoder2", encoder2);
+				pipe.addLast("timeout", timeoutHandler);
+				pipe.addLast("streamer", new ChunkedWriteHandler());
+				pipe.addLast("encoder", new TomP2PEncoderTCP());
+				pipe.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
 				if (messageLoggerFilter != null)
-					p.addLast("loggerDownstream", messageLoggerFilter.getChannelDownstreamHandler());
-				p.addLast("encoder1", encoder1);
-				p.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
-				if (messageLoggerFilter != null)
-					p.addLast("loggerUpstream", messageLoggerFilter.getChannelUpstreamHandler());
-				p.addLast("performance", performanceFilter);
-				if (globalTrafficShapingHandler.hasLimit()) p.addLast("trafficShaping", globalTrafficShapingHandler);
-				p.addLast("executor", executionHandlerRcv);
+					pipe.addLast("loggerUpstream", messageLoggerFilter);
+				pipe.addLast("performance", performanceFilter);
+				pipe.addLast("executor", executionHandlerRcv);
 				DispatcherReplyTCP dispatcherReply = new DispatcherReplyTCP(timer, configuration.getIdleTCPMillis(),
 						dispatcher, getConnectionBean().getChannelGroup());
-				p.addLast("reply", dispatcherReply);
-				return p;
+				pipe.addLast("reply", dispatcherReply);
+				return pipe;
 			}
 		});
 		bootstrap.setOption("broadcast", "false");
@@ -348,7 +336,6 @@ public class ConnectionHandler
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
-			globalTrafficShapingHandler.releaseExternalResources();
 			logger.debug("shutdown complete");
 		}
 	}

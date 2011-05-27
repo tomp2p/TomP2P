@@ -11,4 +11,5 @@ public interface DataInput
 	public abstract int arrayOffset();
 	public abstract int readerIndex();
 	public abstract void skipBytes(int size);
+	public abstract int readableBytes();
 }

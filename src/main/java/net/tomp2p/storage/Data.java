@@ -16,13 +16,7 @@
 package net.tomp2p.storage;
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -40,7 +34,6 @@ import net.tomp2p.utils.Utils;
 public class Data implements Serializable
 {
 	private static final long serialVersionUID = -5023493840082652284L;
-	final public static PublicKey FROM_MESSAGE = new EmptyPublicKey();
 	final private byte[] data;
 	final private int offset;
 	final private int length;
@@ -51,12 +44,9 @@ public class Data implements Serializable
 	private Number160 hash;
 	private boolean protectedEntry;
 	private boolean directReplication;
-	// to avoid redundant objects, use the same object
-	private PublicKey dataPublicKey;
-	private byte[] signature;
-	// if null, the data has been sent directly, otherwise this field shows the
-	// originator of this data
 	private PeerAddress originator;
+	// never serialized in this object over the network
+	private PublicKey publicKey;
 	
 	public Data(Object object) throws IOException
 	{
@@ -134,62 +124,6 @@ public class Data implements Serializable
 		return ttlSeconds <= 0 ? Long.MAX_VALUE : validFromMillis + (ttlSeconds * 1000L);
 	}
 
-	/**
-	 * This public key is set by the storage class and not by the decoding class
-	 * 
-	 * @return PublicKey
-	 */
-	public PublicKey getDataPublicKey()
-	{
-		return dataPublicKey;
-	}
-
-	/**
-	 * This public key is set by the storage class and not by the decoding class
-	 * 
-	 * @param publicKey
-	 */
-	public void setDataPublicKey(PublicKey dataPublicKey)
-	{
-		this.dataPublicKey = dataPublicKey;
-	}
-
-	public void signAndSetPublicKey(KeyPair keyPair) throws NoSuchAlgorithmException,
-			InvalidKeyException, SignatureException
-	{
-		PrivateKey privateKey = keyPair.getPrivate();
-		Signature signatureAlgorithm = Signature.getInstance("SHA1withDSA");
-		signatureAlgorithm.initSign(privateKey);
-		signatureAlgorithm.update(data, offset, length);
-		byte[] ttl = Utils.intToByteArray(ttlSeconds);
-		signatureAlgorithm.update(ttl);
-		setSignature(signatureAlgorithm.sign());
-		setDataPublicKey(keyPair.getPublic());
-	}
-
-	public boolean verify(PublicKey public1) throws NoSuchAlgorithmException, InvalidKeyException,
-			SignatureException
-	{
-		final Signature signatureAlgorithm = Signature.getInstance("SHA1withDSA");
-		signatureAlgorithm.initVerify(public1);
-		signatureAlgorithm.update(data, offset, length);
-		byte[] ttl = Utils.intToByteArray(ttlSeconds);
-		signatureAlgorithm.update(ttl);
-		return signatureAlgorithm.verify(signature);
-	}
-
-	public void setSignature(byte[] signature)
-	{
-		this.signature = signature;
-	}
-
-	public byte[] getSignature()
-	{
-		return signature;
-	}
-
-	// TODO: get rid of this. If the data key is set, we can assume that we
-	// always want to protect an entry
 	public boolean isProtectedEntry()
 	{
 		return protectedEntry;
@@ -216,10 +150,10 @@ public class Data implements Serializable
 		StringBuilder sb = new StringBuilder();
 		sb.append("Data l:");
 		sb.append(length);
-		sb.append(",dpk:");
-		sb.append(getDataPublicKey() != null);
 		sb.append(",ttl:");
 		sb.append(getTTLSeconds());
+		sb.append("hasPK:");
+		sb.append(publicKey!=null);
 		return sb.toString();
 	}
 
@@ -232,26 +166,14 @@ public class Data implements Serializable
 	{
 		this.originator = originator;
 	}
-	private static class EmptyPublicKey implements PublicKey
+
+	public void setPublicKey(PublicKey publicKey)
 	{
-		private static final long serialVersionUID = -9106407808391259340L;
+		this.publicKey = publicKey;
+	}
 
-		@Override
-		public String getAlgorithm()
-		{
-			return "";
-		}
-
-		@Override
-		public byte[] getEncoded()
-		{
-			return new byte[] {};
-		}
-
-		@Override
-		public String getFormat()
-		{
-			return "";
-		}
+	public PublicKey getPublicKey()
+	{
+		return publicKey;
 	}
 }

@@ -137,6 +137,45 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.offset = offset;
 		this.hashCode = id.hashCode();
 	}
+	
+	public PeerAddress(Number160 id, final byte[] me, int offset) throws UnknownHostException
+	{
+		final int offsetOld=offset;
+		// get the peer ID, this is independant of the type
+		this.id = id;
+		// get the type
+		final int types = me[offset] & 0xff;
+		this.net6 = (types & NET6) > 0;
+		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
+		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		this.presetIPv4 = (types & PRESET_IPv4) > 0;
+		offset++;	
+		// get the port for UDP and TCP
+		this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
+		this.portUDP = ((me[offset + 2] & 0xff) << 8) + (me[offset + 3] & 0xff);
+		offset += 4;
+		//
+		final byte tmp2[];
+		if (isIPv4())
+		{
+			// IPv4 is 32 bit
+			tmp2 = new byte[4];
+			System.arraycopy(me, offset, tmp2, 0, 4);
+			this.address = Inet4Address.getByAddress(tmp2);
+			offset += 4;
+		}
+		else
+		{
+			// IPv6 is 128 bit
+			tmp2 = new byte[16];
+			System.arraycopy(me, offset, tmp2, 0, 16);
+			this.address = Inet6Address.getByAddress(tmp2);
+			offset += 16;
+		}
+		this.readBytes=offset - offsetOld;
+		this.offset = offset;
+		this.hashCode = id.hashCode();
+	}
 
 	/**
 	 * The format of the peer address can also be split.
@@ -422,6 +461,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		if (isNet6(type)) return SIZE_IPv6;
 		else return SIZE_IPv4;
+	}
+	
+	public static int expectedSocketLength(int type)
+	{
+		if (isNet6(type)) return SIZE_IP_SOCKv6;
+		else return SIZE_IP_SOCKv4;
 	}
 	
 	public int expectedLength()

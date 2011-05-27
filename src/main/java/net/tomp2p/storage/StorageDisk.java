@@ -9,8 +9,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import net.tomp2p.message.DataInput;
-import net.tomp2p.message.DataOutput;
-import net.tomp2p.message.DataOutputFactory;
 import net.tomp2p.message.MessageCodec;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
@@ -262,8 +260,8 @@ public class StorageDisk extends Storage
 				return null;
 			}
 			Data data = dataMap.get(key);
-			if (force || data.getDataPublicKey() == null
-					|| data.getDataPublicKey().equals(publicKey))
+			if (force || data.getPublicKey() == null
+					|| data.getPublicKey().equals(publicKey))
 			{
 				timeoutMap.remove(key);
 				responsibilityMap.remove(key.getLocationKey());
@@ -313,7 +311,7 @@ public class StorageDisk extends Storage
 			for (Number480 key : keys)
 			{
 				Data data = dataMap.get(key);
-				if (data.getDataPublicKey() == null || data.getDataPublicKey().equals(publicKey))
+				if (data.getPublicKey() == null || data.getPublicKey().equals(publicKey))
 				{
 					timeoutMap.remove(key);
 					responsibilityMap.remove(key.getLocationKey());
@@ -616,15 +614,19 @@ public class StorageDisk extends Storage
 		}
 
 		@Override
-		public void objectToEntry(Data object, TupleOutput output)
+		public void objectToEntry(Data data, TupleOutput output)
 		{
-			TupleFactory factory = new TupleFactory(output);
-			MessageCodec.encodeData(new ArrayList<DataOutput>(), factory, null, object);
+			int seconds = data.getTTLSeconds();
+			seconds = data.isProtectedEntry() ? seconds | 0x80000000 : seconds & 0x7FFFFFFF;
+			output.writeInt(seconds);
+			output.writeInt(data.getLength());
+			// the real data
+			output.write(data.getData(), data.getOffset(), data.getLength());
 			// in addition, we need to encode if we have a direct replication.
-			// This is not done in MessageCodec becaues this information does
+			// This is not done in MessageCodec because this information does
 			// not go over the wire.
 			int flag = 0;
-			if (object.isDirectReplication())
+			if (data.isDirectReplication())
 				flag |= 0x1;
 			output.writeByte(flag);
 		}
@@ -763,7 +765,7 @@ public class StorageDisk extends Storage
 			return numberPeerID;
 		}
 	}
-	private static class TupleFactory implements DataOutputFactory
+	/*private static class TupleFactory implements DataOutputFactory
 	{
 		final private TupleEncoder encoder;
 
@@ -791,7 +793,8 @@ public class StorageDisk extends Storage
 			encoder.writeBytes(data);
 			return encoder;
 		}
-	}
+	}*/
+	/*
 	private static class TupleEncoder implements DataOutput
 	{
 		final private TupleOutput output;
@@ -828,7 +831,7 @@ public class StorageDisk extends Storage
 		{
 			output.writeUnsignedShort(intVal);
 		}
-	}
+	}*/
 	private static class TupleDecoder implements DataInput
 	{
 		final private TupleInput input;
@@ -890,6 +893,13 @@ public class StorageDisk extends Storage
 		public void skipBytes(int size)
 		{
 			input.skipFast(size);
+		}
+
+		@Override
+		public int readableBytes()
+		{
+			//we can read until we are done.
+			return Integer.MAX_VALUE;
 		}
 	}
 }

@@ -156,7 +156,7 @@ public class DispatcherReplyTCP extends IdleStateAwareChannelHandler
 		// do not show connection reset by peer!
 		if (!"Connection reset by peer".equals(cause))
 		{
-			logger.warn("error in dispatcher reply" + e.toString());
+			logger.warn("error in dispatcher reply" + e.toString() + " -> " +e.getCause().getStackTrace()[1]);
 			if (logger.isDebugEnabled())
 				e.getCause().printStackTrace();
 		}

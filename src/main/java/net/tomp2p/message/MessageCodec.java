@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.message.Message.Command;
@@ -44,23 +43,21 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 
 public class MessageCodec
 {
 	final public static byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 	final public static int MAX_BYTE = 255;
-	final public static int HEADER_SIZE = 64;
-	final private static ChannelFactory factory = new ChannelFactory();
+	final public static int HEADER_SIZE = 60;
 
 	/**
 	 * The format looks as follows:
 	 * 
 	 * 32bit p2p version - 32bit id - 4bit message type - 4bit message name -
 	 * 160bit sender id - 16bit tcp port - 16bit udp port - 160bit recipient id
-	 * - 32bit message length - 16bit (4x4)content type - 8bit network address
+	 * - 16bit (4x4)content type - 8bit network address
 	 * information - 32bit IPv4 address to override address as seen in case of 
-	 * NAT issues. It total, the header is of size 64 bytes.
+	 * NAT issues. It total, the header is of size 60 bytes.
 	 * 
 	 * 
 	 * @param buffer The Netty buffer to fill
@@ -76,18 +73,17 @@ public class MessageCodec
 		buffer.writeShort((short) message.getSender().portTCP()); // 31
 		buffer.writeShort((short) message.getSender().portUDP()); // 33
 		buffer.writeBytes(message.getRecipient().getID().toByteArray()); // 53
-		buffer.writeInt(message.getContentLength()); // 57
 		final int content = ((message.getContentType4().ordinal() << 12)
 				| (message.getContentType3().ordinal() << 8)
 				| (message.getContentType2().ordinal() << 4) | message.getContentType1().ordinal());
-		buffer.writeShort((short) content); // 59
+		buffer.writeShort((short) content); // 55
 		// options
-		buffer.writeByte(message.getSender().createType()); // 60
+		buffer.writeByte(message.getSender().createType()); // 56
 		if(message.getSender().isPresetIPv4() && message.getSender().isIPv4()) {
-			buffer.writeBytes(message.getSender().getInetAddress().getAddress());
+			buffer.writeBytes(message.getSender().getInetAddress().getAddress()); // 60
 		}
 		else {
-			buffer.writeInt(0);
+			buffer.writeInt(0); // 60
 		}
 		return buffer;
 	}
@@ -102,30 +98,35 @@ public class MessageCodec
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	public static void encodePayload(final Message message, List<ChannelBuffer> payloadBuffers)
+	public static void encodePayload(final Message message, ProtocolChunkedInput input)
 			throws InvalidKeyException, SignatureException, NoSuchAlgorithmException
 	{
 		int contentLength = 0;
 		if (message.getContentType1() != Message.Content.EMPTY)
 		{
-			contentLength += encodePayloadType(message.getContentType1(), payloadBuffers, message);
+			contentLength += encodePayloadType(message.getContentType1(), input, message);
 			if (message.getContentType2() != Message.Content.EMPTY)
 			{
-				contentLength += encodePayloadType(message.getContentType2(), payloadBuffers,
+				contentLength += encodePayloadType(message.getContentType2(), input,
 						message);
 				if (message.getContentType3() != Message.Content.EMPTY)
 				{
-					contentLength += encodePayloadType(message.getContentType3(), payloadBuffers,
+					contentLength += encodePayloadType(message.getContentType3(), input,
 							message);
 					if (message.getContentType4() != Message.Content.EMPTY)
 					{
 						contentLength += encodePayloadType(message.getContentType4(),
-								payloadBuffers, message);
+								input, message);
 					}
 				}
 			}
 		}
-		message.setContentLength(contentLength);
+		if(message.isHintSign()){
+			input.addMarkerForSignature();
+		}
+		else
+			input.flush(true);
+		message.setLength(contentLength);
 	}
 
 	/**
@@ -135,78 +136,60 @@ public class MessageCodec
 	 * USER1, USER2, USER3
 	 * 
 	 * @param contentType The type of the content to encode
-	 * @param buffer The Netty buffer to fill
+	 * @param input The ProtocolChunkedInput to fill
 	 * @param message The message which contains the payload
 	 * @throws NoSuchAlgorithmException
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	private static int encodePayloadType(final Content content, final List<ChannelBuffer> buffers,
+	private static int encodePayloadType(final Content content, final ProtocolChunkedInput input,
 			final Message message)
 	{
-		if (message.isHintSign())
-			throw new IllegalArgumentException(
-					"can set signing only at the end, but you called after signig " + content);
 		final int size;
-		final ChannelBuffer buffer;
+		final byte[] data;
 		int count;
-		byte[] data;
 		switch (content)
 		{
 			case KEY:
-				buffers.add(ChannelBuffers.wrappedBuffer(message.getKey3().toByteArray()));
+				input.copyToCurrent(message.getKey3().toByteArray());
 				return 20;
 			case KEY_KEY:
-				buffers.add(ChannelBuffers.wrappedBuffer(message.getKey1().toByteArray()));
-				buffers.add(ChannelBuffers.wrappedBuffer(message.getKey2().toByteArray()));
+				input.copyToCurrent(message.getKey1().toByteArray());
+				input.copyToCurrent(message.getKey2().toByteArray());
 				return 40;
 			case MAP_KEY_DATA:
 				count = 4;
-				buffer = ChannelBuffers.buffer(4);
 				if (message.isConvertNumber480to160())
 				{
 					Map<Number480, Data> dataMap = message.getDataMapConvert();
-					buffer.writeInt(dataMap.size());
-					buffers.add(buffer);
+					input.copyToCurrent(dataMap.size());
 					for (Map.Entry<Number480, Data> entry : dataMap.entrySet())
 					{
-						buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().getContentKey()
-								.toByteArray()));
+						input.copyToCurrent(entry.getKey().getContentKey().toByteArray());
 						count += 20;
-						Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
-						count += encodeData(tmp2, factory, message, entry.getValue());
-						for (DataOutput output : tmp2)
-							buffers.add(((ChannelEncoder) output).getChannelBuffer());
+						count += encodeData(input, message, entry.getValue());
 					}
 					return count;
 				}
 				else
 				{
-					buffer.writeInt(message.getDataMap().size());
-					buffers.add(buffer);
+					input.copyToCurrent(message.getDataMap().size());
 					for (Map.Entry<Number160, Data> entry : message.getDataMap().entrySet())
 					{
-						buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().toByteArray()));
+						input.copyToCurrent(entry.getKey().toByteArray());
 						count += 20;
-						// count += encodeData(buffers, message,
-						// entry.getValue());
-						Collection<DataOutput> tmp2 = new ArrayList<DataOutput>(4);
-						count += encodeData(tmp2, factory, message, entry.getValue());
-						for (DataOutput output : tmp2)
-							buffers.add(((ChannelEncoder) output).getChannelBuffer());
+						count += encodeData(input, message, entry.getValue());
 					}
 					return count;
 				}
 			case MAP_KEY_KEY:
 				Map<Number160, Number160> keyMap = message.getKeyMap();
 				size = keyMap.size();
-				buffer = ChannelBuffers.buffer(4);
-				buffer.writeInt(size);
-				buffers.add(buffer);
+				input.copyToCurrent(size);
 				for (final Map.Entry<Number160, Number160> entry : keyMap.entrySet())
 				{
-					buffers.add(ChannelBuffers.wrappedBuffer(entry.getKey().toByteArray()));
-					buffers.add(ChannelBuffers.wrappedBuffer(entry.getValue().toByteArray()));
+					input.copyToCurrent(entry.getKey().toByteArray());
+					input.copyToCurrent(entry.getValue().toByteArray());
 				}
 				return 4 + (size * (20 + 20));
 			case SET_KEYS:
@@ -214,66 +197,52 @@ public class MessageCodec
 				{
 					Collection<Number480> keys = message.getKeysConvert();
 					size = keys.size();
-					buffer = ChannelBuffers.buffer(4);
-					buffer.writeInt(size);
-					buffers.add(buffer);
+					input.copyToCurrent(size);
 					for (Number480 key : keys)
-						buffers.add(ChannelBuffers.wrappedBuffer(key.getContentKey().toByteArray()));
+						input.copyToCurrent(key.getContentKey().toByteArray());
 					return 4 + (size * 20);
 				}
 				else
 				{
 					size = message.getKeys().size();
-					buffer = ChannelBuffers.buffer(4);
-					buffer.writeInt(size);
-					buffers.add(buffer);
+					input.copyToCurrent(size);
 					for (Number160 key : message.getKeys())
-						buffers.add(ChannelBuffers.wrappedBuffer(key.toByteArray()));
+						input.copyToCurrent(key.toByteArray());
 					return 4 + (size * 20);
 				}
 			case SET_NEIGHBORS:
 				count = 1;
 				size = Math.min(message.getNeighbors().size(),
 						Math.min(message.getUseAtMostNeighbors(), MAX_BYTE));
-				buffer = ChannelBuffers.buffer(1);
-				buffer.writeByte(size);
-				buffers.add(buffer);
+				input.copyToCurrent((byte)size);
 				final Iterator<PeerAddress> iterator = message.getNeighbors().iterator();
 				for (int i = 0; iterator.hasNext() && i < size; i++)
 				{
-					ChannelBuffer buffer2 = writePeerAddress(iterator.next());
-					buffers.add(buffer2);
-					count += buffer2.capacity();
+					byte[] data1=iterator.next().toByteArray();
+					input.copyToCurrent(data1);
+					count += data1.length;
 				}
 				return count;
 			case SET_TRACKER_DATA:
 				count = 1;
 				final Collection<TrackerData> trackerDatas=message.getTrackerData();
-				buffer = ChannelBuffers.buffer(1);
-				buffer.writeByte(trackerDatas.size());
-				buffers.add(buffer);
+				input.copyToCurrent((byte)trackerDatas.size());
 				for(TrackerData trackerData:trackerDatas)
 				{
-					PeerAddress peerAddress=trackerData.getPeerAddress();
-					ChannelBuffer buffer2 = writePeerAddress(peerAddress);
-					buffers.add(buffer2);
-					count += buffer2.capacity();
+					byte[] data1=trackerData.getPeerAddress().toByteArray();
+					input.copyToCurrent(data1);
+					count += data1.length;
 					if(trackerData.getAttachement()!=null)
 					{
-						ChannelBuffer buffer3 = ChannelBuffers.buffer(5);
-						buffer3.writeByte(1);
-						buffer3.writeInt(trackerData.getLength());
-						buffers.add(buffer3);
+						input.copyToCurrent((byte)1);
+						input.copyToCurrent(trackerData.getLength());
 						count += 5;
-						ChannelBuffer buffer4 = ChannelBuffers.wrappedBuffer(trackerData.getAttachement(), trackerData.getOffset(), trackerData.getLength());
-						buffers.add(buffer4);
-						count += buffer4.capacity();
+						input.copyToCurrent(trackerData.getAttachement(), trackerData.getOffset(), trackerData.getLength());
+						count += trackerData.getLength();
 					}
 					else
 					{
-						ChannelBuffer buffer3 = ChannelBuffers.buffer(1);
-						buffer3.writeByte(0);
-						buffers.add(buffer3);
+						input.copyToCurrent((byte)0);
 						count += 1;
 					}
 				}
@@ -285,39 +254,29 @@ public class MessageCodec
 				else
 					message.setPayload1(null);
 				size = tmpBuffer.writerIndex();
-				buffer = ChannelBuffers.buffer(4);
-				buffer.writeInt(size);
-				buffers.add(buffer);
-				buffers.add(tmpBuffer.slice());
+				input.copyToCurrent(size);
+				input.copyToCurrent(tmpBuffer.slice());
 				return 4 + size;
 			case LONG:
-				buffer = ChannelBuffers.buffer(8);
-				buffer.writeLong(message.getLong());
-				buffers.add(buffer);
+				input.copyToCurrent(message.getLong());
 				return 8;
 			case INTEGER:
-				buffer = ChannelBuffers.buffer(4);
-				buffer.writeInt(message.getInteger());
-				buffers.add(buffer);
+				input.copyToCurrent(message.getInteger());
 				return 4;
 			case PUBLIC_KEY:
 				data = message.getPublicKey().getEncoded();
 				size = data.length;
-				buffer = ChannelBuffers.buffer(2 + size);
-				buffer.writeShort(size);
-				buffer.writeBytes(data);
-				buffers.add(buffer);
+				input.copyToCurrent((short)size);
+				input.copyToCurrent(data);
 				return 2 + size;
 			case PUBLIC_KEY_SIGNATURE:
 				// flag to encode public key
 				data = message.getPublicKey().getEncoded();
 				size = data.length;
-				buffer = ChannelBuffers.buffer(2 + size);
-				buffer.writeShort(size);
-				buffer.writeBytes(data);
-				buffers.add(buffer);
+				input.copyToCurrent((short)size);
+				input.copyToCurrent(data);
 				message.setHintSign(true);
-				// count 40 for the signature, which comes later
+				// count 40 for the signature, which comes later in ProtocolChunkedInput
 				return 40 + 2 + size;
 			case EMPTY:
 			case RESERVED1:
@@ -328,117 +287,18 @@ public class MessageCodec
 		}
 	}
 
-	public static void encodeSecurity(Message message, List<ChannelBuffer> buffers)
-			throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, IOException
+	public static int encodeData(ProtocolChunkedInput input, final Message message, Data data)
 	{
-		if (!message.isHintSign())
-			return;
-		Signature signature = Signature.getInstance("SHA1withDSA");
-		signature.initSign(message.getPrivateKey());
-		//System.err.println("private key for encoding is " + message.getPrivateKey());
-		//System.err.println("public key for encoding is " + message.getPublicKey());
-		for (ChannelBuffer buffer2 : buffers)
-		{
-			signature.update(buffer2.array(), buffer2.arrayOffset(), buffer2.writerIndex());
-			//System.err.println("\nI do the update starting from encode " + buffer2.arrayOffset()
-			//		+ " to " + buffer2.writerIndex());
-			//for (int i = buffer2.arrayOffset(); i < buffer2.writerIndex(); i++)
-			//{
-			//	System.err.format("%1$02x,", buffer2.array()[i]);
-			//	if (i % 1000 == 0 && i != 0)
-			//		System.err.print("\n");
-			//}
-		}
-		byte[] signatureData = signature.sign();
-		SHA1Signature decodedSignature = new SHA1Signature();
-		decodedSignature.decode(signatureData);
-		// System.err.println("nn1 "+decodedSignature.getNumber1());
-		// System.err.println("nn2 "+decodedSignature.getNumber2());
-		buffers.add(ChannelBuffers.wrappedBuffer(decodedSignature.getNumber1().toByteArray()));
-		buffers.add(ChannelBuffers.wrappedBuffer(decodedSignature.getNumber2().toByteArray()));
-	}
-
-	public static int encodeData(Collection<DataOutput> result, DataOutputFactory factory,
-			final Message message, Data data)
-	{
-		int dataHeaderLength = 4 + 4 + 2 + 1;
-		int count = dataHeaderLength;
-		DataOutput output1 = factory.create(dataHeaderLength);
+		int count = 4 + 4;
 		// encode entry protection in millis as the sign bit. Thus the max value
 		// of millis is 2^31, which is more than enough
 		int seconds = data.getTTLSeconds();
 		seconds = data.isProtectedEntry() ? seconds | 0x80000000 : seconds & 0x7FFFFFFF;
-		output1.writeInt(seconds);
-		output1.writeInt(data.getLength());
-		result.add(output1);
-		// here we could do the second array
-		byte[] serializedPublicKey = null;
-		// public key
-		PublicKey publicKey = data.getDataPublicKey();
-		if (publicKey == null)
-			output1.writeShort(0);
-		//
-		else if (message != null && data.getDataPublicKey().equals(message.getPublicKey()))
-			output1.writeShort(-1);
-		else
-		{
-			serializedPublicKey = publicKey.getEncoded();
-			int publicKeyLength = serializedPublicKey.length;
-			output1.writeShort(publicKeyLength);
-			count += publicKeyLength;
-			// here we do the fourth array
-		}
-		// signature
-		byte[] signature = data.getSignature();
-		if (signature == null || signature.length == 0)
-			output1.writeByte(0);
-		else
-		{
-			int signatureLength = signature.length;
-			output1.writeByte(signatureLength);
-			count += signatureLength;
-			// here we do the fifth array
-		}
-		// second array
-		if (data.getPeerAddress() == null)
-		{
-			// writing a zero indicates that there is no peeraddress. This is
-			// ok, since there cannot be a peeraddress that starts with a zeros
-			DataOutput outputPeerAddress = factory.create(new byte[1]);
-			result.add(outputPeerAddress);
-			count++;
-		}
-		else
-		{
-			int len=data.getPeerAddress().expectedLength();
-			//the length cannot be larger than 255
-			byte[] peerAddress = new byte[len +1];
-			peerAddress[0]=(byte)len;
-			data.getPeerAddress().toByteArray(peerAddress,1);
-			DataOutput outputPeerAddress = factory.create(peerAddress);
-			result.add(outputPeerAddress);
-			count += peerAddress.length;
-		}
-		// third array
-		DataOutput output2 = factory.create(data.getData(), data.getOffset(), data.getLength());
-		result.add(output2);
+		input.copyToCurrent(seconds);
+		input.copyToCurrent(data.getLength());
+		// the real data
+		input.copyToCurrent(data.getData(), data.getOffset(), data.getLength());
 		count += data.getLength();
-		// fourth array
-		if (serializedPublicKey != null)
-		{
-			DataOutput output3 = factory.create(serializedPublicKey);
-			result.add(output3);
-			// do not add anything to the counter here, since we did it in the
-			// data header
-		}
-		// fifth array
-		if (signature != null && signature.length > 0)
-		{
-			DataOutput output4 = factory.create(signature);
-			result.add(output4);
-			// do not add anything to the counter here, since we did it in the
-			// data header
-		}
 		return count;
 	}
 
@@ -466,7 +326,6 @@ public class MessageCodec
 		final int portUDP = buffer.readUnsignedShort();
 		final Number160 recipientID = readID(buffer);
 		message.setRecipient(new PeerAddress(recipientID));
-		message.setContentLength(buffer.readInt());
 		final int contentType = buffer.readUnsignedShort();
 		message.setContentType(Content.values()[contentType & 0xf],
 				Content.values()[(contentType >>> 4) & 0xf],
@@ -505,36 +364,47 @@ public class MessageCodec
 	 * @throws InvalidKeySpecException
 	 * @throws InvalidKeySpecException
 	 * @throws IOException
+	 * @throws DecoderException 
 	 * @throws ASN1Exception
 	 * @throws UnsupportedEncodingException If UTF-8 is not there
 	 */
-	public static void decodePayload(final Content content, final ChannelBuffer buffer,
+	public static boolean decodePayload(final Content content, final ChannelBuffer buffer,
 			final Message message) throws InvalidKeyException, SignatureException,
-			NoSuchAlgorithmException, InvalidKeySpecException, IOException
+			NoSuchAlgorithmException, InvalidKeySpecException, IOException, DecoderException
 	{
 		final int len;
 		byte[] me;
 		switch (content)
 		{
 			case KEY:
+				if(buffer.readableBytes() < 20) return false;
 				message.setKey0(readID(buffer));
-				break;
+				return true;
 			case KEY_KEY:
+				if(buffer.readableBytes() < 40) return false;
 				message.setKeyKey0(readID(buffer), readID(buffer));
-				break;
+				return true;
 			case MAP_KEY_DATA:
+				if(buffer.readableBytes() < 4) return false;
 				int size = buffer.readInt();
 				Map<Number160, Data> result = new HashMap<Number160, Data>(size);
 				for (int i = 0; i < size; i++)
 				{
+					if(buffer.readableBytes() < 20) return false;
 					Number160 key = readID(buffer);
 					final Data data = decodeData(new ChannelDecoder(buffer), message);
+					if(data == null) return false;
+					if(data.isProtectedEntry() && message.getPublicKey()==null)
+						throw new DecoderException("You indicated that you want to protect the data, but you did not provide or provided too late a public key.");
+					data.setPublicKey(message.getPublicKey());
 					result.put(key, data);
 				}
 				message.setDataMap0(result);
-				break;
+				return true;
 			case MAP_KEY_KEY:
+				if(buffer.readableBytes() < 4) return false;
 				len = buffer.readInt();
+				if(buffer.readableBytes() < ((20+20)*len)) return false;
 				final Map<Number160, Number160> keyMap = new HashMap<Number160, Number160>();
 				for (int i = 0; i < len; i++)
 				{
@@ -543,10 +413,12 @@ public class MessageCodec
 					keyMap.put(key1, key2);
 				}
 				message.setKeyMap0(keyMap);
-				break;
+				return true;
 			case SET_KEYS:
 				// can be 31bit long ~ 2GB
+				if(buffer.readableBytes() < 4) return false;
 				len = buffer.readInt();
+				if(buffer.readableBytes() < (20*len)) return false;
 				final Collection<Number160> tmp = new ArrayList<Number160>(len);
 				for (int i = 0; i < len; i++)
 				{
@@ -554,36 +426,49 @@ public class MessageCodec
 					tmp.add(key);
 				}
 				message.setKeys0(tmp);
-				break;
+				return true;
 			case SET_NEIGHBORS:
+				if(buffer.readableBytes() < 1) return false;
 				len = buffer.readUnsignedByte();
+				if(buffer.readableBytes() < (len * PeerAddress.SIZE_IPv4)) return false;
 				final Collection<PeerAddress> neighbors = new ArrayList<PeerAddress>(len);
-				for (int i = 0; i < len; i++)
-					neighbors.add(readPeerAddress(buffer));
+				for (int i = 0; i < len; i++) {
+					PeerAddress peerAddress=readPeerAddress(buffer);
+					if(peerAddress == null) return false;
+					neighbors.add(peerAddress);
+				}
 				message.setNeighbors0(neighbors);
-				break;
+				return true;
 			case SET_TRACKER_DATA:
+				if(buffer.readableBytes() < 1) return false;
 				len = buffer.readUnsignedByte();
+				if(buffer.readableBytes() < (len * (PeerAddress.SIZE_IPv4 + 1))) return false;
 				final Collection<TrackerData> trackerDatas = new ArrayList<TrackerData>(len);
 				for (int i = 0; i < len; i++)
 				{
 					PeerAddress peerAddress = readPeerAddress(buffer);
+					if(peerAddress == null) return false;
 					byte[] attachment = null;
 					int offset = 0;
 					int length = 0;
+					if(buffer.readableBytes() < 1) return false;
 					byte miniHeader = buffer.readByte();
 					if(miniHeader!=0)
 					{
+						if(buffer.readableBytes() < 4) return false;
 						length=buffer.readInt();
+						if(buffer.readableBytes() < length) return false;
 						attachment = new byte[length];
 						buffer.readBytes(attachment);
 					}
 					trackerDatas.add(new TrackerData(peerAddress, message.getSender(), attachment, offset, length));
 				}
 				message.setTrackerData0(trackerDatas);
-				break;
+				return true;
 			case CHANNEL_BUFFER:
+				if(buffer.readableBytes() < 4) return false;
 				len = buffer.readInt();
+				if(buffer.readableBytes() < len) return false;
 				// final ChannelBuffer tmpBuffer =
 				// buffer.slice(buffer.readerIndex(), len);
 				// you can only use slice if no execution handler is in place,
@@ -591,59 +476,32 @@ public class MessageCodec
 				final ChannelBuffer tmpBuffer = buffer.copy(buffer.readerIndex(), len);
 				buffer.skipBytes(len);
 				message.setPayload0(tmpBuffer);
-				break;
+				return true;
 			case LONG:
+				if(buffer.readableBytes() < 8) return false;
 				message.setLong0(buffer.readLong());
-				break;
+				return true;
 			case INTEGER:
+				if(buffer.readableBytes() < 4) return false;
 				message.setInteger0(buffer.readInt());
-				break;
+				return true;
 			case PUBLIC_KEY:
-				len = buffer.readUnsignedShort();
-				me = new byte[len];
-				message.setPublicKey0(decodePublicKey(new ChannelDecoder(buffer), me));
-				break;
 			case PUBLIC_KEY_SIGNATURE:
+				if(buffer.readableBytes() < 2) return false;
 				len = buffer.readUnsignedShort();
 				me = new byte[len];
-				PublicKey receivedPublicKey = decodePublicKey(new ChannelDecoder(buffer), me);
-				// get signature
-				final Signature signatureAlgorithm = Signature.getInstance("SHA1withDSA");
-				signatureAlgorithm.initVerify(receivedPublicKey);
-				signatureAlgorithm.update(buffer.array(), buffer.arrayOffset(),
-						buffer.readerIndex());
-				//System.err.println("\nI do the update starting from docede " + buffer.arrayOffset()
-				//		+ " to " + buffer.readerIndex());
-				//System.err.println("public key is"+receivedPublicKey);
-				//for (int i = buffer.arrayOffset(); i < buffer.readerIndex(); i++)
-				//{
-				//	System.err.format("%1$02x,", buffer.array()[i]);
-				//	if (i % 1000 == 0 && i != 0)
-				//		System.err.print("\n");
-				//}
-				Number160 number1 = readID(buffer);
-				Number160 number2 = readID(buffer);
-				// System.err.println("n1 "+number1);
-				// System.err.println("n2 "+number2);
-				SHA1Signature signatureEncode = new SHA1Signature(number1, number2);
-				byte[] signatureReceived = signatureEncode.encode();
-				if (signatureAlgorithm.verify(signatureReceived))
-					// set public key only if signature is correct
-					message.setPublicKey0(receivedPublicKey);
-				// set data maps
-				if (message.isHintDataPublickKey())
-				{
-					for (Data data : message.getDataMap().values())
-						if (Data.FROM_MESSAGE.equals(data.getDataPublicKey()))
-							data.setDataPublicKey(receivedPublicKey);
+				if(buffer.readableBytes() < len) return false;
+				message.setPublicKey0(decodePublicKey(new ChannelDecoder(buffer), me));
+				if(content == Content.PUBLIC_KEY_SIGNATURE) {
+					message.setHintSign(true);
 				}
-				break;
+				return true;
 			case EMPTY:
 			case RESERVED1:
 			case RESERVED2:
 			case RESERVED3:
 			default:
-				break;
+				return true;
 		}
 	}
 
@@ -651,47 +509,17 @@ public class MessageCodec
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
 			UnknownHostException
 	{
+		//mini header for data, 8 bytes ttl and data length
+		if (buffer.readableBytes() < 4 + 4) return null;
 		int ttl = buffer.readInt();
 		boolean protectedEntry = (ttl & 0x80000000) != 0;
 		ttl &= 0x7FFFFFFF;
-		int valueSize = buffer.readInt();
-		int publicKeyLength = buffer.readUnsignedShort();
-		int sigLength = buffer.readUnsignedByte();
+		int dateLength = buffer.readInt();
 		//
-		int length = buffer.readUnsignedByte();
-		PeerAddress originator = null;
-		if (length == 0)
-		{
-			if (message != null)
-				message.getSender();
-		}
-		else
-		{
-			originator=new PeerAddress(buffer.array(),buffer.arrayOffset()+buffer.readerIndex());
-			buffer.skipBytes(originator.readBytes());
-		}
-		//
+		if (buffer.readableBytes() < dateLength) return null;
 		final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-				valueSize, ttl, protectedEntry, originator);
-		buffer.skipBytes(valueSize);
-		// sig and pubkey
-		if (message != null && publicKeyLength == -1)
-		{
-			message.setHintDataPublickKey(true);
-			data.setDataPublicKey(Data.FROM_MESSAGE);
-		}
-		else if (publicKeyLength > 0)
-		{
-			byte[] receivedRawPublicKey = new byte[publicKeyLength];
-			PublicKey receivedPublicKey = decodePublicKey(buffer, receivedRawPublicKey);
-			data.setDataPublicKey(receivedPublicKey);
-		}
-		if (sigLength > 0)
-		{
-			byte[] signature = new byte[sigLength];
-			buffer.readBytes(signature);
-			data.setSignature(signature);
-		}
+				dateLength, ttl, protectedEntry, message.getSender());
+		buffer.skipBytes(dateLength);
 		return data;
 	}
 
@@ -741,10 +569,10 @@ public class MessageCodec
 		return new Number160(me);
 	}
 
-	private static ChannelBuffer writePeerAddress(PeerAddress peerAddress)
+	/*private static ChannelBuffer writePeerAddress(PeerAddress peerAddress)
 	{
 		return ChannelBuffers.wrappedBuffer(peerAddress.toByteArray());
-	}
+	}*/
 
 	/**
 	 * Read a PeerAddress from a Netty buffer. I did not want to include
@@ -757,8 +585,15 @@ public class MessageCodec
 	private static PeerAddress readPeerAddress(final ChannelBuffer buffer)
 			throws UnknownHostException
 	{
-		PeerAddress peerAddress= new PeerAddress(buffer.array(), buffer.arrayOffset()+buffer.readerIndex());
-		buffer.skipBytes(peerAddress.readBytes());
+		if(buffer.readableBytes() < 21) return null;
+		Number160 id = readID(buffer);
+		//peek
+		int type = buffer.getUnsignedByte(buffer.readerIndex());
+		//now we know the length
+		int len=PeerAddress.expectedSocketLength(type);
+		if(buffer.readableBytes() < len ) return null;
+		PeerAddress peerAddress = new PeerAddress(id, buffer.array(), buffer.arrayOffset() + buffer.readerIndex());
+		buffer.skipBytes(len);
 		return peerAddress;
 	}
 
@@ -771,58 +606,21 @@ public class MessageCodec
 		final PublicKey receivedPublicKey = keyFactory.generatePublic(pubKeySpec);
 		return receivedPublicKey;
 	}
-	private static class ChannelFactory implements DataOutputFactory
+	
+	public static boolean decodeSignature(Signature signature, Message message, ChannelBuffer buffer) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException
 	{
-		@Override
-		public DataOutput create(int count)
-		{
-			return new ChannelEncoder(ChannelBuffers.buffer(count));
-		}
-
-		@Override
-		public DataOutput create(byte[] data, int offset, int length)
-		{
-			return new ChannelEncoder(ChannelBuffers.wrappedBuffer(data, offset, length));
-		}
-
-		@Override
-		public DataOutput create(byte[] data)
-		{
-			return new ChannelEncoder(ChannelBuffers.wrappedBuffer(data));
-		}
+		if(buffer.readableBytes() < 20 + 20) return false;
+		Number160 number1 = MessageCodec.readID(buffer);
+		Number160 number2 = MessageCodec.readID(buffer);
+		SHA1Signature signatureEncode = new SHA1Signature(number1, number2);
+		byte[] signatureReceived = signatureEncode.encode();
+		if (!signature.verify(signatureReceived))
+			// set public key only if signature is correct
+			message.setPublicKey0(null);
+		// set data maps
+		return true;
 	}
-	private static class ChannelEncoder implements DataOutput
-	{
-		private final ChannelBuffer buffer;
-
-		private ChannelEncoder(ChannelBuffer buffer)
-		{
-			this.buffer = buffer;
-		}
-
-		public ChannelBuffer getChannelBuffer()
-		{
-			return buffer;
-		}
-
-		@Override
-		public void writeByte(int intVal)
-		{
-			buffer.writeByte(intVal);
-		}
-
-		@Override
-		public void writeInt(int intVal)
-		{
-			buffer.writeInt(intVal);
-		}
-
-		@Override
-		public void writeShort(int intVal)
-		{
-			buffer.writeShort(intVal);
-		}
-	}
+	
 	private static class ChannelDecoder implements DataInput
 	{
 		final private ChannelBuffer buffer;
@@ -884,6 +682,12 @@ public class MessageCodec
 		public void skipBytes(int size)
 		{
 			buffer.skipBytes(size);
+		}
+
+		@Override
+		public int readableBytes()
+		{
+			return buffer.readableBytes();
 		}
 	}
 }

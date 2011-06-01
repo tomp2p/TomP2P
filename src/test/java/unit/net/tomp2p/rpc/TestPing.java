@@ -305,11 +305,11 @@ public class TestPing
 		{
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
-			Utils.sleep(100);
+			//Utils.sleep(100);
 			// sender.setBlocking(false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			Utils.sleep(100);
+			//Utils.sleep(100);
 			// recv1.setBlocking(false);
 			long start = System.currentTimeMillis();
 			List<FutureResponse> list = new ArrayList<FutureResponse>(10000);

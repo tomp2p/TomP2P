@@ -120,6 +120,7 @@ public class TestStorage
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false);
 			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			
 			Number320 key=new Number320(new Number160(33), new ShortString("test")
@@ -137,6 +138,7 @@ public class TestStorage
 			fr = smmSender.put(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
 					.toNumber160(), tmp, false, false);
 			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			Map<Number480, Data>  result2 = storeRecv.get(key);
 			Assert.assertEquals(result2.size(), 2);
@@ -563,7 +565,7 @@ public class TestStorage
 			recv1.getPeerBean().setStorage(storeRecv);
 			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
-			byte[] me1 = new byte[100 * 1014 * 1024];
+			byte[] me1 = new byte[50 * 1014 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false);

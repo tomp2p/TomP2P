@@ -392,7 +392,7 @@ public class MessageCodec
 				{
 					if(buffer.readableBytes() < 20) return false;
 					Number160 key = readID(buffer);
-					final Data data = decodeData(new ChannelDecoder(buffer), message);
+					final Data data = decodeData(new ChannelDecoder(buffer), message.getSender());
 					if(data == null) return false;
 					if(data.isProtectedEntry() && message.getPublicKey()==null)
 						throw new DecoderException("You indicated that you want to protect the data, but you did not provide or provided too late a public key.");
@@ -505,7 +505,7 @@ public class MessageCodec
 		}
 	}
 
-	public static Data decodeData(final DataInput buffer, Message message)
+	public static Data decodeData(final DataInput buffer, PeerAddress originator)
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
 			UnknownHostException
 	{
@@ -518,7 +518,7 @@ public class MessageCodec
 		//
 		if (buffer.readableBytes() < dateLength) return null;
 		final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-				dateLength, ttl, protectedEntry, message.getSender());
+				dateLength, ttl, protectedEntry, originator);
 		buffer.skipBytes(dateLength);
 		return data;
 	}

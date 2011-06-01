@@ -71,8 +71,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			// in case we want to check the signature, we need to keep the
 			// header for a while
 			buffer.getBytes(buffer.readerIndex(), rawHeader);
-			// we need to backup the reader index, since read data may vanish.
-			buffer.markReaderIndex();
 			final SocketAddress sa = channel.getRemoteAddress();
 			// System.err.println("tcp decoder"+sa);
 			message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) sa).getAddress());
@@ -97,6 +95,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 0)
 			{
 				step++;
+				readerIndex = buffer.readerIndex();
 				if (message.isHintSign())
 				{
 					signature = Signature.getInstance("SHA1withDSA");
@@ -115,6 +114,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 1)
 			{
 				step++;
+				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
@@ -130,6 +130,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 2)
 			{
 				step++;
+				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
@@ -144,6 +145,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 3)
 			{
 				step++;
+				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
@@ -156,7 +158,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				buffer.readerIndex(readerIndex);
 				return null;
 			}
-
 			return cleanupAndReturnMessage();
 		}
 		else
@@ -172,6 +173,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			e.getCause().printStackTrace();
 		if (e.getCause().getMessage() == null)
 		{
+			e.getCause().printStackTrace();
 			ctx.sendUpstream(e);
 			return;
 		}
@@ -195,6 +197,8 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	{
 		final Message tmp = message;
 		message = null;
+		step = 0;
+		signature = null;
 		// set finished time at the end since the sender starts its timer after
 		// sending the last packet
 		if (logger.isDebugEnabled())

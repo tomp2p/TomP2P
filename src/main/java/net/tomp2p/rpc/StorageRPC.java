@@ -214,8 +214,15 @@ public class StorageRPC extends ReplyHandler
 		for (Map.Entry<Number160, Data> entry : toStore.entrySet())
 		{
 			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
-					entry.getValue(), publicKey, putIfAbsent, protectDomain))
+					entry.getValue(), publicKey, putIfAbsent, protectDomain)) {
 				result.add(entry.getKey());
+			}
+			else {
+				if(logger.isDebugEnabled())
+					logger.debug("could not add");
+				peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
+						entry.getValue(), publicKey, putIfAbsent, protectDomain);
+			}
 		}
 		// check the responsibility of the newly added data, do something
 		// (notify) if we are responsible

@@ -13,6 +13,7 @@ import net.tomp2p.message.MessageCodec;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 
 import org.slf4j.Logger;
@@ -598,7 +599,19 @@ public class StorageDisk extends Storage
 		{
 			try
 			{
-				Data data = MessageCodec.decodeData(new TupleDecoder(input), null);
+				//get the peeraddress from the disk, this is the same format as in MessageCodec, however, its BerkleyDB specific
+				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+				input.read(me);
+				Number160 id = new Number160(me);
+				input.mark(1);
+				int type = input.readUnsignedByte();
+				input.reset();
+				int len=PeerAddress.expectedSocketLength(type);
+				byte[] me2=new byte[len];
+				input.read(me2);
+				PeerAddress peerAddress = new PeerAddress(id, me2, 0);
+				
+				Data data = MessageCodec.decodeData(new TupleDecoder(input), peerAddress);
 				// in addition to, we need to decode if we have a direct
 				// replication. This is not done in MessageCodec becaues this
 				// information does not go over the wire.
@@ -616,6 +629,7 @@ public class StorageDisk extends Storage
 		@Override
 		public void objectToEntry(Data data, TupleOutput output)
 		{
+			output.write(data.getPeerAddress().toByteArray());
 			int seconds = data.getTTLSeconds();
 			seconds = data.isProtectedEntry() ? seconds | 0x80000000 : seconds & 0x7FFFFFFF;
 			output.writeInt(seconds);

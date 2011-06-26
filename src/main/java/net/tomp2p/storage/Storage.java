@@ -26,7 +26,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.utils.Utils;
 
-public abstract class Storage implements Digest
+public abstract class Storage implements Digest, Responsibility
 {
 	public enum ProtectionEnable
 	{
@@ -79,11 +79,6 @@ public abstract class Storage implements Digest
 	public abstract void close();
 
 	// Replication
-	public abstract Collection<Number160> findResponsibleData(Number160 peerID);
-
-	public abstract Number160 findResponsiblePeerID(Number160 key);
-
-	public abstract boolean updateResponsibilities(Number160 key, Number160 closest);
 
 	public abstract Collection<Number480> storedDirectReplication();
 

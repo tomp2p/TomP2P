@@ -34,7 +34,7 @@ import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.Transaction;
 
-public class StorageDisk extends Storage
+public class StorageDisk extends Storage implements Responsibility
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageDisk.class);
 	private final Environment env;
@@ -371,28 +371,6 @@ public class StorageDisk extends Storage
 	}
 
 	@Override
-	public DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey)
-	{
-		if (fromKey == null)
-			fromKey = Number160.ZERO;
-		if (toKey == null)
-			toKey = Number160.MAX_VALUE;
-		checkTimeout();
-		SortedMap<Number480, Data> tmp = get(key);
-		Number160 hash = Number160.ZERO;
-		int size = 0;
-		for (Number480 key2 : tmp.keySet())
-		{
-			if(fromKey.compareTo(key2.getContentKey())<1 && toKey.compareTo(key2.getContentKey())>1)
-			{
-				hash = hash.xor(key2.getContentKey());
-				size++;
-			}
-		}
-		return new DigestInfo(hash, size);
-	}
-
-	@Override
 	public void iterateAndRun(Number160 locationKey, StorageRunner runner)
 	{
 		Number480 min = new Number480(locationKey, Number160.ZERO, Number160.ZERO);
@@ -406,7 +384,7 @@ public class StorageDisk extends Storage
 	}
 
 	@Override
-	public Collection<Number160> findResponsibleData(Number160 peerID)
+	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID)
 	{
 		Collection<Number160> result = new ArrayList<Number160>();
 		for (Number160Number160 tmp : responsibilityMapRev.duplicates(peerID))
@@ -415,7 +393,7 @@ public class StorageDisk extends Storage
 	}
 
 	@Override
-	public Number160 findResponsiblePeerID(Number160 locationKey)
+	public Number160 findPeerIDForResponsibleContent(Number160 locationKey)
 	{
 		Number160Number160 tmp = responsibilityMap.get(locationKey);
 		if (tmp == null)
@@ -629,7 +607,10 @@ public class StorageDisk extends Storage
 		@Override
 		public void objectToEntry(Data data, TupleOutput output)
 		{
-			output.write(data.getPeerAddress().toByteArray());
+			PeerAddress peerAddress = data.getPeerAddress();
+			if(peerAddress == null)
+				peerAddress = PeerAddress.EMPTY_IPv4;
+			output.write(peerAddress.toByteArray());
 			int seconds = data.getTTLSeconds();
 			seconds = data.isProtectedEntry() ? seconds | 0x80000000 : seconds & 0x7FFFFFFF;
 			output.writeInt(seconds);
@@ -915,5 +896,12 @@ public class StorageDisk extends Storage
 			//we can read until we are done.
 			return Integer.MAX_VALUE;
 		}
+	}
+
+	@Override
+	public void removeResponsibility(Number160 locationKey)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

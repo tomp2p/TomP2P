@@ -20,31 +20,32 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.p2p.IdentityManagement;
+import net.tomp2p.p2p.Maintenance;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DigestInfo;
-import net.tomp2p.rpc.TrackerDataResult;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.MapMaker;
+
 /**
  * The maintenance for the tracker is done by the client peer. Thus the peers on
  * a tracker expire, but a client can send a Bloom filter with peers, that he
- * knows are offline.
+ * knows are offline. TrackerStorage stores the data in memory only.
+ * 
+ * TODO: check availability of secondary peers and periodically check if peers
+ * from the mesh are still online, right now we rely on the PeerMap mechanism
  * 
  * @author draft
  * 
@@ -52,266 +53,312 @@ import org.slf4j.LoggerFactory;
 public class TrackerStorage implements PeerStatusListener, Digest
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
+	final private static Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
+	final private static DigestInfo EMPTY_DIGEST_INFO = new DigestInfo(Number160.ZERO, 0);
 	// once you call listen, changing this value has no effect unless a new
 	// TrackerRPC is created. The value is chosen to fit into one single UDP
 	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
 	final public static int TRACKER_SIZE = 35;
-	final private Set<Number320> secondaryTracker = new HashSet<Number320>();
-	final private Map<Number320, SortedMap<Number160, TrackerData>> trackerData = new HashMap<Number320, SortedMap<Number160, TrackerData>>();
-	final private Map<Number160, Set<Number320>> trackerDataPerPeerPrimary = new HashMap<Number160, Set<Number320>>();
-	final private Map<Number160, Set<Number320>> trackerDataPerPeerSecondary = new HashMap<Number160, Set<Number320>>();
-	final private Map<Number160, Long> trackerPeerTimeout = new LinkedHashMap<Number160, Long>();
-	final private Map<Number160, PublicKey> peerIdentity = new HashMap<Number160, PublicKey>();
-	final private Set<Number160> peerOffline = new HashSet<Number160>();
-	final private Set<Number160> peerOfflinePrimary = new HashSet<Number160>();
-	final private Object lock = new Object();
-	private boolean fillPrimaryStorageFast=false;
-	private boolean primaryStorageOnly=false;
+	// K=location and domain, V=peerId and attachment
+	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataActive;
+	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataMesh;
+	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataSecondary;
+	// for timeouts we need to know which peer stores what data to remove it
+	// from the primary and secondary tracker
+	// K=peerId of the offline peer, V=location and domain
+	final private ConcurrentMap<Number160, Collection<Number320>> reverseTrackerDataMesh;
+	final private ConcurrentMap<Number160, Collection<Number320>> reverseTrackerDataSecondary;
+	// K=peerId of the offline peer, V=reporter
+	final private ConcurrentMap<Number160, Collection<Number160>> peerOffline;
+	final private IdentityManagement identityManagement;
+	final private int trackerTimoutSeconds;
+	final private Replication replication;
+	final private Maintenance maintenance;
+	// variable parameters
+	private boolean fillPrimaryStorageFast = false;
+	private boolean primaryStorageOnly = false;
 	private int secondaryFactor = 5;
 	private int primanyFactor = 1;
 
-	final private Random rnd;
-	private volatile int trackerTimoutSeconds = Integer.MAX_VALUE;
-
-	public TrackerStorage(long seed)
+	public enum ReferrerType
 	{
-		rnd = new Random(seed);
+		ACTIVE, MESH
+	};
+
+	public TrackerStorage(IdentityManagement identityManagement, int trackerTimoutSeconds, Replication replication,
+			Maintenance maintenance)
+	{
+		this.trackerTimoutSeconds = trackerTimoutSeconds;
+		this.identityManagement = identityManagement;
+		this.replication = replication;
+		this.maintenance = maintenance;
+		trackerDataActive = new MapMaker().makeMap();
+		trackerDataMesh = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
+		trackerDataSecondary = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
+		//
+		reverseTrackerDataMesh = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
+		reverseTrackerDataSecondary = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS)
+				.makeMap();
+		// if everything is perfect, a factor of 2 is enough, to be on the safe
+		// side factor 5 is used.
+		peerOffline = new MapMaker().expireAfterAccess(trackerTimoutSeconds * 5, TimeUnit.SECONDS).makeMap();
+
+	}
+
+	public Map<Number160, TrackerData> activePeers(Number160 locationKey, Number160 domainKey)
+	{
+		Number320 keys = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = trackerDataActive.get(keys);
+		if (data == null)
+			return EMPTY_MAP;
+		// return a copy
+		synchronized (data)
+		{
+			return new HashMap<Number160, TrackerData>(data);
+		}
+
+	}
+
+	public Map<Number160, TrackerData> meshPeers(Number160 locationKey, Number160 domainKey)
+	{
+		Number320 keys = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = trackerDataMesh.get(keys);
+		if (data == null)
+			return EMPTY_MAP;
+		// return a copy
+		synchronized (data)
+		{
+			return new HashMap<Number160, TrackerData>(data);
+		}
+
+	}
+
+	public Map<Number160, TrackerData> secondaryPeers(Number160 locationKey, Number160 domainKey)
+	{
+		Number320 keys = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = trackerDataSecondary.get(keys);
+		if (data == null)
+			return EMPTY_MAP;
+		// return a copy
+		synchronized (data)
+		{
+			return new HashMap<Number160, TrackerData>(data);
+		}
+	}
+
+	public void addActive(Number160 locationKey, Number160 domainKey, PeerAddress remotePeer, byte[] attachement,
+			int offset, int length)
+	{
+		Number320 key = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = new HashMap<Number160, TrackerData>();
+		Map<Number160, TrackerData> data2 = trackerDataActive.putIfAbsent(key, data);
+		data = data2 == null ? data : data2;
+		// we don't expect many concurrent access for data
+		synchronized (data)
+		{
+			data.put(remotePeer.getID(), new TrackerData(remotePeer, identityManagement.getPeerAddress(), attachement,
+					offset, length));
+		}
+	}
+
+	public boolean removeActive(Number160 locationKey, Number160 domainKey, Number160 remotePeerId)
+	{
+		Number320 key = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = trackerDataActive.get(key);
+		if (data == null)
+			return false;
+		TrackerData retVal;
+		// we don't expect many concurrent access for data
+		synchronized (data)
+		{
+			retVal = data.remove(remotePeerId);
+			if (data.size() == 0)
+			{
+				trackerDataActive.remove(key);
+			}
+		}
+		return retVal != null;
 	}
 
 	public boolean put(Number160 locationKey, Number160 domainKey, PeerAddress peerAddress, PublicKey publicKey,
 			byte[] attachement)
 	{
 		if (attachement == null)
-			return put(locationKey, domainKey, peerAddress, publicKey, attachement, 0, 0);
-		else
-			return put(locationKey, domainKey, peerAddress, publicKey, attachement, 0, attachement.length);
-	}
-	
-	public Collection<Number160> knownPeers(Number160 locationKey, Number160 domainKey)
-	{
-		Number320 keys = new Number320(locationKey, domainKey);
-		synchronized (lock)
 		{
-			Map<Number160, TrackerData> data = trackerData.get(keys);
-			return new ArrayList<Number160>(data.keySet());
+			return put(locationKey, domainKey, peerAddress, publicKey, null, 0, 0);
+		}
+		else
+		{
+			return put(locationKey, domainKey, peerAddress, publicKey, attachement, 0, attachement.length);
 		}
 	}
 
 	public boolean put(Number160 locationKey, Number160 domainKey, PeerAddress peerAddress, PublicKey publicKey,
 			byte[] attachement, int offset, int length)
 	{
-		Number160 peerId = peerAddress.getID();
-		synchronized (lock)
+		if (logger.isDebugEnabled())
 		{
-			// check if this guy is offline
-			if (peerOffline.contains(peerAddress.getID()))
-				return false;
-			// check permission
-			PublicKey storedIdentity = peerIdentity.get(peerId);
-			if (storedIdentity != null)
-			{
-				if (!storedIdentity.equals(publicKey))
-					return false;
-			}
-			else if (publicKey != null)
-				peerIdentity.put(peerId, publicKey);
-			// set/update timeout
-			trackerPeerTimeout.remove(peerId);
-			trackerPeerTimeout.put(peerId, System.currentTimeMillis() + (getTrackerTimoutSeconds() * 1000));
-			// store the data
-			if (!isSecondaryTracker(locationKey, domainKey) && primaryStorageOnly)
-			{
-				// we have space in our primary tracker, store them there!
-				Number320 key = new Number320(locationKey, domainKey);
-				storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataPerPeerPrimary);
-			}
-			else if (size(locationKey, domainKey) < TRACKER_SIZE * getPrimanyFactor())
-			{
-				// we have space in our primary tracker, store them there!
-				Number320 key = new Number320(locationKey, domainKey);
-				storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataPerPeerPrimary);
-			}
-			else
-			{
-				// no space, store in the extended cache
-				Number320 keyAlt = new Number320(locationKey, domainKey.xor(Number160.MAX_VALUE));
-				storeData(peerAddress, attachement, offset, length, peerId, keyAlt, trackerDataPerPeerSecondary);
-			}
-			return true;
+			logger.debug("try to store on tracker " + locationKey);
 		}
+		Number160 peerId = peerAddress.getID();
+		// check if this guy is offline
+		if (isOffline(peerAddress))
+			return false;
+		// check identity
+		if (!identityManagement.checkIdentity(peerId, publicKey))
+			return false;
+
+		// store the data
+		if (canStorePrimary(locationKey, domainKey, false))
+		{
+			// we have space in our primary tracker, store them there!
+			Number320 key = new Number320(locationKey, domainKey);
+			if (storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataMesh,
+					reverseTrackerDataMesh, getPrimanyFactor()))
+			{
+				replication.checkResponsibility(locationKey);
+				return true;
+			}
+		}
+		// do not store in the secondary map, since this is used for PEX, for
+		// unknown peers.
+		return false;
+	}
+
+	private boolean isOffline(PeerAddress peerAddress)
+	{
+		// TODO: always trust myself, do a majority voting for others
+		if (peerOffline.containsKey(peerAddress.getID()))
+			return true;
+		return false;
 	}
 
 	public boolean putReferred(Number160 locationKey, Number160 domainKey, PeerAddress peerAddress,
-			PeerAddress referrer, byte[] attachement, int offset, int legth)
+			PeerAddress referrer, byte[] attachement, int offset, int length, ReferrerType type)
 	{
 		Number160 peerId = peerAddress.getID();
-		synchronized (lock)
+		// we cannot do public key check, because these data is referenced from
+		// other peers and we don't know about the timeouts as well
+		// store the data
+		if (canStoreSecondary(locationKey, domainKey))
 		{
-			// check if this guy is offline
-			if (peerOffline.contains(peerAddress.getID()))
-				return false;
-			PublicKey storedIdentity = peerIdentity.get(peerId);
-			// we have it already stored first hand, ignore this entry!
-			if (storedIdentity != null)
-				return false;
-			// set/update timeout
-			trackerPeerTimeout.remove(peerId);
-			trackerPeerTimeout.put(peerId, System.currentTimeMillis() + (getTrackerTimoutSeconds() * 1000));
-			// store the data
-			if (size(locationKey, domainKey) < (TRACKER_SIZE * getPrimanyFactor()) && isFillPrimaryStorageFast())
+			// maybe we have space in our secondary tracker, store them there!
+			Number320 key = new Number320(locationKey, domainKey);
+			if (storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataSecondary,
+					reverseTrackerDataSecondary, getSecondaryFactor()))
 			{
-				// we have space in our primary tracker, store them there!
-				Number320 key = new Number320(locationKey, domainKey);
-				storeData(peerAddress, attachement, offset, legth, peerId, key, trackerDataPerPeerPrimary);
+				if(ReferrerType.MESH == type) {
+					maintenance.addTrackerMaintenance(peerAddress, referrer, locationKey, domainKey, this);
+				}
+				return true;
 			}
-			else
+		}
+		return false;
+	}
+
+	public boolean moveFromSecondaryToMesh(Number160 locationKey, Number160 domainKey, PublicKey publicKey)
+	{
+		Number320 key = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> map = trackerDataSecondary.remove(key);
+		if (map == null)
+			return false;
+		synchronized (map)
+		{
+			for (Entry<Number160, TrackerData> entry : map.entrySet())
 			{
-				// no space, store in the extended cache
-				Number320 keyAlt = new Number320(locationKey, domainKey.xor(Number160.MAX_VALUE));
-				storeData(peerAddress, attachement, offset, legth, peerId, keyAlt, trackerDataPerPeerSecondary);
+				reverseTrackerDataSecondary.remove(entry.getKey());
+				TrackerData data = entry.getValue();
+				put(locationKey, domainKey, data.getPeerAddress(), publicKey, data.getAttachement(), data.getOffset(),
+						data.getLength());
 			}
+		}
+
+		return true;
+	}
+
+	private boolean storeData(PeerAddress peerAddress, byte[] attachement, int offset, int length, Number160 peerId,
+			Number320 key, ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerData,
+			ConcurrentMap<Number160, Collection<Number320>> reverseTrackerData, int factor)
+	{
+		Map<Number160, TrackerData> data = new HashMap<Number160, TrackerData>();
+		Map<Number160, TrackerData> data2 = trackerData.putIfAbsent(key, data);
+		data = data2 == null ? data : data2;
+		// we don't expect much concurrency with data and data2 so we use
+		// locking
+		synchronized (data)
+		{
+			if (data.size() > TRACKER_SIZE * factor)
+				return false;
+			data.put(peerId, new TrackerData(peerAddress, null, attachement, offset, length));
+		}
+		// now store the reverse data to find all the data one peer stored
+		Collection<Number320> collection = new HashSet<Number320>();
+		Collection<Number320> collection2 = reverseTrackerData.putIfAbsent(peerId, collection);
+		collection = collection2 == null ? collection : collection2;
+		// we don't expect much concurrency with collection and collection2 so
+		// we use locking
+		synchronized (collection)
+		{
+			collection.add(key);
 		}
 		return true;
 	}
 
-	private void storeData(PeerAddress peerAddress, byte[] attachement, int offset, int length, Number160 peerId,
-			Number320 key, Map<Number160, Set<Number320>> trackerDataPerPeer)
+	private boolean canStorePrimary(Number160 locationKey, Number160 domainKey, boolean referred)
 	{
-		SortedMap<Number160, TrackerData> data = trackerData.get(key);
-		if (data == null)
+		if (isPrimaryStorageOnly())
 		{
-			data = new TreeMap<Number160, TrackerData>();
-			trackerData.put(key, data);
+			return true;
 		}
-		data.put(peerId, new TrackerData(peerAddress, null, attachement, offset, length));
-		// store the map peer - content
-		Set<Number320> keys = trackerDataPerPeer.get(key);
-		if (keys == null)
+		else if (!referred || isFillPrimaryStorageFast())
 		{
-			keys = new HashSet<Number320>();
-			trackerDataPerPeer.put(peerId, keys);
+			return sizePrimary(locationKey, domainKey) <= (TRACKER_SIZE * getPrimanyFactor());
 		}
-		keys.add(key);
+		else
+		{
+			return false;
+		}
 	}
 
-	public int size(Number160 locationKey, Number160 domainKey)
+	private boolean canStoreSecondary(Number160 locationKey, Number160 domainKey)
+	{
+		if (isPrimaryStorageOnly())
+		{
+			return false;
+		}
+		else
+		{
+			return sizeSecondary(locationKey, domainKey) <= (TRACKER_SIZE * getSecondaryFactor());
+		}
+	}
+
+	public int sizePrimary(Number160 locationKey, Number160 domainKey)
+	{
+		return size(locationKey, domainKey, trackerDataMesh);
+	}
+
+	public int sizeSecondary(Number160 locationKey, Number160 domainKey)
+	{
+		return size(locationKey, domainKey, trackerDataSecondary);
+	}
+
+	private int size(Number160 locationKey, Number160 domainKey,
+			ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerData)
 	{
 		Number320 key = new Number320(locationKey, domainKey);
-		synchronized (lock)
+		Map<Number160, TrackerData> data = trackerData.get(key);
+		if (data == null)
 		{
-			Map<Number160, TrackerData> data = trackerData.get(key);
-			if (data == null)
-				return 0;
-			else
-				return data.size();
+			return 0;
 		}
-	}
-
-	public TrackerDataResult get(Number160 locationKey, Number160 domainKey)
-	{
-		Number320 keys = new Number320(locationKey, domainKey);
-		return get(keys);
-	}
-
-	public TrackerDataResult get(Number320 keys)
-	{
-		synchronized (lock)
+		else
 		{
-			SortedMap<Number160, TrackerData> tmp = trackerData.get(keys);
-			return new TrackerDataResult(tmp, false);
-		}
-	}
-
-	public TrackerDataResult getSelection(Number160 locationKey, Number160 domainKey, int maxTrackers,
-			Set<Number160> knownPeers)
-	{
-		Number320 keys = new Number320(locationKey, domainKey);
-		SortedMap<Number160, TrackerData> dataCopy;
-		synchronized (lock)
-		{
-			Map<Number160, TrackerData> data = trackerData.get(keys);
-			if (data != null)
-				dataCopy = new TreeMap<Number160, TrackerData>(data);
-			else
-				dataCopy = null;
-		}
-
-		if (knownPeers != null && dataCopy != null)
-		{
-			for (Iterator<Number160> i = dataCopy.keySet().iterator(); i.hasNext();)
+			synchronized (data)
 			{
-				Number160 number160 = i.next();
-				if (knownPeers.contains(number160))
-				{
-					if (logger.isDebugEnabled())
-						logger.debug("We won't deliver " + number160 + " as the peer indicates that its already known.");
-					// System.err.println("We won't deliver " +
-					// number480.getContentKey()
-					// + " as the peer indicates that its already known.");
-					i.remove();
-				}
+				return data.size();
 			}
 		}
-		Map<Number160, TrackerData> dataResult = new HashMap<Number160, TrackerData>();
-		if (dataCopy == null)
-			return new TrackerDataResult(dataResult, false);
-		int size = dataCopy.size();
-		for (int i = 0; i < maxTrackers && i < size; i++)
-		{
-			Entry<Number160, TrackerData> key = Utils.<Number160, TrackerData>pollRandomKey(dataCopy, rnd);
-			/*if(dataResult.containsKey(key.getKey()))
-				System.out.println("Wtf?? "+dataCopy);
-			System.out.println("add "+key.getKey());
-			System.out.println("all "+dataCopy);*/
-			dataResult.put(key.getKey(), key.getValue());
-		}
-		/*if(size(locationKey, domainKey)==35 && dataResult.size()<35)
-		{
-			System.out.println("Wtf?");
-			getSelection(locationKey, domainKey, maxTrackers, knownPeers);
-		}*/
-		return new TrackerDataResult(dataResult, !dataCopy.isEmpty());
-	}
-
-	public Collection<PeerAddress> getSelectionSecondary(Number160 locationKey, Number160 domainKey, int maxTrackers,
-			Set<Number160> knownPeers)
-	{
-		TrackerDataResult data = getSelection(locationKey, domainKey.xor(Number160.MAX_VALUE), maxTrackers, knownPeers);
-		List<PeerAddress> retVal = new ArrayList<PeerAddress>();
-		for (TrackerData dat : data.getPeerDataMap().values())
-			retVal.add(dat.getPeerAddress());
-		return retVal;
-	}
-
-	public int getTrackerTimoutSeconds()
-	{
-		return trackerTimoutSeconds;
-	}
-
-	public void setTrackerTimoutSeconds(int trackerTimoutSeconds)
-	{
-		this.trackerTimoutSeconds = trackerTimoutSeconds;
-	}
-
-	public void addAsSecondaryTracker(Number160 locationKey, Number160 domainKey)
-	{
-		secondaryTracker.add(new Number320(locationKey, domainKey));
-	}
-
-	public boolean isSecondaryTracker(Number160 locationKey, Number160 domainKey)
-	{
-		return secondaryTracker.contains(new Number320(locationKey, domainKey));
-	}
-
-	public int getTrackerStoreSizeMax(Number160 locationKey, Number160 domainKey)
-	{
-		if (isSecondaryTracker(locationKey, domainKey))
-			return TRACKER_SIZE * getSecondaryFactor();
-		else if(isPrimaryStorageOnly())
-			return Integer.MAX_VALUE;
-		else
-			return TRACKER_SIZE * getPrimanyFactor();
 	}
 
 	public void setSecondaryFactor(int secondaryFactor)
@@ -334,56 +381,50 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		return primanyFactor;
 	}
 
-	public Set<Number160> getAndClearOfflinePrimary()
-	{
-		Set<Number160> retVal;
-		synchronized (lock)
-		{
-			retVal = new HashSet<Number160>(peerOfflinePrimary);
-			peerOfflinePrimary.clear();
-		}
-		return retVal;
-	}
-
 	@Override
 	public void peerOffline(PeerAddress peerAddress, Reason reason)
 	{
-		if(reason == Reason.NOT_REACHABLE)
-			peerOffline(peerAddress.getID());
+		if (reason == Reason.NOT_REACHABLE)
+			peerOffline(peerAddress.getID(), identityManagement.getSelf());
 	}
 
-	private void peerOffline(Number160 peerId)
+	private void peerOffline(Number160 peerId, Number160 referrerId)
 	{
-		synchronized (lock)
-		{
-			peerOffline.add(peerId);
-			if (removeOffline(peerId, trackerDataPerPeerPrimary))
-			{
-				peerOfflinePrimary.add(peerId);
-				System.err.println("removed "+peerId);
-			}
-			removeOffline(peerId, trackerDataPerPeerSecondary);
-			trackerPeerTimeout.remove(peerId);
-			trackerDataPerPeerPrimary.remove(peerId);
-			trackerDataPerPeerSecondary.remove(peerId);
-		}
+		indicateOffline(peerId, referrerId);
+		remove(peerId, trackerDataMesh, reverseTrackerDataMesh);
+		remove(peerId, trackerDataSecondary, reverseTrackerDataSecondary);
 	}
 
-	private boolean removeOffline(Number160 peerId, Map<Number160, Set<Number320>> trackerDataPerPeer)
+	private void indicateOffline(Number160 peerId, Number160 referrerId)
+	{
+		Collection<Number160> collection = new HashSet<Number160>();
+		Collection<Number160> collection2 = peerOffline.putIfAbsent(peerId, collection);
+		collection = collection2 == null ? collection : collection2;
+		collection.add(referrerId);
+	}
+
+	private boolean remove(Number160 peerId, ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerData,
+			ConcurrentMap<Number160, Collection<Number320>> reverseTrackerData)
 	{
 		boolean retVal = false;
-		Set<Number320> keys = trackerDataPerPeer.get(peerId);
-		if (keys == null)
+		Collection<Number320> collection = reverseTrackerData.remove(peerId);
+		if (collection == null)
 			return false;
-		for (Number320 key : keys)
+		synchronized (collection)
 		{
-			Map<Number160, TrackerData> data = trackerData.get(key);
-			if (data == null)
-				continue;
-			if (data.remove(peerId) != null)
-				retVal = true;
-			if (data.size() == 0)
-				trackerData.remove(key);
+			for (Number320 key : collection)
+			{
+				Map<Number160, TrackerData> data = trackerData.get(key);
+				if (data == null)
+					continue;
+				synchronized (data)
+				{
+					if (data.remove(peerId) != null)
+						retVal = true;
+					if (data.size() == 0)
+						trackerData.remove(key);
+				}
+			}
 		}
 		return retVal;
 	}
@@ -397,40 +438,18 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	@Override
 	public void peerOnline(PeerAddress peerAddress)
 	{
-		synchronized (lock)
-		{
-			if(true)
-				return;
-			// switch from secondary storage to primary storage
-			peerOffline.remove(peerAddress.getID());
-			Set<Number320> keys = trackerDataPerPeerSecondary.remove(peerAddress.getID());
-			if (keys == null)
-				return;
-			for (Number320 key : keys)
-			{
-				Map<Number160, TrackerData> data = trackerData.get(key);
-				if (data == null)
-					continue;
-				TrackerData localTrackerData = data.remove(peerAddress.getID());
-				if (localTrackerData == null)
-					continue;
-				if(data.size()==0)
-					this.trackerData.remove(key);
-				put(key.getLocationKey(), key.getDomainKey().xor(Number160.MAX_VALUE), peerAddress, peerIdentity.get(peerAddress.getID()),
-						localTrackerData.getAttachement(), localTrackerData.getOffset(), localTrackerData.getLength());
-			}
-		}
+		peerOffline.remove(peerAddress.getID());
 	}
 
 	@Override
 	public DigestInfo digest(Number320 key)
 	{
-		synchronized (lock)
+		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
+		if (data == null)
+			return EMPTY_DIGEST_INFO;
+		synchronized (data)
 		{
-			Map<Number160, TrackerData> data = trackerData.get(key);
 			Number160 hash = Number160.ZERO;
-			if (data == null)
-				return new DigestInfo(hash, 0);
 			for (Number160 tmpKey : data.keySet())
 				hash = hash.xor(tmpKey);
 			return new DigestInfo(hash, data.size());
@@ -442,13 +461,13 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	{
 		if (contentKeys == null)
 			return digest(key);
-		synchronized (lock)
+		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
+		if (data == null)
+			return EMPTY_DIGEST_INFO;
+		synchronized (data)
 		{
-			Map<Number160, TrackerData> data = trackerData.get(key);
 			Number160 hash = Number160.ZERO;
 			int size = 0;
-			if (data == null)
-				return new DigestInfo(hash, 0);
 			for (Number160 tmpKey : contentKeys)
 			{
 				if (data.containsKey(tmpKey))
@@ -461,33 +480,9 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		}
 	}
 
-	@Override
-	public DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey)
-	{
-		if (fromKey == null)
-			fromKey = Number160.ZERO;
-		if (toKey == null)
-			toKey = Number160.MAX_VALUE;
-		synchronized (lock)
-		{
-			SortedMap<Number160, TrackerData> data = trackerData.get(key);
-			Number160 hash = Number160.ZERO;
-			if (data == null)
-				return new DigestInfo(hash, 0);
-			SortedMap<Number160, TrackerData> dataSub = data.subMap(fromKey, toKey);
-			for (Number160 tmpKey : dataSub.keySet())
-				hash = hash.xor(tmpKey);
-			return new DigestInfo(hash, dataSub.size());
-		}
-	}
-
-	// Timer for tracker data expiration, not required for the simulation
-
 	public void removeReferred(Number160 locationKey, Number160 domainKey, Number160 key, PeerAddress referrer)
 	{
-		// TODO: remove this, only for testing and simulation. We assume every
-		// peer is good!!!!
-		peerOffline(key);
+		indicateOffline(key, referrer.getID());
 	}
 
 	public void setFillPrimaryStorageFast(boolean fillPrimaryStorageFast)
@@ -508,5 +503,38 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	public boolean isPrimaryStorageOnly()
 	{
 		return primaryStorageOnly;
+	}
+
+	public int getTrackerTimoutSeconds()
+	{
+		return trackerTimoutSeconds;
+	}
+
+	/**
+	 * A peer is a secondary tracker if the peers stores itself on the tracker
+	 * as well. The primary trackers do not behave like this.
+	 * 
+	 * @param locationKey
+	 * @param domainKey
+	 * @return
+	 */
+	public boolean isSecondaryTracker(Number160 locationKey, Number160 domainKey)
+	{
+		Map<Number160, TrackerData> mesh = meshPeers(locationKey, domainKey);
+		return mesh.containsKey(identityManagement.getSelf());
+	}
+
+	// TODO: seems a bit inefficient, but it works for the moment
+	public Collection<Number160> responsibleDomains(Number160 locationKey)
+	{
+		Collection<Number160> retVal = new ArrayList<Number160>();
+		for (Number320 number320 : trackerDataMesh.keySet())
+		{
+			if (number320.getLocationKey().equals(locationKey))
+			{
+				retVal.add(number320.getDomainKey());
+			}
+		}
+		return retVal;
 	}
 }

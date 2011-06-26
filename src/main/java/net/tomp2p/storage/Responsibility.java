@@ -18,13 +18,16 @@ package net.tomp2p.storage;
 import java.util.Collection;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
-import net.tomp2p.rpc.DigestInfo;
 
-public interface Digest
+public interface Responsibility
 {
-	public abstract DigestInfo digest(Number320 key);
-	
-	public abstract DigestInfo digest(Number320 key, Collection<Number160> contentKeys);
+
+	public abstract Number160 findPeerIDForResponsibleContent(Number160 locationKey);
+
+	public abstract Collection<Number160> findContentForResponsiblePeerID(Number160 peerID);
+
+	public abstract boolean updateResponsibilities(Number160 locationKey, Number160 peerId);
+
+	public abstract void removeResponsibility(Number160 locationKey);
 
 }

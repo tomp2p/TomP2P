@@ -1,16 +1,17 @@
 /*
- * @(#) $CVSHeader:  $
- *
- * Copyright (C) 2011 by Netcetera AG.
- * All rights reserved.
- *
- * The copyright to the computer program(s) herein is the property of
- * Netcetera AG, Switzerland.  The program(s) may be used and/or copied
- * only with the written permission of Netcetera AG or in accordance
- * with the terms and conditions stipulated in the agreement/contract
- * under which the program(s) have been supplied.
- *
- * @(#) $Id: codetemplates.xml,v 1.5 2004/06/29 12:49:49 hagger Exp $
+ * Copyright 2009 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package net.tomp2p.storage;
 
@@ -23,14 +24,22 @@ public class TrackerData implements Comparable<TrackerData>
 	final private byte[] attachement;
 	final private int offset;
 	final private int length;
+	final private boolean couldProvideMoreData;
 
-	public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int legth)
+	public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length)
+	{
+		this(peerAddress, referrer, attachement, offset, length, false);
+	}
+
+	public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length,
+			boolean couldProvideMoreData)
 	{
 		this.peerAddress = peerAddress;
 		this.referrer = referrer;
 		this.attachement = attachement;
 		this.offset = offset;
-		this.length = legth;
+		this.length = length;
+		this.couldProvideMoreData = couldProvideMoreData;
 	}
 
 	public PeerAddress getPeerAddress()
@@ -71,12 +80,17 @@ public class TrackerData implements Comparable<TrackerData>
 	{
 		return getPeerAddress().getID().compareTo(o.getPeerAddress().getID());
 	}
-	
+
 	@Override
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
 		sb.append("p:").append(peerAddress).append(",l:").append(length);
 		return sb.toString();
+	}
+
+	public boolean couldProvideMoreData()
+	{
+		return couldProvideMoreData;
 	}
 }

@@ -18,7 +18,6 @@ package net.tomp2p.storage;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,10 +42,11 @@ public class StorageMemory extends Storage
 	final protected SortedMap<Number480, Data> dataMap = new TreeMap<Number480, Data>();
 	final protected Set<Number480> dataDirectReplication = new HashSet<Number480>();
 	final private Map<Number320, PublicKey> protectedMap = new HashMap<Number320, PublicKey>();
-	final protected Map<Number160, Number160> responsibilityMap = new HashMap<Number160, Number160>();
-	final protected Map<Number160, Set<Number160>> responsibilityMapRev = new HashMap<Number160, Set<Number160>>();
+	//final protected Map<Number160, Number160> responsibilityMap = new HashMap<Number160, Number160>();
+	//final protected Map<Number160, Set<Number160>> responsibilityMapRev = new HashMap<Number160, Set<Number160>>();
 	final private Map<Number480, Long> timeoutMap = new HashMap<Number480, Long>();
 	final private SortedMap<Long, Set<Number480>> timeoutMapRev = new TreeMap<Long, Set<Number480>>();
+	final private Responsibility responsibilityMemory = new ResponsibilityMemory();
 
 	@Override
 	public void close()
@@ -54,8 +54,6 @@ public class StorageMemory extends Storage
 		dataMap.clear();
 		dataDirectReplication.clear();
 		protectedMap.clear();
-		responsibilityMap.clear();
-		responsibilityMapRev.clear();
 		timeoutMap.clear();
 		timeoutMapRev.clear();
 	}
@@ -95,8 +93,6 @@ public class StorageMemory extends Storage
 			if (tmp != null)
 			{
 				tmp.remove(key);
-				if (tmp.isEmpty())
-					responsibilityMapRev.remove(old);
 			}
 		}
 		Set<Number480> tmp = timeoutMapRev.get(exp);
@@ -332,31 +328,6 @@ public class StorageMemory extends Storage
 	}
 
 	@Override
-	public DigestInfo digest(Number320 key, Number160 fromKey, Number160 toKey)
-	{
-		if (fromKey == null)
-			fromKey = Number160.ZERO;
-		if (toKey == null)
-			toKey = Number160.MAX_VALUE;
-		synchronized (lock)
-		{
-			checkTimeout();
-			SortedMap<Number480, Data> tmp = get(key);
-			Number160 hash = Number160.ZERO;
-			int size = 0;
-			for (Number480 key2 : tmp.keySet())
-			{
-				if (fromKey.compareTo(key2.getContentKey()) < 1 && toKey.compareTo(key2.getContentKey()) > 1)
-				{
-					hash = hash.xor(key2.getContentKey());
-					size++;
-				}
-			}
-			return new DigestInfo(hash, size);
-		}
-	}
-
-	@Override
 	public void iterateAndRun(Number160 locationKey, StorageRunner runner)
 	{
 		Number480 min = new Number480(locationKey, Number160.ZERO, Number160.ZERO);
@@ -373,56 +344,21 @@ public class StorageMemory extends Storage
 	}
 
 	@Override
-	public Collection<Number160> findResponsibleData(Number160 peerID)
+	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID)
 	{
-		synchronized (lock)
-		{
-			Collection<Number160> result = responsibilityMapRev.get(peerID);
-			if (result == null)
-				return Collections.<Number160> emptyList();
-			else
-				return new ArrayList<Number160>(result);
-		}
+		return responsibilityMemory.findContentForResponsiblePeerID(peerID);
 	}
 
 	@Override
-	public Number160 findResponsiblePeerID(Number160 key)
+	public Number160 findPeerIDForResponsibleContent(Number160 locationKey)
 	{
-		synchronized (lock)
-		{
-			return responsibilityMap.get(key);
-		}
+		return responsibilityMemory.findPeerIDForResponsibleContent(locationKey);
 	}
 
 	@Override
-	public boolean updateResponsibilities(Number160 key, Number160 closest)
+	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId)
 	{
-		synchronized (lock)
-		{
-			boolean isNew = false;
-			Number160 old = responsibilityMap.put(key, closest);
-			if (old != null)
-			{
-				isNew = !old.equals(closest);
-				Set<Number160> tmp = responsibilityMapRev.get(old);
-				if (tmp != null)
-				{
-					tmp.remove(key);
-					if (tmp.isEmpty())
-						responsibilityMapRev.remove(old);
-				}
-			}
-			else
-				isNew = true;
-			Set<Number160> tmp = responsibilityMapRev.get(closest);
-			if (tmp == null)
-			{
-				tmp = new HashSet<Number160>();
-				responsibilityMapRev.put(closest, tmp);
-			}
-			tmp.add(key);
-			return isNew;
-		}
+		return responsibilityMemory.updateResponsibilities(locationKey, peerId);
 	}
 
 	@Override
@@ -433,19 +369,10 @@ public class StorageMemory extends Storage
 		return new ArrayList<Number480>(0);
 	}
 
-	private void removeResponsibility(Number160 key)
+	@Override
+	public void removeResponsibility(Number160 locationKey)
 	{
-		Number160 tmp = responsibilityMap.remove(key);
-		if (tmp != null)
-		{
-			Set<Number160> tmp2 = responsibilityMapRev.get(tmp);
-			if (tmp2 != null)
-			{
-				tmp2.remove(key);
-				if (tmp2.isEmpty())
-					responsibilityMapRev.remove(tmp);
-			}
-		}
+		responsibilityMemory.removeResponsibility(locationKey);
 	}
 
 	// TODO: make check timeout time based in a thread, but for now its ok.
@@ -467,5 +394,4 @@ public class StorageMemory extends Storage
 		}
 		return toRemove;
 	}
-
 }

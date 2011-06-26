@@ -65,7 +65,7 @@ public class FutureResponse extends BaseFutureImpl
 			else
 			{
 				type = FutureType.OK;
-				reason = "Message delivered";
+				reason = "Nothing to deliver...";
 			}
 		}
 		notifyListerenrs();

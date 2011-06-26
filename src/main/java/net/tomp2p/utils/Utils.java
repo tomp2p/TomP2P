@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.utils;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -30,6 +31,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +48,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Digest;
+import net.tomp2p.storage.TrackerData;
 
 public class Utils
 {
@@ -247,8 +250,7 @@ public class Utils
 		return data;
 	}
 
-	public static Object decodeJavaObject(byte[] me, int offset, int length)
-			throws ClassNotFoundException, IOException
+	public static Object decodeJavaObject(byte[] me, int offset, int length) throws ClassNotFoundException, IOException
 	{
 		ByteArrayInputStream bais = new ByteArrayInputStream(me, offset, length);
 		ObjectInputStream ois = new ObjectInputStream(bais);
@@ -257,8 +259,7 @@ public class Utils
 		return obj;
 	}
 
-	public static<K> void difference(Collection<K> newNeighbors,
-			Collection<K> alreadyAsked, Collection<K> result)
+	public static <K> void difference(Collection<K> newNeighbors, Collection<K> alreadyAsked, Collection<K> result)
 	{
 		for (Iterator<K> iterator = newNeighbors.iterator(); iterator.hasNext();)
 		{
@@ -310,8 +311,7 @@ public class Utils
 
 	public static final byte[] intToByteArray(int value)
 	{
-		return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8),
-				(byte) value };
+		return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
 	}
 
 	public static final int byteArrayToInt(byte[] b)
@@ -319,8 +319,8 @@ public class Utils
 		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
 	}
 
-	public static DigestInfo digest(Digest storage, Number160 locationKey,
-			final Number160 domainKey, final Collection<Number160> contentKeys)
+	public static DigestInfo digest(Digest storage, Number160 locationKey, final Number160 domainKey,
+			final Collection<Number160> contentKeys)
 	{
 		DigestInfo digestInfo;
 		if (contentKeys != null)
@@ -330,25 +330,28 @@ public class Utils
 		return digestInfo;
 	}
 
-	public static<K> K pollRandom(SortedSet<K> queueToAsk, Random rnd)
+	public static <K> K pollRandom(SortedSet<K> queueToAsk, Random rnd)
 	{
-		int size=queueToAsk.size();
-		if(size == 0)
+		int size = queueToAsk.size();
+		if (size == 0)
 			return null;
-		int index=rnd.nextInt(size);
-		List<K> values=new ArrayList<K>(queueToAsk);
-		return values.get(index);
+		int index = rnd.nextInt(size);
+		List<K> values = new ArrayList<K>(queueToAsk);
+		K retVal = values.get(index);
+		//now we need to remove this element
+		queueToAsk.remove(retVal);
+		return retVal;
 	}
-	
-	public static<K,V> Entry<K, V> pollRandomKey(Map<K,V> queueToAsk, Random rnd)
+
+	public static <K, V> Entry<K, V> pollRandomKey(Map<K, V> queueToAsk, Random rnd)
 	{
-		int size=queueToAsk.size();
-		if(size == 0)
+		int size = queueToAsk.size();
+		if (size == 0)
 			return null;
-		List<K> keys=new ArrayList<K>();
+		List<K> keys = new ArrayList<K>();
 		keys.addAll(queueToAsk.keySet());
-		int index=rnd.nextInt(size);
-		final K key=keys.get(index);
+		int index = rnd.nextInt(size);
+		final K key = keys.get(index);
 		final V value = queueToAsk.remove(key);
 		return new Entry<K, V>()
 		{
@@ -357,11 +360,13 @@ public class Utils
 			{
 				return key;
 			}
+
 			@Override
 			public V getValue()
 			{
 				return value;
 			}
+
 			@Override
 			public V setValue(V value)
 			{
@@ -369,4 +374,70 @@ public class Utils
 			}
 		};
 	}
+
+	public static <K> Collection<K> subtract(final Collection<K> a, final Collection<K> b)
+	{
+		ArrayList<K> list = new ArrayList<K>(a);
+		for (Iterator<K> it = b.iterator(); it.hasNext();)
+		{
+			list.remove(it.next());
+		}
+		return list;
+	}
+
+	public static <K, V> Map<K, V> subtract(final Map<K, V> a, final Collection<K> b)
+	{
+		Map<K, V> map = new HashMap<K, V>(a);
+		for (Iterator<K> it = b.iterator(); it.hasNext();)
+		{
+			map.remove(it.next());
+		}
+		return map;
+	}
+	
+	public static <K, V> Map<K, V> disjunction(final Map<K, V> a, final Collection<K> b)
+	{
+		Map<K, V> map = new HashMap<K, V>();
+		for (Iterator<Entry<K, V>> it = a.entrySet().iterator(); it.hasNext();)
+		{
+			Entry<K, V> entry=it.next();
+			if(!b.contains(entry.getKey()))
+				map.put(entry.getKey(), entry.getValue());
+		}
+		return map;
+	}
+
+	public static <K> Collection<K> limit(final Collection<K> a, final int size)
+	{
+		ArrayList<K> list = new ArrayList<K>();
+		int i = 0;
+		for (Iterator<K> it = a.iterator(); it.hasNext() && i < size;)
+		{
+			list.add(it.next());
+		}
+		return list;
+	}
+
+	public static <K, V> Map<K, V> limit(final Map<K, V> a, final int i)
+	{
+		Map<K, V> map = new HashMap<K, V>(a);
+		int remove = a.size() - i;
+		for (Iterator<K> it = a.keySet().iterator(); it.hasNext() && remove >= 0;)
+		{
+			map.remove(it.next());
+			remove--;
+		}
+		return map;
+	}
+
+	public static Collection<Number160> convert(final Collection<TrackerData> a)
+	{
+		ArrayList<Number160> retVal = new ArrayList<Number160>();
+		for (Iterator<TrackerData> it = a.iterator(); it.hasNext();)
+		{
+			retVal.add(it.next().getPeerAddress().getID());
+		}
+		return retVal;
+	}
+
 }

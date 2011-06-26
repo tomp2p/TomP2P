@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +27,10 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 
-
-
+/**
+ * This class holds the object for future results from the tracker get() and
+ * add(). FutureTracker can fail, if the search did not return any results.
+ */
 public class FutureTracker extends BaseFutureImpl
 {
 	final private EvaluatingSchemeTracker evaluatingSchemeTracker;
@@ -49,7 +52,7 @@ public class FutureTracker extends BaseFutureImpl
 	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers)
 	{
 		this.evaluatingSchemeTracker = evaluatingSchemeTracker;
-		this.knownPeers=knownPeers;
+		this.knownPeers = knownPeers;
 	}
 
 	public void setFutureCreate(FutureCreate<BaseFuture> futureCreate)
@@ -75,8 +78,12 @@ public class FutureTracker extends BaseFutureImpl
 			this.potentialTrackers = potentialTrackers;
 			this.directTrackers = directTrackers;
 			this.peersOnTracker = peersOnTracker;
-			this.type = ((potentialTrackers.size() == 0) && (directTrackers.size() == 0))
-					? BaseFuture.FutureType.FAILED : BaseFuture.FutureType.OK;
+			this.type = ((potentialTrackers.size() == 0) && (directTrackers.size() == 0)) ? BaseFuture.FutureType.FAILED
+					: BaseFuture.FutureType.OK;
+			if (this.type == BaseFuture.FutureType.FAILED)
+			{
+				this.reason = "we did not find anything, are you sure you are serching for the right tracker?";
+			}
 		}
 		notifyListerenrs();
 	}
@@ -120,7 +127,7 @@ public class FutureTracker extends BaseFutureImpl
 			return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
 		}
 	}
-	
+
 	public Set<Number160> getKnownPeers()
 	{
 		synchronized (lock)
@@ -129,8 +136,7 @@ public class FutureTracker extends BaseFutureImpl
 		}
 	}
 
-	public void setScheduledFuture(ScheduledFuture<?> scheduledFuture,
-			List<ScheduledFuture<?>> scheduledFutures)
+	public void setScheduledFuture(ScheduledFuture<?> scheduledFuture, List<ScheduledFuture<?>> scheduledFutures)
 	{
 		synchronized (lock)
 		{

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,11 +26,12 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 	private final boolean cancelFuturesOnFinish;
 	// all these values are accessed within synchronized blocks
 	private K last;
-	private final List<K> intermediateFutures;
+	//private final List<K> intermediateFutures;
 	private int counter = 0;
 	private int successCounter = 0;
 	volatile private boolean completedJoin = false;
-
+	final private List<K> forksCopy;
+	
 	public FutureForkJoin(K... forks)
 	{
 		this(forks.length, false, forks);
@@ -45,10 +47,14 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 	{
 		this.nrFinishFuturesSuccess = nrFinishFuturesSuccess;
 		this.forks = forks;
+		int len=forks.length;
+		this.forksCopy = new ArrayList<K>(len); 
+		for(int i=0;i<len;i++)
+			forksCopy.add(forks[i]);
 		this.cancelFuturesOnFinish = cancelFuturesOnFinish;
 		// the futures array may have null entries, so count first.
 		nrFutures = forks.length;
-		intermediateFutures = new ArrayList<K>(this.nrFutures - 1);
+		//intermediateFutures = new ArrayList<K>(this.nrFutures - 1);
 		if (this.nrFutures <= 0)
 			setFailed("We have no futures: " + this.nrFutures);
 		else
@@ -106,8 +112,8 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 				notifyNow = setFinish(finished, FutureType.OK);
 			else if (++counter >= nrFutures)
 				notifyNow = setFinish(finished, FutureType.FAILED);
-			else
-				intermediateFutures.add(finished);
+			//else
+				//intermediateFutures.add(finished);
 		}
 		if (notifyNow)
 		{
@@ -128,7 +134,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		}
 	}
 
-	private boolean setFinish(K last, FutureType type)
+	protected boolean setFinish(K last, FutureType type)
 	{
 		if (!setCompletedAndNotify())
 			return false;
@@ -164,32 +170,11 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		}
 	}
 
-	/*
-	 * public int getLastIndex() { synchronized (lock) { return lastIndex; } }
-	 */
-	/**
-	 * This is only safe to access is this future has completed!
-	 * 
-	 * @return The list of finished futures indexes before complete has been
-	 *         called. This does not include the last future index, which can be
-	 *         accessed using getLast().
-	 */
-	public List<K> getIntermediateFutures()
+	public List<K> getAll()
 	{
 		synchronized (lock)
 		{
-			if (!completed)
-				throw new RuntimeException(
-						"Cannot access intermediateIndexes if fork/join not finished");
-			return intermediateFutures;
-		}
-	}
-
-	public K[] getAll()
-	{
-		synchronized (lock)
-		{
-			return forks;
+			return forksCopy;
 		}
 	}
 

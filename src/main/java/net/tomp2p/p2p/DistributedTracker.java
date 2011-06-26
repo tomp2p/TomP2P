@@ -15,7 +15,6 @@
  */
 package net.tomp2p.p2p;
 
-import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,11 +38,8 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
-//import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.rpc.TrackerDataResult;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.TrackerData;
-import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -84,18 +80,19 @@ public class DistributedTracker
 	{
 		final FutureTracker futureTracker = new FutureTracker(evaluatingScheme, knownPeers);
 		if (useSecondaryTrackers)
-		{
-			TrackerDataResult trackerDataResult = peerBean.getTrackerStorage().getSelection(locationKey, domainKey,
-					trackerConfiguration.getMaxPrimaryTrackers(), null);
-			Collection<PeerAddress> queueToAsk =
-			peerBean.getTrackerStorage().getSelectionSecondary(locationKey, domainKey, Integer.MAX_VALUE, null);
+		{			
+			Map<Number160, TrackerData> meshPeers = peerBean.getTrackerStorage().meshPeers(locationKey, domainKey);
+			Map<Number160, TrackerData> secondaryPeers = peerBean.getTrackerStorage().secondaryPeers(locationKey, domainKey);
 			SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
 					.createPeerComparator(stableRandom));
-			for (TrackerData trackerData : trackerDataResult.getPeerDataMap().values())
+			for (TrackerData trackerData : meshPeers.values())
 			{
 				secondaryQueue.add(trackerData.getPeerAddress());
 			}
-			secondaryQueue.addAll(queueToAsk);
+			for (TrackerData trackerData : secondaryPeers.values())
+			{
+				secondaryQueue.add(trackerData.getPeerAddress());
+			}
 			startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage, knownPeers,
 					futureTracker, secondaryQueue);
 		}
@@ -159,15 +156,15 @@ public class DistributedTracker
 		});
 	}
 
-	public FutureForkJoin<FutureResponse> startExchange(final Number160 locationKey, final Number160 domainKey)
+	public FutureForkJoin<FutureResponse> startPeerExchange(final Number160 locationKey, final Number160 domainKey)
 	{
-		TrackerDataResult trackerData = peerBean.getTrackerStorage().getSelection(locationKey, domainKey,
-				TrackerStorage.TRACKER_SIZE, null);
-		Map<Number160, TrackerData> peers = trackerData.getPeerDataMap();
-		FutureResponse[] futureResponses = new FutureResponse[peers.size()];
+		Map<Number160, TrackerData> activePeers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
+		//TODO: make a limitrandom here in case we have many activepeers, below is a sketch
+		//activePeers = Utils.limitRandom(activePeers, TrackerStorage.TRACKER_SIZE);
+		FutureResponse[] futureResponses = new FutureResponse[activePeers.size()];
 		int i = 0;
-		for (TrackerData data : peers.values())
-			futureResponses[i++] = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey);
+		for (TrackerData data : activePeers.values())
+			futureResponses[i++] = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false);
 		return new FutureForkJoin<FutureResponse>(futureResponses);
 	}
 
@@ -226,8 +223,6 @@ public class DistributedTracker
 				trackerConfiguration.getMaxPrimaryTrackers(), futureResponses, futureTracker, knownPeers, isGet);
 	}
 
-	public static boolean tmpUseSecondary = true;
-
 	private void loopRec(final Number160 locationKey, final Number160 domainKey,
 			final SortedSet<PeerAddress> queueToAsk, final SortedSet<PeerAddress> secondaryQueue,
 			final Set<PeerAddress> alreadyAsked, final Set<PeerAddress> successAsked,
@@ -254,25 +249,24 @@ public class DistributedTracker
 				PeerAddress next = null;
 				if (primaryTracker.incrementAndGet() <= maxPrimaryTracker)
 				{
-					//if (isGet)
+					if (isGet)
 						next = Utils.pollRandom(queueToAsk, rnd);
-					//else
-					//	next = Utils.pollFirst(queueToAsk);
+					else
+						next = Utils.pollFirst(queueToAsk);
 				}
-				else
+				if (next == null)
 				{
-					if (next == null && tmpUseSecondary)
-					{
-						if (isGet)
-							next = Utils.pollRandom(secondaryQueue, rnd);
-						else
-							// PeerAddress next = queueToAsk.pollFirst();
-							next = Utils.pollFirst(secondaryQueue);
-						primary = false;
-					}
+					if (isGet)
+						next = Utils.pollRandom(secondaryQueue, rnd);
+					else
+						next = Utils.pollFirst(secondaryQueue);
+					primary = false;
 				}
 				if (next != null)
 				{
+					if (logger.isDebugEnabled()) {
+						logger.debug("we are about to ask "+next);
+					}
 					alreadyAsked.add(next);
 					active++;
 					futureResponses[i] = operation.create(next, primary);
@@ -312,10 +306,6 @@ public class DistributedTracker
 					Collection<TrackerData> newDataMap = futureResponse.getResponse().getTrackerData();
 					mergeC(secondaryQueue, newDataMap, alreadyAsked);
 					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
-					// regardless if we search for a tracker or add something to
-					// a tracker, we know that this tracker is alive and
-					// serving, so add it to the primary list
-					PublicKey pub = futureResponse.getResponse().getPublicKey();
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
 							atLeastEntriesFromTrackers, isGet);
@@ -352,15 +342,15 @@ public class DistributedTracker
 				// check if done, or continune looping
 				if (finished)
 				{
-					queueToAsk.addAll(secondaryQueue);
+					Set<PeerAddress> potentialTrackers=new HashSet<PeerAddress>(queueToAsk);
+					potentialTrackers.addAll(secondaryQueue);
 					if (logger.isDebugEnabled())
 					{
-						int size = peerBean.getTrackerStorage().size(locationKey, domainKey);
 						logger.debug("we finished2, we asked " + alreadyAsked.size() + ", but we could ask "
 								+ queueToAsk.size() + " more nodes (" + successfulRequests + "/"
-								+ atLeastSuccessfullRequests + "). TrackerSize is " + size);
+								+ atLeastSuccessfullRequests + ")");
 					}
-					futureTracker.setTrackers(queueToAsk, successAsked, peerOnTracker);
+					futureTracker.setTrackers(potentialTrackers, successAsked, peerOnTracker);
 					DistributedRouting.cancel(cancelOnFinish, parallel, futureResponses);
 				}
 				else

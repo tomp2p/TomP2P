@@ -31,6 +31,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.storage.TrackerStorage.ReferrerType;
+import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -158,7 +160,8 @@ public class TrackerRPC extends ReplyHandler
 			throw new RuntimeException("BF data may be empty but it has to be there.");
 		ChannelBuffer buffer = message.getPayload1();
 		int length = buffer.writerIndex();
-		if(length>0) {
+		if (length > 0)
+		{
 			knownPeers = new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset(), length);
 		}
 		byte[] attachement = null;
@@ -172,44 +175,44 @@ public class TrackerRPC extends ReplyHandler
 		PublicKey publicKey = message.getPublicKey();
 		//
 		final TrackerStorage trackerStorage = peerBean.getTrackerStorage();
-		TrackerDataResult trackerData1 = trackerStorage.getSelection(locationKey, domainKey,
-				TrackerRPC.MAX_MSG_SIZE_UDP, knownPeers);
-		if (trackerData1.couldProvideMoreData())
+
+		Map<Number160, TrackerData> meshPeers = trackerStorage.meshPeers(locationKey, domainKey);
+		if(knownPeers != null){
+			meshPeers = Utils.disjunction(meshPeers, knownPeers);
+		}
+		int size = meshPeers.size();
+		meshPeers = Utils.limit(meshPeers, TrackerRPC.MAX_MSG_SIZE_UDP);
+		boolean couldProvideMoreData = size > meshPeers.size();
+		if (couldProvideMoreData)
 		{
 			responseMessage.setType(Message.Type.PARTIALLY_OK);
 		}
-		Map<Number160, TrackerData> peerDataMap = trackerData1.getPeerDataMap();
-		responseMessage.setTrackerData(peerDataMap.values());
+		responseMessage.setTrackerData(meshPeers.values());
 		PeerAddress senderAddress = message.getSender();
 		if (message.getCommand() == Command.TRACKER_ADD)
 		{
 			if (!trackerStorage.put(locationKey, domainKey, senderAddress, publicKey, attachement))
 			{
 				responseMessage.setType(Message.Type.DENIED);
+				if (logger.isDebugEnabled())
+					logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress() + ") locationKey:"
+							+ locationKey + ", domainKey:" + domainKey + ", address:" + senderAddress);
 			}
 			else
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("tracker put on(" + peerBean.getServerPeerAddress() + ") locationKey:" + locationKey
-							+ ", domainKey:" + domainKey + ", address:" + senderAddress + "size: "
-							+ trackerStorage.size(locationKey, domainKey));
+							+ ", domainKey:" + domainKey + ", address:" + senderAddress + "sizeP: "
+							+ trackerStorage.sizePrimary(locationKey, domainKey));
 			}
-			int currentSize = trackerStorage.size(locationKey, domainKey);
-			if (currentSize >= trackerStorage.getTrackerStoreSizeMax(locationKey, domainKey))
-			{
-				if (logger.isDebugEnabled())
-					logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress() + ") locationKey:"
-							+ locationKey + ", domainKey:" + domainKey + ", address:" + senderAddress
-							+ ", current size: " + currentSize);
-				responseMessage.setType(Message.Type.DENIED);
-			}
+
 		}
 		else
 		{
 			if (logger.isDebugEnabled())
 				logger.debug("tracker get on(" + peerBean.getServerPeerAddress() + ") locationKey:" + locationKey
 						+ ", domainKey:" + domainKey + ", address:" + senderAddress + " returning: "
-						+ (peerDataMap == null ? "0" : peerDataMap.size()));
+						+ (meshPeers == null ? "0" : meshPeers.size()));
 		}
 		return responseMessage;
 	}
@@ -271,6 +274,7 @@ public class TrackerRPC extends ReplyHandler
 		// Since I might become a tracker as well, we keep this information
 		// about those trackers.
 		Collection<TrackerData> tmp = message.getTrackerData();
+		// no data found
 		if (tmp == null || tmp.size() == 0)
 			return;
 		for (TrackerData data : tmp)
@@ -278,9 +282,8 @@ public class TrackerRPC extends ReplyHandler
 			// we don't know the public key, since this is not first hand
 			// information.
 			// TTL will be set in tracker storage, so don't worry about it here.
-			PeerAddress peerAddress = data.getPeerAddress();
-			trackerStorage.putReferred(locationKey, domainKey, peerAddress, referrer, data.getAttachement(),
-					data.getOffset(), data.getLength());
+			trackerStorage.putReferred(locationKey, domainKey, data.getPeerAddress(), referrer, data.getAttachement(),
+					data.getOffset(), data.getLength(), ReferrerType.MESH);
 		}
 	}
 }

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.p2p;
+
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
@@ -26,7 +27,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FutureForkedBroadcast;
+import net.tomp2p.futures.FutureForkedBootstrap;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message;
@@ -39,7 +40,6 @@ import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Handles routing of nodes to other nodes
@@ -62,84 +62,96 @@ public class DistributedRouting
 	/**
 	 * Bootstraps to the given remoteNode, i.e. looking for near and far nodes
 	 * 
-	 * @param remoteNode the node to which bootstrap should be performed to
-	 * @param maxNoNewInfo number of nodes asked without new information to stop
-	 *        at
-	 * @param maxFailures number of failures to stop at
-	 * @param parallel number of routing requests performed concurrently
+	 * @param remoteNode
+	 *            the node to which bootstrap should be performed to
+	 * @param maxNoNewInfo
+	 *            number of nodes asked without new information to stop at
+	 * @param maxFailures
+	 *            number of failures to stop at
+	 * @param parallel
+	 *            number of routing requests performed concurrently
 	 * @return a FutureMulti object containing FutureRouting objects
 	 */
-	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo,
-			int maxFailures, int maxSuccess, int parallel, boolean forceSocket)
+	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
+			int maxSuccess, int parallel, boolean forceSocket)
 	{
 		// search close peers
 		logger.debug("broadcast to " + peerAddresses);
-		FutureRouting futureRouting1 = routing(peerAddresses, peerBean.getServerPeerAddress()
-				.getID(), null, null, 0, maxNoNewInfo, maxFailures, maxSuccess, parallel,
-				Command.NEIGHBORS_STORAGE, false, forceSocket);
+		FutureRouting futureRouting1 = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
+				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket);
 		// search far peers
-		FutureRouting futureRouting2 = routing(peerAddresses, peerBean.getServerPeerAddress()
-				.getID().xor(Number160.MAX_VALUE), null, null, 0, maxNoNewInfo, maxFailures, maxSuccess,
-				parallel, Command.NEIGHBORS_STORAGE, false, forceSocket);
-		return new FutureForkedBroadcast(peerAddresses, futureRouting1, futureRouting2);
+		FutureRouting futureRouting2 = routing(peerAddresses,
+				peerBean.getServerPeerAddress().getID().xor(Number160.MAX_VALUE), null, null, 0, maxNoNewInfo,
+				maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket);
+		return new FutureForkedBootstrap(peerBean.getServerPeerAddress(), peerAddresses, futureRouting1, futureRouting2);
 	}
 
 	/**
 	 * Looks for a route to the given locationKey
 	 * 
-	 * @param locationKey the node a route should be found to
-	 * @param domainKey the domain of the network the current node and
-	 *        locationKey is in
-	 * @param contentKeys keys of the content to search for. Only used if you
-	 *        perform a get
-	 * @param maxDirectHits number of direct hits to stop at
-	 * @param maxNoNewInfo number of nodes asked without new information to stop
-	 *        at
-	 * @param maxFailures number of failures to stop at
-	 * @param parallel number of routing requests performed concurrently
+	 * @param locationKey
+	 *            the node a route should be found to
+	 * @param domainKey
+	 *            the domain of the network the current node and locationKey is
+	 *            in
+	 * @param contentKeys
+	 *            keys of the content to search for. Only used if you perform a
+	 *            get
+	 * @param maxDirectHits
+	 *            number of direct hits to stop at
+	 * @param maxNoNewInfo
+	 *            number of nodes asked without new information to stop at
+	 * @param maxFailures
+	 *            number of failures to stop at
+	 * @param parallel
+	 *            number of routing requests performed concurrently
 	 * @return a FutureRouting object, is set to complete if the route has been
 	 *         found
 	 */
 	public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
-			final Collection<Number160> contentKeys, Command command, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, int maxSuccess, int parallel, boolean isDigest)
+			final Collection<Number160> contentKeys, Command command, int maxDirectHits, int maxNoNewInfo,
+			int maxFailures, int maxSuccess, int parallel, boolean isDigest)
 	{
-		return route(locationKey, domainKey, contentKeys, command, maxDirectHits, maxNoNewInfo,
-				maxFailures, maxSuccess, parallel, isDigest, false);
+		return route(locationKey, domainKey, contentKeys, command, maxDirectHits, maxNoNewInfo, maxFailures,
+				maxSuccess, parallel, isDigest, false);
 	}
 
 	FutureRouting route(final Number160 locationKey, final Number160 domainKey,
-			final Collection<Number160> contentKeys, Command command, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, int maxSuccess, int parallel, boolean isDigest, 
-			boolean forceSocket)
+			final Collection<Number160> contentKeys, Command command, int maxDirectHits, int maxNoNewInfo,
+			int maxFailures, int maxSuccess, int parallel, boolean isDigest, boolean forceSocket)
 	{
 		// for bad distribution, use large NO_NEW_INFORMATION
-		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey,
-				parallel * 2);
-		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits,
-				maxNoNewInfo, maxFailures, maxSuccess, parallel, command, isDigest, forceSocket);
+		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey, parallel * 2);
+		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits, maxNoNewInfo, maxFailures,
+				maxSuccess, parallel, command, isDigest, forceSocket);
 	}
 
 	/**
 	 * Looks for a route to the given locationKey
 	 * 
-	 * @param peerAddresses nodes which should be asked first for a route
-	 * @param locationKey the node a route should be found to
-	 * @param domainKey the domain of the network the current node and
-	 *        locationKey is in
-	 * @param contentKeys nodes which we got from another node
-	 * @param maxDirectHits number of direct hits to stop at
-	 * @param maxNoNewInfo number of nodes asked without new information to stop
-	 *        at
-	 * @param maxFailures number of failures to stop at
-	 * @param parallel number of routing requests performed concurrently
+	 * @param peerAddresses
+	 *            nodes which should be asked first for a route
+	 * @param locationKey
+	 *            the node a route should be found to
+	 * @param domainKey
+	 *            the domain of the network the current node and locationKey is
+	 *            in
+	 * @param contentKeys
+	 *            nodes which we got from another node
+	 * @param maxDirectHits
+	 *            number of direct hits to stop at
+	 * @param maxNoNewInfo
+	 *            number of nodes asked without new information to stop at
+	 * @param maxFailures
+	 *            number of failures to stop at
+	 * @param parallel
+	 *            number of routing requests performed concurrently
 	 * @return a FutureRouting object, is set to complete if the route has been
 	 *         found
 	 */
 	private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
-			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits,
-			int maxNoNewInfo, int maxFailures, int maxSuccess, final int parallel, Command command,
-			boolean isDigest, boolean forceSocket)
+			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits, int maxNoNewInfo,
+			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceSocket)
 	{
 		if (peerAddresses == null)
 			throw new IllegalArgumentException("you need to specify some nodes");
@@ -148,23 +160,21 @@ public class DistributedRouting
 		final FutureResponse[] futureResponses = new FutureResponse[parallel];
 		final FutureRouting futureRouting = new FutureRouting();
 		//
-		final Comparator<PeerAddress> comparator = peerBean.getPeerMap().createPeerComparator(
-				locationKey);
+		final Comparator<PeerAddress> comparator = peerBean.getPeerMap().createPeerComparator(locationKey);
 		final SortedSet<PeerAddress> queueToAsk = new TreeSet<PeerAddress>(comparator);
 		// we can reuse the comparator
 		final SortedSet<PeerAddress> alreadyAsked = new TreeSet<PeerAddress>(comparator);
 		// as presented by Kazuyuki Shudo at AIMS 2009, its better to ask random
 		// peers with the data than ask peers that ar ordered by distance ->
 		// this balances load.
-		final SortedSet<PeerAddress> directHits = new TreeSet<PeerAddress>(peerBean.getPeerMap()
-				.createPeerComparator());
+		final SortedSet<PeerAddress> directHits = new TreeSet<PeerAddress>(peerBean.getPeerMap().createPeerComparator());
 		final SortedSet<PeerAddress> potentialHits = new TreeSet<PeerAddress>(comparator);
 		// fill initially
 		queueToAsk.addAll(peerAddresses);
 		alreadyAsked.add(peerBean.getServerPeerAddress());
 		potentialHits.add(peerBean.getServerPeerAddress());
-		//domainkey can be null if we bootstrap
-		if (command == Command.NEIGHBORS_STORAGE && domainKey!=null)
+		// domainkey can be null if we bootstrap
+		if (command == Command.NEIGHBORS_STORAGE && domainKey != null)
 		{
 			DigestInfo digestInfo = Utils.digest(peerBean.getStorage(), locationKey, domainKey, contentKeys);
 			if (digestInfo.getSize() > 0)
@@ -173,6 +183,8 @@ public class DistributedRouting
 		else if (command == Command.NEIGHBORS_TRACKER)
 		{
 			DigestInfo digestInfo = Utils.digest(peerBean.getTrackerStorage(), locationKey, domainKey, contentKeys);
+			// we always put ourselfs to the tracker list, so we need to check
+			// if we know also other peers on our trackers.
 			if (digestInfo.getSize() > 0)
 				directHits.add(peerBean.getServerPeerAddress());
 		}
@@ -182,49 +194,62 @@ public class DistributedRouting
 		}
 		else
 		{
-			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits,
-					potentialHits, new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), 
-					maxDirectHits, maxNoNewInfo, maxFailures, maxSuccess, parallel, locationKey, domainKey, 
-					contentKeys, true, command, isDigest, forceSocket, false);
+			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
+					new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,
+					maxFailures, maxSuccess, parallel, locationKey, domainKey, contentKeys, true, command, isDigest,
+					forceSocket, false);
 		}
 		return futureRouting;
 	}
-
-	
 
 	/**
 	 * Looks for a route to the given locationKey, performing recursively. Since
 	 * this method is not called concurrently, but sequentially, no
 	 * synchronization is necessary.
 	 * 
-	 * @param futureResponses expected responses
-	 * @param futureRouting the current routing future used
-	 * @param queueToAsk all nodes which should be asked for routing information
-	 * @param alreadyAsked nodes which already have been asked
-	 * @param directHits stores direct hits received
-	 * @param nrNoNewInfo number of nodes contacted without any new information
-	 * @param nrFailures number of nodes without a response
-	 * @param nrSucess number of peers that responded
-	 * @param maxDirectHits number of direct hits to stop at
-	 * @param maxNoNewInfo number of nodes asked without new information to stop
-	 *        at
-	 * @param maxFailures number of failures to stop at
-	 * @param maxSuccess number of successful requests. To avoid looping if every peer gives a new piece of information.
-	 * @param parallel number of routing requests performed concurrently
-	 * @param locationKey the node a route should be found to
-	 * @param domainKey the domain of the network the current node and
-	 *        locationKey is in
-	 * @param contentKeys nodes which we got from another node
+	 * @param futureResponses
+	 *            expected responses
+	 * @param futureRouting
+	 *            the current routing future used
+	 * @param queueToAsk
+	 *            all nodes which should be asked for routing information
+	 * @param alreadyAsked
+	 *            nodes which already have been asked
+	 * @param directHits
+	 *            stores direct hits received
+	 * @param nrNoNewInfo
+	 *            number of nodes contacted without any new information
+	 * @param nrFailures
+	 *            number of nodes without a response
+	 * @param nrSucess
+	 *            number of peers that responded
+	 * @param maxDirectHits
+	 *            number of direct hits to stop at
+	 * @param maxNoNewInfo
+	 *            number of nodes asked without new information to stop at
+	 * @param maxFailures
+	 *            number of failures to stop at
+	 * @param maxSuccess
+	 *            number of successful requests. To avoid looping if every peer
+	 *            gives a new piece of information.
+	 * @param parallel
+	 *            number of routing requests performed concurrently
+	 * @param locationKey
+	 *            the node a route should be found to
+	 * @param domainKey
+	 *            the domain of the network the current node and locationKey is
+	 *            in
+	 * @param contentKeys
+	 *            nodes which we got from another node
 	 */
-	private void routingRec(final FutureResponse[] futureResponses,
-			final FutureRouting futureRouting, final SortedSet<PeerAddress> queueToAsk,
-			final SortedSet<PeerAddress> alreadyAsked, final SortedSet<PeerAddress> directHits,
-			final SortedSet<PeerAddress> potentialHits, final AtomicInteger nrNoNewInfo,
-			final AtomicInteger nrFailures, final AtomicInteger nrSuccess, final int maxDirectHits, 
-			final int maxNoNewInfo, final int maxFailures, final int maxSucess, final int parallel, 
-			final Number160 locationKey, final Number160 domainKey, final Collection<Number160> contentKeys,
-			final boolean cancelOnFinish, final Command command, final boolean isDigest,
-			final boolean forceSocket, final boolean stopCreatingNewFutures)
+	private void routingRec(final FutureResponse[] futureResponses, final FutureRouting futureRouting,
+			final SortedSet<PeerAddress> queueToAsk, final SortedSet<PeerAddress> alreadyAsked,
+			final SortedSet<PeerAddress> directHits, final SortedSet<PeerAddress> potentialHits,
+			final AtomicInteger nrNoNewInfo, final AtomicInteger nrFailures, final AtomicInteger nrSuccess,
+			final int maxDirectHits, final int maxNoNewInfo, final int maxFailures, final int maxSucess,
+			final int parallel, final Number160 locationKey, final Number160 domainKey,
+			final Collection<Number160> contentKeys, final boolean cancelOnFinish, final Command command,
+			final boolean isDigest, final boolean forceSocket, final boolean stopCreatingNewFutures)
 	{
 		int active = 0;
 		for (int i = 0; i < parallel; i++)
@@ -237,8 +262,12 @@ public class DistributedRouting
 				{
 					alreadyAsked.add(next);
 					active++;
-					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey,
-							contentKeys, command, isDigest, forceSocket);
+					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey, contentKeys, command,
+							isDigest, forceSocket);
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("get close neighbors: " + next);
+					}
 				}
 			}
 			else if (futureResponses[i] != null)
@@ -251,8 +280,7 @@ public class DistributedRouting
 			return;
 		}
 		final boolean last = active == 1;
-		FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(1, false,
-				futureResponses);
+		FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(1, false, futureResponses);
 		fp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>()
 		{
 			@Override
@@ -266,32 +294,33 @@ public class DistributedRouting
 					PeerAddress remotePeer = lastResponse.getSender();
 					potentialHits.add(remotePeer);
 					Collection<PeerAddress> newNeighbors = lastResponse.getNeighbors();
-					logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
+					}
 					long contentLength = lastResponse.getInteger();
 					Map<Number160, Number160> keyMap = lastResponse.getKeyMap();
-					if (evaluateDirectHits(contentLength, keyMap, remotePeer, directHits,
-							maxDirectHits))
+					if (evaluateDirectHits(contentLength, keyMap, remotePeer, directHits, maxDirectHits))
 					{
-						//stop immediately
+						// stop immediately
 						finished = true;
 						stopCreatingNewFutures = true;
 					}
-					else if (nrSuccess.incrementAndGet()>maxSucess)
+					else if (nrSuccess.incrementAndGet() > maxSucess)
 					{
-						//wait until pending futures are finished
+						// wait until pending futures are finished
 						finished = last;
 						stopCreatingNewFutures = true;
 					}
-					else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, nrNoNewInfo,
-							maxNoNewInfo))
+					else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, nrNoNewInfo, maxNoNewInfo))
 					{
-						//wait until pending futures are finished
+						// wait until pending futures are finished
 						finished = last;
 						stopCreatingNewFutures = true;
 					}
 					else
 					{
-						//continue
+						// continue
 						finished = false;
 						stopCreatingNewFutures = false;
 					}
@@ -303,17 +332,19 @@ public class DistributedRouting
 				}
 				if (finished)
 				{
-					logger.debug("done1 " + directHits);
-					logger.debug("done2 " + potentialHits);
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("finished routing, direct hits: " + directHits + ", potential: " + potentialHits);
+					}
 					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
 					cancel(cancelOnFinish, parallel, futureResponses);
 				}
 				else
 				{
-					routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked,
-							directHits, potentialHits, nrNoNewInfo, nrFailures, nrSuccess, maxDirectHits,
-							maxNoNewInfo, maxFailures, maxSucess, parallel, locationKey, domainKey,
-							contentKeys, cancelOnFinish, command, isDigest, forceSocket, stopCreatingNewFutures);
+					routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
+							nrNoNewInfo, nrFailures, nrSuccess, maxDirectHits, maxNoNewInfo, maxFailures, maxSucess,
+							parallel, locationKey, domainKey, contentKeys, cancelOnFinish, command, isDigest,
+							forceSocket, stopCreatingNewFutures);
 				}
 			}
 		});
@@ -332,8 +363,8 @@ public class DistributedRouting
 	}
 
 	// checks if we reached the end of our search.
-	static boolean evaluateDirectHits(long contentLength, Map<Number160, Number160> keyMap,
-			PeerAddress recipient, final Collection<PeerAddress> directHits, int maxDirectHits)
+	static boolean evaluateDirectHits(long contentLength, Map<Number160, Number160> keyMap, PeerAddress recipient,
+			final Collection<PeerAddress> directHits, int maxDirectHits)
 	{
 		if (contentLength > 0)
 		{
@@ -345,9 +376,8 @@ public class DistributedRouting
 	}
 
 	// checks if we reached the end of our search.
-	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors,
-			final SortedSet<PeerAddress> queueToAsk, final Set<PeerAddress> alreadyAsked,
-			final AtomicInteger noNewInfo, int maxNoNewInfo)
+	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors, final SortedSet<PeerAddress> queueToAsk,
+			final Set<PeerAddress> alreadyAsked, final AtomicInteger noNewInfo, int maxNoNewInfo)
 	{
 		// TODO: check why this null check is required
 		// if (newNeighbors == null)

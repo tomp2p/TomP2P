@@ -64,6 +64,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.replication.DefaultStorageReplication;
 import net.tomp2p.replication.Replication;
+import net.tomp2p.replication.TrackerStorageReplication;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -75,6 +76,7 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.ResponsibilityMemory;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.CacheMap;
@@ -129,6 +131,8 @@ public class Peer
 	// private final List<NodeListener> nodeListeners = new
 	// LinkedList<NodeListener>();
 	// private ScheduledFuture<?> sf;
+	private IdentityManagement identityManagement;
+	private Maintenance maintenance;
 	private HandshakeRPC handshakeRCP;
 	private StorageRPC storageRPC;
 	private NeighborRPC neighborRPC;
@@ -329,17 +333,18 @@ public class Peer
 		PeerMap peerMap = connectionHandler.getPeerBean().getPeerMap();
 		// create storage and add replication feature
 		StorageMemory storage = new StorageMemory();
+		ResponsibilityMemory responsibilityMemory = new ResponsibilityMemory();
 		peerBean.setStorage(storage);
-		Replication replicationStorage = new Replication(storage, selfAddress, peerMap);
+		Replication replicationStorage = new Replication(responsibilityMemory, selfAddress, peerMap);
 		peerBean.setReplicationStorage(replicationStorage);
 		// create tracker and add replication feature
-		TrackerStorage storageTracker = new TrackerStorage(peerBean.getServerPeerAddress().getID().hashCode());
+		identityManagement = new IdentityManagement(getPeerAddress());
+		maintenance = new Maintenance();
+		Replication replicationTracker = new Replication(new ResponsibilityMemory(), selfAddress, peerMap);
+		TrackerStorage storageTracker = new TrackerStorage(identityManagement, getP2PConfiguration().getTrackerTimoutSeconds(), replicationTracker, maintenance);
 		peerBean.setTrackerStorage(storageTracker);
 		peerMap.addPeerOfflineListener(storageTracker);
-		// TODO: do we need a replication tracker?
-		// Replication replicationTracker = new Replication(storageTracker,
-		// selfAddress, peerMap);
-		// peerBean.setReplicationTracker(replicationTracker);
+		
 		// RPC communication
 		handshakeRCP = new HandshakeRPC(peerBean, connectionBean);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
@@ -347,7 +352,11 @@ public class Peer
 		quitRCP = new QuitRPC(peerBean, connectionBean);
 		peerExchangeRPC = new PeerExchangeRPC(peerBean, connectionBean);
 		directDataRPC = new DirectDataRPC(peerBean, connectionBean);
+		// replication for trackers, which needs PEX
+		TrackerStorageReplication trackerStorageReplication=new TrackerStorageReplication(peerExchangeRPC, pendingFutures, storageTracker);
+		replicationTracker.addResponsibilityListener(trackerStorageReplication);
 		trackerRPC = new TrackerRPC(peerBean, connectionBean);
+		
 		// distributed communication
 		routing = new DistributedRouting(peerBean, neighborRPC);
 		dht = new DistributedHashHashMap(routing, storageRPC, directDataRPC);
@@ -363,7 +372,7 @@ public class Peer
 	{
 		Replication replicationStorage = getPeerBean().getReplicationStorage();
 		DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(this,
-				replicationStorage.getStorage(), storageRPC, pendingFutures);
+				getPeerBean().getStorage(), storageRPC, pendingFutures);
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}
@@ -387,7 +396,7 @@ public class Peer
 
 	void startMaintainance()
 	{
-		scheduledFutures.add(addMaintainance(new Maintenance(connectionHandler.getPeerBean().getPeerMap(),
+		scheduledFutures.add(addMaintainance(new Maintenance2(connectionHandler.getPeerBean().getPeerMap(),
 				handshakeRCP, peerConfiguration)));
 	}
 
@@ -1168,8 +1177,9 @@ public class Peer
 	{
 		// make a good guess based on the config and the maxium tracker that can
 		// be found
-		getPeerBean().getTrackerStorage().addAsSecondaryTracker(locationKey, config.getDomain());
 		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
+		// add myself to my local tracker, since we use a mesh we are part of the tracker mesh as well.
+		getPeerBean().getTrackerStorage().put(locationKey, config.getDomain(), getPeerAddress(), getPeerBean().getKeyPair().getPublic(), config.getAttachement());
 		final FutureTracker futureTracker = getTracker().addToTracker(locationKey, config.getDomain(),
 				config.getAttachement(), config.getRoutingConfiguration(), config.getTrackerConfiguration(),
 				config.isSignMessage(), config.getFutureCreate(), bloomFilter);
@@ -1218,7 +1228,7 @@ public class Peer
 			@Override
 			public void run()
 			{
-				FutureForkJoin<FutureResponse> futureForkJoin = getTracker().startExchange(locationKey,
+				FutureForkJoin<FutureResponse> futureForkJoin = getTracker().startPeerExchange(locationKey,
 						config.getDomain());
 				futureTracker.repeated(futureForkJoin);
 			}
@@ -1230,14 +1240,14 @@ public class Peer
 		return tmp;
 	}
 
-	private class Maintenance implements Runnable
+	private class Maintenance2 implements Runnable
 	{
 		final int max;
 		final Map<PeerAddress, FutureResponse> result = new HashMap<PeerAddress, FutureResponse>();
 		final private PeerMap peerMap;
 		final private HandshakeRPC handshakeRPC;
 
-		public Maintenance(PeerMap peerMap, HandshakeRPC handshakeRPC, P2PConfiguration config)
+		public Maintenance2(PeerMap peerMap, HandshakeRPC handshakeRPC, P2PConfiguration config)
 		{
 			this.peerMap = peerMap;
 			this.handshakeRPC = handshakeRPC;

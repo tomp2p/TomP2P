@@ -388,14 +388,11 @@ public class DistributedHashHashMap
 			@Override
 			public void operationComplete(FutureForkJoin<FutureResponse> future) throws Exception
 			{
-				for (FutureResponse futureResponse : future.getIntermediateFutures())
+				for (FutureResponse futureResponse : future.getAll())
 				{
 					if (futureResponse.isSuccess())
 						operation.interMediateResponse(futureResponse);
 				}
-				FutureResponse futureResponse = future.getLast();
-				if (futureResponse != null && futureResponse.isSuccess())
-					operation.interMediateResponse(futureResponse);
 				if (future.isSuccess())
 				{
 					operation.response(futureDHT);

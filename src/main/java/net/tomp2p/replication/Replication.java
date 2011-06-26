@@ -1,4 +1,5 @@
 package net.tomp2p.replication;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -8,18 +9,22 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.Responsibility;
 
+/**
+ * This class has 3 methods that are called from outside eventes: check,
+ * peerInsert, peerRemoved.
+ */
 public class Replication implements PeerMapChangeListener
 {
 	final private List<ResponsibilityListener> listeners = new ArrayList<ResponsibilityListener>();
 	final private PeerMap peerMap;
 	final private PeerAddress selfAddress;
-	final private Storage storage;
+	final private Responsibility responsibility;
 
-	public Replication(Storage storage, PeerAddress selfAddress, PeerMap peerMap)
+	public Replication(Responsibility responsibility, PeerAddress selfAddress, PeerMap peerMap)
 	{
-		this.storage = storage;
+		this.responsibility = responsibility;
 		this.selfAddress = selfAddress;
 		this.peerMap = peerMap;
 		peerMap.addPeerMapChangeListener(this);
@@ -47,14 +52,14 @@ public class Replication implements PeerMapChangeListener
 		PeerAddress closest = closest(locationKey);
 		if (closest.getID().equals(selfAddress.getID()))
 		{
-			//if(peerMap.isCloser(locationKey, key1, key2)
-			
-			if (storage.updateResponsibilities(locationKey, closest.getID()))
+			// if(peerMap.isCloser(locationKey, key1, key2)
+
+			if (responsibility.updateResponsibilities(locationKey, closest.getID()))
 				notifyMeResponsible(locationKey);
 		}
 		else
 		{
-			if (storage.updateResponsibilities(locationKey, closest.getID()))
+			if (responsibility.updateResponsibilities(locationKey, closest.getID()))
 				// notify that someone else is now responsible for the
 				// content with key responsibleLocations
 				notifyOtherResponsible(locationKey, closest);
@@ -66,10 +71,10 @@ public class Replication implements PeerMapChangeListener
 		// we need to exclude ourselfs to get the "I'm responsible" notification
 		if (!isReplicationEnabled() || current.equals(selfAddress.getID()))
 			return;
-		Number160 test = storage.findResponsiblePeerID(locationKey);
+		Number160 test = responsibility.findPeerIDForResponsibleContent(locationKey);
 		if (test == null || peerMap.isCloser(locationKey, current, test) == -1)
 		{
-			storage.updateResponsibilities(locationKey, current);
+			responsibility.updateResponsibilities(locationKey, current);
 		}
 	}
 
@@ -79,14 +84,14 @@ public class Replication implements PeerMapChangeListener
 		if (!isReplicationEnabled())
 			return;
 		// check if we should change responibility.
-		Collection<Number160> myResponsibleLocations = storage.findResponsibleData(selfAddress
+		Collection<Number160> myResponsibleLocations = responsibility.findContentForResponsiblePeerID(selfAddress
 				.getID());
 		for (Number160 myResponsibleLocation : myResponsibleLocations)
 		{
 			PeerAddress closest = closest(myResponsibleLocation);
 			if (!closest.getID().equals(selfAddress.getID()))
 			{
-				if (storage.updateResponsibilities(myResponsibleLocation, closest.getID()))
+				if (responsibility.updateResponsibilities(myResponsibleLocation, closest.getID()))
 					// notify that someone else is now responsible for the
 					// content with key responsibleLocations
 					notifyOtherResponsible(myResponsibleLocation, closest);
@@ -100,7 +105,7 @@ public class Replication implements PeerMapChangeListener
 		if (!isReplicationEnabled())
 			return;
 		// check if we should change responibility.
-		Collection<Number160> otherResponsibleLocations = storage.findResponsibleData(peerAddress
+		Collection<Number160> otherResponsibleLocations = responsibility.findContentForResponsiblePeerID(peerAddress
 				.getID());
 		if (otherResponsibleLocations == null)
 			return;
@@ -109,7 +114,7 @@ public class Replication implements PeerMapChangeListener
 			PeerAddress closest = closest(otherResponsibleLocation);
 			if (closest.getID().equals(selfAddress.getID()))
 			{
-				if (storage.updateResponsibilities(otherResponsibleLocation, closest.getID()))
+				if (responsibility.updateResponsibilities(otherResponsibleLocation, closest.getID()))
 					// notify that someone I'm now responsible for the
 					// content
 					// with key responsibleLocations
@@ -144,10 +149,5 @@ public class Replication implements PeerMapChangeListener
 		SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, 1);
 		tmp.add(selfAddress);
 		return tmp.iterator().next();
-	}
-
-	public Storage getStorage()
-	{
-		return storage;
 	}
 }

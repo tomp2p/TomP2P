@@ -73,7 +73,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 		// we get called every x seconds for content we are responsible for. So
 		// we need to make sure that there are enough copies. The easy way is to
 		// publish it again... The good way is to do a diff
-		Collection<Number160> locationKeys = storage.findResponsibleData(peer.getPeerID());
+		Collection<Number160> locationKeys = storage.findContentForResponsiblePeerID(peer.getPeerID());
 		if (locationKeys == null)
 			return;
 		for (Number160 locationKey : locationKeys)

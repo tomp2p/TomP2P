@@ -49,8 +49,11 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		this.forks = forks;
 		int len=forks.length;
 		this.forksCopy = new ArrayList<K>(len); 
-		for(int i=0;i<len;i++)
-			forksCopy.add(forks[i]);
+		for(int i=0;i<len;i++) {
+			if(forks[i]!=null) { 
+				forksCopy.add(forks[i]);
+			}
+		}
 		this.cancelFuturesOnFinish = cancelFuturesOnFinish;
 		// the futures array may have null entries, so count first.
 		nrFutures = forks.length;

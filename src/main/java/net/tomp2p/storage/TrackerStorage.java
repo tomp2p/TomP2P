@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -77,7 +76,6 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	final private Maintenance maintenance;
 	// variable parameters
 	private boolean fillPrimaryStorageFast = false;
-	private boolean primaryStorageOnly = false;
 	private int secondaryFactor = 5;
 	private int primanyFactor = 1;
 
@@ -249,7 +247,9 @@ public class TrackerStorage implements PeerStatusListener, Digest
 					reverseTrackerDataSecondary, getSecondaryFactor()))
 			{
 				if(ReferrerType.MESH == type) {
-					maintenance.addTrackerMaintenance(peerAddress, referrer, locationKey, domainKey, this);
+					if(!isSecondaryTracker(locationKey, domainKey)) {
+						maintenance.addTrackerMaintenance(peerAddress, referrer, locationKey, domainKey, this);
+					}
 				}
 				return true;
 			}
@@ -257,20 +257,21 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		return false;
 	}
 
-	public boolean moveFromSecondaryToMesh(Number160 locationKey, Number160 domainKey, PublicKey publicKey)
+	public boolean moveFromSecondaryToMesh(PeerAddress peerAddress, PeerAddress referrer, Number160 locationKey, Number160 domainKey, PublicKey publicKey)
 	{
 		Number320 key = new Number320(locationKey, domainKey);
-		Map<Number160, TrackerData> map = trackerDataSecondary.remove(key);
+		Map<Number160, TrackerData> map = trackerDataSecondary.get(key);
 		if (map == null)
 			return false;
 		synchronized (map)
 		{
-			for (Entry<Number160, TrackerData> entry : map.entrySet())
+			TrackerData data = map.remove(peerAddress.getID());
+			if(data!=null)
 			{
-				reverseTrackerDataSecondary.remove(entry.getKey());
-				TrackerData data = entry.getValue();
-				put(locationKey, domainKey, data.getPeerAddress(), publicKey, data.getAttachement(), data.getOffset(),
-						data.getLength());
+				if(!put(locationKey, domainKey, data.getPeerAddress(), publicKey, data.getAttachement(), data.getOffset(),
+						data.getLength())) {
+					map.put(peerAddress.getID(), data);
+				}
 			}
 		}
 
@@ -307,11 +308,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 
 	private boolean canStorePrimary(Number160 locationKey, Number160 domainKey, boolean referred)
 	{
-		if (isPrimaryStorageOnly())
-		{
-			return true;
-		}
-		else if (!referred || isFillPrimaryStorageFast())
+		if (!referred || isFillPrimaryStorageFast())
 		{
 			return sizePrimary(locationKey, domainKey) <= (TRACKER_SIZE * getPrimanyFactor());
 		}
@@ -323,14 +320,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 
 	private boolean canStoreSecondary(Number160 locationKey, Number160 domainKey)
 	{
-		if (isPrimaryStorageOnly())
-		{
-			return false;
-		}
-		else
-		{
-			return sizeSecondary(locationKey, domainKey) <= (TRACKER_SIZE * getSecondaryFactor());
-		}
+		return sizeSecondary(locationKey, domainKey) <= (TRACKER_SIZE * getSecondaryFactor());
 	}
 
 	public int sizePrimary(Number160 locationKey, Number160 domainKey)
@@ -495,16 +485,6 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		return fillPrimaryStorageFast;
 	}
 
-	public void setPrimaryStorageOnly(boolean primaryStorageOnly)
-	{
-		this.primaryStorageOnly = primaryStorageOnly;
-	}
-
-	public boolean isPrimaryStorageOnly()
-	{
-		return primaryStorageOnly;
-	}
-
 	public int getTrackerTimoutSeconds()
 	{
 		return trackerTimoutSeconds;
@@ -520,8 +500,15 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	 */
 	public boolean isSecondaryTracker(Number160 locationKey, Number160 domainKey)
 	{
-		Map<Number160, TrackerData> mesh = meshPeers(locationKey, domainKey);
-		return mesh.containsKey(identityManagement.getSelf());
+		Number320 keys = new Number320(locationKey, domainKey);
+		Map<Number160, TrackerData> data = trackerDataMesh.get(keys);
+		if (data == null)
+			return false;
+		// return a copy
+		synchronized (data)
+		{
+			return data.containsKey(identityManagement.getSelf());
+		}
 	}
 
 	// TODO: seems a bit inefficient, but it works for the moment

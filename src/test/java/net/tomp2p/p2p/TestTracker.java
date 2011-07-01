@@ -302,7 +302,7 @@ public class TestTracker
 				System.err.println("found on DHT1: " + pa.getPeerAddress().getID());
 				tmp.remove(pa.getPeerAddress().getID());
 			}
-			ctg.setUseSecondaryTrackers(true);
+			//ctg.setUseSecondaryTrackers(true);
 			FutureTracker ft2 = nodes[299].getFromTracker(trackerID, ctg, ft1.getKnownPeers());
 			ft2.awaitUninterruptibly();
 			System.err.println("Reason: " + ft2.getFailedReason());
@@ -321,7 +321,7 @@ public class TestTracker
 			 */
 			for (Number160 number160 : tmp)
 			{
-				System.err.println("not found: " + number160);
+				System.err.println("not found: " + number160+ " out of 301");
 			}
 			System.err.println("not found: " + tmp.size());
 			Assert.assertEquals(true, tmp.size() < 100);

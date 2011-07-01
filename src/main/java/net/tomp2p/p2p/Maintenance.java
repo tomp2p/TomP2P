@@ -26,7 +26,7 @@ public class Maintenance
 			Number160 domainKey, TrackerStorage trackerStorage)
 	{
 		// TODO: do real checks, for now, we trust the peers
-		trackerStorage.moveFromSecondaryToMesh(locationKey, domainKey, null);
+		trackerStorage.moveFromSecondaryToMesh(peerAddress, referrer, locationKey, domainKey, null);
 	}
 
 }

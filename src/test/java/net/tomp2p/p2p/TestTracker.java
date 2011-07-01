@@ -281,14 +281,16 @@ public class TestTracker
 						.isSecondaryTracker(trackerID, cts.getDomain());
 				Map<Number160, TrackerData> tdr = nodes[i].getPeerBean().getTrackerStorage()
 						.meshPeers(trackerID, cts.getDomain());
+				Map<Number160, TrackerData> tdr2= nodes[i].getPeerBean().getTrackerStorage()
+					.secondaryPeers(trackerID, cts.getDomain());
 
 				if (tdr != null)
-					System.err.println("size[" + i + "] (" + secondary + "): " + tdr.size());
+					System.err.println("size[" + i + "] (" + secondary + "): " + tdr.size()+"/"+tdr2.size());
 				else
 					System.err.println("size[" + i + "] (" + secondary + "): " + 0);
 			}
 			System.err.println("SEARCH>>");
-			tc = new TrackerConfiguration(1, 1, 20, 301, 0, 20);
+			tc = new TrackerConfiguration(1, 1, 30, 301, 0, 20);
 			ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();
 			ctg.setDomain(new ShortString("test").toNumber160());
 			ctg.setRoutingConfiguration(rc);

@@ -126,7 +126,7 @@ public class HandshakeRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(final Message message) throws Exception
+	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
 	    //probe
 	    if (message.getType() == Type.REQUEST_3)
@@ -134,6 +134,9 @@ public class HandshakeRPC extends ReplyHandler
 			logger.debug("reply to probing, fire message to "+message.getSender());
 	    	final Message responseMessage = createMessage(message.getSender(), Command.PING,
 					Type.OK);
+	    	if(sign) {
+	    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+	    	}
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP())
 				fireUDP(message.getSender());
@@ -147,6 +150,9 @@ public class HandshakeRPC extends ReplyHandler
 			logger.debug("reply to discover, found "+message.getRealSender());
 			final Message responseMessage = createMessage(message.getSender(), Command.PING,
 					Type.OK);
+			if(sign) {
+	    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+	    	}
 			responseMessage.setMessageId(message.getMessageId());
 			Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 			self.add(message.getRealSender());
@@ -159,6 +165,9 @@ public class HandshakeRPC extends ReplyHandler
 			{
 				final Message responseMessage = createMessage(message.getSender(), Command.PING,
 						Type.OK);
+				if(sign) {
+		    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+		    	}
 				responseMessage.setMessageId(message.getMessageId());
 				if (wait)
 					Utils.sleep(10 * 1000);

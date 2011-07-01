@@ -45,7 +45,7 @@ public class QuitRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(final Message message) throws Exception
+	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
 		peerBean.getPeerMap().peerOffline(message.getSender(), true);
 		//TODO: test this

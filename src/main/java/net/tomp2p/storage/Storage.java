@@ -16,9 +16,7 @@
 package net.tomp2p.storage;
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.SortedMap;
 
 import net.tomp2p.peers.Number160;
@@ -36,10 +34,6 @@ public abstract class Storage implements Digest, Responsibility
 	{
 		NO_MASTER, MASTER_PUBLIC_KEY
 	};
-	public enum ProtectionEntryInDomain
-	{
-		ENTRY_REMOVE_IF_DOMAIN_CLAIMED, ENTRY_LEAVE
-	};
 	// Hash of public key is always preferred
 	private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
 	// Domains can generallay be protected
@@ -48,8 +42,6 @@ public abstract class Storage implements Digest, Responsibility
 	private ProtectionMode protectionEntryMode = ProtectionMode.MASTER_PUBLIC_KEY;
 	// Entries can generallay be protected
 	private ProtectionEnable protectionEntryEnable = ProtectionEnable.ALL;
-	// default is not to delete
-	private ProtectionEntryInDomain protectionEntryInDomain = ProtectionEntryInDomain.ENTRY_LEAVE;
 	// stores the domains that cannot be reserved and items can be added by
 	// anyone
 	private Collection<Number160> removedDomains = new HashSet<Number160>();
@@ -89,13 +81,12 @@ public abstract class Storage implements Digest, Responsibility
 
 	public void setProtection(ProtectionEnable protectionDomainEnable,
 			ProtectionMode protectionDomainMode, ProtectionEnable protectionEntryEnable,
-			ProtectionMode protectionEntryMode, ProtectionEntryInDomain protectionEntryInDomain)
+			ProtectionMode protectionEntryMode)
 	{
 		setProtectionDomainEnable(protectionDomainEnable);
 		setProtectionDomainMode(protectionDomainMode);
 		setProtectionEntryEnable(protectionEntryEnable);
 		setProtectionEntryMode(protectionEntryMode);
-		setProtectionEntryInDomain(protectionEntryInDomain);
 	}
 
 	public void setProtectionDomainMode(ProtectionMode protectionDomainMode)
@@ -136,16 +127,6 @@ public abstract class Storage implements Digest, Responsibility
 	public ProtectionEnable getProtectionEntryEnable()
 	{
 		return protectionEntryEnable;
-	}
-
-	public void setProtectionEntryInDomain(ProtectionEntryInDomain protectionEntryInDomain)
-	{
-		this.protectionEntryInDomain = protectionEntryInDomain;
-	}
-
-	public ProtectionEntryInDomain getProtectionEntryInDomain()
-	{
-		return protectionEntryInDomain;
 	}
 
 	public void removeDomainProtection(Number160 removeDomain)

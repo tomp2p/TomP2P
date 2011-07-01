@@ -208,16 +208,8 @@ public class StorageDisk extends Storage implements Responsibility
 
 	private boolean protectDomain(Number320 partKey, PublicKey publicKey)
 	{
-		if (!protectedMap.containsKey(partKey))
-		{
-			if (getProtectionEntryInDomain() == ProtectionEntryInDomain.ENTRY_REMOVE_IF_DOMAIN_CLAIMED)
-				remove(partKey.min(), partKey.max(), publicKey);
-			protectedMap.put(partKey, publicKey);
-			return true;
-		}
-		else
-			// or else check if already protected
-			return protectedMap.get(partKey).equals(publicKey);
+		protectedMap.put(partKey, publicKey);
+		return true;
 	}
 
 	@Override

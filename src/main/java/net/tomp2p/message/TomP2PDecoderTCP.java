@@ -72,7 +72,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			// header for a while
 			buffer.getBytes(buffer.readerIndex(), rawHeader);
 			final SocketAddress sa = channel.getRemoteAddress();
-			// System.err.println("tcp decoder"+sa);
 			message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) sa).getAddress());
 			if (logger.isDebugEnabled())
 				logger.debug("got header in decoder " + message);
@@ -95,7 +94,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 0)
 			{
 				step++;
-				readerIndex = buffer.readerIndex();
 				if (message.isHintSign())
 				{
 					signature = Signature.getInstance("SHA1withDSA");
@@ -104,6 +102,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 					int read = buffer.readerIndex() - readerIndex;
 					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 				}
+				readerIndex = buffer.readerIndex();
 			}
 
 			if (step == 1 && !MessageCodec.decodePayload(message.getContentType2(), buffer, message))
@@ -114,12 +113,12 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 1)
 			{
 				step++;
-				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
 					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 				}
+				readerIndex = buffer.readerIndex();
 			}
 
 			if (step == 2 && !MessageCodec.decodePayload(message.getContentType3(), buffer, message))
@@ -130,13 +129,14 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 2)
 			{
 				step++;
-				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
 					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 				}
+				readerIndex = buffer.readerIndex();
 			}
+			
 			if (step == 3 && !MessageCodec.decodePayload(message.getContentType4(), buffer, message))
 			{
 				buffer.readerIndex(readerIndex);
@@ -145,12 +145,12 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			else if (step == 3)
 			{
 				step++;
-				readerIndex = buffer.readerIndex();
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
 					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 				}
+				readerIndex = buffer.readerIndex();
 			}
 
 			if (step == 4 && signature != null && !MessageCodec.decodeSignature(signature, message, buffer))

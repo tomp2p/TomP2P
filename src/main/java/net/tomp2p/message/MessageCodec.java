@@ -113,6 +113,7 @@ public class MessageCodec
 				{
 					contentLength += encodePayloadType(message.getContentType3(), input,
 							message);
+					
 					if (message.getContentType4() != Message.Content.EMPTY)
 					{
 						contentLength += encodePayloadType(message.getContentType4(),
@@ -330,6 +331,7 @@ public class MessageCodec
 		message.setContentType(Content.values()[contentType & 0xf],
 				Content.values()[(contentType >>> 4) & 0xf],
 				Content.values()[(contentType >>> 8) & 0xf], Content.values()[contentType >>> 12]);
+		//message.checkForSignature();
 		// set the address as we see it, important for port forwarding
 		// identification
 		message.setRealSender(new PeerAddress(senderID, sender, portTCP, portUDP));
@@ -615,8 +617,10 @@ public class MessageCodec
 		SHA1Signature signatureEncode = new SHA1Signature(number1, number2);
 		byte[] signatureReceived = signatureEncode.encode();
 		if (!signature.verify(signatureReceived))
+		{
 			// set public key only if signature is correct
 			message.setPublicKey0(null);
+		}
 		// set data maps
 		return true;
 	}

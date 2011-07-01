@@ -16,11 +16,8 @@
 package net.tomp2p.p2p;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
@@ -37,24 +34,5 @@ public class VotingSchemeTracker implements EvaluatingSchemeTracker
 			result.addAll(trackerDatas);
 		return result;
 	}
-
-	/*@Override
-	public Map<PeerAddress, Set<TrackerData>> evaluate(Map<PeerAddress, Collection<TrackerData>> rawData)
-	{
-		if (rawData == null)
-			throw new IllegalArgumentException("cannot evaluate, as no result provided");
-		Map<PeerAddress, Set<TrackerData>> result = new HashMap<PeerAddress, Set<TrackerData>>();
-		for (Entry<PeerAddress, Collection<TrackerData>> tmp : rawData.entrySet())
-		{
-			Set<TrackerData> set = result.get(tmp.getKey());
-			if (set == null)
-			{
-				set = new HashSet<TrackerData>();
-				result.put(tmp.getKey(), set);
-			}
-			set.addAll(tmp.getValue());
-		}
-		return result;
-	}*/
 
 }

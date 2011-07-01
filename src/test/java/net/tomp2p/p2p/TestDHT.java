@@ -39,7 +39,6 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage.ProtectionEnable;
-import net.tomp2p.storage.Storage.ProtectionEntryInDomain;
 import net.tomp2p.storage.Storage.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Utils;
@@ -55,8 +54,8 @@ public class TestDHT
 	final private static ConnectionConfiguration CONFIGURATION = new ConnectionConfiguration();
 	static
 	{
-		CONFIGURATION.setIdleTCPMillis(3000000);
-		CONFIGURATION.setIdleUDPMillis(3000000);
+		//CONFIGURATION.setIdleTCPMillis(3000000);
+		//CONFIGURATION.setIdleUDPMillis(3000000);
 	}
 	
 	@Test
@@ -1024,17 +1023,17 @@ public class TestDHT
 			master.listen(4001, 4001);
 			master.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
-					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEntryInDomain.ENTRY_LEAVE);
+					ProtectionMode.MASTER_PUBLIC_KEY);
 			slave1 = new Peer(new Number160(rnd), pair2);
 			slave1.listen(master);
 			slave1.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
-					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEntryInDomain.ENTRY_LEAVE);
+					ProtectionMode.MASTER_PUBLIC_KEY);
 			slave2 = new Peer(new Number160(rnd), pair3);
 			slave2.listen(master);
 			slave2.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
-					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEntryInDomain.ENTRY_LEAVE);
+					ProtectionMode.MASTER_PUBLIC_KEY);
 			// perfect routing
 			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);

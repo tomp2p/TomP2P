@@ -213,10 +213,11 @@ public class DispatcherRequest extends SimpleChannelHandler
 			peerMap.peerOffline(message.getSender(), true);
 			return;
 		}
-		if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID()))
-		{
-			logger.info("Is it really required to send a message to ourself? " + message);
-		}
+		//We will send data to ourself if the network is small
+		//if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID()))
+		//{
+		//	logger.info("Is it really required to send a message to ourself? " + message);
+		//}
 		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? timeoutUPDMillis
 				: timeoutTCPMillis;
 		// no need to reply, we are late anyway

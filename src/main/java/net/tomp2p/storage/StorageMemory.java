@@ -132,10 +132,18 @@ public class StorageMemory extends Storage
 							key.getDomainKey(), publicKey)))
 			{
 				if (canProtectDomain(partKey, publicKey))
+				{
 					return protectDomain(partKey, publicKey);
+				}
 			}
 		}
 		return false;
+	}
+	
+	private boolean protectDomain(Number320 partKey, PublicKey publicKey)
+	{
+		protectedMap.put(partKey, publicKey);
+		return true;
 	}
 
 	private boolean isDomainProtectedByOthers(Number320 partKey, PublicKey publicKey)
@@ -144,20 +152,6 @@ public class StorageMemory extends Storage
 		if (other == null)
 			return false;
 		return !publicKey.equals(other);
-	}
-
-	private boolean protectDomain(Number320 partKey, PublicKey publicKey)
-	{
-		// if (!protectedMap.containsKey(partKey))
-		// {
-		if (getProtectionEntryInDomain() == ProtectionEntryInDomain.ENTRY_REMOVE_IF_DOMAIN_CLAIMED)
-			remove(partKey.min(), partKey.max(), publicKey);
-		protectedMap.put(partKey, publicKey);
-		return true;
-		// }
-		// else
-		// or else check if already protected
-		// return protectedMap.get(partKey).equals(publicKey);
 	}
 
 	@Override

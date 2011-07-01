@@ -80,9 +80,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			peerBean.getPeerMap().peerFound(message.getSender(), message.getSender());
 			try
 			{//
-				Message reply = handleResponse(message);
-				if (sign)
-					reply.setPublicKeyAndSign(peerBean.getKeyPair());
+				Message reply = handleResponse(message, sign);
 				return reply;
 			}
 			catch (Throwable e)
@@ -116,7 +114,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 	 * @param message Request message
 	 * @throws Exception
 	 */
-	public abstract Message handleResponse(Message message) throws Exception;
+	public abstract Message handleResponse(Message message, boolean sign) throws Exception;
 
 	void nullCheck(Object... objs)
 	{
@@ -125,13 +123,9 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 				throw new IllegalArgumentException("Object cannot be null");
 	}
 
-	public void setSign(boolean sign)
+	public void setSignReply(boolean sign)
 	{
 		this.sign = sign;
 	}
 
-	public boolean isSign()
-	{
-		return sign;
-	}
 }

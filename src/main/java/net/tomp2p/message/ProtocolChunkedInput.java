@@ -32,17 +32,21 @@ public class ProtocolChunkedInput implements ChunkedInput
 {
 	private final ChannelHandlerContext ctx;
 	private final Queue<ChannelBuffer> queue = new ConcurrentLinkedQueue<ChannelBuffer>();
-	private ChannelBuffer channelBuffer=ChannelBuffers.dynamicBuffer();
-	private volatile boolean done=false;
+	private ChannelBuffer channelBuffer = ChannelBuffers.dynamicBuffer();
+	private volatile boolean done = false;
 	private final Signature signature;
-	public ProtocolChunkedInput(ChannelHandlerContext ctx, PrivateKey privateKey) throws NoSuchAlgorithmException, InvalidKeyException
+
+	public ProtocolChunkedInput(ChannelHandlerContext ctx, PrivateKey privateKey) throws NoSuchAlgorithmException,
+			InvalidKeyException
 	{
-		this.ctx=ctx;
-		if(privateKey!=null) {
+		this.ctx = ctx;
+		if (privateKey != null)
+		{
 			signature = Signature.getInstance("SHA1withDSA");
 			signature.initSign(privateKey);
 		}
-		else {
+		else
+		{
 			signature = null;
 		}
 	}
@@ -57,26 +61,31 @@ public class ProtocolChunkedInput implements ChunkedInput
 	public Object nextChunk() throws Exception
 	{
 		ChannelBuffer channelBuffer = queue.poll();
-		if(channelBuffer==null) {
+		if (channelBuffer == null)
+		{
 			return null;
 		}
-		if(signature != null && channelBuffer != ChannelBuffers.EMPTY_BUFFER) {
-			signature.update(channelBuffer.array(), channelBuffer.arrayOffset(), channelBuffer.arrayOffset() + channelBuffer.writerIndex());
+		if (signature != null && channelBuffer != ChannelBuffers.EMPTY_BUFFER)
+		{
+			signature.update(channelBuffer.array(), channelBuffer.arrayOffset(), channelBuffer.arrayOffset()
+					+ channelBuffer.writerIndex());
 		}
-		else if(signature != null && channelBuffer == ChannelBuffers.EMPTY_BUFFER) {
+		else if (signature != null && channelBuffer == ChannelBuffers.EMPTY_BUFFER)
+		{
 			byte[] signatureData = signature.sign();
 			SHA1Signature decodedSignature = new SHA1Signature();
 			decodedSignature.decode(signatureData);
-			channelBuffer = ChannelBuffers.wrappedBuffer(decodedSignature.getNumber1().toByteArray(), decodedSignature.getNumber2().toByteArray());
+			channelBuffer = ChannelBuffers.wrappedBuffer(decodedSignature.getNumber1().toByteArray(), decodedSignature
+					.getNumber2().toByteArray());
 		}
 		return channelBuffer;
 	}
-	
+
 	public int size()
 	{
 		return queue.size();
 	}
-	
+
 	public void addMarkerForSignature()
 	{
 		flush(true);
@@ -95,66 +104,75 @@ public class ProtocolChunkedInput implements ChunkedInput
 	{
 		done = true;
 	}
-	
-	public void resume() {
-		ChunkedWriteHandler chunkedWriteHandler=(ChunkedWriteHandler)ctx.getPipeline().get("streamer");
+
+	public void resume()
+	{
+		ChunkedWriteHandler chunkedWriteHandler = (ChunkedWriteHandler) ctx.getPipeline().get("streamer");
 		chunkedWriteHandler.resumeTransfer();
 	}
 
 	public void copyToCurrent(byte[] byteArray)
 	{
-		if(done) return;
+		if (done)
+			return;
 		channelBuffer.writeBytes(byteArray);
 	}
-	
+
 	public void copyToCurrent(int size)
 	{
-		if(done) return;
+		if (done)
+			return;
 		channelBuffer.writeInt(size);
 	}
-	
+
 	public void copyToCurrent(byte size)
 	{
-		if(done) return;
+		if (done)
+			return;
 		channelBuffer.writeByte(size);
 	}
-	
+
 	public void copyToCurrent(long long1)
 	{
-		if(done) return;
+		if (done)
+			return;
 		channelBuffer.writeLong(long1);
 	}
-	
+
 	public void copyToCurrent(short short1)
 	{
-		if(done) return;
+		if (done)
+			return;
 		channelBuffer.writeShort(short1);
 	}
-	
+
 	public void copyToCurrent(ChannelBuffer slice)
 	{
-		if(done) return;
+		if (done)
+			return;
 		flush(false);
 		queue.add(slice);
 	}
-	
+
 	public void copyToCurrent(byte[] array, int offset, int length)
 	{
-		if(done) return;
+		if (done)
+			return;
 		flush(false);
 		queue.add(ChannelBuffers.wrappedBuffer(array, offset, length));
 	}
-	
+
 	public void flush(boolean last)
 	{
-		if(channelBuffer.writerIndex() > 0)
+		if (channelBuffer.writerIndex() > 0)
 		{
 			queue.add(channelBuffer);
-			if(!last) {
-				channelBuffer=ChannelBuffers.dynamicBuffer();
+			if (!last)
+			{
+				channelBuffer = ChannelBuffers.dynamicBuffer();
 			}
 		}
-		if(last)
+		if (last)
 			done = true;
 	}
 

@@ -118,7 +118,7 @@ public class PeerExchangeRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(final Message message) throws Exception
+	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("Received Peer Exchange Message " + message);

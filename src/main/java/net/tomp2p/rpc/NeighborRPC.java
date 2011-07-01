@@ -93,14 +93,17 @@ public class NeighborRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(Message message) throws IOException
+	public Message handleResponse(Message message, boolean sign) throws IOException
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("handleResponse for " + message);
 		Number160 locationKey = message.getKey1();
 		Number160 domainKey = message.getKey2();
 		// Create response message and set neighbors
-		Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
+		final Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
+		if(sign) {
+    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+    	}
 		responseMessage.setMessageId(message.getMessageId());
 		Collection<PeerAddress> neighbors = peerBean.getPeerMap().closePeers(locationKey,
 				NEIGHBOR_SIZE);

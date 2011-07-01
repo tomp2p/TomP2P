@@ -77,9 +77,12 @@ public class DirectDataRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(final Message message) throws Exception
+	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
 		final Message responseMessage = createMessage(message.getSender(), Command.DIRECT_DATA, Type.OK);
+		if(sign) {
+    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+    	}
 		responseMessage.setMessageId(message.getMessageId());
 		final RawDataReply rawDataReply2 = rawDataReply;
 		final ObjectDataReply objectDataReply2 = objectDataReply;

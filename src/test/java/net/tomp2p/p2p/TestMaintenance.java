@@ -1,4 +1,5 @@
 package net.tomp2p.p2p;
+
 import java.util.Collection;
 import java.util.Random;
 
@@ -9,7 +10,6 @@ import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
-
 
 public class TestMaintenance
 {
@@ -28,14 +28,11 @@ public class TestMaintenance
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
-				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(),
-						master.getPeerAddress());
-				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(),
-						master.getPeerAddress());
+				master.getPeerBean().getPeerMap().peerFound(nodes[i].getPeerAddress(), master.getPeerAddress());
+				nodes[i].getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), master.getPeerAddress());
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(),
-							master.getPeerAddress());
+					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), master.getPeerAddress());
 				}
 			}
 			//
@@ -154,16 +151,14 @@ public class TestMaintenance
 			nodes[2].startMaintainance();
 			nodes[3].startMaintainance();
 			Utils.sleep(10000);
+			PeerAddress node3 = nodes[3].getPeerAddress();
 			nodes[3].shutdown();
 			Utils.sleep(15000);
-			Assert.assertEquals(false, master.getPeerBean().getPeerMap().contains(
-					nodes[3].getPeerAddress()));
-			Assert.assertEquals(false, nodes[0].getPeerBean().getPeerMap().contains(
-					nodes[3].getPeerAddress()));
-			Assert.assertEquals(false, nodes[1].getPeerBean().getPeerMap().contains(
-					nodes[3].getPeerAddress()));
-			Assert.assertEquals(false, nodes[2].getPeerBean().getPeerMap().contains(
-					nodes[3].getPeerAddress()));
+
+			Assert.assertEquals(false, master.getPeerBean().getPeerMap().contains(node3));
+			Assert.assertEquals(false, nodes[0].getPeerBean().getPeerMap().contains(node3));
+			Assert.assertEquals(false, nodes[1].getPeerBean().getPeerMap().contains(node3));
+			Assert.assertEquals(false, nodes[2].getPeerBean().getPeerMap().contains(node3));
 		}
 		finally
 		{

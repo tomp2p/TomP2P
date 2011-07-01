@@ -440,4 +440,21 @@ public class Utils
 		return retVal;
 	}
 
+	public static String debugArray(byte[] array, int offset, int length)
+	{
+		String digits = "0123456789abcdef";
+	    StringBuilder sb = new StringBuilder(length * 2);
+	    for (int i=0;i<length;i++) {
+	        int bi = array[offset+i] & 0xff;
+	        sb.append(digits.charAt(bi >> 4));
+	        sb.append(digits.charAt(bi & 0xf));
+	    }
+	    return sb.toString();
+	}
+
+	public static String debugArray(byte[] array)
+	{
+		return debugArray(array, 0, array.length);
+	}
+
 }

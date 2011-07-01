@@ -17,7 +17,6 @@ package net.tomp2p.p2p;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
@@ -25,6 +24,4 @@ import net.tomp2p.storage.TrackerData;
 public interface EvaluatingSchemeTracker
 {
 	public Collection<TrackerData> evaluateSingle(Map<PeerAddress, Collection<TrackerData>> rawData);
-
-	//public Map<PeerAddress, Set<TrackerData>> evaluate(Map<PeerAddress, Collection<TrackerData>> rawData);
 }

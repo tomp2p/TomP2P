@@ -92,13 +92,15 @@ public class TrackerRPC extends ReplyHandler
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, primary ? Type.REQUEST_3
 				: Type.REQUEST_1);
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
 			message.setPayload(ChannelBuffers.wrappedBuffer(((SimpleBloomFilter<Number160>) knownPeers).toByteArray()));
 		else
 			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
-		if (signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		
 		if (attachement != null)
 		{
 			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message,
@@ -119,13 +121,15 @@ public class TrackerRPC extends ReplyHandler
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_GET, Type.REQUEST_1);
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
 			message.setPayload(ChannelBuffers.wrappedBuffer(((SimpleBloomFilter<Number160>) knownPeers).toByteArray()));
 		else
 			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
-		if (signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		
 		if (expectAttachement)
 		{
 			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message,
@@ -148,9 +152,12 @@ public class TrackerRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(Message message) throws Exception
+	public Message handleResponse(Message message, boolean sign) throws Exception
 	{
 		final Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
+		if(sign) {
+    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+    	}
 		responseMessage.setMessageId(message.getMessageId());
 		// get data
 		Number160 locationKey = message.getKey1();

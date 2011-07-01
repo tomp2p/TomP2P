@@ -772,4 +772,12 @@ public class Message
 	{
 		return contentType1 != Content.EMPTY;
 	}
+
+	/*public void checkForSignature()
+	{
+		if(contentType1 == Content.PUBLIC_KEY_SIGNATURE || contentType2 == Content.PUBLIC_KEY_SIGNATURE ||contentType3 == Content.PUBLIC_KEY_SIGNATURE ||contentType4 == Content.PUBLIC_KEY_SIGNATURE ) {
+			setHintSign(true);
+		}
+		
+	}*/
 }

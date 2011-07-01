@@ -468,7 +468,7 @@ public class Peer
 	public ScheduledFuture<?> addMaintainance(Runnable runnable)
 	{
 		return scheduledExecutorServiceMaintenance.scheduleWithFixedDelay(runnable, 0,
-				peerConfiguration.getWaitingTimeBetweenNodeMaintenenceSeconds()[0] / 2, TimeUnit.SECONDS);
+				(peerConfiguration.getWaitingTimeBetweenNodeMaintenenceSeconds()[0] + 1) / 2, TimeUnit.SECONDS);
 	}
 
 	public ConnectionHandler getConnectionHandler()

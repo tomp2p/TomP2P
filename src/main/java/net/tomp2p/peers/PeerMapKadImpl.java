@@ -519,7 +519,6 @@ public class PeerMapKadImpl implements PeerMap
 			if (map.size() > bagSize)
 			{
 				long maxValue = Long.MAX_VALUE;
-				int counter = 0;
 				PeerAddress removePeerAddress = null;
 				synchronized (map)
 				{
@@ -535,7 +534,6 @@ public class PeerMapKadImpl implements PeerMap
 						// lastSeenOnline, as we might have old reliable peers.
 						if (maxValue == 0)
 							break;
-						counter++;
 					}
 				}
 				if (removePeerAddress != null)

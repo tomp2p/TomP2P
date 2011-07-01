@@ -80,10 +80,12 @@ public class StorageRPC extends ReplyHandler
 	{
 		nullCheck(remoteNode, locationKey, domainKey, dataMap);
 		final Message message = createMessage(remoteNode, Command.PUT, type);
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
-		if (signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		
 		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
@@ -100,10 +102,11 @@ public class StorageRPC extends ReplyHandler
 		for (Data data : dataSet)
 			dataMap.put(data.getHash(), data);
 		final Message message = createMessage(remoteNode, Command.ADD, type);
+		if (protectDomain || signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
-		if (protectDomain || signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
@@ -114,13 +117,15 @@ public class StorageRPC extends ReplyHandler
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.GET, Type.REQUEST_1);
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
 		if (protectedDomains != null)
 			message.setPublicKey(protectedDomains);
-		if (signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		
 		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
@@ -132,11 +137,13 @@ public class StorageRPC extends ReplyHandler
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.REMOVE, sendBackResults
 				? Type.REQUEST_2 : Type.REQUEST_1);
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
-		if (signMessage)
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		
 		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
 		return request.sendTCP();
 	}
@@ -161,12 +168,15 @@ public class StorageRPC extends ReplyHandler
 	}
 
 	@Override
-	public Message handleResponse(final Message message) throws IOException
+	public Message handleResponse(final Message message, boolean sign) throws IOException
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("handle " + message);
 		final Message responseMessage = createMessage(message.getSender(), message.getCommand(),
 				Type.OK);
+		if(sign) {
+    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+    	}
 		responseMessage.setMessageId(message.getMessageId());
 		switch (message.getCommand())
 		{

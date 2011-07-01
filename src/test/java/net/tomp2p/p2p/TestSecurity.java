@@ -14,7 +14,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage.ProtectionEnable;
-import net.tomp2p.storage.Storage.ProtectionEntryInDomain;
 import net.tomp2p.storage.Storage.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Utils;
@@ -152,22 +151,19 @@ public class TestSecurity
 			master.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_LEAVE);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			slave1 = new Peer(new Number160(rnd), pair2);
 			slave1.listen(master);
 			slave1.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_LEAVE);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			slave2 = new Peer(new Number160(rnd), pair3);
 			slave2.listen(master);
 			slave2.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_REMOVE_IF_DOMAIN_CLAIMED);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			// perfect routing
 			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
@@ -205,7 +201,7 @@ public class TestSecurity
 			fdht4.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht4.isSuccess());
 			Assert.assertEquals(2, fdht4.getRawData().get(slave1.getPeerAddress()).size());
-			Assert.assertEquals(1, fdht4.getRawData().get(slave2.getPeerAddress()).size());
+			Assert.assertEquals(2, fdht4.getRawData().get(slave2.getPeerAddress()).size());
 		}
 		finally
 		{
@@ -236,22 +232,19 @@ public class TestSecurity
 			master.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_LEAVE);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			slave1 = new Peer(new Number160(rnd), pair2);
 			slave1.listen(master);
 			slave1.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_LEAVE);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			slave2 = new Peer(new Number160(rnd), pair3);
 			slave2.listen(master);
 			slave2.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
-							ProtectionEntryInDomain.ENTRY_LEAVE);
+							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 			// perfect routing
 			master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);

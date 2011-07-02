@@ -258,7 +258,14 @@ public class DispatcherRequest extends SimpleChannelHandler
 								+ message);
 				message.setRecipient(message.getSender())
 						.setSender(peerBean.getServerPeerAddress()).setType(Type.EXCEPTION);
-				responseMessage = message;
+				response(ctx, e, message);
+			}
+			else if(responseMessage == message) {
+				if(logger.isDebugEnabled())
+					logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
+			}
+			else {
+				response(ctx, e, responseMessage);
 			}
 		}
 		else
@@ -266,16 +273,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 			logger.warn("No handler found for " + message);
 			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress())
 					.setType(Type.UNKNOWN_ID);
-			responseMessage = message;
-		}
-		if (responseMessage == message)
-		{
-			if(logger.isDebugEnabled())
-				logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
-		}
-		else
-		{
-			response(ctx, e, responseMessage);
+			response(ctx, e, message);
 		}
 	}
 

@@ -396,9 +396,11 @@ public class MessageCodec
 					Number160 key = readID(buffer);
 					final Data data = decodeData(new ChannelDecoder(buffer), message.getSender());
 					if(data == null) return false;
-					if(data.isProtectedEntry() && message.getPublicKey()==null)
-						throw new DecoderException("You indicated that you want to protect the data, but you did not provide or provided too late a public key.");
-					data.setPublicKey(message.getPublicKey());
+					if(message.isRequest()) {
+						if(data.isProtectedEntry() && message.getPublicKey()==null)
+							throw new DecoderException("You indicated that you want to protect the data, but you did not provide or provided too late a public key.");
+						data.setPublicKey(message.getPublicKey());
+					}
 					result.put(key, data);
 				}
 				message.setDataMap0(result);
@@ -536,7 +538,7 @@ public class MessageCodec
 		{
 			// check if its worth coping the buffer, or just take the one backed
 			// by the bytebuffer. If the backing buffer is too big, then its a
-			// waste of space and we should copy, otherwise, tatke the backing
+			// waste of space and we should copy, otherwise, take the backing
 			// array.
 			// TODO: find good values for this. This is just a guess
 			final boolean copy = true;

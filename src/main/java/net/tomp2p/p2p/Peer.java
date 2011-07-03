@@ -332,8 +332,8 @@ public class Peer
 		PeerAddress selfAddress = getPeerAddress();
 		PeerMap peerMap = connectionHandler.getPeerBean().getPeerMap();
 		// create storage and add replication feature
-		StorageMemory storage = new StorageMemory();
 		ResponsibilityMemory responsibilityMemory = new ResponsibilityMemory();
+		StorageMemory storage = new StorageMemory(responsibilityMemory);
 		peerBean.setStorage(storage);
 		Replication replicationStorage = new Replication(responsibilityMemory, selfAddress, peerMap);
 		peerBean.setReplicationStorage(replicationStorage);
@@ -791,33 +791,23 @@ public class Peer
 		final FutureDHT futureDHT = getDHT().put(locationKey, config.getDomain(), dataMap,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isStoreIfAbsent(),
 				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate());
-		/*if (config.getRefreshSeconds() > 0)
+		if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
-		}*/
+		}
 		return futureDHT;
 	}
 
-	/*private ScheduledFuture<?> schedulePut(final Number160 locationKey, Map<Number160, Data> dataMap,
+	private ScheduledFuture<?> schedulePut(final Number160 locationKey, final Map<Number160, Data> dataMap,
 			final ConfigurationStore config, final FutureDHT futureDHT)
 	{
-		final Collection<Number480> keys = new HashSet<Number480>();
-		for (Map.Entry<Number160, Data> entry : dataMap.entrySet())
-		{
-			Number160 contentKey = entry.getKey();
-			Number480 key = new Number480(locationKey, config.getDomain(), contentKey);
-			getPeerBean().getStorage().put(key, entry.getValue(), keyPair.getPublic(), config.isStoreIfAbsent(),
-					config.isProtectDomain());
-			keys.add(key);
-		}
 		Runnable runner = new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				Map<Number160, Data> dataMap2 = getPeerBean().getStorage().get(keys, keyPair.getPublic());
-				FutureDHT futureDHT2 = getDHT().put(locationKey, config.getDomain(), dataMap2,
+				FutureDHT futureDHT2 = getDHT().put(locationKey, config.getDomain(), dataMap,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(),
 						config.getFutureCreate());
@@ -828,7 +818,7 @@ public class Peer
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
-	}*/
+	}
 
 	// ADD
 	public FutureDHT add(final Number160 locationKey, final Data data)
@@ -868,33 +858,23 @@ public class Peer
 		final FutureDHT futureDHT = getDHT().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isProtectDomain(),
 				config.isSignMessage(), config.getFutureCreate());
-		/*if (config.getRefreshSeconds() > 0)
+		if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
-		}*/
+		}
 		return futureDHT;
 	}
 
-	/*private ScheduledFuture<?> scheduleAdd(final Number160 locationKey, Collection<Data> dataCollection,
+	private ScheduledFuture<?> scheduleAdd(final Number160 locationKey, final Collection<Data> dataCollection,
 			final ConfigurationStore config, final FutureDHT futureDHT)
 	{
-		final Collection<Number480> keys = new HashSet<Number480>();
-		for (Data data : dataCollection)
-		{
-			Number160 contentKey = data.getHash();
-			Number480 key = new Number480(locationKey, config.getDomain(), contentKey);
-			getPeerBean().getStorage().put(key, data, keyPair.getPublic(), config.isStoreIfAbsent(),
-					config.isProtectDomain());
-			keys.add(key);
-		}
 		Runnable runner = new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				Map<Number160, Data> dataMap2 = getPeerBean().getStorage().get(keys, keyPair.getPublic());
-				FutureDHT futureDHT2 = getDHT().add(locationKey, config.getDomain(), dataMap2.values(),
+				FutureDHT futureDHT2 = getDHT().add(locationKey, config.getDomain(), dataCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate());
 				futureDHT.created(futureDHT2);
@@ -904,7 +884,7 @@ public class Peer
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
-	}*/
+	}
 
 	// GET
 	public FutureDHT getAll(final Number160 locationKey)

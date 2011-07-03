@@ -53,25 +53,25 @@ public class StorageRPC extends ReplyHandler
 	}
 
 	public FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain,
+			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage)
 	{
 		Type request = Type.REQUEST_1;
 		if (protectDomain)
 			request = Type.REQUEST_3;
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage);
+				|| signMessage || protectEntry);
 	}
 
 	public FutureResponse putIfAbsent(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain,
+			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage)
 	{
 		Type request = Type.REQUEST_2;
 		if (protectDomain)
 			request = Type.REQUEST_4;
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage);
+				|| signMessage || protectEntry);
 	}
 
 	private FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,

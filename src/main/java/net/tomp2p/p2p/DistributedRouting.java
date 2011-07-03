@@ -256,6 +256,10 @@ public class DistributedRouting
 		{
 			if (futureResponses[i] == null && !stopCreatingNewFutures)
 			{
+				if (logger.isDebugEnabled())
+				{
+					logger.debug("here1: ");
+				}
 				PeerAddress next = Utils.pollFirst(queueToAsk);
 				// PeerAddress next = queueToAsk.pollFirst();
 				if (next != null)
@@ -270,8 +274,13 @@ public class DistributedRouting
 					}
 				}
 			}
-			else if (futureResponses[i] != null)
+			else if (futureResponses[i] != null) {
 				active++;
+				if (logger.isDebugEnabled())
+				{
+					logger.debug("here2: "+futureResponses[i].getRequest());
+				}
+			}
 		}
 		if (active == 0)
 		{
@@ -323,6 +332,10 @@ public class DistributedRouting
 						// continue
 						finished = false;
 						stopCreatingNewFutures = false;
+					}
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("Routing finished " + finished);
 					}
 				}
 				else

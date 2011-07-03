@@ -53,7 +53,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 					logger.debug("transfer from " + storageRPC.getPeerAddress() + " to " + other
 							+ " for key " + locationKey);
 				pendingFutures.put(storageRPC.put(other, locationKey, domainKey, dataMap, false,
-						false), System.currentTimeMillis());
+						false, false), System.currentTimeMillis());
 			}
 		});
 	}

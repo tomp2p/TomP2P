@@ -46,7 +46,17 @@ public class StorageMemory extends Storage
 	//final protected Map<Number160, Set<Number160>> responsibilityMapRev = new HashMap<Number160, Set<Number160>>();
 	final private Map<Number480, Long> timeoutMap = new HashMap<Number480, Long>();
 	final private SortedMap<Long, Set<Number480>> timeoutMapRev = new TreeMap<Long, Set<Number480>>();
-	final private Responsibility responsibilityMemory = new ResponsibilityMemory();
+	final private Responsibility responsibilityMemory;
+	
+	public StorageMemory()
+	{
+		this(new ResponsibilityMemory());
+	}
+	
+	public StorageMemory(Responsibility responsibilityMemory )
+	{
+		this.responsibilityMemory = responsibilityMemory;
+	}
 
 	@Override
 	public void close()

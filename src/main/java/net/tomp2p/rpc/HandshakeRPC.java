@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.rpc;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -23,6 +24,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
@@ -40,8 +42,8 @@ public class HandshakeRPC extends ReplyHandler
 		this(peerBean, connectionBean, true, true, false);
 	}
 
-	HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, final boolean enable,
-			final boolean register, final boolean wait)
+	HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, final boolean enable, final boolean register,
+			final boolean wait)
 	{
 		super(peerBean, connectionBean);
 		this.enable = enable;
@@ -120,23 +122,22 @@ public class HandshakeRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(final Message message)
 	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message
-				.getType() == Type.REQUEST_3)
+		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3)
 				&& message.getCommand() == Command.PING;
 	}
 
 	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
-	    //probe
-	    if (message.getType() == Type.REQUEST_3)
+		// probe
+		if (message.getType() == Type.REQUEST_3)
 		{
-			logger.debug("reply to probing, fire message to "+message.getSender());
-	    	final Message responseMessage = createMessage(message.getSender(), Command.PING,
-					Type.OK);
-	    	if(sign) {
-	    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
-	    	}
+			logger.debug("reply to probing, fire message to " + message.getSender());
+			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
+			if (sign)
+			{
+				responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+			}
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP())
 				fireUDP(message.getSender());
@@ -144,15 +145,15 @@ public class HandshakeRPC extends ReplyHandler
 				fireTCP(message.getSender());
 			return responseMessage;
 		}
-	    	//discover
+		// discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
-			logger.debug("reply to discover, found "+message.getRealSender());
-			final Message responseMessage = createMessage(message.getSender(), Command.PING,
-					Type.OK);
-			if(sign) {
-	    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
-	    	}
+			logger.debug("reply to discover, found " + message.getRealSender());
+			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
+			if (sign)
+			{
+				responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+			}
 			responseMessage.setMessageId(message.getMessageId());
 			Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 			self.add(message.getRealSender());
@@ -161,13 +162,19 @@ public class HandshakeRPC extends ReplyHandler
 		}
 		else
 		{
+			//test if this is a broadcast message to ourselfs. If it is, do not reply.
+			if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID())
+					&& message.getRecipient().getID().equals(Number160.ZERO))
+			{
+				return message;
+			}
 			if (enable)
 			{
-				final Message responseMessage = createMessage(message.getSender(), Command.PING,
-						Type.OK);
-				if(sign) {
-		    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
-		    	}
+				final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
+				if (sign)
+				{
+					responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+				}
 				responseMessage.setMessageId(message.getMessageId());
 				if (wait)
 					Utils.sleep(10 * 1000);

@@ -1049,6 +1049,7 @@ public class TestDHT
 			data1.setProtectedEntry(true);
 			FutureDHT fdht1 = master.put(locationKey, data1, cs1);
 			fdht1.awaitUninterruptibly();
+			System.err.println(fdht1.getFailedReason());
 			Assert.assertEquals(true, fdht1.isSuccess());
 			// store again
 			Data data2 = new Data("test1");
@@ -1076,6 +1077,8 @@ public class TestDHT
 			fdht7.awaitUninterruptibly();
 			Assert.assertEquals(2, fdht7.getData().size());
 			Assert.assertEquals(true, fdht7.isSuccess());
+			//if(true)
+			//	System.exit(0);
 			// try to remove for real, all
 			ConfigurationRemove cr = Configurations.defaultRemoveConfiguration();
 			cr.setSignMessage(true);
@@ -1153,7 +1156,7 @@ public class TestDHT
 		{
 			master = new Peer(new Number160(rnd));
 			master.listen(4001, 4001);
-			Peer[] nodes = createNodes(master, 1000);
+			Peer[] nodes = createNodes(master, 500);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
@@ -1181,7 +1184,7 @@ public class TestDHT
 			System.err.println("round start");
 			Random rnd = new Random(42L);
 			byte[] toStore1 = new byte[10 * 1024];
-			for (int j = 0; j < 100; j++)
+			for (int j = 0; j < 5; j++)
 			{
 				System.err.println("round "+j);
 				for (int i = 0; i < nodes.length - 1; i++)

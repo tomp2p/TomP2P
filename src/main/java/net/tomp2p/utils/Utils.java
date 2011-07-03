@@ -47,6 +47,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Digest;
 import net.tomp2p.storage.TrackerData;
 
@@ -455,6 +456,18 @@ public class Utils
 	public static String debugArray(byte[] array)
 	{
 		return debugArray(array, 0, array.length);
+	}
+
+	public static boolean checkEntryProtection(Map<Number160, Data> dataMap)
+	{
+		for(Data data:dataMap.values())
+		{
+			if(data.isProtectedEntry())
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

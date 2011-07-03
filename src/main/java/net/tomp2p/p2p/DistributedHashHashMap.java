@@ -201,10 +201,11 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
+									boolean protectEntry = Utils.checkEntryProtection(dataMap);
 									return putIfAbsent ? store.putIfAbsent(address, locationKey,
-											domainKey, dataMap, protectDomain, signMessage) : store
+											domainKey, dataMap, protectDomain, protectEntry, signMessage) : store
 											.put(address, locationKey, domainKey, dataMap,
-													protectDomain, signMessage);
+													protectDomain, protectEntry, signMessage);
 								}
 
 								@Override

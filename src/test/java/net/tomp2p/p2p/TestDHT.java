@@ -399,7 +399,7 @@ public class TestDHT
 			FutureDHT fdht = nodes[444].put(nodes[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			rc = new RoutingConfiguration(0, 0, 0, 1);
+			rc = new RoutingConfiguration(0, 0, 10, 1);
 			pc = new RequestP2PConfiguration(1, 0, 0);
 			ConfigurationGet cg = Configurations.defaultGetConfiguration();
 			cg.setDomain(new ShortString("test").toNumber160());
@@ -444,7 +444,7 @@ public class TestDHT
 			FutureDHT fdht = nodes[444].put(nodes[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			rc = new RoutingConfiguration(4, 0, 0, 1);
+			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
 			ConfigurationGet cg = Configurations.defaultGetConfiguration();
 			cg.setDomain(new ShortString("test").toNumber160());
@@ -489,7 +489,7 @@ public class TestDHT
 			FutureDHT fdht = nodes[444].put(nodes[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			rc = new RoutingConfiguration(1, 0, 0, 1);
+			rc = new RoutingConfiguration(1, 0, 10, 1);
 			pc = new RequestP2PConfiguration(1, 0, 0);
 			ConfigurationGet cg = Configurations.defaultGetConfiguration();
 			cg.setDomain(new ShortString("test").toNumber160());
@@ -537,7 +537,7 @@ public class TestDHT
 			FutureDHT fdht = nodes[444].put(nodes[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			rc = new RoutingConfiguration(4, 0, 0, 1);
+			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
 			ConfigurationRemove cr = Configurations.defaultRemoveConfiguration();
 			cr.setDomain(new ShortString("test").toNumber160());
@@ -591,7 +591,7 @@ public class TestDHT
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			System.err.println("remove");
-			rc = new RoutingConfiguration(4, 0, 0, 1);
+			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
 			ConfigurationRemove cr = Configurations.defaultRemoveConfiguration();
 			cr.setDomain(new ShortString("test").toNumber160());

@@ -732,10 +732,24 @@ public class Peer
 								int portUDP = -1;
 								if (futureResponseUDP.isSuccess())
 									portUDP = serverAddress.portUDP();
-								connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP,
-										serverAddress.portTCP(), seenAs.getInetAddress(),
-										bindings.getOutsideUDPPort(),
-										bindings.getOutsideTCPPort());
+								try
+								{
+									connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP,
+											serverAddress.portTCP(), seenAs.getInetAddress(),
+											bindings.getOutsideUDPPort(),
+											bindings.getOutsideTCPPort());
+								}
+								catch (Exception e) 
+								{
+									String msg="UPNP did not work properly "+e.getMessage();
+									futureDiscover.setFailed(msg);
+									if(logger.isDebugEnabled())
+									{
+										logger.debug(msg);
+										e.printStackTrace();
+									}
+									return;
+								}
 								getPeerBean().setServerPeerAddress(
 										serverAddress.changePorts(bindings.getOutsideUDPPort(),
 												bindings.getOutsideTCPPort()));

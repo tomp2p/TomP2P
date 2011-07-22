@@ -40,6 +40,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.socket.DatagramChannel;
+import org.jboss.netty.channel.socket.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -190,7 +191,6 @@ public class DispatcherRequest extends SimpleChannelHandler
 	/**
 	 * Called if we get a message
 	 */
-	// static int i = 0;
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
@@ -234,14 +234,14 @@ public class DispatcherRequest extends SimpleChannelHandler
 			PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
 			peerBean.setServerPeerAddress(newServerAddress);
 			for (PeerListener listener : listeners)
-				listener.serverAddressChanged(newServerAddress);
+				listener.serverAddressChanged(newServerAddress, false);
 		}
-		else if (serverAddress.isFirewalledTCP() && !(ctx.getChannel() instanceof DatagramChannel))
+		else if (serverAddress.isFirewalledTCP() && ctx.getChannel() instanceof SocketChannel)
 		{
 			PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
 			peerBean.setServerPeerAddress(newServerAddress);
 			for (PeerListener listener : listeners)
-				listener.serverAddressChanged(newServerAddress);
+				listener.serverAddressChanged(newServerAddress, true);
 		}
 		Message responseMessage = null;
 		// Look for a handler for the received message

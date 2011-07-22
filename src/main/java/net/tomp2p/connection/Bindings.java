@@ -35,10 +35,10 @@ public class Bindings
 	final private List<String> listenInterfaceHints = new ArrayList<String>(1);
 	final private List<Protocol> listenProtocolHints = new ArrayList<Protocol>(0);
 	final private boolean listenBroadcast;
-	private InetAddress outsideAddress = null;
-	private int outsideTCPPort = 0;
-	private int outsideUDPPort = 0;
-	
+	private InetAddress externalAddress = null;
+	private int externalTCPPort = 0;
+	private int externalUDPPort = 0;
+	private boolean setupUPNP = false;
 
 	public Bindings()
 	{
@@ -75,14 +75,14 @@ public class Bindings
 		this.listenBroadcast = true;
 	}
 
-	public Bindings(Protocol protocol, String iface, InetAddress outsideAddress,
-			int outsideTCPPort, int outsideUDPPort, boolean listenBroadcast)
+	public Bindings(Protocol protocol, String iface, InetAddress externalAddress,
+			int externalTCPPort, int externalUDPPort, boolean listenBroadcast)
 	{
 		addInterface(iface);
 		addProtocol(protocol);
-		this.outsideAddress = outsideAddress;
-		this.outsideTCPPort = outsideTCPPort;
-		this.outsideUDPPort = outsideUDPPort;
+		this.externalAddress = externalAddress;
+		this.externalTCPPort = externalTCPPort;
+		this.externalUDPPort = externalUDPPort;
 		this.listenBroadcast = listenBroadcast;
 	}
 
@@ -222,34 +222,56 @@ public class Bindings
 		return listenBroadcast;
 	}
 
-	public void setOutsideAddress(InetAddress outsideAddress, int outsideTCPPort, int outsideUDPPort)
+	public void setExternalAddress(InetAddress externalAddress, int externalTCPPort, int externalUDPPort)
 	{
-		if (outsideAddress == null)
+		if (externalAddress == null)
 			throw new IllegalArgumentException("address cannot be null");
-		if (outsideTCPPort <= 0 || outsideUDPPort <= 0)
+		if (externalTCPPort <= 0 || externalUDPPort <= 0)
 			throw new IllegalArgumentException("port needs to be > 0");
-		this.outsideAddress = outsideAddress;
-		this.outsideTCPPort = outsideTCPPort;
-		this.outsideUDPPort = outsideUDPPort;
+		this.externalAddress = externalAddress;
+		this.externalTCPPort = externalTCPPort;
+		this.externalUDPPort = externalUDPPort;
 	}
 
-	public InetAddress getOutsideAddress()
+	public InetAddress getExternalAddress()
 	{
-		return outsideAddress;
+		return externalAddress;
 	}
 
 	public int getOutsideTCPPort()
 	{
-		return outsideTCPPort;
+		return externalTCPPort;
 	}
 
 	public int getOutsideUDPPort()
 	{
-		return outsideUDPPort;
+		return externalUDPPort;
 	}
 
 	public boolean isOutsideAddressSet()
 	{
-		return outsideAddress!=null;
+		return externalAddress!=null;
+	}
+
+	public boolean isSetupUPNP()
+	{
+		return setupUPNP;
+	}
+
+	public void setSetupUPNP(boolean setupUPNP)
+	{
+		this.setupUPNP = setupUPNP;
+	}
+
+	public void setOutsidePortUDP(int externalUDPPort)
+	{
+		this.externalUDPPort = externalUDPPort;
+		
+	}
+
+	public void setOutsidePortTCP(int externalTCPPort)
+	{
+		this.externalTCPPort = externalTCPPort;
+		
 	}
 }

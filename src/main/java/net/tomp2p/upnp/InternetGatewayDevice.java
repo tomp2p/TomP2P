@@ -427,6 +427,12 @@ public class InternetGatewayDevice
 			throw ex;
 		}
 	}
+	
+	public boolean addPortMapping(String description, String protocol, int externalPort,
+			int internalPort) throws IOException, UPNPResponseException
+	{
+		return addPortMapping(description, protocol, null, externalPort, igd.getLocalIP().getHostAddress(), internalPort, 0);
+	}
 
 	/**
 	 * Configures a nat entry on the UPNP device.
@@ -579,71 +585,6 @@ public class InternetGatewayDevice
 			}
 		}
 		return rtrval;
-	}
-
-	/**
-	 * Computes the total entries in available in the nat table size, not that
-	 * this method is not guaranteed to work with all upnp devices since it is
-	 * not an generic IGD command
-	 * 
-	 * @return the number of entries or null if the NAT table size cannot be
-	 *         computed for the device
-	 * @throws IOException
-	 *             if some error occurs during communication with the device
-	 * @throws UPNPResponseException
-	 *             if the devices returns an error message with error code other
-	 *             than 713 or 402
-	 */
-	public Integer getNatTableSize() throws IOException, UPNPResponseException
-	{
-
-		// first let's look at the first index.. some crappy devices do
-		// not start with index 0
-		// we stop at index 50
-		int startIndex = -1;
-		for (int i = 0; i < 50; i++)
-		{
-			try
-			{
-				getGenericPortMappingEntry(i);
-				startIndex = i;
-				break;
-			}
-			catch (UPNPResponseException ex)
-			{
-				// some devices return the 402 code
-				if (ex.getDetailErrorCode() != 713 && ex.getDetailErrorCode() != 402)
-				{
-					throw ex;
-				}
-			}
-		}
-		if (startIndex == -1)
-		{
-			// humm nothing found within the first 200 indexes..
-			// returning null
-			return null;
-		}
-		int size = 0;
-		while (true)
-		{
-
-			try
-			{
-				getGenericPortMappingEntry(startIndex++);
-				size++;
-			}
-			catch (UPNPResponseException ex)
-			{
-				if (ex.getDetailErrorCode() == 713 || ex.getDetailErrorCode() == 402)
-				{
-					// / ok index unknown
-					break;
-				}
-				throw ex;
-			}
-		}
-		return new Integer(size);
 	}
 
 	private void checkPortMappingProtocol(String prot) throws IllegalArgumentException

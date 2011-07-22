@@ -575,8 +575,12 @@ public class TestRouting
 			master.shutdown();
 		}
 	}
-
 	private Peer[] createNodes(Peer master, int nr) throws Exception
+	{
+		return createNodes(master, nr, rnd);
+	}
+
+	private Peer[] createNodes(Peer master, int nr, Random rnd) throws Exception
 	{
 		Peer[] nodes = new Peer[nr];
 		for (int i = 0; i < nr; i++)
@@ -742,47 +746,6 @@ public class TestRouting
 		}
 		finally
 		{
-			master.shutdown();
-		}
-	}
-
-	@Test
-	public void testRoutingFailuresTCP() throws Exception
-	{
-		Random rnd = new Random(42L); 
-		Peer master = new Peer(new Number160(rnd));
-		try
-		{
-			master.listen(4001, 4001);
-			int len = 2000;
-			Peer[] nodes = createNodes(master, len);
-			for (int i = 0; i < nodes.length; i++)
-			{
-				for (int j = 0; j < nodes.length; j++)
-					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
-			}
-			for (int i = 0; i < 2000; i++)
-			{
-				if (i != 20 && i != 500)
-				{
-					System.out.println("Shutting down "
-							+ nodes[i].getPeerBean().getServerPeerAddress().getID());
-					nodes[i].shutdown();
-				}
-			}
-			FutureRouting fr = nodes[500].getRouting().route(nodes[20].getPeerID(), null, null,
-					Command.NEIGHBORS_STORAGE, 0, 1, 1, 100, 1, true);
-			fr.awaitUninterruptibly();
-			Assert.assertEquals(true, fr.isSuccess());
-			SortedSet<PeerAddress> ns = fr.getPotentialHits();
-			if (ns.size() > 0)
-				Assert.assertEquals(nodes[20].getPeerAddress(), ns.first());
-			else
-				Assert.fail("nothing returned");
-		}
-		finally
-		{
-			System.err.println("almost done");
 			master.shutdown();
 		}
 	}

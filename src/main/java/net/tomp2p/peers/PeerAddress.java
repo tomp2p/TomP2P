@@ -592,6 +592,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	{
 		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP, presetIPv4);
 	}
+	
+	public PeerAddress changeAddress(InetAddress address)
+	{
+		return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP, presetIPv4);
+	}
 
 	public PeerAddress changePeerId(Number160 id2)
 	{

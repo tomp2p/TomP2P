@@ -34,7 +34,6 @@ public class ConnectionConfiguration
 	private long readLimit=0;
 	private long writeLimit=0;
 	
-	private boolean enabledUPNPNAT=true;
 	public int getIdleTCPMillis()
 	{
 		return idleTCPMillis;
@@ -156,13 +155,4 @@ public class ConnectionConfiguration
 	{
 		return maxIncomingThreads;
 	}
-
-	public void setEnabledUPNPNAT(boolean enabledUPNPNAT) {
-		this.enabledUPNPNAT = enabledUPNPNAT;
-	}
-
-	public boolean isEnabledUPNPNAT() {
-		return enabledUPNPNAT;
-	}
-
 }

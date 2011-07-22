@@ -1,17 +1,24 @@
 package net.tomp2p.futures;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl implements BaseFuture
 {
 	final int nrMaxFutures;
-	final List<K> futures = new ArrayList<K>();
-	final AtomicBoolean success = new AtomicBoolean(true);
-
+	final int minSuccess;
+	final List<K> futuresDone;
+	private int successCount = 0;
+	
 	public FutureLateJoin(int nrMaxFutures)
 	{
+		this(nrMaxFutures, 0);
+	}
+
+	public FutureLateJoin(int nrMaxFutures, int minSuccess)
+	{
 		this.nrMaxFutures = nrMaxFutures;
+		this.minSuccess = minSuccess;
+		this.futuresDone = new ArrayList<K>(nrMaxFutures);
 	}
 
 	public void add(final K future)
@@ -24,10 +31,9 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 				boolean done;
 				synchronized (lock)
 				{
-					success.set(false);
 					done = checkDone(future);
 				}
-				if (done)
+				if (done) 
 					notifyListerenrs();
 			}
 
@@ -37,8 +43,8 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 				boolean done;
 				synchronized (lock)
 				{
-					if (future.isFailed())
-						success.set(false);
+					if (future.isSuccess())
+						successCount++;
 					done = checkDone(future);
 				}
 				if (done)
@@ -52,24 +58,23 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		boolean done = false;
 		if (!completed)
 		{
-			futures.add(future);
-			if (futures.size() == nrMaxFutures)
+			futuresDone.add(future);
+			if (futuresDone.size() == nrMaxFutures)
 			{
 				done = setCompletedAndNotify();
-				//in this future, this cannot be false because we check with iscompleted before
-				assert(done);
-				type = success.get() ? FutureType.OK : FutureType.FAILED;
-				reason = success.get() ? "All Futures Ok" : "At least one future failed";
+				boolean isSuccess = nrMaxFutures >= successCount;
+				type = isSuccess ? FutureType.OK : FutureType.FAILED;
+				reason = isSuccess ? "All Futures Ok" : "At least one future failed";
 			}
 		}
 		return done;
 	}
 	
-	public List<K> getFutures()
+	public List<K> getFuturesDone()
 	{
 		synchronized (lock)
 		{
-			return futures;
+			return futuresDone;
 		}
 	}
 }

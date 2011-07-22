@@ -83,8 +83,8 @@ public class ConnectionHandler
 	// Used to calculate the throughput
 	final private static PerformanceFilter performanceFilter = new PerformanceFilter();
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
-	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
-	final private Map<InternetGatewayDevice, InetSocketAddress> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, InetSocketAddress>();
+	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, Integer>();
+	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, Integer>();
 	final private TCPChannelCache channelChache;
 	final private Timer timer;
 	final private boolean master;
@@ -132,18 +132,20 @@ public class ConnectionHandler
 		//
 		String status = bindings.discoverLocalInterfaces();
 		logger.info("Status of interface search: " + status);
-		InetAddress outsideAddress = bindings.getOutsideAddress();
+		InetAddress outsideAddress = bindings.getExternalAddress();
 		PeerAddress self;
 		if (outsideAddress != null)
 		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), true);
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
+					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), true);
 		}
 		else
 		{
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), false);
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(),
+					peerConfiguration.isBehindFirewall(), false);
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);
@@ -299,8 +301,10 @@ public class ConnectionHandler
 
 	public void customLoggerMessage(String customMessage)
 	{
-		if (messageLoggerFilter != null) messageLoggerFilter.customMessage(customMessage);
-		else logger.error("cannot write to log, as no file was provided");
+		if (messageLoggerFilter != null)
+			messageLoggerFilter.customMessage(customMessage);
+		else
+			logger.error("cannot write to log, as no file was provided");
 	}
 
 	/**
@@ -312,7 +316,8 @@ public class ConnectionHandler
 	 */
 	public void shutdown()
 	{
-		if (master) logger.debug("shutdown in progress...");
+		if (master)
+			logger.debug("shutdown in progress...");
 		// deregister in dispatcher
 		connectionBean.getDispatcherRequest().removeIoHandler(getPeerBean().getServerPeerAddress().getID());
 		// shutdown all children
@@ -323,7 +328,8 @@ public class ConnectionHandler
 			unmapUPNP();
 			timer.stop();
 			// channelChache.shutdown();
-			if (messageLoggerFilter != null) messageLoggerFilter.close();
+			if (messageLoggerFilter != null)
+				messageLoggerFilter.close();
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
@@ -342,11 +348,11 @@ public class ConnectionHandler
 
 	public void unmapUPNP()
 	{
-		for (Map.Entry<InternetGatewayDevice, InetSocketAddress> entry : internetGatewayDevicesTCP.entrySet())
+		for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesTCP.entrySet())
 		{
 			try
 			{
-				entry.getKey().deletePortMapping(entry.getValue().getHostName(), entry.getValue().getPort(), "TCP");
+				entry.getKey().deletePortMapping(null, entry.getValue(), "TCP");
 			}
 			catch (IOException e)
 			{
@@ -358,11 +364,11 @@ public class ConnectionHandler
 			}
 			logger.info("removed TCP mapping " + entry.toString());
 		}
-		for (Map.Entry<InternetGatewayDevice, InetSocketAddress> entry : internetGatewayDevicesUDP.entrySet())
+		for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesUDP.entrySet())
 		{
 			try
 			{
-				entry.getKey().deletePortMapping(entry.getValue().getHostName(), entry.getValue().getPort(), "UDP");
+				entry.getKey().deletePortMapping(null, entry.getValue(), "UDP");
 			}
 			catch (IOException e)
 			{
@@ -375,46 +381,56 @@ public class ConnectionHandler
 			logger.info("removed UDP mapping " + entry.toString());
 		}
 	}
-	/**
-	 * Adds a port forearding policy to UPNP enabled devices. Internal is the peer, while external is the router
-	 * @param internalAddress
-	 * @param internalPortUDP
-	 * @param internalPortTCP
-	 * @param externalAddress
-	 * @param externalPortUDP
-	 * @param externalPortTCP
-	 * @throws IOException
-	 * @throws UPNPResponseException
-	 */
-	public void mapUPNP(InetAddress internalAddress, int internalPortUDP, int internalPortTCP, InetAddress externalAddress, int externalPortUDP, int externalPortTCP) throws IOException,
-			UPNPResponseException
+
+	public void mapUPNP(int internalPortUDP, int internalPortTCP, int externalPortUDP, int externalPortTCP)
+			throws IOException
 	{
 		// -1 sets the default timeout to 1500 ms
 		Collection<InternetGatewayDevice> IGDs = InternetGatewayDevice.getDevices(-1);
-		if (IGDs == null) return;
+		if (IGDs == null)
+			return;
 		for (InternetGatewayDevice igd : IGDs)
 		{
 			logger.info("Found device " + igd);
-			if(externalPortUDP!=-1) 
+			try
 			{
-				boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", externalAddress.getHostName(), externalPortUDP,
-					internalAddress.getHostAddress(), internalPortUDP, 0);
-				if (mappedUDP) addMappingUDP(igd, externalAddress, externalPortUDP);
+				if (externalPortUDP != -1)
+				{
+					boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", externalPortUDP,
+							internalPortUDP);
+					if (mappedUDP)
+						internetGatewayDevicesUDP.put(igd, externalPortUDP);
+				}
 			}
-			boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", externalAddress.getHostName(), externalPortTCP,
-					internalAddress.getHostAddress(), internalPortTCP, 0);
-			if (mappedTCP) addMappingTCP(igd, externalAddress, externalPortTCP);
+			catch (IOException e)
+			{
+				logger.warn("error in mapping UPD UPNP " + e);
+
+			}
+			catch (UPNPResponseException e)
+			{
+				logger.warn("error in mapping UDP UPNP " + e);
+			}
+			try
+			{
+				if (externalPortUDP != -1)
+				{
+					boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", externalPortTCP,
+							internalPortTCP);
+					if (mappedTCP)
+						internetGatewayDevicesTCP.put(igd, externalPortTCP);
+				}
+			}
+			catch (IOException e)
+			{
+				logger.warn("error in mapping TCP UPNP " + e);
+
+			}
+			catch (UPNPResponseException e)
+			{
+				logger.warn("error in mapping TCP UPNP " + e);
+			}
 		}
-	}
-
-	private void addMappingTCP(InternetGatewayDevice igd, InetAddress externalAddress, int externalPortTCP)
-	{
-		internetGatewayDevicesTCP.put(igd, new InetSocketAddress(externalAddress, externalPortTCP));
-	}
-
-	private void addMappingUDP(InternetGatewayDevice igd, InetAddress externalAddress, int externalPortUDP)
-	{
-		internetGatewayDevicesUDP.put(igd, new InetSocketAddress(externalAddress, externalPortUDP));
 	}
 
 	public boolean isListening()

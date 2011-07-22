@@ -44,6 +44,7 @@
 package net.tomp2p.upnp;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -67,42 +68,16 @@ import org.w3c.dom.Node;
 public class RootDevice extends Device
 {
 
-	/***/
-	public final int specVersionMajor;
-
-	/***/
-	public final int specVersionMinor;
-
+	private final int specVersionMajor;
+	private final int specVersionMinor;
 	private long validityTime;
-
 	private long creationTime;
-
-	/***/
-	public final URL deviceDefLoc;
-
+	private final URL deviceDefLoc;
 	private String deviceDefLocData;
-
-	/***/
-	public final String vendorFirmware;
-
-	/***/
-	public final String discoveryUSN;
-
-	/***/
-	public final String discoveryUDN;
-
-	/**
-	 * @param args
-	 * @throws MalformedURLException
-	 */
-	public static void main( String[] args ) throws MalformedURLException
-	{
-		RootDevice root =
-				build( new URL( "http://homepages.inf.ed.ac.uk/rmcnally/upnp.xml" ), "10", "vendor",
-						"usn", "udn" );
-
-		System.out.println( root );
-	}
+	private final String vendorFirmware;
+	private final String discoveryUSN;
+	private final String discoveryUDN;
+	private final InetAddress localIP;
 
 	/**
 	 * @param deviceDef
@@ -113,7 +88,7 @@ public class RootDevice extends Device
 	 * @return a new {@link RootDevice}, or <code>null</code>
 	 */
 	public static RootDevice build( URL deviceDef, String maxAge, String vendorFirmware,
-			String discoveryUSN, String discoveryUDN )
+			String discoveryUSN, String discoveryUDN, InetAddress localIP )
 	{
 		Document xml = XMLUtil.getXML( deviceDef );
 
@@ -163,7 +138,7 @@ public class RootDevice extends Device
 			}
 
 			return new RootDevice( xml, baseURL, maxAge, deviceDef, vendorFirmware, discoveryUSN,
-					discoveryUDN );
+					discoveryUDN, localIP );
 		}
 		catch( XPathExpressionException e )
 		{
@@ -185,7 +160,7 @@ public class RootDevice extends Device
 	 * @throws XPathExpressionException
 	 */
 	public RootDevice( Document doc, URL urlBase, String maxAge, URL deviceDefinition,
-			String vendorFirmware, String discoveryUSN, String discoveryUDN )
+			String vendorFirmware, String discoveryUSN, String discoveryUDN, InetAddress localIP )
 			throws IllegalStateException, XPathExpressionException
 	{
 		super( ( Node ) XMLUtil.xpath.evaluate( "root/device", doc, XPathConstants.NODE ), null,
@@ -199,6 +174,7 @@ public class RootDevice extends Device
 		this.vendorFirmware = vendorFirmware;
 		this.discoveryUSN = discoveryUSN;
 		this.discoveryUDN = discoveryUDN;
+		this.localIP = localIP;
 
 		int svmaj = 0, svmin = 0;
 		try
@@ -277,5 +253,35 @@ public class RootDevice extends Device
 			}
 		}
 		return deviceDefLocData;
+	}
+
+	public int getSpecVersionMajor()
+	{
+		return specVersionMajor;
+	}
+
+	public int getSpecVersionMinor()
+	{
+		return specVersionMinor;
+	}
+
+	public String getVendorFirmware()
+	{
+		return vendorFirmware;
+	}
+
+	public String getDiscoveryUSN()
+	{
+		return discoveryUSN;
+	}
+
+	public String getDiscoveryUDN()
+	{
+		return discoveryUDN;
+	}
+
+	public InetAddress getLocalIP()
+	{
+		return localIP;
 	}
 }

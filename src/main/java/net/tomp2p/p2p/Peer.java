@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -575,10 +576,8 @@ public class Peer
 			{
 				if (future.isSuccess())
 				{
-					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 					final PeerAddress sender = future.getLast().getResponse().getSender();
-					peerAddresses.add(sender);
-					result.waitForBootstrap(bootstrap(peerAddresses));
+					result.waitForBootstrap(bootstrap(sender));
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");
@@ -623,10 +622,8 @@ public class Peer
 			{
 				if (future.isSuccess())
 				{
-					final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 					final PeerAddress sender = future.getResponse().getSender();
-					peerAddresses.add(sender);
-					result.waitForBootstrap(bootstrap(peerAddresses));
+					result.waitForBootstrap(bootstrap(sender));
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");
@@ -635,18 +632,21 @@ public class Peer
 		return result;
 	}
 
-	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses)
+	public FutureBootstrap bootstrap(final PeerAddress peerAddress)
 	{
-		return bootstrap(peerAddresses, Configurations.defaultStoreConfiguration());
+		Collection<PeerAddress> bootstrapTo=new ArrayList<PeerAddress>(1);
+		bootstrapTo.add(peerAddress);
+		return bootstrap(peerAddress, bootstrapTo, Configurations.defaultStoreConfiguration());
 	}
 
-	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, final ConfigurationStore config)
+	public FutureBootstrap bootstrap(final PeerAddress peerAddress, final Collection<PeerAddress> bootstrapTo, final ConfigurationStore config)
 	{
-
-		if (peerConfiguration.isBehindFirewall() && !bindings.isOutsideAddressSet())
+		if (peerConfiguration.isBehindFirewall())
 		{
+			if(bindings.isSetupUPNP())
+				setupPortForwandingUPNP();
 			final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
-			FutureDiscover futureDiscover = discover(peerAddresses.iterator().next());
+			FutureDiscover futureDiscover = discover(peerAddress);
 			futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
 			{
 				@Override
@@ -655,7 +655,7 @@ public class Peer
 					if (future.isSuccess())
 					{
 						FutureBootstrap futureBootstrap = routing.bootstrap(
-								peerAddresses,
+								bootstrapTo,
 								config.getRoutingConfiguration().getMaxNoNewInfo(
 										config.getRequestP2PConfiguration().getMinimumResults()), config
 										.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
@@ -671,35 +671,75 @@ public class Peer
 		}
 		else
 		{
-			FutureBootstrap futureBootstrap = routing.bootstrap(peerAddresses, config.getRoutingConfiguration()
+			FutureBootstrap futureBootstrap = routing.bootstrap(bootstrapTo, config.getRoutingConfiguration()
 					.getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()), config
 					.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
 					config.getRoutingConfiguration().getParallel(), false);
 			return futureBootstrap;
 		}
 	}
-
-	public FutureBootstrap bootstrap(final PeerAddress peerAddress)
+	
+	/**
+	 * The Dynamic and/or Private Ports are those from 49152 through 65535 (http://www.iana.org/assignments/port-numbers)
+	 * @param port
+	 * @return
+	 */
+	public void setupPortForwandingUPNP()
 	{
-		final Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>();
-		peerAddresses.add(peerAddress);
-		return bootstrap(peerAddresses);
+		final int range = 65535 - 49152;
+		Random rnd = new Random();
+		int portUDP=bindings.getOutsideUDPPort();
+		if(portUDP==0)
+		{
+			portUDP=rnd.nextInt(range)+49152;
+			bindings.setOutsidePortUDP(portUDP);
+		}
+		int portTCP=bindings.getOutsideTCPPort();
+		if(portTCP==0)
+		{
+			portTCP=rnd.nextInt(range)+49152;
+			bindings.setOutsidePortTCP(portTCP);
+		}
+		try
+		{
+			connectionHandler.mapUPNP( getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
+		}
+		catch (IOException e)
+		{
+			logger.warn("cannot find UPNP devices "+e);
+		}
+		
 	}
 
+	/**
+	 * Discover attempts to find the external IP address of this peer. This is done by first trying to set UPNP 
+	 * with port forwarding (gives us the external address), query UPNP for the external address, and 
+	 * pinging a well known peer.
+	 *  
+	 * @param peerAddress
+	 * @return
+	 */
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
 		final FutureDiscover futureDiscover = new FutureDiscover(timer, peerConfiguration.getDiscoverTimeoutSec());
-		FutureLateJoin<FutureResponse> late = new FutureLateJoin<FutureResponse>(2);
 		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress);
-		final FutureResponse futureResponseUDP = getHandshakeRPC().pingUDP(peerAddress);
-		late.add(futureResponseTCP);
-		late.add(futureResponseUDP);
+
 		addPeerListener(new PeerListener()
 		{
+			private boolean changedUDP=false;
+			private boolean changedTCP=false;
+			
 			@Override
-			public void serverAddressChanged(PeerAddress peerAddress)
+			public void serverAddressChanged(PeerAddress peerAddress, boolean tcp)
 			{
-				futureDiscover.done(peerAddress);
+				if(tcp)
+					changedTCP=true;
+				else
+					changedUDP=true;
+				if(changedTCP && changedUDP) 
+				{
+					futureDiscover.done(peerAddress);
+				}
 			}
 
 			@Override
@@ -712,7 +752,7 @@ public class Peer
 			{
 			}
 		});
-		late.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
+		futureResponseTCP.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
 		{
 			@Override
 			public void operationComplete(FutureLateJoin<FutureResponse> future) throws Exception
@@ -727,36 +767,12 @@ public class Peer
 						logger.debug("I'm seen as " + seenAs + " by peer " + peerAddress);
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-							if (connectionConfiguration.isEnabledUPNPNAT())
-							{
-								int portUDP = -1;
-								if (futureResponseUDP.isSuccess())
-									portUDP = serverAddress.portUDP();
-								try
-								{
-									connectionHandler.mapUPNP(serverAddress.getInetAddress(), portUDP,
-											serverAddress.portTCP(), seenAs.getInetAddress(),
-											bindings.getOutsideUDPPort(),
-											bindings.getOutsideTCPPort());
-								}
-								catch (Exception e) 
-								{
-									String msg="UPNP did not work properly "+e.getMessage();
-									futureDiscover.setFailed(msg);
-									if(logger.isDebugEnabled())
-									{
-										logger.debug(msg);
-										e.printStackTrace();
-									}
-									return;
-								}
-								getPeerBean().setServerPeerAddress(
-										serverAddress.changePorts(bindings.getOutsideUDPPort(),
-												bindings.getOutsideTCPPort()));
-							}
+							serverAddress=serverAddress.changePorts(bindings.getOutsideUDPPort(), bindings.getOutsideTCPPort());
+							serverAddress=serverAddress.changeAddress(seenAs.getInetAddress());
+							getPeerBean().setServerPeerAddress(serverAddress);
+							//
 							getHandshakeRPC().pingTCPProbe(peerAddress);
-							if (futureResponseUDP.isSuccess())
-								getHandshakeRPC().pingUDPProbe(peerAddress);
+							getHandshakeRPC().pingUDPProbe(peerAddress);
 						}
 						// else -> we announce exactly how the other peer sees
 						// us

@@ -55,6 +55,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Class to discover an UPNP device on the network.</br> A multicast
@@ -73,6 +76,7 @@ import java.util.Map;
 
 public class Discovery
 {
+	final private static Logger logger = LoggerFactory.getLogger(Discovery.class);
 	/***/
 	public final static String ROOT_DEVICES = "upnp:rootdevice";
 
@@ -233,7 +237,7 @@ public class Discovery
 
 			@Override
 			public void discoveredDevice( String usn, String udn, String nt, String maxAge,
-					URL location, String firmware )
+					URL location, String firmware, InetAddress localIP )
 			{
 				synchronized( devices )
 				{
@@ -242,7 +246,7 @@ public class Discovery
 						try
 						{
 							RootDevice device =
-									RootDevice.build( location, maxAge, firmware, usn, udn );
+									RootDevice.build( location, maxAge, firmware, usn, udn, localIP );
 							devices.put( usn, device );
 						}
 						catch( Exception ex )
@@ -264,26 +268,12 @@ public class Discovery
 					.hasMoreElements(); )
 			{
 				NetworkInterface intf =  e.nextElement();
-				for( Enumeration<InetAddress> adrs = intf.getInetAddresses(); adrs.hasMoreElements(); )
-				{
-					InetAddress adr =  adrs.nextElement();
-					if( adr instanceof Inet4Address && !adr.isLoopbackAddress() )
-					{
-						sendSearchMessage( adr, ttl, mx, searchTarget );
-					}
-				}
+				sendViaInterface(ttl, mx, searchTarget, intf);
 			}
 		}
 		else
 		{
-			for( Enumeration<InetAddress> adrs = ni.getInetAddresses(); adrs.hasMoreElements(); )
-			{
-				InetAddress adr = adrs.nextElement();
-				if( adr instanceof Inet4Address && !adr.isLoopbackAddress() )
-				{
-					sendSearchMessage( adr, ttl, mx, searchTarget );
-				}
-			}
+			sendViaInterface(ttl, mx, searchTarget, ni);
 		}
 
 		try
@@ -302,6 +292,25 @@ public class Discovery
 			return null;
 		}
 		return devices.values();
+	}
+
+	private static void sendViaInterface(int ttl, int mx, String searchTarget, NetworkInterface intf)
+	{
+		for( Enumeration<InetAddress> adrs = intf.getInetAddresses(); adrs.hasMoreElements(); )
+		{
+			InetAddress adr =  adrs.nextElement();
+			if( adr instanceof Inet4Address && !adr.isLoopbackAddress() )
+			{
+				try
+				{
+					sendSearchMessage( adr, ttl, mx, searchTarget );
+				}
+				catch (IOException ex)
+				{
+					logger.warn("error sending message" +ex);
+				}
+			}
+		}
 	}
 
 	/**

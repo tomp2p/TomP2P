@@ -23,5 +23,5 @@ public interface PeerListener
 
 	public void notifyOnStart();
 	
-	public void serverAddressChanged(PeerAddress peerAddress);
+	public void serverAddressChanged(PeerAddress peerAddress, boolean tcp);
 }

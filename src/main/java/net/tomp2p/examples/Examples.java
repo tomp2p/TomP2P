@@ -73,7 +73,7 @@ public class Examples
 		Bindings b = new Bindings(false);
 		b.addInterface("eth0");
 		b.addProtocol(Protocol.IPv4);
-		b.setOutsideAddress(Inet4Address.getByName("127.0.0.1"), 4001, 4001);
+		b.setExternalAddress(Inet4Address.getByName("127.0.0.1"), 4001, 4001);
 		System.out.println("Listening to: " + b.discoverLocalInterfaces());
 		master.listen(4001, 4001, b);
 		System.out.println("address visible to outside is " + master.getPeerAddress());

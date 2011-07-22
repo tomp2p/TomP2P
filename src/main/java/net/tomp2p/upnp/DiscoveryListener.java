@@ -64,17 +64,6 @@ import java.util.Set;
  */
 public class DiscoveryListener implements Runnable
 {
-	private static boolean MATCH_IP = true;
-
-	static
-	{
-		String prop = System.getProperty( "net.sbbi.upnp.ddos.matchip" );
-		if( prop != null && prop.equals( "false" ) )
-		{
-			MATCH_IP = false;
-		}
-	}
-
 	private static final int DEFAULT_TIMEOUT = 250;
 
 	private Map<String, Set<DiscoveryResultsHandler>> registeredHandlers =
@@ -303,20 +292,8 @@ public class DiscoveryListener implements Runnable
 				return;
 			}
 			URL loc = new URL( deviceDescrLoc );
-			if( MATCH_IP )
-			{
-				InetAddress locHost = InetAddress.getByName( loc.getHost() );
-				if( !from.equals( locHost ) )
-				{
-					/*
-					 * log.warn( "Discovery message sender IP " + from +
-					 * " does not match device description IP " + locHost +
-					 * " skipping device, set the net.sbbi.upnp.ddos.matchip system property"
-					 * + " to false to avoid this check" );
-					 */
-					return;
-				}
-			}
+			//InetAddress locHost = InetAddress.getByName( loc.getHost() );
+			
 			String st = msg.getHTTPHeaderField( "st" );
 			if( st == null || st.trim().length() == 0 )
 			{
@@ -367,7 +344,7 @@ public class DiscoveryListener implements Runnable
 				{
 					for( DiscoveryResultsHandler handler:handlers )
 					{
-						handler.discoveredDevice( usn, udn, st, maxAge, loc, server );
+						handler.discoveredDevice( usn, udn, st, maxAge, loc, server, from );
 					}
 				}
 			}

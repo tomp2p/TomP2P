@@ -43,6 +43,9 @@
 
 package net.tomp2p.upnp;
 
+import java.net.InetAddress;
+import java.net.URL;
+
 /**
  * This interface can be use to register against the DiscoveryListener
  * class to receive SSDP search responses.
@@ -72,6 +75,6 @@ public interface DiscoveryResultsHandler
 	 *           the device firmware
 	 */
 	public void discoveredDevice( String usn, String udn, String nt, String maxAge,
-			java.net.URL location, String firmware );
+			URL location, String firmware, InetAddress localIP);
 
 }

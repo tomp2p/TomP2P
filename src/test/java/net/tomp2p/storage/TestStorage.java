@@ -17,6 +17,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.io.Files;
+
 public class TestStorage
 {
 	final private static Number160 locationKey = new Number160(10);
@@ -29,12 +31,13 @@ public class TestStorage
 	final private static Number480 key2 = new Number480(locationKey, domainKey, content2);
 	final private static Number480 key3 = new Number480(locationKey, domainKey, content3);
 	final private static Number480 key4 = new Number480(locationKey, domainKey, content4);
-	final private static String DIR = "/tmp/blub";
+	private static String DIR;
 
 	@Before
 	public void befor()
 	{
-		new File(DIR).mkdirs();
+		File tmpDir = Files.createTempDir();
+		DIR = tmpDir.getPath();
 	}
 
 	@After

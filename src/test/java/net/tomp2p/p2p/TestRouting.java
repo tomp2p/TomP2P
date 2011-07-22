@@ -749,6 +749,7 @@ public class TestRouting
 	@Test
 	public void testRoutingFailuresTCP() throws Exception
 	{
+		Random rnd = new Random(42L); 
 		Peer master = new Peer(new Number160(rnd));
 		try
 		{

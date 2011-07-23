@@ -742,7 +742,7 @@ public class TestRouting
 				Assert.assertEquals(nodes[((i * 3333) + 1) % nodes.length].getPeerAddress(), ns
 						.first());
 			}
-			System.err.println("done!");
+			System.err.println("done! ");
 		}
 		finally
 		{

@@ -24,6 +24,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.config.ConfigurationGet;
@@ -56,6 +57,27 @@ public class TestDHT
 	{
 		//CONFIGURATION.setIdleTCPMillis(3000000);
 		//CONFIGURATION.setIdleUDPMillis(3000000);
+	}
+	@Test
+	public void testBootstrapDiscover() throws Exception
+	{
+		Peer master = null;
+		Peer slave = null;
+		try
+		{
+			master = new Peer(new Number160(rnd));
+			master.listen(4001, 4001);
+			slave = new Peer(new Number160(rnd));
+			slave.listen(4002, 4002);
+			FutureDiscover fd=master.discover(slave.getPeerAddress());
+			fd.awaitUninterruptibly();
+			Assert.assertEquals(true, fd.isSuccess());
+		}
+		finally
+		{
+			master.shutdown();
+			slave.shutdown();
+		}
 	}
 	
 	@Test

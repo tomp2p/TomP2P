@@ -752,10 +752,10 @@ public class Peer
 			{
 			}
 		});
-		futureResponseTCP.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
+		futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>()
 		{
 			@Override
-			public void operationComplete(FutureLateJoin<FutureResponse> future) throws Exception
+			public void operationComplete(FutureResponse future) throws Exception
 			{
 				PeerAddress serverAddress = getPeerBean().getServerPeerAddress();
 				if (futureResponseTCP.isSuccess())

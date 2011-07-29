@@ -136,7 +136,7 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				}
 				readerIndex = buffer.readerIndex();
 			}
-			
+
 			if (step == 3 && !MessageCodec.decodePayload(message.getContentType4(), buffer, message))
 			{
 				buffer.readerIndex(readerIndex);
@@ -183,6 +183,19 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			return;
 		}
 	}
+
+	/**
+	 * {@inheritDoc}
+	 * 
+	 * decodeLast is called from cleanup within FrameDecoder, which is triggered
+	 * by a close. This can be called by a timer if and IdleHandler has been
+	 * defined.
+	 */
+	/*@Override
+	protected Object decodeLast(ChannelHandlerContext ctx, Channel channel, ChannelBuffer buffer) throws Exception
+	{
+		return null;
+	}*/
 
 	/**
 	 * After successfully reception of the message, we need to set message to

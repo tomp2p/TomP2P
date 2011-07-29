@@ -100,8 +100,8 @@ public class ConnectionHandler
 			}
 		});
 	}
-	final private ExecutionHandler executionHandlerSend;
-	final private ExecutionHandler executionHandlerRcv;
+	//final private ExecutionHandler executionHandlerSend;
+	//final private ExecutionHandler executionHandlerRcv;
 	//
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
@@ -121,8 +121,8 @@ public class ConnectionHandler
 		t1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 		// for sending, this should never be blocking!
 		Executor t2 = Executors.newCachedThreadPool();
-		executionHandlerRcv = new ExecutionHandler(t1);
-		executionHandlerSend = new ExecutionHandler(t2);
+		//executionHandlerRcv = new ExecutionHandler(t1);
+		//executionHandlerSend = new ExecutionHandler(t2);
 		//
 		udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 		tcpServerChannelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
@@ -154,7 +154,7 @@ public class ConnectionHandler
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory, udpChannelFactory,
-				configuration, executionHandlerSend, messageLoggerFilter);
+				configuration, /*executionHandlerSend,*/ messageLoggerFilter);
 		// Dispatcher setup start
 		this.channelChache = new TCPChannelCache(connectionPool, timer, channelGroup);
 		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration.getIdleUDPMillis(),
@@ -198,8 +198,8 @@ public class ConnectionHandler
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);
-		this.executionHandlerSend = parent.executionHandlerSend;
-		this.executionHandlerRcv = parent.executionHandlerRcv;
+		//this.executionHandlerSend = parent.executionHandlerSend;
+		//this.executionHandlerRcv = parent.executionHandlerRcv;
 		this.messageLoggerFilter = parent.messageLoggerFilter;
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
@@ -230,7 +230,7 @@ public class ConnectionHandler
 				if (messageLoggerFilter != null)
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
 				pipe.addLast("performance", performanceFilter);
-				pipe.addLast("executor", executionHandlerRcv);
+				//pipe.addLast("executor", executionHandlerRcv);
 				pipe.addLast("handler", dispatcher);
 				return pipe;
 			}
@@ -279,7 +279,7 @@ public class ConnectionHandler
 				if (messageLoggerFilter != null)
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
 				pipe.addLast("performance", performanceFilter);
-				pipe.addLast("executor", executionHandlerRcv);
+				//pipe.addLast("executor", executionHandlerRcv);
 				DispatcherReplyTCP dispatcherReply = new DispatcherReplyTCP(timer, configuration.getIdleTCPMillis(),
 						dispatcher, getConnectionBean().getChannelGroup());
 				pipe.addLast("reply", dispatcherReply);
@@ -337,8 +337,8 @@ public class ConnectionHandler
 			// close client
 			connectionBean.getSender().shutdown();
 			// release resources
-			executionHandlerSend.releaseExternalResources();
-			executionHandlerRcv.releaseExternalResources();
+			//executionHandlerSend.releaseExternalResources();
+			//executionHandlerRcv.releaseExternalResources();
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();

@@ -64,12 +64,12 @@ public class ConnectionCollector
 	final private int maxMessageSize;
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
-	final private ExecutionHandler executionHandlerSender;
+	//final private ExecutionHandler executionHandlerSender;
 	final private MessageLogger messageLoggerFilter;
 
 	public ConnectionCollector(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
-			ExecutionHandler executionHandlerSender,
+			//ExecutionHandler executionHandlerSender,
 			 MessageLogger messageLoggerFilter)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
@@ -77,7 +77,7 @@ public class ConnectionCollector
 		this.semaphoreUDPMessages = new Semaphore(configuration.getMaxOutgoingUDP(), true);
 		this.semaphoreTCPMessages = new MySemaphoreTCP(configuration.getMaxOutgoingTCP());
 		this.maxMessageSize = configuration.getMaxMessageSize();
-		this.executionHandlerSender = executionHandlerSender;
+		//this.executionHandlerSender = executionHandlerSender;
 		this.messageLoggerFilter = messageLoggerFilter;
 	}
 
@@ -300,7 +300,7 @@ public class ConnectionCollector
 			pipe.addLast("loggerUpstream", messageLoggerFilter);
 		if (dispatcherReply != null)
 		{
-			pipe.addLast("executor", executionHandlerSender);
+			//pipe.addLast("executor", executionHandlerSender);
 			pipe.addLast("reply", dispatcherReply);
 		}
 	}

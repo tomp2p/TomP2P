@@ -789,7 +789,7 @@ public class Peer
 				}
 				else
 				{
-					futureDiscover.setFailed("We need at least the TCP connection");
+					futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection");
 					return;
 				}
 			}

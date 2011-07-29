@@ -75,7 +75,6 @@ public class DispatcherReplyTCP extends IdleStateAwareChannelHandler
 		timeoutAll(message);
 		if (idleTimeout != null)
 			idleTimeout.cancel();
-		idleTimeout = null;
 	}
 
 	public void add(Message message, RequestHandlerTCP requestHandler)

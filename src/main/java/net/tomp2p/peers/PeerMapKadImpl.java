@@ -196,13 +196,22 @@ public class PeerMapKadImpl implements PeerMap
 	@Override
 	public void addPeerOfflineListener(PeerStatusListener peerListener)
 	{
-		peerListeners.add(peerListener);
+		// synchronized should be ok, since we dont call addListener too often
+		synchronized (peerListeners)
+		{
+			peerListeners.add(peerListener);
+		}
+		
 	}
 
 	@Override
 	public void removePeerOfflineListener(PeerStatusListener peerListener)
 	{
-		peerListeners.remove(peerListener);
+		// synchronized should be ok, since we dont call addListener too often
+		synchronized (peerListeners)
+		{
+			peerListeners.remove(peerListener);
+		}
 	}
 
 	@Override
@@ -250,20 +259,32 @@ public class PeerMapKadImpl implements PeerMap
 
 	private void notifyOffline(PeerAddress peerAddress, Reason reason)
 	{
-		for (PeerStatusListener listener : peerListeners)
-			listener.peerOffline(peerAddress, reason);
+		// synchronized should be ok, since we dont call addListener too often
+		synchronized (peerListeners)
+		{
+			for (PeerStatusListener listener : peerListeners)
+				listener.peerOffline(peerAddress, reason);
+		}
 	}
 
 	private void notifyPeerFail(PeerAddress peerAddress)
 	{
-		for (PeerStatusListener listener : peerListeners)
-			listener.peerFail(peerAddress);
+		// synchronized should be ok, since we dont call addListener too often
+		synchronized (peerListeners)
+		{
+			for (PeerStatusListener listener : peerListeners)
+				listener.peerFail(peerAddress);
+		}
 	}
 	
 	private void notifyPeerOnline(PeerAddress peerAddress)
 	{
-		for (PeerStatusListener listener : peerListeners)
-			listener.peerOnline(peerAddress);
+		// synchronized should be ok, since we dont call addListener too often
+		synchronized (peerListeners)
+		{
+			for (PeerStatusListener listener : peerListeners)
+				listener.peerOnline(peerAddress);
+		}
 	}
 
 	/**

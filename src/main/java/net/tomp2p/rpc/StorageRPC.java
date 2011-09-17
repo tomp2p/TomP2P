@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -54,29 +55,29 @@ public class StorageRPC extends ReplyHandler
 
 	public FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
-			boolean signMessage)
+			boolean signMessage, ChannelCreator channelCreator)
 	{
 		Type request = Type.REQUEST_1;
 		if (protectDomain)
 			request = Type.REQUEST_3;
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage || protectEntry);
+				|| signMessage || protectEntry, channelCreator);
 	}
 
 	public FutureResponse putIfAbsent(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
-			boolean signMessage)
+			boolean signMessage, ChannelCreator channelCreator)
 	{
 		Type request = Type.REQUEST_2;
 		if (protectDomain)
 			request = Type.REQUEST_4;
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage || protectEntry);
+				|| signMessage || protectEntry, channelCreator);
 	}
 
 	private FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, final Type type,
-			boolean signMessage)
+			boolean signMessage, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey, dataMap);
 		final Message message = createMessage(remoteNode, Command.PUT, type);
@@ -86,13 +87,14 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
 		
-		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
-		return request.sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return request.sendTCP(channelCreator);
 	}
 
 	public FutureResponse add(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
-			boolean signMessage)
+			boolean signMessage, ChannelCreator channelCreator)
 	{
 		Type type = Type.REQUEST_1;
 		if (protectDomain)
@@ -107,13 +109,14 @@ public class StorageRPC extends ReplyHandler
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
-		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
-		return request.sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return request.sendTCP(channelCreator);
 	}
 
 	public FutureResponse get(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			PublicKey protectedDomains, boolean signMessage)
+			PublicKey protectedDomains, boolean signMessage, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.GET, Type.REQUEST_1);
@@ -125,14 +128,14 @@ public class StorageRPC extends ReplyHandler
 			message.setKeys(contentKeys);
 		if (protectedDomains != null)
 			message.setPublicKey(protectedDomains);
-		
-		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
-		return request.sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return request.sendTCP(channelCreator);
 	}
 
 	public FutureResponse remove(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			final boolean sendBackResults, final boolean signMessage)
+			final boolean sendBackResults, final boolean signMessage, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.REMOVE, sendBackResults
@@ -143,9 +146,9 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
-		
-		final RequestHandlerTCP request = new RequestHandlerTCP(peerBean, connectionBean, message);
-		return request.sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return request.sendTCP(channelCreator);
 	}
 
 	@Override

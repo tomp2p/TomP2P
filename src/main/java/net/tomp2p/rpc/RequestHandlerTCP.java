@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.rpc;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerException;
@@ -22,6 +23,10 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerMap;
 
+import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelUpstreamHandler;
+import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public class RequestHandlerTCP
+public class RequestHandlerTCP implements ChannelUpstreamHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(RequestHandlerTCP.class);
 	// The future response which is currently be waited for
@@ -41,11 +46,6 @@ public class RequestHandlerTCP
 	final private ConnectionBean connectionBean;
 	final private Message message;
 	final private MessageID sendMessageID;
-
-	public RequestHandlerTCP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
-	{
-		this(new FutureResponse(message), peerBean, connectionBean, message);
-	}
 
 	/**
 	 * 
@@ -67,21 +67,15 @@ public class RequestHandlerTCP
 		return futureResponse;
 	}
 
-	public FutureResponse sendTCP()
+	public FutureResponse sendTCP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendTCP(this, futureResponse, message);
+		connectionBean.getSender().sendTCP(this, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
-	public FutureResponse sendTCP(String channelName)
+	public FutureResponse fireAndForgetTCP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendTCP(channelName, this, futureResponse, message);
-		return futureResponse;
-	}
-
-	public FutureResponse fireAndForgetTCP()
-	{
-		connectionBean.getSender().sendTCP(null, futureResponse, message);
+		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
@@ -90,52 +84,58 @@ public class RequestHandlerTCP
 		return peerBean.getPeerMap();
 	}
 
-	public void messageReceived(Message message) throws Exception
-	{
-		try
-		{
-			MessageID recvMessageID = new MessageID(message);
-			if (message.getType() == Message.Type.UNKNOWN_ID)
-			{
-				String msg = "Message was not delivered successfully: " + this.message;
-				futureResponse.setFailed(msg);
-				getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
-				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
-			}
-			else if (message.getType() == Message.Type.EXCEPTION)
-			{
-				String msg = "Message caused an exception on the other side, handle as peer_abort: "
-						+ this.message;
-				futureResponse.setFailed(msg);
-				// getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
-				// true);
-				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
-			}
-			else if (!sendMessageID.equals(recvMessageID))
-			{
-				String msg = "Message [" + message
-						+ "] sent to the node is not the same as we expect. We sent ["
-						+ this.message + "]";
-				if (logger.isWarnEnabled())
-					logger.warn(msg);
-				futureResponse.setFailed(msg);
-				// getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(),
-				// true);
-				throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
-			}
-			else
-			{
-				if (logger.isDebugEnabled())
-					logger.debug("perfect: " + message);
-				// We got a good answer, let's mark the sender as alive
-				if (message.isOk() || message.isNotOk())
-					getPeerMap().peerFound(message.getSender(), null);
-				futureResponse.setResponse(message);
-			}
+	
+	@Override
+	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ce) throws Exception {
+		
+		if (!(ce instanceof MessageEvent)) {
+			//here we get message types such as OPEN
+			ctx.sendUpstream(ce);
+			return;
 		}
-		finally
+		MessageEvent e=(MessageEvent) ce;
+		if (!(e.getMessage() instanceof Message))
 		{
-			futureResponse.setFailed("very unexpected exception...");
+			String msg = "Message received, but not of type Message: " + e.getMessage();
+			logger.error(msg);
+			futureResponse.setFailed(msg);
+			ctx.sendUpstream(ce);
+			return;
+		}
+		final Message message = (Message) e.getMessage();
+		MessageID recvMessageID = new MessageID(message);
+		if (message.getType() == Message.Type.UNKNOWN_ID)
+		{
+			String msg = "Message was not delivered successfully: " + this.message;
+			futureResponse.setFailed(msg);
+			getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
+			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+		}
+		else if (message.getType() == Message.Type.EXCEPTION)
+		{
+			String msg = "Message caused an exception on the other side, handle as peer_abort: "
+					+ this.message;
+			futureResponse.setFailed(msg);
+			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+		}
+		else if (!sendMessageID.equals(recvMessageID))
+		{
+			String msg = "Message [" + message
+					+ "] sent to the node is not the same as we expect. We sent ["
+					+ this.message + "]";
+			if (logger.isWarnEnabled())
+				logger.warn(msg);
+			futureResponse.setFailed(msg);
+			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+		}
+		else
+		{
+			if (logger.isDebugEnabled())
+				logger.debug("perfect: " + message);
+			// We got a good answer, let's mark the sender as alive
+			if (message.isOk() || message.isNotOk())
+				getPeerMap().peerFound(message.getSender(), null);
+			futureResponse.setResponse(message);
 		}
 	}
 }

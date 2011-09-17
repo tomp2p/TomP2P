@@ -24,8 +24,8 @@ public class ConnectionConfiguration
 	private int idleUDPMillis = 2 * 1000;
 	private int connectTimeouMillis = 1 * 1000;
 	//
-	private int maxOutgoingUDP = 20;
-	private int maxOutgoingTCP = 20;
+	private int maxOutgoingUDP = 200;
+	private int maxOutgoingTCP = 100;
 	private int maxIncomingThreads = 100;
 	//
 	private int maxMessageSize = 2 * 1024 * 1024;

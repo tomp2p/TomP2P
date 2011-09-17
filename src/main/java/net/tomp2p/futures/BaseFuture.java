@@ -23,7 +23,7 @@ public interface BaseFuture extends Cancellable
 {
 	public enum FutureType
 	{
-		OK, FAILED, CANCEL
+		INIT, OK, FAILED, CANCEL
 	};
 
 	/**

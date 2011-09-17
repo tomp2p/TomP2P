@@ -20,11 +20,11 @@ public class ConnectionBean
 {
 	final private int p2pID;
 	final private ChannelGroup channelGroup;
-	final private DispatcherRequest dispatcherRequest;
+	final private DispatcherReply dispatcherRequest;
 	final private Sender sender;
 
 	//
-	public ConnectionBean(int p2pID, DispatcherRequest dispatcherRequest, Sender sender, ChannelGroup channelGroup)
+	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender, ChannelGroup channelGroup)
 	{
 		this.p2pID = p2pID;
 		this.channelGroup=channelGroup;
@@ -37,7 +37,7 @@ public class ConnectionBean
 		return sender;
 	}
 
-	public DispatcherRequest getDispatcherRequest()
+	public DispatcherReply getDispatcherRequest()
 	{
 		return dispatcherRequest;
 	}

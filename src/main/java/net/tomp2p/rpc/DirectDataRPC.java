@@ -15,6 +15,7 @@
  */
 package net.tomp2p.rpc;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureData;
@@ -37,16 +38,22 @@ public class DirectDataRPC extends ReplyHandler
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.DIRECT_DATA);
 	}
+	
+	public FutureData send(final PeerAddress remoteNode, final ChannelBuffer buffer,
+			boolean raw, ChannelCreator cc)
+	{
+		RequestHandlerTCP request=send(remoteNode, buffer, raw);
+		return (FutureData) request.sendTCP(cc);
+	}
 
-	public FutureData send(final String channelName, final PeerAddress remoteNode, final ChannelBuffer buffer,
+	public RequestHandlerTCP send(final PeerAddress remoteNode, final ChannelBuffer buffer,
 			boolean raw)
 	{
 		final Message message = createMessage(remoteNode, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);
 		final FutureData futureData = new FutureData(message, raw);
 		final RequestHandlerTCP requestHandler = new RequestHandlerTCP(futureData, peerBean, connectionBean, message);
-		requestHandler.sendTCP(channelName);
-		return futureData;
+		return requestHandler;
 	}
 
 	public void setReply(final RawDataReply rawDataReply)

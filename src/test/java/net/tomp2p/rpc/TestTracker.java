@@ -3,6 +3,7 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -30,13 +31,14 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, null, false, false, bloomFilter);
+					dom, null, false, false, bloomFilter, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
-					false, bloomFilter);
+					false, bloomFilter, cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
@@ -71,12 +73,13 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, null, false, false, null);
+					dom, null, false, false, null, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
-					false, null);
+					false, null, cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
@@ -106,12 +109,13 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new String("data").getBytes(), false, false, null);
+					dom, new String("data").getBytes(), false, false, null, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
-					false, null);
+					false, null, cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
@@ -144,13 +148,14 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new String("data").getBytes(), false, false, bloomFilter);
+					dom, new String("data").getBytes(), false, false, bloomFilter, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter.add(sender.getPeerID());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
-					false, bloomFilter);
+					false, bloomFilter, cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());

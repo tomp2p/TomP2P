@@ -43,6 +43,9 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
@@ -468,6 +471,34 @@ public class Utils
 			}
 		}
 		return false;
+	}
+	
+	public static void addReleaseListener(BaseFuture baseFuture, final ChannelCreator cc, final int nr) 
+	{
+		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
+		{
+			@Override
+			public void operationComplete(BaseFuture future) throws Exception {
+				cc.release(nr);
+			}
+		});
+	}
+	
+	public static void addReleaseListenerAll(BaseFuture baseFuture, final ChannelCreator cc) 
+	{
+		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
+		{
+			@Override
+			public void operationComplete(BaseFuture future) throws Exception {
+				cc.release();
+			}
+		});
+	}
+
+	public static Map<Number160, TrackerData> limitRandom(
+			Map<Number160, TrackerData> activePeers, int trackerSize) {
+		// TODO Auto-generated method stub
+		return activePeers;
 	}
 
 }

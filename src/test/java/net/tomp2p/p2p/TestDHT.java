@@ -17,6 +17,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -70,6 +71,7 @@ public class TestDHT
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
 			FutureDiscover fd=master.discover(slave.getPeerAddress());
+			System.err.println(fd.getFailedReason());
 			fd.awaitUninterruptibly();
 			Assert.assertEquals(true, fd.isSuccess());
 		}
@@ -349,12 +351,14 @@ public class TestDHT
 		{
 			master = new Peer(new Number160(rnd));
 			master.listen(4001, 4001);
-			Peer[] nodes = createNodes(master, 2000);
+			Peer[] nodes = createNodes(master, 500);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
+				System.err.println("go for "+i);
 				for (int j = 0; j < nodes.length; j++)
 					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
+				
 			}
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(0, 0, 1);
@@ -946,16 +950,18 @@ public class TestDHT
 			fdht.awaitUninterruptibly();
 			Collection<Number160> tmp = new ArrayList<Number160>();
 			tmp.add(new Number160(5));
+			final ChannelCreator cc=master1.getConnectionHandler().getConnectionReservation().reserve(1);
+			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false);
+					new ShortString("test").toNumber160(), tmp, null, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master3.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false);
+					new ShortString("test").toNumber160(), tmp, null, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master1.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false);
+					new ShortString("test").toNumber160(), tmp, null, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			//
@@ -966,7 +972,7 @@ public class TestDHT
 			master2.listen(4002, 4002);
 			//
 			fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false);
+					new ShortString("test").toNumber160(), tmp, null, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(0, fr.getResponse().getDataMap().size());
 			//
@@ -1345,8 +1351,10 @@ public class TestDHT
 				for (BaseFuture baseFuture : nodes[i].getPendingFutures().keySet())
 					baseFuture.awaitUninterruptibly();
 			}
+			final ChannelCreator cc=master.getConnectionHandler().getConnectionReservation().reserve(1);
+						
 			FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-					Configurations.DEFAULT_DOMAIN, null, null, false);
+					Configurations.DEFAULT_DOMAIN, null, null, false, cc);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
@@ -1401,9 +1409,12 @@ public class TestDHT
 			int i = 0;
 			for (PeerAddress closest : tmp)
 			{
+				final ChannelCreator cc=master.getConnectionHandler().getConnectionReservation().reserve(1);
+				
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-						Configurations.DEFAULT_DOMAIN, null, null, false);
+						Configurations.DEFAULT_DOMAIN, null, null, false, cc);
 				futureResponse.awaitUninterruptibly();
+				cc.release();
 				Assert.assertEquals(true, futureResponse.isSuccess());
 				Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
 				i++;
@@ -1486,6 +1497,7 @@ public class TestDHT
 		{
 			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
 			nodes[i].listen(master);
+			System.err.println("go for2 "+i);
 		}
 		return nodes;
 	}

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -31,6 +32,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.utils.Utils;
 
+import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
@@ -60,7 +62,7 @@ public class NeighborRPC extends ReplyHandler
 	 */
 	public FutureResponse closeNeighbors(PeerAddress remoteNode, Number160 locationKey,
 			Number160 domainKey, Collection<Number160> contentKeys, Command command,
-			boolean isDigest, boolean forceSocket)
+			boolean isDigest, boolean forceSocket, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey);
 		if (command != Command.NEIGHBORS_TRACKER && command != Command.NEIGHBORS_STORAGE)
@@ -72,13 +74,15 @@ public class NeighborRPC extends ReplyHandler
 			message.setKeys(contentKeys);
 		if (!forceSocket)
 		{
-			NeighborsRequestUDP request = new NeighborsRequestUDP(peerBean, connectionBean, message);
-			return request.sendUDP();
+			FutureResponse futureResponse = new FutureResponse(message);
+			NeighborsRequestUDP request = new NeighborsRequestUDP(futureResponse, peerBean, connectionBean, message);
+			return request.sendUDP(channelCreator);
 		}
 		else
 		{
-			NeighborsRequestTCP request = new NeighborsRequestTCP(peerBean, connectionBean, message);
-			return request.sendTCP();
+			FutureResponse futureResponse = new FutureResponse(message);
+			NeighborsRequestTCP request = new NeighborsRequestTCP(futureResponse, peerBean, connectionBean, message);
+			return request.sendTCP(channelCreator);
 		}
 	}
 
@@ -176,26 +180,26 @@ public class NeighborRPC extends ReplyHandler
 	{
 		final private Message message;
 
-		public NeighborsRequestTCP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		public NeighborsRequestTCP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
 		{
-			super(peerBean, connectionBean, message);
+			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;
 		}
 
 		@Override
-		public void messageReceived(Message message) throws Exception
+		public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ce) throws Exception
 		{
 			preHandleMessage(message, getPeerMap(), this.message.getRecipient());
-			super.messageReceived(message);
+			super.handleUpstream(ctx, ce);
 		}
 	}
 	private class NeighborsRequestUDP extends RequestHandlerUDP
 	{
 		final private Message message;
 
-		public NeighborsRequestUDP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		public NeighborsRequestUDP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
 		{
-			super(peerBean, connectionBean, message);
+			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;
 		}
 

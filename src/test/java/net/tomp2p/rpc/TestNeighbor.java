@@ -3,6 +3,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.p2p.Peer;
@@ -35,8 +37,9 @@ public class TestNeighbor
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.listen(8088, 8088);
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
+			ChannelCreator cc=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
-					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false);
+					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
@@ -67,8 +70,9 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
+			ChannelCreator cc=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
-					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false);
+					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false,cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
@@ -101,8 +105,9 @@ public class TestNeighbor
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			try
 			{
+				ChannelCreator cc=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
 				neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160("0x30"), null,
-						null, Command.PUT, true, false);
+						null, Command.PUT, true, false, cc);
 				Assert.fail("");
 			}
 			catch (IllegalArgumentException i)

@@ -3,6 +3,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
@@ -32,7 +33,8 @@ public class TestPing
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+			ChannelCreator cc=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 		}
@@ -56,9 +58,11 @@ public class TestPing
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+			ChannelCreator cc1=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc1);
 			fr.awaitUninterruptibly();
-			FutureResponse fr2 = recv1.getHandshakeRPC().pingTCP(sender.getPeerAddress());
+			ChannelCreator cc2=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr2 = recv1.getHandshakeRPC().pingTCP(sender.getPeerAddress(), cc2);
 			fr2.awaitUninterruptibly();
 			Assert.assertEquals(true, fr2.isSuccess());
 		}
@@ -84,14 +88,16 @@ public class TestPing
 			final Peer recv1 = new Peer(55, new Number160("0x1234"));
 			recv11 = recv1;
 			recv1.listen(8088, 8088);
-			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+			ChannelCreator cc1=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc1);
 			fr.awaitUninterruptibly();
+			final ChannelCreator cc2=sender.getConnectionHandler().getConnectionReservation().reserve(1);
 			fr.addListener(new BaseFutureAdapter<FutureResponse>()
 			{
 				@Override
 				public void operationComplete(FutureResponse future) throws Exception
 				{
-					FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+					FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc2);
 					try
 					{
 						fr2.await();
@@ -128,7 +134,8 @@ public class TestPing
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			FutureResponse fr = handshake.pingUDP(recv1.getPeerAddress());
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = handshake.pingUDP(recv1.getPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 		}
@@ -155,7 +162,8 @@ public class TestPing
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
-			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress());
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
 		}
@@ -182,10 +190,10 @@ public class TestPing
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
-			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress());
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
-			Assert.assertEquals(fr.getFailedReason().indexOf("complete=true/Timeout"),0);
 			System.err.println("done");
 		}
 		finally
@@ -211,7 +219,8 @@ public class TestPing
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
-			FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().getServerPeerAddress());
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
 		}
@@ -233,14 +242,13 @@ public class TestPing
 		{
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
-			Utils.sleep(100);
-			// sender.setBlocking(false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			List<FutureResponse> list = new ArrayList<FutureResponse>(10000);
-			for (int i = 0; i < 100; i++)
+			List<FutureResponse> list = new ArrayList<FutureResponse>(50);
+			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(50);
+			for (int i = 0; i < 50; i++)
 			{
-				FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
+				FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
 				list.add(fr);
 			}
 			for (FutureResponse fr2 : list)
@@ -272,7 +280,8 @@ public class TestPing
 			List<FutureResponse> list = new ArrayList<FutureResponse>();
 			for (int i = 0; i < p.length; i++)
 			{
-				FutureResponse fr = p[0].getHandshakeRPC().pingTCP(p[i].getPeerAddress());
+				final ChannelCreator cc=p[0].getConnectionHandler().getConnectionReservation().reserve(1);
+				FutureResponse fr = p[0].getHandshakeRPC().pingTCP(p[i].getPeerAddress(), cc);
 				list.add(fr);
 			}
 			for (FutureResponse fr2 : list)
@@ -312,22 +321,25 @@ public class TestPing
 			//Utils.sleep(100);
 			// recv1.setBlocking(false);
 			long start = System.currentTimeMillis();
-			List<FutureResponse> list = new ArrayList<FutureResponse>(10000);
-			for (int i = 0; i < 10000; i++)
+			List<FutureResponse> list = new ArrayList<FutureResponse>(100);
+			for (int i = 0; i < 20; i++)
 			{
-				FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress());
-				list.add(fr);
+				final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(50);
+				for (int j = 0; j < 50; j++)
+				{
+					FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
+					list.add(fr);
+				}
+				for (FutureResponse fr2 : list)
+				{
+					fr2.awaitUninterruptibly();
+					if (!fr2.isSuccess())
+						System.err.println("fail " + fr2.getFailedReason());
+					Assert.assertEquals(true, fr2.isSuccess());
+				}
+				list.clear();
+				cc.release();
 			}
-			for (FutureResponse fr2 : list)
-			{
-				fr2.awaitUninterruptibly();
-				if (fr2.isFailed())
-					System.err.println(fr2.getFailedReason());
-				if (!fr2.isSuccess())
-					System.err.println("fail " + fr2.getFailedReason());
-				Assert.assertEquals(true, fr2.isSuccess());
-			}
-			list.clear();
 			System.out.println("TCP time: " + (System.currentTimeMillis() - start));
 			for (FutureResponse fr2 : list)
 			{
@@ -336,17 +348,24 @@ public class TestPing
 			}
 			//
 			start = System.currentTimeMillis();
-			list = new ArrayList<FutureResponse>(10000);
-			for (int i = 0; i < 10000; i++)
+			list = new ArrayList<FutureResponse>(50);
+			for (int i = 0; i < 20; i++)
 			{
-				FutureResponse fr = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress());
-				list.add(fr);
+				final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(50);
+				for (int j = 0; j < 50; j++)
+				{
+					FutureResponse fr = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc);
+					list.add(fr);
+				}
+				for (FutureResponse fr2 : list)
+				{
+					fr2.awaitUninterruptibly();
+					Assert.assertEquals(true, fr2.isSuccess());
+				}
+				list.clear();
+				cc.release();
 			}
-			for (FutureResponse fr2 : list)
-			{
-				fr2.awaitUninterruptibly();
-				Assert.assertEquals(true, fr2.isSuccess());
-			}
+			
 			System.out.println("UDP time: " + (System.currentTimeMillis() - start));
 		}
 		finally

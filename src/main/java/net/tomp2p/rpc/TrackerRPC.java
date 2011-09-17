@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -36,6 +37,7 @@ import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
@@ -66,13 +68,13 @@ public class TrackerRPC extends ReplyHandler
 
 	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
-			Set<Number160> knownPeers)
+			Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
 		if (attachement == null)
-			return addToTracker(remoteNode, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers);
+			return addToTracker(remoteNode, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers, channelCreator);
 		else
 			return addToTracker(remoteNode, locationKey, domainKey, attachement, 0, attachement.length, signMessage,
-					primary, knownPeers);
+					primary, knownPeers, channelCreator);
 	}
 
 	public static boolean isPrimary(FutureResponse response)
@@ -87,7 +89,7 @@ public class TrackerRPC extends ReplyHandler
 
 	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
-			boolean primary, Set<Number160> knownPeers)
+			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, primary ? Type.REQUEST_3
@@ -103,21 +105,23 @@ public class TrackerRPC extends ReplyHandler
 		
 		if (attachement != null)
 		{
-			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message,
+			FutureResponse futureResponse = new FutureResponse(message);
+			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
 			message.setPayload(ChannelBuffers.wrappedBuffer(attachement, offset, legth));
-			return requestHandler.sendTCP();
+			return requestHandler.sendTCP(channelCreator);
 		}
 		else
 		{
-			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(peerBean, connectionBean, message,
+			FutureResponse futureResponse = new FutureResponse(message);
+			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
-			return requestHandler.sendUDP();
+			return requestHandler.sendUDP(channelCreator);
 		}
 	}
 
 	public FutureResponse getFromTracker(final PeerAddress remoteNode, final Number160 locationKey,
-			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers)
+			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
 		final Message message = createMessage(remoteNode, Command.TRACKER_GET, Type.REQUEST_1);
@@ -132,15 +136,17 @@ public class TrackerRPC extends ReplyHandler
 		
 		if (expectAttachement)
 		{
-			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(peerBean, connectionBean, message,
+			FutureResponse futureResponse = new FutureResponse(message);
+			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
-			return requestHandler.sendTCP();
+			return requestHandler.sendTCP(channelCreator);
 		}
 		else
 		{
-			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(peerBean, connectionBean, message,
+			FutureResponse futureResponse = new FutureResponse(message);
+			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
-			return requestHandler.sendUDP();
+			return requestHandler.sendUDP(channelCreator);
 		}
 	}
 
@@ -230,20 +236,19 @@ public class TrackerRPC extends ReplyHandler
 		final private Number160 locationKey;
 		final private Number160 domainKey;
 
-		public TrackerRequestTCP(PeerBean peerBean, ConnectionBean connectionBean, Message message,
+		public TrackerRequestTCP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
 				Number160 locationKey, Number160 domainKey)
 		{
-			super(peerBean, connectionBean, message);
+			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;
 			this.locationKey = locationKey;
 			this.domainKey = domainKey;
 		}
 
 		@Override
-		public void messageReceived(Message message) throws Exception
-		{
+		public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ce) throws Exception {
 			preHandleMessage(message, peerBean.getTrackerStorage(), this.message.getRecipient(), locationKey, domainKey);
-			super.messageReceived(message);
+			super.handleUpstream(ctx, ce);
 		}
 	}
 
@@ -253,10 +258,10 @@ public class TrackerRPC extends ReplyHandler
 		final private Number160 locationKey;
 		final private Number160 domainKey;
 
-		public TrackerRequestUDP(PeerBean peerBean, ConnectionBean connectionBean, Message message,
+		public TrackerRequestUDP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
 				Number160 locationKey, Number160 domainKey)
 		{
-			super(peerBean, connectionBean, message);
+			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;
 			this.locationKey = locationKey;
 			this.domainKey = domainKey;

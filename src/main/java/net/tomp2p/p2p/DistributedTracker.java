@@ -25,6 +25,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -40,6 +41,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.TrackerData;
+import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -76,7 +78,7 @@ public class DistributedTracker
 	public FutureTracker getFromTracker(final Number160 locationKey, final Number160 domainKey,
 			RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
 			final boolean expectAttachement, EvaluatingSchemeTracker evaluatingScheme, final boolean signMessage,
-			final boolean useSecondaryTrackers, final Set<Number160> knownPeers)
+			final boolean useSecondaryTrackers, final Set<Number160> knownPeers, final ChannelCreator cc)
 	{
 		final FutureTracker futureTracker = new FutureTracker(evaluatingScheme, knownPeers);
 		if (useSecondaryTrackers)
@@ -94,11 +96,11 @@ public class DistributedTracker
 				secondaryQueue.add(trackerData.getPeerAddress());
 			}
 			startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage, knownPeers,
-					futureTracker, secondaryQueue);
+					futureTracker, secondaryQueue, cc);
 		}
 		else
 		{
-			final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, true);
+			final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, true, cc);
 			// final Number160 searchCloseTo=new Number160(rnd);
 			futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 			{
@@ -110,7 +112,7 @@ public class DistributedTracker
 						if (logger.isDebugEnabled())
 							logger.debug("found direct hits for tracker get: " + futureRouting.getDirectHits());
 						startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage,
-								knownPeers, futureTracker, futureRouting.getDirectHits());
+								knownPeers, futureTracker, futureRouting.getDirectHits(), cc);
 					}
 					else
 					{
@@ -126,7 +128,7 @@ public class DistributedTracker
 	private void startLoop(final Number160 locationKey, final Number160 domainKey,
 			final TrackerConfiguration trackerConfiguration, final boolean expectAttachement,
 			final boolean signMessage, final Set<Number160> knownPeers, final FutureTracker futureTracker,
-			final SortedSet<PeerAddress> queueToAsk)
+			final SortedSet<PeerAddress> queueToAsk, final ChannelCreator cc)
 	{
 		loop(locationKey, domainKey, queueToAsk, trackerConfiguration, futureTracker, true, knownPeers, new Operation()
 		{
@@ -136,7 +138,7 @@ public class DistributedTracker
 				if (logger.isDebugEnabled())
 					logger.debug("tracker get: " + remoteNode + " location=" + locationKey + " ");
 				FutureResponse futureResponse = trackerRPC.getFromTracker(remoteNode, locationKey, domainKey,
-						expectAttachement, signMessage, knownPeers);
+						expectAttachement, signMessage, knownPeers, cc);
 				if (logger.isDebugEnabled())
 				{
 					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
@@ -156,25 +158,25 @@ public class DistributedTracker
 		});
 	}
 
-	public FutureForkJoin<FutureResponse> startPeerExchange(final Number160 locationKey, final Number160 domainKey)
+	public FutureForkJoin<FutureResponse> startPeerExchange(final Number160 locationKey, final Number160 domainKey, final ChannelCreator cc)
 	{
 		Map<Number160, TrackerData> activePeers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
 		//TODO: make a limitrandom here in case we have many activepeers, below is a sketch
-		//activePeers = Utils.limitRandom(activePeers, TrackerStorage.TRACKER_SIZE);
+		activePeers = Utils.limitRandom(activePeers, TrackerStorage.TRACKER_SIZE);
 		FutureResponse[] futureResponses = new FutureResponse[activePeers.size()];
 		int i = 0;
 		for (TrackerData data : activePeers.values())
-			futureResponses[i++] = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false);
+			futureResponses[i++] = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false, cc);
 		return new FutureForkJoin<FutureResponse>(futureResponses);
 	}
 
 	public FutureTracker addToTracker(final Number160 locationKey, final Number160 domainKey, final byte[] attachment,
 			RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
-			final boolean signMessage, final FutureCreate<BaseFuture> futureCreate, final Set<Number160> knownPeers)
+			final boolean signMessage, final FutureCreate<BaseFuture> futureCreate, final Set<Number160> knownPeers, final ChannelCreator cc)
 	{
 		final FutureTracker futureTracker = new FutureTracker();
 		futureTracker.setFutureCreate(futureCreate);
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, false);
+		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, false, cc);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -194,7 +196,7 @@ public class DistributedTracker
 										logger.debug("tracker add (me=" + peerBean.getServerPeerAddress() + "): "
 												+ remoteNode + " location=" + locationKey);
 									return trackerRPC.addToTracker(remoteNode, locationKey, domainKey, attachment,
-											signMessage, primary, knownPeers);
+											signMessage, primary, knownPeers, cc);
 								}
 							});
 				}
@@ -375,12 +377,12 @@ public class DistributedTracker
 	}
 
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey, Set<Number160> contentKeys,
-			RoutingConfiguration routingConfiguration, boolean isDigest)
+			RoutingConfiguration routingConfiguration, boolean isDigest, final ChannelCreator cc)
 	{
 		return routing.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
 				routingConfiguration.getDirectHits(), routingConfiguration.getMaxNoNewInfo(0),
 				routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDigest);
+				routingConfiguration.getParallel(), isDigest, cc);
 	}
 
 	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors, final SortedSet<PeerAddress> queueToAsk,

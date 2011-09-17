@@ -3,6 +3,7 @@ package net.tomp2p.p2p;
 import java.net.InetAddress;
 import java.util.Random;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
@@ -26,14 +27,16 @@ public class TestNAT {
 		peer.listen(4000, 4000);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
-				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa);
+				ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
 				fr1.awaitUninterruptibly();
 				if (fr1.isSuccess())
 					System.out.println("peer online T:" + pa);
 				else
 					System.out.println("offline " + pa);
-				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa);
+				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
 				fr2.awaitUninterruptibly();
+				cc.release();
 				if (fr2.isSuccess())
 					System.out.println("peer online U:" + pa);
 				else

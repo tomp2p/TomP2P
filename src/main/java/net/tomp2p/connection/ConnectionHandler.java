@@ -25,10 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
@@ -43,7 +40,6 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.upnp.InternetGatewayDevice;
 import net.tomp2p.upnp.UPNPResponseException;
 
-import org.jboss.netty.bootstrap.Bootstrap;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -57,7 +53,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
@@ -85,9 +80,9 @@ public class ConnectionHandler
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
 	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, Integer>();
 	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, Integer>();
-	final private TCPChannelCache channelChache;
 	final private Timer timer;
 	final private boolean master;
+	final private ConnectionReservation reservation;
 	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
 	static
 	{
@@ -116,11 +111,11 @@ public class ConnectionHandler
 	{
 		this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
-		ThreadPoolExecutor t1 = new ThreadPoolExecutor(5, configuration.getMaxIncomingThreads(), 60L, TimeUnit.SECONDS,
-				new ArrayBlockingQueue<Runnable>(configuration.getMaxIncomingThreads(), true));
-		t1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+		//ThreadPoolExecutor t1 = new ThreadPoolExecutor(5, configuration.getMaxIncomingThreads(), 60L, TimeUnit.SECONDS,
+		//		new ArrayBlockingQueue<Runnable>(configuration.getMaxIncomingThreads(), true));
+		//t1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 		// for sending, this should never be blocking!
-		Executor t2 = Executors.newCachedThreadPool();
+		//Executor t2 = Executors.newCachedThreadPool();
 		//executionHandlerRcv = new ExecutionHandler(t1);
 		//executionHandlerSend = new ExecutionHandler(t2);
 		//
@@ -130,6 +125,8 @@ public class ConnectionHandler
 		tcpClientChannelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 		//
+		
+		
 		String status = bindings.discoverLocalInterfaces();
 		logger.info("Status of interface search: " + status);
 		InetAddress outsideAddress = bindings.getExternalAddress();
@@ -152,16 +149,12 @@ public class ConnectionHandler
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
+		reservation=new ConnectionReservation(tcpClientChannelFactory, udpChannelFactory, configuration, messageLoggerFilter);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
-		ConnectionCollector connectionPool = new ConnectionCollector(tcpClientChannelFactory, udpChannelFactory,
-				configuration, /*executionHandlerSend,*/ messageLoggerFilter);
-		// Dispatcher setup start
-		this.channelChache = new TCPChannelCache(connectionPool, timer, channelGroup);
-		DispatcherRequest dispatcherRequest = new DispatcherRequest(p2pID, peerBean, configuration.getIdleUDPMillis(),
-				configuration.getTimeoutTCPMillis(), channelGroup, peerMap, listeners, channelChache);
-		this.channelChache.setDispatcherRequest(dispatcherRequest);
+		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean, configuration.getIdleUDPMillis(),
+				configuration.getTimeoutTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
-		Sender sender = new Sender(connectionPool, configuration, channelChache, timer);
+		Sender sender = new Sender(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup);
 		if (bindings.isListenBroadcast())
 		{
@@ -204,8 +197,8 @@ public class ConnectionHandler
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
-		this.channelChache = parent.channelChache;
 		this.configuration = parent.configuration;
+		this.reservation = parent.reservation;
 		this.timer = parent.timer;
 		this.master = false;
 	}
@@ -215,7 +208,7 @@ public class ConnectionHandler
 		return connectionBean;
 	}
 
-	public boolean startupUDP(InetSocketAddress listenAddressesUDP, final DispatcherRequest dispatcher)
+	public boolean startupUDP(InetSocketAddress listenAddressesUDP, final DispatcherReply dispatcher)
 			throws Exception
 	{
 		ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(udpChannelFactory);
@@ -227,10 +220,10 @@ public class ConnectionHandler
 				ChannelPipeline pipe = Channels.pipeline();
 				pipe.addLast("encoder", new TomP2PEncoderUDP());
 				pipe.addLast("decoder", new TomP2PDecoderUDP());
-				if (messageLoggerFilter != null)
+				if (messageLoggerFilter != null) {
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
+				}
 				pipe.addLast("performance", performanceFilter);
-				//pipe.addLast("executor", executionHandlerRcv);
 				pipe.addLast("handler", dispatcher);
 				return pipe;
 			}
@@ -251,19 +244,10 @@ public class ConnectionHandler
 	 *            the addresses which we will listen on
 	 * @throws Exception
 	 */
-	public boolean startupTCP(InetSocketAddress listenAddressesTCP, DispatcherRequest dispatcher, int maxMessageSize)
+	public boolean startupTCP(InetSocketAddress listenAddressesTCP, final DispatcherReply dispatcher, int maxMessageSize)
 			throws Exception
 	{
 		ServerBootstrap bootstrap = new ServerBootstrap(tcpServerChannelFactory);
-		setupBootstrapTCP(bootstrap, dispatcher, maxMessageSize);
-		Channel channel = bootstrap.bind(listenAddressesTCP);
-		connectionBean.getChannelGroup().add(channel);
-		logger.info("Listening on TCP socket: " + listenAddressesTCP);
-		return channel.isBound();
-	}
-
-	private void setupBootstrapTCP(Bootstrap bootstrap, final DispatcherRequest dispatcher, final int maxMessageSize)
-	{
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory()
 		{
 			@Override
@@ -275,18 +259,19 @@ public class ConnectionHandler
 				pipe.addLast("timeout", timeoutHandler);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
-				pipe.addLast("decoder", new TomP2PDecoderTCP(maxMessageSize));
+				pipe.addLast("decoder", new TomP2PDecoderTCP());
 				if (messageLoggerFilter != null)
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
 				pipe.addLast("performance", performanceFilter);
-				//pipe.addLast("executor", executionHandlerRcv);
-				DispatcherReplyTCP dispatcherReply = new DispatcherReplyTCP(timer, configuration.getIdleTCPMillis(),
-						dispatcher, getConnectionBean().getChannelGroup());
-				pipe.addLast("reply", dispatcherReply);
+				pipe.addLast("handler", dispatcher);
 				return pipe;
 			}
 		});
 		bootstrap.setOption("broadcast", "false");
+		Channel channel = bootstrap.bind(listenAddressesTCP);
+		connectionBean.getChannelGroup().add(channel);
+		logger.info("Listening on TCP socket: " + listenAddressesTCP);
+		return channel.isBound();
 	}
 
 	/**
@@ -436,5 +421,10 @@ public class ConnectionHandler
 	public boolean isListening()
 	{
 		return !getConnectionBean().getChannelGroup().isEmpty();
+	}
+	
+	public ConnectionReservation getConnectionReservation()
+	{
+		return reservation;
 	}
 }

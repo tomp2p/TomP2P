@@ -18,6 +18,7 @@ package net.tomp2p.rpc;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -36,6 +37,7 @@ public class HandshakeRPC extends ReplyHandler
 	final private static Logger logger = LoggerFactory.getLogger(HandshakeRPC.class);
 	final private boolean enable;
 	final private boolean wait;
+	private volatile ChannelCreator channelCreator;
 
 	public HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
@@ -52,71 +54,79 @@ public class HandshakeRPC extends ReplyHandler
 			registerIoHandler(Command.PING);
 	}
 
-	public FutureResponse pingBroadcastUDP(final PeerAddress remoteNode)
+	public FutureResponse pingBroadcastUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).sendBroadcastUDP();
+		return createHandlerUDP(remoteNode).sendBroadcastUDP(channelCreator);
 	}
 
-	public FutureResponse pingUDP(final PeerAddress remoteNode)
+	public FutureResponse pingUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).sendUDP();
+		return createHandlerUDP(remoteNode).sendUDP(channelCreator);
 	}
 
-	public FutureResponse pingTCP(final PeerAddress remoteNode)
+	public FutureResponse pingTCP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerTCP(remoteNode).sendTCP();
+		return createHandlerTCP(remoteNode).sendTCP(channelCreator);
 	}
 
-	public FutureResponse fireUDP(final PeerAddress remoteNode)
+	public FutureResponse fireUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).fireAndForgetUDP();
+		return createHandlerUDP(remoteNode).fireAndForgetUDP(channelCreator);
 	}
 
-	public FutureResponse fireTCP(final PeerAddress remoteNode)
+	public FutureResponse fireTCP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerTCP(remoteNode).fireAndForgetTCP();
+		return createHandlerTCP(remoteNode).fireAndForgetTCP(channelCreator);
 	}
 
 	private RequestHandlerUDP createHandlerUDP(final PeerAddress remoteNode)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
-		return new RequestHandlerUDP(peerBean, connectionBean, message);
+		FutureResponse futureResponse = new FutureResponse(message);
+		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
 	}
 
 	private RequestHandlerTCP createHandlerTCP(final PeerAddress remoteNode)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
-		return new RequestHandlerTCP(peerBean, connectionBean, message);
+		FutureResponse futureResponse = new FutureResponse(message);
+		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
 	}
 
-	public FutureResponse pingUDPDiscover(final PeerAddress remoteNode)
+	public FutureResponse pingUDPDiscover(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_2);
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
-		return new RequestHandlerUDP(peerBean, connectionBean, message).sendUDP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
 	}
 
-	public FutureResponse pingTCPDiscover(final PeerAddress remoteNode)
+	public FutureResponse pingTCPDiscover(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_2);
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
-		return new RequestHandlerTCP(peerBean, connectionBean, message).sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
 	}
 
-	public FutureResponse pingUDPProbe(final PeerAddress remoteNode)
+	public FutureResponse pingUDPProbe(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
-		return new RequestHandlerUDP(peerBean, connectionBean, message).sendUDP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		this.channelCreator=channelCreator;
+		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
 	}
 
-	public FutureResponse pingTCPProbe(final PeerAddress remoteNode)
+	public FutureResponse pingTCPProbe(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
-		return new RequestHandlerTCP(peerBean, connectionBean, message).sendTCP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		this.channelCreator=channelCreator;
+		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
 	}
 
 	@Override
@@ -140,9 +150,9 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP())
-				fireUDP(message.getSender());
+				fireUDP(message.getSender(), channelCreator);
 			else
-				fireTCP(message.getSender());
+				fireTCP(message.getSender(), channelCreator);
 			return responseMessage;
 		}
 		// discover

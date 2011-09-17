@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -53,7 +54,7 @@ public class PeerExchangeRPC extends ReplyHandler
 	}
 
 	public FutureResponse peerExchange(final PeerAddress remoteNode, Number160 locationKey, Number160 domainKey,
-			boolean isReplication)
+			boolean isReplication, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.PEX, isReplication ? Type.REQUEST_2 : Type.REQUEST_1);
 		Set<Number160> tmp1 = sentPeers.get(remoteNode.getID());
@@ -98,8 +99,9 @@ public class PeerExchangeRPC extends ReplyHandler
 			if (logger.isDebugEnabled())
 				logger.debug("sent (" + message.getSender().getID() + ") to " + remoteNode.getID() + " / "
 						+ peers.size());
-			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean, connectionBean, message);
-			return requestHandler.fireAndForgetUDP();
+			FutureResponse futureResponse = new FutureResponse(message);
+			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
+			return requestHandler.fireAndForgetUDP(channelCreator);
 		}
 		else
 		{

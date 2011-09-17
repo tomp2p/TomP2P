@@ -473,11 +473,9 @@ public class MessageCodec
 				if(buffer.readableBytes() < 4) return false;
 				len = buffer.readInt();
 				if(buffer.readableBytes() < len) return false;
-				// final ChannelBuffer tmpBuffer =
-				// buffer.slice(buffer.readerIndex(), len);
 				// you can only use slice if no execution handler is in place,
 				// otherwise, you will overwrite stuff
-				final ChannelBuffer tmpBuffer = buffer.copy(buffer.readerIndex(), len);
+				final ChannelBuffer tmpBuffer = buffer.slice(buffer.readerIndex(), len);
 				buffer.skipBytes(len);
 				message.setPayload0(tmpBuffer);
 				return true;

@@ -3,7 +3,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.config.ConfigurationStore;
 import net.tomp2p.p2p.config.Configurations;
@@ -13,6 +15,7 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageRunner;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +55,11 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 				if (logger.isDebugEnabled())
 					logger.debug("transfer from " + storageRPC.getPeerAddress() + " to " + other
 							+ " for key " + locationKey);
-				pendingFutures.put(storageRPC.put(other, locationKey, domainKey, dataMap, false,
-						false, false), System.currentTimeMillis());
+				final ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+				FutureResponse fr=storageRPC.put(other, locationKey, domainKey, dataMap, false,
+						false, false, cc);
+				Utils.addReleaseListener(fr, cc, 1);
+				pendingFutures.put(fr, System.currentTimeMillis());
 			}
 		});
 	}

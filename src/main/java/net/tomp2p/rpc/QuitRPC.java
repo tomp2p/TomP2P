@@ -15,6 +15,7 @@
  */
 package net.tomp2p.rpc;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
@@ -31,11 +32,12 @@ public class QuitRPC extends ReplyHandler
 		registerIoHandler(Command.QUIT);
 	}
 
-	public FutureResponse quit(final PeerAddress remoteNode)
+	public FutureResponse quit(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remoteNode, Command.QUIT, Type.REQUEST_1);
-		final RequestHandlerUDP requestHandler = new RequestHandlerUDP(peerBean, connectionBean, message);
-		return requestHandler.fireAndForgetUDP();
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
+		return requestHandler.fireAndForgetUDP(channelCreator);
 	}
 
 	@Override

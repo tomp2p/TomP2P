@@ -57,9 +57,9 @@ import org.slf4j.LoggerFactory;
  * 
  */
 @Sharable
-public class DispatcherRequest extends SimpleChannelHandler
+public class DispatcherReply extends SimpleChannelHandler
 {
-	final private static Logger logger = LoggerFactory.getLogger(DispatcherRequest.class);
+	final private static Logger logger = LoggerFactory.getLogger(DispatcherReply.class);
 	// Stores all registered handlers, DIY copy on write map
 	private volatile Map<Number160, Map<Command, ReplyHandler>> listenersRequest = null;
 	private volatile Set<ReplyHandler> handlers = null;
@@ -79,7 +79,6 @@ public class DispatcherRequest extends SimpleChannelHandler
 	final private ChannelGroup channelGroup;
 	final private PeerMap peerMap;
 	final private List<PeerListener> listeners;
-	final private TCPChannelCache channelChache;
 
 	/**
 	 * Constructor
@@ -87,9 +86,9 @@ public class DispatcherRequest extends SimpleChannelHandler
 	 * @param p2pID the p2p ID the dispatcher is looking for in messages
 	 * @param routing
 	 */
-	public DispatcherRequest(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
+	public DispatcherReply(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
 			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap,
-			List<PeerListener> listeners, TCPChannelCache channelChache)
+			List<PeerListener> listeners)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
@@ -100,7 +99,6 @@ public class DispatcherRequest extends SimpleChannelHandler
 		this.channelGroup = channelGroup;
 		this.peerMap = peerMap;
 		this.listeners = listeners;
-		this.channelChache = channelChache;
 	}
 
 	/**
@@ -300,12 +298,7 @@ public class DispatcherRequest extends SimpleChannelHandler
 					@Override
 					public void operationComplete(ChannelFuture future) throws Exception
 					{
-						if (future.isSuccess())
-						{
-							channelChache.addChannel(response.getSender().getID(), response
-									.getRecipient().getID(), response.getRecipient()
-									.getInetAddress(), ctx.getChannel());
-						}
+						future.getChannel().close();
 					}
 				});
 			}

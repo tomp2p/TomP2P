@@ -43,18 +43,13 @@ public class Sender
 	final private static Logger logger = LoggerFactory.getLogger(Sender.class);
 	// Timer used for ReplyTimeout
 	final private Timer timer;
-	final private ConnectionCollector connectionCollector;
 	final private ConnectionConfiguration configuration;
 	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
 	final private Thread senderThread;
-	final private TCPChannelCache channelChache;
-	volatile private boolean running = true;
+	private volatile boolean running = true;
 
-	public Sender(final ConnectionCollector connectionCollector,
-			final ConnectionConfiguration configuration, TCPChannelCache channelChache, Timer timer)
+	public Sender(final ConnectionConfiguration configuration,Timer timer)
 	{
-		this.channelChache = channelChache;
-		this.connectionCollector = connectionCollector;
 		this.configuration = configuration;
 		this.timer = timer;
 		this.senderThread = new Thread(new Runnable()
@@ -92,40 +87,30 @@ public class Sender
 		this.senderThread.start();
 	}
 
-	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message)
+	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
-		sendTCP(TCPChannelCache.DEFAULT_CHANNEL_NAME, handler, futureResponse, message);
+		sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator);
 	}
 
-	public void sendTCP(final String channelName, final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message)
+	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
-		sendTCP(channelName, message.getRecipient(), handler, futureResponse, message);
+		sendUDP(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
 	}
 
-	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message)
+	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
-		sendUDP(message.getRecipient(), handler, futureResponse, message, false);
-	}
-
-	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message)
-	{
-		sendUDP(message.getRecipient(), handler, futureResponse, message, true);
+		sendUDP(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
 	}
 
 	public void shutdown()
 	{
 		running = false;
 		senderThread.interrupt();
-		connectionCollector.shutdown();
+		//TODO: shutdown channelCreator?
 	}
 
-	public ConnectionCollector getConnectionCollector()
-	{
-		return connectionCollector;
-	}
-
-	private void sendTCP(final String channelName, final PeerAddress remoteNode,
-			final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message)
+	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
+			final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator)
 	{
 		// do not block if we came from the netty thread
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -138,7 +123,7 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendTCP0(channelName, requestHandler, futureResponse, message);
+					sendTCP0(requestHandler, futureResponse, message, channelCreator);
 				}
 			});
 		}
@@ -146,17 +131,15 @@ public class Sender
 		{
 			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
 			// this may block if its from the user directly
-			if (waitForConnection(futureResponse))
-			{
-				if (logger.isDebugEnabled())
-					logger.debug("send TCP " + Thread.currentThread().getName());
-				sendTCP0(channelName, requestHandler, futureResponse,  message);
-			}
+			if (logger.isDebugEnabled())
+				logger.debug("send TCP " + Thread.currentThread().getName());
+			sendTCP0(requestHandler, futureResponse,  message, channelCreator);
 		}
 	}
 
 	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
-			final FutureResponse futureResponse, final Message message, final boolean broadcast)
+			final FutureResponse futureResponse, final Message message, 
+			final boolean broadcast, final ChannelCreator channelCreator)
 	{
 		// do not block if we came from the netty thread
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -169,55 +152,22 @@ public class Sender
 				@Override
 				public void run()
 				{
-					sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast);
+					sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
 				}
 			});
 		}
 		else
 		{
 			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
-			// this may block if its from the user directly
-			if (waitForConnection(futureResponse))
-			{
-				if (logger.isDebugEnabled())
-					logger.debug("send UDP " + Thread.currentThread().getName());
-				sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast);
-			}
+			if (logger.isDebugEnabled())
+				logger.debug("send UDP " + Thread.currentThread().getName());
+			sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
 		}
 	}
 
-	private boolean waitForConnection(FutureResponse futureResponse)
-	{
-		// why 100? well its a nice number. The queue size with 100 can go up to
-		// 100*exploding factor. The exploding factor is how much threads a main
-		// thread can start. for example for bootstrap it is 2 x routing, which
-		// is 2 x parallel. So for parallel = 3, the queue can get up to
-		// 3*2*100=600. So if you create from a NioWorker new threads, then you
-		// might want to adjust this.
-		while (sendTaskQueue.size() > 100)
-		{
-			synchronized (sendTaskQueue)
-			{
-				try
-				{
-					if (logger.isDebugEnabled())
-						logger.debug("slow down, the queue size is " + sendTaskQueue.size());
-					sendTaskQueue.wait();
-				}
-				catch (InterruptedException e)
-				{
-					logger.error("error in waitforconn");
-					e.printStackTrace();
-					futureResponse.setFailed("Interrupted");
-					return false;
-				}
-			}
-		}
-		return true;
-	}
+	
 
-	private void sendTCP0(String channelName, final RequestHandlerTCP requestHandler,
-			final FutureResponse futureResponse, final Message message)
+	private void sendTCP0(final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator)
 	{
 		if (futureResponse.isCompleted())
 			return;
@@ -225,9 +175,9 @@ public class Sender
 		{
 			IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration
 					.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
-			final ChannelFuture channelFuture = channelChache.getChannel(channelName,
-					timeoutHandler, futureResponse, configuration.getConnectTimeoutMillis(),
-					configuration.getIdleTCPMillis(), message, requestHandler);
+			final ChannelFuture channelFuture = channelCreator.createTCPChannel(timeoutHandler, futureResponse,   
+					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis(), 
+					message, requestHandler);
 			if (channelFuture == null)
 			{
 				futureResponse.setFailed("could not get channel in "
@@ -263,7 +213,7 @@ public class Sender
 							futureResponse.cancel();
 						else
 						{
-							logger.warn("Failed to connect channel " + connectionCollector + "/"
+							logger.warn("Failed to connect channel " 
 									+ future.getChannel().isBound() + "/"
 									+ future.getChannel().isConnected() + "/"
 									+ future.getChannel().isOpen() + " / " + future.isCancelled()
@@ -288,7 +238,8 @@ public class Sender
 	}
 
 	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP replyHandler, 
-			final FutureResponse futureResponse, final Message message, final boolean broadcast)
+			final FutureResponse futureResponse, final Message message, final boolean broadcast, 
+			final ChannelCreator channelCreator)
 	{
 		if (futureResponse.isCompleted())
 			return;
@@ -301,8 +252,8 @@ public class Sender
 		}
 		try
 		{
-			final Channel channel = connectionCollector.channelUDP(replyTimeoutHandler,
-					replyHandler, broadcast);
+			final Channel channel = channelCreator.createUDPChannel(replyTimeoutHandler,
+					replyHandler, futureResponse, broadcast);
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
 			afterSend(writeFuture, futureResponse, false, message, replyHandler == null);
 		}

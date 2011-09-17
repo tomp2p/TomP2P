@@ -16,6 +16,7 @@
 package net.tomp2p.rpc;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerException;
@@ -50,11 +51,6 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 	final private AtomicBoolean handlingMessage = new AtomicBoolean(false);
 	final private MessageID sendMessageID;
 
-	public RequestHandlerUDP(PeerBean peerBean, ConnectionBean connectionBean, Message message)
-	{
-		this(new FutureResponse(message), peerBean, connectionBean, message);
-	}
-
 	/**
 	 * 
 	 * @param objectHolder the bean representing the node this handler belongs
@@ -75,21 +71,21 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		return futureResponse;
 	}
 
-	public FutureResponse sendUDP()
+	public FutureResponse sendUDP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendUDP(this, futureResponse, message);
+		connectionBean.getSender().sendUDP(this, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
-	public FutureResponse sendBroadcastUDP()
+	public FutureResponse sendBroadcastUDP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendBroadcastUDP(this, futureResponse, message);
+		connectionBean.getSender().sendBroadcastUDP(this, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
-	public FutureResponse fireAndForgetUDP()
+	public FutureResponse fireAndForgetUDP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendUDP(null, futureResponse, message);
+		connectionBean.getSender().sendUDP(null, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 

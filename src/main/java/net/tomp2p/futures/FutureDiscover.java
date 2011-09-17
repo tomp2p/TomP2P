@@ -66,6 +66,7 @@ public class FutureDiscover extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify())
 				return;
+			this.type = FutureType.OK;
 			this.peerAddress = peerAddress;
 		}
 		notifyListerenrs();

@@ -43,7 +43,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	protected boolean completed = false;
 	// by default false, change in case of success. An unfinished operation is
 	// always set to failed
-	protected FutureType type = FutureType.OK;
+	protected FutureType type = FutureType.INIT;
 	final protected Object lock;
 	protected String reason = "unknown";
 

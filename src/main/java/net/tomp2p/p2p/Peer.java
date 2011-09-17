@@ -29,16 +29,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.TCPChannelCache;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -46,7 +49,6 @@ import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
@@ -73,6 +75,7 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
+import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
@@ -162,6 +165,7 @@ public class Peer
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
 	final public static int BLOOMFILTER_SIZE = 1024;
+	final BlockingQueue<Runnable> invokeLater = new LinkedBlockingQueue<Runnable>();
 
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
@@ -207,6 +211,18 @@ public class Peer
 		this.peerConfiguration = peerConfiguration;
 		this.connectionConfiguration = connectionConfiguration;
 		this.keyPair = keyPair;
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Runnable run = invokeLater.take();
+					run.run();
+				} catch (Exception e) {
+					logger.error("Exception in runner: "+e.toString());
+					e.printStackTrace();
+				}
+			}
+		}).start();
 	}
 
 	public void addPeerListener(PeerListener listener)
@@ -354,7 +370,7 @@ public class Peer
 		peerExchangeRPC = new PeerExchangeRPC(peerBean, connectionBean);
 		directDataRPC = new DirectDataRPC(peerBean, connectionBean);
 		// replication for trackers, which needs PEX
-		TrackerStorageReplication trackerStorageReplication=new TrackerStorageReplication(peerExchangeRPC, pendingFutures, storageTracker);
+		TrackerStorageReplication trackerStorageReplication=new TrackerStorageReplication(this, peerExchangeRPC, pendingFutures, storageTracker);
 		replicationTracker.addResponsibilityListener(trackerStorageReplication);
 		trackerRPC = new TrackerRPC(peerBean, connectionBean);
 		
@@ -534,27 +550,44 @@ public class Peer
 		getDirectDataRPC().setReply(objectDataReply);
 	}
 
-	// custom messages
+	// custom message
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
 	{
-		return send(TCPChannelCache.DEFAULT_CHANNEL_NAME, remotePeer, requestBuffer);
+		return send(remotePeer, requestBuffer, true);
 	}
-
-	public FutureData send(final String channelName, final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
-	{
-		return getDirectDataRPC().send(channelName, remotePeer, requestBuffer.slice(), true);
-	}
-
-	public FutureData send(final PeerAddress remotePeer, final Object object) throws IOException
-	{
-		return send(TCPChannelCache.DEFAULT_CHANNEL_NAME, remotePeer, object);
-	}
-
-	public FutureData send(final String channelName, final PeerAddress remotePeer, final Object object)
+	public FutureData send( final PeerAddress remotePeer, final Object object)
 			throws IOException
 	{
 		byte[] me = Utils.encodeJavaObject(object);
-		return getDirectDataRPC().send(channelName, remotePeer, ChannelBuffers.wrappedBuffer(me), false);
+		return send(remotePeer, ChannelBuffers.wrappedBuffer(me), false);
+	}
+	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer, boolean raw)
+	{
+		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+		{
+			//delayed reservation
+			final RequestHandlerTCP request = getDirectDataRPC().send(remotePeer, requestBuffer.slice(), raw);
+			Runnable run=new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(1);
+					request.sendTCP(cc);
+					Utils.addReleaseListener(request.getFutureResponse(), cc, 1);
+				}
+			};
+			invokeLater.add(run);
+			return (FutureData) request.getFutureResponse();
+		}
+		else
+		{
+			final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(1);
+			RequestHandlerTCP request = getDirectDataRPC().send(remotePeer, requestBuffer.slice(), raw);
+			request.sendTCP(cc);
+			Utils.addReleaseListener(request.getFutureResponse(), cc, 1);
+			return (FutureData) request.getFutureResponse();
+		}
 	}
 
 	// Boostrap and ping
@@ -592,11 +625,15 @@ public class Peer
 		if (size > 0)
 		{
 			final FutureResponse[] validBroadcast = new FutureResponse[size];
+			if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+				throw new RuntimeException("calling from IO thread not supported yet, may cause a deadlock.");
+			final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(size);
 			for (int i = 0; i < size; i++)
 			{
 				final InetAddress broadcastAddress = bindings.getBroadcastAddresses().get(i);
 				final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress, port, port);
-				validBroadcast[i] = getHandshakeRPC().pingBroadcastUDP(peerAddress);
+				validBroadcast[i] = getHandshakeRPC().pingBroadcastUDP(peerAddress, cc);
+				Utils.addReleaseListener(validBroadcast[i], cc, 1);
 				logger.debug("ping broadcast to " + broadcastAddress);
 			}
 			final FutureForkJoin<FutureResponse> pings = new FutureForkJoin<FutureResponse>(1, true, validBroadcast);
@@ -606,9 +643,16 @@ public class Peer
 			throw new IllegalArgumentException("No broadcast address found. Cannot ping nothing");
 	}
 
+	
+
 	public FutureResponse ping(final InetSocketAddress address)
 	{
-		return getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
+		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+			throw new RuntimeException("calling from IO thread not supported yet, may cause a deadlock.");
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(1);
+		FutureResponse futureResponse = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address), cc);
+		Utils.addReleaseListener(futureResponse, cc,1);
+		return futureResponse;
 	}
 
 	public FutureBootstrap bootstrap(final InetSocketAddress address)
@@ -623,7 +667,14 @@ public class Peer
 				if (future.isSuccess())
 				{
 					final PeerAddress sender = future.getResponse().getSender();
-					result.waitForBootstrap(bootstrap(sender));
+					//need to invoke later as we run in a netty thread
+					invokeLater.add(new Runnable()
+					{
+						@Override
+						public void run() {
+							result.waitForBootstrap(bootstrap(sender));
+						}
+					});
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");
@@ -641,8 +692,10 @@ public class Peer
 
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress, final Collection<PeerAddress> bootstrapTo, final ConfigurationStore config)
 	{
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(),config.getRequestP2PConfiguration().getParallel());
 		if (peerConfiguration.isBehindFirewall())
 		{
+			final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn * 2);
 			if(bindings.isSetupUPNP())
 				setupPortForwandingUPNP();
 			final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
@@ -654,16 +707,20 @@ public class Peer
 				{
 					if (future.isSuccess())
 					{
+						
 						FutureBootstrap futureBootstrap = routing.bootstrap(
 								bootstrapTo,
 								config.getRoutingConfiguration().getMaxNoNewInfo(
 										config.getRequestP2PConfiguration().getMinimumResults()), config
 										.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
-										.getMaxSuccess(), config.getRoutingConfiguration().getParallel(), false);
+										.getMaxSuccess(), config.getRoutingConfiguration().getParallel(), false, cc);
 						result.waitForBootstrap(futureBootstrap);
+						Utils.addReleaseListenerAll(result, cc);
 					}
-					else
+					else {
 						result.setFailed("Network discovery failed.");
+						cc.release();
+					}
 
 				}
 			});
@@ -671,10 +728,12 @@ public class Peer
 		}
 		else
 		{
+			final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn * 2);
 			FutureBootstrap futureBootstrap = routing.bootstrap(bootstrapTo, config.getRoutingConfiguration()
 					.getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()), config
 					.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
-					config.getRoutingConfiguration().getParallel(), false);
+					config.getRoutingConfiguration().getParallel(), false, cc);
+			Utils.addReleaseListenerAll(futureBootstrap, cc);
 			return futureBootstrap;
 		}
 	}
@@ -722,8 +781,11 @@ public class Peer
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
 		final FutureDiscover futureDiscover = new FutureDiscover(timer, peerConfiguration.getDiscoverTimeoutSec());
-		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress);
-
+		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+			throw new RuntimeException("calling from IO thread not supported yet, may cause a deadlock.");
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(3);
+		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress, cc);
+		Utils.addReleaseListener(futureResponseTCP, cc, 1);
 		addPeerListener(new PeerListener()
 		{
 			private boolean changedUDP=false;
@@ -771,8 +833,10 @@ public class Peer
 							serverAddress=serverAddress.changeAddress(seenAs.getInetAddress());
 							getPeerBean().setServerPeerAddress(serverAddress);
 							//
-							getHandshakeRPC().pingTCPProbe(peerAddress);
-							getHandshakeRPC().pingUDPProbe(peerAddress);
+							FutureResponse fr1 = getHandshakeRPC().pingTCPProbe(peerAddress, cc);
+							FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);
+							Utils.addReleaseListener(fr1, cc, 1);
+							Utils.addReleaseListener(fr2, cc, 1);
 						}
 						// else -> we announce exactly how the other peer sees
 						// us
@@ -818,30 +882,41 @@ public class Peer
 	public FutureDHT put(final Number160 locationKey, final Map<Number160, Data> dataMap,
 			final ConfigurationStore config)
 	{
+		
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureDHT futureDHT = getDHT().put(locationKey, config.getDomain(), dataMap,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isStoreIfAbsent(),
-				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate());
+				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
 	private ScheduledFuture<?> schedulePut(final Number160 locationKey, final Map<Number160, Data> dataMap,
 			final ConfigurationStore config, final FutureDHT futureDHT)
 	{
+		
+		
 		Runnable runner = new Runnable()
 		{
 			@Override
 			public void run()
 			{
+				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+				
 				FutureDHT futureDHT2 = getDHT().put(locationKey, config.getDomain(), dataMap,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(),
-						config.getFutureCreate());
+						config.getFutureCreate(), cc);
 				futureDHT.created(futureDHT2);
+				Utils.addReleaseListenerAll(futureDHT2, cc);
 			}
 		};
 		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
@@ -885,14 +960,18 @@ public class Peer
 				}
 			}
 		}
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureDHT futureDHT = getDHT().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isProtectDomain(),
-				config.isSignMessage(), config.getFutureCreate());
+				config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
@@ -904,10 +983,14 @@ public class Peer
 			@Override
 			public void run()
 			{
+				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+				
 				FutureDHT futureDHT2 = getDHT().add(locationKey, config.getDomain(), dataCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate());
+						config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate(), cc);
 				futureDHT.created(futureDHT2);
+				Utils.addReleaseListenerAll(futureDHT2, cc);
 			}
 		};
 		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
@@ -945,9 +1028,13 @@ public class Peer
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureDHT futureDHT = getDHT().get(locationKey, config.getDomain(), keyCollection, config.getPublicKey(),
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.getEvaluationScheme(),
-				config.isSignMessage());
+				config.isSignMessage(), cc);
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
@@ -985,14 +1072,19 @@ public class Peer
 		}
 		else
 			getPeerBean().getStorage().remove(new Number320(locationKey, config.getDomain()), keyPair.getPublic());
+		
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+					
 		final FutureDHT futureDHT = getDHT().remove(locationKey, config.getDomain(), keyCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isReturnResults(),
-				config.isSignMessage(), config.getFutureCreate());
+				config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleRemove(locationKey, keyCollection, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
@@ -1009,10 +1101,14 @@ public class Peer
 			@Override
 			public void run()
 			{
+				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+				
 				FutureDHT futureDHT2 = getDHT().remove(locationKey, config.getDomain(), keyCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isReturnResults(), config.isSignMessage(), config.getFutureCreate());
+						config.isReturnResults(), config.isSignMessage(), config.getFutureCreate(), cc);
 				futureDHT.created(futureDHT2);
+				Utils.addReleaseListenerAll(futureDHT2, cc);
 				if (++counter >= repetion)
 				{
 					synchronized (this)
@@ -1055,13 +1151,17 @@ public class Peer
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, true, config.getRoutingConfiguration(),
-				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish());
+				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
@@ -1079,13 +1179,17 @@ public class Peer
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		byte[] me = Utils.encodeJavaObject(object);
 		ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(me);
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, false, config.getRoutingConfiguration(),
-				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish());
+				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
 			futureDHT.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
 	}
 
@@ -1102,10 +1206,14 @@ public class Peer
 			@Override
 			public void run()
 			{
+				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+				
 				final FutureDHT futureDHT2 = getDHT().direct(locationKey, buffer, false,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.getFutureCreate(), config.isCancelOnFinish());
+						config.getFutureCreate(), config.isCancelOnFinish(), cc);
 				futureDHT.created(futureDHT2);
+				Utils.addReleaseListenerAll(futureDHT2, cc);
 				if (++counter >= repetion)
 				{
 					synchronized (this)
@@ -1178,9 +1286,14 @@ public class Peer
 	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config,
 			Set<Number160> knownPeers)
 	{
-		return getTracker().getFromTracker(locationKey, config.getDomain(), config.getRoutingConfiguration(),
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getTrackerConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
+		FutureTracker futureTracker = getTracker().getFromTracker(locationKey, config.getDomain(), config.getRoutingConfiguration(),
 				config.getTrackerConfiguration(), config.isExpectAttachement(), config.getEvaluationScheme(),
-				config.isSignMessage(), config.isUseSecondaryTrackers(), knownPeers);
+				config.isSignMessage(), config.isUseSecondaryTrackers(), knownPeers, cc);
+		Utils.addReleaseListenerAll(futureTracker, cc);
+		return futureTracker;
 	}
 
 	public FutureTracker addToTracker(final Number160 locationKey, final ConfigurationTrackerStore config)
@@ -1190,9 +1303,12 @@ public class Peer
 		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
 		// add myself to my local tracker, since we use a mesh we are part of the tracker mesh as well.
 		getPeerBean().getTrackerStorage().put(locationKey, config.getDomain(), getPeerAddress(), getPeerBean().getKeyPair().getPublic(), config.getAttachement());
+		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getTrackerConfiguration().getParallel());
+		final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+		
 		final FutureTracker futureTracker = getTracker().addToTracker(locationKey, config.getDomain(),
 				config.getAttachement(), config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-				config.isSignMessage(), config.getFutureCreate(), bloomFilter);
+				config.isSignMessage(), config.getFutureCreate(), bloomFilter, cc);
 		if (getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() > 0)
 		{
 			ScheduledFuture<?> tmp = scheduleAddTracker(locationKey, config, futureTracker);
@@ -1203,6 +1319,7 @@ public class Peer
 			ScheduledFuture<?> tmp = schedulePeerExchange(locationKey, config, futureTracker);
 			futureTracker.setScheduledFuture(tmp, scheduledFutures);
 		}
+		Utils.addReleaseListenerAll(futureTracker, cc);
 		return futureTracker;
 	}
 
@@ -1217,10 +1334,14 @@ public class Peer
 				// make a good guess based on the config and the maxium tracker
 				// that can be found
 				SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(BLOOMFILTER_SIZE, 1024);
+				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getTrackerConfiguration().getParallel());
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(conn);
+				
 				FutureTracker futureTracker2 = getTracker().addToTracker(locationKey, config.getDomain(),
 						config.getAttachement(), config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-						config.isSignMessage(), config.getFutureCreate(), bloomFilter);
+						config.isSignMessage(), config.getFutureCreate(), bloomFilter, cc);
 				futureTracker.repeated(futureTracker2);
+				Utils.addReleaseListenerAll(futureTracker2, cc);
 			}
 		};
 		int refresh = getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() * 3 / 4;
@@ -1238,9 +1359,11 @@ public class Peer
 			@Override
 			public void run()
 			{
+				final ChannelCreator cc=getConnectionHandler().getConnectionReservation().reserve(TrackerStorage.TRACKER_SIZE);
 				FutureForkJoin<FutureResponse> futureForkJoin = getTracker().startPeerExchange(locationKey,
-						config.getDomain());
+						config.getDomain(), cc);
 				futureTracker.repeated(futureForkJoin);
+				Utils.addReleaseListenerAll(futureForkJoin, cc);
 			}
 		};
 		int refresh = config.getWaitBeforeNextSendSeconds();
@@ -1268,12 +1391,17 @@ public class Peer
 		public void run()
 		{
 			// System.err.println("run!!!");
+			if(true)
+				return;
 			Collection<PeerAddress> nas = peerMap.peersForMaintenance();
 			if (logger.isDebugEnabled())
 				logger.debug("numbe of peers for maintenance: " + nas.size());
+			ChannelCreator cc = getConnectionHandler().getConnectionReservation().reserve(max);
 			for (PeerAddress na : nas)
 			{
-				result.put(na, handshakeRPC.pingUDP(na));
+				FutureResponse futureResponse = handshakeRPC.pingUDP(na, cc);
+				Utils.addReleaseListener(futureResponse, cc, 1);
+				result.put(na, futureResponse);
 				if (result.size() >= max)
 				{
 					if (!waitFor())
@@ -1315,7 +1443,7 @@ public class Peer
 				}
 				result.clear();
 				// don't stress
-				Thread.sleep(2000);
+				Thread.sleep(5000);
 			}
 			catch (InterruptedException e)
 			{

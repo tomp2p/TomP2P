@@ -6,6 +6,7 @@ import java.util.Random;
 //import org.junit.Test;
 
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureResponse;
@@ -30,14 +31,17 @@ public class TestIPv6
 		peer.listen(4000, 4000, b);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
-				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa);
+				ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
 				fr1.awaitUninterruptibly();
+				
 				if (fr1.isSuccess())
 					System.out.println("peer online TCP:" + pa);
 				else
 					System.out.println("offline " + pa);
-				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa);
+				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
 				fr2.awaitUninterruptibly();
+				cc.release();
 				if (fr2.isSuccess())
 					System.out.println("peer online UDP:" + pa);
 				else

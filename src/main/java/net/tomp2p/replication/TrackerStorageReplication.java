@@ -19,12 +19,15 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.utils.Utils;
 
 public class TrackerStorageReplication implements ResponsibilityListener
 {
@@ -32,10 +35,12 @@ public class TrackerStorageReplication implements ResponsibilityListener
 	final private PeerExchangeRPC peerExchangeRPC;
 	final private Map<BaseFuture, Long> pendingFutures;
 	final private TrackerStorage trackerStorage;
+	final private Peer peer;
 
-	public TrackerStorageReplication(PeerExchangeRPC peerExchangeRPC, Map<BaseFuture, Long> pendingFutures,
+	public TrackerStorageReplication(Peer peer, PeerExchangeRPC peerExchangeRPC, Map<BaseFuture, Long> pendingFutures,
 			TrackerStorage trackerStorage)
 	{
+		this.peer = peer;
 		this.peerExchangeRPC = peerExchangeRPC;
 		this.pendingFutures = pendingFutures;
 		this.trackerStorage = trackerStorage;
@@ -57,7 +62,9 @@ public class TrackerStorageReplication implements ResponsibilityListener
 		}
 		for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey))
 		{
-			FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true);
+			final ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+			FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, cc);
+			Utils.addReleaseListener(futureResponse, cc, 1);
 			pendingFutures.put(futureResponse, System.currentTimeMillis());
 		}
 	}

@@ -59,6 +59,33 @@ public class TestDHT
 		//CONFIGURATION.setIdleTCPMillis(3000000);
 		//CONFIGURATION.setIdleUDPMillis(3000000);
 	}
+	
+	@Test
+	public void testTooManyOpenFilesInSystem() throws Exception
+	{
+		Peer master = null;
+		Peer slave = null;
+		try
+		{
+			master = new Peer(new Number160(rnd));
+			master.listen(4001, 4001);
+			slave = new Peer(new Number160(rnd));
+			slave.listen(4002, 4002);
+			for(int i=0;i<1000;i++)
+			{
+				master.discover(slave.getPeerAddress());
+				byte[] b=new byte[10000];
+				master.send(slave.getPeerAddress(), b);
+				System.out.println(".");
+			}
+		}
+		finally
+		{
+			master.shutdown();
+			slave.shutdown();
+		}
+	}
+	
 	@Test
 	public void testBootstrapDiscover() throws Exception
 	{

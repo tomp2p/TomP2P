@@ -842,17 +842,23 @@ public class Peer
 						// us
 						else
 						{
+							//important to release connection if not needed
+							cc.release(2);
 							futureDiscover.done(seenAs);
 						}
 					}
 					else
 					{
+						//important to release connection if not needed
+						cc.release(2);
 						futureDiscover.setFailed("Peer " + peerAddress + " did not report our IP address");
 						return;
 					}
 				}
 				else
 				{
+					//important to release connection if not needed
+					cc.release(2);
 					futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection");
 					return;
 				}

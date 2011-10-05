@@ -71,13 +71,14 @@ public class TestDHT
 			master.listen(4001, 4001);
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
-			for(int i=0;i<1000;i++)
+			for(int i=0;i<10000;i++)
 			{
 				master.discover(slave.getPeerAddress());
 				byte[] b=new byte[10000];
 				master.send(slave.getPeerAddress(), b);
 				System.out.println(".");
 			}
+			System.err.println("done!!");
 		}
 		finally
 		{

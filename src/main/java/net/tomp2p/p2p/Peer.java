@@ -29,9 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +40,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -50,6 +49,7 @@ import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.config.ConfigurationDirect;
@@ -165,7 +165,7 @@ public class Peer
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
 	final public static int BLOOMFILTER_SIZE = 1024;
-	final BlockingQueue<Runnable> invokeLater = new LinkedBlockingQueue<Runnable>();
+	
 
 	// private volatile boolean running = false;
 	public Peer(final KeyPair keyPair)
@@ -211,18 +211,6 @@ public class Peer
 		this.peerConfiguration = peerConfiguration;
 		this.connectionConfiguration = connectionConfiguration;
 		this.keyPair = keyPair;
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					Runnable run = invokeLater.take();
-					run.run();
-				} catch (Exception e) {
-					logger.error("Exception in runner: "+e.toString());
-					e.printStackTrace();
-				}
-			}
-		}).start();
 	}
 
 	public void addPeerListener(PeerListener listener)
@@ -245,6 +233,7 @@ public class Peer
 	public void shutdown()
 	{
 		logger.info("shutdown in progres");
+		Utils.shutdown();
 		synchronized (scheduledFutures)
 		{
 			for (ScheduledFuture<?> scheduledFuture : scheduledFutures)
@@ -549,17 +538,45 @@ public class Peer
 	{
 		getDirectDataRPC().setReply(objectDataReply);
 	}
+	
+	/**
+	 * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the 
+	 * connection gets closed after that time of inacitivty. If the other peer goes offline or closes the connection 
+	 * (due to inactivity), further requests with this connections reopens the connection. 
+	 * 
+	 * @param destination The end-point to connect to
+	 * @param idleSeconds time in seconds after a connection gets closed if idle, -1 if it should remain always open until 
+	 * 			the user closes the connection manually.
+	 * @return A class that needs to be passed to those methods that should use the already open connection.
+	 */
+	public PeerConnection createPeerConnection(PeerAddress destination, int idleSeconds)
+	{
+		return new PeerConnection();
+	}
 
 	// custom message
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
 	{
 		return send(remotePeer, requestBuffer, true);
 	}
-	public FutureData send( final PeerAddress remotePeer, final Object object)
+	public FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer)
+	{
+		//not supported yet
+		return null;
+	}
+	
+	public FutureData send(final PeerAddress remotePeer, final Object object)
 			throws IOException
 	{
 		byte[] me = Utils.encodeJavaObject(object);
 		return send(remotePeer, ChannelBuffers.wrappedBuffer(me), false);
+	}
+	
+	public FutureData send(final PeerConnection connection, final Object object)
+			throws IOException
+	{
+		//not supported yet
+		return null;
 	}
 	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer, boolean raw)
 	{
@@ -567,7 +584,7 @@ public class Peer
 		{
 			//delayed reservation
 			final RequestHandlerTCP request = getDirectDataRPC().send(remotePeer, requestBuffer.slice(), raw);
-			Runnable run=new Runnable()
+			FutureRunnable runner=new FutureRunnable()
 			{
 				@Override
 				public void run()
@@ -576,8 +593,14 @@ public class Peer
 					request.sendTCP(cc);
 					Utils.addReleaseListener(request.getFutureResponse(), cc, 1);
 				}
+
+				@Override
+				public void failed(String reason) 
+				{
+					request.getFutureResponse().setFailed(reason);	
+				}
 			};
-			invokeLater.add(run);
+			Utils.invokeLater(runner);
 			return (FutureData) request.getFutureResponse();
 		}
 		else
@@ -668,16 +691,26 @@ public class Peer
 				{
 					final PeerAddress sender = future.getResponse().getSender();
 					//need to invoke later as we run in a netty thread
-					invokeLater.add(new Runnable()
+					FutureRunnable runner = new FutureRunnable() 
 					{
 						@Override
-						public void run() {
+						public void run() 
+						{
 							result.waitForBootstrap(bootstrap(sender));
 						}
-					});
+						
+						@Override
+						public void failed(String string) 
+						{
+							result.setFailed(string);
+						}
+					};
+					Utils.invokeLater(runner);
 				}
-				else
+				else 
+				{
 					result.setFailed("could not reach anyone with the broadcast");
+				}
 			}
 		});
 		return result;

@@ -1443,9 +1443,6 @@ public class Peer
 		@Override
 		public void run()
 		{
-			// System.err.println("run!!!");
-			if(true)
-				return;
 			Collection<PeerAddress> nas = peerMap.peersForMaintenance();
 			if (logger.isDebugEnabled())
 				logger.debug("numbe of peers for maintenance: " + nas.size());

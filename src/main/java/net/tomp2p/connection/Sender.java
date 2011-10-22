@@ -14,16 +14,16 @@
  * the License.
  */
 package net.tomp2p.connection;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
+import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -44,69 +44,30 @@ public class Sender
 	// Timer used for ReplyTimeout
 	final private Timer timer;
 	final private ConnectionConfiguration configuration;
-	final private BlockingQueue<Runnable> sendTaskQueue = new LinkedBlockingQueue<Runnable>();
-	final private Thread senderThread;
-	private volatile boolean running = true;
+	private volatile boolean shutdown = false;
 
-	public Sender(final ConnectionConfiguration configuration,Timer timer)
+	public Sender(final ConnectionConfiguration configuration, Timer timer)
 	{
 		this.configuration = configuration;
 		this.timer = timer;
-		this.senderThread = new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				while (running)
-				{
-					try
-					{
-						Runnable runner = sendTaskQueue.take();
-						try
-						{
-							runner.run();
-						}
-						catch (Exception e)
-						{
-							logger.error("Error while sending " + e.toString());
-							if (logger.isDebugEnabled())
-								e.printStackTrace();
-						}
-						synchronized (sendTaskQueue)
-						{
-							sendTaskQueue.notifyAll();
-						}
-					}
-					catch (InterruptedException e)
-					{
-						// check running flag fast
-					}
-				}
-			}
-		});
-		this.senderThread.start();
 	}
 
 	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
+		if(shutdown) return;
 		sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator);
 	}
 
 	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
+		if(shutdown) return;
 		sendUDP(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
 	}
 
 	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
+		if(shutdown) return;
 		sendUDP(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
-	}
-
-	public void shutdown()
-	{
-		running = false;
-		senderThread.interrupt();
-		//TODO: shutdown channelCreator?
 	}
 
 	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
@@ -118,14 +79,20 @@ public class Sender
 			logger
 					.debug("we are TCP from " + Thread.currentThread().getName()
 							+ ", do not block! ");
-			sendTaskQueue.offer(new Runnable()
-			{
+			FutureRunnable runner = new FutureRunnable()
+			{	
 				@Override
-				public void run()
+				public void run() 
 				{
 					sendTCP0(requestHandler, futureResponse, message, channelCreator);
 				}
-			});
+				@Override
+				public void failed(String reason) 
+				{
+					futureResponse.cancel();
+				}
+			};
+			Utils.invokeLater(runner);
 		}
 		else
 		{
@@ -147,14 +114,20 @@ public class Sender
 			logger
 					.debug("we are UDP from " + Thread.currentThread().getName()
 							+ ", do not block! ");
-			sendTaskQueue.offer(new Runnable()
-			{
+			FutureRunnable runner = new FutureRunnable()
+			{	
 				@Override
-				public void run()
+				public void run() 
 				{
 					sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
 				}
-			});
+				@Override
+				public void failed(String reason) 
+				{
+					futureResponse.cancel();
+				}
+			};
+			Utils.invokeLater(runner);
 		}
 		else
 		{
@@ -218,9 +191,11 @@ public class Sender
 									+ future.getChannel().isConnected() + "/"
 									+ future.getChannel().isOpen() + " / " + future.isCancelled()
 									+ " /ch:" + channelFuture.getChannel());
-							if (future.getCause() != null)
+							if (logger.isDebugEnabled() && future.getCause()!=null)
+							{
 								future.getCause().printStackTrace();
-							futureResponse.setFailed("Connect failed " + future);
+							}
+							futureResponse.setFailed("Connect failed " + future.getCause());
 						}
 					}
 				}
@@ -261,6 +236,10 @@ public class Sender
 		{
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			logger.warn(ce.toString());
+			if(logger.isDebugEnabled())
+			{
+				ce.printStackTrace();
+			}
 			return;
 		}
 		if (logger.isDebugEnabled())
@@ -317,5 +296,10 @@ public class Sender
 	public ConnectionConfiguration getConfiguration()
 	{
 		return configuration;
+	}
+	
+	public void shutdown()
+	{
+		shutdown = true;
 	}
 }

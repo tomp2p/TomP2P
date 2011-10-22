@@ -158,7 +158,7 @@ public class HandshakeRPC extends ReplyHandler
 		// discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
-			logger.debug("reply to discover, found " + message.getRealSender());
+			logger.debug("reply to discover, found " + message.getSender());
 			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
 			if (sign)
 			{
@@ -166,7 +166,7 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			responseMessage.setMessageId(message.getMessageId());
 			Collection<PeerAddress> self = new ArrayList<PeerAddress>();
-			self.add(message.getRealSender());
+			self.add(message.getSender());
 			responseMessage.setNeighbors(self);
 			return responseMessage;
 		}

@@ -632,8 +632,22 @@ public class Peer
 			{
 				if (future.isSuccess())
 				{
-					final PeerAddress sender = future.getLast().getResponse().getSender();
-					result.waitForBootstrap(bootstrap(sender));
+					FutureRunnable runner = new FutureRunnable() 
+					{
+						@Override
+						public void run() 
+						{
+							final PeerAddress sender = future.getLast().getResponse().getSender();
+							result.waitForBootstrap(bootstrap(sender));
+						}
+						@Override
+						public void failed(String reason)
+						{
+							result.setFailed(reason);						
+						}
+					};
+					Utils.invokeLater(runner);
+					
 				}
 				else
 					result.setFailed("could not reach anyone with the broadcast");

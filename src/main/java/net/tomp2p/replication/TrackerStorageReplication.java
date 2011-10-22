@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -62,10 +63,28 @@ public class TrackerStorageReplication implements ResponsibilityListener
 		}
 		for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey))
 		{
-			final ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
-			FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, cc);
-			Utils.addReleaseListener(futureResponse, cc, 1);
-			pendingFutures.put(futureResponse, System.currentTimeMillis());
+			FutureRunnable runner=new FutureRunnable()
+			{
+				private volatile FutureResponse futureResponse;
+				@Override
+				public void run() 
+				{
+					final ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+					futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, cc);
+					Utils.addReleaseListener(futureResponse, cc, 1);
+					pendingFutures.put(futureResponse, System.currentTimeMillis());
+					
+				}
+				@Override
+				public void failed(String reason) 
+				{
+					if(futureResponse!=null)
+					{
+						futureResponse.setFailed(reason);
+					}
+				}
+			};
+			Utils.invokeLater(runner);
 		}
 	}
 }

@@ -96,7 +96,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	 */
 	public SimpleBloomFilter(byte[] rawBitArray, int offset, int length)
 	{
-		this(byteArrayToInt(rawBitArray, 4), byteArrayToInt(rawBitArray, 0), fromByteArray(new BitSet(), rawBitArray,
+		this(byteArrayToInt(rawBitArray, 4 + offset), byteArrayToInt(rawBitArray, 0 + offset), fromByteArray(new BitSet(), rawBitArray,
 				offset + 8, length - 8));
 	}
 

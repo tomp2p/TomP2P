@@ -29,9 +29,15 @@ public class TestPeerExchange
 			sender.getPeerBean().getTrackerStorage().addActive(locationKey, domainKey,sender.getPeerAddress(), null, 0, 0);
 			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey, false, cc);
 			fr.awaitUninterruptibly();
+			if(fr.isFailed())
+				System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			Utils.sleep(200);
 			Assert.assertEquals(1, recv1.getPeerBean().getTrackerStorage().sizeSecondary(locationKey, domainKey));
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
 		}
 		finally
 		{

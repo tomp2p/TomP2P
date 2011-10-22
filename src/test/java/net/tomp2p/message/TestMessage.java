@@ -179,13 +179,13 @@ public class TestMessage
 
 	private void testEncodeDecode6(boolean tcp) throws Exception
 	{
-		for(int i=0;i<8;i++)
+		for(int i=0;i<4;i++)
 		{
 			// setup
 			SocketAddress sock = new InetSocketAddress(2000);
 			DummyChannel dc = new DummyChannel(sock);
 			// encode and test for is firewallend and ipv4
-			Message m1 = Utils2.createDummyMessage((i & 1) > 0, (i & 2) > 0, (i & 4) > 0);
+			Message m1 = Utils2.createDummyMessage((i & 1) > 0, (i & 2) > 0);
 			m1.setType(Message.Type.DENIED);
 			DummyCoder coder=new DummyCoder(tcp);
 			ChannelBuffer buffer = coder.encode(m1);

@@ -85,8 +85,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 			}
 			catch (Throwable e)
 			{
-				if (logger.isWarnEnabled())
-					logger.error("Exception in custom handler: " + e.toString());
+				logger.error("Exception in custom handler: " + e.toString());
 				e.printStackTrace();
 			}
 		}

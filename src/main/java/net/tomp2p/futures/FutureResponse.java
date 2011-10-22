@@ -74,7 +74,7 @@ public class FutureResponse extends BaseFutureImpl
 			else
 			{
 				//only accept the first setresponse
-				if (type == FutureType.OK)
+				if (type != FutureType.INIT)
 					return;
 				if (responseMessage != null)
 				{
@@ -125,9 +125,8 @@ public class FutureResponse extends BaseFutureImpl
 			}
 			else
 			{
-			
 				//only accept the first setresponse
-				if (type == FutureType.OK)
+				if (type != FutureType.INIT)
 					return;
 				this.reason = reason;
 				this.type = FutureType.FAILED;

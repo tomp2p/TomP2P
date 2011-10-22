@@ -174,7 +174,12 @@ public class NeighborRPC extends ReplyHandler
 				logger.warn("Neighbor message received, but does not contain any neighbors.");
 		}
 		else
-			logger.warn("Message not of type Neighbor, ignoring");
+		{
+			if(logger.isDebugEnabled())
+			{
+				logger.debug("Message not of type Neighbor, ignoring "+message);
+			}
+		}
 	}
 	private class NeighborsRequestTCP extends RequestHandlerTCP
 	{

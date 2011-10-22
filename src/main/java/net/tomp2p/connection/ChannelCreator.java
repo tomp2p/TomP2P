@@ -59,16 +59,18 @@ public class ChannelCreator
 	public Channel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
 			RequestHandlerUDP requestHandler, final FutureResponse futureResponse, boolean broadcast) {
 		if(shutdown.get())
-			return null;
+		{
+			throw new RuntimeException("Cannot create channel if already shutdown");
+		}
 		// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
 		if(!semaphore.tryAcquire())
 		{
 			throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
 		}
 		// now, we don't exceeded the limits, so create channels
+		futureResponse.setExitFast(false);
 		Channel channel = createChannelUDP(timeoutHandler, requestHandler, broadcast);
 		channelsUDP.add(channel);
-		futureResponse.setExitFast(false);
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
 			@Override
@@ -76,10 +78,10 @@ public class ChannelCreator
 			{
 				channelsUDP.remove(future.getChannel());
 				semaphore.release();
-				//channel is closed, so we can fire the result to any listener
+				//we set fast exit to false, exit if connection has been closed.
 				futureResponse.fireResponse();
 			}
-			});
+		});
 		return channel;
 	}
 	
@@ -87,7 +89,9 @@ public class ChannelCreator
 			final FutureResponse futureResponse, int connectTimeoutMillis,
 			int idleTCPMillis, Message message, RequestHandlerTCP requestHandler) {
 		if(shutdown.get())
-			return null;
+		{
+			throw new RuntimeException("Cannot create channel if already shutdown");
+		}
 		// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
 		if(!semaphore.tryAcquire())
 		{
@@ -96,9 +100,9 @@ public class ChannelCreator
 		// now, we don't exceeded the limits, so create channels
 		ChannelFuture channelFuture = createChannelTCP(timeoutHandler, requestHandler,
 				message.getRecipient().createSocketTCP(), new InetSocketAddress(0), connectTimeoutMillis);
+		futureResponse.setExitFast(false);
 		Channel channel = channelFuture.getChannel();
 		channelsTCP.add(channel);
-		futureResponse.setExitFast(false);
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
 			@Override
@@ -106,6 +110,7 @@ public class ChannelCreator
 			{
 				channelsTCP.remove(future.getChannel());
 				semaphore.release();
+				//we set fast exit to false, exit if connection has been closed.
 				futureResponse.fireResponse();
 			}
 		});

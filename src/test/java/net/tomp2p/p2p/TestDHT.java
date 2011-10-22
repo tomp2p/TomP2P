@@ -76,7 +76,7 @@ public class TestDHT
 				master.discover(slave.getPeerAddress());
 				byte[] b=new byte[10000];
 				master.send(slave.getPeerAddress(), b);
-				System.out.println(".");
+				//System.out.println(".");
 			}
 			System.err.println("done!!");
 		}
@@ -125,7 +125,7 @@ public class TestDHT
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(false, fb.isSuccess());
 			System.err.println(fb.getFailedReason());
-			fb=master.bootstrap(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 4002));
+			fb=master.bootstrap(slave.getPeerAddress());
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(true, fb.isSuccess());
 			
@@ -188,7 +188,7 @@ public class TestDHT
 			{
 				fm.awaitUninterruptibly();
 				if (fm.isFailed())
-					System.err.println(fm.getFailedReason());
+					System.err.println("FAILL:"+fm.getFailedReason());
 				Assert.assertEquals(true, fm.isSuccess());
 				System.err.println("i:" + (++i));
 			}
@@ -789,6 +789,8 @@ public class TestDHT
 			int read = fd.getBuffer().readInt();
 			Assert.assertEquals(88, read);
 			System.err.println("done");
+			//for(FutureBootstrap fb:tmp)
+			//	fb.awaitUninterruptibly();
 		}
 		finally
 		{
@@ -1525,7 +1527,7 @@ public class TestDHT
 		{
 			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
 			nodes[i].listen(master);
-			System.err.println("go for2 "+i);
+			//System.err.println("go for2 "+i);
 		}
 		return nodes;
 	}

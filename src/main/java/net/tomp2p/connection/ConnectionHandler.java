@@ -131,18 +131,18 @@ public class ConnectionHandler
 		logger.info("Status of interface search: " + status);
 		InetAddress outsideAddress = bindings.getExternalAddress();
 		PeerAddress self;
-		if (outsideAddress != null)
-		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
-					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall(), true);
-		}
-		else
+		if (outsideAddress == null)
 		{
 			if (bindings.getAddresses().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses().get(0);
-			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, peerConfiguration.isBehindFirewall(),
-					peerConfiguration.isBehindFirewall(), false);
+			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort,
+					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+		}
+		else
+		{
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
+				peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);
@@ -318,12 +318,10 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
-			connectionBean.getChannelGroup().close().awaitUninterruptibly();
-			// close client
 			connectionBean.getSender().shutdown();
+			reservation.shutdown();
+			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources
-			//executionHandlerSend.releaseExternalResources();
-			//executionHandlerRcv.releaseExternalResources();
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();

@@ -268,7 +268,7 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 		else
 		{
-			logger.warn("No handler found for " + message);
+			logger.warn("No handler found for " + message+ ". Probably we have shutdown this peer.");
 			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress())
 					.setType(Type.UNKNOWN_ID);
 			response(ctx, e, message);
@@ -278,6 +278,14 @@ public class DispatcherReply extends SimpleChannelHandler
 	// respond within a session
 	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response)
 	{
+		//check if channel is still open. If its not, then do not send anything because 
+		//this will cause an exception that will be logged.
+		if (!ctx.getChannel().isOpen())
+		{
+			if (logger.isDebugEnabled())
+				logger.debug("channel is not open, do not reply");
+			return;
+		}
 		if (ctx.getChannel() instanceof DatagramChannel)
 		{
 			if (logger.isDebugEnabled())
@@ -288,24 +296,17 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 		else
 		{
-			try
+			if (logger.isDebugEnabled())
+				logger.debug("reply TCP message " + response);
+			ChannelFuture cf = ctx.getChannel().write(response);
+			cf.addListener(new ChannelFutureListener()
 			{
-				if (logger.isDebugEnabled())
-					logger.debug("reply TCP message " + response);
-				ChannelFuture cf = ctx.getChannel().write(response);
-				cf.addListener(new ChannelFutureListener()
+				@Override
+				public void operationComplete(ChannelFuture future) throws Exception
 				{
-					@Override
-					public void operationComplete(ChannelFuture future) throws Exception
-					{
-						future.getChannel().close();
-					}
-				});
-			}
-			catch (Throwable e1)
-			{
-				e1.printStackTrace();
-			}
+					future.getChannel().close();
+				}
+			});
 		}
 	}
 
@@ -352,8 +353,11 @@ public class DispatcherReply extends SimpleChannelHandler
 		else
 		{
 			// not registered
-			logger.error("Handler not found for type " + command
+			if(logger.isDebugEnabled())
+			{
+				logger.debug("Handler not found for type " + command
 					+ ", we are looking for the server with ID " + recipientID);
+			}
 			return null;
 		}
 	}

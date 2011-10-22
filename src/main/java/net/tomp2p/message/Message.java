@@ -71,7 +71,6 @@ public class Message
 	private Type type;
 	private Command command;
 	private PeerAddress sender;
-	private PeerAddress realSender;
 	private PeerAddress recipient;
 	private long length = 0;
 	// payload
@@ -239,27 +238,6 @@ public class Message
 	public Message setCommand(final Command command)
 	{
 		this.command = command;
-		return this;
-	}
-
-	/**
-	 * The ID of the real sender as seen by us.
-	 * 
-	 * @returnThe ID of the sender.
-	 */
-	public PeerAddress getRealSender()
-	{
-		return realSender;
-	}
-
-	/**
-	 * The ID of the real sender as seen by us.
-	 * 
-	 * @param sender The ID of the sender.
-	 */
-	public Message setRealSender(final PeerAddress realSender)
-	{
-		this.realSender = realSender;
 		return this;
 	}
 

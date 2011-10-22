@@ -74,7 +74,7 @@ public class ConnectionReservation
 				synchronized (semaphore)
 				{
 					try {
-						semaphore.wait(150);
+						semaphore.wait(250);
 					} catch (InterruptedException e) {
 						// maybe we need to exit due to shutdown
 					}
@@ -107,6 +107,10 @@ public class ConnectionReservation
 	public void shutdown()
 	{
 		shutdown.set(true);
+		synchronized (semaphore)
+		{
+			semaphore.notifyAll();
+		}
 		channelsTCP.close().awaitUninterruptibly();
 		channelsUDP.close().awaitUninterruptibly();
 	}

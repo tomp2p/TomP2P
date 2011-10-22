@@ -884,8 +884,8 @@ public class TestStorage
 			slave2.listen(8002,8002);
 			slave1.bootstrap(master.getPeerAddress()).awaitUninterruptibly();
 			slave2.bootstrap(master.getPeerAddress()).awaitUninterruptibly();
+			master.getPeerBean().getPeerMap().peerOffline(slave2.getPeerAddress(), true);
 			slave2.shutdown();
-			Thread.sleep(20000);
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());
 		}

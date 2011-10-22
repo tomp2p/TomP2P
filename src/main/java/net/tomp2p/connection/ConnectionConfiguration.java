@@ -22,7 +22,7 @@ public class ConnectionConfiguration
 	private int idleTCPMillis = 4 * 1000;
 	private int timeoutTCPMillis = 3 * 1000;
 	private int idleUDPMillis = 2 * 1000;
-	private int connectTimeouMillis = 1 * 1000;
+	private int connectTimeouMillis = 3 * 1000;
 	//
 	private int maxOutgoingUDP = 200;
 	private int maxOutgoingTCP = 100;

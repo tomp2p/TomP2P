@@ -16,9 +16,7 @@
 package net.tomp2p.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -48,7 +46,7 @@ public class MessageCodec
 {
 	final public static byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 	final public static int MAX_BYTE = 255;
-	final public static int HEADER_SIZE = 60;
+	final public static int HEADER_SIZE = 56;
 
 	/**
 	 * The format looks as follows:
@@ -56,8 +54,7 @@ public class MessageCodec
 	 * 32bit p2p version - 32bit id - 4bit message type - 4bit message name -
 	 * 160bit sender id - 16bit tcp port - 16bit udp port - 160bit recipient id
 	 * - 16bit (4x4)content type - 8bit network address
-	 * information - 32bit IPv4 address to override address as seen in case of 
-	 * NAT issues. It total, the header is of size 60 bytes.
+	 * information. It total, the header is of size 56 bytes.
 	 * 
 	 * 
 	 * @param buffer The Netty buffer to fill
@@ -79,12 +76,6 @@ public class MessageCodec
 		buffer.writeShort((short) content); // 55
 		// options
 		buffer.writeByte(message.getSender().createType()); // 56
-		if(message.getSender().isPresetIPv4() && message.getSender().isIPv4()) {
-			buffer.writeBytes(message.getSender().getInetAddress().getAddress()); // 60
-		}
-		else {
-			buffer.writeInt(0); // 60
-		}
 		return buffer;
 	}
 
@@ -310,10 +301,9 @@ public class MessageCodec
 	 * @param sender The sender of the packet, which has been set in the socket
 	 *        class
 	 * @return The partial message, only the header fields are filled
-	 * @throws UnknownHostException 
 	 */
 	public static Message decodeHeader(final ChannelBuffer buffer, final InetAddress sender)
-			throws DecoderException, UnknownHostException
+			throws DecoderException
 	{
 		final Message message = new Message();
 		message.setVersion(buffer.readInt());
@@ -331,25 +321,12 @@ public class MessageCodec
 		message.setContentType(Content.values()[contentType & 0xf],
 				Content.values()[(contentType >>> 4) & 0xf],
 				Content.values()[(contentType >>> 8) & 0xf], Content.values()[contentType >>> 12]);
-		//message.checkForSignature();
 		// set the address as we see it, important for port forwarding
 		// identification
-		message.setRealSender(new PeerAddress(senderID, sender, portTCP, portUDP));
 		final byte optionType = buffer.readByte();
-		if(PeerAddress.isPresetIPv4(optionType)) {
-			byte[] me=new byte[4];
-			buffer.readBytes(me);
-			InetAddress senderAsReported=Inet4Address.getByAddress(me);
-			final PeerAddress peerAddress = new PeerAddress(senderID, senderAsReported, portTCP, portUDP,
-					optionType);
-			message.setSender(peerAddress);
-		}
-		else {
-			buffer.skipBytes(4);
-			final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
-					optionType);
-			message.setSender(peerAddress);
-		}
+		final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
+				optionType);
+		message.setSender(peerAddress);
 		return message;
 	}
 
@@ -508,8 +485,7 @@ public class MessageCodec
 	}
 
 	public static Data decodeData(final DataInput buffer, PeerAddress originator)
-			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException,
-			UnknownHostException
+			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException
 	{
 		//mini header for data, 8 bytes ttl and data length
 		if (buffer.readableBytes() < 4 + 4) return null;
@@ -582,10 +558,8 @@ public class MessageCodec
 	 * 
 	 * @param buffer The Netty buffer
 	 * @return A PeerAddress created from the buffer (deserialized)
-	 * @throws UnknownHostException if the address is not valid
 	 */
 	private static PeerAddress readPeerAddress(final ChannelBuffer buffer)
-			throws UnknownHostException
 	{
 		if(buffer.readableBytes() < 21) return null;
 		Number160 id = readID(buffer);

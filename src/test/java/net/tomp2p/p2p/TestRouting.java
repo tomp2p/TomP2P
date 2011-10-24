@@ -668,7 +668,7 @@ public class TestRouting
 						nodes[((i * 3333) + 1) % nodes.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 5, 0, 100, 2, true, cc);
 				frs.put(i, frr);
-				Utils.addReleaseListener(frr, cc, 1);
+				Utils.addReleaseListener(frr, cc, 2);
 			}
 			System.err.println("run Forrest, run!");
 			for (int i = 0; i < nodes.length; i++)
@@ -751,7 +751,7 @@ public class TestRouting
 						nodes[((i * 3333) + 1) % nodes.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 1, 0, 100, 2, false, cc);
 				frs.add(frr);
-				Utils.addReleaseListener(frr, cc, 1);
+				Utils.addReleaseListener(frr, cc, 2);
 			}
 			System.err.println("run Forrest, run!");
 			for (int i = 0; i < nodes.length; i++)

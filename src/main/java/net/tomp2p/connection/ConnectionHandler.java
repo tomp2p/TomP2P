@@ -34,6 +34,7 @@ import net.tomp2p.message.TomP2PEncoderTCP;
 import net.tomp2p.message.TomP2PEncoderUDP;
 import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.PeerListener;
+import net.tomp2p.p2p.Scheduler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -82,7 +83,7 @@ public class ConnectionHandler
 	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, Integer>();
 	final private Timer timer;
 	final private boolean master;
-	final private ConnectionReservation reservation;
+	//final private ConnectionReservation reservation;
 	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
 	static
 	{
@@ -149,13 +150,14 @@ public class ConnectionHandler
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
-		reservation=new ConnectionReservation(tcpClientChannelFactory, udpChannelFactory, configuration, messageLoggerFilter);
+		ConnectionReservation reservation=new ConnectionReservation(tcpClientChannelFactory, udpChannelFactory, configuration, messageLoggerFilter);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean, configuration.getIdleUDPMillis(),
 				configuration.getTimeoutTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
+		Scheduler scheduledPeer = new Scheduler();
 		Sender sender = new Sender(configuration, timer);
-		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup);
+		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup, scheduledPeer, reservation);
 		if (bindings.isListenBroadcast())
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
@@ -174,6 +176,7 @@ public class ConnectionHandler
 					throw new IOException("cannot bind TCP or UDP");
 			}
 		}
+		
 		master = true;
 	}
 
@@ -198,7 +201,6 @@ public class ConnectionHandler
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
 		this.configuration = parent.configuration;
-		this.reservation = parent.reservation;
 		this.timer = parent.timer;
 		this.master = false;
 	}
@@ -318,8 +320,9 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
+			connectionBean.getScheduler().shutdown();
 			connectionBean.getSender().shutdown();
-			reservation.shutdown();
+			connectionBean.getReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources
 			udpChannelFactory.releaseExternalResources();
@@ -419,10 +422,5 @@ public class ConnectionHandler
 	public boolean isListening()
 	{
 		return !getConnectionBean().getChannelGroup().isEmpty();
-	}
-	
-	public ConnectionReservation getConnectionReservation()
-	{
-		return reservation;
 	}
 }

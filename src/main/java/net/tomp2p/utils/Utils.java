@@ -36,8 +36,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.SortedSet;
@@ -45,13 +43,9 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
@@ -63,64 +57,6 @@ import net.tomp2p.storage.TrackerData;
 public class Utils
 {
 	private static final Random random = new Random();
-	private static final BlockingQueue<FutureRunnable> invokeLater = new LinkedBlockingQueue<FutureRunnable>();
-	private static final Logger logger = LoggerFactory.getLogger(Utils.class);
-	private static final Thread laterThread;
-	private static volatile boolean running = true;
-	
-	static
-	{
-		laterThread=new Thread(new Runnable() 
-		{
-			@Override
-			public void run() 
-			{
-				FutureRunnable runner=null;
-				while(running)
-				{
-					try 
-					{
-						runner = invokeLater.take();
-						runner.run();
-					}
-					catch (InterruptedException ie)
-					{
-						if(logger.isDebugEnabled())
-						{
-							logger.debug("interrupted, check if we need to exit this thread");
-						}
-					}
-					catch (Exception e) 
-					{
-						logger.error("Exception in runner: "+e.toString());
-						e.printStackTrace();
-					}
-				}
-				//those are the ones in the queue that have not yet been processed.
-				while((runner=invokeLater.poll())!=null)
-				{
-					runner.failed("Shutting down...");
-				}
-			}
-		});
-		laterThread.start();
-	}
-	
-	public static void invokeLater(FutureRunnable runner)
-	{
-		if(running == false)
-		{
-			runner.failed("Shutting down...");
-			return;
-		}
-		invokeLater.offer(runner);
-	}
-	
-	public static void shutdown()
-	{
-		running = false;
-		laterThread.interrupt();
-	}
 
 	public static ByteBuffer loadFile(File file) throws IOException
 	{

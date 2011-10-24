@@ -980,7 +980,7 @@ public class TestDHT
 			fdht.awaitUninterruptibly();
 			Collection<Number160> tmp = new ArrayList<Number160>();
 			tmp.add(new Number160(5));
-			final ChannelCreator cc=master1.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=master1.getConnectionBean().getReservation().reserve(1);
 			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
 					new ShortString("test").toNumber160(), tmp, null, false, cc);
@@ -1381,7 +1381,7 @@ public class TestDHT
 				for (BaseFuture baseFuture : nodes[i].getPendingFutures().keySet())
 					baseFuture.awaitUninterruptibly();
 			}
-			final ChannelCreator cc=master.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
 						
 			FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
 					Configurations.DEFAULT_DOMAIN, null, null, false, cc);
@@ -1439,7 +1439,7 @@ public class TestDHT
 			int i = 0;
 			for (PeerAddress closest : tmp)
 			{
-				final ChannelCreator cc=master.getConnectionHandler().getConnectionReservation().reserve(1);
+				final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
 				
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
 						Configurations.DEFAULT_DOMAIN, null, null, false, cc);

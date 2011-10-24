@@ -65,24 +65,38 @@ public class ConnectionReservation
 			throw new RuntimeException("cannot block here");
 		}
 		boolean acquired = false;
+		int counter = 0;
 		while(!acquired && !shutdown.get())
 		{
 			acquired=semaphore.tryAcquire(permits);
 			if (!acquired)
 			{
-				logger.warn("cannot acquire "+ permits+", in total we have "+maxPermits+", but now we have "+semaphore.availablePermits());
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermits+", but now we have "+semaphore.availablePermits());
+				}
+				if(counter % 40 ==0)
+				{
+					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermits+", but now we have "+semaphore.availablePermits());
+				}
 				synchronized (semaphore)
 				{
-					try {
+					try 
+					{
 						semaphore.wait(250);
-					} catch (InterruptedException e) {
+						counter++;
+					} 
+					catch (InterruptedException e) 
+					{
 						// maybe we need to exit due to shutdown
 					}
 				}
 			}	
 		}
-		if(shutdown.get()) {
-			if(acquired) {
+		if(shutdown.get()) 
+		{
+			if(acquired) 
+			{
 				semaphore.release(permits);
 			}
 			return null;
@@ -95,6 +109,7 @@ public class ConnectionReservation
 	public void release(int permits)
 	{
 		semaphore.release(permits);
+		logger.warn("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphore.availablePermits());
 		synchronized (semaphore)
 		{
 			semaphore.notifyAll();

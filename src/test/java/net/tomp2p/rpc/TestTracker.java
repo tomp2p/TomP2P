@@ -31,7 +31,7 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
-			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
 					dom, null, false, false, bloomFilter, cc);
 			fr.awaitUninterruptibly();
@@ -73,7 +73,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
-			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
 					dom, null, false, false, null, cc);
 			fr.awaitUninterruptibly();
@@ -109,7 +109,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
-			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
 					dom, new String("data").getBytes(), false, false, null, cc);
 			fr.awaitUninterruptibly();
@@ -148,7 +148,7 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
-			final ChannelCreator cc=sender.getConnectionHandler().getConnectionReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
 					dom, new String("data").getBytes(), false, false, bloomFilter, cc);
 			fr.awaitUninterruptibly();

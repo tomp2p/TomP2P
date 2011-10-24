@@ -18,12 +18,10 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
-import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -73,69 +71,18 @@ public class Sender
 	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
 			final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator)
 	{
-		// do not block if we came from the netty thread
-		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
-		{
-			logger
-					.debug("we are TCP from " + Thread.currentThread().getName()
-							+ ", do not block! ");
-			FutureRunnable runner = new FutureRunnable()
-			{	
-				@Override
-				public void run() 
-				{
-					sendTCP0(requestHandler, futureResponse, message, channelCreator);
-				}
-				@Override
-				public void failed(String reason) 
-				{
-					futureResponse.cancel();
-				}
-			};
-			Utils.invokeLater(runner);
-		}
-		else
-		{
-			logger.debug("here TCP we can block! " + Thread.currentThread().getName());
-			// this may block if its from the user directly
-			if (logger.isDebugEnabled())
-				logger.debug("send TCP " + Thread.currentThread().getName());
-			sendTCP0(requestHandler, futureResponse,  message, channelCreator);
-		}
+		if (logger.isDebugEnabled())
+			logger.debug("send TCP " + Thread.currentThread().getName());
+		sendTCP0(requestHandler, futureResponse,  message, channelCreator);
 	}
 
 	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
 			final FutureResponse futureResponse, final Message message, 
 			final boolean broadcast, final ChannelCreator channelCreator)
 	{
-		// do not block if we came from the netty thread
-		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
-		{
-			logger
-					.debug("we are UDP from " + Thread.currentThread().getName()
-							+ ", do not block! ");
-			FutureRunnable runner = new FutureRunnable()
-			{	
-				@Override
-				public void run() 
-				{
-					sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
-				}
-				@Override
-				public void failed(String reason) 
-				{
-					futureResponse.cancel();
-				}
-			};
-			Utils.invokeLater(runner);
-		}
-		else
-		{
-			logger.debug("here UDP we can block! " + Thread.currentThread().getName());
-			if (logger.isDebugEnabled())
-				logger.debug("send UDP " + Thread.currentThread().getName());
-			sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
-		}
+		if (logger.isDebugEnabled())
+			logger.debug("send UDP " + Thread.currentThread().getName());
+		sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
 	}
 
 	

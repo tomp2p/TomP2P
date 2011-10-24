@@ -27,7 +27,7 @@ public class TestNAT {
 		peer.listen(4000, 4000);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
-				ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+				ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
 				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
 				fr1.awaitUninterruptibly();
 				if (fr1.isSuccess())

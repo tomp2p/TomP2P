@@ -25,7 +25,7 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			ChannelCreator cc=recv1.getConnectionHandler().getConnectionReservation().reserve(1);
+			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(1);
 			sender.getPeerBean().getTrackerStorage().addActive(locationKey, domainKey,sender.getPeerAddress(), null, 0, 0);
 			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey, false, cc);
 			fr.awaitUninterruptibly();

@@ -55,7 +55,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 				if (logger.isDebugEnabled())
 					logger.debug("transfer from " + storageRPC.getPeerAddress() + " to " + other
 							+ " for key " + locationKey);
-				final ChannelCreator cc=peer.getConnectionHandler().getConnectionReservation().reserve(1);
+				final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
 				FutureResponse fr=storageRPC.put(other, locationKey, domainKey, dataMap, false,
 						false, false, cc);
 				Utils.addReleaseListener(fr, cc, 1);

@@ -68,8 +68,8 @@ public class ChannelCreator
 			throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
 		}
 		// now, we don't exceeded the limits, so create channels
-		futureResponse.setExitFast(false);
 		Channel channel = createChannelUDP(timeoutHandler, requestHandler, broadcast);
+		futureResponse.setExitFast(false);
 		channelsUDP.add(channel);
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
@@ -100,8 +100,8 @@ public class ChannelCreator
 		// now, we don't exceeded the limits, so create channels
 		ChannelFuture channelFuture = createChannelTCP(timeoutHandler, requestHandler,
 				message.getRecipient().createSocketTCP(), new InetSocketAddress(0), connectTimeoutMillis);
-		futureResponse.setExitFast(false);
 		Channel channel = channelFuture.getChannel();
+		futureResponse.setExitFast(false);
 		channelsTCP.add(channel);
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{

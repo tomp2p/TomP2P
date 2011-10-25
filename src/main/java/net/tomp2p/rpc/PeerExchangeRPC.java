@@ -56,7 +56,7 @@ public class PeerExchangeRPC extends ReplyHandler
 	public FutureResponse peerExchange(final PeerAddress remoteNode, Number160 locationKey, Number160 domainKey,
 			boolean isReplication, ChannelCreator channelCreator)
 	{
-		final Message message = createMessage(remoteNode, Command.PEX, isReplication ? Type.REQUEST_2 : Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
 		Set<Number160> tmp1 = sentPeers.get(remoteNode.getID());
 
 		if (tmp1 == null)
@@ -115,7 +115,7 @@ public class PeerExchangeRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(final Message message)
 	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
+		return (message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2)
 				&& message.getCommand() == Command.PEX;
 	}
 
@@ -136,7 +136,7 @@ public class PeerExchangeRPC extends ReplyHandler
 				PeerAddress trackerEntry = data.getPeerAddress();
 				peerBean.getTrackerStorage().putReferred(locationKey, domainKey, trackerEntry, referrer,
 						data.getAttachement(), data.getOffset(), data.getLength(),
-						message.getType() == Type.REQUEST_1 ? ReferrerType.ACTIVE : ReferrerType.MESH);
+						message.getType() == Type.REQUEST_FF_1 ? ReferrerType.ACTIVE : ReferrerType.MESH);
 				if (logger.isDebugEnabled())
 					logger.debug("Adding " + data.getPeerAddress() + " to the map. I'm " + message.getRecipient());
 			}

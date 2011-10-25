@@ -14,11 +14,10 @@
  * the License.
  */
 package net.tomp2p.connection;
-import java.util.concurrent.TimeUnit;
-
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
@@ -50,10 +49,10 @@ public class Sender
 		this.timer = timer;
 	}
 
-	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
+	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if(shutdown) return;
-		sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator);
+		sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator, idleTCPMillis);
 	}
 
 	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
@@ -69,11 +68,11 @@ public class Sender
 	}
 
 	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
-			final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator)
+			final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("send TCP " + Thread.currentThread().getName());
-		sendTCP0(requestHandler, futureResponse,  message, channelCreator);
+		sendTCP0(remoteNode, requestHandler, futureResponse,  message, channelCreator, idleTCPMillis);
 	}
 
 	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
@@ -87,15 +86,25 @@ public class Sender
 
 	
 
-	private void sendTCP0(final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator)
+	private void sendTCP0(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (futureResponse.isCompleted())
 			return;
 		try
 		{
-			IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration
-					.getIdleTCPMillis(), TimeUnit.MILLISECONDS);
-			final ChannelFuture channelFuture = channelCreator.createTCPChannel(timeoutHandler, futureResponse,   
+			ReplyTimeoutHandler replyTimeoutHandler = null;
+			//no need for timeout if its fire and forget, since we close the connection anyway after writing
+			if (requestHandler != null)
+			{
+				replyTimeoutHandler = new ReplyTimeoutHandler(timer, configuration.getIdleUDPMillis(),
+						remoteNode);
+				futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
+			}
+			else if (message.getType()!=Type.REQUEST_FF_1)
+			{
+				throw new RuntimeException("This send needs to be a fire and forget request");
+			}
+			final ChannelFuture channelFuture = channelCreator.createTCPChannel(replyTimeoutHandler, futureResponse,   
 					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis(), 
 					message, requestHandler);
 			if (channelFuture == null)
@@ -159,25 +168,29 @@ public class Sender
 		}
 	}
 
-	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP replyHandler, 
+	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler, 
 			final FutureResponse futureResponse, final Message message, final boolean broadcast, 
 			final ChannelCreator channelCreator)
 	{
 		if (futureResponse.isCompleted())
 			return;
 		ReplyTimeoutHandler replyTimeoutHandler = null;
-		if (replyHandler != null)
+		if (requestHandler != null)
 		{
 			replyTimeoutHandler = new ReplyTimeoutHandler(timer, configuration.getIdleUDPMillis(),
 					remoteNode);
 			futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
 		}
+		else if (message.getType() != Type.REQUEST_FF_1 && message.getType() != Type.REQUEST_FF_2)
+		{
+			throw new RuntimeException("This send needs to be a fire and forget request");
+		}
 		try
 		{
 			final Channel channel = channelCreator.createUDPChannel(replyTimeoutHandler,
-					replyHandler, futureResponse, broadcast);
+					requestHandler, futureResponse, broadcast);
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
-			afterSend(writeFuture, futureResponse, false, message, replyHandler == null);
+			afterSend(writeFuture, futureResponse, false, message, requestHandler == null);
 		}
 		catch (Exception ce)
 		{
@@ -221,14 +234,6 @@ public class Sender
 						futureResponse.setFailed("Write failed");
 						logger.warn("Failed to write channel the request "
 								+ futureResponse.getRequest());
-					}
-				}
-				else
-				{
-					if (tcp && !isFireAndForget)
-					{
-						futureResponse.setReplyTimeout(System.currentTimeMillis()
-								+ configuration.getTimeoutTCPMillis());
 					}
 				}
 				if (isFireAndForget)

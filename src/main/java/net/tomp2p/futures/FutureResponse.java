@@ -30,7 +30,7 @@ public class FutureResponse extends BaseFutureImpl
 	final private Message requestMessage;
 	private Message responseMessage;
 	private ReplyTimeoutHandler replyTimeoutHandler;
-	private long replyTimeoutMillis=Long.MAX_VALUE;
+	//private long replyTimeoutMillis=Long.MAX_VALUE;
 	private volatile boolean exitFast = true;
 
 	public FutureResponse(final Message requestMessage)
@@ -180,7 +180,7 @@ public class FutureResponse extends BaseFutureImpl
 		}
 	}
 
-	public void setReplyTimeout(long replyTimeoutMillis)
+	/*public void setReplyTimeout(long replyTimeoutMillis)
 	{
 		synchronized (lock)
 		{
@@ -194,7 +194,7 @@ public class FutureResponse extends BaseFutureImpl
 		{
 			return replyTimeoutMillis;
 		}
-	}
+	}*/
 
 	public boolean isExitFast() 
 	{

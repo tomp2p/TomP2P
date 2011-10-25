@@ -884,9 +884,9 @@ public class TestDHT
 			{
 				Iterator<Data> iterator = futureDHT.getRawData().values().iterator().next()
 						.values().iterator();
-				System.out.println("got: " + iterator.next().getObject() + " ("
+				System.err.println("got: " + iterator.next().getObject() + " ("
 						+ futureDHT.isSuccess() + ")");
-				System.out.println("got: " + iterator.next().getObject() + " ("
+				System.err.println("got: " + iterator.next().getObject() + " ("
 						+ futureDHT.isSuccess() + ")");
 				Assert.assertEquals(2, futureDHT.getRawData().values().iterator().next().values()
 						.size());

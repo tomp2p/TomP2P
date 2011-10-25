@@ -46,7 +46,6 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	private final long allIdleTimeMillis;
 	private final PeerAddress remotePeer;
 	private volatile Timeout allIdleTimeout;
-	// private volatile AllIdleTimeoutTask allIdleTimeoutTask;
 	private volatile long lastReadTime;
 	private volatile long lastWriteTime;
 

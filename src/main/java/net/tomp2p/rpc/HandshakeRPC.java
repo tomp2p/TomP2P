@@ -56,39 +56,39 @@ public class HandshakeRPC extends ReplyHandler
 
 	public FutureResponse pingBroadcastUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).sendBroadcastUDP(channelCreator);
+		return createHandlerUDP(remoteNode, Type.REQUEST_1).sendBroadcastUDP(channelCreator);
 	}
 
 	public FutureResponse pingUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).sendUDP(channelCreator);
+		return createHandlerUDP(remoteNode, Type.REQUEST_1).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerTCP(remoteNode).sendTCP(channelCreator);
+		return createHandlerTCP(remoteNode, Type.REQUEST_1).sendTCP(channelCreator);
 	}
 
 	public FutureResponse fireUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode).fireAndForgetUDP(channelCreator);
+		return createHandlerUDP(remoteNode, Type.REQUEST_FF_1).fireAndForgetUDP(channelCreator);
 	}
 
 	public FutureResponse fireTCP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerTCP(remoteNode).fireAndForgetTCP(channelCreator);
+		return createHandlerTCP(remoteNode, Type.REQUEST_FF_1).fireAndForgetTCP(channelCreator);
 	}
 
-	private RequestHandlerUDP createHandlerUDP(final PeerAddress remoteNode)
+	private RequestHandlerUDP createHandlerUDP(final PeerAddress remoteNode, Type type)
 	{
-		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
 		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
 	}
 
-	private RequestHandlerTCP createHandlerTCP(final PeerAddress remoteNode)
+	private RequestHandlerTCP createHandlerTCP(final PeerAddress remoteNode, Type type)
 	{
-		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
 		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
 	}
@@ -132,7 +132,7 @@ public class HandshakeRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(final Message message)
 	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3)
+		return (message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3)
 				&& message.getCommand() == Command.PING;
 	}
 

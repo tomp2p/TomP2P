@@ -15,7 +15,34 @@
  */
 package net.tomp2p.connection;
 
+import net.tomp2p.peers.PeerAddress;
+
 public class PeerConnection 
 {
-
+	final private PeerAddress destination;
+	final private ChannelCreator channelCreator;
+	final private int idleTCPMillis;
+	public PeerConnection(PeerAddress destination, ChannelCreator channelCreator,
+			int idleTCPMillis) 
+	{
+		this.destination = destination;
+		this.channelCreator = channelCreator;
+		this.idleTCPMillis = idleTCPMillis;
+	}
+	public void close()
+	{
+		getChannelCreator().tryClose(getDestination());
+	}
+	public PeerAddress getDestination() 
+	{
+		return destination;
+	}
+	public ChannelCreator getChannelCreator() 
+	{
+		return channelCreator;
+	}
+	public int getIdleTCPMillis() 
+	{
+		return idleTCPMillis;
+	}
 }

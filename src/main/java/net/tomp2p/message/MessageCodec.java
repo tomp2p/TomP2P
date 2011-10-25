@@ -65,7 +65,7 @@ public class MessageCodec
 	{
 		buffer.writeInt(message.getVersion()); // 4
 		buffer.writeInt(message.getMessageId()); // 8
-		buffer.writeByte(((message.getType().ordinal() << 4) + message.getCommand().ordinal())); // 9
+		buffer.writeByte((message.getType().ordinal() << 4) | message.getCommand().ordinal()); // 9
 		buffer.writeBytes(message.getSender().getID().toByteArray()); // 29
 		buffer.writeShort((short) message.getSender().portTCP()); // 31
 		buffer.writeShort((short) message.getSender().portUDP()); // 33
@@ -75,7 +75,7 @@ public class MessageCodec
 				| (message.getContentType2().ordinal() << 4) | message.getContentType1().ordinal());
 		buffer.writeShort((short) content); // 55
 		// options
-		buffer.writeByte(message.getSender().createType()); // 56
+		buffer.writeByte((message.getSender().getOptions() << 4) | message.getOptions()); // 56
 		return buffer;
 	}
 
@@ -309,9 +309,9 @@ public class MessageCodec
 		message.setVersion(buffer.readInt());
 		message.setMessageId(buffer.readInt());
 		//
-		final int commandType = buffer.readUnsignedByte();
-		message.setCommand(Command.values()[commandType & 0xf]);
-		message.setType(Type.values()[commandType >>> 4]);
+		final int typeCommand = buffer.readUnsignedByte();
+		message.setType(Type.values()[typeCommand >>> 4]);
+		message.setCommand(Command.values()[typeCommand & 0xf]);
 		final Number160 senderID = readID(buffer);
 		final int portTCP = buffer.readUnsignedShort();
 		final int portUDP = buffer.readUnsignedShort();
@@ -323,10 +323,13 @@ public class MessageCodec
 				Content.values()[(contentType >>> 8) & 0xf], Content.values()[contentType >>> 12]);
 		// set the address as we see it, important for port forwarding
 		// identification
-		final byte optionType = buffer.readByte();
+		final int senderMessageOptions = buffer.readUnsignedByte();
+		final int senderOptions =  senderMessageOptions >>> 4;
 		final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
-				optionType);
+				senderOptions);
 		message.setSender(peerAddress);
+		final int options =  senderMessageOptions & 0xf;
+		message.setOptions(options);
 		return message;
 	}
 

@@ -43,7 +43,14 @@ public class DirectDataRPC extends ReplyHandler
 			boolean raw, ChannelCreator cc)
 	{
 		RequestHandlerTCP request=send(remoteNode, buffer, raw);
-		return (FutureData) request.sendTCP(cc);
+		return (FutureData) request.sendTCP(cc, connectionBean.getConfiguration().getIdleTCPMillis());
+	}
+	
+	public FutureData send(final PeerAddress remoteNode, final ChannelBuffer buffer,
+			boolean raw, ChannelCreator cc, int idleTCPMillis)
+	{
+		RequestHandlerTCP request=send(remoteNode, buffer, raw);
+		return (FutureData) request.sendTCP(cc, idleTCPMillis);
 	}
 
 	public RequestHandlerTCP send(final PeerAddress remoteNode, final ChannelBuffer buffer,

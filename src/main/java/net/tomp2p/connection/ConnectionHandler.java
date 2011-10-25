@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -104,13 +103,13 @@ public class ConnectionHandler
 	final private ChannelFactory tcpClientChannelFactory;
 	//
 	final private MessageLogger messageLoggerFilter;
-	final private ConnectionConfiguration configuration;
+	//final private ConnectionConfiguration configuration;
 
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair, PeerMap peerMap,
 			List<PeerListener> listeners, P2PConfiguration peerConfiguration) throws Exception
 	{
-		this.configuration = configuration;
+		//this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
 		//ThreadPoolExecutor t1 = new ThreadPoolExecutor(5, configuration.getMaxIncomingThreads(), 60L, TimeUnit.SECONDS,
 		//		new ArrayBlockingQueue<Runnable>(configuration.getMaxIncomingThreads(), true));
@@ -153,11 +152,11 @@ public class ConnectionHandler
 		ConnectionReservation reservation=new ConnectionReservation(tcpClientChannelFactory, udpChannelFactory, configuration, messageLoggerFilter);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean, configuration.getIdleUDPMillis(),
-				configuration.getTimeoutTCPMillis(), channelGroup, peerMap, listeners);
+				configuration.getIdleTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
 		Scheduler scheduledPeer = new Scheduler();
 		Sender sender = new Sender(configuration, timer);
-		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup, scheduledPeer, reservation);
+		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup, scheduledPeer, reservation, configuration);
 		if (bindings.isListenBroadcast())
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
@@ -200,7 +199,7 @@ public class ConnectionHandler
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
-		this.configuration = parent.configuration;
+		//this.configuration = parent.configuration;
 		this.timer = parent.timer;
 		this.master = false;
 	}
@@ -256,8 +255,8 @@ public class ConnectionHandler
 			public ChannelPipeline getPipeline() throws Exception
 			{
 				ChannelPipeline pipe = Channels.pipeline();
-				IdleStateHandler timeoutHandler = new IdleStateHandler(timer, configuration.getIdleTCPMillis(),
-						TimeUnit.MILLISECONDS);
+				ReplyTimeoutHandler timeoutHandler = new ReplyTimeoutHandler(timer, 
+						connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress());
 				pipe.addLast("timeout", timeoutHandler);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
@@ -320,8 +319,8 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
-			connectionBean.getScheduler().shutdown();
 			connectionBean.getSender().shutdown();
+			connectionBean.getScheduler().shutdown();
 			connectionBean.getReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources

@@ -19,9 +19,9 @@ public class ConnectionConfiguration
 	private int udpLength = 1400;
 	private int defaultPort = 7700;
 	// idle needs to be larger than timeout for TCP
-	private int idleTCPMillis = 4 * 1000;
-	private int timeoutTCPMillis = 3 * 1000;
-	private int idleUDPMillis = 2 * 1000;
+	private int idleTCPMillis = 6 * 1000;
+	//private int timeoutTCPMillis = 3 * 1000;
+	private int idleUDPMillis = 3 * 1000;
 	private int connectTimeouMillis = 3 * 1000;
 	//
 	private int maxOutgoingUDP = 200;
@@ -114,16 +114,6 @@ public class ConnectionConfiguration
 	public int getMaxMessageSize()
 	{
 		return maxMessageSize;
-	}
-
-	public void setTimeoutTCPMillis(int timeoutTCPMillis)
-	{
-		this.timeoutTCPMillis = timeoutTCPMillis;
-	}
-
-	public int getTimeoutTCPMillis()
-	{
-		return timeoutTCPMillis;
 	}
 
 	public long getReadLimit()

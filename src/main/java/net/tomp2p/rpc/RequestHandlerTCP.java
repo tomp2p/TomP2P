@@ -66,22 +66,32 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 	{
 		return futureResponse;
 	}
-
+	
 	public FutureResponse sendTCP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendTCP(this, futureResponse, message, channelCreator);
+		return sendTCP(channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
+	}
+
+	public FutureResponse sendTCP(ChannelCreator channelCreator, int idleTCPMillis)
+	{
+		connectionBean.getSender().sendTCP(this, futureResponse, message, channelCreator, idleTCPMillis);
 		return futureResponse;
 	}
 
 	public FutureResponse fireAndForgetTCP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator);
+		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
 		return futureResponse;
 	}
 
 	protected PeerMap getPeerMap()
 	{
 		return peerBean.getPeerMap();
+	}
+	
+	public void setKeepAlive(boolean isKeepAlive)
+	{
+		message.setKeepAlive(isKeepAlive);
 	}
 
 	

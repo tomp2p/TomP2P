@@ -256,14 +256,14 @@ public class DispatcherReply extends SimpleChannelHandler
 								+ message);
 				message.setRecipient(message.getSender())
 						.setSender(peerBean.getServerPeerAddress()).setType(Type.EXCEPTION);
-				response(ctx, e, message);
+				response(ctx, e, message, false);
 			}
 			else if(responseMessage == message) {
 				if(logger.isDebugEnabled())
 					logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
 			}
 			else {
-				response(ctx, e, responseMessage);
+				response(ctx, e, responseMessage, message.isKeepAlive());
 			}
 		}
 		else
@@ -271,12 +271,12 @@ public class DispatcherReply extends SimpleChannelHandler
 			logger.warn("No handler found for " + message+ ". Probably we have shutdown this peer.");
 			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress())
 					.setType(Type.UNKNOWN_ID);
-			response(ctx, e, message);
+			response(ctx, e, message, false);
 		}
 	}
 
 	// respond within a session
-	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response)
+	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response, boolean isKeepAlive)
 	{
 		//check if channel is still open. If its not, then do not send anything because 
 		//this will cause an exception that will be logged.
@@ -299,14 +299,17 @@ public class DispatcherReply extends SimpleChannelHandler
 			if (logger.isDebugEnabled())
 				logger.debug("reply TCP message " + response);
 			ChannelFuture cf = ctx.getChannel().write(response);
-			cf.addListener(new ChannelFutureListener()
+			if(!isKeepAlive)
 			{
-				@Override
-				public void operationComplete(ChannelFuture future) throws Exception
+				cf.addListener(new ChannelFutureListener()
 				{
-					future.getChannel().close();
-				}
-			});
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception
+					{
+						future.getChannel().close();
+					}
+				});
+			}
 		}
 	}
 

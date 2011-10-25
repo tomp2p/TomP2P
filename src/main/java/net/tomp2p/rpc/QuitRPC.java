@@ -34,7 +34,7 @@ public class QuitRPC extends ReplyHandler
 
 	public FutureResponse quit(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		final Message message = createMessage(remoteNode, Command.QUIT, Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.QUIT, Type.REQUEST_FF_1);
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
 		return requestHandler.fireAndForgetUDP(channelCreator);
@@ -43,7 +43,7 @@ public class QuitRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(final Message message)
 	{
-		return message.getType() == Type.REQUEST_1 && message.getCommand() == Command.QUIT;
+		return message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT;
 	}
 
 	@Override

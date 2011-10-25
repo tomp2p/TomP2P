@@ -58,7 +58,9 @@ public class Message
 		// *** NEIGHBORS has four different cases
 		// REQUEST_1 for NEIGHBORS_* means check for get (withDigest)
 		// REQUEST_2 for NEIGHBORS_* means check for put (no digest)
-		REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, OK, PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2, USER3, USER4
+		// REQUEST_FF_1 for PEX means fire and forget, coming from mesh
+		// REQUEST_FF_1 for PEX means fire and forget, coming from primary
+		REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, REQUEST_FF_1, REQUEST_FF_2, OK, PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2
 	};
 	// 1 x 4 bit
 	public enum Command
@@ -66,34 +68,35 @@ public class Message
 		PING, PUT, GET, ADD, REMOVE, SYNC, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, USER1, USER2, USER3
 	};
 	// header
-	private int messageId;
-	private int version;
-	private Type type;
-	private Command command;
-	private PeerAddress sender;
-	private PeerAddress recipient;
-	private long length = 0;
+	private volatile int messageId;
+	private volatile int version;
+	private volatile Type type;
+	private volatile Command command;
+	private volatile PeerAddress sender;
+	private volatile PeerAddress recipient;
+	private volatile long length = 0;
+	private volatile int options = 0;
 	// payload
-	private Collection<PeerAddress> neighbors = null;
-	private int useAtMostNeighbors = -1;
-	private Map<Number160, Data> dataMap = null;
-	private Map<Number480, Data> dataMapConvert = null;
-	private Collection<TrackerData> trackerData = null;
-	private Number160 key1 = null;
-	private Number160 key2 = null;
-	private Number160 key3 = null;
-	private Map<Number160, Number160> keyMap = null;
-	private Collection<Number160> keys = null;
-	private Collection<Number480> keysConvert = null;
-	private ChannelBuffer payload1 = null;
-	private ChannelBuffer payload2 = null;
-	private long long_number = 0;
-	private int int_number = 0;
-	private Content contentType1 = Content.EMPTY;
-	private Content contentType2 = Content.EMPTY;
-	private Content contentType3 = Content.EMPTY;
-	private Content contentType4 = Content.EMPTY;
-	private PublicKey publicKey = null;
+	private volatile Collection<PeerAddress> neighbors = null;
+	private volatile int useAtMostNeighbors = -1;
+	private volatile Map<Number160, Data> dataMap = null;
+	private volatile Map<Number480, Data> dataMapConvert = null;
+	private volatile Collection<TrackerData> trackerData = null;
+	private volatile Number160 key1 = null;
+	private volatile Number160 key2 = null;
+	private volatile Number160 key3 = null;
+	private volatile Map<Number160, Number160> keyMap = null;
+	private volatile Collection<Number160> keys = null;
+	private volatile Collection<Number480> keysConvert = null;
+	private volatile ChannelBuffer payload1 = null;
+	private volatile ChannelBuffer payload2 = null;
+	private volatile long long_number = 0;
+	private volatile int int_number = 0;
+	private volatile Content contentType1 = Content.EMPTY;
+	private volatile Content contentType2 = Content.EMPTY;
+	private volatile Content contentType3 = Content.EMPTY;
+	private volatile Content contentType4 = Content.EMPTY;
+	private volatile PublicKey publicKey = null;
 	//
 	private volatile transient long finished = 0;
 	private volatile transient boolean isUDP=true;
@@ -389,7 +392,7 @@ public class Message
 	public boolean isRequest()
 	{
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3
-				|| type == Type.REQUEST_4;
+				|| type == Type.REQUEST_4 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
 	}
 
 	public boolean isOk()
@@ -749,6 +752,26 @@ public class Message
 	public boolean hasContent()
 	{
 		return contentType1 != Content.EMPTY;
+	}
+
+	public void setOptions(int options) 
+	{
+		
+	}
+
+	public int getOptions() 
+	{
+		return 0;
+	}
+	
+	public void setKeepAlive(boolean isKeepAlive)
+	{
+		options = isKeepAlive ? 1:0;
+	}
+	
+	public boolean isKeepAlive()
+	{
+		return options==1;
 	}
 
 	/*public void checkForSignature()

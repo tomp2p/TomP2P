@@ -39,11 +39,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	final private static int NET6 = 1;
 	final private static int FIREWALL_UDP = 2;
 	final private static int FIREWALL_TCP = 4;
-	// final private static int PRESET_IPv4 = 8;
-	// final private static int RESERVED_1 = 16;
-	// final private static int RESERVED_2 = 32;
-	// final private static int RESERVED_3 = 64;
-	// final private static int RESERVED_4 = 128;
+	// final private static int RESERVED_1 = 8;
 	final private static long serialVersionUID = -1316622724169272306L;
 	final private Number160 id;
 	// a peer can change its IP, so this is not final.
@@ -108,10 +104,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this.id = new Number160(tmp);
 		offset += Number160.BYTE_ARRAY_SIZE;
 		// get the type
-		final int types = me[offset] & 0xff;
-		this.net6 = (types & NET6) > 0;
-		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
-		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		final int options = me[offset] & 0xff;
+		this.net6 = (options & NET6) > 0;
+		this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+		this.firewalledTCP = (options & FIREWALL_TCP) > 0;
 		offset++;
 		// get the port for UDP and TCP
 		this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
@@ -177,10 +173,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		// get the peer ID, this is independent of the type
 		this.id = id;
 		// get the type
-		final int types = me[offset] & 0xff;
-		this.net6 = (types & NET6) > 0;
-		this.firewalledUDP = (types & FIREWALL_UDP) > 0;
-		this.firewalledTCP = (types & FIREWALL_TCP) > 0;
+		final int options = me[offset] & 0xff;
+		this.net6 = (options & NET6) > 0;
+		this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+		this.firewalledTCP = (options & FIREWALL_TCP) > 0;
 		offset++;
 		// get the port for UDP and TCP
 		this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
@@ -307,9 +303,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		this(id, parent.address, parent.portTCP, parent.portUDP);
 	}
 
-	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP, byte optionType)
+	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP, int options)
 	{
-		this(id, address, portTCP, portUDP, isFirewalledUDP(optionType), isFirewalledTCP(optionType));
+		this(id, address, portTCP, portUDP, isFirewalledUDP(options), isFirewalledTCP(options));
 	}
 
 	/**
@@ -392,7 +388,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	public int toByteArraySocketAddress(byte[] me, int offset)
 	{
 		// save the type
-		me[offset] = createType();
+		me[offset] = getOptions();
 		int delta = 1;
 		// save ports tcp
 		int tmp = offset + delta;
@@ -457,7 +453,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		return id;
 	}
 
-	public byte createType()
+	public byte getOptions()
 	{
 		byte result = 0;
 		if (net6)
@@ -469,32 +465,32 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		return result;
 	}
 
-	public static boolean isNet6(int type)
+	public static boolean isNet6(int options)
 	{
-		return ((type & 0xff) & NET6) > 0;
+		return ((options & 0xff) & NET6) > 0;
 	}
 
-	public static boolean isFirewalledTCP(int type)
+	public static boolean isFirewalledTCP(int options)
 	{
-		return ((type & 0xff) & FIREWALL_TCP) > 0;
+		return ((options & 0xff) & FIREWALL_TCP) > 0;
 	}
 
-	public static boolean isFirewalledUDP(int type)
+	public static boolean isFirewalledUDP(int options)
 	{
-		return ((type & 0xff) & FIREWALL_UDP) > 0;
+		return ((options & 0xff) & FIREWALL_UDP) > 0;
 	}
 
-	public static int expectedLength(int type)
+	public static int expectedLength(int options)
 	{
-		if (isNet6(type))
+		if (isNet6(options))
 			return SIZE_IPv6;
 		else
 			return SIZE_IPv4;
 	}
 
-	public static int expectedSocketLength(int type)
+	public static int expectedSocketLength(int options)
 	{
-		if (isNet6(type))
+		if (isNet6(options))
 			return SIZE_IP_SOCKv6;
 		else
 			return SIZE_IP_SOCKv4;

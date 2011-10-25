@@ -548,9 +548,10 @@ public class Peer
 	 * 			the user closes the connection manually.
 	 * @return A class that needs to be passed to those methods that should use the already open connection.
 	 */
-	public PeerConnection createPeerConnection(PeerAddress destination, int idleSeconds)
+	public PeerConnection createPeerConnection(PeerAddress destination, int idleTCPMillis)
 	{
-		return new PeerConnection();
+		final ChannelCreator cc=getConnectionBean().getReservation().reserve(1, true);
+		return new PeerConnection(destination, cc, idleTCPMillis);
 	}
 
 	// custom message
@@ -560,8 +561,7 @@ public class Peer
 	}
 	public FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer)
 	{
-		//not supported yet
-		return null;
+		return send(connection, requestBuffer, true);
 	}
 	
 	public FutureData send(final PeerAddress remotePeer, final Object object)
@@ -574,8 +574,15 @@ public class Peer
 	public FutureData send(final PeerConnection connection, final Object object)
 			throws IOException
 	{
-		//not supported yet
-		return null;
+		byte[] me = Utils.encodeJavaObject(object);
+		return send(connection, ChannelBuffers.wrappedBuffer(me), false);
+	}
+	private FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer, boolean raw)
+	{
+		RequestHandlerTCP request = getDirectDataRPC().send(connection.getDestination(), requestBuffer.slice(), raw);
+		request.setKeepAlive(true);
+		request.sendTCP(connection.getChannelCreator(), connection.getIdleTCPMillis());
+		return (FutureData) request.getFutureResponse();
 	}
 	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer, boolean raw)
 	{

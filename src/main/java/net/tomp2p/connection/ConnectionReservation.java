@@ -57,6 +57,11 @@ public class ConnectionReservation
 	
 	public ChannelCreator reserve(final int permits) throws ChannelException
 	{
+		return reserve(permits, false);
+	}
+	
+	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse) throws ChannelException
+	{
 		if(shutdown.get())
 			return null;
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
@@ -102,14 +107,17 @@ public class ConnectionReservation
 			return null;
 		}
 		//by now we have acquired the permits
-		ChannelCreator channelCreator = new ChannelCreator(channelsTCP, channelsUDP, permits, messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory, shutdown, this);
+		ChannelCreator channelCreator = new ChannelCreator(channelsTCP, channelsUDP, permits, messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory, shutdown, this, keepAliveAndReuse);
 		return channelCreator;
 	}
 	
 	public void release(int permits)
 	{
 		semaphore.release(permits);
-		logger.warn("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphore.availablePermits());
+		if(logger.isDebugEnabled())
+		{
+			logger.debug("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphore.availablePermits());
+		}
 		synchronized (semaphore)
 		{
 			semaphore.notifyAll();

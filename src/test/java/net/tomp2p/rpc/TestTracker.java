@@ -109,7 +109,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
-			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(2);
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
 					dom, new String("data").getBytes(), false, false, null, cc);
 			fr.awaitUninterruptibly();
@@ -117,7 +117,7 @@ public class TestTracker
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
 					false, null, cc);
 			fr.awaitUninterruptibly();
-			System.err.println(fr.getFailedReason());
+			System.err.println("ERR:"+fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);

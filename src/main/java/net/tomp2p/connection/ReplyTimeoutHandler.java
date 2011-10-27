@@ -137,13 +137,39 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 				allIdleTimeout = timer.newTimeout(this, nextDelay, TimeUnit.MILLISECONDS);
 			}
 		}
+
+		public void abort() 
+		{
+			try
+			{
+				ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+						AbortCause.USER_ERROR, "Abort exception for peer " + remotePeer)));
+			}
+			catch (Throwable t)
+			{
+				ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), t));
+			}
+			
+		}
 	}
 
 	@Override
 	public void cancel()
 	{
 		if (allIdleTimeout != null)
+		{	
 			allIdleTimeout.cancel();
+		}
+		allIdleTimeout = null;
+	}
+
+	public void abort() 
+	{
+		if (allIdleTimeout != null)
+		{
+			allIdleTimeout.cancel();
+			((AllIdleTimeoutTask)allIdleTimeout.getTask()).abort();
+		}
 		allIdleTimeout = null;
 	}
 }

@@ -293,6 +293,7 @@ public class DispatcherReply extends SimpleChannelHandler
 			// no need to close a local channel, as we do not open a local
 			// channel for UDP during a reply. This is our server socket!
 			e.getChannel().write(response, e.getRemoteAddress());
+			// TODO: if we set a timeout in ConnectionHandler, we need to cancel the timeout here.
 		}
 		else
 		{
@@ -317,6 +318,7 @@ public class DispatcherReply extends SimpleChannelHandler
 	{
 		if (!(ctx.getChannel() instanceof DatagramChannel))
 			ctx.getChannel().close();
+		// TODO: if we set a timeout in ConnectionHandler, we need to cancel the timeout here.
 	}
 
 	/**

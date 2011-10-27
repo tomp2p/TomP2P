@@ -33,7 +33,7 @@ public class PeerException extends Exception
 		 * reply). PEER_ABORT means that the other peer found an error on our
 		 * side (e.g., if this peer thinks the other peer is someone else)
 		 */
-		USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
+		USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT, USER_ERROR
 	}
 	final private AbortCause abortCause;
 

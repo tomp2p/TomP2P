@@ -756,12 +756,12 @@ public class Message
 
 	public void setOptions(int options) 
 	{
-		
+		this.options = options;
 	}
 
 	public int getOptions() 
 	{
-		return 0;
+		return options;
 	}
 	
 	public void setKeepAlive(boolean isKeepAlive)

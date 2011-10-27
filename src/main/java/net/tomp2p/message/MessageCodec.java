@@ -75,7 +75,8 @@ public class MessageCodec
 				| (message.getContentType2().ordinal() << 4) | message.getContentType1().ordinal());
 		buffer.writeShort((short) content); // 55
 		// options
-		buffer.writeByte((message.getSender().getOptions() << 4) | message.getOptions()); // 56
+		int options=(message.getSender().getOptions() << 4) | message.getOptions();
+		buffer.writeByte(options); // 56
 		return buffer;
 	}
 

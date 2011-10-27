@@ -23,16 +23,11 @@ public class ConnectionConfiguration
 	//private int timeoutTCPMillis = 3 * 1000;
 	private int idleUDPMillis = 3 * 1000;
 	private int connectTimeouMillis = 3 * 1000;
-	//
-	private int maxOutgoingUDP = 200;
-	private int maxOutgoingTCP = 100;
-	private int maxIncomingThreads = 100;
-	//
+	// doing tests on localhost, we open 2 * maxOpenConnection
+	private int maxOpenConnection = 400;
+	private int maxCreating = 75;
+	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
-	//
-	//bandwith shaping in bytes/s
-	private long readLimit=0;
-	private long writeLimit=0;
 	
 	public int getIdleTCPMillis()
 	{
@@ -84,27 +79,15 @@ public class ConnectionConfiguration
 		return defaultPort;
 	}
 
-	public void setMaxOutgoingUDP(int maxOutgoingUDP)
+	public void setMaxOpenConnection(int maxOpenConnection)
 	{
-		this.maxOutgoingUDP = maxOutgoingUDP;
+		this.maxOpenConnection = maxOpenConnection;
 	}
 
-	public int getMaxOutgoingUDP()
+	public int getMaxOpenConnection()
 	{
-		return maxOutgoingUDP;
+		return maxOpenConnection;
 	}
-
-	public void setMaxOutgoingTCP(int maxOutgoingTCP)
-	{
-		this.maxOutgoingTCP = maxOutgoingTCP;
-	}
-
-	public int getMaxOutgoingTCP()
-	{
-		return maxOutgoingTCP;
-	}
-
-
 
 	public void setMaxMessageSize(int maxMessageSize)
 	{
@@ -116,33 +99,13 @@ public class ConnectionConfiguration
 		return maxMessageSize;
 	}
 
-	public long getReadLimit()
+	public int getMaxCreating() 
 	{
-		return readLimit;
+		return maxCreating;
 	}
 
-	public long getWriteLimit()
+	public void setMaxCreating(int maxCreating) 
 	{
-		return writeLimit;
-	}
-
-	public void setReadLimit(long readLimit)
-	{
-		this.readLimit = readLimit;
-	}
-
-	public void setWriteLimit(long writeLimit)
-	{
-		this.writeLimit = writeLimit;
-	}
-
-	public void setMaxIncomingThreads(int maxIncomingThreads)
-	{
-		this.maxIncomingThreads = maxIncomingThreads;
-	}
-
-	public int getMaxIncomingThreads()
-	{
-		return maxIncomingThreads;
+		this.maxCreating = maxCreating;
 	}
 }

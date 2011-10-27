@@ -170,18 +170,10 @@ public class TomP2PDecoderTCP extends FrameDecoder
 	public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) throws Exception
 	{
 		if (logger.isDebugEnabled())
-			e.getCause().printStackTrace();
-		if (e.getCause().getMessage() == null)
 		{
 			e.getCause().printStackTrace();
-			ctx.sendUpstream(e);
-			return;
 		}
-		if (e.getCause().getMessage().equals("Connection reset by peer"))
-		{
-			ctx.sendUpstream(e);
-			return;
-		}
+		ctx.sendUpstream(e);
 	}
 
 	/**

@@ -581,7 +581,25 @@ public class Peer
 	{
 		RequestHandlerTCP request = getDirectDataRPC().send(connection.getDestination(), requestBuffer.slice(), raw);
 		request.setKeepAlive(true);
+		//since we keep one connection open, we need to make sure that we do not send anything in parallel.
+		try 
+		{
+			connection.aquireOrWait();
+		} 
+		catch (InterruptedException e)
+		{
+			request.getFutureResponse().setFailed("Interupted "+e);
+		}
 		request.sendTCP(connection.getChannelCreator(), connection.getIdleTCPMillis());
+		request.getFutureResponse().addListener(new BaseFutureAdapter<FutureResponse>() 
+		{
+			@Override
+			public void operationComplete(FutureResponse future) throws Exception 
+			{
+				connection.release();	
+				connection.getChannelCreator().releaseCreating();
+			}
+		});
 		return (FutureData) request.getFutureResponse();
 	}
 	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer, boolean raw)

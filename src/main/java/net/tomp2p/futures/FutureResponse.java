@@ -30,8 +30,6 @@ public class FutureResponse extends BaseFutureImpl
 	final private Message requestMessage;
 	private Message responseMessage;
 	private ReplyTimeoutHandler replyTimeoutHandler;
-	//private long replyTimeoutMillis=Long.MAX_VALUE;
-	private volatile boolean exitFast = true;
 
 	public FutureResponse(final Message requestMessage)
 	{
@@ -53,60 +51,21 @@ public class FutureResponse extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			if(exitFast)
+			if (!setCompletedAndNotify())
+				return;
+			if (responseMessage != null)
 			{
-				if (!setCompletedAndNotify())
-					return;
-				if (responseMessage != null)
-				{
-					this.responseMessage = responseMessage;
-					type = (responseMessage.getType() == Message.Type.OK)
-							|| (responseMessage.getType() == Message.Type.PARTIALLY_OK) ? FutureType.OK
-							: FutureType.FAILED;
-					reason = responseMessage.getType().toString();
-				}
-				else
-				{
-					type = FutureType.OK;
-					reason = "Nothing to deliver...";
-				}
+				this.responseMessage = responseMessage;
+				type = (responseMessage.getType() == Message.Type.OK)
+						|| (responseMessage.getType() == Message.Type.PARTIALLY_OK) ? FutureType.OK
+						: FutureType.FAILED;
+				reason = responseMessage.getType().toString();
 			}
 			else
 			{
-				//only accept the first setresponse
-				if (type != FutureType.INIT)
-					return;
-				if (responseMessage != null)
-				{
-					this.responseMessage = responseMessage;
-					type = (responseMessage.getType() == Message.Type.OK)
-						|| (responseMessage.getType() == Message.Type.PARTIALLY_OK) ? FutureType.OK
-								: FutureType.FAILED;
-					reason = responseMessage.getType().toString();
-				}
-				else
-				{
-					type = FutureType.OK;
-					reason = "Nothing to deliver...";
-				}
-				//exit here means, do not call notify listeners
-				return;
+				type = FutureType.OK;
+				reason = "Nothing to deliver...";
 			}
-		}
-		notifyListerenrs();
-	}
-	
-	public void fireResponse()
-	{
-		synchronized (lock) 
-		{
-			if (type == FutureType.INIT)
-			{
-				exitFast = true;
-				return;
-			}
-			if (!setCompletedAndNotify())
-				return;
 		}
 		notifyListerenrs();
 	}
@@ -116,23 +75,10 @@ public class FutureResponse extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			if(exitFast)
-			{
-				if (!setCompletedAndNotify())
-					return;
-				this.reason = reason;
-				this.type = FutureType.FAILED;
-			}
-			else
-			{
-				//only accept the first setresponse
-				if (type != FutureType.INIT)
-					return;
-				this.reason = reason;
-				this.type = FutureType.FAILED;
-				//don't call notify listeners
+			if (!setCompletedAndNotify())
 				return;
-			}	
+			this.reason = reason;
+			this.type = FutureType.FAILED;
 		}
 		notifyListerenrs();
 	}
@@ -177,38 +123,6 @@ public class FutureResponse extends BaseFutureImpl
 		synchronized (lock)
 		{
 			this.replyTimeoutHandler.cancel();
-		}
-	}
-
-	/*public void setReplyTimeout(long replyTimeoutMillis)
-	{
-		synchronized (lock)
-		{
-			this.replyTimeoutMillis=replyTimeoutMillis;
-		}
-	}
-
-	public long getReplyTimeout()
-	{
-		synchronized (lock)
-		{
-			return replyTimeoutMillis;
-		}
-	}*/
-
-	public boolean isExitFast() 
-	{
-		synchronized (lock)
-		{
-			return exitFast;
-		}
-	}
-
-	public void setExitFast(boolean exitFast) 
-	{
-		synchronized (lock) 
-		{
-			this.exitFast = exitFast;	
 		}
 	}
 }

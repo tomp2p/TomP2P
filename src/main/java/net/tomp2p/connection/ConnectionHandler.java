@@ -255,9 +255,10 @@ public class ConnectionHandler
 			public ChannelPipeline getPipeline() throws Exception
 			{
 				ChannelPipeline pipe = Channels.pipeline();
-				ReplyTimeoutHandler timeoutHandler = new ReplyTimeoutHandler(timer, 
-						connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress());
-				pipe.addLast("timeout", timeoutHandler);
+				//TODO: enable a 2min timeout
+				//ReplyTimeoutHandler timeoutHandler = new ReplyTimeoutHandler(timer, 
+				//		connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress(), "receiver TCP");
+				//pipe.addLast("timeout", timeoutHandler);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
 				pipe.addLast("decoder", new TomP2PDecoderTCP());

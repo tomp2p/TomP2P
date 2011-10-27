@@ -15,6 +15,8 @@
  */
 package net.tomp2p.connection;
 
+import java.util.concurrent.Semaphore;
+
 import net.tomp2p.peers.PeerAddress;
 
 public class PeerConnection 
@@ -22,6 +24,7 @@ public class PeerConnection
 	final private PeerAddress destination;
 	final private ChannelCreator channelCreator;
 	final private int idleTCPMillis;
+	final private Semaphore oneConnection = new Semaphore(1);
 	public PeerConnection(PeerAddress destination, ChannelCreator channelCreator,
 			int idleTCPMillis) 
 	{
@@ -44,5 +47,13 @@ public class PeerConnection
 	public int getIdleTCPMillis() 
 	{
 		return idleTCPMillis;
+	}
+	public void aquireOrWait() throws InterruptedException 
+	{
+		oneConnection.acquire();
+	}
+	public void release() 
+	{
+		oneConnection.release();
 	}
 }

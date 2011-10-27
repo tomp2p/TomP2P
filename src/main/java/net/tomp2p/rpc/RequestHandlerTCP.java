@@ -14,18 +14,21 @@
  * the License.
  */
 package net.tomp2p.rpc;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerException;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerMap;
 
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelUpstreamHandler;
+import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +48,7 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 	final private PeerBean peerBean;
 	final private ConnectionBean connectionBean;
 	final private Message message;
+	final private AtomicBoolean handlingMessage = new AtomicBoolean(false);
 	final private MessageID sendMessageID;
 
 	/**
@@ -98,45 +102,52 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 	@Override
 	public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ce) throws Exception {
 		
-		if (!(ce instanceof MessageEvent)) {
-			//here we get message types such as OPEN
-			ctx.sendUpstream(ce);
-			return;
+		if (!(ce instanceof MessageEvent)) 
+		{
+			//here we get message types such as OPEN, or EXCEPTION
+			if (ce instanceof ExceptionEvent)
+			{
+				String msg = "Exception received: " + ((ExceptionEvent)ce).getCause();
+				closeFail(msg, ctx.getChannel(), futureResponse);
+				return;
+	        }
+			else
+			{
+				ctx.sendUpstream(ce);
+				return;
+			}
 		}
 		MessageEvent e=(MessageEvent) ce;
 		if (!(e.getMessage() instanceof Message))
 		{
 			String msg = "Message received, but not of type Message: " + e.getMessage();
-			logger.error(msg);
-			futureResponse.setFailed(msg);
-			ctx.sendUpstream(ce);
+			closeFail(msg, ctx.getChannel(), futureResponse);
 			return;
 		}
 		final Message message = (Message) e.getMessage();
+		if (handlingMessage.compareAndSet(false, true))
+		{
+			futureResponse.cancelTimeout();
+		}
 		MessageID recvMessageID = new MessageID(message);
 		if (message.getType() == Message.Type.UNKNOWN_ID)
 		{
 			String msg = "Message was not delivered successfully: " + this.message;
-			futureResponse.setFailed(msg);
 			getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
-			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+			closeFail(msg, ctx.getChannel(), futureResponse);
 		}
 		else if (message.getType() == Message.Type.EXCEPTION)
 		{
 			String msg = "Message caused an exception on the other side, handle as peer_abort: "
 					+ this.message;
-			futureResponse.setFailed(msg);
-			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+			closeFail(msg, ctx.getChannel(), futureResponse);
 		}
 		else if (!sendMessageID.equals(recvMessageID))
 		{
 			String msg = "Message [" + message
-					+ "] sent to the node is not the same as we expect. We sent ["
+					+ "] sent to the node is not the same as we expect (TCP). We sent ["
 					+ this.message + "]";
-			if (logger.isWarnEnabled())
-				logger.warn(msg);
-			futureResponse.setFailed(msg);
-			throw new PeerException(PeerException.AbortCause.PEER_ABORT, msg);
+			closeFail(msg, ctx.getChannel(), futureResponse);
 		}
 		else
 		{
@@ -145,7 +156,18 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 			// We got a good answer, let's mark the sender as alive
 			if (message.isOk() || message.isNotOk())
 				getPeerMap().peerFound(message.getSender(), null);
+			// connection is closed by other peer
 			futureResponse.setResponse(message);
 		}
+	}
+
+	public void closeFail(final String cause, final Channel channel, final FutureResponse futureResponse)
+	{
+		if (logger.isDebugEnabled())
+		{
+			logger.debug(cause);
+		}
+		futureResponse.setFailed(cause);
+		channel.close();
 	}
 }

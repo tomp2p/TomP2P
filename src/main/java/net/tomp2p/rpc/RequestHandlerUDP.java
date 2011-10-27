@@ -178,7 +178,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 			else if (!sendMessageID.equals(recvMessageID))
 			{
 				String msg = "Message [" + message
-						+ "] sent to the node is not the same as we expect. We sent ["
+						+ "] sent to the node is not the same as we expect (UDP). We sent ["
 						+ this.message + "]";
 				if (logger.isWarnEnabled())
 					logger.warn(msg);

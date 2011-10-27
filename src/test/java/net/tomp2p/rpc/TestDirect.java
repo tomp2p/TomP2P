@@ -1,10 +1,8 @@
 package net.tomp2p.rpc;
-import java.util.Collection;
-
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureData;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message.Command;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -13,10 +11,10 @@ import net.tomp2p.utils.Utils;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestCutom
+public class TestDirect
 {
 	@Test
-	public void testCustomMessage() throws Exception
+	public void testDirectMessage() throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -47,7 +45,7 @@ public class TestCutom
 	}
 	
 	@Test
-	public void testCustomMessage1() throws Exception
+	public void testDirectMessage1() throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -70,6 +68,94 @@ public class TestCutom
 			System.err.println(fd1.getFailedReason());
 			Assert.assertEquals(true, fd1.isSuccess());
 			Assert.assertEquals(true, fd2.isSuccess());
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
+	public void testDirectReconnect() throws Exception
+	{
+		ChannelCreator.resetStat();
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			
+			sender = new Peer(55, new Number160("0x50"));
+			sender.listen(2424, 2424);
+			recv1 = new Peer(55, new Number160("0x20"));
+			recv1.listen(8088, 8088);
+			recv1.setObjectDataReply(new ObjectDataReply() {
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					return "yes";
+				}
+			});
+			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 10*1000);
+			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedTCP());
+			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			FutureData fd1=sender.send(peerConnection, "test");
+			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
+			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			fd1.awaitUninterruptibly();
+			Utils.sleep(2000);
+			System.err.println("send second with the same connection");
+			FutureData fd2=sender.send(peerConnection, "test");
+			fd2.awaitUninterruptibly();
+			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
+			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			Assert.assertEquals(true, fd1.isSuccess());
+			Assert.assertEquals(true, fd2.isSuccess());
+			System.err.println("done");
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
+	public void testDirectReconnectParallel() throws Exception
+	{
+		ChannelCreator.resetStat();
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x50"));
+			sender.listen(2424, 2424);
+			recv1 = new Peer(55, new Number160("0x20"));
+			recv1.listen(8088, 8088);
+			recv1.setObjectDataReply(new ObjectDataReply() {
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					return "yes";
+				}
+			});
+			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 10*1000);
+			int len=20;
+			FutureData fd[]=new FutureData[len];
+			for(int i=0;i<len;i++)
+			{
+				fd[i]=sender.send(peerConnection, "test");
+			}
+			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
+			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			for(int i=0;i<len;i++)
+			{
+				fd[i].awaitUninterruptibly();
+				Assert.assertEquals(true, fd[i].isSuccess());
+			}
+			System.err.println("done");
 		}
 		finally
 		{

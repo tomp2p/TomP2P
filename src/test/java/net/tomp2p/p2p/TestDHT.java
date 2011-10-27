@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -71,17 +72,55 @@ public class TestDHT
 			master.listen(4001, 4001);
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
-			for(int i=0;i<10000;i++)
+			
+			
+			slave.setRawDataReply(new RawDataReply() 
+			{	
+				@Override
+				public ChannelBuffer reply(PeerAddress sender, ChannelBuffer requestBuffer)
+						throws Exception 
+				{
+					final byte[] b1=new byte[10000];
+					int i=requestBuffer.getInt(0);
+					ChannelBuffer ret=ChannelBuffers.wrappedBuffer(b1);
+					ret.setInt(0, i);
+					return ret;
+				}
+			});
+			List<BaseFuture> list= new ArrayList<BaseFuture>();
+			for(int i=0;i<100;i++)
 			{
-				master.discover(slave.getPeerAddress());
-				byte[] b=new byte[10000];
-				master.send(slave.getPeerAddress(), b);
+				final byte[] b=new byte[10000];
+				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
+				list.add(master.send(pc, ChannelBuffers.wrappedBuffer(b)));
+			}
+			for(int i=0;i<30000;i++)
+			{
+				list.add(master.discover(slave.getPeerAddress()));
+				final byte[] b=new byte[10000];
+				byte[] me=Utils.intToByteArray(i);
+				System.arraycopy(me, 0, b, 0, 4);
+				list.add(master.send(slave.getPeerAddress(), ChannelBuffers.wrappedBuffer(b)));
 				//System.out.println(".");
+			}
+			for(BaseFuture bf:list)
+			{
+				bf.awaitUninterruptibly();
+				if(bf.isFailed())
+				{
+					System.err.println("WTF "+bf.getFailedReason());
+				}
+				Assert.assertEquals(true,bf.isSuccess());
 			}
 			System.err.println("done!!");
 		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
 		finally
 		{
+			System.err.println("done!1!");
 			master.shutdown();
 			slave.shutdown();
 		}

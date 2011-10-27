@@ -147,11 +147,12 @@ public class Sender
 									+ future.getChannel().isConnected() + "/"
 									+ future.getChannel().isOpen() + " / " + future.isCancelled()
 									+ " /ch:" + channelFuture.getChannel());
+							futureResponse.setFailed("Connect failed " + future.getCause());
 							if (logger.isDebugEnabled() && future.getCause()!=null)
 							{
 								future.getCause().printStackTrace();
 							}
-							futureResponse.setFailed("Connect failed " + future.getCause());
+							
 						}
 					}
 				}

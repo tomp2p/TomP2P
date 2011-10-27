@@ -36,8 +36,10 @@ import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 
 public class ChannelCreator 
 {
-	final private Semaphore semaphore;
-	final private int permits;
+	final private Semaphore semaphoreOpenConnections;
+	//final private Semaphore semaphoreCreating;
+	final private int permitsOpen;
+	//final private int permitsCreate;
 	final private ChannelGroup channelsTCP;
 	final private ChannelGroup channelsUDP;
 	final private MessageLogger messageLoggerFilter;
@@ -46,18 +48,20 @@ public class ChannelCreator
 	final private AtomicBoolean shutdown;
 	final private ConnectionReservation connectionReservation;
 	final private boolean keepAliveAndReuse;
-	final private Map<InetSocketAddress, ChannelFuture> cacheMap = Collections.synchronizedMap(new CacheMap<InetSocketAddress, ChannelFuture>(100));
+	final private Map<String, ChannelFuture> cacheMap = Collections.synchronizedMap(new CacheMap<String, ChannelFuture>(100));
 	private static AtomicLong statConnectionsCreatedTCP=new AtomicLong();
 	private static AtomicLong statConnectionsCreatedUDP=new AtomicLong();
 	
-	public ChannelCreator(ChannelGroup channelsTCP, ChannelGroup channelsUDP, int permits, 
+	public ChannelCreator(ChannelGroup channelsTCP, ChannelGroup channelsUDP, int permitsOpen, 
 			MessageLogger messageLoggerFilter, ChannelFactory tcpClientChannelFactory, 
 			ChannelFactory udpClientChannelFactory, AtomicBoolean shutdown, ConnectionReservation connectionReservation, boolean keepAliveAndReuse)
 	{
-		this.permits = permits;
+		this.permitsOpen = permitsOpen;
+		//this.permitsCreate = permitsCreate;
 		this.channelsTCP = channelsTCP;
 		this.channelsUDP = channelsUDP;
-		this.semaphore=new Semaphore(permits);
+		this.semaphoreOpenConnections=new Semaphore(permitsOpen);
+		//this.semaphoreCreating=new Semaphore(permitsCreate);
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpClientChannelFactory;
@@ -73,13 +77,22 @@ public class ChannelCreator
 			throw new RuntimeException("Cannot create channel if already shutdown");
 		}
 		// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
-		if(!semaphore.tryAcquire())
+		if(!semaphoreOpenConnections.tryAcquire())
 		{
-			throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
+			throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
 		}
 		// now, we don't exceeded the limits, so create channels
-		Channel channel = createChannelUDP(timeoutHandler, requestHandler, broadcast);
-		futureResponse.setExitFast(false);
+		Channel channel;
+		try
+		{
+			channel = createChannelUDP(timeoutHandler, requestHandler, broadcast);
+		}
+		catch (Exception e)
+		{
+			futureResponse.setFailed("Cannot create channel "+e);
+			semaphoreOpenConnections.release();
+			return null;
+		}
 		channelsUDP.add(channel);
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
@@ -87,9 +100,7 @@ public class ChannelCreator
 			public void operationComplete(ChannelFuture future) throws Exception
 			{
 				channelsUDP.remove(future.getChannel());
-				semaphore.release();
-				//we set fast exit to false, exit if connection has been closed.
-				futureResponse.fireResponse();
+				semaphoreOpenConnections.release();
 			}
 		});
 		return channel;
@@ -101,55 +112,79 @@ public class ChannelCreator
 		if(shutdown.get())
 		{
 			throw new RuntimeException("Cannot create channel if already shutdown");
-		}
-		// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
-		if(!semaphore.tryAcquire())
-		{
-			throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
-		}
-		// now, we don't exceeded the limits, so create channels
+		}	
 		ChannelFuture channelFuture;
 		final InetSocketAddress recipient = message.getRecipient().createSocketTCP();
+		boolean newConnection = true;
 		if(keepAliveAndReuse)
 		{
-			channelFuture = cacheMap.get(recipient);
+			channelFuture = cacheMap.get(recipient.toString());
 			if(channelFuture == null)
 			{
+				// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
+				if(!semaphoreOpenConnections.tryAcquire())
+				{
+					throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
+				}
+				// now, we don't exceeded the limits, so create channels
 				channelFuture = createChannelTCP(timeoutHandler, requestHandler,
 						recipient, new InetSocketAddress(0), connectTimeoutMillis);
-				cacheMap.put(recipient, channelFuture);
+				cacheMap.put(recipient.toString(), channelFuture);
+			}
+			else
+			{
+				newConnection = false;
+				ReplyTimeoutHandler oldTimoutHandler = (ReplyTimeoutHandler)channelFuture.getChannel().getPipeline().replace("timeout", "timeout", timeoutHandler);
+				//abort the old timeouthandler. If we have not dealt with it (should not happen), then abort and throw exception
+				oldTimoutHandler.abort();
+				channelFuture.getChannel().getPipeline().replace("request", "request", requestHandler);
+				//we need a new RequestHandlerTCP in order for the new message
 			}
 		}
 		else
 		{
-			channelFuture = createChannelTCP(timeoutHandler, requestHandler,
-					recipient, new InetSocketAddress(0), connectTimeoutMillis);
+			// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
+			if(!semaphoreOpenConnections.tryAcquire())
+			{
+				throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
+			}
+			try
+			{
+				channelFuture = createChannelTCP(timeoutHandler, requestHandler,
+						recipient, new InetSocketAddress(0), connectTimeoutMillis);
+			}
+			catch (Exception e)
+			{
+				futureResponse.setFailed("Cannot create channel "+e);
+				semaphoreOpenConnections.release();
+				return null;
+			}
 			
 		}
-		Channel channel = channelFuture.getChannel();
-		futureResponse.setExitFast(false);
+		final Channel channel = channelFuture.getChannel();
 		channelsTCP.add(channel);
-		channel.getCloseFuture().addListener(new ChannelFutureListener()
+		if(newConnection)
 		{
-			@Override
-			public void operationComplete(ChannelFuture future) throws Exception
+			channel.getCloseFuture().addListener(new ChannelFutureListener()
 			{
-				channelsTCP.remove(future.getChannel());
-				semaphore.release();
-				if(keepAliveAndReuse)
+				@Override
+				public void operationComplete(ChannelFuture future) throws Exception
 				{
-					cacheMap.remove(recipient);
+					channelsTCP.remove(future.getChannel());
+					semaphoreOpenConnections.release();
+					if(keepAliveAndReuse)
+					{
+						cacheMap.remove(recipient.toString());
+					}
 				}
-				//we set fast exit to false, exit if connection has been closed.
-				futureResponse.fireResponse();
-			}
-		});
+			});
+		}
 		return channelFuture;
 	}
 	
 	public void release()
 	{
-		connectionReservation.release(permits);
+		connectionReservation.release(permitsOpen);
 	}
 	
 	public void release(int nr)
@@ -157,18 +192,29 @@ public class ChannelCreator
 		connectionReservation.release(nr);
 	}
 	
+	private final AtomicBoolean releasedCreating = new AtomicBoolean(false);
+	
+	public void releaseCreating() 
+	{
+		if(releasedCreating.compareAndSet(false, true))
+		{
+			connectionReservation.releaseCreating(permitsOpen);
+		}
+	}
+	
 	private ChannelFuture createChannelTCP(ChannelHandler timeoutHandler,
-			ChannelHandler dispatcherReply, SocketAddress remoteAddress,
+			ChannelHandler requestHandler, SocketAddress remoteAddress,
 			SocketAddress localAddress, int connectionTimoutMillis)
 	{
 		statConnectionsCreatedTCP.incrementAndGet();
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
+		//DBX: enable this line again
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
-		//bootstrap.setOption("tcpNoDelay", true);
+		bootstrap.setOption("tcpNoDelay", true);
 		bootstrap.setOption("soLinger", 0);
 		bootstrap.setOption("reuseAddress", true);
 		bootstrap.setOption("keepAlive", true);
-		setupBootstrapTCP(bootstrap, timeoutHandler, dispatcherReply, new TomP2PDecoderTCP(), new TomP2PEncoderTCP(), new ChunkedWriteHandler(), messageLoggerFilter);
+		setupBootstrapTCP(bootstrap, timeoutHandler, requestHandler, new TomP2PDecoderTCP(), new TomP2PEncoderTCP(), new ChunkedWriteHandler(), messageLoggerFilter);
 		return bootstrap.connect(remoteAddress);
 	}
 	
@@ -187,7 +233,7 @@ public class ChannelCreator
 	}
 	
 	static void setupBootstrapTCP(Bootstrap bootstrap, ChannelHandler timeoutHandler,
-			ChannelHandler dispatcherReply, ChannelUpstreamHandler decoder, ChannelDownstreamHandler encoder, ChunkedWriteHandler streamer, ChannelHandler messageLoggerFilter)
+			ChannelHandler requestHandler, ChannelUpstreamHandler decoder, ChannelDownstreamHandler encoder, ChunkedWriteHandler streamer, ChannelHandler messageLoggerFilter)
 	{
 		ChannelPipeline pipe = bootstrap.getPipeline();
 		if (timeoutHandler != null) {
@@ -199,13 +245,13 @@ public class ChannelCreator
 		if (messageLoggerFilter != null) {
 			pipe.addLast("loggerUpstream", messageLoggerFilter);
 		}
-		if (dispatcherReply != null) {
-			pipe.addLast("reply", dispatcherReply);
+		if (requestHandler != null) {
+			pipe.addLast("request", requestHandler);
 		}
 	}
 	
 	static void setupBootstrapUDP(Bootstrap bootstrap, ChannelHandler timeoutHandler,
-			ChannelHandler dispatcherReply, ChannelUpstreamHandler decoder, ChannelDownstreamHandler encoder, ChannelHandler messageLoggerFilter)
+			ChannelHandler requestHandler, ChannelUpstreamHandler decoder, ChannelDownstreamHandler encoder, ChannelHandler messageLoggerFilter)
 	{
 		ChannelPipeline pipe = bootstrap.getPipeline();
 		if (timeoutHandler != null)
@@ -214,9 +260,9 @@ public class ChannelCreator
 		pipe.addLast("decoder", decoder);
 		if (messageLoggerFilter != null)
 			pipe.addLast("loggerUpstream", messageLoggerFilter);
-		if (dispatcherReply != null)
+		if (requestHandler != null)
 		{
-			pipe.addLast("reply", dispatcherReply);
+			pipe.addLast("request", requestHandler);
 		}
 	}
 
@@ -229,6 +275,12 @@ public class ChannelCreator
 		}
 	}
 	
+	public static void resetStat()
+	{
+		statConnectionsCreatedTCP.set(0);
+		statConnectionsCreatedUDP.set(0);
+	}
+	
 	public static long getStatConnectionsCreatedTCP()
 	{
 		return statConnectionsCreatedTCP.get();
@@ -238,4 +290,6 @@ public class ChannelCreator
 	{
 		return statConnectionsCreatedUDP.get();
 	}
+
+
 }

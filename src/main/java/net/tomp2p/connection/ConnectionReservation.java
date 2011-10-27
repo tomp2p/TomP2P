@@ -36,7 +36,8 @@ public class ConnectionReservation
 	private AtomicBoolean shutdown = new AtomicBoolean(false);
 	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
 	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
-	final private Semaphore semaphore;
+	final private Semaphore semaphoreCreating;
+	final private Semaphore semaphoreOpen;
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionReservation.class);
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
@@ -50,8 +51,10 @@ public class ConnectionReservation
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
-		this.maxPermits = configuration.getMaxOutgoingTCP() + configuration.getMaxOutgoingUDP();
-		this.semaphore = new Semaphore(maxPermits);
+		this.maxPermits = configuration.getMaxCreating();
+		this.semaphoreCreating = new Semaphore(maxPermits);
+		this.semaphoreOpen = new Semaphore(configuration.getMaxOpenConnection());
+		//this.semaphoreCreate = new Semaphore(20);
 		this.messageLoggerFilter = messageLoggerFilter;
 	}
 	
@@ -73,22 +76,22 @@ public class ConnectionReservation
 		int counter = 0;
 		while(!acquired && !shutdown.get())
 		{
-			acquired=semaphore.tryAcquire(permits);
+			acquired=semaphoreCreating.tryAcquire(permits) && semaphoreOpen.tryAcquire(permits);
 			if (!acquired)
 			{
 				if(logger.isDebugEnabled())
 				{
-					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermits+", but now we have "+semaphore.availablePermits());
+					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermits+", but now we have "+semaphoreCreating.availablePermits());
 				}
 				if(counter % 40 ==0)
 				{
-					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermits+", but now we have "+semaphore.availablePermits());
+					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermits+", but now we have "+semaphoreCreating.availablePermits());
 				}
-				synchronized (semaphore)
+				synchronized (semaphoreCreating)
 				{
 					try 
 					{
-						semaphore.wait(250);
+						semaphoreCreating.wait(250);
 						counter++;
 					} 
 					catch (InterruptedException e) 
@@ -102,7 +105,8 @@ public class ConnectionReservation
 		{
 			if(acquired) 
 			{
-				semaphore.release(permits);
+				semaphoreCreating.release(permits);
+				semaphoreOpen.release(permits);
 			}
 			return null;
 		}
@@ -111,16 +115,26 @@ public class ConnectionReservation
 		return channelCreator;
 	}
 	
+	public void releaseCreating(int permits)
+	{
+		semaphoreCreating.release(permits);
+		synchronized (semaphoreCreating)
+		{
+			semaphoreCreating.notifyAll();
+		}
+	}
+	
 	public void release(int permits)
 	{
-		semaphore.release(permits);
+		semaphoreCreating.release(permits);
+		semaphoreOpen.release(permits);
 		if(logger.isDebugEnabled())
 		{
-			logger.debug("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphore.availablePermits());
+			logger.debug("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphoreCreating.availablePermits());
 		}
-		synchronized (semaphore)
+		synchronized (semaphoreCreating)
 		{
-			semaphore.notifyAll();
+			semaphoreCreating.notifyAll();
 		}
 	}
 
@@ -130,9 +144,9 @@ public class ConnectionReservation
 	public void shutdown()
 	{
 		shutdown.set(true);
-		synchronized (semaphore)
+		synchronized (semaphoreCreating)
 		{
-			semaphore.notifyAll();
+			semaphoreCreating.notifyAll();
 		}
 		channelsTCP.close().awaitUninterruptibly();
 		channelsUDP.close().awaitUninterruptibly();

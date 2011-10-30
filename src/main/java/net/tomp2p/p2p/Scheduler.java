@@ -18,6 +18,7 @@ public class Scheduler
 	//private final Thread laterThread1;
 	private final Thread laterThread2;
 	private volatile boolean running = true;
+	//private volatile boolean isShutdown = false;
 	
 	
 	public Scheduler()
@@ -59,6 +60,7 @@ public class Scheduler
 				{
 					runner.failed("Shutting down...");
 				}
+				//isShutdown = true;
 			}
 		});
 		laterThread.start();
@@ -91,10 +93,11 @@ public class Scheduler
 		invokeLater2.offer(runner);
 	}
 	
-	public void shutdown()
+	public void shutdownAndWait()
 	{
 		running = false;
 		//laterThread1.interrupt();
 		laterThread2.interrupt();
+		//while(!isShutdown);
 	}
 }

@@ -49,6 +49,7 @@ import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
@@ -551,7 +552,18 @@ public class Peer
 	public PeerConnection createPeerConnection(PeerAddress destination, int idleTCPMillis)
 	{
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(1, true);
-		return new PeerConnection(destination, cc, idleTCPMillis);
+		final PeerConnection peerConnection = new PeerConnection(destination, cc, idleTCPMillis);
+		getConnectionBean().getReservation().addPeerConnection(peerConnection);
+		Runnable runner = new Runnable() 
+		{
+			@Override
+			public void run()
+			{
+				getConnectionBean().getReservation().removePeerConnection(peerConnection);	
+			}
+		};
+		peerConnection.setCloseRunner(runner);
+		return peerConnection;
 	}
 
 	// custom message
@@ -584,7 +596,7 @@ public class Peer
 		//since we keep one connection open, we need to make sure that we do not send anything in parallel.
 		try 
 		{
-			connection.aquireOrWait();
+			connection.aquireSingleConnection();
 		} 
 		catch (InterruptedException e)
 		{
@@ -596,7 +608,7 @@ public class Peer
 			@Override
 			public void operationComplete(FutureResponse future) throws Exception 
 			{
-				connection.release();	
+				connection.releaseSingleConnection();	
 				connection.getChannelCreator().releaseCreating();
 			}
 		});
@@ -646,7 +658,7 @@ public class Peer
 
 	public FutureBootstrap bootstrapBroadcast(int port)
 	{
-		final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
+		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
 		// limit after
 		final FutureForkJoin<FutureResponse> tmp = pingBroadcast(port);
 		tmp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>()
@@ -662,7 +674,10 @@ public class Peer
 						public void run() 
 						{
 							final PeerAddress sender = future.getLast().getResponse().getSender();
-							result.waitForBootstrap(bootstrap(sender));
+							Collection<PeerAddress> bootstrapTo=new ArrayList<PeerAddress>(1);
+							bootstrapTo.add(sender);
+							result.setBootstrapTo(bootstrapTo);
+							result.waitFor(bootstrap(sender));
 						}
 						@Override
 						public void failed(String reason)
@@ -673,8 +688,9 @@ public class Peer
 					getConnectionBean().getScheduler().callLater(runner);
 					
 				}
-				else
-					result.setFailed("could not reach anyone with the broadcast");
+				else {
+					result.setFailed("could not reach anyone with the broadcast (1)");
+				}
 			}
 		});
 		return result;
@@ -718,7 +734,7 @@ public class Peer
 
 	public FutureBootstrap bootstrap(final InetSocketAddress address)
 	{
-		final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
+		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
 		final FutureResponse tmp = ping(address);
 		tmp.addListener(new BaseFutureAdapter<FutureResponse>()
 		{
@@ -734,7 +750,10 @@ public class Peer
 						@Override
 						public void run() 
 						{
-							result.waitForBootstrap(bootstrap(sender));
+							Collection<PeerAddress> bootstrapTo=new ArrayList<PeerAddress>(1);
+							bootstrapTo.add(sender);
+							result.setBootstrapTo(bootstrapTo);
+							result.waitFor(bootstrap(sender));
 						}
 						
 						@Override
@@ -745,9 +764,8 @@ public class Peer
 					};
 					getConnectionBean().getScheduler().callLater(runner);
 				}
-				else 
-				{
-					result.setFailed("could not reach anyone with the broadcast");
+				else {
+					result.setFailed("could not reach anyone with the broadcast (2)");
 				}
 			}
 		});
@@ -763,13 +781,14 @@ public class Peer
 
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress, final Collection<PeerAddress> bootstrapTo, final ConfigurationStore config)
 	{
+		final FutureWrappedBootstrap<FutureRouting> result = new FutureWrappedBootstrap<FutureRouting>();
+		result.setBootstrapTo(bootstrapTo);
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(),config.getRequestP2PConfiguration().getParallel());
 		if (peerConfiguration.isBehindFirewall())
 		{
 			final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn * 2);
 			if(bindings.isSetupUPNP())
 				setupPortForwandingUPNP();
-			final FutureWrappedBootstrap result = new FutureWrappedBootstrap();
 			FutureDiscover futureDiscover = discover(peerAddress);
 			futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
 			{
@@ -778,13 +797,13 @@ public class Peer
 				{
 					if (future.isSuccess())
 					{
-						FutureBootstrap futureBootstrap = routing.bootstrap(
+						FutureRouting futureBootstrap = routing.bootstrap(
 								bootstrapTo,
 								config.getRoutingConfiguration().getMaxNoNewInfo(
 										config.getRequestP2PConfiguration().getMinimumResults()), config
 										.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration()
 										.getMaxSuccess(), config.getRoutingConfiguration().getParallel(), false, cc);
-						result.waitForBootstrap(futureBootstrap);
+						result.waitFor(futureBootstrap);
 						Utils.addReleaseListenerAll(futureBootstrap, cc);
 					}
 					else {
@@ -799,12 +818,13 @@ public class Peer
 		else
 		{
 			final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn * 2);
-			FutureBootstrap futureBootstrap = routing.bootstrap(bootstrapTo, config.getRoutingConfiguration()
+			FutureRouting futureBootstrap = routing.bootstrap(bootstrapTo, config.getRoutingConfiguration()
 					.getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()), config
 					.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
 					config.getRoutingConfiguration().getParallel(), false, cc);
 			Utils.addReleaseListenerAll(futureBootstrap, cc);
-			return futureBootstrap;
+			result.waitFor(futureBootstrap);
+			return result;
 		}
 	}
 	

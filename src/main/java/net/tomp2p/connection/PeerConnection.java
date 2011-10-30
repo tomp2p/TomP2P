@@ -16,6 +16,7 @@
 package net.tomp2p.connection;
 
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.peers.PeerAddress;
 
@@ -25,6 +26,8 @@ public class PeerConnection
 	final private ChannelCreator channelCreator;
 	final private int idleTCPMillis;
 	final private Semaphore oneConnection = new Semaphore(1);
+	final private AtomicBoolean closed = new AtomicBoolean(false);
+	private volatile Runnable closeRunner;
 	public PeerConnection(PeerAddress destination, ChannelCreator channelCreator,
 			int idleTCPMillis) 
 	{
@@ -34,7 +37,12 @@ public class PeerConnection
 	}
 	public void close()
 	{
-		getChannelCreator().tryClose(getDestination());
+		if(closed.compareAndSet(false, true))
+		{
+			channelCreator.tryClose(getDestination());
+			channelCreator.releaseOpen();
+			closeRunner.run();
+		}
 	}
 	public PeerAddress getDestination() 
 	{
@@ -42,18 +50,29 @@ public class PeerConnection
 	}
 	public ChannelCreator getChannelCreator() 
 	{
+		if(closed.get()) {
+			throw new RuntimeException("cannot used a closed channel");
+		}
 		return channelCreator;
+	}
+	public boolean isClosed()
+	{
+		return closed.get();
 	}
 	public int getIdleTCPMillis() 
 	{
 		return idleTCPMillis;
 	}
-	public void aquireOrWait() throws InterruptedException 
+	public void aquireSingleConnection() throws InterruptedException 
 	{
 		oneConnection.acquire();
 	}
-	public void release() 
+	public void releaseSingleConnection() 
 	{
 		oneConnection.release();
+	}
+	public void setCloseRunner(Runnable closeRunner) 
+	{
+		this.closeRunner=closeRunner;
 	}
 }

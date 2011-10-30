@@ -69,7 +69,8 @@ public class ConnectionBean
 		return reservation;
 	}
 
-	public ConnectionConfiguration getConfiguration() {
+	public ConnectionConfiguration getConfiguration() 
+	{
 		return configuration;
 	}
 }

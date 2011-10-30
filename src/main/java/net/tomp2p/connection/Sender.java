@@ -51,20 +51,32 @@ public class Sender
 
 	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator, final int idleTCPMillis)
 	{
-		if(shutdown) return;
-		sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator, idleTCPMillis);
+		if(shutdown) {
+			futureResponse.setFailed("Shutdown in sender");
+		}
+		else {
+			sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator, idleTCPMillis);
+		}
 	}
 
 	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
-		if(shutdown) return;
-		sendUDP(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
+		if(shutdown) {
+			futureResponse.setFailed("Shutdown in sender");
+		}
+		else {
+			sendUDP(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
+		}
 	}
 
 	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
 	{
-		if(shutdown) return;
-		sendUDP(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
+		if(shutdown)  {
+			futureResponse.setFailed("Shutdown in sender");
+		}
+		else {
+			sendUDP(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
+		}
 	}
 
 	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
@@ -104,31 +116,31 @@ public class Sender
 			{
 				throw new RuntimeException("This send needs to be a fire and forget request");
 			}
-			final ChannelFuture channelFuture = channelCreator.createTCPChannel(replyTimeoutHandler, futureResponse,   
+			final ChannelFuture channelFutureConnect = channelCreator.createTCPChannel(replyTimeoutHandler, futureResponse,   
 					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis(), 
 					message, requestHandler);
-			if (channelFuture == null)
+			if (channelFutureConnect == null)
 			{
 				futureResponse.setFailed("could not get channel in "
 						+ configuration.getConnectTimeoutMillis() + "ms");
 				return;
 			}
-			final Cancellable cancel1 = new Cancellable()
+			final Cancellable cancel = new Cancellable()
 			{
 				@Override
 				public void cancel()
 				{
-					channelFuture.cancel();
+					channelFutureConnect.cancel();
 				}
 			};
-			futureResponse.addCancellation(cancel1);
-			channelFuture.addListener(new ChannelFutureListener()
+			futureResponse.addCancellation(cancel);
+			channelFutureConnect.addListener(new ChannelFutureListener()
 			{
 				@Override
 				public void operationComplete(final ChannelFuture future)
 				{
-					futureResponse.removeCancellation(cancel1);
-					if (future.isSuccess() && !channelFuture.isCancelled())
+					futureResponse.removeCancellation(cancel);
+					if (future.isSuccess() && !channelFutureConnect.isCancelled())
 					{
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
@@ -137,16 +149,19 @@ public class Sender
 					}
 					else
 					{
+						//most likely its closed, but just to be sure
 						future.getChannel().close();
-						if (channelFuture.isCancelled())
+						if (channelFutureConnect.isCancelled())
+						{
 							futureResponse.cancel();
+						}
 						else
 						{
 							logger.warn("Failed to connect channel " 
 									+ future.getChannel().isBound() + "/"
 									+ future.getChannel().isConnected() + "/"
 									+ future.getChannel().isOpen() + " / " + future.isCancelled()
-									+ " /ch:" + channelFuture.getChannel());
+									+ " /ch:" + channelFutureConnect.getChannel());
 							futureResponse.setFailed("Connect failed " + future.getCause());
 							if (logger.isDebugEnabled() && future.getCause()!=null)
 							{
@@ -210,7 +225,7 @@ public class Sender
 	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse,
 			final boolean tcp, final Message message, final boolean isFireAndForget)
 	{
-		final Cancellable cancel2 = new Cancellable()
+		final Cancellable cancel = new Cancellable()
 		{
 			@Override
 			public void cancel()
@@ -218,18 +233,21 @@ public class Sender
 				writeFuture.cancel();
 			}
 		};
-		futureResponse.addCancellation(cancel2);
+		futureResponse.addCancellation(cancel);
 		writeFuture.addListener(new ChannelFutureListener()
 		{
 			@Override
 			public void operationComplete(final ChannelFuture writeFuture)
 			{
-				futureResponse.removeCancellation(cancel2);
+				futureResponse.removeCancellation(cancel);
 				if (!writeFuture.isSuccess())
 				{
+					//most likely its closed, but just to be sure
 					writeFuture.getChannel().close();
 					if (writeFuture.isCancelled())
+					{
 						futureResponse.cancel();
+					}
 					else
 					{
 						futureResponse.setFailed("Write failed");
@@ -251,7 +269,7 @@ public class Sender
 		return configuration;
 	}
 	
-	public void shutdown()
+	public void shutdownAndWait()
 	{
 		shutdown = true;
 	}

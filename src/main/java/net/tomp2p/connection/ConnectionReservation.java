@@ -14,6 +14,8 @@
  * the License.
  */
 package net.tomp2p.connection;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,7 +44,9 @@ public class ConnectionReservation
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
 	final private MessageLogger messageLoggerFilter;
-	final private int maxPermits;
+	final private int maxPermitsCreating;
+	final private int maxPermitsOpen;
+	final private ConcurrentMap<PeerConnection, Boolean> permanentConnections = new ConcurrentHashMap<PeerConnection, Boolean>();
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
@@ -51,9 +55,10 @@ public class ConnectionReservation
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
-		this.maxPermits = configuration.getMaxCreating();
-		this.semaphoreCreating = new Semaphore(maxPermits);
-		this.semaphoreOpen = new Semaphore(configuration.getMaxOpenConnection());
+		this.maxPermitsCreating = configuration.getMaxCreating();
+		this.maxPermitsOpen = configuration.getMaxOpenConnection();
+		this.semaphoreCreating = new Semaphore(maxPermitsCreating);
+		this.semaphoreOpen = new Semaphore(maxPermitsOpen);
 		//this.semaphoreCreate = new Semaphore(20);
 		this.messageLoggerFilter = messageLoggerFilter;
 	}
@@ -73,7 +78,7 @@ public class ConnectionReservation
 			throw new RuntimeException("cannot block here");
 		}
 		boolean acquired = false;
-		int counter = 0;
+		//int counter = 0;
 		while(!acquired && !shutdown.get())
 		{
 			acquired=semaphoreCreating.tryAcquire(permits) && semaphoreOpen.tryAcquire(permits);
@@ -81,18 +86,18 @@ public class ConnectionReservation
 			{
 				if(logger.isDebugEnabled())
 				{
-					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermits+", but now we have "+semaphoreCreating.availablePermits());
+					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", but now we have "+semaphoreCreating.availablePermits());
 				}
-				if(counter % 40 ==0)
+				/*if(counter % 40 ==0)
 				{
-					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermits+", but now we have "+semaphoreCreating.availablePermits());
-				}
+					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", but now we have "+semaphoreCreating.availablePermits());
+				}*/
 				synchronized (semaphoreCreating)
 				{
 					try 
 					{
 						semaphoreCreating.wait(250);
-						counter++;
+						//counter++;
 					} 
 					catch (InterruptedException e) 
 					{
@@ -124,13 +129,18 @@ public class ConnectionReservation
 		}
 	}
 	
+	public void releaseOpen(int permits)
+	{
+		semaphoreOpen.release(permits);
+	}
+	
 	public void release(int permits)
 	{
 		semaphoreCreating.release(permits);
 		semaphoreOpen.release(permits);
 		if(logger.isDebugEnabled())
 		{
-			logger.debug("released "+ permits+", in total we have "+maxPermits+", now we have "+semaphoreCreating.availablePermits());
+			logger.debug("released "+ permits+", in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", now we have "+semaphoreCreating.availablePermits());
 		}
 		synchronized (semaphoreCreating)
 		{
@@ -144,11 +154,28 @@ public class ConnectionReservation
 	public void shutdown()
 	{
 		shutdown.set(true);
+		for(PeerConnection peerConnection:permanentConnections.keySet())
+		{
+			peerConnection.close();
+		}
 		synchronized (semaphoreCreating)
 		{
+			//when we shutdown, we dont care about the connection count.
 			semaphoreCreating.notifyAll();
 		}
+		//futureGroup.awaitUninterruptibly();
 		channelsTCP.close().awaitUninterruptibly();
 		channelsUDP.close().awaitUninterruptibly();
 	}
+
+	public void addPeerConnection(PeerConnection peerConnection) 
+	{
+		permanentConnections.put(peerConnection, Boolean.TRUE);	
+	}
+	
+	public void removePeerConnection(PeerConnection peerConnection) 
+	{
+		permanentConnections.remove(peerConnection);
+	}
+	
 }

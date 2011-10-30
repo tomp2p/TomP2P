@@ -25,7 +25,7 @@ public class ConnectionConfiguration
 	private int connectTimeouMillis = 3 * 1000;
 	// doing tests on localhost, we open 2 * maxOpenConnection
 	private int maxOpenConnection = 400;
-	private int maxCreating = 75;
+	private int maxCreating = 50;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
 	

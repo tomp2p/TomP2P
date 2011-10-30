@@ -26,9 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FutureForkedBootstrap;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message;
@@ -61,7 +59,7 @@ public class DistributedRouting
 	}
 
 	/**
-	 * Bootstraps to the given remoteNode, i.e. looking for near and far nodes
+	 * Bootstraps to the given remoteNode, i.e. looking for near nodes
 	 * 
 	 * @param remoteNode
 	 *            the node to which bootstrap should be performed to
@@ -71,20 +69,19 @@ public class DistributedRouting
 	 *            number of failures to stop at
 	 * @param parallel
 	 *            number of routing requests performed concurrently
-	 * @return a FutureMulti object containing FutureRouting objects
+	  * @return a FutureRouting object, is set to complete if the route has been
+	 *         found
 	 */
-	public FutureBootstrap bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
+	public FutureRouting bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
 			int maxSuccess, int parallel, boolean forceSocket, final ChannelCreator cc)
 	{
 		// search close peers
-		logger.debug("broadcast to " + peerAddresses);
-		FutureRouting futureRouting1 = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
+		if(logger.isDebugEnabled()) {
+			logger.debug("broadcast to " + peerAddresses);
+		}
+		FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
 				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc);
-		// search far peers
-		FutureRouting futureRouting2 = routing(peerAddresses,
-				peerBean.getServerPeerAddress().getID().xor(Number160.MAX_VALUE), null, null, 0, maxNoNewInfo,
-				maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc);
-		return new FutureForkedBootstrap(peerBean.getServerPeerAddress(), peerAddresses, futureRouting1, futureRouting2);
+		return futureRouting;
 	}
 
 	/**
@@ -257,10 +254,6 @@ public class DistributedRouting
 		{
 			if (futureResponses[i] == null && !stopCreatingNewFutures)
 			{
-				if (logger.isDebugEnabled())
-				{
-					logger.debug("here1: ");
-				}
 				PeerAddress next = Utils.pollFirst(queueToAsk);
 				// PeerAddress next = queueToAsk.pollFirst();
 				if (next != null)
@@ -269,18 +262,13 @@ public class DistributedRouting
 					active++;
 					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey, contentKeys, command,
 							isDigest, forceSocket, cc);
-					if (logger.isDebugEnabled())
-					{
+					if (logger.isDebugEnabled()) {
 						logger.debug("get close neighbors: " + next);
 					}
 				}
 			}
 			else if (futureResponses[i] != null) {
 				active++;
-				if (logger.isDebugEnabled())
-				{
-					logger.debug("here2: "+futureResponses[i].getRequest());
-				}
 			}
 		}
 		if (active == 0)
@@ -304,8 +292,7 @@ public class DistributedRouting
 					PeerAddress remotePeer = lastResponse.getSender();
 					potentialHits.add(remotePeer);
 					Collection<PeerAddress> newNeighbors = lastResponse.getNeighbors();
-					if (logger.isDebugEnabled())
-					{
+					if (logger.isDebugEnabled()) {
 						logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
 					}
 					long contentLength = lastResponse.getInteger();
@@ -334,8 +321,7 @@ public class DistributedRouting
 						finished = false;
 						stopCreatingNewFutures = false;
 					}
-					if (logger.isDebugEnabled())
-					{
+					if (logger.isDebugEnabled()) {
 						logger.debug("Routing finished " + finished);
 					}
 				}
@@ -346,8 +332,7 @@ public class DistributedRouting
 				}
 				if (finished)
 				{
-					if (logger.isDebugEnabled())
-					{
+					if (logger.isDebugEnabled()) {
 						logger.debug("finished routing, direct hits: " + directHits + ", potential: " + potentialHits);
 					}
 					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);

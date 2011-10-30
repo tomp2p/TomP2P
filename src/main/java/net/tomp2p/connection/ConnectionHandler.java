@@ -104,7 +104,7 @@ public class ConnectionHandler
 	//
 	final private MessageLogger messageLoggerFilter;
 	//final private ConnectionConfiguration configuration;
-
+	
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair, PeerMap peerMap,
 			List<PeerListener> listeners, P2PConfiguration peerConfiguration) throws Exception
@@ -125,7 +125,6 @@ public class ConnectionHandler
 		tcpClientChannelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 		//
-		
 		
 		String status = bindings.discoverLocalInterfaces();
 		logger.info("Status of interface search: " + status);
@@ -257,7 +256,7 @@ public class ConnectionHandler
 				ChannelPipeline pipe = Channels.pipeline();
 				//TODO: enable a 2min timeout
 				//ReplyTimeoutHandler timeoutHandler = new ReplyTimeoutHandler(timer, 
-				//		connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress(), "receiver TCP");
+				//		connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress());
 				//pipe.addLast("timeout", timeoutHandler);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
@@ -320,8 +319,8 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
-			connectionBean.getSender().shutdown();
-			connectionBean.getScheduler().shutdown();
+			connectionBean.getScheduler().shutdownAndWait();
+			connectionBean.getSender().shutdownAndWait();
 			connectionBean.getReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources

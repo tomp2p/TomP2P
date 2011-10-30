@@ -392,7 +392,9 @@ public class StorageMemory extends Storage
 		{
 			for (Number480 key : toRemove)
 			{
-				logger.debug("Remove key " + key + " due to expiration");
+				if(logger.isDebugEnabled()) {
+					logger.debug("Remove key " + key + " due to expiration");
+				}
 				remove(key, null, true);
 			}
 		}

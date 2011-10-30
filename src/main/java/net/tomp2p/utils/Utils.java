@@ -500,7 +500,4 @@ public class Utils
 		// TODO Auto-generated method stub
 		return activePeers;
 	}
-	
-	
-
 }

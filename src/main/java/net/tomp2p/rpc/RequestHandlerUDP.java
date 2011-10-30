@@ -25,6 +25,9 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerMap;
 
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.DefaultExceptionEvent;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -120,7 +123,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		{
 			// e.getCause().printStackTrace();
 			logger.debug("exception caugth, but handled properly: " + e.toString());
-			futureResponse.setFailed(e.toString());
+			reportFail(e.toString(), ctx.getChannel(), futureResponse);
 			if (e.getCause() instanceof PeerException)
 			{
 				PeerException pe = (PeerException) e.getCause();
@@ -160,15 +163,15 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		}
 		if (e.getMessage() instanceof Message)
 		{
-			Message message = (Message) e.getMessage();
-			MessageID recvMessageID = new MessageID(message);
-			if (message.getType() == Message.Type.UNKNOWN_ID)
+			final Message responseMessage = (Message) e.getMessage();
+			MessageID recvMessageID = new MessageID(responseMessage);
+			if (responseMessage.getType() == Message.Type.UNKNOWN_ID)
 			{
 				String msg = "Message was not delivered successfully: " + this.message;
 				exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 						PeerException.AbortCause.PEER_ABORT, msg)));
 			}
-			else if (message.getType() == Message.Type.EXCEPTION)
+			else if (responseMessage.getType() == Message.Type.EXCEPTION)
 			{
 				String msg = "Message caused an exception on the other side, handle as peer_abort: "
 						+ this.message;
@@ -177,7 +180,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 			}
 			else if (!sendMessageID.equals(recvMessageID))
 			{
-				String msg = "Message [" + message
+				String msg = "Message [" + responseMessage
 						+ "] sent to the node is not the same as we expect (UDP). We sent ["
 						+ this.message + "]";
 				if (logger.isWarnEnabled())
@@ -188,11 +191,11 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 			else
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("perfect: " + message);
+					logger.debug("perfect: " + responseMessage);
 				// We got a good answer, let's mark the sender as alive
-				if (message.isOk() || message.isNotOk())
-					getPeerMap().peerFound(message.getSender(), null);
-				futureResponse.setResponse(message);
+				if (responseMessage.isOk() || responseMessage.isNotOk())
+					getPeerMap().peerFound(responseMessage.getSender(), null);
+				reportResult(ctx.getChannel(), futureResponse, responseMessage);
 			}
 		}
 		else
@@ -204,10 +207,29 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		}
 		ctx.sendUpstream(e);
 	}
-	/*
-	 * public void closeRequested(ChannelHandlerContext ctx, ChannelStateEvent
-	 * e) throws Exception { ctx.sendDownstream(e); try { throw new
-	 * RuntimeException(""); } catch(RuntimeException ee) {
-	 * ee.printStackTrace(); } logger.error("CLOSE CALLED"); }
-	 */
+	
+	private void reportFail(final String cause, final Channel channel, final FutureResponse futureResponse)
+	{
+		channel.getCloseFuture().addListener(new ChannelFutureListener() 
+		{
+			@Override
+			public void operationComplete(ChannelFuture arg0) throws Exception 
+			{
+				futureResponse.setFailed(cause);
+			}
+		});	
+	}
+	
+	private void reportResult(final Channel channel, final FutureResponse futureResponse, final Message responseMessage)
+	{
+		// most likely this is already closed
+		channel.getCloseFuture().addListener(new ChannelFutureListener() 
+		{
+			@Override
+			public void operationComplete(ChannelFuture arg0) throws Exception 
+			{
+				futureResponse.setResponse(responseMessage);
+			}
+		});
+	}
 }

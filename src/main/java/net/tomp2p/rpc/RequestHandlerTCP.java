@@ -26,6 +26,8 @@ import net.tomp2p.peers.PeerMap;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelUpstreamHandler;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -108,7 +110,7 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 			if (ce instanceof ExceptionEvent)
 			{
 				String msg = "Exception received: " + ((ExceptionEvent)ce).getCause();
-				closeFail(msg, ctx.getChannel(), futureResponse);
+				reportFail(msg, ctx.getChannel(), futureResponse);
 				return;
 	        }
 			else
@@ -121,53 +123,81 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 		if (!(e.getMessage() instanceof Message))
 		{
 			String msg = "Message received, but not of type Message: " + e.getMessage();
-			closeFail(msg, ctx.getChannel(), futureResponse);
+			reportFail(msg, ctx.getChannel(), futureResponse);
 			return;
 		}
-		final Message message = (Message) e.getMessage();
+		final Message responseMessage = (Message) e.getMessage();
 		if (handlingMessage.compareAndSet(false, true))
 		{
 			futureResponse.cancelTimeout();
 		}
-		MessageID recvMessageID = new MessageID(message);
-		if (message.getType() == Message.Type.UNKNOWN_ID)
+		MessageID recvMessageID = new MessageID(responseMessage);
+		if (responseMessage.getType() == Message.Type.UNKNOWN_ID)
 		{
 			String msg = "Message was not delivered successfully: " + this.message;
 			getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
-			closeFail(msg, ctx.getChannel(), futureResponse);
+			reportFail(msg, ctx.getChannel(), futureResponse);
 		}
-		else if (message.getType() == Message.Type.EXCEPTION)
+		else if (responseMessage.getType() == Message.Type.EXCEPTION)
 		{
 			String msg = "Message caused an exception on the other side, handle as peer_abort: "
 					+ this.message;
-			closeFail(msg, ctx.getChannel(), futureResponse);
+			reportFail(msg, ctx.getChannel(), futureResponse);
 		}
 		else if (!sendMessageID.equals(recvMessageID))
 		{
-			String msg = "Message [" + message
+			String msg = "Message [" + responseMessage
 					+ "] sent to the node is not the same as we expect (TCP). We sent ["
 					+ this.message + "]";
-			closeFail(msg, ctx.getChannel(), futureResponse);
+			reportFail(msg, ctx.getChannel(), futureResponse);
 		}
 		else
 		{
 			if (logger.isDebugEnabled())
-				logger.debug("perfect: " + message);
+				logger.debug("perfect: " + responseMessage);
 			// We got a good answer, let's mark the sender as alive
-			if (message.isOk() || message.isNotOk())
-				getPeerMap().peerFound(message.getSender(), null);
+			if (responseMessage.isOk() || responseMessage.isNotOk())
+				getPeerMap().peerFound(responseMessage.getSender(), null);
 			// connection is closed by other peer
-			futureResponse.setResponse(message);
+			reportResult(ctx.getChannel(), futureResponse, responseMessage);
 		}
 	}
 
-	public void closeFail(final String cause, final Channel channel, final FutureResponse futureResponse)
+	private void reportFail(final String cause, final Channel channel, final FutureResponse futureResponse)
 	{
-		if (logger.isDebugEnabled())
-		{
+		if (logger.isDebugEnabled()) {
 			logger.debug(cause);
 		}
-		futureResponse.setFailed(cause);
 		channel.close();
+		//this needs to be the last listener added
+		channel.getCloseFuture().addListener(new ChannelFutureListener() 
+		{
+			@Override
+			public void operationComplete(ChannelFuture arg0) throws Exception 
+			{
+				futureResponse.setFailed(cause);
+			}
+		});	
+	}
+	
+	private void reportResult(final Channel channel, final FutureResponse futureResponse, final Message responseMessage)
+	{
+		if(message.isKeepAlive())
+		{
+			futureResponse.setResponse(responseMessage);
+		}
+		else
+		{
+			// the other side closes the channel
+			// this needs to be the last listener added
+			channel.getCloseFuture().addListener(new ChannelFutureListener() 
+			{
+				@Override
+				public void operationComplete(ChannelFuture arg0) throws Exception 
+				{
+					futureResponse.setResponse(responseMessage);
+				}
+			});
+		}
 	}
 }

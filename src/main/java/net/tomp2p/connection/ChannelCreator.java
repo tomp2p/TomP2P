@@ -37,9 +37,7 @@ import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 public class ChannelCreator 
 {
 	final private Semaphore semaphoreOpenConnections;
-	//final private Semaphore semaphoreCreating;
-	final private int permitsOpen;
-	//final private int permitsCreate;
+	final private int permits;
 	final private ChannelGroup channelsTCP;
 	final private ChannelGroup channelsUDP;
 	final private MessageLogger messageLoggerFilter;
@@ -52,16 +50,14 @@ public class ChannelCreator
 	private static AtomicLong statConnectionsCreatedTCP=new AtomicLong();
 	private static AtomicLong statConnectionsCreatedUDP=new AtomicLong();
 	
-	public ChannelCreator(ChannelGroup channelsTCP, ChannelGroup channelsUDP, int permitsOpen, 
+	public ChannelCreator(ChannelGroup channelsTCP, ChannelGroup channelsUDP, int permits, 
 			MessageLogger messageLoggerFilter, ChannelFactory tcpClientChannelFactory, 
 			ChannelFactory udpClientChannelFactory, AtomicBoolean shutdown, ConnectionReservation connectionReservation, boolean keepAliveAndReuse)
 	{
-		this.permitsOpen = permitsOpen;
-		//this.permitsCreate = permitsCreate;
+		this.permits = permits;
 		this.channelsTCP = channelsTCP;
 		this.channelsUDP = channelsUDP;
-		this.semaphoreOpenConnections=new Semaphore(permitsOpen);
-		//this.semaphoreCreating=new Semaphore(permitsCreate);
+		this.semaphoreOpenConnections=new Semaphore(permits);
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpClientChannelFactory;
@@ -71,7 +67,8 @@ public class ChannelCreator
 	}
 	
 	public Channel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
-			RequestHandlerUDP requestHandler, final FutureResponse futureResponse, boolean broadcast) {
+			RequestHandlerUDP requestHandler, final FutureResponse futureResponse, boolean broadcast) 
+	{				
 		if(shutdown.get())
 		{
 			throw new RuntimeException("Cannot create channel if already shutdown");
@@ -79,7 +76,7 @@ public class ChannelCreator
 		// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
 		if(!semaphoreOpenConnections.tryAcquire())
 		{
-			throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
+			throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
 		}
 		// now, we don't exceeded the limits, so create channels
 		Channel channel;
@@ -124,7 +121,7 @@ public class ChannelCreator
 				// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
 				if(!semaphoreOpenConnections.tryAcquire())
 				{
-					throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
+					throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
 				}
 				// now, we don't exceeded the limits, so create channels
 				channelFuture = createChannelTCP(timeoutHandler, requestHandler,
@@ -146,7 +143,7 @@ public class ChannelCreator
 			// If we are out of semaphores, we cannot create any channels. Since we know how many channels max. in parallel are created, we can reserve it. 
 			if(!semaphoreOpenConnections.tryAcquire())
 			{
-				throw new RuntimeException("you ran out of permits. You had "+permitsOpen+" available, but now its down to 0");
+				throw new RuntimeException("you ran out of permits. You had "+permits+" available, but now its down to 0");
 			}
 			try
 			{
@@ -159,10 +156,10 @@ public class ChannelCreator
 				semaphoreOpenConnections.release();
 				return null;
 			}
-			
 		}
 		final Channel channel = channelFuture.getChannel();
 		channelsTCP.add(channel);
+		
 		if(newConnection)
 		{
 			channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -170,7 +167,6 @@ public class ChannelCreator
 				@Override
 				public void operationComplete(ChannelFuture future) throws Exception
 				{
-					channelsTCP.remove(future.getChannel());
 					semaphoreOpenConnections.release();
 					if(keepAliveAndReuse)
 					{
@@ -184,7 +180,7 @@ public class ChannelCreator
 	
 	public void release()
 	{
-		connectionReservation.release(permitsOpen);
+		connectionReservation.release(permits);
 	}
 	
 	public void release(int nr)
@@ -192,14 +188,14 @@ public class ChannelCreator
 		connectionReservation.release(nr);
 	}
 	
-	private final AtomicBoolean releasedCreating = new AtomicBoolean(false);
-	
-	public void releaseCreating() 
+	public void releaseCreating()
 	{
-		if(releasedCreating.compareAndSet(false, true))
-		{
-			connectionReservation.releaseCreating(permitsOpen);
-		}
+		connectionReservation.releaseCreating(permits);
+	}
+	
+	public void releaseOpen() 
+	{
+		connectionReservation.releaseOpen(permits);
 	}
 	
 	private ChannelFuture createChannelTCP(ChannelHandler timeoutHandler,
@@ -215,7 +211,8 @@ public class ChannelCreator
 		bootstrap.setOption("reuseAddress", true);
 		bootstrap.setOption("keepAlive", true);
 		setupBootstrapTCP(bootstrap, timeoutHandler, requestHandler, new TomP2PDecoderTCP(), new TomP2PEncoderTCP(), new ChunkedWriteHandler(), messageLoggerFilter);
-		return bootstrap.connect(remoteAddress);
+		ChannelFuture channelFuture = bootstrap.connect(remoteAddress);
+		return channelFuture;
 	}
 	
 	private Channel createChannelUDP(ChannelHandler timeoutHandler, ChannelHandler replyHandler,
@@ -290,6 +287,4 @@ public class ChannelCreator
 	{
 		return statConnectionsCreatedUDP.get();
 	}
-
-
 }

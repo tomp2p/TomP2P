@@ -19,37 +19,17 @@ import java.util.Collection;
 import net.tomp2p.peers.PeerAddress;
 
 
-public class FutureWrappedBootstrap extends FutureWrapper<FutureBootstrap> implements
+public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<K> implements
 		FutureBootstrap
 {
 	private Collection<PeerAddress> bootstrapTo;
-
-	public void waitForBootstrap(final FutureBootstrap bootstrap)
-	{
-		synchronized (lock)
-		{
-			this.bootstrapTo = bootstrap.getBootstrapTo();
-		}
-		waitFor(bootstrap);
-	}
-	@Deprecated
-	public void waitForBootstrap(final FutureBootstrap bootstrap, final PeerAddress bootstrapTo)
-	{
-		synchronized (lock)
-		{
-			this.bootstrapTo = bootstrap.getBootstrapTo();
-		}
-		waitFor(bootstrap);
-	}
-
-	public void waitForBootstrap(final FutureBootstrap bootstrap,
-			final Collection<PeerAddress> bootstrapTo)
+	
+	public void setBootstrapTo(Collection<PeerAddress> bootstrapTo)
 	{
 		synchronized (lock)
 		{
 			this.bootstrapTo = bootstrapTo;
 		}
-		waitFor(bootstrap);
 	}
 
 	public Collection<PeerAddress> getBootstrapTo()
@@ -58,5 +38,10 @@ public class FutureWrappedBootstrap extends FutureWrapper<FutureBootstrap> imple
 		{
 			return bootstrapTo;
 		}
+	}
+	
+	public K getWrappedFuture()
+	{
+		return super.getWrappedFuture();
 	}
 }

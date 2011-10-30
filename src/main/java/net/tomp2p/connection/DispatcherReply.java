@@ -297,8 +297,9 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 		else
 		{
-			if (logger.isDebugEnabled())
-				logger.debug("reply TCP message " + response);
+			if (logger.isDebugEnabled()) {
+				logger.debug("reply TCP message " + response+ " to "+ctx.getChannel().getRemoteAddress());
+			}
 			ChannelFuture cf = ctx.getChannel().write(response);
 			if(!isKeepAlive)
 			{

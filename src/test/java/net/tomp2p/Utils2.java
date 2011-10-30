@@ -1,13 +1,12 @@
 package net.tomp2p;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.Random;
 
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -71,6 +70,54 @@ public class Utils2
 		message.setType(type);
 		message.setCommand(command);
 		return message;
+	}
+
+	/**
+	 * Creates peers for testing. The first peer (peer[0]) will be used as the
+	 * master. This means that shutting down peer[0] will shut down all other
+	 * peers
+	 * 
+	 * @param nrOfPeers
+	 *            The number of peers to create including the master
+	 * @param rnd
+	 *            The random object to create random peer IDs
+	 * @param port
+	 *            The port where the master peer will listen to
+	 * @return All the peers, with the master peer at position 0 -> peer[0]
+	 * @throws Exception
+	 *             If the creation of nodes fail.
+	 */
+	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port)
+			throws Exception {
+		if (nrOfPeers < 1) {
+			throw new IllegalArgumentException("Cannot create less than 1 peer");
+		}
+
+		Peer[] peers = new Peer[nrOfPeers];
+		peers[0] = new Peer(new Number160(rnd));
+		peers[0].listen(port, port);
+		for (int i = 1; i < nrOfPeers; i++) {
+			peers[i] = new Peer(new Number160(rnd));
+			peers[i].listen(peers[0]);
+		}
+		System.err.println("peers created.");
+		return peers;
+	}
+
+	/**
+	 * Perfect routing, where each neighbor has contacted each other. This means
+	 * that for small number of peers, every peer knows every other peer.
+	 * 
+	 * @param peers
+	 *            The peers taking part in the p2p network.
+	 */
+	public static void perfectRouting(Peer[] peers) {
+		for (int i = 0; i < peers.length; i++) {
+			for (int j = 0; j < peers.length; j++)
+				peers[i].getPeerBean().getPeerMap()
+						.peerFound(peers[j].getPeerAddress(), null);
+		}
+		System.err.println("perfect routing done.");
 	}
 	
 }

@@ -228,11 +228,15 @@ public class StorageRPC extends ReplyHandler
 		{
 			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
 					entry.getValue(), publicKey, putIfAbsent, protectDomain)) {
+				if(logger.isDebugEnabled()) {
+					logger.debug("put data with key "+locationKey+" on "+peerBean.getServerPeerAddress());
+				}
 				result.add(entry.getKey());
 			}
 			else {
-				if(logger.isDebugEnabled())
-					logger.debug("could not add");
+				if(logger.isDebugEnabled()) {
+					logger.debug("could not add "+locationKey+" on "+peerBean.getServerPeerAddress());
+				}
 				peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
 						entry.getValue(), publicKey, putIfAbsent, protectDomain);
 			}
@@ -275,8 +279,12 @@ public class StorageRPC extends ReplyHandler
 		for (Map.Entry<Number160, Data> entry : data.entrySet())
 		{
 			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
-					entry.getValue(), publicKey, true, protectDomain))
+					entry.getValue(), publicKey, true, protectDomain)) {
+				if(logger.isDebugEnabled()) {
+					logger.debug("add data with key "+locationKey+" on "+peerBean.getServerPeerAddress());
+				}
 				result.add(entry.getKey());
+			}
 		}
 		// check the responsibility of the newly added data, do something
 		// (notify) if we are responsible

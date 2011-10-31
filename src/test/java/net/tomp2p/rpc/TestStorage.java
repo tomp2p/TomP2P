@@ -760,17 +760,21 @@ public class TestStorage
 			
 			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			//todo make this work...
-			
 			store(sender, recv1, smmSender, cc).awaitUninterruptibly();
+			cc.release();
 			for (int i = 0; i < 40; i++)
 			{
-				final ChannelCreator cc1=sender.getConnectionBean().getReservation().reserve(50);
+				System.err.println("round "+i);
+				//final ChannelCreator cc1=sender.getConnectionBean().getReservation().reserve(50);
 				for (int j = 0; j < 50; j++)
 				{
-					res.add(store(sender, recv1, smmSender, cc1));
+					ChannelCreator cc1=sender.getConnectionBean().getReservation().reserve(1);
+					FutureResponse fr=store(sender, recv1, smmSender, cc1);
+					res.add(fr);
+					Utils.addReleaseListenerAll(fr, cc1);
 			
 				}
-				cc1.release();
+				//cc1.release();
 				for (FutureResponse fr : res)
 				{
 					fr.awaitUninterruptibly();
@@ -778,7 +782,7 @@ public class TestStorage
 				}
 				res.clear();
 			}
-			
+			System.err.println("done.");
 		}
 		finally
 		{

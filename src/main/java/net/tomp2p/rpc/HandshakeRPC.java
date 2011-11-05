@@ -22,6 +22,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
@@ -37,7 +38,6 @@ public class HandshakeRPC extends ReplyHandler
 	final private static Logger logger = LoggerFactory.getLogger(HandshakeRPC.class);
 	final private boolean enable;
 	final private boolean wait;
-	private volatile ChannelCreator channelCreator;
 
 	public HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
@@ -117,7 +117,6 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		this.channelCreator=channelCreator;
 		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
 	}
 
@@ -125,7 +124,6 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		this.channelCreator=channelCreator;
 		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
 	}
 
@@ -149,16 +147,48 @@ public class HandshakeRPC extends ReplyHandler
 				responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
 			}
 			responseMessage.setMessageId(message.getMessageId());
-			if (message.isUDP())
-				fireUDP(message.getSender(), channelCreator);
-			else
-				fireTCP(message.getSender(), channelCreator);
+			if (message.isUDP()) 
+			{
+				FutureRunnable runner = new FutureRunnable() 
+				{
+					@Override
+					public void run() {
+						ChannelCreator cc=connectionBean.getReservation().reserve(1);
+						FutureResponse fr=fireUDP(message.getSender(), cc);
+						Utils.addReleaseListenerAll(fr, cc);
+					}
+					@Override
+					public void failed(String reason) {
+						logger.warn("handleResponse for REQUEST_3 failed (UDP) "+reason);
+					}
+				};
+				connectionBean.getScheduler().callLater(runner);
+			}
+			else 
+			{
+				FutureRunnable runner = new FutureRunnable() 
+				{
+					@Override
+					public void run() {
+						ChannelCreator cc=connectionBean.getReservation().reserve(1);
+						FutureResponse fr=fireTCP(message.getSender(), cc);
+						Utils.addReleaseListenerAll(fr, cc);
+					}
+					@Override
+					public void failed(String reason) {
+						logger.warn("handleResponse for REQUEST_3 failed (TCP) "+reason);
+					}
+				};
+				connectionBean.getScheduler().callLater(runner);
+			}
 			return responseMessage;
 		}
 		// discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
-			logger.debug("reply to discover, found " + message.getSender());
+			if(logger.isDebugEnabled()) {
+				logger.debug("reply to discover, found " + message.getSender());
+			}
 			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
 			if (sign)
 			{
@@ -170,7 +200,8 @@ public class HandshakeRPC extends ReplyHandler
 			responseMessage.setNeighbors(self);
 			return responseMessage;
 		}
-		else
+		// regular ping
+		else  if (message.getType() == Type.REQUEST_1)
 		{
 			//test if this is a broadcast message to ourselfs. If it is, do not reply.
 			if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID())
@@ -197,6 +228,11 @@ public class HandshakeRPC extends ReplyHandler
 					Utils.sleep(10 * 1000);
 				return null;
 			}
+		}
+		// fire and forget
+		else 
+		{
+			return message;
 		}
 	}
 }

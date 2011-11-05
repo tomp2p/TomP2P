@@ -787,8 +787,6 @@ public class Peer
 		if (peerConfiguration.isBehindFirewall())
 		{
 			final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn * 2);
-			if(bindings.isSetupUPNP())
-				setupPortForwandingUPNP();
 			FutureDiscover futureDiscover = discover(peerAddress);
 			futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
 			{
@@ -830,10 +828,11 @@ public class Peer
 	
 	/**
 	 * The Dynamic and/or Private Ports are those from 49152 through 65535 (http://www.iana.org/assignments/port-numbers)
+	 * @param internalHost 
 	 * @param port
 	 * @return
 	 */
-	public void setupPortForwandingUPNP()
+	public void setupPortForwandingUPNP(String internalHost)
 	{
 		final int range = 65535 - 49152;
 		Random rnd = new Random();
@@ -851,7 +850,7 @@ public class Peer
 		}
 		try
 		{
-			connectionHandler.mapUPNP( getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
+			connectionHandler.mapUPNP(internalHost, getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
 		}
 		catch (IOException e)
 		{
@@ -919,9 +918,13 @@ public class Peer
 						logger.debug("I'm seen as " + seenAs + " by peer " + peerAddress);
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
+							// now we know our internal IP, where we receive packets
+							setupPortForwandingUPNP(futureResponseTCP.getResponse().getRecipient().getInetAddress().getHostAddress());
+							//
 							serverAddress=serverAddress.changePorts(bindings.getOutsideUDPPort(), bindings.getOutsideTCPPort());
 							serverAddress=serverAddress.changeAddress(seenAs.getInetAddress());
 							getPeerBean().setServerPeerAddress(serverAddress);
+							
 							//
 							FutureResponse fr1 = getHandshakeRPC().pingTCPProbe(peerAddress, cc);
 							FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);

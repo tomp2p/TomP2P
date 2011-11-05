@@ -48,7 +48,9 @@ public class TomP2PDecoderUDP implements ChannelUpstreamHandler
 		}
 		Message message = decode(ctx, e.getChannel(), (ChannelBuffer) originalMessage, e.getRemoteAddress());
 		if (message != null)
+		{
 			Channels.fireMessageReceived(ctx, message, e.getRemoteAddress());
+		}
 	}
 
 	protected Message decode(final ChannelHandlerContext ctx, final Channel channel, final ChannelBuffer buffer,
@@ -62,7 +64,8 @@ public class TomP2PDecoderUDP implements ChannelUpstreamHandler
 		}
 
 		int readerIndex = buffer.readerIndex();
-		final Message message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) socketAddress).getAddress());
+		final InetSocketAddress localSocket = (InetSocketAddress) channel.getLocalAddress();
+		final Message message = MessageCodec.decodeHeader(buffer, localSocket, ((InetSocketAddress) socketAddress));
 		// set finished time before, as the sender already started its timer
 		message.setUDP();
 		message.finished();

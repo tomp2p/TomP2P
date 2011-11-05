@@ -367,7 +367,7 @@ public class ConnectionHandler
 		}
 	}
 
-	public void mapUPNP(int internalPortUDP, int internalPortTCP, int externalPortUDP, int externalPortTCP)
+	public void mapUPNP(String internalHost, int internalPortUDP, int internalPortTCP, int externalPortUDP, int externalPortTCP)
 			throws IOException
 	{
 		// -1 sets the default timeout to 1500 ms
@@ -381,7 +381,7 @@ public class ConnectionHandler
 			{
 				if (externalPortUDP != -1)
 				{
-					boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", externalPortUDP,
+					boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", internalHost, externalPortUDP,
 							internalPortUDP);
 					if (mappedUDP)
 						internetGatewayDevicesUDP.put(igd, externalPortUDP);
@@ -400,7 +400,7 @@ public class ConnectionHandler
 			{
 				if (externalPortUDP != -1)
 				{
-					boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", externalPortTCP,
+					boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", internalHost, externalPortTCP,
 							internalPortTCP);
 					if (mappedTCP)
 						internetGatewayDevicesTCP.put(igd, externalPortTCP);

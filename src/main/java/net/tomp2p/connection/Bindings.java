@@ -38,7 +38,6 @@ public class Bindings
 	private InetAddress externalAddress = null;
 	private int externalTCPPort = 0;
 	private int externalUDPPort = 0;
-	private boolean setupUPNP = false;
 
 	public Bindings()
 	{
@@ -251,16 +250,6 @@ public class Bindings
 	public boolean isOutsideAddressSet()
 	{
 		return externalAddress!=null;
-	}
-
-	public boolean isSetupUPNP()
-	{
-		return setupUPNP;
-	}
-
-	public void setSetupUPNP(boolean setupUPNP)
-	{
-		this.setupUPNP = setupUPNP;
 	}
 
 	public void setOutsidePortUDP(int externalUDPPort)

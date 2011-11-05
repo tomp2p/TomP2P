@@ -871,10 +871,9 @@ public class TestDHT
 				System.err.println(futureDHT.getFailedReason());
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			
-			Iterator<Data> iterator = futureDHT.getRawData().values().iterator().next()
-					.values().iterator();
-			Assert.assertEquals(2, futureDHT.getRawData().values().iterator().next().values()
-					.size());
+			Iterator<Data> iterator = futureDHT.getData().values().iterator();
+			//futureDHT.get
+			Assert.assertEquals(2, futureDHT.getData().size());
 			System.err.println("got: " + iterator.next().getObject() + " ("
 					+ futureDHT.isSuccess() + ")");
 			System.err.println("got: " + iterator.next().getObject() + " ("

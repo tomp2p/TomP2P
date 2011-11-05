@@ -96,7 +96,6 @@ public class ChannelCreator
 			@Override
 			public void operationComplete(ChannelFuture future) throws Exception
 			{
-				channelsUDP.remove(future.getChannel());
 				semaphoreOpenConnections.release();
 			}
 		});
@@ -204,7 +203,6 @@ public class ChannelCreator
 	{
 		statConnectionsCreatedTCP.incrementAndGet();
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
-		//DBX: enable this line again
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
 		bootstrap.setOption("tcpNoDelay", true);
 		bootstrap.setOption("soLinger", 0);

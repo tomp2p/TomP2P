@@ -323,6 +323,8 @@ public class PeerMapKadImpl implements PeerMap
 				|| isPeerRemovedTemporarly(remotePeer)
 				|| filteredAddresses.contains(remotePeer.getInetAddress()))
 			return false;
+		// the peer might have a new port
+		updatePeerAddress(remotePeer);
 		if (!firstHand && !contains(remotePeer) && assumeBehindFirewall)
 		{
 			// TODO: put peers that come from a referrer in a list, which will
@@ -339,7 +341,7 @@ public class PeerMapKadImpl implements PeerMap
 		}
 		final int classMember = classMember(remotePeer.getID());
 		final Map<Number160, PeerAddress> map = peerMap.get(classMember);
-		if (size() < maxPeers || map.containsKey(remotePeer.getID()))
+		if (size() < maxPeers)
 		{
 			// this updates stats and schedules peer for maintenance
 			prepareInsertOrUpdate(remotePeer, firstHand);
@@ -597,6 +599,13 @@ public class PeerMapKadImpl implements PeerMap
 			}
 		}
 		return false;
+	}
+	
+	public void updatePeerAddress(PeerAddress peerAddress)
+	{
+		final int classMember = classMember(peerAddress.getID());
+		Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
+		tmp.put(peerAddress.getID(), peerAddress);
 	}
 
 	@Override

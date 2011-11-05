@@ -16,7 +16,7 @@
 package net.tomp2p.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -303,7 +303,7 @@ public class MessageCodec
 	 *        class
 	 * @return The partial message, only the header fields are filled
 	 */
-	public static Message decodeHeader(final ChannelBuffer buffer, final InetAddress sender)
+	public static Message decodeHeader(final ChannelBuffer buffer, final InetSocketAddress recipient, final InetSocketAddress sender)
 			throws DecoderException
 	{
 		final Message message = new Message();
@@ -317,7 +317,7 @@ public class MessageCodec
 		final int portTCP = buffer.readUnsignedShort();
 		final int portUDP = buffer.readUnsignedShort();
 		final Number160 recipientID = readID(buffer);
-		message.setRecipient(new PeerAddress(recipientID));
+		message.setRecipient(new PeerAddress(recipientID, recipient));
 		final int contentType = buffer.readUnsignedShort();
 		message.setContentType(Content.values()[contentType & 0xf],
 				Content.values()[(contentType >>> 4) & 0xf],
@@ -326,7 +326,7 @@ public class MessageCodec
 		// identification
 		final int senderMessageOptions = buffer.readUnsignedByte();
 		final int senderOptions =  senderMessageOptions >>> 4;
-		final PeerAddress peerAddress = new PeerAddress(senderID, sender, portTCP, portUDP,
+		final PeerAddress peerAddress = new PeerAddress(senderID, sender.getAddress(), portTCP, portUDP,
 				senderOptions);
 		message.setSender(peerAddress);
 		final int options =  senderMessageOptions & 0xf;

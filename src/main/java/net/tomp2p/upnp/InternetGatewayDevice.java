@@ -428,10 +428,11 @@ public class InternetGatewayDevice
 		}
 	}
 	
-	public boolean addPortMapping(String description, String protocol, int externalPort,
+	public boolean addPortMapping(String description, String protocol, String internalHost, int externalPort,
 			int internalPort) throws IOException, UPNPResponseException
 	{
-		return addPortMapping(description, protocol, null, externalPort, igd.getLocalIP().getHostAddress(), internalPort, 0);
+		//we need to be sure that igd.getLocalIP().getHostAddress() is in the network of internalHost
+		return addPortMapping(description, protocol, null, externalPort, internalHost, internalPort, 0);
 	}
 
 	/**

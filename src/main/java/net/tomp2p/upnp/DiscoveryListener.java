@@ -199,11 +199,6 @@ public class DiscoveryListener implements Runnable
 	private void startMultiCastSocket() throws IOException
 	{
 		int bindPort = Discovery.DEFAULT_SSDP_SEARCH_PORT;
-		String port = System.getProperty( "net.sbbi.upnp.Discovery.bindPort" );
-		if( port != null )
-		{
-			bindPort = Integer.parseInt( port );
-		}
 
 		skt = new java.net.MulticastSocket( null );
 		skt.bind( new InetSocketAddress( InetAddress.getByName( "0.0.0.0" ), bindPort ) );
@@ -258,7 +253,6 @@ public class DiscoveryListener implements Runnable
 
 	private void listenBroadCast() throws IOException
 	{
-
 		skt.receive( input );
 		InetAddress from = input.getAddress();
 		String received =

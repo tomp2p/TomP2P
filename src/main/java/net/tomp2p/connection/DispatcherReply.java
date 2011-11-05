@@ -180,9 +180,18 @@ public class DispatcherReply extends SimpleChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
+		if(e.getCause().toString().equals("java.io.IOException: Connection reset by peer"))
+		{
+			ctx.sendUpstream(e);
+			return;
+		}
+		else if(e.getCause().toString().equals("java.io.IOException: Broken pipe"))
+		{
+			ctx.sendUpstream(e);
+			return;
+		}
 		logger.warn("error in dispatcher request" + e.toString());
-		if (logger.isDebugEnabled())
-			e.getCause().printStackTrace();
+		e.getCause().printStackTrace();
 		ctx.sendUpstream(e);
 	}
 

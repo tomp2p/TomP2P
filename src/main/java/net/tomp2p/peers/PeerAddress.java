@@ -250,7 +250,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	}
 
 	/**
-	 * This is usually used for debugging, the address will be null and ports -1
+	 * If you only need to know the id
 	 * 
 	 * @param id
 	 *            The id of the peer
@@ -258,6 +258,17 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	public PeerAddress(Number160 id)
 	{
 		this(id, null, -1, -1);
+	}
+	
+	/**
+	 *  If you only need to know the id and InetAddress
+	 * 
+	 * @param id  The id of the peer
+	 * @param address The InetAddress of the peer
+	 */
+	public PeerAddress(Number160 id, InetAddress address)
+	{
+		this(id, address, -1, -1);
 	}
 
 	/**

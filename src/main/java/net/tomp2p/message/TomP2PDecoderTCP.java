@@ -16,7 +16,6 @@
 package net.tomp2p.message;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.security.Signature;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -71,8 +70,9 @@ public class TomP2PDecoderTCP extends FrameDecoder
 			// in case we want to check the signature, we need to keep the
 			// header for a while
 			buffer.getBytes(buffer.readerIndex(), rawHeader);
-			final SocketAddress sa = channel.getRemoteAddress();
-			message = MessageCodec.decodeHeader(buffer, ((InetSocketAddress) sa).getAddress());
+			final InetSocketAddress remoteSocket = (InetSocketAddress) channel.getRemoteAddress();
+			final InetSocketAddress localSocket = (InetSocketAddress) channel.getLocalAddress();
+			message = MessageCodec.decodeHeader(buffer, localSocket, remoteSocket);
 			if (logger.isDebugEnabled())
 				logger.debug("got header in decoder " + message);
 			// set that we did not read data, otherwise it gets lost.

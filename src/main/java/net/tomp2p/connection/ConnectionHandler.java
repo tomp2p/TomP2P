@@ -21,10 +21,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 
 import net.tomp2p.message.TomP2PDecoderTCP;
@@ -37,8 +34,6 @@ import net.tomp2p.p2p.Scheduler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.upnp.InternetGatewayDevice;
-import net.tomp2p.upnp.UPNPResponseException;
 
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -74,12 +69,11 @@ public class ConnectionHandler
 	// Stores the node information about this node
 	final private ConnectionBean connectionBean;
 	final private PeerBean peerBean;
+	final private NATUtils natUtils;
 	final public static int UDP_LIMIT = 1400;
 	// Used to calculate the throughput
 	final private static PerformanceFilter performanceFilter = new PerformanceFilter();
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
-	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP = new HashMap<InternetGatewayDevice, Integer>();
-	final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP = new HashMap<InternetGatewayDevice, Integer>();
 	final private Timer timer;
 	final private boolean master;
 	//final private ConnectionReservation reservation;
@@ -174,7 +168,7 @@ public class ConnectionHandler
 					throw new IOException("cannot bind TCP or UDP");
 			}
 		}
-		
+		natUtils = new NATUtils();
 		master = true;
 	}
 
@@ -200,6 +194,7 @@ public class ConnectionHandler
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
 		//this.configuration = parent.configuration;
 		this.timer = parent.timer;
+		this.natUtils = parent.natUtils;
 		this.master = false;
 	}
 
@@ -284,6 +279,11 @@ public class ConnectionHandler
 	{
 		return peerBean;
 	}
+	
+	public NATUtils getNATUtils()
+	{
+		return natUtils;
+	}
 
 	public void customLoggerMessage(String customMessage)
 	{
@@ -311,7 +311,7 @@ public class ConnectionHandler
 			handler.shutdown();
 		if (master)
 		{
-			unmapUPNP();
+			natUtils.shutdown();
 			timer.stop();
 			// channelChache.shutdown();
 			if (messageLoggerFilter != null)
@@ -328,93 +328,6 @@ public class ConnectionHandler
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
 			logger.debug("shutdown complete");
-		}
-	}
-
-	public void unmapUPNP()
-	{
-		for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesTCP.entrySet())
-		{
-			try
-			{
-				entry.getKey().deletePortMapping(null, entry.getValue(), "TCP");
-			}
-			catch (IOException e)
-			{
-				logger.warn("not removed TCP mapping " + entry.toString() + e);
-			}
-			catch (UPNPResponseException e)
-			{
-				logger.warn("not removed TCP mapping " + entry.toString() + e);
-			}
-			logger.info("removed TCP mapping " + entry.toString());
-		}
-		for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesUDP.entrySet())
-		{
-			try
-			{
-				entry.getKey().deletePortMapping(null, entry.getValue(), "UDP");
-			}
-			catch (IOException e)
-			{
-				logger.warn("not removed UDP mapping " + entry.toString() + e);
-			}
-			catch (UPNPResponseException e)
-			{
-				logger.warn("not removed UDP mapping " + entry.toString() + e);
-			}
-			logger.info("removed UDP mapping " + entry.toString());
-		}
-	}
-
-	public void mapUPNP(String internalHost, int internalPortUDP, int internalPortTCP, int externalPortUDP, int externalPortTCP)
-			throws IOException
-	{
-		// -1 sets the default timeout to 1500 ms
-		Collection<InternetGatewayDevice> IGDs = InternetGatewayDevice.getDevices(-1);
-		if (IGDs == null)
-			return;
-		for (InternetGatewayDevice igd : IGDs)
-		{
-			logger.info("Found device " + igd);
-			try
-			{
-				if (externalPortUDP != -1)
-				{
-					boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", internalHost, externalPortUDP,
-							internalPortUDP);
-					if (mappedUDP)
-						internetGatewayDevicesUDP.put(igd, externalPortUDP);
-				}
-			}
-			catch (IOException e)
-			{
-				logger.warn("error in mapping UPD UPNP " + e);
-
-			}
-			catch (UPNPResponseException e)
-			{
-				logger.warn("error in mapping UDP UPNP " + e);
-			}
-			try
-			{
-				if (externalPortUDP != -1)
-				{
-					boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", internalHost, externalPortTCP,
-							internalPortTCP);
-					if (mappedTCP)
-						internetGatewayDevicesTCP.put(igd, externalPortTCP);
-				}
-			}
-			catch (IOException e)
-			{
-				logger.warn("error in mapping TCP UPNP " + e);
-
-			}
-			catch (UPNPResponseException e)
-			{
-				logger.warn("error in mapping TCP UPNP " + e);
-			}
 		}
 	}
 

@@ -53,6 +53,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
+import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.config.ConfigurationDirect;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
@@ -850,13 +851,27 @@ public class Peer
 		}
 		try
 		{
-			connectionHandler.mapUPNP(internalHost, getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
+			connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
+			//connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
 		}
 		catch (IOException e)
+		//catch (NatPmpException e)
 		{
 			logger.warn("cannot find UPNP devices "+e);
+			boolean retVal;
+			try 
+			{
+				retVal = connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(), getPeerAddress().portTCP(), portUDP, portTCP);
+				if(!retVal) 
+				{
+					logger.warn("cannot find NAT-PMP devices");
+				}
+			} 
+			catch (NatPmpException e1) 
+			{
+				logger.warn("cannot find NAT-PMP devices "+e);
+			}
 		}
-		
 	}
 
 	/**

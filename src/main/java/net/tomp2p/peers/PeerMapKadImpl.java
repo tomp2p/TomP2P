@@ -324,7 +324,7 @@ public class PeerMapKadImpl implements PeerMap
 				|| filteredAddresses.contains(remotePeer.getInetAddress()))
 			return false;
 		// the peer might have a new port
-		updatePeerAddress(remotePeer);
+		updateExistingPeerAddress(remotePeer);
 		if (!firstHand && !contains(remotePeer) && assumeBehindFirewall)
 		{
 			// TODO: put peers that come from a referrer in a list, which will
@@ -601,11 +601,12 @@ public class PeerMapKadImpl implements PeerMap
 		return false;
 	}
 	
-	public void updatePeerAddress(PeerAddress peerAddress)
+	public void updateExistingPeerAddress(PeerAddress peerAddress)
 	{
 		final int classMember = classMember(peerAddress.getID());
 		Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
-		tmp.put(peerAddress.getID(), peerAddress);
+		if(tmp.containsKey(peerAddress.getID()))
+			tmp.put(peerAddress.getID(), peerAddress);
 	}
 
 	@Override

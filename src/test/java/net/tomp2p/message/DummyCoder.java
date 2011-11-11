@@ -4,8 +4,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.concurrent.TimeUnit;
 
-import net.tomp2p.Utils2;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -15,8 +13,11 @@ import org.jboss.netty.channel.MessageEvent;
 
 public class DummyCoder
 {
-	final private SocketAddress sock = new InetSocketAddress(2000);
-	final private DummyChannel dc = new DummyChannel(sock);
+	final private SocketAddress sockRemote = new InetSocketAddress(2000);
+	final private SocketAddress sockLocal = new InetSocketAddress(1000);
+	final private DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
+
+	
 	final private DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
 	final private boolean tcp;
 

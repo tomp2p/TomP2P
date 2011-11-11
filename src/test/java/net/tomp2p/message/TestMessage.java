@@ -43,8 +43,9 @@ public class TestMessage
 	private void testEncodeDecode(boolean tcp) throws Exception
 	{
 		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
+		SocketAddress sockRemote = new InetSocketAddress(2000);
+		SocketAddress sockLocal = new InetSocketAddress(1000);
+		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 		// encode
 		Message m1 = Utils2.createDummyMessage();
 		DummyCoder coder=new DummyCoder(tcp);
@@ -71,8 +72,9 @@ public class TestMessage
 	private void testEncodeDecode2(boolean tcp) throws Exception
 	{
 		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
+		SocketAddress sockRemote = new InetSocketAddress(2000);
+		SocketAddress sockLocal = new InetSocketAddress(1000);
+		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 		// encode
 		Message m1 = Utils2.createDummyMessage();
 		m1.setCommand(Command.NEIGHBORS_TRACKER);
@@ -110,8 +112,9 @@ public class TestMessage
 	private void testEncodeDecode3(boolean tcp) throws Exception
 	{
 		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
+		SocketAddress sockRemote = new InetSocketAddress(2000);
+		SocketAddress sockLocal = new InetSocketAddress(1000);
+		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 		// encode
 		Message m1 = Utils2.createDummyMessage();
 		m1.setType(Message.Type.DENIED);
@@ -182,8 +185,9 @@ public class TestMessage
 		for(int i=0;i<4;i++)
 		{
 			// setup
-			SocketAddress sock = new InetSocketAddress(2000);
-			DummyChannel dc = new DummyChannel(sock);
+			SocketAddress sockRemote = new InetSocketAddress(2000);
+			SocketAddress sockLocal = new InetSocketAddress(1000);
+			DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 			// encode and test for is firewallend and ipv4
 			Message m1 = Utils2.createDummyMessage((i & 1) > 0, (i & 2) > 0);
 			m1.setType(Message.Type.DENIED);
@@ -213,8 +217,9 @@ public class TestMessage
 	public void testPerformanceTCPEncoder() throws Exception
 	{
 		// setup
-		SocketAddress sock = new InetSocketAddress(2000);
-		DummyChannel dc = new DummyChannel(sock);
+		SocketAddress sockRemote = new InetSocketAddress(2000);
+		SocketAddress sockLocal = new InetSocketAddress(1000);
+		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 		// encode
 		Message m1 = Utils2.createDummyMessage();
 		m1.setType(Message.Type.UNKNOWN_ID);

@@ -13,11 +13,13 @@ import org.jboss.netty.channel.ChannelPipeline;
 public class DummyChannel implements Channel
 {
 	private final SocketAddress remoteAddress;
+	private final SocketAddress localAddress;
 	List<Object> objects=new ArrayList<Object>();
 
-	public DummyChannel(SocketAddress remoteAddress)
+	public DummyChannel(SocketAddress remoteAddress, SocketAddress localAddress)
 	{
 		this.remoteAddress = remoteAddress;
+		this.localAddress = localAddress;
 	}
 	@Override
 	public ChannelFuture bind(SocketAddress localAddress)
@@ -85,8 +87,7 @@ public class DummyChannel implements Channel
 	@Override
 	public SocketAddress getLocalAddress()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return localAddress;
 	}
 
 	@Override

@@ -34,8 +34,8 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://tomp2p.net/svn/TomP2P/tags/TomP2P-3.2.7</connection>
-    <developerConnection>scm:svn:https://tomp2p.net/svn/TomP2P/tags/TomP2P-3.2.7</developerConnection>
+    <connection>scm:svn:http://tomp2p.net/svn/TomP2P/trunk</connection>
+    <developerConnection>scm:svn:https://tomp2p.net/svn/TomP2P/trunk</developerConnection>
   </scm>
 
   <distributionManagement>

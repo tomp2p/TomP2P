@@ -8,5 +8,13 @@ communication framework uses Java NIO to handle many concurrent connections.
 Release Management
 ==================
 To make a release, use the maven plugin:
-mvn release:prepare -Dusername=xxx -Dpassword=yyy
-mvn release:perform
+
+  mvn release:prepare -Dusername=xxx -Dpassword=yyy
+
+if using a netbook or similar, use:
+
+  mvn release:prepare -Dusername=xxx -Dpassword=yyy -DskipTests
+
+For the release, do: 
+
+  mvn release:perform

@@ -13,7 +13,7 @@ To make a release, use the maven plugin:
 
 if using a netbook or similar, use:
 
-  mvn release:prepare -Dusername=xxx -Dpassword=yyy -DskipTests
+  mvn release:prepare -Dusername=xxx -Dpassword=yyy -Darguments='-Dmaven.test.skip=true'
 
 For the release, do: 
 

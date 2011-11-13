@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -588,6 +589,30 @@ public class TestRouting
 			peers[i].listen(4001 + i, 4001 + i);
 		}
 		return peers;
+	}
+	
+	@Test
+	public void testPerfectRouting() throws Exception
+	{
+		final Random rnd = new Random(42L);
+		Peer master = null;
+		try
+		{
+			// setup
+			Peer[] peers = Utils2.createNodes(1000, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			Collection<PeerAddress> pas = peers[30].getPeerBean().getPeerMap().closePeers(
+					peers[30].getPeerID(), 20);
+			Iterator<PeerAddress> i = pas.iterator();
+			PeerAddress p1 = i.next();
+			Assert.assertEquals(peers[262].getPeerAddress(), p1);
+		}
+		finally
+		{
+			master.shutdown();
+		}
 	}
 
 	@Test

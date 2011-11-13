@@ -4,13 +4,11 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.NeighborRPC;
 
 import org.junit.Assert;
 import org.junit.Test;

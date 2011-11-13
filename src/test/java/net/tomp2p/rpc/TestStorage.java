@@ -5,12 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.FileHandler;
 import java.util.logging.Handler;
@@ -29,7 +27,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.ShortString;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ResponsibilityListener;
-import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageDisk;
@@ -195,7 +192,6 @@ public class TestStorage
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
-			Set<Number480> tofetch = new HashSet<Number480>();
 			Data c = storeRecv.get(new Number480(new Number160(33), new ShortString("test")
 			.toNumber160(), new Number160(77)));
 			for (int i = 0; i < me1.length; i++)
@@ -213,7 +209,6 @@ public class TestStorage
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<Number160> putKeys = fr.getResponse().getKeys();
 			Assert.assertEquals(0, putKeys.size());
-			tofetch = new HashSet<Number480>();
 			c = storeRecv.get(new Number480(new Number160(33), new ShortString("test").toNumber160(),new Number160(88)));
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
@@ -915,15 +910,6 @@ public class TestStorage
 		tmp.put(new Number160(88), new Data(me2));
 		FutureResponse fr = smmSender.add(recv1.getPeerAddress(), new Number160(33),
 				new ShortString("test").toNumber160(), tmp.values(), false, false, cc);
-		return fr;
-	}
-
-	private FutureResponse get(Peer sender, final Peer recv1, StorageRPC smmSender)
-			throws Exception
-	{
-		final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
-		FutureResponse fr = smmSender.get(recv1.getPeerAddress(), new Number160(33),
-				new ShortString("test").toNumber160(), null, null, false, cc);
 		return fr;
 	}
 }

@@ -258,19 +258,21 @@ public class TestDHT
 			master = peers[0];
 			// do testing
 			List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();
-			for (int i = 0; i < peers.length; i++)
+			// we start from 1, because a broadcast to ourself will not get replied.
+			for (int i = 1; i < peers.length; i++)
 			{
-				FutureBootstrap res = peers[i].bootstrapBroadcast();
+				FutureBootstrap res = peers[i].bootstrapBroadcast(4001);
 				tmp.add(res);
 			}
 			int i = 0;
 			for (FutureBootstrap fm : tmp)
 			{
+				System.err.println("i:" + (++i));
 				fm.awaitUninterruptibly();
 				if (fm.isFailed())
 					System.err.println("error "+fm.getFailedReason());
 				Assert.assertEquals(true, fm.isSuccess());
-				System.err.println("i:" + (++i));
+				
 			}
 		}
 		finally

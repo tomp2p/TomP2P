@@ -15,6 +15,7 @@
  */
 package net.tomp2p.futures;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ public class FutureDHT extends BaseFutureImpl
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
 	private Map<PeerAddress, Object> rawObjects;
 	private Map<PeerAddress, ChannelBuffer> rawChannels;
+	//
+	private List<FutureResponse> pendingFutures=new ArrayList<FutureResponse>(4);
 	//
 	private ScheduledFuture<?> scheduledFuture;
 	private List<ScheduledFuture<?>> scheduledFutures;
@@ -70,6 +73,9 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawKeys = rawKeys;
+			this.minReached = rawKeys.size() >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawKeys.size();
 		}
 		notifyListerenrs();
 	}
@@ -114,10 +120,9 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawData = rawData;
-			final int size = rawData.size();
-			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "size ok" : " DHT size is zero";
 			this.minReached = rawData.size() >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
 		}
 		notifyListerenrs();
 	}
@@ -168,6 +173,9 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawChannels = rawChannels;
+			this.minReached = rawChannels.size() >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
 		}
 		notifyListerenrs();
 	}
@@ -186,6 +194,9 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawObjects = rawObjects;
+			this.minReached = rawObjects.size() >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
 		}
 		notifyListerenrs();
 	}
@@ -256,6 +267,36 @@ public class FutureDHT extends BaseFutureImpl
 		synchronized (lock)
 		{
 			return this.evaluationScheme.evaluate4(rawChannels);
+		}
+	}
+
+	public void addPending(FutureResponse futureResponse) 
+	{
+		synchronized (lock)
+		{
+			pendingFutures.add(futureResponse);
+		}
+	}
+	
+	/**
+	 * Returns back those futures that are still running. If 6 storage futures are started at the same time and
+	 * 5 of them finish, and we specified that we are fine if 5 finishes, then futureDHT returns success. However, the
+	 * future that may still be running is the one that stores the content to the closest peer. For testing this is not 
+	 * acceptable, thus after waiting for futureDHT, one needs to wait for the running futures as well.
+	 *  
+	 * @return A future that finishes if all running futures are finished.
+	 */
+	public FutureForkJoin<FutureResponse> getRunningFutures()
+	{
+		synchronized (lock)
+		{
+			final int size=pendingFutures.size();
+			final FutureResponse[] futureResponses=new FutureResponse[size];
+			for(int i=0;i<size;i++)
+			{
+				futureResponses[i]=pendingFutures.get(i);
+			}
+			return new FutureForkJoin<FutureResponse>(futureResponses);
 		}
 	}
 }

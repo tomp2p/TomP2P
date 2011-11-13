@@ -392,21 +392,30 @@ public class DistributedHashHashMap
 					if (futureResponse.isSuccess())
 						operation.interMediateResponse(futureResponse);
 				}
-				if (future.isSuccess())
+				// we are finished if forkjoin says so or we got too many failures
+				if (future.isSuccess() || nrFailure.incrementAndGet() > maxFailure)
 				{
+					if(!cancelOnFinish)
+					{
+						for (FutureResponse futureResponse : future.getAll())
+						{
+							if (!futureResponse.isSuccess())
+							{
+								//we add pending futures that are not canceled that the user can wait for those futures
+								futureDHT.addPending(futureResponse);
+							}
+						}
+					}
+					else
+					{
+						DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
+					}
 					operation.response(futureDHT);
-					DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 				}
 				else
 				{
-					if (nrFailure.incrementAndGet() > maxFailure)
-					{
-						operation.response(futureDHT);
-						DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
-					}
-					else
-						loopRec(queue, min - future.getSuccessCounter(), nrFailure, maxFailure,
-								parallelDiff, futures, futureDHT, cancelOnFinish, operation);
+					loopRec(queue, min - future.getSuccessCounter(), nrFailure, maxFailure,
+							parallelDiff, futures, futureDHT, cancelOnFinish, operation);
 				}
 			}
 		});

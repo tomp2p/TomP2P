@@ -1111,6 +1111,7 @@ public class TestDHT
 			cr.setSignMessage(true);
 			FutureDHT fdht5 = master.removeAll(locationKey, cr);
 			fdht5.awaitUninterruptibly();
+			System.err.println(fdht5.getFailedReason());
 			Assert.assertEquals(true, fdht5.isSuccess());
 			// get all, they should be removed now
 			FutureDHT fdht6 = slave2.getAll(locationKey);

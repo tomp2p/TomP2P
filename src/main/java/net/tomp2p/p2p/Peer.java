@@ -379,7 +379,7 @@ public class Peer
 	{
 		Replication replicationStorage = getPeerBean().getReplicationStorage();
 		DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(this,
-				getPeerBean().getStorage(), storageRPC, pendingFutures);
+				getPeerBean().getStorage(), storageRPC, pendingFutures, getConnectionBean().getScheduler());
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}

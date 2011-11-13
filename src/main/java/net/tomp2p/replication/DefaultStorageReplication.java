@@ -6,7 +6,9 @@ import java.util.Map;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.Scheduler;
 import net.tomp2p.p2p.config.ConfigurationStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
@@ -27,14 +29,16 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 	private final StorageRPC storageRPC;
 	private final Peer peer;
 	private final Map<BaseFuture, Long> pendingFutures;
+	private final Scheduler scheduler;
 
 	public DefaultStorageReplication(Peer peer, Storage storage, StorageRPC storageRPC,
-			Map<BaseFuture, Long> pendingFutures)
+			Map<BaseFuture, Long> pendingFutures, Scheduler scheduler)
 	{
 		this.peer = peer;
 		this.storage = storage;
 		this.storageRPC = storageRPC;
 		this.pendingFutures = pendingFutures;
+		this.scheduler = scheduler;
 	}
 
 	@Override
@@ -46,20 +50,34 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 		storage.iterateAndRun(locationKey, new StorageRunner()
 		{
 			@Override
-			public void call(Number160 locationKey, Number160 domainKey, Number160 contentKey,
+			public void call(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey,
 					Data data)
 			{
 				// TODO do a diff or similar
-				Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+				final Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 				dataMap.put(contentKey, data);
 				if (logger.isDebugEnabled())
 					logger.debug("transfer from " + storageRPC.getPeerAddress() + " to " + other
 							+ " for key " + locationKey);
-				final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
-				FutureResponse fr=storageRPC.put(other, locationKey, domainKey, dataMap, false,
-						false, false, cc);
-				Utils.addReleaseListener(fr, cc, 1);
-				pendingFutures.put(fr, System.currentTimeMillis());
+				scheduler.callLater(new FutureRunnable() 
+				{	
+					@Override
+					public void run() 
+					{
+						final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
+						FutureResponse fr=storageRPC.put(other, locationKey, domainKey, dataMap, false,
+								false, false, cc);
+						Utils.addReleaseListener(fr, cc, 1);
+						pendingFutures.put(fr, System.currentTimeMillis());
+						
+					}
+					@Override
+					public void failed(String reason) 
+					{
+						logger.error("Failed to store data for replication: "+reason);
+					}
+				});
+				
 			}
 		});
 	}

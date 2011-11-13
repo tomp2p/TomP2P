@@ -287,16 +287,17 @@ public class DispatcherReply extends SimpleChannelHandler
 	// respond within a session
 	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response, boolean isKeepAlive)
 	{
-		//check if channel is still open. If its not, then do not send anything because 
-		//this will cause an exception that will be logged.
-		if (!ctx.getChannel().isOpen())
-		{
-			if (logger.isDebugEnabled())
-				logger.debug("channel is not open, do not reply");
-			return;
-		}
+		
 		if (ctx.getChannel() instanceof DatagramChannel)
 		{
+			//check if channel is still open. If its not, then do not send anything because 
+			//this will cause an exception that will be logged.
+			if (!ctx.getChannel().isOpen())
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("channel is not open, do not reply");
+				return;
+			}
 			if (logger.isDebugEnabled())
 				logger.debug("reply UDP message " + response);
 			// no need to close a local channel, as we do not open a local
@@ -306,6 +307,14 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 		else
 		{
+			//check if channel is still open. If its not, then do not send anything because 
+			//this will cause an exception that will be logged.
+			if (!ctx.getChannel().isConnected())
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("channel is not open, do not reply");
+				return;
+			}
 			if (logger.isDebugEnabled()) {
 				logger.debug("reply TCP message " + response+ " to "+ctx.getChannel().getRemoteAddress());
 			}

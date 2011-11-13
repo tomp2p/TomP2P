@@ -57,7 +57,6 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		this.cancelFuturesOnFinish = cancelFuturesOnFinish;
 		// the futures array may have null entries, so count first.
 		nrFutures = forks.length;
-		//intermediateFutures = new ArrayList<K>(this.nrFutures - 1);
 		if (this.nrFutures <= 0)
 			setFailed("We have no futures: " + this.nrFutures);
 		else
@@ -115,8 +114,6 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 				notifyNow = setFinish(finished, FutureType.OK);
 			else if (++counter >= nrFutures)
 				notifyNow = setFinish(finished, FutureType.FAILED);
-			//else
-				//intermediateFutures.add(finished);
 		}
 		if (notifyNow)
 		{

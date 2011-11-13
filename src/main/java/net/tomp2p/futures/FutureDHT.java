@@ -73,9 +73,10 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawKeys = rawKeys;
-			this.minReached = rawKeys.size() >= min;
-			this.type = minReached ? FutureType.OK : FutureType.FAILED;
-			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawKeys.size();
+			final int size=rawKeys.size();
+			this.minReached = size >= min;
+			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
+			this.reason = size > 0 ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawKeys.size();
 		}
 		notifyListerenrs();
 	}
@@ -120,9 +121,10 @@ public class FutureDHT extends BaseFutureImpl
 		{
 			if (!setCompletedAndNotify()) return;
 			this.rawData = rawData;
-			this.minReached = rawData.size() >= min;
-			this.type = minReached ? FutureType.OK : FutureType.FAILED;
-			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
+			final int size=rawData.size();
+			this.minReached = size >= min;
+			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
+			this.reason = size > 0 ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
 		}
 		notifyListerenrs();
 	}

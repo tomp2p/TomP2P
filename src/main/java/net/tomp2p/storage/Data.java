@@ -148,12 +148,15 @@ public class Data implements Serializable
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();
-		sb.append("Data l:");
+		sb.append("Data[l:");
 		sb.append(length);
-		sb.append(",ttl:");
+		sb.append(",tyn:");
 		sb.append(getTTLSeconds());
-		sb.append("hasPK:");
+		sb.append(",hasPK:");
 		sb.append(publicKey!=null);
+		sb.append(",h:");
+		sb.append(getHash());
+		sb.append("]");
 		return sb.toString();
 	}
 

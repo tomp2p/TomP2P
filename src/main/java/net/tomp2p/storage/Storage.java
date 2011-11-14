@@ -58,11 +58,6 @@ public abstract class Storage implements Digest, Responsibility
 			PublicKey publicKey);
 
 	public abstract Data remove(Number480 key, PublicKey publicKey);
-	
-	public SortedMap<Number480, Data> remove(Number320 number320, PublicKey publicKey)
-	{
-		return remove(number320.min(), number320.max(), publicKey);
-	}
 
 	public abstract boolean contains(Number480 key);
 
@@ -73,6 +68,11 @@ public abstract class Storage implements Digest, Responsibility
 	// Replication
 
 	public abstract Collection<Number480> storedDirectReplication();
+	
+	public SortedMap<Number480, Data> remove(Number320 number320, PublicKey publicKey)
+	{
+		return remove(number320.min(), number320.max(), publicKey);
+	}
 
 	public SortedMap<Number480, Data> get(Number320 key)
 	{

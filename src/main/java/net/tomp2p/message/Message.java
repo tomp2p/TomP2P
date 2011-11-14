@@ -28,6 +28,8 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The message is in binary format in TomP2P. It is defined as follows and has
@@ -39,6 +41,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
  */
 public class Message
 {
+	final private static Logger logger = LoggerFactory.getLogger(Message.class);
 	// used for creating random message id
 	final transient private static Random random = new Random();
 	// 2 x 4 bit -> 8 bit
@@ -649,17 +652,6 @@ public class Message
 		return payload2;
 	}
 
-	@Override
-	public String toString()
-	{
-		final StringBuilder sb = new StringBuilder("Message: id=");
-		sb.append(getMessageId());
-		sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString())
-				.append(",l=").append(getLength()+MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(
-						",r=").append(getRecipient()).append(",k=").append(keys);
-		return sb.toString();
-	}
-
 	// ///////////////////////////////
 	public Message setInteger(final int int_number)
 	{
@@ -781,4 +773,31 @@ public class Message
 		}
 		
 	}*/
+	
+	@Override
+	public String toString()
+	{
+		final StringBuilder sb = new StringBuilder("Message:id=");
+		sb.append(getMessageId());
+		sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString())
+				.append(",l=").append(getLength()+MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(
+					",r=").append(getRecipient());
+		if(logger.isDebugEnabled()) 
+		{
+			if(dataMap!=null)
+			{
+				sb.append(",m={");
+				for(Map.Entry<Number160, Data> entry:dataMap.entrySet())
+				{
+					sb.append("k:");
+					sb.append(entry.getKey());
+					sb.append("v:");
+					sb.append(entry.getValue().getHash());
+				}
+				sb.append("}");
+			}
+		}
+		return sb.toString();
+		
+	}
 }

@@ -10,11 +10,9 @@ Release Management
 To make a release, use the maven plugin:
 
   mvn release:prepare -Dusername=xxx -Dpassword=yyy
-
+  mvn release:perform
+  
 if using a netbook or similar, use:
 
   mvn release:prepare -Dusername=xxx -Dpassword=yyy -Darguments='-Dmaven.test.skip=true'
-
-For the release, do: 
-
-  mvn release:perform
+  mvn release:perform -Darguments='-Dmaven.test.skip=true'

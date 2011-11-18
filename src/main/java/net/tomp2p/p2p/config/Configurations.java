@@ -29,7 +29,7 @@ public class Configurations
 	public static ConfigurationGet defaultGetConfiguration()
 	{
 		ConfigurationGet config = new ConfigurationGet();
-		config.setRequestP2PConfiguration(new RequestP2PConfiguration(1, 5, 2));
+		config.setRequestP2PConfiguration(new RequestP2PConfiguration(3, 5, 2));
 		config.setRoutingConfiguration(new RoutingConfiguration(3, 5, 10, 2));
 		config.setDomain(DEFAULT_DOMAIN);
 		config.setContentKey(Number160.ZERO);

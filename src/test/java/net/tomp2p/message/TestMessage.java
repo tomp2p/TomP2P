@@ -93,7 +93,7 @@ public class TestMessage
 		Object obj = new TomP2PDecoderTCP().decode(null, dc, buffer);
 		// test
 		Message m2 = (Message) obj;
-		Assert.assertEquals(false, m2.getKey1() == null);
+		Assert.assertEquals(false, m2.getKeyKey1() == null);
 		Assert.assertEquals(false, m2.getKeys() == null);
 		compareMessage(m1, m2);
 
@@ -318,8 +318,8 @@ public class TestMessage
 				Assert.assertEquals(m1.getKeyMap().get(key1), m2.getKeyMap().get(key2));
 			}
 		}
-		Assert.assertEquals(m1.getKey1(), m2.getKey1());
-		Assert.assertEquals(m1.getKey2(), m2.getKey2());
+		Assert.assertEquals(m1.getKeyKey1(), m2.getKeyKey1());
+		Assert.assertEquals(m1.getKeyKey2(), m2.getKeyKey2());
 		Assert.assertEquals(m1.getLong(), m2.getLong());
 		if (m1.getPayload1() != null && m2.getPayload1() != null)
 		{

@@ -154,7 +154,7 @@ public class TrackerRPC extends ReplyHandler
 	public boolean checkMessage(Message message)
 	{
 		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
-				&& message.getKey1() != null && message.getKey2() != null;
+				&& message.getKeyKey1() != null && message.getKeyKey2() != null;
 	}
 
 	@Override
@@ -166,8 +166,8 @@ public class TrackerRPC extends ReplyHandler
     	}
 		responseMessage.setMessageId(message.getMessageId());
 		// get data
-		Number160 locationKey = message.getKey1();
-		Number160 domainKey = message.getKey2();
+		Number160 locationKey = message.getKeyKey1();
+		Number160 domainKey = message.getKeyKey2();
 		SimpleBloomFilter<Number160> knownPeers = null;
 		if (message.getPayload1() == null)
 			throw new RuntimeException("BF data may be empty but it has to be there.");

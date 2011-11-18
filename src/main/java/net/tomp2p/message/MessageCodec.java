@@ -144,11 +144,11 @@ public class MessageCodec
 		switch (content)
 		{
 			case KEY:
-				input.copyToCurrent(message.getKey3().toByteArray());
+				input.copyToCurrent(message.getKey().toByteArray());
 				return 20;
 			case KEY_KEY:
-				input.copyToCurrent(message.getKey1().toByteArray());
-				input.copyToCurrent(message.getKey2().toByteArray());
+				input.copyToCurrent(message.getKeyKey1().toByteArray());
+				input.copyToCurrent(message.getKeyKey2().toByteArray());
 				return 40;
 			case MAP_KEY_DATA:
 				count = 4;

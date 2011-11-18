@@ -37,4 +37,28 @@ public class DigestInfo
 	{
 		return size;
 	}
+	
+	public boolean isEmpty()
+	{
+		return keyDigest == null && size == 0;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(!(obj instanceof DigestInfo))
+			return false;
+		DigestInfo other=(DigestInfo)obj;
+		if(keyDigest == null)
+			return true;
+		return keyDigest.equals(other.keyDigest) && size == other.size;
+	}
+	
+	@Override
+	public int hashCode() 
+	{
+		if(keyDigest == null)
+			return 0;
+		return keyDigest.hashCode() ^ size;
+	}
 }

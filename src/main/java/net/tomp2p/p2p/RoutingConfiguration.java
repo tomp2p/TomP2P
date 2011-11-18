@@ -21,6 +21,7 @@ public class RoutingConfiguration
 	final private int maxFailures;
 	final private int maxSuccess;
 	final private int parallel;
+	final private boolean forceSocket;
 	
 	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int parallel)
 	{
@@ -31,8 +32,13 @@ public class RoutingConfiguration
 	{
 		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel);
 	}
-
+	
 	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel)
+	{
+		this(directHits, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel, false);
+	}
+
+	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel, boolean forceSocket)
 	{
 		if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
@@ -41,6 +47,7 @@ public class RoutingConfiguration
 		this.maxFailures = maxFailures;
 		this.maxSuccess = maxSuccess;
 		this.parallel = parallel;
+		this.forceSocket = forceSocket;
 	}
 
 	public int getDirectHits()
@@ -79,5 +86,10 @@ public class RoutingConfiguration
 	public int getParallel()
 	{
 		return parallel;
+	}
+	
+	public boolean isForceSocket()
+	{
+		return forceSocket;
 	}
 }

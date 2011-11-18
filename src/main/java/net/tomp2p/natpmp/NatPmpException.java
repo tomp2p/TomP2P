@@ -23,7 +23,10 @@ package net.tomp2p.natpmp;
  * @author flszen
  */
 public class NatPmpException extends Exception {
-    /**
+
+	private static final long serialVersionUID = 6619242406146562923L;
+
+	/**
      * Constructs a new NatPmpException with a specific message.
      * @param message The message of the exception.
      */

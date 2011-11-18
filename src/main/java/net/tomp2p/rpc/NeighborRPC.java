@@ -89,7 +89,7 @@ public class NeighborRPC extends ReplyHandler
 	@Override
 	public boolean checkMessage(Message message)
 	{
-		return message.getKey1() != null
+		return message.getKeyKey1() != null && message.getKeyKey2() != null
 				&& message.getContentType1() == Content.KEY_KEY
 				&& (message.getContentType2() == Content.EMPTY || message.getContentType2() == Content.SET_KEYS)
 				&& (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
@@ -101,8 +101,8 @@ public class NeighborRPC extends ReplyHandler
 	{
 		if (logger.isDebugEnabled())
 			logger.debug("handleResponse for " + message);
-		Number160 locationKey = message.getKey1();
-		Number160 domainKey = message.getKey2();
+		Number160 locationKey = message.getKeyKey1();
+		Number160 domainKey = message.getKeyKey2();
 		// Create response message and set neighbors
 		final Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
 		if(sign) {

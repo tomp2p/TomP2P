@@ -125,8 +125,8 @@ public class PeerExchangeRPC extends ReplyHandler
 		if (logger.isDebugEnabled())
 			logger.debug("Received Peer Exchange Message " + message);
 		Collection<TrackerData> tmp = message.getTrackerData();
-		Number160 locationKey = message.getKey1();
-		Number160 domainKey = message.getKey2();
+		Number160 locationKey = message.getKeyKey1();
+		Number160 domainKey = message.getKeyKey2();
 		Collection<Number160> removedKeys = message.getKeys();
 		if (tmp != null && tmp.size() > 0 && locationKey != null && domainKey != null)
 		{

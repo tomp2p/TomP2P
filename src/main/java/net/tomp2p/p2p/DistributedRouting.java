@@ -19,7 +19,9 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -80,7 +82,7 @@ public class DistributedRouting
 			logger.debug("broadcast to " + peerAddresses);
 		}
 		FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
-				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc);
+				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc, true);
 		return futureRouting;
 	}
 
@@ -106,6 +108,7 @@ public class DistributedRouting
 	 * @return a FutureRouting object, is set to complete if the route has been
 	 *         found
 	 */
+	@Deprecated
 	public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, Command command, int maxDirectHits, int maxNoNewInfo,
 			int maxFailures, int maxSuccess, int parallel, boolean isDigest, final ChannelCreator cc)
@@ -114,14 +117,14 @@ public class DistributedRouting
 				maxSuccess, parallel, isDigest, false, cc);
 	}
 
-	FutureRouting route(final Number160 locationKey, final Number160 domainKey,
+	public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, Command command, int maxDirectHits, int maxNoNewInfo,
 			int maxFailures, int maxSuccess, int parallel, boolean isDigest, boolean forceSocket, final ChannelCreator cc)
 	{
 		// for bad distribution, use large NO_NEW_INFORMATION
 		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey, parallel * 2);
 		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits, maxNoNewInfo, maxFailures,
-				maxSuccess, parallel, command, isDigest, forceSocket, cc);
+				maxSuccess, parallel, command, isDigest, forceSocket, cc, false);
 	}
 
 	/**
@@ -149,7 +152,8 @@ public class DistributedRouting
 	 */
 	private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits, int maxNoNewInfo,
-			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceSocket , final ChannelCreator cc)
+			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceSocket, 
+			final ChannelCreator cc, final boolean isBootstrap)
 	{
 		if (peerAddresses == null)
 			throw new IllegalArgumentException("you need to specify some nodes");
@@ -165,7 +169,7 @@ public class DistributedRouting
 		// as presented by Kazuyuki Shudo at AIMS 2009, its better to ask random
 		// peers with the data than ask peers that ar ordered by distance ->
 		// this balances load.
-		final SortedSet<PeerAddress> directHits = new TreeSet<PeerAddress>(peerBean.getPeerMap().createPeerComparator());
+		final SortedMap<PeerAddress, DigestInfo> directHits = new TreeMap<PeerAddress, DigestInfo>(peerBean.getPeerMap().createPeerComparator());
 		final SortedSet<PeerAddress> potentialHits = new TreeSet<PeerAddress>(comparator);
 		// fill initially
 		queueToAsk.addAll(peerAddresses);
@@ -174,28 +178,29 @@ public class DistributedRouting
 		// domainkey can be null if we bootstrap
 		if (command == Command.NEIGHBORS_STORAGE && domainKey != null)
 		{
-			DigestInfo digestInfo = Utils.digest(peerBean.getStorage(), locationKey, domainKey, contentKeys);
-			if (digestInfo.getSize() > 0)
-				directHits.add(peerBean.getServerPeerAddress());
+			DigestInfo digestBean = Utils.digest(peerBean.getStorage(), locationKey, domainKey, contentKeys);
+			if (digestBean.getSize() > 0)
+				directHits.put(peerBean.getServerPeerAddress(), digestBean);
 		}
 		else if (command == Command.NEIGHBORS_TRACKER)
 		{
-			DigestInfo digestInfo = Utils.digest(peerBean.getTrackerStorage(), locationKey, domainKey, contentKeys);
+			DigestInfo digestBean = Utils.digest(peerBean.getTrackerStorage(), locationKey, domainKey, contentKeys);
 			// we always put ourselfs to the tracker list, so we need to check
 			// if we know also other peers on our trackers.
-			if (digestInfo.getSize() > 0)
-				directHits.add(peerBean.getServerPeerAddress());
+			if (digestBean.getSize() > 0)
+				directHits.put(peerBean.getServerPeerAddress(), digestBean);
 		}
 		if (peerAddresses.size() == 0)
 		{
-			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
+			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, isBootstrap, false);
 		}
 		else
 		{
+			boolean isRoutingOnlyToSelf = peerAddresses.size() == 1 && peerAddresses.iterator().next().equals(peerBean.getServerPeerAddress()); 
 			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 					new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,
 					maxFailures, maxSuccess, parallel, locationKey, domainKey, contentKeys, true, command, isDigest,
-					forceSocket, false, cc);
+					forceSocket, false, cc, isBootstrap, !isRoutingOnlyToSelf);
 		}
 		return futureRouting;
 	}
@@ -242,12 +247,13 @@ public class DistributedRouting
 	 */
 	private void routingRec(final FutureResponse[] futureResponses, final FutureRouting futureRouting,
 			final SortedSet<PeerAddress> queueToAsk, final SortedSet<PeerAddress> alreadyAsked,
-			final SortedSet<PeerAddress> directHits, final SortedSet<PeerAddress> potentialHits,
+			final SortedMap<PeerAddress, DigestInfo> directHits, final SortedSet<PeerAddress> potentialHits,
 			final AtomicInteger nrNoNewInfo, final AtomicInteger nrFailures, final AtomicInteger nrSuccess,
 			final int maxDirectHits, final int maxNoNewInfo, final int maxFailures, final int maxSucess,
 			final int parallel, final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, final boolean cancelOnFinish, final Command command,
-			final boolean isDigest, final boolean forceSocket, final boolean stopCreatingNewFutures, final ChannelCreator cc)
+			final boolean isDigest, final boolean forceSocket, final boolean stopCreatingNewFutures, 
+			final ChannelCreator cc, final boolean isBootstrap, final boolean isRoutingToOthers)
 	{
 		int active = 0;
 		for (int i = 0; i < parallel; i++)
@@ -273,7 +279,7 @@ public class DistributedRouting
 		}
 		if (active == 0)
 		{
-			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
+			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, isBootstrap, isRoutingToOthers);
 			cancel(cancelOnFinish, parallel, futureResponses);
 			return;
 		}
@@ -295,9 +301,11 @@ public class DistributedRouting
 					if (logger.isDebugEnabled()) {
 						logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
 					}
-					long contentLength = lastResponse.getInteger();
+					int resultSize = lastResponse.getInteger();
+					Number160 resultHash = lastResponse.getKey();
 					Map<Number160, Number160> keyMap = lastResponse.getKeyMap();
-					if (evaluateDirectHits(contentLength, keyMap, remotePeer, directHits, maxDirectHits))
+					DigestInfo digestBean = new DigestInfo(resultHash, resultSize);
+					if (evaluateDirectHits(keyMap, remotePeer, directHits, digestBean, maxDirectHits))
 					{
 						// stop immediately
 						finished = true;
@@ -335,7 +343,7 @@ public class DistributedRouting
 					if (logger.isDebugEnabled()) {
 						logger.debug("finished routing, direct hits: " + directHits + ", potential: " + potentialHits);
 					}
-					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked);
+					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, isBootstrap, isRoutingToOthers);
 					cancel(cancelOnFinish, parallel, futureResponses);
 				}
 				else
@@ -343,7 +351,7 @@ public class DistributedRouting
 					routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 							nrNoNewInfo, nrFailures, nrSuccess, maxDirectHits, maxNoNewInfo, maxFailures, maxSucess,
 							parallel, locationKey, domainKey, contentKeys, cancelOnFinish, command, isDigest,
-							forceSocket, stopCreatingNewFutures, cc);
+							forceSocket, stopCreatingNewFutures, cc, isBootstrap, isRoutingToOthers);
 				}
 			}
 		});
@@ -362,12 +370,12 @@ public class DistributedRouting
 	}
 
 	// checks if we reached the end of our search.
-	static boolean evaluateDirectHits(long contentLength, Map<Number160, Number160> keyMap, PeerAddress recipient,
-			final Collection<PeerAddress> directHits, int maxDirectHits)
+	static boolean evaluateDirectHits(Map<Number160, Number160> keyMap, PeerAddress remotePeer,
+			final Map<PeerAddress, DigestInfo> directHits, DigestInfo digestBean, int maxDirectHits)
 	{
-		if (contentLength > 0)
+		if (digestBean.getSize() > 0)
 		{
-			directHits.add(recipient);
+			directHits.put(remotePeer, digestBean);
 			if (directHits.size() >= maxDirectHits)
 				return true;
 		}

@@ -302,6 +302,43 @@ public class TestDHT
 			slave.shutdown();
 		}
 	}
+	
+	@Test
+	public void testBootstrap5() throws Exception
+	{
+		Peer peer = null;
+		try 
+		{
+			peer = new Peer(new Number160(rnd));
+			peer.listen(4000, 4000);
+			FutureBootstrap tmp = peer.bootstrap(peer.getPeerAddress());
+			tmp.awaitUninterruptibly();
+			Assert.assertEquals(true, tmp.isSuccess());
+		}
+		finally
+		{
+			peer.shutdown();
+		}
+	}
+	
+	@Test
+	public void testBootstrap6() throws Exception
+	{
+		Peer peer = null;
+		try 
+		{
+			peer = new Peer(new Number160(rnd));
+			peer.listen(4000, 4000);
+			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
+			FutureBootstrap tmp = peer.bootstrap(pa);
+			tmp.awaitUninterruptibly();
+			Assert.assertEquals(false, tmp.isSuccess());
+		}
+		finally
+		{
+			peer.shutdown();
+		}
+	}
 
 	@Test
 	public void testPut() throws Exception
@@ -1443,6 +1480,63 @@ public class TestDHT
 		finally
 		{
 			master.shutdown();
+		}
+	}
+	
+	@Test
+	public void testKeys() throws Exception
+	{
+		final Random rnd = new Random(42L);
+		Peer p1 = null;
+		Peer p2 = null;
+		try
+		{
+			Number160 n1=new Number160(rnd);
+			Data d1=new Data("hello");
+			Data d2=new Data("world!");
+			// setup (step 1)
+			p1 = new Peer(new Number160(rnd));
+			p1.listen(4001, 4001);
+			FutureDHT futureDHT = p1.add(n1, d1);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			p2 = new Peer(new Number160(rnd));
+			p2.listen(4002, 4002);
+			p2.bootstrap(p1.getPeerAddress()).awaitUninterruptibly();
+			// test (step 2)
+			futureDHT = p1.add(n1, d2);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			futureDHT = p2.getAll(n1);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(2, futureDHT.getData().size());
+			// test (step 3)
+			futureDHT = p1.remove(n1, d2.getHash());
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			futureDHT = p2.getAll(n1);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(1, futureDHT.getData().size());
+			// test (step 4)
+			futureDHT = p1.add(n1, d2);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			futureDHT = p2.getAll(n1);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(2, futureDHT.getData().size());
+			// test (remove all)
+			futureDHT = p1.remove(n1, d1.getHash());
+			futureDHT.awaitUninterruptibly();
+			futureDHT = p1.remove(n1, d2.getHash());
+			futureDHT.awaitUninterruptibly();
+			futureDHT = p2.getAll(n1);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(0, futureDHT.getData().size());
+		}
+		finally
+		{
+			p1.shutdown();
+			p2.shutdown();
 		}
 	}
 

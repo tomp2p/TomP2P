@@ -257,7 +257,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	 */
 	public PeerAddress(Number160 id)
 	{
-		this(id, null, -1, -1);
+		this(id, (InetAddress) null, -1, -1);
 	}
 	
 	/**
@@ -302,6 +302,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 	public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP)
 	{
 		this(id, address, portTCP, portUDP, false, false);
+	}
+	
+	public PeerAddress(Number160 id, String address, int portTCP, int portUDP) throws UnknownHostException
+	{
+		this(id, InetAddress.getByName(address), portTCP, portUDP, false, false);
 	}
 
 	public PeerAddress(Number160 id, InetSocketAddress inetSocketAddress)

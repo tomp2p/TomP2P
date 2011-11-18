@@ -1174,6 +1174,13 @@ public class Peer
 		keyCollection.add(config.getContentKey());
 		return remove(locationKey, keyCollection, config);
 	}
+	
+	public FutureDHT remove(final Number160 locationKey, final Number160 contentKey)
+	{
+		Set<Number160> keyCollection = new HashSet<Number160>();
+		keyCollection.add(contentKey);
+		return remove(locationKey, keyCollection, Configurations.defaultRemoveConfiguration());
+	}
 
 	public FutureDHT remove(final Number160 locationKey, final Set<Number160> keyCollection,
 			final ConfigurationRemove config)

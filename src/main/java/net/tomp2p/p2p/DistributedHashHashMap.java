@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -17,8 +17,10 @@ package net.tomp2p.p2p;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +35,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
@@ -245,9 +248,11 @@ public class DistributedHashHashMap
 			{
 				if (futureRouting.isSuccess())
 				{
-					if (logger.isDebugEnabled())
+					if (logger.isDebugEnabled()) 
+					{
 						logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
-					loop(p2pConfiguration, futureRouting.getDirectHits(), futureDHT, true,
+					}
+					loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()), futureRouting.getDirectHits(), futureDHT, true,
 							new Operation()
 							{
 								Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
@@ -342,6 +347,11 @@ public class DistributedHashHashMap
 	private void loop(RequestP2PConfiguration p2pConfiguration, SortedSet<PeerAddress> queue,
 			FutureDHT futureDHT, boolean cancleOnFinish, Operation operation)
 	{
+		if(p2pConfiguration.getMinimumResults() == 0)
+		{
+			operation.response(futureDHT);
+			return;
+		}
 		FutureResponse[] futures = new FutureResponse[p2pConfiguration.getParallel()];
 		// here we split min and pardiff, par=min+pardiff
 		loopRec(queue, p2pConfiguration.getMinimumResults(), new AtomicInteger(0), p2pConfiguration
@@ -428,7 +438,7 @@ public class DistributedHashHashMap
 		return routing.route(locationKey, domainKey, contentKeys, command, routingConfiguration
 				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(p2pConfiguration
 				.getMinimumResults()), routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDirect, cc);
+				routingConfiguration.getParallel(), isDirect, routingConfiguration.isForceSocket(), cc);
 	}
 	public interface Operation
 	{
@@ -437,5 +447,30 @@ public class DistributedHashHashMap
 		public abstract void response(FutureDHT futureDHT);
 
 		public abstract void interMediateResponse(FutureResponse futureResponse);
+	}
+	
+	/**
+	 * Adjusts the number of minimum requests in the P2P configuration. When we query x peers for the get() operation and they
+	 * have y different data stored (y <= x), then set the minimum to y or to the value the user set if its smaller. If no data
+	 * is found, then return 0, so we don't start P2P RPCs.
+	 * 
+	 * @param p2pConfiguration The old P2P configuration with the user specified minimum result
+	 * @param directHitsDigest The digest information from the routing process
+	 * @return The new RequestP2PConfiguration with the new minimum result
+	 */
+	public static RequestP2PConfiguration adjustConfiguration(RequestP2PConfiguration p2pConfiguration, 
+			SortedMap<PeerAddress, DigestInfo> directHitsDigest) 
+	{
+		Set<DigestInfo> tmp = new HashSet<DigestInfo>();
+		for(DigestInfo digestBean: directHitsDigest.values())
+		{
+			if(!digestBean.isEmpty())
+			{
+				tmp.add(digestBean);
+			}
+		}
+		int unique = tmp.size();
+		int requested = p2pConfiguration.getMinimumResults();
+		return new RequestP2PConfiguration(Math.min(unique, requested), p2pConfiguration.getMaxFailure(), p2pConfiguration.getParallelDiff());
 	}
 }

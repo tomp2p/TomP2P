@@ -382,7 +382,7 @@ public class DistributedTracker
 		return routing.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
 				routingConfiguration.getDirectHits(), routingConfiguration.getMaxNoNewInfo(0),
 				routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDigest, cc);
+				routingConfiguration.getParallel(), isDigest, routingConfiguration.isForceSocket(), cc);
 	}
 
 	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors, final SortedSet<PeerAddress> queueToAsk,

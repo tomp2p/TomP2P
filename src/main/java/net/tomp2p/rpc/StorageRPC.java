@@ -160,11 +160,11 @@ public class StorageRPC extends ReplyHandler
 			{
 				case ADD:
 				case PUT:
-					return message.getKey1() != null && message.getKey2() != null
+					return message.getKeyKey1() != null && message.getKeyKey2() != null
 							&& message.getDataMap() != null;
 				case GET:
 				case REMOVE:
-					return message.getKey1() != null && message.getKey2() != null;
+					return message.getKeyKey1() != null && message.getKeyKey2() != null;
 			}
 		}
 		return false;
@@ -213,8 +213,8 @@ public class StorageRPC extends ReplyHandler
 	private Message handlePut(final Message message, final Message responseMessage,
 			final boolean putIfAbsent, final boolean protectDomain) throws IOException
 	{
-		final Number160 locationKey = message.getKey1();
-		final Number160 domainKey = message.getKey2();
+		final Number160 locationKey = message.getKeyKey1();
+		final Number160 domainKey = message.getKeyKey2();
 		final Map<Number160, Data> toStore = message.getDataMap();
 		final PublicKey publicKey = message.getPublicKey();
 		// here we set the map with the close peers. If we get data by a sender
@@ -265,8 +265,8 @@ public class StorageRPC extends ReplyHandler
 	private Message handleAdd(final Message message, final Message responseMessage,
 			final boolean protectDomain)
 	{
-		final Number160 locationKey = message.getKey1();
-		final Number160 domainKey = message.getKey2();
+		final Number160 locationKey = message.getKeyKey1();
+		final Number160 domainKey = message.getKeyKey2();
 		final Map<Number160, Data> data = message.getDataMap();
 		final PublicKey publicKey = message.getPublicKey();
 		// here we set the map with the close peers. If we get data by a sender
@@ -296,8 +296,8 @@ public class StorageRPC extends ReplyHandler
 
 	private Message handleGet(final Message message, final Message responseMessage)
 	{
-		final Number160 locationKey = message.getKey1();
-		final Number160 domainKey = message.getKey2();
+		final Number160 locationKey = message.getKeyKey1();
+		final Number160 domainKey = message.getKeyKey2();
 		final Collection<Number160> contentKeys = message.getKeys();
 		final Map<Number480, Data> result;
 		if (contentKeys != null)
@@ -324,8 +324,8 @@ public class StorageRPC extends ReplyHandler
 	private Message handleRemove(final Message message, final Message responseMessage,
 			final boolean sendBackResults)
 	{
-		final Number160 locationKey = message.getKey1();
-		final Number160 domainKey = message.getKey2();
+		final Number160 locationKey = message.getKeyKey1();
+		final Number160 domainKey = message.getKeyKey2();
 		final Collection<Number160> contentKeys = message.getKeys();
 		final PublicKey publicKey = message.getPublicKey();
 		final Map<Number480, Data> result;

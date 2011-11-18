@@ -557,17 +557,35 @@ public class Message
 		this.key2 = key2;
 	}
 
+	@Deprecated
 	public Number160 getKey1()
 	{
 		return key1;
 	}
+	
+	public Number160 getKeyKey1()
+	{
+		return key1;
+	}
 
+	@Deprecated
 	public Number160 getKey2()
 	{
 		return key2;
 	}
-
+	
+	public Number160 getKeyKey2()
+	{
+		return key2;
+	}
+	
+	@Deprecated
 	public Number160 getKey3()
+	{
+		return key3;
+	}
+	
+	public Number160 getKey()
 	{
 		return key3;
 	}

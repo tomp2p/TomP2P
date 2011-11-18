@@ -200,8 +200,7 @@ public class TestSecurity
 			FutureDHT fdht4 = slave1.getAll(locationKey, cg);
 			fdht4.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht4.isSuccess());
-			Assert.assertEquals(2, fdht4.getRawData().get(slave1.getPeerAddress()).size());
-			Assert.assertEquals(2, fdht4.getRawData().get(slave2.getPeerAddress()).size());
+			Assert.assertEquals(2, fdht4.getData().size());
 		}
 		finally
 		{

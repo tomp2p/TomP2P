@@ -1358,6 +1358,7 @@ public class TestDHT
 	@Test
 	public void testActiveReplicationForward() throws Exception
 	{
+		Random rnd = new Random(42L);
 		Peer master = null;
 		try
 		{
@@ -1401,14 +1402,18 @@ public class TestDHT
 					baseFuture.awaitUninterruptibly();
 			}
 			//wait for the replication
-			while(master.getPendingFutures().size() == 0)
+			Peer peerClose = searchPeer(closest, peers);
+			int i=0;
+			while(!peerClose.getPeerBean().getStorage().contains(new Number480(locationKey, Configurations.DEFAULT_DOMAIN, Number160.ZERO)))
 			{
-				Utils.sleep(10);
+				Utils.sleep(250);
+				i++;
+				if(i>10)
+					break;
 			}
-			
 			final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
 						
-			FutureResponse futureResponse = peers[10].getStoreRPC().get(closest, locationKey,
+			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
 					Configurations.DEFAULT_DOMAIN, null, null, false, cc);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
@@ -1418,6 +1423,16 @@ public class TestDHT
 		{
 			master.shutdown();
 		}
+	}
+	
+	private Peer searchPeer(PeerAddress peerAddress, Peer[] peers)
+	{
+		for(Peer peer:peers)
+		{
+			if(peer.getPeerAddress().equals(peerAddress))
+				return peer;
+		}
+		return null;
 	}
 
 	@Test

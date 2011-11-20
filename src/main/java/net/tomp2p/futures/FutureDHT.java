@@ -35,7 +35,8 @@ import org.jboss.netty.buffer.ChannelBuffer;
  */
 public class FutureDHT extends BaseFutureImpl
 {
-	// The minimum number of expected results. This can be used for further evaluation
+	// The minimum number of expected results. This is also used for put()
+	// operations to decide if a future failed or not.
 	final private int min;
 	// Since we receive multiple results, we have an evaluation scheme to
 	// simplify the result
@@ -113,7 +114,8 @@ public class FutureDHT extends BaseFutureImpl
 	}
 
 	/**
-	 * Finish the future and set the keys that have been stored.
+	 * Finish the future and set the keys that have been stored. The flag
+	 * isAbsent influences minreached.
 	 * 
 	 * @param rawKeys The keys that have been stored with information on which
 	 *        peer it has been stored
@@ -131,8 +133,8 @@ public class FutureDHT extends BaseFutureImpl
 			this.rawKeys = rawKeys;
 			final int size = rawKeys.size();
 			this.minReached = size >= min;
-			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "Minimun number of results reached" : "Expected " + min
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
 					+ " result, but got " + size;
 		}
 		notifyListerenrs();
@@ -180,8 +182,8 @@ public class FutureDHT extends BaseFutureImpl
 			this.rawChannels = rawChannels;
 			final int size = rawChannels.size();
 			this.minReached = size >= min;
-			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "Minimun number of results reached" : "Expected " + min
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
 					+ " result, but got " + size;
 		}
 		notifyListerenrs();
@@ -205,8 +207,8 @@ public class FutureDHT extends BaseFutureImpl
 			this.rawObjects = rawObjects;
 			final int size = rawObjects.size();
 			this.minReached = size >= min;
-			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "Minimun number of results reached" : "Expected " + min
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
 					+ " result, but got " + size;
 		}
 		notifyListerenrs();
@@ -267,7 +269,9 @@ public class FutureDHT extends BaseFutureImpl
 	}
 
 	/**
-	 * Checks if the minimum of expected results have been reached.
+	 * Checks if the minimum of expected results have been reached. This flag is
+	 * also used for determining the success or failure of this future for put
+	 * and send_direct.
 	 * 
 	 * @return True, if expected minimum results have been reached.
 	 */

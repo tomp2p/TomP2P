@@ -1012,7 +1012,7 @@ public class Peer
 		
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-		
+		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDHT().put(locationKey, config.getDomain(), dataMap,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isStoreIfAbsent(),
 				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate(), cc);
@@ -1089,7 +1089,7 @@ public class Peer
 		}
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-		
+		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDHT().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isProtectDomain(),
 				config.isSignMessage(), config.getFutureCreate(), cc);
@@ -1209,7 +1209,7 @@ public class Peer
 		
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-					
+		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDHT().remove(locationKey, config.getDomain(), keyCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(), config.isReturnResults(),
 				config.isSignMessage(), config.getFutureCreate(), cc);
@@ -1287,7 +1287,7 @@ public class Peer
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-		
+		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, true, config.getRoutingConfiguration(),
 				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
@@ -1315,7 +1315,7 @@ public class Peer
 		ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(me);
 		int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 		final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-		
+		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, false, config.getRoutingConfiguration(),
 				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
@@ -1342,7 +1342,7 @@ public class Peer
 			{
 				int conn=Math.max(config.getRoutingConfiguration().getParallel(), config.getRequestP2PConfiguration().getParallel());
 				final ChannelCreator cc=getConnectionBean().getReservation().reserve(conn);
-				
+				config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
 				final FutureDHT futureDHT2 = getDHT().direct(locationKey, buffer, false,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.getFutureCreate(), config.isCancelOnFinish(), cc);
@@ -1607,5 +1607,12 @@ public class Peer
 	public P2PConfiguration getP2PConfiguration()
 	{
 		return peerConfiguration;
+	}
+	
+	public static RequestP2PConfiguration adjustConfiguration(RequestP2PConfiguration p2pConfiguration, PeerMap peerMap)
+	{
+		int size = peerMap.size() + 1;
+		int requested = p2pConfiguration.getMinimumResults();
+		return new RequestP2PConfiguration(Math.min(size, requested), p2pConfiguration.getMaxFailure(), p2pConfiguration.getParallelDiff());
 	}
 }

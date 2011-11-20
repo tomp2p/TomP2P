@@ -49,13 +49,13 @@ public class DistributedHashHashMap
 {
 	final private static Logger logger = LoggerFactory.getLogger(DistributedHashHashMap.class);
 	final private DistributedRouting routing;
-	final private StorageRPC store;
+	final private StorageRPC storeRCP;
 	final private DirectDataRPC directDataRPC;
 
-	public DistributedHashHashMap(DistributedRouting routing, StorageRPC store, DirectDataRPC directDataRPC)
+	public DistributedHashHashMap(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC)
 	{
 		this.routing = routing;
-		this.store = store;
+		this.storeRCP = storeRCP;
 		this.directDataRPC = directDataRPC;
 	}
 
@@ -86,7 +86,7 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
-									return store.add(address, locationKey, domainKey, dataSet,
+									return storeRCP.add(address, locationKey, domainKey, dataSet,
 											protectDomain, signMessage, cc);
 								}
 
@@ -203,8 +203,8 @@ public class DistributedHashHashMap
 								public FutureResponse create(PeerAddress address)
 								{
 									boolean protectEntry = Utils.checkEntryProtection(dataMap);
-									return putIfAbsent ? store.putIfAbsent(address, locationKey,
-											domainKey, dataMap, protectDomain, protectEntry, signMessage, cc) : store
+									return putIfAbsent ? storeRCP.putIfAbsent(address, locationKey,
+											domainKey, dataMap, protectDomain, protectEntry, signMessage, cc) : storeRCP
 											.put(address, locationKey, domainKey, dataMap,
 													protectDomain, protectEntry, signMessage, cc);
 								}
@@ -252,6 +252,7 @@ public class DistributedHashHashMap
 					{
 						logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
 					}
+					//this adjust is based on results from the routing process, so we cannot do this earlier
 					loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()), futureRouting.getDirectHits(), futureDHT, true,
 							new Operation()
 							{
@@ -260,7 +261,7 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
-									return store.get(address, locationKey, domainKey, contentKeys,
+									return storeRCP.get(address, locationKey, domainKey, contentKeys,
 											publicKey, signMessage, cc);
 								}
 
@@ -312,7 +313,7 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
-									return store.remove(address, locationKey, domainKey,
+									return storeRCP.remove(address, locationKey, domainKey,
 											contentKeys, returnResults, signMessage, cc);
 								}
 

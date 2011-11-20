@@ -1,1 +1,1 @@
-3.2.10:set default to not firewalled, putifabsent fixes, PeerAddress serialization improvements, close storage on shutdown, PeerMap can ignore firewalled peers, Configuration cleanup, Enabling more testcases (needs Xmx1024M). 
+ * cleanup of package net.tomp2p.futures and net.tomp2p.log

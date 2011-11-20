@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.log;
+@Deprecated
 public interface PeerLogger
 {
 	public abstract void sendLog(String name, String value);

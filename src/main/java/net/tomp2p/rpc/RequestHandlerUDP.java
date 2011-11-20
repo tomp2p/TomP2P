@@ -102,7 +102,6 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 	{
 		if (handlingMessage.compareAndSet(false, true))
 		{
-			futureResponse.cancelTimeout();
 			ctx.getChannel().close();
 		}
 		if (logger.isDebugEnabled())
@@ -116,8 +115,8 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		{
 			logger.warn("Got exception, but ignored " + "(future response completed): "
 					+ futureResponse.getFailedReason());
-			//if (logger.isDebugEnabled())
-				e.getCause().printStackTrace();
+			// if (logger.isDebugEnabled())
+			e.getCause().printStackTrace();
 		}
 		else
 		{
@@ -158,7 +157,6 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 	{
 		if (handlingMessage.compareAndSet(false, true))
 		{
-			futureResponse.cancelTimeout();
 			ctx.getChannel().close();
 		}
 		if (e.getMessage() instanceof Message)
@@ -207,26 +205,28 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		}
 		ctx.sendUpstream(e);
 	}
-	
-	private void reportFail(final String cause, final Channel channel, final FutureResponse futureResponse)
+
+	private void reportFail(final String cause, final Channel channel,
+			final FutureResponse futureResponse)
 	{
-		channel.getCloseFuture().addListener(new ChannelFutureListener() 
+		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
 			@Override
-			public void operationComplete(ChannelFuture arg0) throws Exception 
+			public void operationComplete(ChannelFuture arg0) throws Exception
 			{
 				futureResponse.setFailed(cause);
 			}
-		});	
+		});
 	}
-	
-	private void reportResult(final Channel channel, final FutureResponse futureResponse, final Message responseMessage)
+
+	private void reportResult(final Channel channel, final FutureResponse futureResponse,
+			final Message responseMessage)
 	{
 		// most likely this is already closed
-		channel.getCloseFuture().addListener(new ChannelFutureListener() 
+		channel.getCloseFuture().addListener(new ChannelFutureListener()
 		{
 			@Override
-			public void operationComplete(ChannelFuture arg0) throws Exception 
+			public void operationComplete(ChannelFuture arg0) throws Exception
 			{
 				futureResponse.setResponse(responseMessage);
 			}

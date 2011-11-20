@@ -21,6 +21,10 @@ package net.tomp2p.futures;
  */
 public interface BaseFuture extends Cancellable
 {
+	/**
+	 * The first state is always INIT and will always end in either OK, FAILED,
+	 * or CANCEl
+	 */
 	public enum FutureType
 	{
 		INIT, OK, FAILED, CANCEL
@@ -121,7 +125,9 @@ public interface BaseFuture extends Cancellable
 	 * Removes a listener which is notified when the state of this future
 	 * changes. If a future is complete, then all listeners are called and after
 	 * that, the listener list is cleared, so there is no need to call
-	 * removeListener if a future has been completed.
+	 * removeListener if a future has been completed. The listener can be called
+	 * from the caller thread if the future is already finished or from a
+	 * different thread if the future is not ready yet.
 	 * 
 	 * @param listener The listener extends the BaseFuture
 	 * @return this
@@ -132,7 +138,10 @@ public interface BaseFuture extends Cancellable
 	 * Adds a cancel listener to this future, which is called when cancel is
 	 * executed. There is no need to call removeCancellation if a future has
 	 * been completed, because the cancellable list is cleared after the future
-	 * has been completed anyway.
+	 * has been completed.
+	 * 
+	 * An example usage for a cancelation is if a TCP connection is being
+	 * created, but the user shuts down the peer.
 	 * 
 	 * @param cancellable A cancellable class
 	 */

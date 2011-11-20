@@ -361,7 +361,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			System.err.println("Test " + fdht.getFailedReason());
 			Assert.assertEquals(true, fdht.isSuccess());
 			// search top 3
@@ -406,7 +406,7 @@ public class TestDHT
 			master.listen(4001, 4001);
 			FutureDHT fdht = master.put(Number160.ONE, new Data("hallo"));
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			fdht = master.get(Number160.ONE);
 			fdht.awaitUninterruptibly();
@@ -441,7 +441,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			// search top 3
 			TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(peers[30]
@@ -492,7 +492,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			rc = new RoutingConfiguration(0, 0, 10, 1);
 			pc = new RequestP2PConfiguration(1, 0, 0);
@@ -534,7 +534,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
@@ -576,7 +576,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			rc = new RoutingConfiguration(1, 0, 10, 1);
 			pc = new RequestP2PConfiguration(1, 0, 0);
@@ -621,7 +621,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			rc = new RoutingConfiguration(4, 0, 10, 1);
 			pc = new RequestP2PConfiguration(4, 0, 0);
@@ -671,7 +671,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = peers[444].put(peers[30].getPeerID(), data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
 			System.err.println("remove");
 			rc = new RoutingConfiguration(4, 0, 10, 1);
@@ -888,11 +888,11 @@ public class TestDHT
 			System.err.println("stop added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
 			futureDHT = peers[50].add(nr, data2);
 			futureDHT.awaitUninterruptibly();
-			futureDHT.getRunningFutures().awaitUninterruptibly();
+			futureDHT.getFutureRequests().awaitUninterruptibly();
 			System.err.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
 			futureDHT = peers[77].getAll(nr);
 			futureDHT.awaitUninterruptibly();
-			futureDHT.getRunningFutures().awaitUninterruptibly();
+			futureDHT.getFutureRequests().awaitUninterruptibly();
 			if (!futureDHT.isSuccess())
 				System.err.println(futureDHT.getFailedReason());
 			Assert.assertEquals(true, futureDHT.isSuccess());
@@ -983,7 +983,7 @@ public class TestDHT
 			cs.setRoutingConfiguration(rc);
 			FutureDHT fdht = master1.put(id, data, cs);
 			fdht.awaitUninterruptibly();
-			fdht.getRunningFutures().awaitUninterruptibly();
+			fdht.getFutureRequests().awaitUninterruptibly();
 			Collection<Number160> tmp = new ArrayList<Number160>();
 			tmp.add(new Number160(5));
 			final ChannelCreator cc=master1.getConnectionBean().getReservation().reserve(1);
@@ -1113,14 +1113,14 @@ public class TestDHT
 			data1.setProtectedEntry(true);
 			FutureDHT fdht1 = master.put(locationKey, data1, cs1);
 			fdht1.awaitUninterruptibly();
-			fdht1.getRunningFutures().awaitUninterruptibly();
+			fdht1.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht1.isSuccess());
 			// store again
 			Data data2 = new Data("test1");
 			data2.setProtectedEntry(true);
 			FutureDHT fdht2 = slave1.put(locationKey, data2);
 			fdht2.awaitUninterruptibly();
-			fdht2.getRunningFutures().awaitUninterruptibly();
+			fdht2.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(0, fdht2.getKeys().size());
 			Assert.assertEquals(false, fdht2.isSuccess());
 			// Utils.sleep(1000000);
@@ -1136,7 +1136,7 @@ public class TestDHT
 			data3.setProtectedEntry(true);
 			FutureDHT fdht4 = master.put(locationKey, data3, cs1);
 			fdht4.awaitUninterruptibly();
-			fdht4.getRunningFutures().awaitUninterruptibly();
+			fdht4.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht4.isSuccess());
 			// get it
 			FutureDHT fdht7 = slave2.getAll(locationKey);
@@ -1161,14 +1161,14 @@ public class TestDHT
 			cs1.setContentKey(Utils.makeSHAHash(pair1.getPublic().getEncoded()));
 			FutureDHT fdht8 = slave1.put(locationKey, new Data("test1"), cs1);
 			fdht8.awaitUninterruptibly();
-			fdht8.getRunningFutures().awaitUninterruptibly();
+			fdht8.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, fdht8.isSuccess());
 			// overwrite
 			Data data4 = new Data("test1");
 			data4.setProtectedEntry(true);
 			FutureDHT fdht9 = master.put(locationKey, data4, cs1);
 			fdht9.awaitUninterruptibly();
-			fdht9.getRunningFutures().awaitUninterruptibly();
+			fdht9.getFutureRequests().awaitUninterruptibly();
 			System.err.println("reason " + fdht9.getFailedReason());
 			Assert.assertEquals(true, fdht9.isSuccess());
 		}
@@ -1381,7 +1381,7 @@ public class TestDHT
 			Data data = new Data("Test");
 			FutureDHT futureDHT = master.put(locationKey, data);
 			futureDHT.awaitUninterruptibly();
-			futureDHT.getRunningFutures().awaitUninterruptibly();
+			futureDHT.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();
 			for (int i = 0; i < peers.length; i++)
@@ -1453,7 +1453,7 @@ public class TestDHT
 			Data data = new Data("Test");
 			FutureDHT futureDHT = master.put(locationKey, data);
 			futureDHT.awaitUninterruptibly();
-			futureDHT.getRunningFutures().awaitUninterruptibly();
+			futureDHT.getFutureRequests().awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			// bootstrap
 			List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();

@@ -21,10 +21,20 @@ import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-
+/**
+ * FutureData is used as the future object for direct DHT operations. Its adds
+ * more logic that the generic {@link FutureResponse}, such as converting the
+ * received buffer to an object.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class FutureData extends FutureResponse
 {
+	// if set to raw, we expose the user directly to the Netty buffer, otherwise
+	// we are converting byte[] arrays to objecs
 	final private boolean raw;
+	// we get either a buffer or an object
 	private ChannelBuffer buffer;
 	private Object object;
 
@@ -33,7 +43,7 @@ public class FutureData extends FutureResponse
 	 * have a null payload. This is ok since a response might be empty and only
 	 * send an ack that the message has arrived.
 	 * 
-	 * @param requestMessage
+	 * @param requestMessage The message that was sent to the remode peer
 	 */
 	public FutureData(final Message requestMessage, final boolean raw)
 	{
@@ -47,14 +57,17 @@ public class FutureData extends FutureResponse
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
+			{
 				return;
+			}
 			this.buffer = responseMessage.getPayload1();
 			// even though the buffer is null, the type can be OK. In that case
 			// an empty message was sent.
 			this.type = responseMessage.getType() == Message.Type.OK ? FutureType.OK
 					: FutureType.FAILED;
 			this.reason = responseMessage.getType().toString();
-			if (!raw && this.type == FutureType.OK && this.buffer!=null)
+			// check if the user is waiting for an object
+			if (!raw && this.type == FutureType.OK && this.buffer != null)
 			{
 				try
 				{
@@ -76,6 +89,11 @@ public class FutureData extends FutureResponse
 		notifyListerenrs();
 	}
 
+	/**
+	 * Returns the raw buffer or null if the answer was empty.
+	 * 
+	 * @return The transferred buffer
+	 */
 	public ChannelBuffer getBuffer()
 	{
 		synchronized (lock)
@@ -84,6 +102,12 @@ public class FutureData extends FutureResponse
 		}
 	}
 
+	/**
+	 * Returns the object or null if the underlying buffer was raw or the answer
+	 * was empty.
+	 * 
+	 * @return The transferred object
+	 */
 	public Object getObject()
 	{
 		synchronized (lock)

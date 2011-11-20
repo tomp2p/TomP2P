@@ -23,6 +23,7 @@ import java.util.zip.GZIPOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated
 public class GZipFileLogger implements PeerLogger
 {
 	final private static Logger logger = LoggerFactory.getLogger(GZipFileLogger.class);

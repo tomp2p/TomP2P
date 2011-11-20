@@ -174,8 +174,7 @@ public class DistributedTracker
 			RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
 			final boolean signMessage, final FutureCreate<BaseFuture> futureCreate, final Set<Number160> knownPeers, final ChannelCreator cc)
 	{
-		final FutureTracker futureTracker = new FutureTracker();
-		futureTracker.setFutureCreate(futureCreate);
+		final FutureTracker futureTracker = new FutureTracker(futureCreate);
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, false, cc);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{

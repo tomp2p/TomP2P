@@ -18,12 +18,26 @@ import java.util.Collection;
 
 import net.tomp2p.peers.PeerAddress;
 
-
+/**
+ * The bootstrap will be a wrapped future, because we need to ping a server
+ * first, and if this ping is successful, we can bootstrap.
+ * 
+ * @author Thomas Bocek
+ * 
+ * @param <K>
+ */
 public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<K> implements
 		FutureBootstrap
 {
 	private Collection<PeerAddress> bootstrapTo;
-	
+
+	/**
+	 * The addresses we boostrap to. If we broadcast, we don't know the
+	 * addresses in advance.
+	 * 
+	 * @param bootstrapTo A list of peers that were involved in the
+	 *        bootstrapping
+	 */
 	public void setBootstrapTo(Collection<PeerAddress> bootstrapTo)
 	{
 		synchronized (lock)
@@ -32,16 +46,14 @@ public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<
 		}
 	}
 
+	/**
+	 * Returns a list of of peers that were involved in the bootstrapping
+	 */
 	public Collection<PeerAddress> getBootstrapTo()
 	{
 		synchronized (lock)
 		{
 			return bootstrapTo;
 		}
-	}
-	
-	public K getWrappedFuture()
-	{
-		return super.getWrappedFuture();
 	}
 }

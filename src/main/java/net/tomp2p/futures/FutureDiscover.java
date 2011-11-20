@@ -1,3 +1,18 @@
+/*
+ * Copyright 2011 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package net.tomp2p.futures;
 import java.util.concurrent.TimeUnit;
 
@@ -7,61 +22,52 @@ import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 
+/**
+ * The future that keeps track of network discovery such as discovery if its
+ * behind a NAT, the status if UPNP or NAT-PMP could be established, if there is
+ * portforwarding.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class FutureDiscover extends BaseFutureImpl
 {
+	// timeout to tell us when discovery failed.
 	final private Timeout timeout;
-	//
-	private boolean goodUDP;
-	private boolean goodTCP;
+	// result
 	private PeerAddress peerAddress;
+	private boolean discoveredTCP = false;
+	private boolean discoveredUDP = false;
 
+	/**
+	 * Creates a new future object and creates a timer that fires failed after a
+	 * timeout.
+	 * 
+	 * @param timer The timer to use
+	 * @param delaySec The delay in seconds
+	 */
 	public FutureDiscover(Timer timer, int delaySec)
 	{
 		timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
-	}
-
-	@Override
-	public void cancel()
-	{
-		timeout.cancel();
-		super.cancel();
-	}
-
-	public void setGoodUDP(boolean goodUDP)
-	{
-		synchronized (lock)
+		addListener(new BaseFutureAdapter<FutureDiscover>()
 		{
-			this.goodUDP = goodUDP;
-		}
+			@Override
+			public void operationComplete(FutureDiscover future) throws Exception
+			{
+				// cancel timeout if we are done.
+				timeout.cancel();
+			}
+		});
 	}
 
-	public boolean getGoodUPD()
-	{
-		synchronized (lock)
-		{
-			return goodUDP;
-		}
-	}
-	
-	public void setGoodTCP(boolean goodTCP)
-	{
-		synchronized (lock)
-		{
-			this.goodTCP=goodTCP;
-		}
-	}
-
-	public boolean getGoodTCP()
-	{
-		synchronized (lock)
-		{
-			return goodTCP;
-		}
-	}
-
+	/**
+	 * Gets called if the discovery was a success and an other peer could ping
+	 * us with TCP and UDP.
+	 * 
+	 * @param peerAddress The peerAddress of our server
+	 */
 	public void done(PeerAddress peerAddress)
 	{
-		timeout.cancel();
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
@@ -72,6 +78,11 @@ public class FutureDiscover extends BaseFutureImpl
 		notifyListerenrs();
 	}
 
+	/**
+	 * The peerAddress where we are reachable
+	 * 
+	 * @return The new un-firewalled peerAddress of this peer
+	 */
 	public PeerAddress getPeerAddress()
 	{
 		synchronized (lock)
@@ -79,6 +90,61 @@ public class FutureDiscover extends BaseFutureImpl
 			return peerAddress;
 		}
 	}
+
+	/**
+	 * Intermediate result if TCP has been discovered. Set discoveredTCP True if
+	 * other peer could reach us with a TCP ping.
+	 */
+	public void setDiscoveredTCP()
+	{
+		synchronized (lock)
+		{
+			this.discoveredTCP = true;
+		}
+	}
+
+	/**
+	 * Intermediate result if UDP has been discovered. Set discoveredUDP True if
+	 * other peer could reach us with a UDP ping.
+	 */
+	public void setDiscoveredUDP()
+	{
+		synchronized (lock)
+		{
+			this.discoveredUDP = true;
+		}
+	}
+
+	/**
+	 * Checks if this peer can be reached via TCP.
+	 * 
+	 * @return True if this peer can be reached via TCP from outside.
+	 */
+	public boolean isDiscoveredTCP()
+	{
+		synchronized (lock)
+		{
+			return discoveredTCP;
+		}
+	}
+
+	/**
+	 * Checks if this peer can be reached via UDP.
+	 * 
+	 * @return True if this peer can be reached via UDP from outside.
+	 */
+	public boolean isDiscoveredUDP()
+	{
+		synchronized (lock)
+		{
+			return discoveredUDP;
+		}
+
+	}
+
+	/**
+	 * In case of no peer can contact us, we fire an failed.
+	 */
 	private final class DiscoverTimeoutTask implements TimerTask
 	{
 		@Override

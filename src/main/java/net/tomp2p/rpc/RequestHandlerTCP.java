@@ -14,8 +14,6 @@
  * the License.
  */
 package net.tomp2p.rpc;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
@@ -50,7 +48,6 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 	final private PeerBean peerBean;
 	final private ConnectionBean connectionBean;
 	final private Message message;
-	final private AtomicBoolean handlingMessage = new AtomicBoolean(false);
 	final private MessageID sendMessageID;
 
 	/**
@@ -127,10 +124,6 @@ public class RequestHandlerTCP implements ChannelUpstreamHandler
 			return;
 		}
 		final Message responseMessage = (Message) e.getMessage();
-		if (handlingMessage.compareAndSet(false, true))
-		{
-			futureResponse.cancelTimeout();
-		}
 		MessageID recvMessageID = new MessageID(responseMessage);
 		if (responseMessage.getType() == Message.Type.UNKNOWN_ID)
 		{

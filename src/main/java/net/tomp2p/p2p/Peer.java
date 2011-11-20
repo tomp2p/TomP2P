@@ -43,6 +43,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
@@ -827,13 +828,19 @@ public class Peer
 		}
 	}
 	
+	@Deprecated
+	public void setupPortForwandingUPNP(String internalHost)
+	{
+		setupPortForwanding(internalHost);
+	}
+	
 	/**
 	 * The Dynamic and/or Private Ports are those from 49152 through 65535 (http://www.iana.org/assignments/port-numbers)
 	 * @param internalHost 
 	 * @param port
 	 * @return
 	 */
-	public void setupPortForwandingUPNP(String internalHost)
+	public void setupPortForwanding(String internalHost)
 	{
 		final int range = 65535 - 49152;
 		Random rnd = new Random();
@@ -877,7 +884,7 @@ public class Peer
 	/**
 	 * Discover attempts to find the external IP address of this peer. This is done by first trying to set UPNP 
 	 * with port forwarding (gives us the external address), query UPNP for the external address, and 
-	 * pinging a well known peer.
+	 * pinging a well known peer. The fallback is NAT-PMP 
 	 *  
 	 * @param peerAddress
 	 * @return
@@ -899,9 +906,15 @@ public class Peer
 			public void serverAddressChanged(PeerAddress peerAddress, boolean tcp)
 			{
 				if(tcp)
+				{
 					changedTCP=true;
+					futureDiscover.setDiscoveredTCP();
+				}
 				else
+				{
 					changedUDP=true;
+					futureDiscover.setDiscoveredUDP();
+				}
 				if(changedTCP && changedUDP) 
 				{
 					futureDiscover.done(peerAddress);
@@ -934,7 +947,7 @@ public class Peer
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
 							// now we know our internal IP, where we receive packets
-							setupPortForwandingUPNP(futureResponseTCP.getResponse().getRecipient().getInetAddress().getHostAddress());
+							setupPortForwanding(futureResponseTCP.getResponse().getRecipient().getInetAddress().getHostAddress());
 							//
 							serverAddress=serverAddress.changePorts(bindings.getOutsideUDPPort(), bindings.getOutsideTCPPort());
 							serverAddress=serverAddress.changeAddress(seenAs.getInetAddress());
@@ -1005,8 +1018,8 @@ public class Peer
 				config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0)
 		{
-			ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
-			futureDHT.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
+			setupCancel(futureDHT, tmp);
 		}
 		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
@@ -1029,7 +1042,7 @@ public class Peer
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(),
 						config.getFutureCreate(), cc);
-				futureDHT.created(futureDHT2);
+				futureDHT.repeated(futureDHT2);
 				Utils.addReleaseListenerAll(futureDHT2, cc);
 			}
 		};
@@ -1082,8 +1095,8 @@ public class Peer
 				config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0)
 		{
-			ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config, futureDHT);
-			futureDHT.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config, futureDHT);
+			setupCancel(futureDHT, tmp);
 		}
 		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
@@ -1103,7 +1116,7 @@ public class Peer
 				FutureDHT futureDHT2 = getDHT().add(locationKey, config.getDomain(), dataCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isProtectDomain(), config.isSignMessage(), config.getFutureCreate(), cc);
-				futureDHT.created(futureDHT2);
+				futureDHT.repeated(futureDHT2);
 				Utils.addReleaseListenerAll(futureDHT2, cc);
 			}
 		};
@@ -1202,8 +1215,8 @@ public class Peer
 				config.isSignMessage(), config.getFutureCreate(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
-			ScheduledFuture<?> tmp = scheduleRemove(locationKey, keyCollection, config, futureDHT);
-			futureDHT.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = scheduleRemove(locationKey, keyCollection, config, futureDHT);
+			setupCancel(futureDHT, tmp);
 		}
 		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
@@ -1228,7 +1241,7 @@ public class Peer
 				FutureDHT futureDHT2 = getDHT().remove(locationKey, config.getDomain(), keyCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isReturnResults(), config.isSignMessage(), config.getFutureCreate(), cc);
-				futureDHT.created(futureDHT2);
+				futureDHT.repeated(futureDHT2);
 				Utils.addReleaseListenerAll(futureDHT2, cc);
 				if (++counter >= repetion)
 				{
@@ -1279,8 +1292,8 @@ public class Peer
 				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
-			ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
-			futureDHT.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
+			setupCancel(futureDHT, tmp);
 		}
 		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
@@ -1307,8 +1320,8 @@ public class Peer
 				config.getRequestP2PConfiguration(), config.getFutureCreate(), config.isCancelOnFinish(), cc);
 		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
 		{
-			ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
-			futureDHT.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
+			setupCancel(futureDHT, tmp);
 		}
 		Utils.addReleaseListenerAll(futureDHT, cc);
 		return futureDHT;
@@ -1333,7 +1346,7 @@ public class Peer
 				final FutureDHT futureDHT2 = getDHT().direct(locationKey, buffer, false,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.getFutureCreate(), config.isCancelOnFinish(), cc);
-				futureDHT.created(futureDHT2);
+				futureDHT.repeated(futureDHT2);
 				Utils.addReleaseListenerAll(futureDHT2, cc);
 				if (++counter >= repetion)
 				{
@@ -1432,16 +1445,30 @@ public class Peer
 				config.isSignMessage(), config.getFutureCreate(), bloomFilter, cc);
 		if (getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() > 0)
 		{
-			ScheduledFuture<?> tmp = scheduleAddTracker(locationKey, config, futureTracker);
-			futureTracker.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = scheduleAddTracker(locationKey, config, futureTracker);
+			setupCancel(futureTracker, tmp);
 		}
 		if (config.getWaitBeforeNextSendSeconds() > 0)
 		{
-			ScheduledFuture<?> tmp = schedulePeerExchange(locationKey, config, futureTracker);
-			futureTracker.setScheduledFuture(tmp, scheduledFutures);
+			final ScheduledFuture<?> tmp = schedulePeerExchange(locationKey, config, futureTracker);
+			setupCancel(futureTracker, tmp);
 		}
 		Utils.addReleaseListenerAll(futureTracker, cc);
 		return futureTracker;
+	}
+
+	private void setupCancel(final BaseFuture futureTracker, final ScheduledFuture<?> tmp)
+	{
+		scheduledFutures.add(tmp);
+		futureTracker.addCancellation(new Cancellable()
+		{
+			@Override
+			public void cancel()
+			{
+				tmp.cancel(true);
+				scheduledFutures.remove(tmp);
+			}
+		});
 	}
 
 	private ScheduledFuture<?> scheduleAddTracker(final Number160 locationKey, final ConfigurationTrackerStore config,

@@ -22,7 +22,6 @@ import net.tomp2p.connection.ConnectionHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * The base for all BaseFuture implementations. Be aware of possible deadlocks.
  * Never await from a listener. This class is heavily inspired by MINA and
@@ -34,17 +33,18 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseFutureImpl implements BaseFuture
 {
 	final private static Logger logger = LoggerFactory.getLogger(BaseFutureImpl.class);
-	// I think a list will be much faster as a set, as we don't expect many
-	// removes
-	final private ArrayList<BaseFutureListener<? extends BaseFuture>> listeners = new ArrayList<BaseFutureListener<? extends BaseFuture>>(
-			1);
-	final private List<Cancellable> cancellables = new ArrayList<Cancellable>();
+	// Listeners that gets notified if the future finished
+	final private List<BaseFutureListener<? extends BaseFuture>> listeners =
+			new ArrayList<BaseFutureListener<? extends BaseFuture>>(1);
+	// While a future is running, the process may add cancellations for faster
+	// cancel operations, e.g. cancel connection attempt
+	final protected List<Cancellable> cancellables = new ArrayList<Cancellable>(1);
+	final protected Object lock;
 	// set the ready flag if operation completed
 	protected boolean completed = false;
 	// by default false, change in case of success. An unfinished operation is
 	// always set to failed
 	protected FutureType type = FutureType.INIT;
-	final protected Object lock;
 	protected String reason = "unknown";
 
 	public BaseFutureImpl()
@@ -79,8 +79,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 					lock.wait();
 				}
 				catch (final InterruptedException e)
-				{
-				}
+				{}
 			}
 			return this;
 		}
@@ -105,6 +104,17 @@ public abstract class BaseFutureImpl implements BaseFuture
 		}
 	}
 
+	/**
+	 * Internal await operation that also checks for potential deadlocks.
+	 * 
+	 * @param timeoutMillis The time to wait
+	 * @param interrupt Flag to indicate if the method can throw an
+	 *        InterruptedException
+	 * @return True if this future has finished in timeoutMillis time, false
+	 *         otherwise
+	 * @throws InterruptedException If the flag interrupt is true and this
+	 *         thread has been interrupted.
+	 */
 	private boolean await0(final long timeoutMillis, final boolean interrupt)
 			throws InterruptedException
 	{
@@ -130,7 +140,9 @@ public abstract class BaseFutureImpl implements BaseFuture
 				catch (final InterruptedException e)
 				{
 					if (interrupt)
+					{
 						throw e;
+					}
 				}
 				if (completed)
 				{
@@ -171,6 +183,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		synchronized (lock)
 		{
+			// failed means failed or canceled
 			return completed && (type != FutureType.OK);
 		}
 	}
@@ -181,8 +194,13 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
+			{
 				return;
-			logger.warn("set failed reason: " + reason);
+			}
+			if (logger.isWarnEnabled())
+			{
+				logger.warn("set failed reason: " + reason);
+			}
 			this.reason = reason;
 			this.type = FutureType.FAILED;
 		}
@@ -192,9 +210,16 @@ public abstract class BaseFutureImpl implements BaseFuture
 	@Override
 	public String getFailedReason()
 	{
+		StringBuffer sb = new StringBuffer("BaseFuture Status=(isComplete:");
 		synchronized (lock)
 		{
-			return "complete=" + completed + "/" + reason + " type=" + type;
+			sb.append(completed);
+			sb.append(", reason:");
+			sb.append(reason);
+			sb.append(", type:");
+			sb.append(type);
+			sb.append(")");
+			return sb.toString();
 		}
 	}
 
@@ -221,7 +246,9 @@ public abstract class BaseFutureImpl implements BaseFuture
 			return true;
 		}
 		else
+		{
 			return false;
+		}
 	}
 
 	@Override
@@ -231,16 +258,23 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (completed)
+			{
 				notifyNow = true;
+			}
 			else
+			{
 				listeners.add(listener);
+			}
 		}
+		// called only once
 		if (notifyNow)
+		{
 			callOperationComplete(listener);
+		}
 		return this;
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void callOperationComplete(final BaseFutureListener listener)
 	{
 		try
@@ -255,11 +289,19 @@ public abstract class BaseFutureImpl implements BaseFuture
 			}
 			catch (final Exception e1)
 			{
+				if (logger.isErrorEnabled())
+				{
+					logger.error("Unexcpected exception in exceptionCaught()", e1);
+				}
 				e1.printStackTrace();
 			}
 		}
 	}
 
+	/**
+	 * If we block from a Netty thread, then the Netty thread won't receive any
+	 * IO operations, thus make the user aware of this situation.
+	 */
 	private void checkDeadlock()
 	{
 		String currentName = Thread.currentThread().getName();
@@ -281,17 +323,13 @@ public abstract class BaseFutureImpl implements BaseFuture
 		// because 'ready' flag will be checked against both addListener and
 		// removeListener calls.
 		for (final BaseFutureListener<? extends BaseFuture> listener : listeners)
+		{
 			callOperationComplete(listener);
+		}
 		listeners.clear();
 		cancellables.clear();
 		// all events are one time events. It cannot happen that you get
 		// notified twice
-	}
-
-	private void cancelAll()
-	{
-		for (final Cancellable cancellable : cancellables)
-			cancellable.cancel();
 	}
 
 	@Override
@@ -300,7 +338,9 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (!completed)
+			{
 				listeners.remove(listener);
+			}
 		}
 		return this;
 	}
@@ -311,7 +351,9 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (!completed)
+			{
 				cancellables.add(cancellable);
+			}
 		}
 		return this;
 	}
@@ -322,7 +364,9 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (!completed)
+			{
 				cancellables.remove(cancellable);
+			}
 		}
 		return this;
 	}
@@ -333,11 +377,17 @@ public abstract class BaseFutureImpl implements BaseFuture
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
+			{
 				return;
+			}
 			this.type = FutureType.CANCEL;
 			this.reason = "canceled";
 		}
-		cancelAll();
+		// only run once
+		for (final Cancellable cancellable : cancellables)
+		{
+			cancellable.cancel();
+		}
 		notifyListerenrs();
 	}
 }

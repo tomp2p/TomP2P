@@ -14,12 +14,10 @@
  * the License.
  */
 package net.tomp2p.futures;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledFuture;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
@@ -29,31 +27,54 @@ import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
+/**
+ * The future object for the get() and put() operations including routing.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class FutureDHT extends BaseFutureImpl
 {
+	// The minimum number of expected results. This is also used for put()
+	// operations to decide if a future failed or not.
 	final private int min;
+	// Since we receive multiple results, we have an evaluation scheme to
+	// simplify the result
 	final private EvaluatingSchemeDHT evaluationScheme;
+	// This is a pointer to the other futures created based on this one.
 	final private FutureCreate<FutureDHT> futureCreate;
+	// A pointer to the routing process that run before the DHT operations
 	final private FutureRouting futureRouting;
+	// Stores futures of DHT operations, 6 is the maximum of futures being
+	// generates as seen in Configurations (min.res + parr.diff)
+	final private List<FutureResponse> requests = new ArrayList<FutureResponse>(6);
+	// Storage of results
 	private Map<PeerAddress, Collection<Number160>> rawKeys;
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
 	private Map<PeerAddress, Object> rawObjects;
 	private Map<PeerAddress, ChannelBuffer> rawChannels;
-	//
-	private List<FutureResponse> pendingFutures=new ArrayList<FutureResponse>(4);
-	//
-	private ScheduledFuture<?> scheduledFuture;
-	private List<ScheduledFuture<?>> scheduledFutures;
-	private boolean cancelSchedule = false;
-	//
+	// Flag indicating if the minimum operations for put have been reached.
 	private boolean minReached;
 
+	@Deprecated
 	public FutureDHT()
 	{
 		this(0, new VotingSchemeDHT(), null, null);
 	}
 
-	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme, FutureCreate<FutureDHT> futureCreate,
+	/**
+	 * Creates a new DHT future object that keeps track of the status of the DHT
+	 * operations.
+	 * 
+	 * @param min The minimum of expected results
+	 * @param evaluationScheme The scheme to evaluate results from multiple
+	 *        peers
+	 * @param futureCreate The object to keep track of the futures created based
+	 *        on this future
+	 * @param futureRouting The futures from the routing process.
+	 */
+	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme,
+			FutureCreate<FutureDHT> futureCreate,
 			FutureRouting futureRouting)
 	{
 		this.min = min;
@@ -62,73 +83,142 @@ public class FutureDHT extends BaseFutureImpl
 		this.futureRouting = futureRouting;
 	}
 
+	@Deprecated
 	public void created(FutureDHT futureDHT)
 	{
-		if (futureCreate != null) futureCreate.repeated(futureDHT);
+		repeated(futureDHT);
 	}
 
+	/**
+	 * Finish the future and set the keys that have been removed.
+	 * 
+	 * @param rawKeys The removed keys with information from which peer it has
+	 *        been removed
+	 */
 	public void setRemovedKeys(final Map<PeerAddress, Collection<Number160>> rawKeys)
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify()) return;
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
 			this.rawKeys = rawKeys;
-			final int size=rawKeys.size();
+			final int size = rawKeys.size();
 			this.minReached = size >= min;
 			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawKeys.size();
+			this.reason = size > 0 ? "Minimun number of results reached"
+					: "Expected > 0 result, but got " + size;
 		}
 		notifyListerenrs();
 	}
 
-	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys, boolean ifAbsent)
+	/**
+	 * Finish the future and set the keys that have been stored. The flag
+	 * isAbsent influences minreached.
+	 * 
+	 * @param rawKeys The keys that have been stored with information on which
+	 *        peer it has been stored
+	 * @param ifAbsent Flag if the user requested putIfAbsent
+	 */
+	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys,
+			boolean ifAbsent)
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify()) return;
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
 			this.rawKeys = rawKeys;
-			this.minReached = rawKeys.size() >= min;
-			// we cannot report a failure for store if absent, because a value
-			// may be present and we did not store anything, which is ok.
-			if (ifAbsent)
-			{
-				this.type = FutureType.OK;
-				this.reason = "ok, since store if absent";
-			}
-			// if put returns 0 keys means failure, we wanted to store values,
-			// but did not
-			else
-			{
-				this.type = FutureType.FAILED;
-				this.reason = "Key size is zero";
-				for (Collection<Number160> result : rawKeys.values())
-				{
-					if (result.size() > 0)
-					{
-						this.type = FutureType.OK;
-						this.reason = "size ok";
-						break;
-					}
-				}
-			}
+			final int size = rawKeys.size();
+			this.minReached = size >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
+					+ " result, but got " + size;
 		}
 		notifyListerenrs();
 	}
 
-	public void setData(final Map<PeerAddress, Map<Number160, Data>> rawData)
+	/**
+	 * Finish the future and set the keys and data that have been received.
+	 * 
+	 * @param rawData The keys and data that have been received with information
+	 *        from which peer it has been received.
+	 */
+	public void setReceivedData(final Map<PeerAddress, Map<Number160, Data>> rawData)
 	{
 		synchronized (lock)
 		{
-			if (!setCompletedAndNotify()) return;
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
 			this.rawData = rawData;
-			final int size=rawData.size();
+			final int size = rawData.size();
 			this.minReached = size >= min;
 			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
-			this.reason = size > 0 ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
+			this.reason = size > 0 ? "Minimun number of results reached"
+					: "Expected >0 result, but got " + size;
 		}
 		notifyListerenrs();
 	}
 
+	/**
+	 * Finish the future and set the keys and data that have send directly using
+	 * the Netty buffer.
+	 * 
+	 * @param rawChannels The raw data that have been sent directly with
+	 *        information on which peer it has been sent
+	 */
+	public void setDirectData1(Map<PeerAddress, ChannelBuffer> rawChannels)
+	{
+		synchronized (lock)
+		{
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
+			this.rawChannels = rawChannels;
+			final int size = rawChannels.size();
+			this.minReached = size >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
+					+ " result, but got " + size;
+		}
+		notifyListerenrs();
+	}
+
+	/**
+	 * Finish the future and set the keys and data that have send directly using
+	 * an object.
+	 * 
+	 * @param rawObjects The objects that have been sent directly with
+	 *        information on which peer it has been sent
+	 */
+	public void setDirectData2(Map<PeerAddress, Object> rawObjects)
+	{
+		synchronized (lock)
+		{
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
+			this.rawObjects = rawObjects;
+			final int size = rawObjects.size();
+			this.minReached = size >= min;
+			this.type = minReached ? FutureType.OK : FutureType.FAILED;
+			this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
+					+ " result, but got " + size;
+		}
+		notifyListerenrs();
+	}
+
+	/**
+	 * Returns the raw keys from the storage or removal operation
+	 * 
+	 * @return The raw keys and the information which peer has been contacted
+	 */
 	public Map<PeerAddress, Collection<Number160>> getRawKeys()
 	{
 		synchronized (lock)
@@ -137,14 +227,11 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	public Collection<Number160> getKeys()
-	{
-		synchronized (lock)
-		{
-			return evaluationScheme.evaluate1(rawKeys);
-		}
-	}
-
+	/**
+	 * Returns the raw data from the get operation
+	 * 
+	 * @return The raw data and the information which peer has been contacted
+	 */
 	public Map<PeerAddress, Map<Number160, Data>> getRawData()
 	{
 		synchronized (lock)
@@ -153,35 +240,12 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	public Map<Number160, Data> getData()
-	{
-		synchronized (lock)
-		{
-			return evaluationScheme.evaluate2(rawData);
-		}
-	}
-
-	public boolean isMinReached()
-	{
-		synchronized (lock)
-		{
-			return minReached;
-		}
-	}
-
-	public void setDirectData1(Map<PeerAddress, ChannelBuffer> rawChannels)
-	{
-		synchronized (lock)
-		{
-			if (!setCompletedAndNotify()) return;
-			this.rawChannels = rawChannels;
-			this.minReached = rawChannels.size() >= min;
-			this.type = minReached ? FutureType.OK : FutureType.FAILED;
-			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
-		}
-		notifyListerenrs();
-	}
-
+	/**
+	 * Return raw data from send_dircet (Netty buffer).
+	 * 
+	 * @return The raw data from send_dircet and the information which peer has
+	 *         been contacted
+	 */
 	public Map<PeerAddress, ChannelBuffer> getRawDirectData1()
 	{
 		synchronized (lock)
@@ -190,19 +254,12 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	public void setDirectData2(Map<PeerAddress, Object> rawObjects)
-	{
-		synchronized (lock)
-		{
-			if (!setCompletedAndNotify()) return;
-			this.rawObjects = rawObjects;
-			this.minReached = rawObjects.size() >= min;
-			this.type = minReached ? FutureType.OK : FutureType.FAILED;
-			this.reason = minReached ? "Minimun number of results reached" : "Expected "+min+" result, but got "+rawData.size();
-		}
-		notifyListerenrs();
-	}
-
+	/**
+	 * Return raw data from send_dircet (Object).
+	 * 
+	 * @return The raw data from send_dircet and the information which peer has
+	 *         been contacted
+	 */
 	public Map<PeerAddress, Object> getRawDirectData2()
 	{
 		synchronized (lock)
@@ -211,6 +268,86 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
+	/**
+	 * Checks if the minimum of expected results have been reached. This flag is
+	 * also used for determining the success or failure of this future for put
+	 * and send_direct.
+	 * 
+	 * @return True, if expected minimum results have been reached.
+	 */
+	public boolean isMinReached()
+	{
+		synchronized (lock)
+		{
+			return minReached;
+		}
+	}
+
+	/**
+	 * Returns the keys that have been stored or removed after evaluation. The
+	 * evaluation gets rid of the PeerAddress information, by either a majority
+	 * vote or cumulation.
+	 * 
+	 * @return The keys that have been stored or removed
+	 */
+	public Collection<Number160> getKeys()
+	{
+		synchronized (lock)
+		{
+			return evaluationScheme.evaluate1(rawKeys);
+		}
+	}
+
+	/**
+	 * Return the data from get() after evaluation. The evaluation gets rid of
+	 * the PeerAddress information, by either a majority vote or cumulation.
+	 * 
+	 * @return The data that have been received.
+	 */
+	public Map<Number160, Data> getData()
+	{
+		synchronized (lock)
+		{
+			return evaluationScheme.evaluate2(rawData);
+		}
+	}
+
+	/**
+	 * Return the data from send_direct (Object) after evaluation. The
+	 * evaluation gets rid of the PeerAddress information, by either a majority
+	 * vote or cumulation.
+	 * 
+	 * @return The data that have been received.
+	 */
+	public Object getObject()
+	{
+		synchronized (lock)
+		{
+			return this.evaluationScheme.evaluate3(rawObjects);
+		}
+	}
+
+	/**
+	 * Return the data from send_direct (Netty buffer) after evaluation. The
+	 * evaluation gets rid of the PeerAddress information, by either a majority
+	 * vote or cumulation.
+	 * 
+	 * @return The data that have been received.
+	 */
+	public Object getChannelBuffer()
+	{
+		synchronized (lock)
+		{
+			return this.evaluationScheme.evaluate4(rawChannels);
+		}
+	}
+
+	/**
+	 * Returns the future object that keeps information about future object,
+	 * based on this object
+	 * 
+	 * @return FutureCreate object.
+	 */
 	public FutureCreate<FutureDHT> getFutureCreate()
 	{
 		synchronized (lock)
@@ -234,71 +371,67 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	public void setScheduledFuture(ScheduledFuture<?> scheduledFuture, List<ScheduledFuture<?>> scheduledFutures)
+	/**
+	 * Returns back those futures that are still running. If 6 storage futures
+	 * are started at the same time and 5 of them finish, and we specified that
+	 * we are fine if 5 finishes, then futureDHT returns success. However, the
+	 * future that may still be running is the one that stores the content to
+	 * the closest peer. For testing this is not acceptable, thus after waiting
+	 * for futureDHT, one needs to wait for the running futures as well.
+	 * 
+	 * @return A future that finishes if all running futures are finished.
+	 */
+	public FutureForkJoin<FutureResponse> getFutureRequests()
 	{
 		synchronized (lock)
 		{
-			this.scheduledFuture = scheduledFuture;
-			this.scheduledFutures = scheduledFutures;
-			if (cancelSchedule == true) cancel();
+			final int size = requests.size();
+			final FutureResponse[] futureResponses = new FutureResponse[size];
+			for (int i = 0; i < size; i++)
+			{
+				futureResponses[i] = requests.get(i);
+			}
+			return new FutureForkJoin<FutureResponse>(futureResponses);
+		}
+	}
+
+	/**
+	 * Adds all requests that have been created for the DHT operations. Those
+	 * were created after the routing process.
+	 * 
+	 * @param futureResponse The futurRepsonse that has been created
+	 */
+	public void addRequests(FutureResponse futureResponse)
+	{
+		synchronized (lock)
+		{
+			requests.add(futureResponse);
+		}
+	}
+
+	/**
+	 * Called for futures created based on this future. This is used for
+	 * scheduled futures.
+	 * 
+	 * @param futureDHT The newly created future
+	 */
+	public void repeated(FutureDHT futureDHT)
+	{
+		if (futureCreate != null)
+		{
+			futureCreate.repeated(futureDHT);
 		}
 	}
 
 	@Override
 	public void cancel()
 	{
-		synchronized (lock)
+		// Even though, this future is completed, there may be tasks than can be
+		// canceled due to scheduled futures attached to this event.
+		for (final Cancellable cancellable : cancellables)
 		{
-			cancelSchedule = true;
-			if (scheduledFuture != null) scheduledFuture.cancel(false);
-			if (scheduledFutures != null) scheduledFutures.remove(scheduledFuture);
+			cancellable.cancel();
 		}
 		super.cancel();
-	}
-
-	public Object getObject()
-	{
-		synchronized (lock)
-		{
-			return this.evaluationScheme.evaluate3(rawObjects);
-		}
-	}
-
-	public Object getChannelBuffer()
-	{
-		synchronized (lock)
-		{
-			return this.evaluationScheme.evaluate4(rawChannels);
-		}
-	}
-
-	public void addPending(FutureResponse futureResponse) 
-	{
-		synchronized (lock)
-		{
-			pendingFutures.add(futureResponse);
-		}
-	}
-	
-	/**
-	 * Returns back those futures that are still running. If 6 storage futures are started at the same time and
-	 * 5 of them finish, and we specified that we are fine if 5 finishes, then futureDHT returns success. However, the
-	 * future that may still be running is the one that stores the content to the closest peer. For testing this is not 
-	 * acceptable, thus after waiting for futureDHT, one needs to wait for the running futures as well.
-	 *  
-	 * @return A future that finishes if all running futures are finished.
-	 */
-	public FutureForkJoin<FutureResponse> getRunningFutures()
-	{
-		synchronized (lock)
-		{
-			final int size=pendingFutures.size();
-			final FutureResponse[] futureResponses=new FutureResponse[size];
-			for(int i=0;i<size;i++)
-			{
-				futureResponses[i]=pendingFutures.get(i);
-			}
-			return new FutureForkJoin<FutureResponse>(futureResponses);
-		}
 	}
 }

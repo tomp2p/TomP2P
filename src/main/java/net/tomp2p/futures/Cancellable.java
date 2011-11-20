@@ -14,8 +14,17 @@
  * the License.
  */
 package net.tomp2p.futures;
-
+/**
+ * A cancelable class should implement this method use use it for future
+ * objects.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public interface Cancellable
 {
+	/**
+	 * This method gets called if a future is cancelled.
+	 */
 	public abstract void cancel();
 }

@@ -267,7 +267,7 @@ public class DistributedHashHashMap
 								@Override
 								public void response(FutureDHT futureDHT)
 								{
-									futureDHT.setData(rawData);
+									futureDHT.setReceivedData(rawData);
 								}
 
 								@Override
@@ -320,7 +320,7 @@ public class DistributedHashHashMap
 								public void response(FutureDHT futureDHT)
 								{
 									if (returnResults)
-										futureDHT.setData(rawDataResult);
+										futureDHT.setReceivedData(rawDataResult);
 									else
 										futureDHT.setRemovedKeys(rawDataNoResult);
 								}
@@ -377,6 +377,7 @@ public class DistributedHashHashMap
 				{
 					active++;
 					futures[i] = operation.create(next);
+					futureDHT.addRequests(futures[i]);
 				}
 			}
 			else
@@ -397,7 +398,7 @@ public class DistributedHashHashMap
 			@Override
 			public void operationComplete(FutureForkJoin<FutureResponse> future) throws Exception
 			{
-				for (FutureResponse futureResponse : future.getAll())
+				for (FutureResponse futureResponse : future.getCompleted())
 				{
 					if (futureResponse.isSuccess())
 						operation.interMediateResponse(futureResponse);
@@ -405,18 +406,7 @@ public class DistributedHashHashMap
 				// we are finished if forkjoin says so or we got too many failures
 				if (future.isSuccess() || nrFailure.incrementAndGet() > maxFailure)
 				{
-					if(!cancelOnFinish)
-					{
-						for (FutureResponse futureResponse : future.getAll())
-						{
-							if (!futureResponse.isSuccess())
-							{
-								//we add pending futures that are not canceled that the user can wait for those futures
-								futureDHT.addPending(futureResponse);
-							}
-						}
-					}
-					else
+					if(cancelOnFinish)
 					{
 						DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 					}

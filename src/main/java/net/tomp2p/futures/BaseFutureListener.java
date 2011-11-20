@@ -18,7 +18,7 @@ package net.tomp2p.futures;
  * Something interested in being notified when the result of an
  * {@link BaseFuture} becomes available.
  * 
- * @author draft
+ * @author Thomas Bocek
  * 
  * @param <F>
  */
@@ -33,5 +33,12 @@ public interface BaseFutureListener<F extends BaseFuture>
 	 */
 	public abstract void operationComplete(F future) throws Exception;
 
+	/**
+	 * If the operation complete is called and the methed throws an exception
+	 * 
+	 * @param t The exception thrown in #operationComplete(BaseFuture).
+	 * @throws Exception If an execption is thrown, it is printed in the log and
+	 *         and System.err
+	 */
 	public abstract void exceptionCaught(Throwable t) throws Exception;
 }

@@ -18,24 +18,35 @@ import net.tomp2p.connection.ReplyTimeoutHandler;
 import net.tomp2p.message.Message;
 
 /**
- * Each response has at least a request messages. The corresponding response
- * message is set only if the request has been successful. This is indicated
- * with the failed field.
+ * Each response has one request messages. The corresponding response message is
+ * set only if the request has been successful. This is indicated with isFailed.
  * 
- * @author draft
+ * @author Thomas Bocek
  * 
  */
 public class FutureResponse extends BaseFutureImpl
 {
+	// the message that was requested
 	final private Message requestMessage;
+	// the reply to this request
 	private Message responseMessage;
-	private ReplyTimeoutHandler replyTimeoutHandler;
 
+	/**
+	 * Create the future and set the request message
+	 * 
+	 * @param requestMessage The request message that will be send over the
+	 *        wire.
+	 */
 	public FutureResponse(final Message requestMessage)
 	{
 		this.requestMessage = requestMessage;
 	}
-	
+
+	/**
+	 * If we don't get a reply message, which is the case for fire-and-forget
+	 * messages, then set the reply to null and set this future to complete with
+	 * the type Success.
+	 */
 	public void setResponse()
 	{
 		setResponse(null);
@@ -43,7 +54,8 @@ public class FutureResponse extends BaseFutureImpl
 
 	/**
 	 * Gets called if a peer responds. Note that either this method or
-	 * responseFailed() is always called. This does not notify any listeners. The listeners gets notified if channel is closed
+	 * responseFailed() is always called. This does not notify any listeners.
+	 * The listeners gets notified if channel is closed
 	 * 
 	 * @param message The received message
 	 */
@@ -52,7 +64,9 @@ public class FutureResponse extends BaseFutureImpl
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
+			{
 				return;
+			}
 			if (responseMessage != null)
 			{
 				this.responseMessage = responseMessage;
@@ -69,7 +83,7 @@ public class FutureResponse extends BaseFutureImpl
 		}
 		notifyListerenrs();
 	}
-	
+
 	@Override
 	public void setFailed(String reason)
 	{
@@ -82,6 +96,7 @@ public class FutureResponse extends BaseFutureImpl
 		}
 		notifyListerenrs();
 	}
+
 	/**
 	 * Returns the response message. This is the same message as in
 	 * response(Message message). If no response where send, then this will
@@ -110,19 +125,21 @@ public class FutureResponse extends BaseFutureImpl
 		}
 	}
 
+	/**
+	 * Set the cancel operation for the timeout handler.
+	 * 
+	 * @param replyTimeoutHandler The timeout that needs to be canceled if the
+	 *        future returns successfully.
+	 */
 	public void setReplyTimeoutHandler(final ReplyTimeoutHandler replyTimeoutHandler)
 	{
-		synchronized (lock)
+		addListener(new BaseFutureAdapter<FutureResponse>()
 		{
-			this.replyTimeoutHandler = replyTimeoutHandler;
-		}
-	}
-
-	public void cancelTimeout()
-	{
-		synchronized (lock)
-		{
-			this.replyTimeoutHandler.cancel();
-		}
+			@Override
+			public void operationComplete(FutureResponse future) throws Exception
+			{
+				replyTimeoutHandler.cancel();
+			}
+		});
 	}
 }

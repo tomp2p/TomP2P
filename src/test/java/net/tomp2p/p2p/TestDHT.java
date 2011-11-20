@@ -1323,13 +1323,14 @@ public class TestDHT
 				@Override
 				public void repeated(FutureDHT future)
 				{
-					System.err.println("chain...");
+					System.err.println("chain1...");
 				}
 			});
 			FutureDHT fdht = peers[1].put(peers[50].getPeerID(), new Data("test"), cs);
 			Utils.sleep(9 * 1000);
 			Assert.assertEquals(5, counter.get());
 			fdht.cancel();
+			System.err.println("stop chain1");
 			ConfigurationRemove cr = Configurations.defaultRemoveConfiguration();
 			cr.setRefreshSeconds(1);
 			cr.setRepetitions(5);
@@ -1339,7 +1340,7 @@ public class TestDHT
 				@Override
 				public void repeated(FutureDHT future)
 				{
-					System.err.println("chain...");
+					System.err.println("chain2...");
 					counter2.incrementAndGet();
 				}
 			});

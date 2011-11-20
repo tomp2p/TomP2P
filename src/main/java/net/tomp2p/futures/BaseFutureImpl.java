@@ -326,8 +326,6 @@ public abstract class BaseFutureImpl implements BaseFuture
 		{
 			callOperationComplete(listener);
 		}
-		listeners.clear();
-		cancellables.clear();
 		// all events are one time events. It cannot happen that you get
 		// notified twice
 	}
@@ -337,20 +335,17 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		synchronized (lock)
 		{
-			if (!completed)
-			{
-				listeners.remove(listener);
-			}
+			listeners.remove(listener);
 		}
 		return this;
 	}
 
 	@Override
-	public BaseFuture addCancellation(final Cancellable cancellable)
+	public BaseFuture addCancellation(final Cancellable cancellable, final boolean addIfRunning)
 	{
 		synchronized (lock)
 		{
-			if (!completed)
+			if (!addIfRunning || !completed)
 			{
 				cancellables.add(cancellable);
 			}
@@ -363,10 +358,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		synchronized (lock)
 		{
-			if (!completed)
-			{
-				cancellables.remove(cancellable);
-			}
+			cancellables.remove(cancellable);
 		}
 		return this;
 	}

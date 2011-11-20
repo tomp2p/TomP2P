@@ -133,7 +133,7 @@ public class Sender
 					channelFutureConnect.cancel();
 				}
 			};
-			futureResponse.addCancellation(cancel);
+			futureResponse.addCancellation(cancel, true);
 			channelFutureConnect.addListener(new ChannelFutureListener()
 			{
 				@Override
@@ -233,7 +233,7 @@ public class Sender
 				writeFuture.cancel();
 			}
 		};
-		futureResponse.addCancellation(cancel);
+		futureResponse.addCancellation(cancel, true);
 		writeFuture.addListener(new ChannelFutureListener()
 		{
 			@Override

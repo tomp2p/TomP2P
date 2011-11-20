@@ -144,8 +144,9 @@ public interface BaseFuture extends Cancellable
 	 * created, but the user shuts down the peer.
 	 * 
 	 * @param cancellable A cancellable class
+	 * @param addIfRunning True: only add the cancelation if the future is still running 
 	 */
-	public abstract BaseFuture addCancellation(Cancellable cancellable);
+	public abstract BaseFuture addCancellation(Cancellable cancellable, boolean addIfRunning);
 
 	/**
 	 * Remove a listener. After a future is completed, all cancellables are

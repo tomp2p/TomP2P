@@ -52,7 +52,8 @@ public class DistributedHashHashMap
 	final private StorageRPC storeRCP;
 	final private DirectDataRPC directDataRPC;
 
-	public DistributedHashHashMap(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC)
+	public DistributedHashHashMap(DistributedRouting routing, StorageRPC storeRCP,
+			DirectDataRPC directDataRPC)
 	{
 		this.routing = routing;
 		this.storeRCP = storeRCP;
@@ -62,12 +63,14 @@ public class DistributedHashHashMap
 	public FutureDHT add(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Data> dataSet, RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean protectDomain,
-			final boolean signMessage, final FutureCreate<FutureDHT> futureCreate, final ChannelCreator cc)
+			final boolean signMessage, final FutureCreate<FutureDHT> futureCreate,
+			final ChannelCreator cc)
 	{
-		
+
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
+				new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -116,12 +119,15 @@ public class DistributedHashHashMap
 	public FutureDHT direct(final Number160 locationKey, final ChannelBuffer buffer,
 			final boolean raw, RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
-			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish, final ChannelCreator cc)
+			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish,
+			final ChannelCreator cc)
 	{
-		
-		final FutureRouting futureRouting = createRouting(locationKey, null, null, routingConfiguration,
+
+		final FutureRouting futureRouting = createRouting(locationKey, null, null,
+				routingConfiguration,
 				p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
+				new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -183,7 +189,8 @@ public class DistributedHashHashMap
 	{
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(),futureCreate, futureRouting);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
+				new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -204,7 +211,8 @@ public class DistributedHashHashMap
 								{
 									boolean protectEntry = Utils.checkEntryProtection(dataMap);
 									return putIfAbsent ? storeRCP.putIfAbsent(address, locationKey,
-											domainKey, dataMap, protectDomain, protectEntry, signMessage, cc) : storeRCP
+											domainKey, dataMap, protectDomain, protectEntry,
+											signMessage, cc) : storeRCP
 											.put(address, locationKey, domainKey, dataMap,
 													protectDomain, protectEntry, signMessage, cc);
 								}
@@ -236,11 +244,13 @@ public class DistributedHashHashMap
 			final Set<Number160> contentKeys, final PublicKey publicKey,
 			RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
-			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage, final ChannelCreator cc)
+			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage,
+			final ChannelCreator cc)
 	{
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, cc);
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), evaluationScheme, null, futureRouting);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
+				evaluationScheme, null, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -248,12 +258,14 @@ public class DistributedHashHashMap
 			{
 				if (futureRouting.isSuccess())
 				{
-					if (logger.isDebugEnabled()) 
+					if (logger.isDebugEnabled())
 					{
 						logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
 					}
-					//this adjust is based on results from the routing process, so we cannot do this earlier
-					loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()), futureRouting.getDirectHits(), futureDHT, true,
+					// this adjust is based on results from the routing process,
+					// so we cannot do this earlier
+					loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()),
+							futureRouting.getDirectHits(), futureDHT, true,
 							new Operation()
 							{
 								Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
@@ -261,7 +273,8 @@ public class DistributedHashHashMap
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
-									return storeRCP.get(address, locationKey, domainKey, contentKeys,
+									return storeRCP.get(address, locationKey, domainKey,
+											contentKeys,
 											publicKey, signMessage, cc);
 								}
 
@@ -293,7 +306,8 @@ public class DistributedHashHashMap
 	{
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
 				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, cc);
-		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), futureCreate, futureRouting);
+		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
+				new VotingSchemeDHT(), futureCreate, futureRouting);
 		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 		{
 			@Override
@@ -348,7 +362,7 @@ public class DistributedHashHashMap
 	private void loop(RequestP2PConfiguration p2pConfiguration, SortedSet<PeerAddress> queue,
 			FutureDHT futureDHT, boolean cancleOnFinish, Operation operation)
 	{
-		if(p2pConfiguration.getMinimumResults() == 0)
+		if (p2pConfiguration.getMinimumResults() == 0)
 		{
 			operation.response(futureDHT);
 			return;
@@ -404,10 +418,11 @@ public class DistributedHashHashMap
 					if (futureResponse.isSuccess())
 						operation.interMediateResponse(futureResponse);
 				}
-				// we are finished if forkjoin says so or we got too many failures
+				// we are finished if forkjoin says so or we got too many
+				// failures
 				if (future.isSuccess() || nrFailure.incrementAndGet() > maxFailure)
 				{
-					if(cancelOnFinish)
+					if (cancelOnFinish)
 					{
 						DistributedRouting.cancel(cancelOnFinish, min + parallelDiff, futures);
 					}
@@ -424,12 +439,15 @@ public class DistributedHashHashMap
 
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
 			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
-			RequestP2PConfiguration p2pConfiguration, Command command, boolean isDirect, final ChannelCreator cc)
+			RequestP2PConfiguration p2pConfiguration, Command command, boolean isDirect,
+			final ChannelCreator cc)
 	{
 		return routing.route(locationKey, domainKey, contentKeys, command, routingConfiguration
 				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(p2pConfiguration
-				.getMinimumResults()), routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDirect, routingConfiguration.isForceSocket(), cc);
+				.getMinimumResults()), routingConfiguration.getMaxFailures(),
+				routingConfiguration.getMaxSuccess(),
+				routingConfiguration.getParallel(), isDirect, routingConfiguration.isForceSocket(),
+				cc);
 	}
 	public interface Operation
 	{
@@ -439,29 +457,41 @@ public class DistributedHashHashMap
 
 		public abstract void interMediateResponse(FutureResponse futureResponse);
 	}
-	
+
 	/**
-	 * Adjusts the number of minimum requests in the P2P configuration. When we query x peers for the get() operation and they
-	 * have y different data stored (y <= x), then set the minimum to y or to the value the user set if its smaller. If no data
-	 * is found, then return 0, so we don't start P2P RPCs.
+	 * Adjusts the number of minimum requests in the P2P configuration. When we
+	 * query x peers for the get() operation and they have y different data
+	 * stored (y <= x), then set the minimum to y or to the value the user set
+	 * if its smaller. If no data is found, then return 0, so we don't start P2P
+	 * RPCs.
 	 * 
-	 * @param p2pConfiguration The old P2P configuration with the user specified minimum result
+	 * @param p2pConfiguration The old P2P configuration with the user specified
+	 *        minimum result
 	 * @param directHitsDigest The digest information from the routing process
 	 * @return The new RequestP2PConfiguration with the new minimum result
 	 */
-	public static RequestP2PConfiguration adjustConfiguration(RequestP2PConfiguration p2pConfiguration, 
-			SortedMap<PeerAddress, DigestInfo> directHitsDigest) 
+	public static RequestP2PConfiguration adjustConfiguration(
+			RequestP2PConfiguration p2pConfiguration,
+			SortedMap<PeerAddress, DigestInfo> directHitsDigest)
 	{
 		Set<DigestInfo> tmp = new HashSet<DigestInfo>();
-		for(DigestInfo digestBean: directHitsDigest.values())
+		for (DigestInfo digestBean : directHitsDigest.values())
 		{
-			if(!digestBean.isEmpty())
+			if (!digestBean.isEmpty())
 			{
 				tmp.add(digestBean);
 			}
 		}
 		int unique = tmp.size();
 		int requested = p2pConfiguration.getMinimumResults();
-		return new RequestP2PConfiguration(Math.min(unique, requested), p2pConfiguration.getMaxFailure(), p2pConfiguration.getParallelDiff());
+		if (unique >= requested)
+		{
+			return p2pConfiguration;
+		}
+		else
+		{
+			return new RequestP2PConfiguration(unique, p2pConfiguration.getMaxFailure(),
+					p2pConfiguration.getParallelDiff());
+		}
 	}
 }

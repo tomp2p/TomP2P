@@ -33,7 +33,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
  * @author Thomas Bocek
  * 
  */
-public class FutureDHT extends BaseFutureImpl
+public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 {
 	// The minimum number of expected results. This is also used for put()
 	// operations to decide if a future failed or not.
@@ -48,6 +48,7 @@ public class FutureDHT extends BaseFutureImpl
 	// Stores futures of DHT operations, 6 is the maximum of futures being
 	// generates as seen in Configurations (min.res + parr.diff)
 	final private List<FutureResponse> requests = new ArrayList<FutureResponse>(6);
+	final private List<Cancellable> cleanup = new ArrayList<Cancellable>(1);
 	// Storage of results
 	private Map<PeerAddress, Collection<Number160>> rawKeys;
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
@@ -423,15 +424,24 @@ public class FutureDHT extends BaseFutureImpl
 		}
 	}
 
-	@Override
-	public void cancel()
+	public void addCleanup(Cancellable cancellable)
+	{
+		synchronized (lock)
+		{
+			cleanup.add(cancellable);
+		}
+	}
+
+	public void shutdown()
 	{
 		// Even though, this future is completed, there may be tasks than can be
 		// canceled due to scheduled futures attached to this event.
-		for (final Cancellable cancellable : cancellables)
+		synchronized (lock)
 		{
-			cancellable.cancel();
+			for (final Cancellable cancellable : cleanup)
+			{
+				cancellable.cancel();
+			}
 		}
-		super.cancel();
 	}
 }

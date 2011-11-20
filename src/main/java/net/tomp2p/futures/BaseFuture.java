@@ -143,10 +143,9 @@ public interface BaseFuture extends Cancellable
 	 * An example usage for a cancelation is if a TCP connection is being
 	 * created, but the user shuts down the peer.
 	 * 
-	 * @param cancellable A cancellable class
-	 * @param addIfRunning True: only add the cancelation if the future is still running 
+	 * @param cancellable A cancellable class 
 	 */
-	public abstract BaseFuture addCancellation(Cancellable cancellable, boolean addIfRunning);
+	public abstract BaseFuture addCancellation(Cancellable cancellable);
 
 	/**
 	 * Remove a listener. After a future is completed, all cancellables are

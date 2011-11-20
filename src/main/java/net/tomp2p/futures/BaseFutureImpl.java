@@ -38,7 +38,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 			new ArrayList<BaseFutureListener<? extends BaseFuture>>(1);
 	// While a future is running, the process may add cancellations for faster
 	// cancel operations, e.g. cancel connection attempt
-	final protected List<Cancellable> cancellables = new ArrayList<Cancellable>(1);
+	final private List<Cancellable> cancellables = new ArrayList<Cancellable>(1);
 	final protected Object lock;
 	// set the ready flag if operation completed
 	protected boolean completed = false;
@@ -326,8 +326,18 @@ public abstract class BaseFutureImpl implements BaseFuture
 		{
 			callOperationComplete(listener);
 		}
+		listeners.clear();
 		// all events are one time events. It cannot happen that you get
 		// notified twice
+	}
+	
+	private void notifyCancelation()
+	{
+		for (final Cancellable cancellable : cancellables)
+		{
+			cancellable.cancel();
+		}
+		cancellables.clear();
 	}
 
 	@Override
@@ -335,17 +345,20 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		synchronized (lock)
 		{
-			listeners.remove(listener);
+			if (!completed)
+			{
+				listeners.remove(listener);
+			}
 		}
 		return this;
 	}
 
 	@Override
-	public BaseFuture addCancellation(final Cancellable cancellable, final boolean addIfRunning)
+	public BaseFuture addCancellation(final Cancellable cancellable)
 	{
 		synchronized (lock)
 		{
-			if (!addIfRunning || !completed)
+			if (!completed)
 			{
 				cancellables.add(cancellable);
 			}
@@ -358,7 +371,10 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		synchronized (lock)
 		{
-			cancellables.remove(cancellable);
+			if (!completed)
+			{
+				cancellables.remove(cancellable);
+			}
 		}
 		return this;
 	}
@@ -376,10 +392,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 			this.reason = "canceled";
 		}
 		// only run once
-		for (final Cancellable cancellable : cancellables)
-		{
-			cancellable.cancel();
-		}
+		notifyCancelation();
 		notifyListerenrs();
 	}
 }

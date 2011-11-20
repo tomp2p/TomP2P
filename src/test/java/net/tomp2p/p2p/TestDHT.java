@@ -1329,7 +1329,7 @@ public class TestDHT
 			FutureDHT fdht = peers[1].put(peers[50].getPeerID(), new Data("test"), cs);
 			Utils.sleep(9 * 1000);
 			Assert.assertEquals(5, counter.get());
-			fdht.cancel();
+			fdht.shutdown();
 			System.err.println("stop chain1");
 			ConfigurationRemove cr = Configurations.defaultRemoveConfiguration();
 			cr.setRefreshSeconds(1);

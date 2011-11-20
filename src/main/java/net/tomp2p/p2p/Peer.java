@@ -45,6 +45,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureCleanup;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
@@ -1566,10 +1567,10 @@ public class Peer
 		return futureTracker;
 	}
 
-	private void setupCancel(final BaseFuture futureTracker, final ScheduledFuture<?> tmp)
+	private void setupCancel(final FutureCleanup futureTracker, final ScheduledFuture<?> tmp)
 	{
 		scheduledFutures.add(tmp);
-		futureTracker.addCancellation(new Cancellable()
+		futureTracker.addCleanup(new Cancellable()
 		{
 			@Override
 			public void cancel()
@@ -1577,7 +1578,7 @@ public class Peer
 				tmp.cancel(true);
 				scheduledFutures.remove(tmp);
 			}
-		}, false);
+		});
 	}
 
 	private ScheduledFuture<?> scheduleAddTracker(final Number160 locationKey,

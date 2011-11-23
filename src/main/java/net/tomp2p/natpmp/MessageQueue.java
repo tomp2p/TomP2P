@@ -168,7 +168,7 @@ class MessageQueue implements Runnable {
                         while (message == null && !shutdown) {
                             if (queue.size() > 0) {
                                 // Get the message to send.
-                                message = queue.pop();
+                                message = queue.removeFirst();
                             } else {
                                 // Wait for a message for up to 1/4 second.
                                 queueLock.wait(250);

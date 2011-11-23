@@ -45,12 +45,13 @@ public class PeerExchangeRPC extends ReplyHandler
 	// since PEX is push based, each peer needs to keep track what was sent to
 	// whom.
 	final private Map<Number160, Set<Number160>> sentPeers;
+	final private static int DAY = 60 * 60 * 24;
 
 	public PeerExchangeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.PEX);
-		sentPeers = new MapMaker().concurrencyLevel(1).expireAfterAccess(1, TimeUnit.DAYS).makeMap();
+		sentPeers = new MapMaker().concurrencyLevel(1).expireAfterAccess(DAY, TimeUnit.SECONDS).makeMap();
 	}
 
 	public FutureResponse peerExchange(final PeerAddress remoteNode, Number160 locationKey, Number160 domainKey,

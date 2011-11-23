@@ -19,7 +19,6 @@ package net.tomp2p.natpmp;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 /**
  * This class manages an External Address message. This class is thread-safe.
@@ -57,7 +56,9 @@ public class ExternalAddressRequestMessage extends Message {
     
     void parseResponse(byte[] response) throws NatPmpException {
         try {
-            externalAddress = (Inet4Address) Inet4Address.getByAddress(Arrays.copyOfRange(response, 8, 12));
+            byte[] copy = new byte[4];
+            System.arraycopy(response, 8, copy, 0, 4);
+        	externalAddress = (Inet4Address) Inet4Address.getByAddress(copy);
         } catch (UnknownHostException ex) {
             throw new NatPmpException("Unable to parse external address.", ex);
         }

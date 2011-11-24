@@ -15,8 +15,10 @@
  */
 package net.tomp2p.futures;
 
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeSet;
 
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
@@ -117,7 +119,20 @@ public class FutureRouting extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return (SortedSet<PeerAddress>)directHits.keySet();
+			//some Java implementations always return SortedSet, some don't (Android)
+			Set<PeerAddress> tmp = directHits.keySet();
+			//if we have a SortedSet, we are fine
+			if(tmp instanceof SortedSet)
+			{
+				return (SortedSet<PeerAddress>)directHits.keySet();
+			}
+			//otherwise, create a new sorted set, put the existing values there, and return this.
+			else
+			{
+				TreeSet<PeerAddress> tmp2 = new TreeSet<PeerAddress>(directHits.comparator());
+				tmp2.addAll(tmp);
+				return tmp2;
+			}
 		}
 	}
 	

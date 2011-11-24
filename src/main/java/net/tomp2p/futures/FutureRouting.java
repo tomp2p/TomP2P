@@ -119,7 +119,11 @@ public class FutureRouting extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			//some Java implementations always return SortedSet, some don't (Android)
+			if(directHits == null)
+			{
+				return null;
+			}
+			//some Java implementations always return SortedSet, some don't.
 			Set<PeerAddress> tmp = directHits.keySet();
 			//if we have a SortedSet, we are fine
 			if(tmp instanceof SortedSet)

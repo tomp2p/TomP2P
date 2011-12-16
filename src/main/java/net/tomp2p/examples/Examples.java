@@ -23,6 +23,7 @@ import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.Bindings.Protocol;
+import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
@@ -70,11 +71,9 @@ public class Examples
 	public static void exampleNAT() throws Exception
 	{
 		Peer master = new Peer(new Number160(rnd));
-		Bindings b = new Bindings(false);
+		Bindings b = new Bindings(Protocol.IPv4, Inet4Address.getByName("127.0.0.1"), 4001, 4001);
 		b.addInterface("eth0");
-		b.addProtocol(Protocol.IPv4);
-		b.setExternalAddress(Inet4Address.getByName("127.0.0.1"), 4001, 4001);
-		System.out.println("Listening to: " + b.discoverLocalInterfaces());
+		System.out.println("Listening to: " + DiscoverNetworks.discoverInterfaces(b));
 		master.listen(4001, 4001, b);
 		System.out.println("address visible to outside is " + master.getPeerAddress());
 		master.shutdown();

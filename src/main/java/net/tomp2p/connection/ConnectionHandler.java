@@ -119,16 +119,16 @@ public class ConnectionHandler
 		tcpClientChannelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 		//
-		
-		String status = bindings.discoverLocalInterfaces();
+		final boolean listenAll=bindings.isListenAll();
+		String status = DiscoverNetworks.discoverInterfaces(bindings);
 		logger.info("Status of interface search: " + status);
 		InetAddress outsideAddress = bindings.getExternalAddress();
 		PeerAddress self;
 		if (outsideAddress == null)
 		{
-			if (bindings.getAddresses().size() == 0)
+			if (bindings.getAddresses0().size() == 0)
 				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
-			outsideAddress = bindings.getAddresses().get(0);
+			outsideAddress = bindings.getAddresses0().get(0);
 			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort,
 					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
@@ -150,7 +150,7 @@ public class ConnectionHandler
 		Scheduler scheduledPeer = new Scheduler();
 		Sender sender = new Sender(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup, scheduledPeer, reservation, configuration);
-		if (bindings.isListenBroadcast())
+		if (listenAll)
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
 			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, configuration.getMaxMessageSize())

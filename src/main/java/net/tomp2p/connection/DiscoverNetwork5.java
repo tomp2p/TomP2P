@@ -1,53 +1,71 @@
-package net.tomp2p.connection;
+/*
+ * Copyright 2011 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
 
+package net.tomp2p.connection;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
-import net.tomp2p.connection.Bindings.Protocol;
-
+/**
+ * Discovers and searches for interfaces and addresses for users with Java 1.5.
+ * The feature to add broadcast addresses for searching peers over layer 2 is
+ * not supported here. For such as feature, use Java 1.6
+ * 
+ * @see DiscoverNetwork6
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class DiscoverNetwork5 implements DiscoverNetwork
 {
-	private Bindings bindings;
-
 	@Override
-	public void init(Bindings bindings)
+	public String discoverNetwork(NetworkInterface networkInterface, Bindings bindings)
 	{
-		this.bindings = bindings;
-	}
-
-	@Override
-	public StringBuilder discoverNetwork(NetworkInterface networkInterface)
-	{
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder("( ");
 		// works in 1.5
 		for (Enumeration<InetAddress> e = networkInterface.getInetAddresses(); e.hasMoreElements();)
 		{
 			// works in 1.5
 			InetAddress inet = e.nextElement();
-			if (bindings.getAddresses().contains(inet)) 
+			if (bindings.getAddresses0().contains(inet))
+			{
 				continue;
-			if (bindings.useAllProtocols())
-			{
-				sb.append(",All:").append(inet);
-				bindings.addAddress(inet);
 			}
-			else
+			// ignore if a user specifies an address and inet is not part of it
+			if(!bindings.isAllAddresses())
 			{
-				if (inet instanceof Inet4Address && bindings.getProtocols().contains(Protocol.IPv4))
+				if(!bindings.getAddresses().contains(inet))
 				{
-					sb.append(",IPv4:").append(inet);
-					bindings.addAddress(inet);
+					continue;
 				}
-				if (inet instanceof Inet6Address && bindings.getProtocols().contains(Protocol.IPv6))
-				{
-					sb.append(",IPv6:").append(inet);
-					bindings.addAddress(inet);
-				}
+			}
+			if (inet instanceof Inet4Address && bindings.isIPv4())
+			{
+				sb.append(inet).append(",");
+				bindings.addAddress0(inet);
+			}
+			else if (inet instanceof Inet6Address && bindings.isIPv6())
+			{
+				sb.append(inet).append(",");
+				bindings.addAddress0(inet);
 			}
 		}
-		return sb.replace(0, 1, "(").append(")");
+		sb.deleteCharAt(sb.length() - 1);
+		return sb.append(")").toString();
 	}
 }

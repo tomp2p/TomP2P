@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -887,20 +886,9 @@ public class Peer
 	 */
 	public void setupPortForwanding(String internalHost)
 	{
-		final int range = 65535 - 49152;
-		Random rnd = new Random();
-		int portUDP = bindings.getOutsideUDPPort();
-		if (portUDP == 0)
-		{
-			portUDP = rnd.nextInt(range) + 49152;
-			bindings.setOutsidePortUDP(portUDP);
-		}
-		int portTCP = bindings.getOutsideTCPPort();
-		if (portTCP == 0)
-		{
-			portTCP = rnd.nextInt(range) + 49152;
-			bindings.setOutsidePortTCP(portTCP);
-		}
+		int portUDP=bindings.getOutsideUDPPort();
+		int portTCP=bindings.getOutsideTCPPort();
+
 		try
 		{
 			connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),

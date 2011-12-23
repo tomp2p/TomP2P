@@ -13,7 +13,6 @@ import net.tomp2p.peers.PeerAddress;
 import org.junit.Assert;
 import org.junit.Test;
 
-
 public class TestNeighbor
 {
 	public static int PORT_TCP = 5001;
@@ -35,7 +34,7 @@ public class TestNeighbor
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.listen(8088, 8088);
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(1);
+			ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
 					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
 			fr.awaitUninterruptibly();
@@ -45,6 +44,7 @@ public class TestNeighbor
 			Assert.assertEquals(new Number160("0x30"), pas.iterator().next().getID());
 			Assert.assertEquals(PORT_TCP, pas.iterator().next().portTCP());
 			Assert.assertEquals(PORT_UDP, pas.iterator().next().portUDP());
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -68,9 +68,9 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(1);
+			ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
-					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false,cc);
+					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
@@ -78,6 +78,7 @@ public class TestNeighbor
 			// I see only myself
 			Assert.assertEquals(1, pas.size());
 			Assert.assertEquals(new Number160("0x20"), pas.iterator().next().getID());
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -101,15 +102,18 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
+			final ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
 			try
 			{
-				ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(1);
-				neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160("0x30"), null,
+
+				neighbors2.closeNeighbors(sender.getPeerAddress(),
+						new Number160("0x30"), null,
 						null, Command.PUT, true, false, cc);
 				Assert.fail("");
 			}
 			catch (IllegalArgumentException i)
 			{
+				recv1.getConnectionBean().getReservation().release(cc);
 			}
 		}
 		finally

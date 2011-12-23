@@ -1,5 +1,4 @@
 package net.tomp2p.rpc;
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureData;
@@ -81,7 +80,6 @@ public class TestDirect
 	@Test
 	public void testDirectReconnect() throws Exception
 	{
-		ChannelCreator.resetStat();
 		Peer sender = null;
 		Peer recv1 = null;
 		try
@@ -98,20 +96,21 @@ public class TestDirect
 				}
 			});
 			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 10*1000);
-			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedTCP());
-			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			FutureData fd1=sender.send(peerConnection, "test");
-			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
-			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			fd1.awaitUninterruptibly();
 			Utils.sleep(2000);
 			System.err.println("send second with the same connection");
 			FutureData fd2=sender.send(peerConnection, "test");
 			fd2.awaitUninterruptibly();
-			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
-			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			Assert.assertEquals(true, fd1.isSuccess());
 			Assert.assertEquals(true, fd2.isSuccess());
+			peerConnection.close();
 			System.err.println("done");
 		}
 		finally
@@ -126,7 +125,6 @@ public class TestDirect
 	@Test
 	public void testDirectReconnectParallel() throws Exception
 	{
-		ChannelCreator.resetStat();
 		Peer sender = null;
 		Peer recv1 = null;
 		try
@@ -148,13 +146,14 @@ public class TestDirect
 			{
 				fd[i]=sender.send(peerConnection, "test");
 			}
-			Assert.assertEquals(1, ChannelCreator.getStatConnectionsCreatedTCP());
-			Assert.assertEquals(0, ChannelCreator.getStatConnectionsCreatedUDP());
+			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			for(int i=0;i<len;i++)
 			{
 				fd[i].awaitUninterruptibly();
 				Assert.assertEquals(true, fd[i].isSuccess());
 			}
+			peerConnection.close();
 			System.err.println("done");
 		}
 		finally

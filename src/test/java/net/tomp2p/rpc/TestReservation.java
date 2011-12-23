@@ -34,6 +34,7 @@ public class TestReservation {
 				Assert.assertEquals(true, fr2.isSuccess());
 				Assert.assertEquals(true, fr3.isSuccess());
 			}
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -68,6 +69,7 @@ public class TestReservation {
 				Assert.assertEquals(true, fr2.isSuccess());
 				Assert.assertEquals(true, fr3.isSuccess());
 			}
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{

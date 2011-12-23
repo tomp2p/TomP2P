@@ -180,7 +180,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -216,7 +216,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -252,7 +252,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -288,7 +288,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -324,7 +324,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -362,7 +362,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -399,7 +399,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -436,7 +436,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -473,7 +473,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -513,7 +513,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(3);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 3, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -550,7 +550,7 @@ public class TestRouting
 			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(3);
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 3, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -629,7 +629,7 @@ public class TestRouting
 			ChannelCreator cc=peers[500].getConnectionBean().getReservation().reserve(1);
 			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -656,7 +656,7 @@ public class TestRouting
 			ChannelCreator cc=peers[500].getConnectionBean().getReservation().reserve(1);
 			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, false, cc);
-			Utils.addReleaseListenerAll(fr, cc);
+			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getReservation(), cc);
 			fr.awaitUninterruptibly();
 			// do verification
 			Assert.assertEquals(true, fr.isSuccess());
@@ -689,7 +689,7 @@ public class TestRouting
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
-				Utils.addReleaseListener(frr, cc, 1);
+				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getReservation(), cc, 1);
 				frs.add(frr);
 			}
 			System.err.println("now checking if the tests were successful.");
@@ -728,7 +728,7 @@ public class TestRouting
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 5, 0, 100, 2, true, cc);
-				Utils.addReleaseListener(frr, cc, 2);
+				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getReservation(), cc, 2);
 				frs.put(i, frr);
 			}
 			System.err.println("now checking if the tests were successful.");
@@ -768,7 +768,7 @@ public class TestRouting
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, false, cc);
-				Utils.addReleaseListener(frr, cc, 1);
+				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getReservation(), cc, 1);
 				frs.add(frr);
 			}
 			System.err.println("now checking if the tests were successful.");
@@ -808,7 +808,7 @@ public class TestRouting
 				FutureRouting frr = peers[peerNr].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 1, 0, 100, 2, false, cc);
-				Utils.addReleaseListener(frr, cc, 2);
+				Utils.addReleaseListener(frr, peers[peerNr].getConnectionBean().getReservation(), cc, 2);
 				frs.add(frr);
 			}
 			System.err.println("now checking if the tests were successful.");
@@ -846,7 +846,7 @@ public class TestRouting
 				ChannelCreator cc=peers[i].getConnectionBean().getReservation().reserve(1);
 				FutureRouting fm = peers[i].getRouting()
 						.bootstrap(peerAddresses, 5, 100, 100, 1, true, cc);
-				Utils.addReleaseListenerAll(fm, cc);
+				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getReservation(), cc);
 				fm.awaitUninterruptibly();
 				// do verification
 				Assert.assertEquals(true, fm.isSuccess());
@@ -876,7 +876,7 @@ public class TestRouting
 				ChannelCreator cc=peers[i].getConnectionBean().getReservation().reserve(1);
 				FutureRouting fm = peers[i].getRouting().bootstrap(peerAddresses, 5, 100, 100, 1,
 						false, cc);
-				Utils.addReleaseListenerAll(fm, cc);
+				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getReservation(), cc);
 				fm.awaitUninterruptibly();
 				// do verification
 				Assert.assertEquals(true, fm.isSuccess());
@@ -958,7 +958,7 @@ public class TestRouting
 				FutureRouting frr = peers[50].getRouting().route(find, null, null,
 						Command.NEIGHBORS_STORAGE, Integer.MAX_VALUE, 5, 10, 20, 2, false, cc);
 				frr.awaitUninterruptibly();
-				Utils.addReleaseListenerAll(frr, cc);
+				Utils.addReleaseListenerAll(frr, peers[0].getConnectionBean().getReservation(), cc);
 				SortedSet<PeerAddress> ss2=frr.getPotentialHits();
 				// test the first 5 peers, because we set noNewInformation to 5, which means we find at least 5 entries.
 				for(int i=0;i<5;i++)

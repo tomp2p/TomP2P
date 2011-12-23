@@ -37,6 +37,7 @@ public class TestPing
 			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -65,6 +66,8 @@ public class TestPing
 			FutureResponse fr2 = recv1.getHandshakeRPC().pingTCP(sender.getPeerAddress(), cc2);
 			fr2.awaitUninterruptibly();
 			Assert.assertEquals(true, fr2.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc1);
+			recv1.getConnectionBean().getReservation().release(cc2);
 		}
 		finally
 		{
@@ -110,6 +113,8 @@ public class TestPing
 			});
 			Utils.sleep(1000);
 			Assert.assertEquals(true, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc1);
+			sender.getConnectionBean().getReservation().release(cc2);
 		}
 		finally
 		{
@@ -138,6 +143,7 @@ public class TestPing
 			FutureResponse fr = handshake.pingUDP(recv1.getPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -166,6 +172,7 @@ public class TestPing
 			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -194,6 +201,7 @@ public class TestPing
 			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 			System.err.println("done");
 		}
 		finally
@@ -223,6 +231,7 @@ public class TestPing
 			FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().getServerPeerAddress(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(false, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -256,6 +265,7 @@ public class TestPing
 				fr2.awaitUninterruptibly();
 				Assert.assertTrue(fr2.isSuccess());
 			}
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -282,6 +292,7 @@ public class TestPing
 			{
 				final ChannelCreator cc=p[0].getConnectionBean().getReservation().reserve(1);
 				FutureResponse fr = p[0].getHandshakeRPC().pingTCP(p[i].getPeerAddress(), cc);
+				Utils.addReleaseListenerAll(fr, p[0].getConnectionBean().getReservation(), cc);
 				list.add(fr);
 			}
 			for (FutureResponse fr2 : list)
@@ -338,7 +349,7 @@ public class TestPing
 					Assert.assertEquals(true, fr2.isSuccess());
 				}
 				list.clear();
-				cc.release();
+				sender.getConnectionBean().getReservation().release(cc);
 			}
 			System.out.println("TCP time: " + (System.currentTimeMillis() - start));
 			for (FutureResponse fr2 : list)
@@ -363,7 +374,7 @@ public class TestPing
 					Assert.assertEquals(true, fr2.isSuccess());
 				}
 				list.clear();
-				cc.release();
+				sender.getConnectionBean().getReservation().release(cc);
 			}
 			
 			System.out.println("UDP time: " + (System.currentTimeMillis() - start));

@@ -15,11 +15,12 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -55,7 +56,7 @@ import org.junit.Test;
 public class TestDHT
 {
 	final private static Random rnd = new Random(42L);
-	final private static ConnectionConfiguration CONFIGURATION = new ConnectionConfiguration();
+	final private static ConnectionConfigurationBean CONFIGURATION = new ConnectionConfigurationBean();
 	static
 	{
 		//CONFIGURATION.setIdleTCPMillis(3000000);
@@ -94,6 +95,7 @@ public class TestDHT
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
 				list.add(master.send(pc, ChannelBuffers.wrappedBuffer(b)));
+				pc.close();
 			}
 			for(int i=0;i<10000;i++)
 			{
@@ -520,7 +522,7 @@ public class TestDHT
 		try
 		{
 			// setup
-			Peer[] peers = Utils2.createNodes(2000, rnd, 4001);
+			Peer[] peers = Utils2.createNodes(1000, rnd, 4001);
 			master = peers[0];
 			Utils2.perfectRouting(peers);
 			// do testing
@@ -956,7 +958,7 @@ public class TestDHT
 		Peer master3 = null;
 		try
 		{
-			ConnectionConfiguration c = new ConnectionConfiguration();
+			ConnectionConfigurationBean c = new ConnectionConfigurationBean();
 			c.setIdleTCPMillis(Integer.MAX_VALUE);
 			c.setIdleUDPMillis(Integer.MAX_VALUE);
 			master1 = new Peer(1, new Number160(rnd), c);
@@ -1027,6 +1029,7 @@ public class TestDHT
 			fdht = master1.get(id, cg);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
+			master1.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -1419,6 +1422,7 @@ public class TestDHT
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
+			master.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -1491,7 +1495,7 @@ public class TestDHT
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
 						Configurations.DEFAULT_DOMAIN, null, null, false, cc);
 				futureResponse.awaitUninterruptibly();
-				cc.release();
+				master.getConnectionBean().getReservation().release(cc);
 				Assert.assertEquals(true, futureResponse.isSuccess());
 				Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
 				i++;
@@ -1609,6 +1613,55 @@ public class TestDHT
 		{
 			p1.shutdown();
 			p2.shutdown();
+		}
+	}
+	
+	@Test
+	public void testPutGetAll() throws Exception
+	{
+		final AtomicBoolean running = new AtomicBoolean(true);
+		Peer master = null;
+		try
+		{
+			// setup
+			final Peer[] peers = Utils2.createNodes(100, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			final Number160 key= Number160.createHash("test"); 
+			final Data data1 = new Data("test1");
+			data1.setTTLSeconds(3);
+			final Data data2 = new Data("test2");
+			data2.setTTLSeconds(3);
+			
+			// add every second a two values
+			Thread t = new Thread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					while(running.get())
+					{
+						peers[10].add(key, data1).awaitUninterruptibly();
+						peers[10].add(key, data2).awaitUninterruptibly();
+						Utils.sleep(1000);
+					}
+				}
+			});
+			t.start();
+			//wait until the first data is stored.
+			Utils.sleep(1000);
+			for(int i=0;i<30;i++)
+			{
+				FutureDHT futureDHT = peers[20+i].getAll(key);
+				futureDHT.awaitUninterruptibly();
+				Assert.assertEquals(2, futureDHT.getData().size());
+				Utils.sleep(1000);
+			}
+		}
+		finally
+		{
+			running.set(false);
+			master.shutdown();
 		}
 	}
 

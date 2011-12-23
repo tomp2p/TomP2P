@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.config.ConfigurationTrackerGet;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
@@ -20,7 +20,7 @@ import org.junit.Test;
 public class TestTracker
 {
 
-	final private static ConnectionConfiguration CONFIGURATION = new ConnectionConfiguration();
+	final private static ConnectionConfigurationBean CONFIGURATION = new ConnectionConfigurationBean();
 	static
 	{
 		CONFIGURATION.setIdleTCPMillis(3000000);

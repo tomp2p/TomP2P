@@ -41,7 +41,7 @@ public class TestIPv6
 					System.out.println("offline " + pa);
 				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
 				fr2.awaitUninterruptibly();
-				cc.release();
+				peer.getConnectionBean().getReservation().release(cc);
 				if (fr2.isSuccess())
 					System.out.println("peer online UDP:" + pa);
 				else

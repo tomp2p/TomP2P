@@ -145,6 +145,7 @@ public class TestStorage
 			c = result2.get(search);
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		catch (Exception e)
 		{
@@ -212,6 +213,7 @@ public class TestStorage
 			c = storeRecv.get(new Number480(new Number160(33), new ShortString("test").toNumber160(),new Number160(88)));
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -260,6 +262,7 @@ public class TestStorage
 			Message m = fr.getResponse();
 			Map<Number160, Data> stored = m.getDataMap();
 			compare(tmp, stored);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -309,6 +312,7 @@ public class TestStorage
 			Message m = fr.getResponse();
 			Map<Number160, Data> stored = m.getDataMap();
 			compare(tmp, stored);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -387,6 +391,7 @@ public class TestStorage
 			m = fr.getResponse();
 			Map<Number160, Data> stored = m.getDataMap();
 			Assert.assertEquals(0, stored.size());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -443,6 +448,7 @@ public class TestStorage
 			m = fr.getResponse();
 			Map<Number160, Data> stored = m.getDataMap();
 			Assert.assertEquals(0, stored.size());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -491,6 +497,7 @@ public class TestStorage
 			Message m = fr.getResponse();
 			Map<Number160, Data> stored = m.getDataMap();
 			Assert.assertEquals(2, stored.size());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -532,6 +539,7 @@ public class TestStorage
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -576,6 +584,7 @@ public class TestStorage
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -624,6 +633,7 @@ public class TestStorage
 					.toNumber160(), null, null, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -668,6 +678,7 @@ public class TestStorage
 			System.err.println("good!");
 			//
 			Utils.sleep(3000);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -720,6 +731,7 @@ public class TestStorage
 			Assert.assertEquals(false, fr.isSuccess());
 			//
 			Utils.sleep(2000);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -756,7 +768,7 @@ public class TestStorage
 			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			//todo make this work...
 			store(sender, recv1, smmSender, cc).awaitUninterruptibly();
-			cc.release();
+			sender.getConnectionBean().getReservation().release(cc);
 			for (int i = 0; i < 40; i++)
 			{
 				System.err.println("round "+i);
@@ -766,7 +778,7 @@ public class TestStorage
 					ChannelCreator cc1=sender.getConnectionBean().getReservation().reserve(1);
 					FutureResponse fr=store(sender, recv1, smmSender, cc1);
 					res.add(fr);
-					Utils.addReleaseListenerAll(fr, cc1);
+					Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getReservation(), cc1);
 			
 				}
 				//cc1.release();
@@ -834,6 +846,7 @@ public class TestStorage
 			master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());
+			master.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -887,6 +900,7 @@ public class TestStorage
 			slave2.shutdown();
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());
+			master.getConnectionBean().getReservation().release(cc);
 		}
 		catch (Exception e)
 		{

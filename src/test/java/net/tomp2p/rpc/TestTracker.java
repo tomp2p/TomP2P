@@ -44,6 +44,7 @@ public class TestTracker
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -85,6 +86,7 @@ public class TestTracker
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -123,6 +125,7 @@ public class TestTracker
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
 			String tmp=new String(fr.getResponse().getTrackerData().iterator().next().getAttachement());
 			Assert.assertEquals(tmp,"data");
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{
@@ -160,6 +163,7 @@ public class TestTracker
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			Assert.assertEquals(0, fr.getResponse().getTrackerData().size());
+			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{

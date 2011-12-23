@@ -34,6 +34,7 @@ public class TestPeerExchange
 			Assert.assertEquals(true, fr.isSuccess());
 			Utils.sleep(200);
 			Assert.assertEquals(1, recv1.getPeerBean().getTrackerStorage().sizeSecondary(locationKey, domainKey));
+			recv1.getConnectionBean().getReservation().release(cc);
 		}
 		catch (Exception e)
 		{

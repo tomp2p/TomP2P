@@ -24,12 +24,12 @@ Adding 3rd party libraries to repository
 E.g. upload snapshot of Netty using scp 
 
 mvn deploy:deploy-file \
--DgroupId=org.jboss.netty \ 
--DartifactId=netty \
--Dversion=3.2.7.Final-SNAPSHOT \ 
--Dpackaging=jar \
--Dfile=netty-3.2.7.Final-SNAPSHOT.jar \ 
--DrepositoryId=ssh-tomp2p \
--Durl=scp://tomp2p.net/home/##username##/maven \ 
--Dusername=##username## \
--Dpassword=##password##
+ -DgroupId=org.jboss.netty \ 
+ -DartifactId=netty \
+ -Dversion=3.2.7.Final-SNAPSHOT \ 
+ -Dpackaging=jar \
+ -Dfile=netty-3.2.7.Final-SNAPSHOT.jar \ 
+ -DrepositoryId=ssh-tomp2p \
+ -Durl=scp://tomp2p.net/home/##username##/maven \ 
+ -Dusername=##username## \
+ -Dpassword=##password##

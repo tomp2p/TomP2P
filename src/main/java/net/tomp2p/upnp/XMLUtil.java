@@ -127,7 +127,7 @@ public class XMLUtil
 	 * @param url
 	 * @return The xml {@link Document}
 	 */
-	public static Document getXML( URL url )
+	public synchronized static Document getXML( URL url )
 	{
 		try
 		{

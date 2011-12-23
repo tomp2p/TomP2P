@@ -168,20 +168,6 @@ public class TestDirect
 	@Test
 	public void testOrder() throws Exception
 	{
-		final StringBuilder sb=new StringBuilder();
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				String s1="";
-				for(int i=0;i<1000000;i++)
-				{
-					s1+="test"+i;
-				}
-				sb.append(s1);
-			}
-		}).start();
 		Peer sender = null;
 		Peer recv1 = null;
 		try

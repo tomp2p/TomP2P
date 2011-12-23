@@ -115,7 +115,6 @@ public class NatPmpDevice {
      * {@link #shutdownAsync(boolean)} method should be called.
      *
      * @see #isShutdown()
-     * @see #isShutdownHookEnabled()
      * @see #setShutdownHookEnabled(boolean)
      * @see #shutdownAsync(boolean)
      */

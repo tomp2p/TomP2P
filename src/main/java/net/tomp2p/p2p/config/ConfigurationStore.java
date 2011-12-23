@@ -1,3 +1,19 @@
+/*
+ * Copyright 2011 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.p2p.config;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
@@ -16,6 +32,21 @@ public class ConfigurationStore extends ConfigurationBase
 		return absent;
 	}
 
+	/**
+	 * If set to true, it only stores data on peers that do not have it.
+	 * FutureDHT reports back what keys have been stored on which peers (
+	 * {@link FutureDHT#getRawKeys()}. The evaluation if it was successful or
+	 * not cannot be done by TomP2P, since FutureDHT e.g. may report that it was
+	 * stored on peer A, but peer B already has it. Instead a Map<PeerAddress,
+	 * Collection<Number160>> is returned, which tells you on what peer the
+	 * value has been stored. If you store key1 and key2 and FutureDHT tells you
+	 * peerA:key1, then you know, that key1 was absent, while key2 was already
+	 * there.
+	 * 
+	 * @param absent True if the value should only be stored if not already
+	 *        present
+	 * @return This instance.
+	 */
 	public ConfigurationStore setStoreIfAbsent(boolean absent)
 	{
 		this.absent = absent;

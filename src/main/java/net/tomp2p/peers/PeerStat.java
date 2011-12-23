@@ -17,7 +17,7 @@ package net.tomp2p.peers;
 public class PeerStat
 {
 	private volatile long lastSeenOnline = 0;
-	private int checked = 0;
+	private volatile int checked = 0;
 	private volatile long crated = 0;
 
 	public void setLastSeenOnline(long lastSeenOnline)

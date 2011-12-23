@@ -67,7 +67,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 						final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
 						FutureResponse fr=storageRPC.put(other, locationKey, domainKey, dataMap, false,
 								false, false, cc);
-						Utils.addReleaseListener(fr, cc, 1);
+						Utils.addReleaseListener(fr, peer.getConnectionBean().getReservation(), cc, 1);
 						pendingFutures.put(fr, System.currentTimeMillis());
 						
 					}

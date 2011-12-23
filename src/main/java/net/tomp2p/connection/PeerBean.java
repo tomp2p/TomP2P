@@ -23,9 +23,17 @@ import net.tomp2p.replication.Replication;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.TrackerStorage;
 
+/**
+ * A bean that holds non-sharable (unique for each peer) configuration settings
+ * for the peer. The sharable configurations are stored in
+ * {@link ConnectionBean}.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class PeerBean
 {
-	//private final ConnectionBean connectionBean;
+	// the key pair cannot be changed anymore
 	private final KeyPair keyPair;
 	// we need to make all volatile, as this can be called by the user from any
 	// thread.
@@ -38,14 +46,8 @@ public class PeerBean
 
 	public PeerBean(KeyPair keyPair)
 	{
-		//this.connectionBean = connectionBean;
 		this.keyPair = keyPair;
 	}
-
-	//public ConnectionBean getConnectionBean()
-	//{
-	//	return connectionBean;
-	//}
 
 	public PeerAddress getServerPeerAddress()
 	{

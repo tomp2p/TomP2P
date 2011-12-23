@@ -44,6 +44,7 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
@@ -473,24 +474,24 @@ public class Utils
 		return false;
 	}
 	
-	public static void addReleaseListener(BaseFuture baseFuture, final ChannelCreator cc, final int nr) 
+	public static void addReleaseListener(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator cc, final int nr) 
 	{
 		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
 		{
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
-				cc.release(nr);
+				connectionReservation.release(cc, nr);
 			}
 		});
 	}
 	
-	public static void addReleaseListenerAll(BaseFuture baseFuture, final ChannelCreator cc) 
+	public static void addReleaseListenerAll(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator cc) 
 	{
 		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
 		{
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
-				cc.release();
+				connectionReservation.release(cc);
 			}
 		});
 	}

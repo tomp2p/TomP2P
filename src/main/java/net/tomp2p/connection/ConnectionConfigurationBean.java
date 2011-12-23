@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,21 +14,28 @@
  * the License.
  */
 package net.tomp2p.connection;
-public class ConnectionConfiguration
+
+/**
+ * This bean sets the sharable configuration for the connection (TCP and UDP)
+ * settings.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
+public class ConnectionConfigurationBean
 {
-	private int udpLength = 1400;
 	private int defaultPort = 7700;
 	// idle needs to be larger than timeout for TCP
 	private int idleTCPMillis = 6 * 1000;
-	//private int timeoutTCPMillis = 3 * 1000;
+	// private int timeoutTCPMillis = 3 * 1000;
 	private int idleUDPMillis = 3 * 1000;
 	private int connectTimeouMillis = 3 * 1000;
 	// doing tests on localhost, we open 2 * maxOpenConnection
 	private int maxOpenConnection = 400;
-	private int maxCreating = 50;
+	private int maxCreating = 100;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
-	
+
 	public int getIdleTCPMillis()
 	{
 		return idleTCPMillis;
@@ -57,16 +64,6 @@ public class ConnectionConfiguration
 	public void setConnectTimeoutMillis(int connectTimeouMillist)
 	{
 		this.connectTimeouMillis = connectTimeouMillist;
-	}
-
-	public void setUdpLength(int udpLength)
-	{
-		this.udpLength = udpLength;
-	}
-
-	public int getUdpLength()
-	{
-		return udpLength;
 	}
 
 	public void setDefaultPort(int defaultPort)
@@ -99,12 +96,12 @@ public class ConnectionConfiguration
 		return maxMessageSize;
 	}
 
-	public int getMaxCreating() 
+	public int getMaxCreating()
 	{
 		return maxCreating;
 	}
 
-	public void setMaxCreating(int maxCreating) 
+	public void setMaxCreating(int maxCreating)
 	{
 		this.maxCreating = maxCreating;
 	}

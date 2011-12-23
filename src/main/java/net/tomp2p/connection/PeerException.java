@@ -18,7 +18,7 @@ package net.tomp2p.connection;
  * This exception is used internally and passed over to the method
  * exceptionCaught. A PeerException always has a cause
  * 
- * @author draft
+ * @author Thomas Bocek
  * 
  */
 public class PeerException extends Exception
@@ -33,21 +33,25 @@ public class PeerException extends Exception
 		 * reply). PEER_ABORT means that the other peer found an error on our
 		 * side (e.g., if this peer thinks the other peer is someone else)
 		 */
-		USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT, USER_ERROR
+		USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
 	}
 	final private AbortCause abortCause;
 
-	public PeerException(AbortCause abortCause)
-	{
-		this(abortCause, "General Error");
-	}
-
+	/**
+	 * Specified error with custom message
+	 * 
+	 * @param abortCause either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
+	 * @param message Custom message
+	 */
 	public PeerException(AbortCause abortCause, String message)
 	{
 		super(message);
 		this.abortCause = abortCause;
 	}
 
+	/**
+	 * @return The cause of the error.
+	 */
 	public AbortCause getAbortCause()
 	{
 		return abortCause;

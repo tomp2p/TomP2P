@@ -17,7 +17,6 @@ package net.tomp2p.examples;
 
 import java.util.Random;
 
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.p2p.Peer;
@@ -60,12 +59,12 @@ public class ExamplePersistentConnection
 			FutureData fd=master.send(peerConnection, sentObject);
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
-			System.out.println("received "+fd.getObject() + " connections: "+ChannelCreator.getStatConnectionsCreatedTCP());
+			System.out.println("received "+fd.getObject() + " connections: "+master.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			//we reuse the connection
 			fd=master.send(peerConnection, sentObject);
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
-			System.out.println("received "+fd.getObject()  + " connections: "+ChannelCreator.getStatConnectionsCreatedTCP());
+			System.out.println("received "+fd.getObject()  + " connections: "+master.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			// now we don't want to keep the connection open anymore:
 			peerConnection.close();
 		}

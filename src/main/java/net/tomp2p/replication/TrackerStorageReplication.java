@@ -71,7 +71,7 @@ public class TrackerStorageReplication implements ResponsibilityListener
 				{
 					final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
 					futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, cc);
-					Utils.addReleaseListener(futureResponse, cc, 1);
+					Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), cc, 1);
 					pendingFutures.put(futureResponse, System.currentTimeMillis());
 					
 				}

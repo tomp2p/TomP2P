@@ -279,7 +279,7 @@ public class StorageRPC extends ReplyHandler
 		for (Map.Entry<Number160, Data> entry : data.entrySet())
 		{
 			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
-					entry.getValue(), publicKey, true, protectDomain)) {
+					entry.getValue(), publicKey, false, protectDomain)) {
 				if(logger.isDebugEnabled()) {
 					logger.debug("add data with key "+locationKey+" on "+peerBean.getServerPeerAddress());
 				}

@@ -155,7 +155,7 @@ public class HandshakeRPC extends ReplyHandler
 					public void run() {
 						ChannelCreator cc=connectionBean.getReservation().reserve(1);
 						FutureResponse fr=fireUDP(message.getSender(), cc);
-						Utils.addReleaseListenerAll(fr, cc);
+						Utils.addReleaseListenerAll(fr, connectionBean.getReservation(), cc);
 					}
 					@Override
 					public void failed(String reason) {
@@ -172,7 +172,7 @@ public class HandshakeRPC extends ReplyHandler
 					public void run() {
 						ChannelCreator cc=connectionBean.getReservation().reserve(1);
 						FutureResponse fr=fireTCP(message.getSender(), cc);
-						Utils.addReleaseListenerAll(fr, cc);
+						Utils.addReleaseListenerAll(fr, connectionBean.getReservation(), cc);
 					}
 					@Override
 					public void failed(String reason) {

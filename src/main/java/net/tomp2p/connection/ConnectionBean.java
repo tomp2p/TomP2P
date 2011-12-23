@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -18,6 +18,13 @@ import net.tomp2p.p2p.Scheduler;
 
 import org.jboss.netty.channel.group.ChannelGroup;
 
+/**
+ * A bean that holds sharable configuration settings for the peer. The
+ * non-sharable configurations are stored in {@link PeerBean}.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class ConnectionBean
 {
 	final private int p2pID;
@@ -26,12 +33,14 @@ public class ConnectionBean
 	final private Sender sender;
 	final private Scheduler scheduler;
 	final private ConnectionReservation reservation;
-	final private ConnectionConfiguration configuration;
-	//
-	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender, ChannelGroup channelGroup, Scheduler scheduler, ConnectionReservation reservation, ConnectionConfiguration configuration)
+	final private ConnectionConfigurationBean configuration;
+
+	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender,
+			ChannelGroup channelGroup, Scheduler scheduler, ConnectionReservation reservation,
+			ConnectionConfigurationBean configuration)
 	{
 		this.p2pID = p2pID;
-		this.channelGroup=channelGroup;
+		this.channelGroup = channelGroup;
 		this.dispatcherRequest = dispatcherRequest;
 		this.sender = sender;
 		this.scheduler = scheduler;
@@ -59,7 +68,7 @@ public class ConnectionBean
 		return channelGroup;
 	}
 
-	public Scheduler getScheduler() 
+	public Scheduler getScheduler()
 	{
 		return scheduler;
 	}
@@ -69,7 +78,7 @@ public class ConnectionBean
 		return reservation;
 	}
 
-	public ConnectionConfiguration getConfiguration() 
+	public ConnectionConfigurationBean getConfiguration()
 	{
 		return configuration;
 	}

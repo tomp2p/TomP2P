@@ -63,6 +63,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception
 	{
+		// set read and wirte time to current time
 		initialize(ctx);
 		ctx.sendUpstream(e);
 	}
@@ -70,6 +71,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
+		// time read update now
 		lastReadTime = System.currentTimeMillis();
 		ctx.sendUpstream(e);
 	}
@@ -78,7 +80,10 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e) throws Exception
 	{
 		if (e.getWrittenAmount() > 0)
+		{
+			// time wirte update now
 			lastWriteTime = System.currentTimeMillis();
+		}
 		ctx.sendUpstream(e);
 	}
 
@@ -91,6 +96,11 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 		ctx.sendUpstream(e);
 	}
 
+	/**
+	 * Set read and write time to current and initialize the timeout.
+	 * 
+	 * @param ctx ChannelHandlerContext
+	 */
 	private void initialize(ChannelHandlerContext ctx)
 	{
 		lastReadTime = lastWriteTime = System.currentTimeMillis();
@@ -100,6 +110,12 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 					TimeUnit.MILLISECONDS);
 		}
 	}
+	/**
+	 * The timertask to take care of timeouts. If a timeout occurs, it is sent
+	 * to upstream.
+	 * 
+	 * @author Thomas Bocek
+	 */
 	private final class AllIdleTimeoutTask implements TimerTask
 	{
 		private final ChannelHandlerContext ctx;
@@ -137,38 +153,14 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 				allIdleTimeout = timer.newTimeout(this, nextDelay, TimeUnit.MILLISECONDS);
 			}
 		}
-
-		public void abort() 
-		{
-			try
-			{
-				ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
-						AbortCause.USER_ERROR, "Abort exception for peer " + remotePeer)));
-			}
-			catch (Throwable t)
-			{
-				ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), t));
-			}
-			
-		}
 	}
 
 	@Override
 	public void cancel()
 	{
 		if (allIdleTimeout != null)
-		{	
-			allIdleTimeout.cancel();
-		}
-		allIdleTimeout = null;
-	}
-
-	public void abort() 
-	{
-		if (allIdleTimeout != null)
 		{
 			allIdleTimeout.cancel();
-			((AllIdleTimeoutTask)allIdleTimeout.getTask()).abort();
 		}
 		allIdleTimeout = null;
 	}

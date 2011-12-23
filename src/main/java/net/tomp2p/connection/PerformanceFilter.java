@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Measures the number of outgoing and incoming packets. This is used to test
- * the performance
+ * the performance. The logger is set to debug and will only output if the msg/s
+ * is larger than 1. To enable the performance, set in tomp2plog.properties
+ * "net.tomp2p.connection.PerformanceFilter.level = FINE"
  * 
  * @author Thomas Bocek
  */
@@ -45,8 +47,12 @@ public class PerformanceFilter extends SimpleChannelHandler
 		final long time = System.currentTimeMillis() - startReceive.get();
 		if (time > 1000)
 		{
-			logger.debug("Incoming throughput="
-					+ (messagesCountReceive.doubleValue() / (time / 1000)) + "msg/s");
+			double throughput = messagesCountReceive.doubleValue() / (time / 1000d);
+			if (throughput > 1 && logger.isDebugEnabled())
+			{
+				logger.debug("Incoming throughput="
+						+ throughput + "msg/s");
+			}
 			startReceive.set(System.currentTimeMillis());
 			messagesCountReceive.set(0);
 		}
@@ -60,8 +66,12 @@ public class PerformanceFilter extends SimpleChannelHandler
 		long time = System.currentTimeMillis() - startSend.get();
 		if (time > 1000)
 		{
-			logger.debug("[Outgoing throughput="
-					+ (messagesCountSend.doubleValue() / (time / 1000)) + "msg/s");
+			double throughput = messagesCountSend.doubleValue() / (time / 1000d);
+			if (throughput > 1 && logger.isDebugEnabled())
+			{
+				logger.debug("[Outgoing throughput="
+						+ throughput + "msg/s");
+			}
 			startSend.set(System.currentTimeMillis());
 			messagesCountSend.set(0);
 		}

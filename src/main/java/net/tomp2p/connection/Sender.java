@@ -30,7 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handles sending of messages
+ * Handles sending of messages. In order to send messages one needs to provide a
+ * channel creator. This can be obtained via the connection reservation, that
+ * keeps track how many connections have been opened.
  * 
  * @author Thomas Bocek
  * 
@@ -40,89 +42,116 @@ public class Sender
 	final private static Logger logger = LoggerFactory.getLogger(Sender.class);
 	// Timer used for ReplyTimeout
 	final private Timer timer;
-	final private ConnectionConfiguration configuration;
-	private volatile boolean shutdown = false;
+	final private ConnectionConfigurationBean configuration;
 
-	public Sender(final ConnectionConfiguration configuration, Timer timer)
+	/**
+	 * The sender is shared for all master and child peers
+	 * 
+	 * @param configuration ConnectionConfigurationBean
+	 * @param timer Timer
+	 */
+	public Sender(final ConnectionConfigurationBean configuration, Timer timer)
 	{
 		this.configuration = configuration;
 		this.timer = timer;
 	}
 
-	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator, final int idleTCPMillis)
-	{
-		if(shutdown) {
-			futureResponse.setFailed("Shutdown in sender");
-		}
-		else {
-			sendTCP(message.getRecipient(), handler, futureResponse, message, channelCreator, idleTCPMillis);
-		}
-	}
-
-	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
-	{
-		if(shutdown) {
-			futureResponse.setFailed("Shutdown in sender");
-		}
-		else {
-			sendUDP(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
-		}
-	}
-
-	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, final Message message, ChannelCreator channelCreator)
-	{
-		if(shutdown)  {
-			futureResponse.setFailed("Shutdown in sender");
-		}
-		else {
-			sendUDP(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
-		}
-	}
-
-	private void sendTCP(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, 
-			final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
+	/**
+	 * Sent the message via TCP. Keep the future state.
+	 * 
+	 * @param handler RequestHandlerTCP
+	 * @param futureResponse FutureResponse
+	 * @param message Message
+	 * @param channelCreator ChannelCreator
+	 * @param idleTCPMillis Timeout
+	 */
+	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse,
+			final Message message, ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (logger.isDebugEnabled())
+		{
 			logger.debug("send TCP " + Thread.currentThread().getName());
-		sendTCP0(remoteNode, requestHandler, futureResponse,  message, channelCreator, idleTCPMillis);
+		}
+		sendTCP0(message.getRecipient(), handler, futureResponse, message, channelCreator,
+				idleTCPMillis);
 	}
 
-	private void sendUDP(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
-			final FutureResponse futureResponse, final Message message, 
-			final boolean broadcast, final ChannelCreator channelCreator)
+	/**
+	 * Sent the message via UDP. Keep the future state.
+	 * 
+	 * @param handler RequestHandlerUDP
+	 * @param futureResponse FutureResponse
+	 * @param message Message
+	 * @param channelCreator ChannelCreator
+	 */
+	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse,
+			final Message message, ChannelCreator channelCreator)
 	{
 		if (logger.isDebugEnabled())
+		{
 			logger.debug("send UDP " + Thread.currentThread().getName());
-		sendUDP0(remoteNode, requestHandler, futureResponse, message, broadcast, channelCreator);
+		}
+		sendUDP0(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
 	}
 
-	
+	/**
+	 * Sent the message via UDP broadcast. Keep the future state.
+	 * @param handler RequestHandlerUDP
+	 * @param futureResponse FutureResponse
+	 * @param message Message
+	 * @param channelCreator ChannelCreator
+	 */
+	public void sendBroadcastUDP(final RequestHandlerUDP handler,
+			final FutureResponse futureResponse, final Message message,
+			ChannelCreator channelCreator)
+	{
+		if (logger.isDebugEnabled())
+		{
+			logger.debug("send UDP " + Thread.currentThread().getName());
+		}
+		sendUDP0(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
+	}
 
-	private void sendTCP0(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
+	/**
+	 * Internal send.
+	 * 
+	 * @param remoteNode PeerAddress
+	 * @param requestHandler RequestHandlerTCP
+	 * @param futureResponse FutureResponse
+	 * @param message Message
+	 * @param channelCreator ChannelCreator
+	 * @param idleTCPMillis Timeout when a connection is considered idle (no data send or receivedF)
+	 */
+	private void sendTCP0(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler,
+			final FutureResponse futureResponse, final Message message,
+			final ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (futureResponse.isCompleted())
 			return;
 		try
 		{
 			ReplyTimeoutHandler replyTimeoutHandler = null;
-			//no need for timeout if its fire and forget, since we close the connection anyway after writing
+			// no need for timeout if its fire and forget, since we close the
+			// connection anyway after writing
 			if (requestHandler != null)
 			{
-				replyTimeoutHandler = new ReplyTimeoutHandler(timer, configuration.getIdleUDPMillis(),
-						remoteNode);
+				replyTimeoutHandler = new ReplyTimeoutHandler(timer, idleTCPMillis, remoteNode);
 				futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
 			}
-			else if (message.getType()!=Type.REQUEST_FF_1)
+			else if (message.getType() != Type.REQUEST_FF_1)
 			{
 				throw new RuntimeException("This send needs to be a fire and forget request");
 			}
-			final ChannelFuture channelFutureConnect = channelCreator.createTCPChannel(replyTimeoutHandler, futureResponse,   
-					configuration.getConnectTimeoutMillis(), configuration.getIdleTCPMillis(), 
-					message, requestHandler);
+			final ChannelFuture channelFutureConnect = channelCreator.createTCPChannel(
+					replyTimeoutHandler, requestHandler, futureResponse,
+					configuration.getConnectTimeoutMillis(), message.getRecipient()
+							.createSocketTCP());
+
 			if (channelFutureConnect == null)
 			{
 				futureResponse.setFailed("could not get channel in "
-						+ configuration.getConnectTimeoutMillis() + "ms");
+						+ configuration.getConnectTimeoutMillis()
+						+ "ms. Most likely reason: shutdown");
 				return;
 			}
 			final Cancellable cancel = new Cancellable()
@@ -145,11 +174,11 @@ public class Sender
 						if (logger.isDebugEnabled())
 							logger.debug("send TCP message " + message);
 						final ChannelFuture writeFuture = future.getChannel().write(message);
-						afterSend(writeFuture, futureResponse, true, message, requestHandler == null);
+						afterSend(writeFuture, futureResponse, requestHandler == null);
 					}
 					else
 					{
-						//most likely its closed, but just to be sure
+						// most likely its closed, but just to be sure
 						future.getChannel().close();
 						if (channelFutureConnect.isCancelled())
 						{
@@ -157,17 +186,17 @@ public class Sender
 						}
 						else
 						{
-							logger.warn("Failed to connect channel " 
+							logger.warn("Failed to connect channel "
 									+ future.getChannel().isBound() + "/"
 									+ future.getChannel().isConnected() + "/"
 									+ future.getChannel().isOpen() + " / " + future.isCancelled()
 									+ " /ch:" + channelFutureConnect.getChannel());
 							futureResponse.setFailed("Connect failed " + future.getCause());
-							if (logger.isDebugEnabled() && future.getCause()!=null)
+							if (logger.isDebugEnabled() && future.getCause() != null)
 							{
 								future.getCause().printStackTrace();
 							}
-							
+
 						}
 					}
 				}
@@ -177,15 +206,29 @@ public class Sender
 		{
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			if (logger.isWarnEnabled())
+			{
 				logger.warn(ce.toString());
+			}
 			if (logger.isDebugEnabled())
+			{
 				ce.printStackTrace();
+			}
 			return;
 		}
 	}
 
-	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler, 
-			final FutureResponse futureResponse, final Message message, final boolean broadcast, 
+	/**
+	 * Internal send.
+	 * 
+	 * @param remoteNode PeerAddress
+	 * @param requestHandler RequestHandlerUDP
+	 * @param futureResponse FutureResponse
+	 * @param message Message
+	 * @param broadcast True if message should be broadcasted (layer 2)
+	 * @param channelCreator ChannelCreator
+	 */
+	private void sendUDP0(final PeerAddress remoteNode, final RequestHandlerUDP requestHandler,
+			final FutureResponse futureResponse, final Message message, final boolean broadcast,
 			final ChannelCreator channelCreator)
 	{
 		if (futureResponse.isCompleted())
@@ -205,25 +248,40 @@ public class Sender
 		{
 			final Channel channel = channelCreator.createUDPChannel(replyTimeoutHandler,
 					requestHandler, futureResponse, broadcast);
+			// in case of shutdown
+			if (channel == null)
+			{
+				futureResponse.setFailed("shutdown in progres");
+			}
 			final ChannelFuture writeFuture = channel.write(message, remoteNode.createSocketUDP());
-			afterSend(writeFuture, futureResponse, false, message, requestHandler == null);
+			afterSend(writeFuture, futureResponse, requestHandler == null);
 		}
 		catch (Exception ce)
 		{
 			futureResponse.setFailed("Could not get channel " + ce.toString());
 			logger.warn(ce.toString());
-			if(logger.isDebugEnabled())
+			if (logger.isDebugEnabled())
 			{
 				ce.printStackTrace();
 			}
 			return;
 		}
 		if (logger.isDebugEnabled())
+		{
 			logger.debug("send UDP message " + message);
+		}
 	}
 
+	/**
+	 * Waits until the write operation is complete and fails if necessary, or
+	 * closes the channel in case of fire and forget.
+	 * 
+	 * @param writeFuture ChannelFuture
+	 * @param futureResponse FutureResponse
+	 * @param isFireAndForget True if we don't expect an answer
+	 */
 	private void afterSend(final ChannelFuture writeFuture, final FutureResponse futureResponse,
-			final boolean tcp, final Message message, final boolean isFireAndForget)
+			final boolean isFireAndForget)
 	{
 		final Cancellable cancel = new Cancellable()
 		{
@@ -242,7 +300,7 @@ public class Sender
 				futureResponse.removeCancellation(cancel);
 				if (!writeFuture.isSuccess())
 				{
-					//most likely its closed, but just to be sure
+					// most likely its closed, but just to be sure
 					writeFuture.getChannel().close();
 					if (writeFuture.isCancelled())
 					{
@@ -262,15 +320,5 @@ public class Sender
 				}
 			}
 		});
-	}
-
-	public ConnectionConfiguration getConfiguration()
-	{
-		return configuration;
-	}
-	
-	public void shutdownAndWait()
-	{
-		shutdown = true;
 	}
 }

@@ -42,7 +42,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 
 	protected void registerIoHandler(Command... names)
 	{
-		connectionBean.getDispatcherRequest().registerIoHandler(peerBean.getServerPeerAddress(), this,
+		connectionBean.getDispatcherRequest().registerIoHandler(peerBean.getServerPeerAddress().getID(), this,
 				names);
 	}
 

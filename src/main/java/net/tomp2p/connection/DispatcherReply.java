@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -120,7 +120,7 @@ public class DispatcherReply extends SimpleChannelHandler
 	 * @param ioHandler the handler which should process the given type of
 	 *        messages
 	 */
-	public void registerIoHandler(PeerAddress sender, ReplyHandler ioHandler, Command... names)
+	public void registerIoHandler(Number160 localPeerId, ReplyHandler ioHandler, Command... names)
 	{
 		synchronized (this)
 		{
@@ -133,11 +133,11 @@ public class DispatcherReply extends SimpleChannelHandler
 					? new HashMap<Number160, Map<Command, ReplyHandler>>()
 					: new HashMap<Number160, Map<Command, ReplyHandler>>(listenersRequest);
 			//
-			Map<Command, ReplyHandler> types = copy2.get(sender.getID());
+			Map<Command, ReplyHandler> types = copy2.get(localPeerId);
 			if (types == null)
 			{
 				types = new HashMap<Command, ReplyHandler>();
-				copy2.put(sender.getID(), types);
+				copy2.put(localPeerId, types);
 			}
 			for (Command name : names)
 				types.put(name, ioHandler);
@@ -146,7 +146,13 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 	}
 
-	public void removeIoHandler(Number160... ids)
+	/**
+	 * If we shutdown, we remove the handlers. This means that a server may
+	 * respond that the handler is unknown.
+	 * 
+	 * @param id The Id of the peer to remove the handlers.
+	 */
+	public void removeIoHandler(Number160 localPeerId)
 	{
 		synchronized (this)
 		{
@@ -155,11 +161,10 @@ public class DispatcherReply extends SimpleChannelHandler
 				Map<Number160, Map<Command, ReplyHandler>> copy2 = new HashMap<Number160, Map<Command, ReplyHandler>>(
 						listenersRequest);
 				Set<ReplyHandler> copy1 = new HashSet<ReplyHandler>(handlers);
-				for (Number160 id : ids)
+				Map<Command, ReplyHandler> types = copy2.remove(localPeerId);
+				if (types != null)
 				{
-					Map<Command, ReplyHandler> types = copy2.remove(id);
-					if (types != null)
-						copy1.removeAll(types.values());
+					copy1.removeAll(types.values());
 				}
 				handlers = Collections.unmodifiableSet(copy1);
 				listenersRequest = Collections.unmodifiableMap(copy2);
@@ -180,12 +185,12 @@ public class DispatcherReply extends SimpleChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
-		if(e.getCause().toString().equals("java.io.IOException: Connection reset by peer"))
+		if (e.getCause().toString().equals("java.io.IOException: Connection reset by peer"))
 		{
 			ctx.sendUpstream(e);
 			return;
 		}
-		else if(e.getCause().toString().equals("java.io.IOException: Broken pipe"))
+		else if (e.getCause().toString().equals("java.io.IOException: Broken pipe"))
 		{
 			ctx.sendUpstream(e);
 			return;
@@ -220,17 +225,13 @@ public class DispatcherReply extends SimpleChannelHandler
 			peerMap.peerOffline(message.getSender(), true);
 			return;
 		}
-		//We will send data to ourself if the network is small
-		//if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID()))
-		//{
-		//	logger.info("Is it really required to send a message to ourself? " + message);
-		//}
 		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? timeoutUPDMillis
 				: timeoutTCPMillis;
 		// no need to reply, we are late anyway
 		if (System.currentTimeMillis() > message.getFinished() + timeout)
 		{
-			logger.info("We are very busy and cannto reply in time (timeout="+timeout+"), so we drop:" + message);
+			logger.info("We are very busy and cannto reply in time (timeout=" + timeout
+					+ "), so we drop:" + message);
 			close(ctx);
 			return;
 		}
@@ -267,31 +268,45 @@ public class DispatcherReply extends SimpleChannelHandler
 						.setSender(peerBean.getServerPeerAddress()).setType(Type.EXCEPTION);
 				response(ctx, e, message, false);
 			}
-			else if(responseMessage == message) {
-				if(logger.isDebugEnabled())
-					logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "+ message);
+			else if (responseMessage == message)
+			{
+				if (logger.isDebugEnabled())
+					logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "
+							+ message);
 			}
-			else {
+			else
+			{
 				response(ctx, e, responseMessage, message.isKeepAlive());
 			}
 		}
 		else
 		{
-			logger.warn("No handler found for " + message+ ". Probably we have shutdown this peer.");
+			logger.warn("No handler found for " + message
+					+ ". Probably we have shutdown this peer.");
 			message.setRecipient(message.getSender()).setSender(peerBean.getServerPeerAddress())
 					.setType(Type.UNKNOWN_ID);
 			response(ctx, e, message, false);
 		}
 	}
 
-	// respond within a session
-	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response, boolean isKeepAlive)
+	/**
+	 * Respond within a session. Keep the connection open if we are asked to do
+	 * so. Connection is only kept alive for TCP data.
+	 * 
+	 * @param ctx
+	 * @param e
+	 * @param response
+	 * @param isKeepAlive
+	 */
+	private void response(final ChannelHandlerContext ctx, MessageEvent e, final Message response,
+			boolean isKeepAlive)
 	{
-		
+
 		if (ctx.getChannel() instanceof DatagramChannel)
 		{
-			//check if channel is still open. If its not, then do not send anything because 
-			//this will cause an exception that will be logged.
+			// check if channel is still open. If its not, then do not send
+			// anything because
+			// this will cause an exception that will be logged.
 			if (!ctx.getChannel().isOpen())
 			{
 				if (logger.isDebugEnabled())
@@ -303,23 +318,27 @@ public class DispatcherReply extends SimpleChannelHandler
 			// no need to close a local channel, as we do not open a local
 			// channel for UDP during a reply. This is our server socket!
 			e.getChannel().write(response, e.getRemoteAddress());
-			// TODO: if we set a timeout in ConnectionHandler, we need to cancel the timeout here.
+			// TODO: if we set a timeout in ConnectionHandler, we need to cancel
+			// the timeout here.
 		}
 		else
 		{
-			//check if channel is still open. If its not, then do not send anything because 
-			//this will cause an exception that will be logged.
+			// check if channel is still open. If its not, then do not send
+			// anything because
+			// this will cause an exception that will be logged.
 			if (!ctx.getChannel().isConnected())
 			{
 				if (logger.isDebugEnabled())
 					logger.debug("channel is not open, do not reply");
 				return;
 			}
-			if (logger.isDebugEnabled()) {
-				logger.debug("reply TCP message " + response+ " to "+ctx.getChannel().getRemoteAddress());
+			if (logger.isDebugEnabled())
+			{
+				logger.debug("reply TCP message " + response + " to "
+						+ ctx.getChannel().getRemoteAddress());
 			}
 			ChannelFuture cf = ctx.getChannel().write(response);
-			if(!isKeepAlive)
+			if (!isKeepAlive)
 			{
 				cf.addListener(new ChannelFutureListener()
 				{
@@ -333,11 +352,18 @@ public class DispatcherReply extends SimpleChannelHandler
 		}
 	}
 
+	/**
+	 * Close the channel if its not UDP.
+	 * 
+	 * @param ctx The channel context
+	 * 
+	 */
 	private static void close(ChannelHandlerContext ctx)
 	{
 		if (!(ctx.getChannel() instanceof DatagramChannel))
 			ctx.getChannel().close();
-		// TODO: if we set a timeout in ConnectionHandler, we need to cancel the timeout here.
+		// TODO: if we set a timeout in ConnectionHandler, we need to cancel the
+		// timeout here.
 	}
 
 	/**
@@ -377,10 +403,10 @@ public class DispatcherReply extends SimpleChannelHandler
 		else
 		{
 			// not registered
-			if(logger.isDebugEnabled())
+			if (logger.isDebugEnabled())
 			{
 				logger.debug("Handler not found for type " + command
-					+ ", we are looking for the server with ID " + recipientID);
+						+ ", we are looking for the server with ID " + recipientID);
 			}
 			return null;
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -65,6 +65,23 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectionHandler
 {
+	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
+	static
+	{
+		ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer()
+		{
+			@Override
+			public String determineThreadName(String currentThreadName, String proposedThreadName)
+					throws Exception
+			{
+				return THREAD_NAME + currentThreadName;
+				// to debug, use time to see when this thread was created:
+				// return THREAD_NAME + currentThreadName +" / "+
+				// System.nanoTime();
+			}
+		});
+	}
+
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionHandler.class);
 	// Stores the node information about this node
 	final private ConnectionBean connectionBean;
@@ -73,53 +90,45 @@ public class ConnectionHandler
 	final public static int UDP_LIMIT = 1400;
 	// Used to calculate the throughput
 	final private static PerformanceFilter performanceFilter = new PerformanceFilter();
+	final private MessageLogger messageLoggerFilter;
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
 	final private Timer timer;
 	final private boolean master;
-	//final private ConnectionReservation reservation;
-	final public static String THREAD_NAME = "Netty thread (non-blocking)/ ";
-	static
-	{
-		ThreadRenamingRunnable.setThreadNameDeterminer(new ThreadNameDeterminer()
-		{
-			@Override
-			public String determineThreadName(String currentThreadName, String proposedThreadName) throws Exception
-			{
-				return THREAD_NAME + currentThreadName;
-			}
-		});
-	}
-	//final private ExecutionHandler executionHandlerSend;
-	//final private ExecutionHandler executionHandlerRcv;
-	//
+
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
 	final private ChannelFactory tcpClientChannelFactory;
-	//
-	final private MessageLogger messageLoggerFilter;
-	//final private ConnectionConfiguration configuration;
-	
+
+	/**
+	 * 
+	 * @param udpPort
+	 * @param tcpPort
+	 * @param id
+	 * @param bindings
+	 * @param p2pID
+	 * @param configuration
+	 * @param messageLogger
+	 * @param keyPair
+	 * @param peerMap
+	 * @param listeners
+	 * @param peerConfiguration
+	 * @throws Exception
+	 */
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
-			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair, PeerMap peerMap,
+			ConnectionConfigurationBean configuration, File messageLogger, KeyPair keyPair,
+			PeerMap peerMap,
 			List<PeerListener> listeners, P2PConfiguration peerConfiguration) throws Exception
 	{
-		//this.configuration = configuration;
 		this.timer = new HashedWheelTimer();
-		//ThreadPoolExecutor t1 = new ThreadPoolExecutor(5, configuration.getMaxIncomingThreads(), 60L, TimeUnit.SECONDS,
-		//		new ArrayBlockingQueue<Runnable>(configuration.getMaxIncomingThreads(), true));
-		//t1.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-		// for sending, this should never be blocking!
-		//Executor t2 = Executors.newCachedThreadPool();
-		//executionHandlerRcv = new ExecutionHandler(t1);
-		//executionHandlerSend = new ExecutionHandler(t2);
-		//
-		udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
-		tcpServerChannelFactory = new NioServerSocketChannelFactory(Executors.newCachedThreadPool(),
+		this.udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+		this.tcpServerChannelFactory = new NioServerSocketChannelFactory(
+				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
-		tcpClientChannelFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(),
+		this.tcpClientChannelFactory = new NioClientSocketChannelFactory(
+				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 		//
-		final boolean listenAll=bindings.isListenAll();
+		final boolean listenAll = bindings.isListenAll();
 		String status = DiscoverNetworks.discoverInterfaces(bindings);
 		logger.info("Status of interface search: " + status);
 		InetAddress outsideAddress = bindings.getExternalAddress();
@@ -127,33 +136,39 @@ public class ConnectionHandler
 		if (outsideAddress == null)
 		{
 			if (bindings.getAddresses0().size() == 0)
-				throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
+				throw new IOException(
+						"Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getAddresses0().get(0);
 			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort,
 					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
 		else
 		{
-			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
-				peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(),
+					bindings.getOutsideUDPPort(),
+					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
-		ConnectionReservation reservation=new ConnectionReservation(tcpClientChannelFactory, udpChannelFactory, configuration, messageLoggerFilter);
+		ConnectionReservation reservation = new ConnectionReservation(tcpClientChannelFactory,
+				udpChannelFactory, configuration, messageLoggerFilter, peerMap.getStatistics());
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
-		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean, configuration.getIdleUDPMillis(),
+		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean,
+				configuration.getIdleUDPMillis(),
 				configuration.getIdleTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
 		Scheduler scheduledPeer = new Scheduler();
 		Sender sender = new Sender(configuration, timer);
-		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup, scheduledPeer, reservation, configuration);
+		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup,
+				scheduledPeer, reservation, configuration);
 		if (listenAll)
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
-			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, configuration.getMaxMessageSize())
+			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest,
+					configuration.getMaxMessageSize())
 					|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
 				throw new IOException("cannot bind TCP or UDP");
 		}
@@ -161,7 +176,8 @@ public class ConnectionHandler
 		{
 			for (InetAddress addr : bindings.getAddresses())
 			{
-				logger.info("Listening on address: " + addr + " on port udp: " + udpPort + " and tcp:" + tcpPort);
+				logger.info("Listening on address: " + addr + " on port udp: " + udpPort
+						+ " and tcp:" + tcpPort);
 				if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest,
 						configuration.getMaxMessageSize())
 						|| !startupUDP(new InetSocketAddress(addr, udpPort), dispatcherRequest))
@@ -173,12 +189,16 @@ public class ConnectionHandler
 	}
 
 	/**
-	 * Attaches a peer to an existing connection and use existing information
+	 * Attaches a peer to an existing connection and use existing information.
+	 * The following objects are never shared: id, keyPair, peerMap.
 	 * 
-	 * @param parent
-	 * @param id
+	 * @param parent The parent handler
+	 * @param id The id of the child peer
+	 * @param keyPair The keypair of the child peer
+	 * @param peerMap The peer map of the child peer
 	 */
-	public ConnectionHandler(ConnectionHandler parent, Number160 id, KeyPair keyPair, PeerMap peerMap)
+	public ConnectionHandler(ConnectionHandler parent, Number160 id, KeyPair keyPair,
+			PeerMap peerMap)
 	{
 		parent.childConnections.add(this);
 		this.connectionBean = parent.connectionBean;
@@ -186,25 +206,47 @@ public class ConnectionHandler
 		this.peerBean = new PeerBean(keyPair);
 		this.peerBean.setServerPeerAddress(self);
 		this.peerBean.setPeerMap(peerMap);
-		//this.executionHandlerSend = parent.executionHandlerSend;
-		//this.executionHandlerRcv = parent.executionHandlerRcv;
 		this.messageLoggerFilter = parent.messageLoggerFilter;
 		this.udpChannelFactory = parent.udpChannelFactory;
 		this.tcpServerChannelFactory = parent.tcpServerChannelFactory;
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
-		//this.configuration = parent.configuration;
 		this.timer = parent.timer;
 		this.natUtils = parent.natUtils;
 		this.master = false;
 	}
 
+	/**
+	 * @return The shared connection configuration
+	 */
 	public ConnectionBean getConnectionBean()
 	{
 		return connectionBean;
 	}
 
+	/**
+	 * @return The non-shared peer configuration
+	 */
+	public PeerBean getPeerBean()
+	{
+		return peerBean;
+	}
+
+	/**
+	 * @return The NAT utils to setup port forwarding using NAT-PMP and UPNP.
+	 */
+	public NATUtils getNATUtils()
+	{
+		return natUtils;
+	}
+
+	/**
+	 * Creates UDP channels and listens on them
+	 * 
+	 * @param listenAddressesUDP The address to listen to
+	 * @param dispatcher The dispatcher that handles incoming messages
+	 * @return True if the channel was bound.
+	 */
 	public boolean startupUDP(InetSocketAddress listenAddressesUDP, final DispatcherReply dispatcher)
-			throws Exception
 	{
 		ConnectionlessBootstrap bootstrap = new ConnectionlessBootstrap(udpChannelFactory);
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory()
@@ -215,7 +257,8 @@ public class ConnectionHandler
 				ChannelPipeline pipe = Channels.pipeline();
 				pipe.addLast("encoder", new TomP2PEncoderUDP());
 				pipe.addLast("decoder", new TomP2PDecoderUDP());
-				if (messageLoggerFilter != null) {
+				if (messageLoggerFilter != null)
+				{
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
 				}
 				pipe.addLast("performance", performanceFilter);
@@ -235,12 +278,13 @@ public class ConnectionHandler
 	/**
 	 * Creates TCP channels and listens on them
 	 * 
-	 * @param listenAddressesTCP
-	 *            the addresses which we will listen on
-	 * @throws Exception
+	 * @param listenAddressesTCP the addresses which we will listen on
+	 * @param dispatcher The dispatcher that handles incoming messages
+	 * @param maxMessageSize The maximum message size that is tolerated
+	 * @return True if the channel was bound.
 	 */
-	public boolean startupTCP(InetSocketAddress listenAddressesTCP, final DispatcherReply dispatcher, int maxMessageSize)
-			throws Exception
+	public boolean startupTCP(InetSocketAddress listenAddressesTCP,
+			final DispatcherReply dispatcher, int maxMessageSize)
 	{
 		ServerBootstrap bootstrap = new ServerBootstrap(tcpServerChannelFactory);
 		bootstrap.setPipelineFactory(new ChannelPipelineFactory()
@@ -249,10 +293,12 @@ public class ConnectionHandler
 			public ChannelPipeline getPipeline() throws Exception
 			{
 				ChannelPipeline pipe = Channels.pipeline();
-				//TODO: enable a 2min timeout
-				//ReplyTimeoutHandler timeoutHandler = new ReplyTimeoutHandler(timer, 
-				//		connectionBean.getConfiguration().getIdleTCPMillis(), getPeerBean().getServerPeerAddress());
-				//pipe.addLast("timeout", timeoutHandler);
+				// TODO: enable a 2min timeout
+				// ReplyTimeoutHandler timeoutHandler = new
+				// ReplyTimeoutHandler(timer,
+				// connectionBean.getConfiguration().getIdleTCPMillis(),
+				// getPeerBean().getServerPeerAddress());
+				// pipe.addLast("timeout", timeoutHandler);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
 				pipe.addLast("decoder", new TomP2PDecoderTCP());
@@ -271,66 +317,71 @@ public class ConnectionHandler
 	}
 
 	/**
-	 * Returns the node information bean of this node
+	 * Writes a custom message to the logger filter. Only used if the logger
+	 * filter has been setup properly.
 	 * 
-	 * @return
+	 * @param customMessage The custom message to print.
 	 */
-	public PeerBean getPeerBean()
-	{
-		return peerBean;
-	}
-	
-	public NATUtils getNATUtils()
-	{
-		return natUtils;
-	}
-
 	public void customLoggerMessage(String customMessage)
 	{
 		if (messageLoggerFilter != null)
+		{
 			messageLoggerFilter.customMessage(customMessage);
+		}
 		else
+		{
 			logger.error("cannot write to log, as no file was provided");
+		}
 	}
 
 	/**
-	 * Shuts down the dispatcher and frees resources<br />
-	 * Note: does not close any channels, use {@link shutdownSharedTCP} or
-	 * {@link shutdownSharedUDP} instead.
-	 * 
-	 * @throws InterruptedException
+	 * Shuts down the dispatcher and frees resources. This closes all channels.
 	 */
 	public void shutdown()
 	{
 		if (master)
-			logger.debug("shutdown in progress...");
+		{
+			if (logger.isDebugEnabled())
+			{
+				logger.debug("shutdown in progress..." + System.nanoTime());
+			}
+		}
 		// deregister in dispatcher
-		connectionBean.getDispatcherRequest().removeIoHandler(getPeerBean().getServerPeerAddress().getID());
+		connectionBean.getDispatcherRequest().removeIoHandler(
+				getPeerBean().getServerPeerAddress().getID());
 		// shutdown all children
 		for (ConnectionHandler handler : childConnections)
+		{
 			handler.shutdown();
+		}
 		if (master)
 		{
 			natUtils.shutdown();
 			timer.stop();
 			// channelChache.shutdown();
 			if (messageLoggerFilter != null)
-				messageLoggerFilter.close();
+				messageLoggerFilter.shutdown();
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
 			connectionBean.getScheduler().shutdownAndWait();
-			connectionBean.getSender().shutdownAndWait();
 			connectionBean.getReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources
 			udpChannelFactory.releaseExternalResources();
 			tcpServerChannelFactory.releaseExternalResources();
 			tcpClientChannelFactory.releaseExternalResources();
-			logger.debug("shutdown complete");
+			if (logger.isDebugEnabled())
+			{
+				logger.debug("shutdown complete");
+			}
 		}
 	}
 
+	/**
+	 * @return Returns true if this handler is attached to listen to an
+	 *         interface.
+	 */
 	public boolean isListening()
 	{
 		return !getConnectionBean().getChannelGroup().isEmpty();

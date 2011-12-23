@@ -1,5 +1,5 @@
 /*
- * Copyright 2009 Thomas Bocek
+ * Copyright 2011 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -14,15 +14,14 @@
  * the License.
  */
 package net.tomp2p.connection;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.netty.channel.ChannelException;
+import net.tomp2p.p2p.Statistics;
+
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,23 +34,27 @@ import org.slf4j.LoggerFactory;
  */
 public class ConnectionReservation
 {
-	private AtomicBoolean shutdown = new AtomicBoolean(false);
-	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
-	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
-	final private Semaphore semaphoreCreating;
-	final private Semaphore semaphoreOpen;
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionReservation.class);
+	// semaphore for connections that are created, used only once, then
+	// destroyed
+	final private Semaphore semaphoreCreating;
+	// semaphore for connections that live longer
+	final private Semaphore semaphoreOpen;
 	final private ChannelFactory tcpClientChannelFactory;
 	final private ChannelFactory udpChannelFactory;
 	final private MessageLogger messageLoggerFilter;
 	final private int maxPermitsCreating;
 	final private int maxPermitsOpen;
-	final private ConcurrentMap<PeerConnection, Boolean> permanentConnections = new ConcurrentHashMap<PeerConnection, Boolean>();
+	final private Statistics statistics;
+	// keeps the information about acquired channel and which semaphore has been used
+	final private Map<ChannelCreator, Semaphore> activeChannelCreators = new ConcurrentHashMap<ChannelCreator, Semaphore>();
+	// used for synchronization
+	final private AtomicInteger counter = new AtomicInteger(0);
+	private volatile boolean shutdown = false;
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpChannelFactory, ConnectionConfiguration configuration,
-			//ExecutionHandler executionHandlerSender,
-			 MessageLogger messageLoggerFilter)
+			ChannelFactory udpChannelFactory, ConnectionConfigurationBean configuration,
+			MessageLogger messageLoggerFilter, Statistics statistics)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
@@ -59,93 +62,164 @@ public class ConnectionReservation
 		this.maxPermitsOpen = configuration.getMaxOpenConnection();
 		this.semaphoreCreating = new Semaphore(maxPermitsCreating);
 		this.semaphoreOpen = new Semaphore(maxPermitsOpen);
-		//this.semaphoreCreate = new Semaphore(20);
 		this.messageLoggerFilter = messageLoggerFilter;
+		this.statistics = statistics;
 	}
-	
-	public ChannelCreator reserve(final int permits) throws ChannelException
+
+	/**
+	 * Reserves connections. If a reservation of 5 connection is made, then 5
+	 * parallel connections can be made. Until the connections are released, the
+	 * connections can be closed and reopened. The reservation reserves
+	 * connections that are created and released immediately.
+	 * 
+	 * @param permits The number of connections to be reserved
+	 * @return The channel creator object that can be used to create the
+	 *         channels. Returns null if something went wrong (shutdown,
+	 *         interrupt)
+	 */
+	public ChannelCreator reserve(final int permits)
 	{
 		return reserve(permits, false);
 	}
-	
-	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse) throws ChannelException
+
+	/**
+	 * Reserves connections. If a reservation of 5 connection is made, then 5
+	 * parallel connections can be made. Until the connections are released, the
+	 * connections can be closed and reopened.
+	 * 
+	 * @param permits The number of connections to be reserved
+	 * @param keepAliveAndReuse If the connection should stay open (TCP) for
+	 *        later reuse.
+	 * @return The channel creator object that can be used to create the
+	 *         channels. Returns null if something went wrong (shutdown,
+	 *         interrupt)
+	 */
+	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse)
 	{
-		if(shutdown.get())
-			return null;
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
 		{
-			logger.warn("we are blocking in a thread that could cause a deadlock: " + Thread.currentThread().getName());
+			logger.warn("we are blocking in a thread that could cause a deadlock: "
+					+ Thread.currentThread().getName());
 			throw new RuntimeException("cannot block here");
 		}
-		boolean acquired = false;
-		//int counter = 0;
-		while(!acquired && !shutdown.get())
+		if(counter.incrementAndGet()<0)
 		{
-			acquired=semaphoreCreating.tryAcquire(permits) && semaphoreOpen.tryAcquire(permits);
-			if (!acquired)
-			{
-				if(logger.isDebugEnabled())
-				{
-					logger.debug("cannot acquire "+ permits+", in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", but now we have "+semaphoreCreating.availablePermits());
-				}
-				/*if(counter % 40 ==0)
-				{
-					logger.warn("cannot acquire "+ permits+" for 10sec, in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", but now we have "+semaphoreCreating.availablePermits());
-				}*/
-				synchronized (semaphoreCreating)
-				{
-					try 
-					{
-						semaphoreCreating.wait(250);
-						//counter++;
-					} 
-					catch (InterruptedException e) 
-					{
-						// maybe we need to exit due to shutdown
-					}
-				}
-			}	
-		}
-		if(shutdown.get()) 
-		{
-			if(acquired) 
-			{
-				semaphoreCreating.release(permits);
-				semaphoreOpen.release(permits);
-			}
+			logger.warn("Cannot acquire " + permits + " connections, shutting down");
 			return null;
 		}
-		//by now we have acquired the permits
-		ChannelCreator channelCreator = new ChannelCreator(channelsTCP, channelsUDP, permits, messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory, shutdown, this, keepAliveAndReuse);
-		return channelCreator;
-	}
-	
-	public void releaseCreating(int permits)
-	{
-		semaphoreCreating.release(permits);
-		synchronized (semaphoreCreating)
+		try
+		{	
+			boolean acquired = acquire(keepAliveAndReuse ? semaphoreOpen : semaphoreCreating,
+					permits);
+			if (acquired)
+			{
+				ChannelCreator channelCreator = new ChannelCreator(permits, statistics,
+						messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory,
+						keepAliveAndReuse);
+				activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
+						: semaphoreCreating);
+				return channelCreator;
+			}
+			else
+			{
+				logger.warn("Cannot acquire " + permits + " connections");
+				return null;
+			}
+		}
+		finally
 		{
-			semaphoreCreating.notifyAll();
+			counter.decrementAndGet();
 		}
 	}
-	
-	public void releaseOpen(int permits)
+
+	/**
+	 * Acquires connections. Waits in a loop. If a connection is ready, the
+	 * wait() gets notified and the acquire() is tried again.
+	 * 
+	 * @param semaphore The semaphore to get the permits from,
+	 * @param permits The number of permits
+	 * @return True if the permits could be acquired
+	 */
+	private boolean acquire(Semaphore semaphore, int permits)
 	{
-		semaphoreOpen.release(permits);
+		boolean acquired = false;
+		while (!acquired && !shutdown)
+		{
+			try
+			{
+				acquired = semaphore.tryAcquire(permits);
+				if (!acquired)
+				{
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("cannot acquire " + permits + ", in total we have "
+								+ maxPermitsCreating + "/" + maxPermitsOpen
+								+ ", but now we have "
+								+ semaphoreCreating.availablePermits());
+					}
+					synchronized (semaphore)
+					{
+						semaphore.wait(250);
+					}
+				}
+			}
+			catch (InterruptedException e)
+			{
+				return false;
+			}
+		}
+		return acquired;
 	}
-	
-	public void release(int permits)
+
+	/**
+	 * Release a channelcreator. The permits will be returned so that they can
+	 * be used again.
+	 * 
+	 * @param channelCreator The channelcreator that is not used anymore (or at
+	 *        least partially)
+	 * @param permits The number of permits to release
+	 */
+	public void release(ChannelCreator channelCreator, int permits)
 	{
-		semaphoreCreating.release(permits);
-		semaphoreOpen.release(permits);
-		if(logger.isDebugEnabled())
+		channelCreator.release(permits);
+		Semaphore semaphore = activeChannelCreators.get(channelCreator);
+		semaphore.release(permits);
+		if (channelCreator.hasNoPermits())
 		{
-			logger.debug("released "+ permits+", in total we have "+maxPermitsCreating+"/"+maxPermitsOpen+", now we have "+semaphoreCreating.availablePermits());
+			activeChannelCreators.remove(channelCreator);
+			if (logger.isDebugEnabled())
+			{
+				logger.debug("full release, we cannot remove the channelcreator from the list");
+			}
 		}
-		synchronized (semaphoreCreating)
+		else
 		{
-			semaphoreCreating.notifyAll();
+			if (logger.isDebugEnabled())
+			{
+				logger.debug("partial release, we cannot remove the channelcreator from the list");
+			}
 		}
+		if (logger.isDebugEnabled())
+		{
+			logger.debug("released " + channelCreator.getPermits() + ", in total we have "
+					+ maxPermitsCreating + "/"
+					+ maxPermitsOpen + ", now we have " + semaphore.availablePermits());
+		}
+		synchronized (semaphore)
+		{
+			semaphore.notifyAll();
+		}
+	}
+
+	/**
+	 * Release a channelcreator. The permits will be returned so that they can
+	 * be used again.
+	 * 
+	 * @param channelCreator. The channelcreator that is not used anymore
+	 */
+	public void release(ChannelCreator channelCreator)
+	{
+		release(channelCreator, channelCreator.getPermits());
 	}
 
 	/**
@@ -153,29 +227,34 @@ public class ConnectionReservation
 	 */
 	public void shutdown()
 	{
-		shutdown.set(true);
-		for(PeerConnection peerConnection:permanentConnections.keySet())
+		if (logger.isDebugEnabled())
 		{
-			peerConnection.close();
+			logger.debug("Shutdown");
 		}
-		synchronized (semaphoreCreating)
+		// wait until all reserev() calls know that we are shutting down.
+		shutdown = true;
+		while(counter.compareAndSet(0, Integer.MIN_VALUE))
 		{
-			//when we shutdown, we dont care about the connection count.
-			semaphoreCreating.notifyAll();
+			synchronized (semaphoreCreating)
+			{
+				semaphoreCreating.notifyAll();
+			}
+			synchronized (semaphoreOpen)
+			{
+				semaphoreOpen.notifyAll();
+			}
 		}
-		//futureGroup.awaitUninterruptibly();
-		channelsTCP.close().awaitUninterruptibly();
-		channelsUDP.close().awaitUninterruptibly();
+		//this needs synchronized, otherwise a thread may add to the list a value, then we fail here
+		synchronized (activeChannelCreators)
+		{
+			for (ChannelCreator channelCreator : activeChannelCreators.keySet())
+			{
+				//this makes them faster to call ConnectionReservation.release
+				channelCreator.shutdown();
+			}
+		}
+		//make sure we wait until all connections are finished.
+		semaphoreCreating.acquireUninterruptibly(maxPermitsCreating);
+		semaphoreOpen.acquireUninterruptibly(maxPermitsOpen);
 	}
-
-	public void addPeerConnection(PeerConnection peerConnection) 
-	{
-		permanentConnections.put(peerConnection, Boolean.TRUE);	
-	}
-	
-	public void removePeerConnection(PeerConnection peerConnection) 
-	{
-		permanentConnections.remove(peerConnection);
-	}
-	
 }

@@ -1,5 +1,4 @@
  * cleanup of package net.tomp2p.futures and net.tomp2p.log.
  * fixed bug in add() that behaved as putIfAbsent
- * classcast exception fix
- * update to Netty 3.2.7
+ * classcast exception fix for Android
  * fixed bug in XMLUtils, which requires to be called synchronized

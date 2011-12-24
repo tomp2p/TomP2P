@@ -672,13 +672,13 @@ public class TestStorage
 			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getReservation(), cc);
 			Utils.sleep(500);
 			fr.cancel();
 			Assert.assertEquals(false, fr.isSuccess());
 			System.err.println("good!");
 			//
 			Utils.sleep(3000);
-			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{

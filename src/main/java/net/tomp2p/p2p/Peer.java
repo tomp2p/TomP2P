@@ -969,7 +969,7 @@ public class Peer
 					if (tmp.size() == 1)
 					{
 						PeerAddress seenAs = tmp.iterator().next();
-						logger.debug("I'm seen as " + seenAs + " by peer " + peerAddress);
+						logger.info("I'm seen as " + seenAs + " by peer " + peerAddress+" I see myself as "+getPeerAddress().getInetAddress());
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
 							// now we know our internal IP, where we receive

@@ -155,11 +155,21 @@ public class ConnectionReservation
 						logger.debug("cannot acquire " + permits + ", in total we have "
 								+ maxPermitsCreating + "/" + maxPermitsOpen
 								+ ", but now we have "
-								+ semaphoreCreating.availablePermits());
+								+ semaphore.availablePermits());
 					}
 					synchronized (semaphore)
 					{
 						semaphore.wait(250);
+					}
+				}
+				else
+				{
+					if (logger.isDebugEnabled())
+					{
+						logger.debug("acquired " + permits + ", in total we have "
+								+ maxPermitsCreating + "/" + maxPermitsOpen
+								+ ", but now we have "
+								+ semaphore.availablePermits());
 					}
 				}
 			}
@@ -189,14 +199,14 @@ public class ConnectionReservation
 			activeChannelCreators.remove(channelCreator);
 			if (logger.isDebugEnabled())
 			{
-				logger.debug("full release, we cannot remove the channelcreator from the list");
+				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits());
 			}
 		}
 		else
 		{
 			if (logger.isDebugEnabled())
 			{
-				logger.debug("partial release, we cannot remove the channelcreator from the list");
+				logger.debug("partial release ("+permits+"), we cannot remove the channelcreator from the list "+semaphore.availablePermits());
 			}
 		}
 		if (logger.isDebugEnabled())

@@ -435,7 +435,12 @@ public class ChannelCreator
 	public void release(int permits)
 	{
 		connectionSemaphore.release(permits);
-		permitsCount.addAndGet(-permits);
+		int result = permitsCount.addAndGet(-permits);
+		if(result < 0)
+		{
+			throw new RuntimeException("Cannot release more than I acquired");
+		}
+		
 	}
 
 	/**

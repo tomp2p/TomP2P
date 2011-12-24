@@ -149,9 +149,7 @@ public class Sender
 
 			if (channelFutureConnect == null)
 			{
-				futureResponse.setFailed("could not get channel in "
-						+ configuration.getConnectTimeoutMillis()
-						+ "ms. Most likely reason: shutdown");
+				futureResponse.setFailed("Shutdown");
 				return;
 			}
 			final Cancellable cancel = new Cancellable()
@@ -172,7 +170,9 @@ public class Sender
 					if (future.isSuccess() && !channelFutureConnect.isCancelled())
 					{
 						if (logger.isDebugEnabled())
+						{
 							logger.debug("send TCP message " + message);
+						}
 						final ChannelFuture writeFuture = future.getChannel().write(message);
 						afterSend(writeFuture, futureResponse, requestHandler == null);
 					}
@@ -186,13 +186,10 @@ public class Sender
 						}
 						else
 						{
-							logger.warn("Failed to connect channel "
-									+ future.getChannel().isBound() + "/"
-									+ future.getChannel().isConnected() + "/"
-									+ future.getChannel().isOpen() + " / " + future.isCancelled()
-									+ " /ch:" + channelFutureConnect.getChannel());
+							logger.warn("Failed to connect channel " + future.isCancelled()
+									+"/"+ future.getCause() + "msg:"+message);
 							futureResponse.setFailed("Connect failed " + future.getCause());
-							if (logger.isDebugEnabled() && future.getCause() != null)
+							if (logger.isWarnEnabled() && future.getCause() != null)
 							{
 								future.getCause().printStackTrace();
 							}
@@ -311,6 +308,10 @@ public class Sender
 						futureResponse.setFailed("Write failed");
 						logger.warn("Failed to write channel the request "
 								+ futureResponse.getRequest());
+						if(logger.isWarnEnabled() && writeFuture.getCause() !=null)
+						{
+							writeFuture.getCause().printStackTrace();
+						}
 					}
 				}
 				if (isFireAndForget)

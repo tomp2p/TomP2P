@@ -309,7 +309,8 @@ public class ConnectionHandler
 				return pipe;
 			}
 		});
-		bootstrap.setOption("broadcast", "false");
+		//as suggested by http://stackoverflow.com/questions/8442166/how-to-allow-more-concurrent-client-connections-with-netty
+		bootstrap.setOption("backlog", 1000);
 		Channel channel = bootstrap.bind(listenAddressesTCP);
 		connectionBean.getChannelGroup().add(channel);
 		logger.info("Listening on TCP socket: " + listenAddressesTCP);

@@ -138,6 +138,10 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 			{
 				try
 				{
+					if(logger.isDebugEnabled())
+					{
+						logger.debug("Timeout exception for peer " + remotePeer);
+					}
 					ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 							AbortCause.TIMEOUT, "Timeout exception for peer " + remotePeer)));
 				}

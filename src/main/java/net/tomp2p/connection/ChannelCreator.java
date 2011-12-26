@@ -18,7 +18,10 @@ package net.tomp2p.connection;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -72,6 +75,8 @@ public class ChannelCreator
 	final private Statistics statistics;
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
+	//
+	final private Set<FutureResponse> active = Collections.synchronizedSet(new HashSet<FutureResponse>());
 
 	/**
 	 * Package private constructor, since this is created by
@@ -149,6 +154,8 @@ public class ChannelCreator
 				return null;
 			}
 			channelsUDP.add(channel);
+			//TODO:DBX debug why it hangs here
+			active.add(futureResponse);
 		}
 
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -158,6 +165,8 @@ public class ChannelCreator
 			{
 				connectionSemaphore.release();
 				statistics.decrementUDPChannelCreation();
+				//TODO:DBX debug why it hangs here
+				active.remove(futureResponse);
 			}
 		});
 		return channel;
@@ -256,6 +265,8 @@ public class ChannelCreator
 				return null;
 			}
 			channelsTCP.add(channel);
+			//TODO:DBX debug why it hangs here
+			active.add(futureResponse);
 		}
 
 		if (newConnection)
@@ -271,6 +282,8 @@ public class ChannelCreator
 					{
 						cacheMap.remove(recipient);
 					}
+					//TODO:DBX debug why it hangs here
+					active.remove(futureResponse);
 				}
 			});
 		}

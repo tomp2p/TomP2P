@@ -20,6 +20,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.p2p.Statistics;
+import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.ChannelFactory;
 import org.slf4j.Logger;
@@ -262,8 +263,14 @@ public class ConnectionReservation
 				//this makes them faster to call ConnectionReservation.release
 				channelCreator.shutdown();
 			}
+			//TODO:DBX debug why it hangs here
+			while(activeChannelCreators.size()!=0)
+			{
+				Utils.sleep(500);
+			}
 		}
 		//make sure we wait until all connections are finished.
+		
 		semaphoreCreating.acquireUninterruptibly(maxPermitsCreating);
 		semaphoreOpen.acquireUninterruptibly(maxPermitsOpen);
 	}

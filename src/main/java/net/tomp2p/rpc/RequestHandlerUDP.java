@@ -236,7 +236,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		{
 			return;
 		}
-		channel.getCloseFuture().addListener(new ChannelFutureListener()
+		channel.close().addListener(new ChannelFutureListener()
 		{
 			@Override
 			public void operationComplete(ChannelFuture arg0) throws Exception
@@ -254,7 +254,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 			return;
 		}
 		// most likely this is already closed
-		channel.getCloseFuture().addListener(new ChannelFutureListener()
+		channel.close().addListener(new ChannelFutureListener()
 		{
 			@Override
 			public void operationComplete(ChannelFuture arg0) throws Exception

@@ -244,7 +244,7 @@ public class DistributedHashHashMap
 			final Set<Number160> contentKeys, final PublicKey publicKey,
 			RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
-			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage,
+			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage, final boolean digest, 
 			final ChannelCreator cc)
 	{
 		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
@@ -269,26 +269,43 @@ public class DistributedHashHashMap
 							new Operation()
 							{
 								Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
+								Map<PeerAddress, Collection<Number160>> rawDigest = new HashMap<PeerAddress, Collection<Number160>>();
 
 								@Override
 								public FutureResponse create(PeerAddress address)
 								{
 									return storeRCP.get(address, locationKey, domainKey,
 											contentKeys,
-											publicKey, signMessage, cc);
+											publicKey, signMessage, digest, cc);
 								}
 
 								@Override
 								public void response(FutureDHT futureDHT)
 								{
-									futureDHT.setReceivedData(rawData);
+									if(digest)
+									{
+										futureDHT.setReceivedDigest(rawDigest);
+									}
+									else
+									{
+										futureDHT.setReceivedData(rawData);
+									}
 								}
 
 								@Override
 								public void interMediateResponse(FutureResponse future)
 								{
-									rawData.put(future.getRequest().getRecipient(), future
+									if(digest)
+									{
+										rawDigest.put(future.getRequest().getRecipient(), future
+												.getResponse().getKeys());	
+									}
+									else
+									{
+										rawData.put(future.getRequest().getRecipient(), future
 											.getResponse().getDataMap());
+									}
+									
 								}
 							});
 				}

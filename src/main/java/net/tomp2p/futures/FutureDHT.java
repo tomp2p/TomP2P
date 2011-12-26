@@ -52,6 +52,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	// Storage of results
 	private Map<PeerAddress, Collection<Number160>> rawKeys;
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
+	private Map<PeerAddress, Collection<Number160>> rawDigest;
 	private Map<PeerAddress, Object> rawObjects;
 	private Map<PeerAddress, ChannelBuffer> rawChannels;
 	// Flag indicating if the minimum operations for put have been reached.
@@ -164,6 +165,30 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 		}
 		notifyListerenrs();
 	}
+	
+	/**
+	 * Finishes the future and set the digest information that have been received.
+	 * 
+	 * @param rawDigest The hashes of the content stored with information
+	 *        from which peer it has been received.
+	 */
+	public void setReceivedDigest(final Map<PeerAddress, Collection<Number160>> rawDigest)
+	{
+		synchronized (lock)
+		{
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
+			this.rawDigest = rawDigest;
+			final int size = rawDigest.size();
+			this.minReached = size >= min;
+			this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
+			this.reason = size > 0 ? "Minimun number of results reached"
+					: "Expected >0 result, but got " + size;
+		}
+		notifyListerenrs();
+	}
 
 	/**
 	 * Finish the future and set the keys and data that have send directly using
@@ -240,6 +265,17 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 			return rawData;
 		}
 	}
+	
+	/**
+	 * @return The raw digest information with hashes of the content and the information which peer has been contacted
+	 */
+	public Map<PeerAddress, Collection<Number160>> getRawDigest()
+	{
+		synchronized (lock)
+		{
+			return rawDigest;
+		}
+	}
 
 	/**
 	 * Return raw data from send_dircet (Netty buffer).
@@ -303,13 +339,27 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	 * Return the data from get() after evaluation. The evaluation gets rid of
 	 * the PeerAddress information, by either a majority vote or cumulation.
 	 * 
-	 * @return The data that have been received.
+	 * @return The evaluated data that have been received.
 	 */
 	public Map<Number160, Data> getData()
 	{
 		synchronized (lock)
 		{
 			return evaluationScheme.evaluate2(rawData);
+		}
+	}
+	
+	/**
+	 * Return the digest information from the get() after evaluation. The evaluation gets rid of
+	 * the PeerAddress information, by either a majority vote or cumulation.
+	 * 
+	 * @return The evaluated digest information that have been received.
+	 */
+	public Collection<Number160> getDigest()
+	{
+		synchronized (lock)
+		{
+			return evaluationScheme.evaluate1(rawDigest);
 		}
 	}
 
@@ -444,4 +494,6 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 			}
 		}
 	}
+
+	
 }

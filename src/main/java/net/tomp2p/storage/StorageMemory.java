@@ -301,10 +301,12 @@ public class StorageMemory extends Storage
 		{
 			checkTimeout();
 			SortedMap<Number480, Data> tmp = get(key);
-			Number160 hash = Number160.ZERO;
+			DigestInfo digestInfo = new DigestInfo();
 			for (Number480 key2 : tmp.keySet())
-				hash = hash.xor(key2.getContentKey());
-			return new DigestInfo(hash, tmp.size());
+			{
+				digestInfo.getKeyDigests().add(key2.getContentKey());
+			}
+			return digestInfo;
 		}
 	}
 
@@ -312,22 +314,22 @@ public class StorageMemory extends Storage
 	public DigestInfo digest(Number320 key, Collection<Number160> contentKeys)
 	{
 		if (contentKeys == null)
+		{
 			return digest(key);
+		}
 		synchronized (lock)
 		{
 			checkTimeout();
 			SortedMap<Number480, Data> tmp = get(key);
-			Number160 hash = Number160.ZERO;
-			int size = 0;
+			DigestInfo digestInfo = new DigestInfo();
 			for (Number480 key2 : tmp.keySet())
 			{
 				if (contentKeys.contains(key2.getContentKey()))
 				{
-					hash = hash.xor(key2.getContentKey());
-					size++;
+					digestInfo.getKeyDigests().add(key2.getContentKey());
 				}
 			}
-			return new DigestInfo(hash, size);
+			return digestInfo;
 		}
 	}
 

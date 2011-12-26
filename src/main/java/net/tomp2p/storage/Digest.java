@@ -21,10 +21,41 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.rpc.DigestInfo;
 
+/**
+ * The storage stores Number480, which is separated in 3 Number160. The first
+ * Number160 is the location key, the second is the domain key, and the third is
+ * the content key. A digest can be calculated over all content keys for a
+ * specific location and domain. The digest can also be calculated over a
+ * selected range of content keys for a specific location and domain.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public interface Digest
 {
+	/**
+	 * Calculates a digest over a specific location and domain. It will return
+	 * those content keys that are stored.
+	 * 
+	 * @param key The location and domain key
+	 * @return A list of all hashes for the content keys. To return a
+	 *         predictable amount (important for routing), the hashes can be
+	 *         xored.
+	 */
 	public abstract DigestInfo digest(Number320 key);
-	
+
+	/**
+	 * Calculates a digest over a specific location and domain. It will return
+	 * those content keys that are stored. Those keys that are not stored are
+	 * ignored
+	 * 
+	 * @param key The location and domain key
+	 * @param contentKeys The content keys to look for. Those keys that are not
+	 *        found are ignored.
+	 * @return A list of all hashes for the content keys. To return a
+	 *         predictable amount (important for routing), the hashes can be
+	 *         xored.
+	 */
 	public abstract DigestInfo digest(Number320 key, Collection<Number160> contentKeys);
 
 }

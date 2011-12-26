@@ -53,6 +53,7 @@ public class Message
 	public enum Type
 	{
 		// REQUEST_1 is the normal request
+		// REQUEST_2 for GET returns the extended digest (hashes of all stored data)
 		// REQUEST_2 for PUT/MOVE/COPY means put if absent
 		// REQUEST_3 for ADD/PUT means protect domain
 		// REQUEST_4 for PUT means protect domain and put if absent

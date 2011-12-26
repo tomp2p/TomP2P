@@ -114,12 +114,25 @@ public class StorageRPC extends ReplyHandler
 		return request.sendTCP(channelCreator);
 	}
 
+	/**
+	 * Starts an RPC to get the data from a remote peer.
+	 * 
+	 * @param remoteNode The remote peer to send this request
+	 * @param locationKey The location key 
+	 * @param domainKey The domain key
+	 * @param contentKeys The content keys or null if requested all
+	 * @param protectedDomains Add the public key to protect the domain. In order to make this work, the message needs to be signed
+	 * @param signMessage Adds a public key and signs the message
+	 * @param digest Returns a list of hashes of the data stored on this peer
+	 * @param channelCreator The channel creator that creates connections. Typically we need one connection here.
+	 * @return The future response to keep track of future events 
+	 */
 	public FutureResponse get(final PeerAddress remoteNode, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			PublicKey protectedDomains, boolean signMessage, ChannelCreator channelCreator)
+			PublicKey protectedDomains, boolean signMessage, boolean digest, ChannelCreator channelCreator)
 	{
 		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.GET, Type.REQUEST_1);
+		final Message message = createMessage(remoteNode, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}
@@ -299,26 +312,46 @@ public class StorageRPC extends ReplyHandler
 		final Number160 locationKey = message.getKeyKey1();
 		final Number160 domainKey = message.getKeyKey2();
 		final Collection<Number160> contentKeys = message.getKeys();
-		final Map<Number480, Data> result;
-		if (contentKeys != null)
+		
+		final boolean digest = message.getType() == Type.REQUEST_2;
+		if(digest)
 		{
-			result = new HashMap<Number480, Data>();
-			for (Number160 contentKey : contentKeys)
+			final Number320 key = new Number320(locationKey, domainKey);
+			final DigestInfo digestInfo;
+			if (contentKeys != null)
 			{
-				Number480 key = new Number480(locationKey, domainKey, contentKey);
-				Data data = peerBean.getStorage().get(key);
-				if (data != null)
-				{
-					result.put(key, data);
-				}
+				digestInfo = peerBean.getStorage().digest(key, contentKeys);	
 			}
+			else	
+			{ 
+				digestInfo = peerBean.getStorage().digest(key);
+			}
+			responseMessage.setKeys(digestInfo.getKeyDigests());
+			return responseMessage;
 		}
 		else
 		{
-			result = peerBean.getStorage().get(new Number320(locationKey, domainKey));
+			final Map<Number480, Data> result;
+			if (contentKeys != null)
+			{
+				result = new HashMap<Number480, Data>();
+				for (Number160 contentKey : contentKeys)
+				{
+					Number480 key = new Number480(locationKey, domainKey, contentKey);
+					Data data = peerBean.getStorage().get(key);
+					if (data != null)
+					{
+						result.put(key, data);
+					}
+				}
+			}
+			else	
+			{
+				result = peerBean.getStorage().get(new Number320(locationKey, domainKey));
+			}
+			responseMessage.setDataMapConvert(result);
+			return responseMessage;
 		}
-		responseMessage.setDataMapConvert(result);
-		return responseMessage;
 	}
 
 	private Message handleRemove(final Message message, final Message responseMessage,

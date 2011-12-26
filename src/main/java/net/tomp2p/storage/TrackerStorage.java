@@ -436,13 +436,17 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	{
 		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
 		if (data == null)
+		{
 			return EMPTY_DIGEST_INFO;
+		}
 		synchronized (data)
 		{
-			Number160 hash = Number160.ZERO;
+			DigestInfo digestInfo = new DigestInfo();
 			for (Number160 tmpKey : data.keySet())
-				hash = hash.xor(tmpKey);
-			return new DigestInfo(hash, data.size());
+			{
+				digestInfo.getKeyDigests().add(tmpKey);	
+			}
+			return digestInfo;
 		}
 	}
 
@@ -450,23 +454,23 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	public DigestInfo digest(Number320 key, Collection<Number160> contentKeys)
 	{
 		if (contentKeys == null)
+		{
 			return digest(key);
+		}
 		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
 		if (data == null)
 			return EMPTY_DIGEST_INFO;
 		synchronized (data)
 		{
-			Number160 hash = Number160.ZERO;
-			int size = 0;
+			DigestInfo digestInfo = new DigestInfo();
 			for (Number160 tmpKey : contentKeys)
 			{
 				if (data.containsKey(tmpKey))
 				{
-					hash = hash.xor(tmpKey);
-					size++;
+					digestInfo.getKeyDigests().add(tmpKey);
 				}
 			}
-			return new DigestInfo(hash, size);
+			return digestInfo;
 		}
 	}
 

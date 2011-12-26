@@ -8,11 +8,13 @@ import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -780,6 +782,52 @@ public class TestDHT
 			master.shutdown();
 		}
 	}
+	
+	@Test
+	public void testDigest() throws Exception
+	{
+		Peer master = null;
+		try
+		{
+			// setup
+			Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			Number160 nr = new Number160(rnd);
+			String toStore1 = "hallo1";
+			String toStore2 = "hallo2";
+			String toStore3 = "hallo3";
+			Data data1 = new Data(toStore1.getBytes());
+			Data data2 = new Data(toStore2.getBytes());
+			Data data3 = new Data(toStore3.getBytes());
+			FutureDHT futureDHT = peers[30].add(nr, data1);
+			futureDHT.awaitUninterruptibly();
+			System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
+			futureDHT = peers[50].add(nr, data2);
+			futureDHT.awaitUninterruptibly();
+			System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
+			futureDHT = peers[51].add(nr, data3);
+			futureDHT.awaitUninterruptibly();
+			System.out.println("added: " + toStore3 + " (" + futureDHT.isSuccess() + ")");
+			futureDHT = peers[77].digestAll(nr);
+			futureDHT.awaitUninterruptibly();
+			System.err.println(futureDHT.getFailedReason());
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			Assert.assertEquals(3, futureDHT.getDigest().size());
+			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
+			Set<Number160> test2 = new HashSet<Number160>();
+			test2.add(test);
+			futureDHT = peers[67].digest(nr, test2, Configurations.defaultGetConfiguration());
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			Assert.assertEquals(1, futureDHT.getDigest().size());
+		}
+		finally
+		{
+			master.shutdown();
+		}
+	}
 
 	@Test
 	public void testData() throws Exception
@@ -991,15 +1039,15 @@ public class TestDHT
 			final ChannelCreator cc=master1.getConnectionBean().getReservation().reserve(1);
 			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, cc);
+					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master3.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, cc);
+					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master1.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, cc);
+					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			//
@@ -1010,7 +1058,7 @@ public class TestDHT
 			master2.listen(4002, 4002);
 			//
 			fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, cc);
+					new ShortString("test").toNumber160(), tmp, null, false, false, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(0, fr.getResponse().getDataMap().size());
 			//
@@ -1418,7 +1466,7 @@ public class TestDHT
 			final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
 						
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
-					Configurations.DEFAULT_DOMAIN, null, null, false, cc);
+					Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
@@ -1493,7 +1541,7 @@ public class TestDHT
 				final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
 				
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-						Configurations.DEFAULT_DOMAIN, null, null, false, cc);
+						Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
 				futureResponse.awaitUninterruptibly();
 				master.getConnectionBean().getReservation().release(cc);
 				Assert.assertEquals(true, futureResponse.isSuccess());

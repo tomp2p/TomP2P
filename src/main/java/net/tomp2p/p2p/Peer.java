@@ -1223,7 +1223,51 @@ public class Peer
 				config.getPublicKey(),
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.getEvaluationScheme(),
-				config.isSignMessage(), cc);
+				config.isSignMessage(), false, cc);
+		Utils.addReleaseListenerAll(futureDHT, getConnectionBean().getReservation(), cc);
+		return futureDHT;
+	}
+	
+	//----------------- digest
+	
+	public FutureDHT digestAll(final Number160 locationKey)
+	{
+		return digest(locationKey, null, Configurations.defaultGetConfiguration());
+	}
+
+	public FutureDHT digestAll(final Number160 locationKey, final ConfigurationGet config)
+	{
+		return digest(locationKey, null, config);
+	}
+	
+	public FutureDHT digest(final Number160 locationKey)
+	{
+		return digest(locationKey, Configurations.defaultGetConfiguration());
+	}
+
+	public FutureDHT digest(final Number160 locationKey, final ConfigurationGet config)
+	{
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
+		Set<Number160> keyCollection = new HashSet<Number160>();
+		keyCollection.add(config.getContentKey());
+		return digest(locationKey, keyCollection, config);
+	}
+	
+	public FutureDHT digest(final Number160 locationKey, Set<Number160> keyCollection,
+			final ConfigurationGet config)
+	{
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
+		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
+				.getRequestP2PConfiguration().getParallel());
+		final ChannelCreator cc = getConnectionBean().getReservation().reserve(conn);
+
+		final FutureDHT futureDHT = getDHT().get(locationKey, config.getDomain(), keyCollection,
+				config.getPublicKey(),
+				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
+				config.getEvaluationScheme(),
+				config.isSignMessage(), true, cc);
 		Utils.addReleaseListenerAll(futureDHT, getConnectionBean().getReservation(), cc);
 		return futureDHT;
 	}

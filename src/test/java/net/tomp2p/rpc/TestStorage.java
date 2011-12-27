@@ -673,12 +673,10 @@ public class TestStorage
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
 			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getReservation(), cc);
-			Utils.sleep(500);
+			Utils.sleep(100);
 			fr.cancel();
 			Assert.assertEquals(false, fr.isSuccess());
 			System.err.println("good!");
-			//
-			Utils.sleep(3000);
 		}
 		finally
 		{

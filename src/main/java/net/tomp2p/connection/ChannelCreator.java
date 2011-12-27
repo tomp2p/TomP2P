@@ -18,6 +18,8 @@ package net.tomp2p.connection;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -77,7 +79,7 @@ public class ChannelCreator
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
 	//
-	final private Set<FutureResponse> active = Collections.synchronizedSet(new HashSet<FutureResponse>());
+	final private Collection<FutureResponse> active = Collections.synchronizedList(new ArrayList<FutureResponse>());
 
 	/**
 	 * Package private constructor, since this is created by
@@ -162,7 +164,7 @@ public class ChannelCreator
 				@Override
 				public void operationComplete(FutureResponse future) throws Exception
 				{					
-					active.remove(futureResponse);					
+					//active.remove(futureResponse);					
 				}
 			});
 			//TODO:DBX debug why it hangs here
@@ -281,7 +283,7 @@ public class ChannelCreator
 						@Override
 						public void operationComplete(FutureResponse future) throws Exception
 						{					
-							active.remove(futureResponse);					
+							//active.remove(futureResponse);					
 						}
 					});
 					//TODO:DBX debug why it hangs here

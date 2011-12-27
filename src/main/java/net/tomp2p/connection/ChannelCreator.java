@@ -78,8 +78,10 @@ public class ChannelCreator
 	final private Statistics statistics;
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
-	//
+	
+	//TODO: DBX remove
 	final private Collection<FutureResponse> active = Collections.synchronizedList(new ArrayList<FutureResponse>());
+	final private Collection<StackTraceElement[]> tmp = Collections.synchronizedList(new ArrayList<StackTraceElement[]>());
 
 	/**
 	 * Package private constructor, since this is created by
@@ -159,6 +161,7 @@ public class ChannelCreator
 			channelsUDP.add(channel);
 			//TODO:DBX debug why it hangs here
 			active.add(futureResponse);
+			tmp.add( Thread.currentThread().getStackTrace());
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
 			{
 				@Override
@@ -278,15 +281,16 @@ public class ChannelCreator
 			channelsTCP.add(channel);
 			//TODO:DBX debug why it hangs here
 			active.add(futureResponse);
+			tmp.add( Thread.currentThread().getStackTrace());
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
-					{
-						@Override
-						public void operationComplete(FutureResponse future) throws Exception
-						{					
-							//active.remove(futureResponse);					
-						}
-					});
-					//TODO:DBX debug why it hangs here
+			{
+				@Override
+				public void operationComplete(FutureResponse future) throws Exception
+				{					
+					//active.remove(futureResponse);					
+				}
+			});
+			//TODO:DBX debug why it hangs here
 		}
 
 		if (newConnection)

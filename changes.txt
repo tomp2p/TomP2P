@@ -1,6 +1,0 @@
- * cleanup of package net.tomp2p.futures and net.tomp2p.log.
- * fixed bug in add() that behaved as putIfAbsent
- * classcast exception fix for Android
- * fixed bug in XMLUtils, which requires to be called synchronized
- * upgraded Netty to 3.2.7
- * added support for digest() and digestAll()

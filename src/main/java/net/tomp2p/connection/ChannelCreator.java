@@ -18,17 +18,11 @@ package net.tomp2p.connection;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PDecoderTCP;
@@ -80,8 +74,8 @@ public class ChannelCreator
 	private volatile AtomicInteger permitsCount;
 	
 	//TODO: DBX remove
-	final private Collection<FutureResponse> active = Collections.synchronizedList(new ArrayList<FutureResponse>());
-	final private Collection<StackTraceElement[]> tmp = Collections.synchronizedList(new ArrayList<StackTraceElement[]>());
+	//final private Collection<FutureResponse> active = Collections.synchronizedList(new ArrayList<FutureResponse>());
+	//final private Collection<StackTraceElement[]> tmp = Collections.synchronizedList(new ArrayList<StackTraceElement[]>());
 
 	/**
 	 * Package private constructor, since this is created by
@@ -160,16 +154,16 @@ public class ChannelCreator
 			}
 			channelsUDP.add(channel);
 			//TODO:DBX debug why it hangs here
-			active.add(futureResponse);
-			tmp.add( Thread.currentThread().getStackTrace());
-			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
-			{
-				@Override
-				public void operationComplete(FutureResponse future) throws Exception
-				{					
+			//active.add(futureResponse);
+			//tmp.add( Thread.currentThread().getStackTrace());
+			//futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
+			///{
+			//	@Override
+			//	public void operationComplete(FutureResponse future) throws Exception
+			//	{					
 					//active.remove(futureResponse);					
-				}
-			});
+			//	}
+			//});
 			//TODO:DBX debug why it hangs here
 		}
 
@@ -280,16 +274,16 @@ public class ChannelCreator
 			}
 			channelsTCP.add(channel);
 			//TODO:DBX debug why it hangs here
-			active.add(futureResponse);
-			tmp.add( Thread.currentThread().getStackTrace());
-			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
-			{
-				@Override
-				public void operationComplete(FutureResponse future) throws Exception
-				{					
+			//active.add(futureResponse);
+			//tmp.add( Thread.currentThread().getStackTrace());
+			//futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
+			//{
+			//	@Override
+			//	public void operationComplete(FutureResponse future) throws Exception
+			//	{					
 					//active.remove(futureResponse);					
-				}
-			});
+			//	}
+			//});
 			//TODO:DBX debug why it hangs here
 		}
 

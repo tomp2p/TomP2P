@@ -28,8 +28,8 @@ public class PeerException extends Exception
 	public enum AbortCause
 	{
 		/*
-		 * USEL_ABORT means that this peer aborts the communictaion. PEER_ERROR
-		 * means that the other peer did not react as excpected (e.g., no
+		 * USEL_ABORT means that this peer aborts the communication. PEER_ERROR
+		 * means that the other peer did not react as expected (e.g., no
 		 * reply). PEER_ABORT means that the other peer found an error on our
 		 * side (e.g., if this peer thinks the other peer is someone else)
 		 */
@@ -60,6 +60,6 @@ public class PeerException extends Exception
 	@Override
 	public String toString()
 	{
-		return "PeerException: " + abortCause.toString();
+		return "PeerException (" + abortCause.toString()+ "): " + getMessage();
 	}
 }

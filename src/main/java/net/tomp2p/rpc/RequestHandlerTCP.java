@@ -143,13 +143,11 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 							futureResponse.getRequest().getRecipient(), force);
 					if (added)
 					{
-						logger.warn("Peer exception (" + System.currentTimeMillis() + ") "
-								+ e.getCause() + " msg " + message + " for "
-								+ futureResponse.getRequest().getRecipient());
+						logger.warn("removed from map, cause: " + pe.toString() + " msg: " + message);
 					}
 					else if (logger.isDebugEnabled())
 					{
-						logger.debug(pe.getMessage() + message);
+						logger.debug(pe.toString() + " msg: " + message);
 					}
 				}
 				else if (logger.isWarnEnabled())
@@ -186,6 +184,7 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 			String msg = "Message was not delivered successfully: " + this.message;
 			exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 					PeerException.AbortCause.PEER_ABORT, msg)));
+			return;
 		}
 		else if (responseMessage.getType() == Message.Type.EXCEPTION)
 		{
@@ -193,6 +192,7 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 					+ this.message;
 			exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 					PeerException.AbortCause.PEER_ABORT, msg)));
+			return;
 		}
 		else if (!sendMessageID.equals(recvMessageID))
 		{
@@ -205,17 +205,20 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 			}
 			exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
 					PeerException.AbortCause.PEER_ABORT, msg)));
+			return;
 		}
-		else
+		
+		if (logger.isDebugEnabled())
 		{
-			if (logger.isDebugEnabled())
-				logger.debug("perfect: " + responseMessage);
-			// We got a good answer, let's mark the sender as alive
-			if (responseMessage.isOk() || responseMessage.isNotOk())
-				getPeerMap().peerFound(responseMessage.getSender(), null);
-			// connection is closed by other peer
-			reportResult(ctx.getChannel(), futureResponse, responseMessage);
+			logger.debug("perfect: " + responseMessage);
 		}
+		// We got a good answer, let's mark the sender as alive
+		if (responseMessage.isOk() || responseMessage.isNotOk())
+		{
+			getPeerMap().peerFound(responseMessage.getSender(), null);
+		}
+		// connection is closed by other peer
+		reportResult(ctx.getChannel(), futureResponse, responseMessage);
 		ctx.sendUpstream(e);
 	}
 

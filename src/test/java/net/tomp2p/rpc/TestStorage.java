@@ -837,7 +837,9 @@ public class TestStorage
 			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 			dataMap.put(Number160.ZERO, new Data("string"));
 			final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
-			master.getStoreRPC().put(master.getPeerAddress(), location, location, dataMap, false, false, false, cc).awaitUninterruptibly();
+			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), location, location, dataMap, false, false, false, cc);
+			fr.awaitUninterruptibly();
+			Utils.addReleaseListenerAll(fr, master.getConnectionBean().getReservation(), cc);
 			//s1.put(location, Number160.ZERO, null, dataMap, false, false);
 			slave = new Peer(new Number160("0xfe"));
 			slave.listen(8000, 8000);
@@ -845,7 +847,6 @@ public class TestStorage
 			master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());
-			master.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{

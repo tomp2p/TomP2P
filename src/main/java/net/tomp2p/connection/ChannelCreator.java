@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PDecoderTCP;
@@ -156,6 +157,15 @@ public class ChannelCreator
 			channelsUDP.add(channel);
 			//TODO:DBX debug why it hangs here
 			active.add(futureResponse);
+			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
+			{
+				@Override
+				public void operationComplete(FutureResponse future) throws Exception
+				{					
+					active.remove(futureResponse);					
+				}
+			});
+			//TODO:DBX debug why it hangs here
 		}
 
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -165,8 +175,7 @@ public class ChannelCreator
 			{
 				connectionSemaphore.release();
 				statistics.decrementUDPChannelCreation();
-				//TODO:DBX debug why it hangs here
-				active.remove(futureResponse);
+				
 			}
 		});
 		return channel;
@@ -267,6 +276,15 @@ public class ChannelCreator
 			channelsTCP.add(channel);
 			//TODO:DBX debug why it hangs here
 			active.add(futureResponse);
+			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
+					{
+						@Override
+						public void operationComplete(FutureResponse future) throws Exception
+						{					
+							active.remove(futureResponse);					
+						}
+					});
+					//TODO:DBX debug why it hangs here
 		}
 
 		if (newConnection)
@@ -282,8 +300,6 @@ public class ChannelCreator
 					{
 						cacheMap.remove(recipient);
 					}
-					//TODO:DBX debug why it hangs here
-					active.remove(futureResponse);
 				}
 			});
 		}

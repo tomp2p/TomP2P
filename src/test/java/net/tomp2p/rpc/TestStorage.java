@@ -717,21 +717,20 @@ public class TestStorage
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
 			byte[] me1 = new byte[50 * 1014 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
-			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(2);
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+			Utils.addReleaseListener(fr, sender.getConnectionBean().getReservation(), cc, 1);
 			fr.awaitUninterruptibly();
 			System.err.println("XX:"+fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			//
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
 					.toNumber160(), null, null, false,false,  cc);
-			Utils.sleep(500);
+			Utils.addReleaseListener(fr, sender.getConnectionBean().getReservation(), cc, 1);
+			Utils.sleep(100);
 			fr.cancel();
 			Assert.assertEquals(false, fr.isSuccess());
-			//
-			Utils.sleep(2000);
-			sender.getConnectionBean().getReservation().release(cc);
 		}
 		finally
 		{

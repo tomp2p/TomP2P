@@ -46,11 +46,11 @@ public class FutureTracker extends BaseFutureImpl implements FutureCleanup
 	private Set<PeerAddress> potentialTrackers;
 	private Set<PeerAddress> directTrackers;
 	private Map<PeerAddress, Collection<TrackerData>> peersOnTracker;
-
-	//
-	// private ScheduledFuture<?> scheduledFuture;
-	// private List<ScheduledFuture<?>> scheduledFutures;
-	// private boolean cancelSchedule = false;
+	
+	public FutureTracker()
+	{
+		this(null);
+	}
 
 	/**
 	 * Create a future object for storing

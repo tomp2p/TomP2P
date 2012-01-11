@@ -315,6 +315,31 @@ public class TestDHT
 		{
 			peer = new Peer(new Number160(rnd));
 			peer.listen(4000, 4000);
+			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
+			FutureBootstrap tmp = peer.bootstrap(pa);
+			tmp.awaitUninterruptibly();
+			Assert.assertEquals(false, tmp.isSuccess());
+		}
+		finally
+		{
+			peer.shutdown();
+		}
+	}
+	
+	/**
+	 * This test works because if a peer bootstraps to itself, then its
+	 * typically the bootstrapping peer
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testBootstrap6() throws Exception
+	{
+		Peer peer = null;
+		try 
+		{
+			peer = new Peer(new Number160(rnd));
+			peer.listen(4000, 4000);
 			FutureBootstrap tmp = peer.bootstrap(peer.getPeerAddress());
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
@@ -325,16 +350,27 @@ public class TestDHT
 		}
 	}
 	
+	/**
+	 * This test fails because if a peer bootstraps to itself, then its
+	 * typically the bootstrapping peer. However, if we bootstrap to more than
+	 * one peer, and the boostrap fails, then we fail this test
+	 * 
+	 * @throws Exception
+	 */
 	@Test
-	public void testBootstrap6() throws Exception
+	public void testBootstrap7() throws Exception
 	{
 		Peer peer = null;
 		try 
 		{
 			peer = new Peer(new Number160(rnd));
 			peer.listen(4000, 4000);
+			
+			Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(2);
 			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
-			FutureBootstrap tmp = peer.bootstrap(pa);
+			bootstrapTo.add(peer.getPeerAddress());
+			bootstrapTo.add(pa);
+			FutureBootstrap tmp = peer.bootstrap(null, bootstrapTo, Configurations.defaultStoreConfiguration());
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 		}

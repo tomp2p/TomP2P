@@ -89,4 +89,13 @@ public class Configurations
 		config.setSignMessage(false);
 		return config;
 	}
+
+	public static ConfigurationBootstrap defaultBootstrapConfiguration()
+	{
+		ConfigurationBootstrap config= new ConfigurationBootstrap();
+		config.setRequestP2PConfiguration(new RequestP2PConfiguration(3, 5, 3));
+		config.setRoutingConfiguration(new RoutingConfiguration(5, 10, 2));
+		config.setForceRoutingOnlyToSelf(false);
+		return config;
+	}
 }

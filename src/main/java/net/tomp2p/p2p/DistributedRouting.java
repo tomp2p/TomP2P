@@ -59,6 +59,24 @@ public class DistributedRouting
 		this.neighbors = neighbors;
 		this.peerBean = peerBean;
 	}
+	
+	/**
+	 * For backwards compatibility, do not use it
+	 * @param peerAddresses
+	 * @param maxNoNewInfo
+	 * @param maxFailures
+	 * @param maxSuccess
+	 * @param parallel
+	 * @param forceSocket
+	 * @param cc
+	 * @return
+	 */
+	@Deprecated
+	public FutureRouting bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
+			int maxSuccess, int parallel, boolean forceSocket, final ChannelCreator cc)
+	{
+		return bootstrap(peerAddresses, maxNoNewInfo, maxFailures, maxSuccess, parallel, forceSocket, false, cc);
+	}
 
 	/**
 	 * Bootstraps to the given remoteNode, i.e. looking for near nodes
@@ -75,14 +93,14 @@ public class DistributedRouting
 	 *         found
 	 */
 	public FutureRouting bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
-			int maxSuccess, int parallel, boolean forceSocket, final ChannelCreator cc)
+			int maxSuccess, int parallel, boolean forceSocket, final boolean isForceRoutingOnlyToSelf, final ChannelCreator cc)
 	{
 		// search close peers
 		if(logger.isDebugEnabled()) {
 			logger.debug("broadcast to " + peerAddresses);
 		}
 		FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
-				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc, true);
+				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc, true, isForceRoutingOnlyToSelf);
 		return futureRouting;
 	}
 
@@ -124,7 +142,7 @@ public class DistributedRouting
 		// for bad distribution, use large NO_NEW_INFORMATION
 		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey, parallel * 2);
 		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits, maxNoNewInfo, maxFailures,
-				maxSuccess, parallel, command, isDigest, forceSocket, cc, false);
+				maxSuccess, parallel, command, isDigest, forceSocket, cc, false, false);
 	}
 
 	/**
@@ -153,7 +171,7 @@ public class DistributedRouting
 	private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits, int maxNoNewInfo,
 			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceSocket, 
-			final ChannelCreator cc, final boolean isBootstrap)
+			final ChannelCreator cc, final boolean isBootstrap, final boolean isForceRoutingOnlyToSelf)
 	{
 		if (peerAddresses == null)
 			throw new IllegalArgumentException("you need to specify some nodes");
@@ -202,7 +220,7 @@ public class DistributedRouting
 			// is 1 and it contains itself. Check for that because we need to
 			// know if we are routing, bootstrapping and bootstrapping to
 			// ourselfs, to return the correct status for the future
-			boolean isRoutingOnlyToSelf = peerAddresses.size() == 1 && peerAddresses.iterator().next().equals(peerBean.getServerPeerAddress()); 
+			boolean isRoutingOnlyToSelf = isForceRoutingOnlyToSelf || (peerAddresses.size() == 1 && peerAddresses.iterator().next().equals(peerBean.getServerPeerAddress())); 
 			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 					new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,
 					maxFailures, maxSuccess, parallel, locationKey, domainKey, contentKeys, true, command, isDigest,

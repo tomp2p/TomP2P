@@ -55,6 +55,7 @@ import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.natpmp.NatPmpException;
+import net.tomp2p.p2p.config.ConfigurationBootstrap;
 import net.tomp2p.p2p.config.ConfigurationDirect;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
@@ -802,9 +803,26 @@ public class Peer
 		bootstrapTo.add(peerAddress);
 		return bootstrap(peerAddress, bootstrapTo, Configurations.defaultStoreConfiguration());
 	}
-
+	
+	/**
+	 * For backwards compatibility, do not use
+	 * @param peerAddress
+	 * @param bootstrapTo
+	 * @param config
+	 * @return
+	 */
+	@Deprecated
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress,
 			final Collection<PeerAddress> bootstrapTo, final ConfigurationStore config)
+	{
+		ConfigurationBootstrap config2 = Configurations.defaultBootstrapConfiguration();
+		config2.setRequestP2PConfiguration(config.getRequestP2PConfiguration());
+		config2.setRoutingConfiguration(config.getRoutingConfiguration());
+		return bootstrap(peerAddress, bootstrapTo, config2);
+	}
+
+	public FutureBootstrap bootstrap(final PeerAddress peerAddress,
+			final Collection<PeerAddress> bootstrapTo, final ConfigurationBootstrap config)
 	{
 		final FutureWrappedBootstrap<FutureRouting> result = new FutureWrappedBootstrap<FutureRouting>();
 		result.setBootstrapTo(bootstrapTo);
@@ -829,7 +847,7 @@ public class Peer
 										.getRoutingConfiguration().getMaxFailures(), config
 										.getRoutingConfiguration()
 										.getMaxSuccess(), config.getRoutingConfiguration()
-										.getParallel(), false, cc);
+										.getParallel(), false, config.isForceRoutingOnlyToSelf(), cc);
 						result.waitFor(futureBootstrap);
 						Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getReservation(), cc);
 					}
@@ -852,7 +870,7 @@ public class Peer
 					config
 							.getRoutingConfiguration().getMaxFailures(), config
 							.getRoutingConfiguration().getMaxSuccess(),
-					config.getRoutingConfiguration().getParallel(), false, cc);
+					config.getRoutingConfiguration().getParallel(), false, config.isForceRoutingOnlyToSelf(), cc);
 			Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getReservation(), cc);
 			result.waitFor(futureBootstrap);
 			return result;

@@ -190,12 +190,18 @@ public class DistributedRouting
 			if (digestBean.getSize() > 0)
 				directHits.put(peerBean.getServerPeerAddress(), digestBean);
 		}
+		// peerAddresses is typically only 0 for routing. However, the user may
+		// bootstrap with an empty List<PeerAddress>, which will then also be 0.
 		if (peerAddresses.size() == 0)
 		{
 			futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, isBootstrap, false);
 		}
 		else
 		{
+			// if a peer bootstraps to itself, then the size of peerAddresses
+			// is 1 and it contains itself. Check for that because we need to
+			// know if we are routing, bootstrapping and bootstrapping to
+			// ourselfs, to return the correct status for the future
 			boolean isRoutingOnlyToSelf = peerAddresses.size() == 1 && peerAddresses.iterator().next().equals(peerBean.getServerPeerAddress()); 
 			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 					new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,

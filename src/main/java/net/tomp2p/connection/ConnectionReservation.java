@@ -97,12 +97,12 @@ public class ConnectionReservation
 	 */
 	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse)
 	{
-		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
-		{
-			logger.warn("we are blocking in a thread that could cause a deadlock: "
-					+ Thread.currentThread().getName());
-			throw new RuntimeException("cannot block here");
-		}
+//		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+//		{
+//			logger.warn("we are blocking in a thread that could cause a deadlock: "
+//					+ Thread.currentThread().getName());
+//			throw new RuntimeException("[Thread: " + Thread.currentThread().getName() + "] cannot block here");
+//		}
 		if(counter.incrementAndGet()<0)
 		{
 			logger.warn("Cannot acquire " + permits + " connections, shutting down");

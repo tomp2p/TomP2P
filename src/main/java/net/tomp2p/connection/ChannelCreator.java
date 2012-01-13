@@ -62,6 +62,7 @@ public class ChannelCreator
 	final private Semaphore connectionSemaphore;
 	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
 	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
+	final private String name;
 	// objects needed to create the connection
 	final private MessageLogger messageLoggerFilter;
 	final private ChannelFactory tcpClientChannelFactory;
@@ -73,10 +74,6 @@ public class ChannelCreator
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
 	
-	//TODO: DBX remove
-	//final private Collection<FutureResponse> active = Collections.synchronizedList(new ArrayList<FutureResponse>());
-	//final private Collection<StackTraceElement[]> tmp = Collections.synchronizedList(new ArrayList<StackTraceElement[]>());
-
 	/**
 	 * Package private constructor, since this is created by
 	 * {@link ConnectionReservation} and should never be called directly.
@@ -91,7 +88,7 @@ public class ChannelCreator
 	 */
 	ChannelCreator(int permits, Statistics statistics,
 			MessageLogger messageLoggerFilter, ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse)
+			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse, String name)
 	{
 		this.permitsCount = new AtomicInteger(permits);
 		this.connectionSemaphore = new Semaphore(permits);
@@ -101,6 +98,7 @@ public class ChannelCreator
 		this.udpChannelFactory = udpClientChannelFactory;
 		this.keepAliveAndReuse = keepAliveAndReuse;
 		this.statistics = statistics;
+		this.name = name;
 	}
 
 	/**
@@ -153,18 +151,6 @@ public class ChannelCreator
 				return null;
 			}
 			channelsUDP.add(channel);
-			//TODO:DBX debug why it hangs here
-			//active.add(futureResponse);
-			//tmp.add( Thread.currentThread().getStackTrace());
-			//futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
-			///{
-			//	@Override
-			//	public void operationComplete(FutureResponse future) throws Exception
-			//	{					
-					//active.remove(futureResponse);					
-			//	}
-			//});
-			//TODO:DBX debug why it hangs here
 		}
 
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -273,18 +259,6 @@ public class ChannelCreator
 				return null;
 			}
 			channelsTCP.add(channel);
-			//TODO:DBX debug why it hangs here
-			//active.add(futureResponse);
-			//tmp.add( Thread.currentThread().getStackTrace());
-			//futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
-			//{
-			//	@Override
-			//	public void operationComplete(FutureResponse future) throws Exception
-			//	{					
-					//active.remove(futureResponse);					
-			//	}
-			//});
-			//TODO:DBX debug why it hangs here
 		}
 
 		if (newConnection)
@@ -492,5 +466,13 @@ public class ChannelCreator
 			channelsTCP.close().awaitUninterruptibly();
 			channelsUDP.close().awaitUninterruptibly();
 		}
+	}
+	
+	/**
+	 * @return The name of this ChannelCreator, used for debugging
+	 */
+	public String getName()
+	{
+		return name;
 	}
 }

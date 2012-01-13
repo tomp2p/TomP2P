@@ -66,7 +66,7 @@ public class ConnectionReservation
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.statistics = statistics;
 	}
-
+	
 	/**
 	 * Reserves connections. If a reservation of 5 connection is made, then 5
 	 * parallel connections can be made. Until the connections are released, the
@@ -80,9 +80,26 @@ public class ConnectionReservation
 	 */
 	public ChannelCreator reserve(final int permits)
 	{
-		return reserve(permits, false);
+		return reserve(permits, false, "default");
 	}
 
+	/**
+	 * Reserves connections. If a reservation of 5 connection is made, then 5
+	 * parallel connections can be made. Until the connections are released, the
+	 * connections can be closed and reopened. The reservation reserves
+	 * connections that are created and released immediately.
+	 * 
+	 * @param permits The number of connections to be reserved
+	 * @param name The name of the ChannelCreator, used for easier debugging
+	 * @return The channel creator object that can be used to create the
+	 *         channels. Returns null if something went wrong (shutdown,
+	 *         interrupt)
+	 */
+	public ChannelCreator reserve(final int permits, final String name)
+	{
+		return reserve(permits, false, name);
+	}
+	
 	/**
 	 * Reserves connections. If a reservation of 5 connection is made, then 5
 	 * parallel connections can be made. Until the connections are released, the
@@ -97,11 +114,29 @@ public class ConnectionReservation
 	 */
 	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse)
 	{
+		return reserve(permits, keepAliveAndReuse, "default");
+	}
+
+	/**
+	 * Reserves connections. If a reservation of 5 connection is made, then 5
+	 * parallel connections can be made. Until the connections are released, the
+	 * connections can be closed and reopened.
+	 * 
+	 * @param permits The number of connections to be reserved
+	 * @param keepAliveAndReuse If the connection should stay open (TCP) for
+	 *        later reuse.
+	 * @param name The name of the ChannelCreator, used for easier debugging
+	 * @return The channel creator object that can be used to create the
+	 *         channels. Returns null if something went wrong (shutdown,
+	 *         interrupt)
+	 */
+	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse, String name)
+	{
 		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
 		{
 			logger.warn("we are blocking in a thread that could cause a deadlock: "
 					+ Thread.currentThread().getName());
-			throw new RuntimeException("cannot block here");
+			throw new RuntimeException("[Thread: " + Thread.currentThread().getName() + "] cannot block here");
 		}
 		if(counter.incrementAndGet()<0)
 		{
@@ -116,7 +151,7 @@ public class ConnectionReservation
 			{
 				ChannelCreator channelCreator = new ChannelCreator(permits, statistics,
 						messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory,
-						keepAliveAndReuse);
+						keepAliveAndReuse, name);
 				activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
 						: semaphoreCreating);
 				return channelCreator;

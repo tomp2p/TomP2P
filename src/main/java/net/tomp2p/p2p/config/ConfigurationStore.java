@@ -17,12 +17,10 @@
 package net.tomp2p.p2p.config;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.p2p.RequestP2PConfiguration;
 
-public class ConfigurationStore extends ConfigurationBase
+public class ConfigurationStore extends ConfigurationBaseDHT
 {
 	private boolean absent;
-	private RequestP2PConfiguration requestP2PConfiguration;
 	private boolean protectDomain;
 	private int refreshSeconds;
 	private FutureCreate<FutureDHT> futureCreate;
@@ -51,18 +49,6 @@ public class ConfigurationStore extends ConfigurationBase
 	{
 		this.absent = absent;
 		return this;
-	}
-
-	public ConfigurationBase setRequestP2PConfiguration(
-			RequestP2PConfiguration requestP2PConfiguration)
-	{
-		this.requestP2PConfiguration = requestP2PConfiguration;
-		return this;
-	}
-
-	public RequestP2PConfiguration getRequestP2PConfiguration()
-	{
-		return requestP2PConfiguration;
 	}
 
 	public ConfigurationBase setProtectDomain(boolean protectDomain)

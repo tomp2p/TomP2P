@@ -15,24 +15,10 @@
  */
 
 package net.tomp2p.p2p.config;
-import net.tomp2p.p2p.RequestP2PConfiguration;
 
-public class ConfigurationBootstrap extends ConfigurationBase
+public class ConfigurationBootstrap extends ConfigurationBaseDHT
 {
-	private RequestP2PConfiguration requestP2PConfiguration;
 	private boolean isForceRoutingOnlyToSelf;
-
-	public ConfigurationBase setRequestP2PConfiguration(
-			RequestP2PConfiguration requestP2PConfiguration)
-	{
-		this.requestP2PConfiguration = requestP2PConfiguration;
-		return this;
-	}
-
-	public RequestP2PConfiguration getRequestP2PConfiguration()
-	{
-		return requestP2PConfiguration;
-	}
 
 	public boolean isForceRoutingOnlyToSelf()
 	{

@@ -162,6 +162,96 @@ public class TestStorage
 	}
 	
 	@Test
+	public void testComparePut() throws Exception
+	{
+		testComparePut(new StorageMemory(), new StorageMemory());
+		testComparePut(new StorageDisk(DIR), new StorageDisk(DIR));
+	}
+	private void testComparePut(Storage storeSender, Storage storeRecv) throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x50"));
+			// Bindings b=new Bindings(Protocol.IPv4);
+			sender.listen(2424, 2424);
+			recv1 = new Peer(55, new Number160("0x20"));
+			recv1.listen(8088, 8088);
+			sender.getPeerBean().setStorage(storeSender);
+			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
+			recv1.getPeerBean().setStorage(storeRecv);
+			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
+			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+			byte[] me1 = new byte[] { 1, 2, 3 };
+			byte[] me2 = new byte[] { 2, 3, 4 };
+			Data d1=new Data(me1);
+			Data d2=new Data(me2);
+			tmp.put(new Number160(77), d1);
+			tmp.put(new Number160(88), d2);
+			System.err.println(recv1.getPeerAddress());
+			final ChannelCreator cc=sender.getConnectionBean().getReservation().reserve(1);
+			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
+			Assert.assertEquals(true, fr.isSuccess());
+			
+			Number320 key=new Number320(new Number160(33), new ShortString("test")
+			.toNumber160());
+			//Set<Number480> tofetch = new HashSet<Number480>();
+			Data c = storeRecv.get(new Number480(key, new Number160(77)));
+			for (int i = 0; i < me1.length; i++)
+				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
+			//
+			tmp.clear();
+			me1 = new byte[] { 5, 6, 7 };
+			me2 = new byte[] { 8, 9, 1, 5 };
+			
+			Map<Number160, HashData> hashDataMap=new HashMap<Number160, HashData>();
+			hashDataMap.put(new Number160(77), new HashData(d1.getHash(), new Data(me1)));
+			hashDataMap.put(new Number160(88), new HashData(new Number160(33), new Data(me2)));
+			
+			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
+					hashDataMap, false, false, false, false, cc);
+			fr.awaitUninterruptibly();
+			//we fail because we provided a false hash
+			Assert.assertEquals(false, fr.isSuccess());
+			System.err.println(fr.getFailedReason());
+			
+			//set the correct hash
+			hashDataMap.put(new Number160(88), new HashData(d2.getHash(), new Data(me2)));
+			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
+					hashDataMap, false, false, false, false, cc);
+			
+			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
+			Assert.assertEquals(true, fr.isSuccess());
+			
+			Assert.assertEquals(true, fr.isSuccess());
+			Map<Number480, Data>  result2 = storeRecv.get(key);
+			Assert.assertEquals(result2.size(), 2);
+			Number480 search=new Number480(key, new Number160(88));
+			c = result2.get(search);
+			for (int i = 0; i < me2.length; i++)
+				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
+			sender.getConnectionBean().getReservation().release(cc);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+			Assert.fail();
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
 	public void testStorePutIfAbsent() throws Exception
 	{
 		testStorePutIfAbsent(new StorageMemory(), new StorageMemory());

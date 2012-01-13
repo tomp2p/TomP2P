@@ -37,6 +37,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.HashData;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
@@ -175,6 +176,18 @@ public class MessageCodec
 					}
 					return count;
 				}
+			case MAP_KEY_COMPARE_DATA:
+				count = 4;
+				input.copyToCurrent(message.getHashDataMap().size());
+				for (Map.Entry<Number160, HashData> entry : message.getHashDataMap().entrySet())
+				{
+					input.copyToCurrent(entry.getKey().toByteArray());
+					count += 20;
+					input.copyToCurrent(entry.getValue().getLeft().toByteArray());
+					count += 20;
+					count += encodeData(input, message, entry.getValue().getRight());
+				}
+				return count;
 			case MAP_KEY_KEY:
 				Map<Number160, Number160> keyMap = message.getKeyMap();
 				size = keyMap.size();
@@ -274,7 +287,6 @@ public class MessageCodec
 			case EMPTY:
 			case RESERVED1:
 			case RESERVED2:
-			case RESERVED3:
 			default:
 				return 0;
 		}
@@ -369,9 +381,9 @@ public class MessageCodec
 				return true;
 			case MAP_KEY_DATA:
 				if(buffer.readableBytes() < 4) return false;
-				int size = buffer.readInt();
-				Map<Number160, Data> result = new HashMap<Number160, Data>(size);
-				for (int i = 0; i < size; i++)
+				len = buffer.readInt();
+				Map<Number160, Data> result = new HashMap<Number160, Data>(len);
+				for (int i = 0; i < len; i++)
 				{
 					if(buffer.readableBytes() < 20) return false;
 					Number160 key = readID(buffer);
@@ -385,6 +397,27 @@ public class MessageCodec
 					result.put(key, data);
 				}
 				message.setDataMap0(result);
+				return true;
+			case MAP_KEY_COMPARE_DATA:
+				if(buffer.readableBytes() < 4) return false;
+				len = buffer.readInt();
+				Map<Number160, HashData> result2 = new HashMap<Number160, HashData>(len);
+				for (int i = 0; i < len; i++)
+				{
+					if(buffer.readableBytes() < 20) return false;
+					Number160 key = readID(buffer);
+					if(buffer.readableBytes() < 20) return false;
+					Number160 hash = readID(buffer);
+					final Data data = decodeData(new ChannelDecoder(buffer), message.getSender());
+					if(data == null) return false;
+					if(message.isRequest()) {
+						if(data.isProtectedEntry() && message.getPublicKey()==null)
+							throw new DecoderException("You indicated that you want to protect the data, but you did not provide or provided too late a public key.");
+						data.setPublicKey(message.getPublicKey());
+					}
+					result2.put(key, new HashData(hash, data));
+				}
+				message.setHashDataMap0(result2);
 				return true;
 			case MAP_KEY_KEY:
 				if(buffer.readableBytes() < 4) return false;
@@ -482,7 +515,6 @@ public class MessageCodec
 			case EMPTY:
 			case RESERVED1:
 			case RESERVED2:
-			case RESERVED3:
 			default:
 				return true;
 		}

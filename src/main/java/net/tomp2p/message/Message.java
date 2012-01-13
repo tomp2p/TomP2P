@@ -24,6 +24,7 @@ import java.util.Random;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.HashData;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
@@ -47,16 +48,18 @@ public class Message
 	// 2 x 4 bit -> 8 bit
 	public enum Content
 	{
-		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, SET_TRACKER_DATA, RESERVED1, RESERVED2, RESERVED3
+		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_COMPARE_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, SET_TRACKER_DATA, RESERVED1, RESERVED2
 	};
 	// 1 x 4 bit
 	public enum Type
 	{
 		// REQUEST_1 is the normal request
 		// REQUEST_2 for GET returns the extended digest (hashes of all stored data)
-		// REQUEST_2 for PUT/MOVE/COPY means put if absent
-		// REQUEST_3 for ADD/PUT means protect domain
+		// REQUEST_2 for PUT/ADD/COMPARE_PUT means protect domain
+		// REQUEST_3 for PUT means put if absent
+		// REQUEST_3 for COMPARE_PUT means partial (partial means that put those data that match compare, ignore others)
 		// REQUEST_4 for PUT means protect domain and put if absent
+		// REQUEST_4 for COMPARE_PUT means partial and protect domain
 		// REQUEST_2 for REMOVE means send back results
 		// REQUEST_2 for RAW_DATA means serilazie object
 		// *** NEIGHBORS has four different cases
@@ -69,7 +72,7 @@ public class Message
 	// 1 x 4 bit
 	public enum Command
 	{
-		PING, PUT, GET, ADD, REMOVE, SYNC, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, USER1, USER2, USER3
+		PING, PUT, COMPARE_PUT, GET, ADD, REMOVE, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, USER1, USER2, USER3
 	};
 	// header
 	private volatile int messageId;
@@ -85,6 +88,8 @@ public class Message
 	private volatile int useAtMostNeighbors = -1;
 	private volatile Map<Number160, Data> dataMap = null;
 	private volatile Map<Number480, Data> dataMapConvert = null;
+	private volatile Map<Number160, HashData> hashDataMap = null;
+	//private volatile Map<Number160, DataData> dataDataMap = null;
 	private volatile Collection<TrackerData> trackerData = null;
 	private volatile Number160 key1 = null;
 	private volatile Number160 key2 = null;
@@ -816,7 +821,25 @@ public class Message
 				sb.append("}");
 			}
 		}
-		return sb.toString();
-		
+		return sb.toString();	
+	}
+
+	public Message setHashDataMap(Map<Number160, HashData> hashDataMap)
+	{
+		if (hashDataMap == null)
+			throw new IllegalArgumentException("dataDataMap cannot add null");
+		this.hashDataMap = hashDataMap;
+		setContentType(Content.MAP_KEY_COMPARE_DATA);
+		return this;
+	}
+	
+	void setHashDataMap0(Map<Number160, HashData> hashDataMap)
+	{
+		this.hashDataMap = hashDataMap;
+	}
+	
+	public Map<Number160, HashData> getHashDataMap()
+	{
+		return hashDataMap;
 	}
 }

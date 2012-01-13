@@ -15,13 +15,18 @@
  */
 package net.tomp2p.storage;
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.SortedMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.rpc.HashData;
 import net.tomp2p.utils.Utils;
 
 public abstract class Storage implements Digest, Responsibility
@@ -66,9 +71,8 @@ public abstract class Storage implements Digest, Responsibility
 	public abstract void close();
 
 	// Replication
-
 	public abstract Collection<Number480> storedDirectReplication();
-	
+
 	public SortedMap<Number480, Data> remove(Number320 number320, PublicKey publicKey)
 	{
 		return remove(number320.min(), number320.max(), publicKey);
@@ -213,5 +217,73 @@ public abstract class Storage implements Digest, Responsibility
 	static boolean isMine(Number160 key, PublicKey publicKey)
 	{
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
+	}
+
+	/**
+	 * Compares and puts the data if the compare matches
+	 * 
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param hashDataMap The map with the data and the hashes to compare to
+	 * @param publicKey The public key
+	 * @param partial If set to true, then partial puts are OK, otherwise all
+	 *        the data needs to be absent.
+	 * @param protectDomain Flag to protect domain
+	 * @return The keys that have been stored
+	 */
+	public Collection<Number160> compareAndPut(Number160 locationKey, Number160 domainKey,
+			Map<Number160, HashData> hashDataMap, PublicKey publicKey, boolean partial,
+			boolean protectDomain)
+	{
+		Collection<Number160> retVal = new ArrayList<Number160>();
+		Lock lock = acquire(locationKey, domainKey);
+		try
+		{
+			boolean perfectMatch = true;
+			for (Map.Entry<Number160, HashData> entry : hashDataMap.entrySet())
+			{
+				Number480 key = new Number480(locationKey, domainKey, entry.getKey());
+				Number160 storedHash = get(key).getHash();
+				if (storedHash == null || !storedHash.equals(entry.getValue().getLeft()))
+				{
+					perfectMatch = false;
+					continue;
+				}
+				if (partial)
+				{
+					put(key, entry.getValue().getRight(), publicKey, false, protectDomain);
+					retVal.add(key.getContentKey());
+				}
+			}
+			if (!partial && perfectMatch)
+			{
+				for (Map.Entry<Number160, HashData> entry : hashDataMap.entrySet())
+				{
+					Number480 key = new Number480(locationKey, domainKey, entry.getKey());
+					put(key, entry.getValue().getRight(), publicKey, false, protectDomain);
+					retVal.add(key.getContentKey());
+				}
+			}
+		}
+		finally
+		{
+			release(lock);
+		}
+		return retVal;
+	}
+
+	
+
+	private Lock acquire(Number160 locationKey, Number160 domainKey)
+	{
+		// TODO make this more smart and lock only for location and domain
+		Lock lock = new ReentrantLock();
+		lock.tryLock();
+		return lock;
+	}
+	
+	private void release(Lock lock)
+	{
+		lock.unlock();
 	}
 }

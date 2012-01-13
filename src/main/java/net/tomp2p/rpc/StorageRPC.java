@@ -45,7 +45,7 @@ public class StorageRPC extends ReplyHandler
 	public StorageRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
-		registerIoHandler(Command.PUT, Command.GET, Command.ADD, Command.REMOVE);
+		registerIoHandler(Command.COMPARE_PUT, Command.PUT, Command.GET, Command.ADD, Command.REMOVE);
 	}
 
 	public PeerAddress getPeerAddress()
@@ -57,9 +57,15 @@ public class StorageRPC extends ReplyHandler
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
-		Type request = Type.REQUEST_1;
+		final Type request;
 		if (protectDomain)
-			request = Type.REQUEST_3;
+		{
+			request = Type.REQUEST_2;
+		}
+		else
+		{
+			request = Type.REQUEST_1;
+		}
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator);
 	}
@@ -68,11 +74,45 @@ public class StorageRPC extends ReplyHandler
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
-		Type request = Type.REQUEST_2;
+		final Type request;
 		if (protectDomain)
+		{
 			request = Type.REQUEST_4;
+		}
+		else
+		{
+			request = Type.REQUEST_3;
+		}
 		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator);
+	}
+	
+	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey, final Number160 domainKey,
+			final Map<Number160, HashData> hashDataMap, boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
+			ChannelCreator channelCreator)
+	{
+		nullCheck(remotePeer, locationKey, domainKey, hashDataMap);
+		
+		final Message message;
+		if (protectDomain)
+		{
+			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut? Type.REQUEST_4: Type.REQUEST_2);
+		}
+		else
+		{
+			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut? Type.REQUEST_3: Type.REQUEST_1);
+		}
+			
+		if (signMessage) {
+			message.setPublicKeyAndSign(peerBean.getKeyPair());
+		}
+		message.setKeyKey(locationKey, domainKey);
+		message.setHashDataMap(hashDataMap);
+		
+		FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return request.sendTCP(channelCreator);
+		
 	}
 
 	private FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
@@ -96,9 +136,15 @@ public class StorageRPC extends ReplyHandler
 			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
-		Type type = Type.REQUEST_1;
+		final Type type;
 		if (protectDomain)
-			type = Type.REQUEST_3;
+		{
+			type = Type.REQUEST_2;
+		}
+		else
+		{
+			type = Type.REQUEST_1;
+		}
 		nullCheck(remoteNode, locationKey, domainKey, dataSet);
 		Map<Number160, Data> dataMap = new HashMap<Number160, Data>(dataSet.size());
 		for (Data data : dataSet)
@@ -178,6 +224,8 @@ public class StorageRPC extends ReplyHandler
 				case GET:
 				case REMOVE:
 					return message.getKeyKey1() != null && message.getKeyKey2() != null;
+				case COMPARE_PUT:
+					return message.getHashDataMap() != null; 
 			}
 		}
 		return false;
@@ -205,6 +253,9 @@ public class StorageRPC extends ReplyHandler
 				return handleAdd(message, responseMessage, isDomainProtected(message));
 			case REMOVE:
 				return handleRemove(message, responseMessage, message.getType() == Type.REQUEST_2);
+			case COMPARE_PUT:
+				return handleCompareAndPut(message, responseMessage, isPartial(message),
+						isDomainProtected(message));
 			default:
 				return null;
 		}
@@ -213,14 +264,20 @@ public class StorageRPC extends ReplyHandler
 	private boolean isDomainProtected(final Message message)
 	{
 		boolean protectDomain = message.getPublicKey() != null
-				&& (message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4);
+				&& (message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4);
 		return protectDomain;
 	}
 
 	private boolean isStoreIfAbsent(final Message message)
 	{
-		boolean absent = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4;
+		boolean absent = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
 		return absent;
+	}
+	
+	private boolean isPartial(final Message message)
+	{
+		boolean partial = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
+		return partial;
 	}
 
 	private Message handlePut(final Message message, final Message responseMessage,
@@ -388,6 +445,31 @@ public class StorageRPC extends ReplyHandler
 			// make a copy, so the iterator in the codec wont conflict with
 			// concurrent calls
 			responseMessage.setDataMapConvert(result);
+		}
+		return responseMessage;
+	}
+	
+	private Message handleCompareAndPut(Message message, Message responseMessage, boolean partial,
+			boolean protectDomain)
+	{
+		final Number160 locationKey = message.getKeyKey1();
+		final Number160 domainKey = message.getKeyKey2();
+		final Map<Number160, HashData> hashDataMap = message.getHashDataMap();
+		final PublicKey publicKey = message.getPublicKey();
+		
+		final Collection<Number160> result = peerBean.getStorage().compareAndPut(
+				locationKey, domainKey, hashDataMap, publicKey, partial, protectDomain);
+		
+		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
+			peerBean.getReplicationStorage().checkResponsibility(locationKey);
+		responseMessage.setKeys(result);
+		if(result.size()==0)
+		{
+			responseMessage.setType(Type.NOT_FOUND);
+		}
+		else if(result.size() != hashDataMap.size())
+		{
+			responseMessage.setType(Type.PARTIALLY_OK);
 		}
 		return responseMessage;
 	}

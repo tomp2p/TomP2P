@@ -87,32 +87,52 @@ public class StorageRPC extends ReplyHandler
 				|| signMessage || protectEntry, channelCreator);
 	}
 	
-	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey, final Number160 domainKey,
-			final Map<Number160, HashData> hashDataMap, boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
+	/**
+	 * Compares and puts data on a peer. It first compares the hashes that the
+	 * user provided on the remote peer, and if the hashes match, the data is
+	 * stored. If the flag partial put has been set, then it will store those
+	 * data where the hashes match and ignore the others.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param hashDataMap The map with the data and the hashes to compare to
+	 * @param protectDomain Protect the domain
+	 * @param protectEntry Protect the entry
+	 * @param signMessage Sing message
+	 * @param partialPut Set to true if partial puts should be allowed. If set
+	 *        to false, then the complete map must match the hash, otherwise it
+	 *        wont be stored.
+	 * @param channelCreator The channel creator
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
+	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Map<Number160, HashData> hashDataMap,
+			boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
 			ChannelCreator channelCreator)
 	{
 		nullCheck(remotePeer, locationKey, domainKey, hashDataMap);
-		
 		final Message message;
 		if (protectDomain)
 		{
-			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut? Type.REQUEST_4: Type.REQUEST_2);
+			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut ? Type.REQUEST_4
+					: Type.REQUEST_2);
 		}
 		else
 		{
-			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut? Type.REQUEST_3: Type.REQUEST_1);
+			message = createMessage(remotePeer, Command.COMPARE_PUT, partialPut ? Type.REQUEST_3
+					: Type.REQUEST_1);
 		}
-			
-		if (signMessage) {
+		if (signMessage)
+		{
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setHashDataMap(hashDataMap);
-		
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean,
+				connectionBean, message);
 		return request.sendTCP(channelCreator);
-		
 	}
 
 	private FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,

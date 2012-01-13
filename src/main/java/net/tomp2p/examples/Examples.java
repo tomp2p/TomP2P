@@ -79,7 +79,7 @@ public class Examples
 		master.shutdown();
 	}
 
-	private static void bootstrap(Peer master, Peer[] nodes)
+	public static void bootstrap(Peer master, Peer[] nodes)
 	{
 		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
 		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
@@ -93,6 +93,11 @@ public class Examples
 		for (int i = 1; i < nodes.length; i++)
 		{
 			FutureBootstrap tmp = nodes[i].bootstrap(master.getPeerAddress());
+			futures1.add(tmp);
+		}
+		for (int i = 1; i < nodes.length; i++)
+		{
+			FutureBootstrap tmp = master.bootstrap(nodes[i].getPeerAddress());
 			futures1.add(tmp);
 		}
 		for (FutureBootstrap future : futures1)
@@ -159,7 +164,7 @@ public class Examples
           System.out.println("this may happen before printing the result");
         }
 
-	private static Peer[] createAndAttachNodes(Peer master, int nr) throws Exception
+	public static Peer[] createAndAttachNodes(Peer master, int nr) throws Exception
 	{
 		Peer[] nodes = new Peer[nr];
 		nodes[0] = master;

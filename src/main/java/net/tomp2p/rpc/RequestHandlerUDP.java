@@ -207,7 +207,11 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		// We got a good answer, let's mark the sender as alive
 		if (responseMessage.isOk() || responseMessage.isNotOk())
 		{
-			getPeerMap().peerFound(responseMessage.getSender(), null);
+			boolean retVal = getPeerMap().peerFound(responseMessage.getSender(), null);
+			if (logger.isDebugEnabled() && !retVal)
+			{
+				logger.debug(responseMessage.getSender() + "not stored in peermap");
+			}
 		}
 		reportResult(ctx.getChannel(), futureResponse, responseMessage);
 		ctx.sendUpstream(e);

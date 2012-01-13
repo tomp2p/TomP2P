@@ -1,0 +1,28 @@
+Release Management
+==================
+To make a release, use the maven plugin:
+
+  mvn release:prepare -Dusername=##username## -Dpassword=##password##
+  mvn release:perform
+  
+if using a netbook or similar, use:
+
+  mvn release:prepare -Dusername=##username## -Dpassword=##password## -Darguments='-Dmaven.test.skip=true'
+  mvn release:perform -Darguments='-Dmaven.test.skip=true'
+  
+
+Adding 3rd party libraries to repository
+========================================
+
+E.g. upload snapshot of Netty using scp 
+
+mvn deploy:deploy-file \
+ -DgroupId=org.jboss.netty \
+ -DartifactId=netty \
+ -Dversion=3.2.7.Final-SNAPSHOT \
+ -Dpackaging=jar \
+ -Dfile=netty-3.2.7.Final-SNAPSHOT.jar \ 
+ -DrepositoryId=ssh-tomp2p \
+ -Durl=scp://tomp2p.net/home/##username##/maven \ 
+ -Dusername=##username## \
+ -Dpassword=##password##

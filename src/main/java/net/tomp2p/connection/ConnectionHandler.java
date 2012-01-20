@@ -48,7 +48,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioDatagramChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
-import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 import org.jboss.netty.util.Timer;
@@ -116,9 +115,9 @@ public class ConnectionHandler
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfigurationBean configuration, File messageLogger, KeyPair keyPair,
 			PeerMap peerMap,
-			List<PeerListener> listeners, P2PConfiguration peerConfiguration) throws Exception
+			List<PeerListener> listeners, P2PConfiguration peerConfiguration, Timer timer) throws Exception
 	{
-		this.timer = new HashedWheelTimer();
+		this.timer = timer;
 		this.udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
 		this.tcpServerChannelFactory = new NioServerSocketChannelFactory(
 				Executors.newCachedThreadPool(),
@@ -358,7 +357,6 @@ public class ConnectionHandler
 		if (master)
 		{
 			natUtils.shutdown();
-			timer.stop();
 			// channelChache.shutdown();
 			if (messageLoggerFilter != null)
 				messageLoggerFilter.shutdown();

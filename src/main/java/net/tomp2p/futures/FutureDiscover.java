@@ -33,7 +33,7 @@ import org.jboss.netty.util.TimerTask;
 public class FutureDiscover extends BaseFutureImpl
 {
 	// timeout to tell us when discovery failed.
-	final private Timeout timeout;
+	private Timeout timeout;
 	// result
 	private PeerAddress peerAddress;
 	private boolean discoveredTCP = false;
@@ -46,18 +46,27 @@ public class FutureDiscover extends BaseFutureImpl
 	 * @param timer The timer to use
 	 * @param delaySec The delay in seconds
 	 */
-	public FutureDiscover(Timer timer, int delaySec)
+	public void setTimeout(Timer timer, int delaySec)
 	{
-		timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
-		addListener(new BaseFutureAdapter<FutureDiscover>()
+		synchronized (lock)
 		{
-			@Override
-			public void operationComplete(FutureDiscover future) throws Exception
-			{
-				// cancel timeout if we are done.
-				timeout.cancel();
-			}
-		});
+			timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
+			addListener(new BaseFutureAdapter<FutureDiscover>()
+					{
+				@Override
+				public void operationComplete(FutureDiscover future) throws Exception
+				{
+					// cancel timeout if we are done.
+					synchronized (lock)
+					{
+						if(timeout != null)
+						{
+							timeout.cancel();
+						}
+					}
+				}
+			});
+		}
 	}
 
 	/**
@@ -68,6 +77,7 @@ public class FutureDiscover extends BaseFutureImpl
 	 */
 	public void done(PeerAddress peerAddress)
 	{
+		//System.err.println("called done");
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
@@ -147,10 +157,11 @@ public class FutureDiscover extends BaseFutureImpl
 	 */
 	private final class DiscoverTimeoutTask implements TimerTask
 	{
+		private final long start=System.currentTimeMillis();
 		@Override
 		public void run(Timeout timeout) throws Exception
 		{
-			setFailed("Timeout in Discover");
+			setFailed("Timeout in Discover: "+(System.currentTimeMillis()-start)+ "ms");
 		}
 	}
 }

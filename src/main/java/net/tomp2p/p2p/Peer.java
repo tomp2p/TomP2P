@@ -320,7 +320,7 @@ public class Peer
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
 				connectionConfiguration,
-				messageLogger, keyPair, peerMap, listeners, peerConfiguration), statistics);
+				messageLogger, keyPair, peerMap, listeners, peerConfiguration, timer), statistics);
 		logger.debug("init done");
 	}
 
@@ -837,8 +837,7 @@ public class Peer
 				{
 					if (peerConfiguration.isBehindFirewall())
 					{
-						final FutureDiscover futureDiscover = new FutureDiscover(timer,
-								peerConfiguration.getDiscoverTimeoutSec());
+						final FutureDiscover futureDiscover = new FutureDiscover();
 						discover(futureDiscover, peerAddress, futureChannelCreator.getChannelCreator());
 						futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
 						{
@@ -951,8 +950,7 @@ public class Peer
 	 */
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
-		final FutureDiscover futureDiscover = new FutureDiscover(timer,
-				peerConfiguration.getDiscoverTimeoutSec());
+		final FutureDiscover futureDiscover = new FutureDiscover();
 		getConnectionBean().getReservation().reserve(3).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
@@ -1044,6 +1042,8 @@ public class Peer
 							FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);
 							Utils.addReleaseListener(fr1, getConnectionBean().getReservation(), cc, 1);
 							Utils.addReleaseListener(fr2, getConnectionBean().getReservation(), cc, 1);
+							// from here we probe, set the timeout here
+							futureDiscover.setTimeout(timer, peerConfiguration.getDiscoverTimeoutSec());
 						}
 						// else -> we announce exactly how the other peer sees
 						// us

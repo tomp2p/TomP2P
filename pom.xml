@@ -34,8 +34,9 @@
   </licenses>
 
   <scm>
-    <connection>scm:svn:http://tomp2p.net/svn/TomP2P/trunk</connection>
-    <developerConnection>scm:svn:https://tomp2p.net/svn/TomP2P/trunk</developerConnection>
+    <url>https://github.com/tomp2p/TomP2P</url>
+    <connection>scm:git:git://github.com/tomp2p/TomP2P.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com:tomp2p/TomP2P.git</developerConnection>
   </scm>
 
   <distributionManagement>

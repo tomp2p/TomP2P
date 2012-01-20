@@ -66,7 +66,7 @@ public class Sender
 	 * @param idleTCPMillis Timeout
 	 */
 	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse,
-			final Message message, ChannelCreator channelCreator, final int idleTCPMillis)
+			final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (logger.isDebugEnabled())
 		{
@@ -85,7 +85,7 @@ public class Sender
 	 * @param channelCreator ChannelCreator
 	 */
 	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse,
-			final Message message, ChannelCreator channelCreator)
+			final Message message, final ChannelCreator channelCreator)
 	{
 		if (logger.isDebugEnabled())
 		{
@@ -101,9 +101,8 @@ public class Sender
 	 * @param message Message
 	 * @param channelCreator ChannelCreator
 	 */
-	public void sendBroadcastUDP(final RequestHandlerUDP handler,
-			final FutureResponse futureResponse, final Message message,
-			ChannelCreator channelCreator)
+	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, 
+			final Message message, final ChannelCreator channelCreator)
 	{
 		if (logger.isDebugEnabled())
 		{

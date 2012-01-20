@@ -124,4 +124,11 @@ public class DummyChannelFuture implements ChannelFuture
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	@Override
+	public ChannelFuture rethrowIfFailed() throws Exception
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

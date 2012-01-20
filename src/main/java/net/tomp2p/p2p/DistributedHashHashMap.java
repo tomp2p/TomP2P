@@ -25,7 +25,9 @@ import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
@@ -61,55 +63,75 @@ public class DistributedHashHashMap
 	}
 
 	public FutureDHT add(final Number160 locationKey, final Number160 domainKey,
-			final Collection<Data> dataSet, RoutingConfiguration routingConfiguration,
+			final Collection<Data> dataSet, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean protectDomain,
-			final boolean signMessage, final FutureCreate<FutureDHT> futureCreate,
-			final ChannelCreator cc)
+			final boolean signMessage, final boolean isAutomaticCleanup, final FutureCreate<FutureDHT> futureCreate,
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
-
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
-				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				new VotingSchemeDHT(), futureCreate, futureRouting);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+				new VotingSchemeDHT(), futureCreate);
+		
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting futureRouting) throws Exception
+			public void operationComplete(final FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
-						logger.debug("adding lkey=" + locationKey + " on "
-								+ futureRouting.getPotentialHits());
-					loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
-							new Operation()
+					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
+							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+					futureDHT.setFutureRouting(futureRouting);
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+					{
+						@Override
+						public void operationComplete(FutureRouting futureRouting) throws Exception
+						{
+							if (futureRouting.isSuccess())
 							{
-								Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
+								if (logger.isDebugEnabled())
+									logger.debug("adding lkey=" + locationKey + " on "
+											+ futureRouting.getPotentialHits());
+								loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
+										new Operation()
+										{
+											Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
 
-								@Override
-								public FutureResponse create(PeerAddress address)
-								{
-									return storeRCP.add(address, locationKey, domainKey, dataSet,
-											protectDomain, signMessage, cc);
-								}
+											@Override
+											public FutureResponse create(PeerAddress address)
+											{
+												return storeRCP.add(address, locationKey, domainKey, dataSet,
+														protectDomain, signMessage, future.getChannelCreator());
+											}
 
-								@Override
-								public void response(FutureDHT futureDHT)
-								{
-									futureDHT.setStoredKeys(rawData, false);
-								}
+											@Override
+											public void response(FutureDHT futureDHT)
+											{
+												futureDHT.setStoredKeys(rawData, false);
+											}
 
-								@Override
-								public void interMediateResponse(FutureResponse future)
-								{
-									rawData.put(future.getRequest().getRecipient(), future
-											.getResponse().getKeys());
-								}
-							});
+											@Override
+											public void interMediateResponse(FutureResponse future)
+											{
+												rawData.put(future.getRequest().getRecipient(), future
+														.getResponse().getKeys());
+											}
+										});
+							}
+							else
+							{
+								futureDHT.setFailed("routing failed");
+							}
+						}
+					});
+					
+					if(isAutomaticCleanup)
+					{
+						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
+					}
 				}
 				else
 				{
-					futureDHT.setFailed("routing failed");
+					futureDHT.setFailed(future);
 				}
 			}
 		});
@@ -117,123 +139,164 @@ public class DistributedHashHashMap
 	}
 
 	public FutureDHT direct(final Number160 locationKey, final ChannelBuffer buffer,
-			final boolean raw, RoutingConfiguration routingConfiguration,
+			final boolean raw, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
-			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish,
-			final ChannelCreator cc)
+			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish, final boolean isAutomaticCleanup,
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
-
-		final FutureRouting futureRouting = createRouting(locationKey, null, null,
-				routingConfiguration,
-				p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				new VotingSchemeDHT(), futureCreate, futureRouting);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+				new VotingSchemeDHT(), futureCreate);
+		
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting futureRouting) throws Exception
+			public void operationComplete(final FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
-						logger.debug("storing lkey=" + locationKey + " on "
-								+ futureRouting.getPotentialHits());
-					loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT,
-							cancelOnFinish, new Operation()
+					final FutureRouting futureRouting = createRouting(locationKey, null, null,
+							routingConfiguration,
+							p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+					futureDHT.setFutureRouting(futureRouting);
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+					{
+						@Override
+						public void operationComplete(FutureRouting futureRouting) throws Exception
+						{
+							if (futureRouting.isSuccess())
 							{
-								Map<PeerAddress, ChannelBuffer> rawChannels = new HashMap<PeerAddress, ChannelBuffer>();
-								Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
+								if (logger.isDebugEnabled())
+									logger.debug("storing lkey=" + locationKey + " on "
+											+ futureRouting.getPotentialHits());
+								loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT,
+										cancelOnFinish, new Operation()
+										{
+											Map<PeerAddress, ChannelBuffer> rawChannels = new HashMap<PeerAddress, ChannelBuffer>();
+											Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
 
-								@Override
-								public FutureResponse create(PeerAddress address)
-								{
-									return directDataRPC.send(address, buffer, raw, cc);
-								}
+											@Override
+											public FutureResponse create(PeerAddress address)
+											{
+												return directDataRPC.send(address, buffer, raw, future.getChannelCreator());
+											}
 
-								@Override
-								public void response(FutureDHT futureDHT)
-								{
-									if (raw)
-										futureDHT.setDirectData1(rawChannels);
-									else
-										futureDHT.setDirectData2(rawObjects);
-								}
+											@Override
+											public void response(FutureDHT futureDHT)
+											{
+												if (raw)
+													futureDHT.setDirectData1(rawChannels);
+												else
+													futureDHT.setDirectData2(rawObjects);
+											}
 
-								@Override
-								public void interMediateResponse(FutureResponse future)
-								{
-									FutureData futureData = (FutureData) future;
-									if (raw)
-										rawChannels.put(future.getRequest().getRecipient(),
-												futureData.getBuffer());
-									else
-										rawObjects.put(future.getRequest().getRecipient(),
-												futureData.getObject());
-								}
-							});
+											@Override
+											public void interMediateResponse(FutureResponse future)
+											{
+												FutureData futureData = (FutureData) future;
+												if (raw)
+													rawChannels.put(future.getRequest().getRecipient(),
+															futureData.getBuffer());
+												else
+													rawObjects.put(future.getRequest().getRecipient(),
+															futureData.getObject());
+											}
+										});
+							}
+							else
+							{
+								futureDHT.setFailed("routing failed");
+							}
+						}
+					});
+					if(isAutomaticCleanup)
+					{
+						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
+					}
 				}
 				else
 				{
-					futureDHT.setFailed("routing failed");
+					futureDHT.setFailed(future);
 				}
 			}
 		});
+		
+		
 		return futureDHT;
 	}
 
 	public FutureDHT put(final Number160 locationKey, final Number160 domainKey,
-			final Map<Number160, Data> dataMap, RoutingConfiguration routingConfiguration,
+			final Map<Number160, Data> dataMap, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean putIfAbsent,
-			final boolean protectDomain, final boolean signMessage,
-			final FutureCreate<FutureDHT> futureCreate, final ChannelCreator cc)
+			final boolean protectDomain, final boolean signMessage, final boolean isAutomaticCleanup,
+			final FutureCreate<FutureDHT> futureCreate, final FutureChannelCreator futureChannelCreator,
+			final ConnectionReservation connectionReservation)
 	{
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
-				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, cc);
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				new VotingSchemeDHT(), futureCreate, futureRouting);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+				new VotingSchemeDHT(), futureCreate);
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting futureRouting) throws Exception
+			public void operationComplete(final FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
-						logger.debug("storing lkey=" + locationKey + " on "
-								+ futureRouting.getPotentialHits());
-					loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
-							new Operation()
+					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
+							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+					futureDHT.setFutureRouting(futureRouting);
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+					{
+						@Override
+						public void operationComplete(FutureRouting futureRouting) throws Exception
+						{
+							if (futureRouting.isSuccess())
 							{
-								Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
+								if (logger.isDebugEnabled())
+									logger.debug("storing lkey=" + locationKey + " on "
+											+ futureRouting.getPotentialHits());
+								loop(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
+										new Operation()
+										{
+											Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
 
-								@Override
-								public FutureResponse create(PeerAddress address)
-								{
-									boolean protectEntry = Utils.checkEntryProtection(dataMap);
-									return putIfAbsent ? storeRCP.putIfAbsent(address, locationKey,
-											domainKey, dataMap, protectDomain, protectEntry,
-											signMessage, cc) : storeRCP
-											.put(address, locationKey, domainKey, dataMap,
-													protectDomain, protectEntry, signMessage, cc);
-								}
+											@Override
+											public FutureResponse create(PeerAddress address)
+											{
+												boolean protectEntry = Utils.checkEntryProtection(dataMap);
+												return putIfAbsent ? storeRCP.putIfAbsent(address, locationKey,
+														domainKey, dataMap, protectDomain, protectEntry,
+														signMessage, future.getChannelCreator()) : storeRCP
+														.put(address, locationKey, domainKey, dataMap,
+																protectDomain, protectEntry, signMessage, future.getChannelCreator());
+											}
 
-								@Override
-								public void response(FutureDHT futureDHT)
-								{
-									futureDHT.setStoredKeys(rawData, putIfAbsent);
-								}
+											@Override
+											public void response(FutureDHT futureDHT)
+											{
+												futureDHT.setStoredKeys(rawData, putIfAbsent);
+											}
 
-								@Override
-								public void interMediateResponse(FutureResponse future)
-								{
-									rawData.put(future.getRequest().getRecipient(), future
-											.getResponse().getKeys());
-								}
-							});
+											@Override
+											public void interMediateResponse(FutureResponse future)
+											{
+												rawData.put(future.getRequest().getRecipient(), future
+														.getResponse().getKeys());
+											}
+										});
+							}
+							else
+							{
+								futureDHT.setFailed("routing failed");
+							}
+						}
+					});
+					if(isAutomaticCleanup)
+					{
+						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
+					}
 				}
 				else
 				{
-					futureDHT.setFailed("routing failed");
+					futureDHT.setFailed(future);
 				}
 			}
 		});
@@ -242,135 +305,181 @@ public class DistributedHashHashMap
 
 	public FutureDHT get(final Number160 locationKey, final Number160 domainKey,
 			final Set<Number160> contentKeys, final PublicKey publicKey,
-			RoutingConfiguration routingConfiguration,
+			final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
 			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage, final boolean digest, 
-			final ChannelCreator cc)
+			final boolean isAutomaticCleanup, final FutureChannelCreator futureChannelCreator, 
+			final ConnectionReservation connectionReservation)
 	{
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
-				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, cc);
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				evaluationScheme, null, futureRouting);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+				evaluationScheme, null);
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting futureRouting) throws Exception
+			public void operationComplete(final FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
+					final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
+							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, future.getChannelCreator());
+					futureDHT.setFutureRouting(futureRouting);
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
-						logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
-					}
-					// this adjust is based on results from the routing process,
-					// so we cannot do this earlier
-					loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()),
-							futureRouting.getDirectHits(), futureDHT, true,
-							new Operation()
+						@Override
+						public void operationComplete(FutureRouting futureRouting) throws Exception
+						{
+							if (futureRouting.isSuccess())
 							{
-								Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
-								Map<PeerAddress, Collection<Number160>> rawDigest = new HashMap<PeerAddress, Collection<Number160>>();
-
-								@Override
-								public FutureResponse create(PeerAddress address)
+								if (logger.isDebugEnabled())
 								{
-									return storeRCP.get(address, locationKey, domainKey,
-											contentKeys,
-											publicKey, signMessage, digest, cc);
+									logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
 								}
+								// this adjust is based on results from the routing process,
+								// so we cannot do this earlier
+								loop(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()),
+										futureRouting.getDirectHits(), futureDHT, true,
+										new Operation()
+										{
+											Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
+											Map<PeerAddress, Collection<Number160>> rawDigest = new HashMap<PeerAddress, Collection<Number160>>();
 
-								@Override
-								public void response(FutureDHT futureDHT)
-								{
-									if(digest)
-									{
-										futureDHT.setReceivedDigest(rawDigest);
-									}
-									else
-									{
-										futureDHT.setReceivedData(rawData);
-									}
-								}
+											@Override
+											public FutureResponse create(PeerAddress address)
+											{
+												return storeRCP.get(address, locationKey, domainKey,
+														contentKeys,
+														publicKey, signMessage, digest, future.getChannelCreator());
+											}
 
-								@Override
-								public void interMediateResponse(FutureResponse future)
-								{
-									if(digest)
-									{
-										rawDigest.put(future.getRequest().getRecipient(), future
-												.getResponse().getKeys());	
-									}
-									else
-									{
-										rawData.put(future.getRequest().getRecipient(), future
-											.getResponse().getDataMap());
-									}
-									
-								}
-							});
+											@Override
+											public void response(FutureDHT futureDHT)
+											{
+												if(digest)
+												{
+													futureDHT.setReceivedDigest(rawDigest);
+												}
+												else
+												{
+													futureDHT.setReceivedData(rawData);
+												}
+											}
+
+											@Override
+											public void interMediateResponse(FutureResponse future)
+											{
+												if(digest)
+												{
+													rawDigest.put(future.getRequest().getRecipient(), future
+															.getResponse().getKeys());	
+												}
+												else
+												{
+													rawData.put(future.getRequest().getRecipient(), future
+														.getResponse().getDataMap());
+												}
+												
+											}
+										});
+							}
+							else
+							{
+								futureDHT.setFailed("routing failed");
+							}
+						}
+					});
+					if(isAutomaticCleanup)
+					{
+						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
+					}
 				}
 				else
-					futureDHT.setFailed("routing failed");
+				{
+					futureDHT.setFailed(future);
+				}
 			}
 		});
+		
+		
 		return futureDHT;
 	}
 
 	public FutureDHT remove(final Number160 locationKey, final Number160 domainKey,
-			final Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
+			final Set<Number160> contentKeys, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean returnResults,
-			final boolean signMessage, FutureCreate<FutureDHT> futureCreate, final ChannelCreator cc)
+			final boolean signMessage, final boolean isAutomaticCleanup, FutureCreate<FutureDHT> futureCreate, 
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
-				routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, cc);
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
-				new VotingSchemeDHT(), futureCreate, futureRouting);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+				new VotingSchemeDHT(), futureCreate);
+		
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting futureRouting) throws Exception
+			public void operationComplete(final FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
-						logger.debug("found direct hits for remove: "
-								+ futureRouting.getDirectHits());
-					loop(p2pConfiguration, futureRouting.getDirectHits(), futureDHT, false,
-							new Operation()
+					final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
+							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, future.getChannelCreator());
+					futureDHT.setFutureRouting(futureRouting);
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+					{
+						@Override
+						public void operationComplete(FutureRouting futureRouting) throws Exception
+						{
+							if (futureRouting.isSuccess())
 							{
-								Map<PeerAddress, Map<Number160, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number160, Data>>();
-								Map<PeerAddress, Collection<Number160>> rawDataNoResult = new HashMap<PeerAddress, Collection<Number160>>();
+								if (logger.isDebugEnabled())
+									logger.debug("found direct hits for remove: "
+											+ futureRouting.getDirectHits());
+								loop(p2pConfiguration, futureRouting.getDirectHits(), futureDHT, false,
+										new Operation()
+										{
+											Map<PeerAddress, Map<Number160, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number160, Data>>();
+											Map<PeerAddress, Collection<Number160>> rawDataNoResult = new HashMap<PeerAddress, Collection<Number160>>();
 
-								@Override
-								public FutureResponse create(PeerAddress address)
-								{
-									return storeRCP.remove(address, locationKey, domainKey,
-											contentKeys, returnResults, signMessage, cc);
-								}
+											@Override
+											public FutureResponse create(PeerAddress address)
+											{
+												return storeRCP.remove(address, locationKey, domainKey,
+														contentKeys, returnResults, signMessage, future.getChannelCreator());
+											}
 
-								@Override
-								public void response(FutureDHT futureDHT)
-								{
-									if (returnResults)
-										futureDHT.setReceivedData(rawDataResult);
-									else
-										futureDHT.setRemovedKeys(rawDataNoResult);
-								}
+											@Override
+											public void response(FutureDHT futureDHT)
+											{
+												if (returnResults)
+													futureDHT.setReceivedData(rawDataResult);
+												else
+													futureDHT.setRemovedKeys(rawDataNoResult);
+											}
 
-								@Override
-								public void interMediateResponse(FutureResponse future)
-								{
-									if (returnResults)
-										rawDataResult.put(future.getRequest().getRecipient(),
-												future.getResponse().getDataMap());
-									else
-										rawDataNoResult.put(future.getRequest().getRecipient(),
-												future.getResponse().getKeys());
-								}
-							});
+											@Override
+											public void interMediateResponse(FutureResponse future)
+											{
+												if (returnResults)
+													rawDataResult.put(future.getRequest().getRecipient(),
+															future.getResponse().getDataMap());
+												else
+													rawDataNoResult.put(future.getRequest().getRecipient(),
+															future.getResponse().getKeys());
+											}
+										});
+							}
+							else
+								futureDHT.setFailed("routing failed");
+						}
+					});
+					if(isAutomaticCleanup)
+					{
+						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
+					}
 				}
 				else
-					futureDHT.setFailed("routing failed");
+				{
+					futureDHT.setFailed(future);
+				}
+				
 			}
 		});
 		return futureDHT;

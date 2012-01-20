@@ -1,6 +1,7 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -20,7 +21,9 @@ public class TestReservation {
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(3);
+			FutureChannelCreator fcc=recv1.getConnectionBean().getReservation().reserve(3);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			for(int i=0;i<1000;i++)
 			{
 				FutureResponse fr1 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
@@ -55,7 +58,9 @@ public class TestReservation {
 			sender.listen(2424, 2424);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(3);
+			FutureChannelCreator fcc=recv1.getConnectionBean().getReservation().reserve(3);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			for(int i=0;i<1000;i++)
 			{
 				FutureResponse fr1 = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc);

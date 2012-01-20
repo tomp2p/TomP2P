@@ -27,11 +27,13 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
@@ -296,7 +298,7 @@ public class TestDHT
 			master.listen(4001, 4001);
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
-			FutureForkJoin<FutureResponse> res = slave.pingBroadcast(4001);
+			FutureLateJoin<FutureResponse> res = slave.pingBroadcast(4001);
 			res.awaitUninterruptibly();
 			Assert.assertEquals(true, res.isSuccess());
 		}
@@ -1072,7 +1074,9 @@ public class TestDHT
 			fdht.getFutureRequests().awaitUninterruptibly();
 			Collection<Number160> tmp = new ArrayList<Number160>();
 			tmp.add(new Number160(5));
-			final ChannelCreator cc=master1.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=master1.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
 					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
@@ -1499,8 +1503,9 @@ public class TestDHT
 				if(i>10)
 					break;
 			}
-			final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
-						
+			final FutureChannelCreator fcc=master.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
 					Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
 			futureResponse.awaitUninterruptibly();
@@ -1574,8 +1579,9 @@ public class TestDHT
 			int i = 0;
 			for (PeerAddress closest : tmp)
 			{
-				final ChannelCreator cc=master.getConnectionBean().getReservation().reserve(1);
-				
+				final FutureChannelCreator fcc=master.getConnectionBean().getReservation().reserve(1);
+				fcc.awaitUninterruptibly();
+				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
 						Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
 				futureResponse.awaitUninterruptibly();

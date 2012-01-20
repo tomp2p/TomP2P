@@ -2,6 +2,7 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -25,7 +26,9 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			ChannelCreator cc=recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=recv1.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			sender.getPeerBean().getTrackerStorage().addActive(locationKey, domainKey,sender.getPeerAddress(), null, 0, 0);
 			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey, false, cc);
 			fr.awaitUninterruptibly();

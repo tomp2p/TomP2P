@@ -153,6 +153,13 @@ public class DummyCoder
 						// TODO Auto-generated method stub
 
 					}
+
+					@Override
+					public ChannelFuture rethrowIfFailed() throws Exception
+					{
+						// TODO Auto-generated method stub
+						return null;
+					}
 				};
 			}
 

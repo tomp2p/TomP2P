@@ -26,11 +26,14 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
@@ -76,52 +79,70 @@ public class DistributedTracker
 	}
 
 	public FutureTracker getFromTracker(final Number160 locationKey, final Number160 domainKey,
-			RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
+			final RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
 			final boolean expectAttachement, EvaluatingSchemeTracker evaluatingScheme, final boolean signMessage,
-			final boolean useSecondaryTrackers, final Set<Number160> knownPeers, final ChannelCreator cc)
+			final boolean useSecondaryTrackers, final Set<Number160> knownPeers, 
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureTracker futureTracker = new FutureTracker(evaluatingScheme, knownPeers);
-		if (useSecondaryTrackers)
-		{			
-			Map<Number160, TrackerData> meshPeers = peerBean.getTrackerStorage().meshPeers(locationKey, domainKey);
-			Map<Number160, TrackerData> secondaryPeers = peerBean.getTrackerStorage().secondaryPeers(locationKey, domainKey);
-			SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
-					.createPeerComparator(stableRandom));
-			for (TrackerData trackerData : meshPeers.values())
-			{
-				secondaryQueue.add(trackerData.getPeerAddress());
-			}
-			for (TrackerData trackerData : secondaryPeers.values())
-			{
-				secondaryQueue.add(trackerData.getPeerAddress());
-			}
-			startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage, knownPeers,
-					futureTracker, secondaryQueue, cc);
-		}
-		else
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
-			final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, true, cc);
-			// final Number160 searchCloseTo=new Number160(rnd);
-			futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+			@Override
+			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception
 			{
-				@Override
-				public void operationComplete(FutureRouting future) throws Exception
+				if(futureChannelCreator2.isSuccess())
 				{
-					if (futureRouting.isSuccess())
-					{
-						if (logger.isDebugEnabled())
-							logger.debug("found direct hits for tracker get: " + futureRouting.getDirectHits());
-						startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage,
-								knownPeers, futureTracker, futureRouting.getDirectHits(), cc);
+					if (useSecondaryTrackers)
+					{			
+						Map<Number160, TrackerData> meshPeers = peerBean.getTrackerStorage().meshPeers(locationKey, domainKey);
+						Map<Number160, TrackerData> secondaryPeers = peerBean.getTrackerStorage().secondaryPeers(locationKey, domainKey);
+						SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
+								.createPeerComparator(stableRandom));
+						for (TrackerData trackerData : meshPeers.values())
+						{
+							secondaryQueue.add(trackerData.getPeerAddress());
+						}
+						for (TrackerData trackerData : secondaryPeers.values())
+						{
+							secondaryQueue.add(trackerData.getPeerAddress());
+						}
+						startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage, knownPeers,
+								futureTracker, secondaryQueue, futureChannelCreator2.getChannelCreator());
 					}
 					else
 					{
-						futureTracker.setFailed("routing failed");
-					}
-				}
+						final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, 
+								routingConfiguration, true, futureChannelCreator2.getChannelCreator());
+						// final Number160 searchCloseTo=new Number160(rnd);
+						futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+						{
+							@Override
+							public void operationComplete(FutureRouting future) throws Exception
+							{
+								if (futureRouting.isSuccess())
+								{
+									if (logger.isDebugEnabled())
+										logger.debug("found direct hits for tracker get: " + futureRouting.getDirectHits());
+									startLoop(locationKey, domainKey, trackerConfiguration, expectAttachement, signMessage,
+											knownPeers, futureTracker, futureRouting.getDirectHits(), 
+											futureChannelCreator2.getChannelCreator());
+								}
+								else
+								{
+									futureTracker.setFailed("routing failed");
+								}
+							}
 
-			});
-		}
+						});
+					}
+					Utils.addReleaseListenerAll(futureTracker, connectionReservation, futureChannelCreator2.getChannelCreator());
+				}
+				else
+				{
+					futureTracker.setFailed(futureChannelCreator2);
+				}
+			}
+		});
 		return futureTracker;
 	}
 
@@ -158,51 +179,92 @@ public class DistributedTracker
 		});
 	}
 
-	public FutureForkJoin<FutureResponse> startPeerExchange(final Number160 locationKey, final Number160 domainKey, final ChannelCreator cc)
+	public FutureLateJoin<FutureResponse> startPeerExchange(final Number160 locationKey,
+			final Number160 domainKey, final FutureChannelCreator futureChannelCreator, 
+			final ConnectionReservation connectionReservation)
 	{
-		Map<Number160, TrackerData> activePeers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
+		final Map<Number160, TrackerData> activePeers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
 		//TODO: make a limitrandom here in case we have many activepeers, below is a sketch
-		activePeers = Utils.limitRandom(activePeers, TrackerStorage.TRACKER_SIZE);
-		FutureResponse[] futureResponses = new FutureResponse[activePeers.size()];
-		int i = 0;
-		for (TrackerData data : activePeers.values())
-			futureResponses[i++] = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false, cc);
-		return new FutureForkJoin<FutureResponse>(futureResponses);
-	}
-
-	public FutureTracker addToTracker(final Number160 locationKey, final Number160 domainKey, final byte[] attachment,
-			RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
-			final boolean signMessage, final FutureCreate<BaseFuture> futureCreate, final Set<Number160> knownPeers, final ChannelCreator cc)
-	{
-		final FutureTracker futureTracker = new FutureTracker(futureCreate);
-		final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, routingConfiguration, false, cc);
-		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+		final Map<Number160, TrackerData> activePeers2 = Utils.limitRandom(activePeers, TrackerStorage.TRACKER_SIZE);
+		final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(activePeers2.size());
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
-			public void operationComplete(FutureRouting future) throws Exception
+			public void operationComplete(FutureChannelCreator future) throws Exception
 			{
-				if (futureRouting.isSuccess())
+				if(future.isSuccess())
 				{
-					if (logger.isDebugEnabled())
-						logger.debug("found potential hits for tracker add: " + futureRouting.getPotentialHits());
-					loop(locationKey, domainKey, futureRouting.getPotentialHits(), trackerConfiguration, futureTracker,
-							false, knownPeers, new Operation()
-							{
-								@Override
-								public FutureResponse create(PeerAddress remoteNode, boolean primary)
-								{
-									if (logger.isDebugEnabled())
-										logger.debug("tracker add (me=" + peerBean.getServerPeerAddress() + "): "
-												+ remoteNode + " location=" + locationKey);
-									return trackerRPC.addToTracker(remoteNode, locationKey, domainKey, attachment,
-											signMessage, primary, knownPeers, cc);
-								}
-							});
+					for (TrackerData data : activePeers2.values())
+					{
+						FutureResponse futureResponses = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false, future.getChannelCreator());
+						if(!futureLateJoin.add(futureResponses))
+						{
+							//the late join future is fininshed if the add returns false
+							break;
+						}
+					}
+					Utils.addReleaseListenerAll(futureLateJoin, connectionReservation, future.getChannelCreator());
 				}
 				else
 				{
-					futureTracker.setFailed("routing failed");
+					futureLateJoin.setFailed(future);
 				}
+			}
+		});
+		return futureLateJoin;
+	}
+
+	public FutureTracker addToTracker(final Number160 locationKey, final Number160 domainKey, final byte[] attachment,
+			final RoutingConfiguration routingConfiguration, final TrackerConfiguration trackerConfiguration,
+			final boolean signMessage, final FutureCreate<BaseFuture> futureCreate, final Set<Number160> knownPeers, 
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
+	{
+		final FutureTracker futureTracker = new FutureTracker(futureCreate);
+		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
+		{
+			@Override
+			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception
+			{
+				if(futureChannelCreator2.isSuccess())
+				{
+					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, 
+							routingConfiguration, false, futureChannelCreator2.getChannelCreator());
+					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+					{
+						@Override
+						public void operationComplete(FutureRouting future) throws Exception
+						{
+							if (futureRouting.isSuccess())
+							{
+								if (logger.isDebugEnabled())
+									logger.debug("found potential hits for tracker add: " + futureRouting.getPotentialHits());
+								loop(locationKey, domainKey, futureRouting.getPotentialHits(), trackerConfiguration, futureTracker,
+										false, knownPeers, new Operation()
+										{
+											@Override
+											public FutureResponse create(PeerAddress remoteNode, boolean primary)
+											{
+												if (logger.isDebugEnabled())
+													logger.debug("tracker add (me=" + peerBean.getServerPeerAddress() + "): "
+															+ remoteNode + " location=" + locationKey);
+												return trackerRPC.addToTracker(remoteNode, locationKey, domainKey, attachment,
+														signMessage, primary, knownPeers, futureChannelCreator2.getChannelCreator());
+											}
+										});
+							}
+							else
+							{
+								futureTracker.setFailed("routing failed");
+							}
+						}
+					});
+					Utils.addReleaseListenerAll(futureTracker, connectionReservation, futureChannelCreator2.getChannelCreator());
+				}
+				else
+				{
+					futureTracker.setFailed(futureChannelCreator2);
+				}
+				
 			}
 		});
 		return futureTracker;

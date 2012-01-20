@@ -46,11 +46,11 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public class RequestHandlerTCP extends SimpleChannelHandler
+public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(RequestHandlerTCP.class);
 	// The future response which is currently be waited for
-	final private FutureResponse futureResponse;
+	final private K futureResponse;
 	// The node this request handler is associated with
 	final private PeerBean peerBean;
 	final private ConnectionBean connectionBean;
@@ -63,7 +63,7 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 	 * @param objectHolder the bean representing the node this handler belongs
 	 *        to
 	 */
-	public RequestHandlerTCP(FutureResponse futureResponse, PeerBean peerBean,
+	public RequestHandlerTCP(K futureResponse, PeerBean peerBean,
 			ConnectionBean connectionBean, Message message)
 	{
 		this.peerBean = peerBean;
@@ -73,24 +73,24 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 		this.sendMessageID = new MessageID(message);
 	}
 
-	public FutureResponse getFutureResponse()
+	public K getFutureResponse()
 	{
 		return futureResponse;
 	}
 
-	public FutureResponse sendTCP(ChannelCreator channelCreator)
+	public K sendTCP(ChannelCreator channelCreator)
 	{
 		return sendTCP(channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
 	}
 
-	public FutureResponse sendTCP(ChannelCreator channelCreator, int idleTCPMillis)
+	public K sendTCP(ChannelCreator channelCreator, int idleTCPMillis)
 	{
 		connectionBean.getSender().sendTCP(this, futureResponse, message, channelCreator,
 				idleTCPMillis);
 		return futureResponse;
 	}
 
-	public FutureResponse fireAndForgetTCP(ChannelCreator channelCreator)
+	public K fireAndForgetTCP(ChannelCreator channelCreator)
 	{
 		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator,
 				connectionBean.getConfiguration().getIdleTCPMillis());
@@ -239,6 +239,10 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 			@Override
 			public void operationComplete(ChannelFuture arg0) throws Exception
 			{
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("channel close, set failure for request message: "+message);
+				}
 				futureResponse.setFailed("Channel closed event");
 			}
 		});
@@ -263,7 +267,7 @@ public class RequestHandlerTCP extends SimpleChannelHandler
 		});
 	}
 
-	private void reportResult(final Channel channel, final FutureResponse futureResponse,
+	private void reportResult(final Channel channel, final K futureResponse,
 			final Message responseMessage)
 	{
 		if (!reported.compareAndSet(false, true))

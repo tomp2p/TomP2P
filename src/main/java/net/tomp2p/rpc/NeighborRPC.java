@@ -81,7 +81,7 @@ public class NeighborRPC extends ReplyHandler
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			NeighborsRequestTCP request = new NeighborsRequestTCP(futureResponse, peerBean, connectionBean, message);
+			NeighborsRequestTCP<FutureResponse> request = new NeighborsRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 			return request.sendTCP(channelCreator);
 		}
 	}
@@ -181,11 +181,11 @@ public class NeighborRPC extends ReplyHandler
 			}
 		}
 	}
-	private class NeighborsRequestTCP extends RequestHandlerTCP
+	private class NeighborsRequestTCP<K extends FutureResponse> extends RequestHandlerTCP<K>
 	{
 		final private Message message;
 
-		public NeighborsRequestTCP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		public NeighborsRequestTCP(K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
 		{
 			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;

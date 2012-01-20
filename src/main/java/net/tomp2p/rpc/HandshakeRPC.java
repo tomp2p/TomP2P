@@ -21,8 +21,9 @@ import java.util.Collection;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
@@ -58,10 +59,15 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		return createHandlerUDP(remoteNode, Type.REQUEST_1).sendBroadcastUDP(channelCreator);
 	}
+	
+	public RequestHandlerUDP pingUDP(final PeerAddress remoteNode)
+	{
+		return createHandlerUDP(remoteNode, Type.REQUEST_1);
+	}
 
 	public FutureResponse pingUDP(final PeerAddress remoteNode, ChannelCreator channelCreator)
 	{
-		return createHandlerUDP(remoteNode, Type.REQUEST_1).sendUDP(channelCreator);
+		return pingUDP(remoteNode).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCP(final PeerAddress remoteNode, ChannelCreator channelCreator)
@@ -86,11 +92,11 @@ public class HandshakeRPC extends ReplyHandler
 		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
 	}
 
-	private RequestHandlerTCP createHandlerTCP(final PeerAddress remoteNode, Type type)
+	private RequestHandlerTCP<FutureResponse> createHandlerTCP(final PeerAddress remoteNode, Type type)
 	{
 		final Message message = createMessage(remoteNode, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 	}
 
 	public FutureResponse pingUDPDiscover(final PeerAddress remoteNode, ChannelCreator channelCreator)
@@ -110,7 +116,7 @@ public class HandshakeRPC extends ReplyHandler
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
 	}
 
 	public FutureResponse pingUDPProbe(final PeerAddress remoteNode, ChannelCreator channelCreator)
@@ -124,7 +130,7 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		final Message message = createMessage(remoteNode, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
 	}
 
 	@Override
@@ -149,38 +155,49 @@ public class HandshakeRPC extends ReplyHandler
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP()) 
 			{
-				FutureRunnable runner = new FutureRunnable() 
+				connectionBean.getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
-					public void run() {
-						ChannelCreator cc=connectionBean.getReservation().reserve(1);
-						FutureResponse fr=fireUDP(message.getSender(), cc);
-						Utils.addReleaseListenerAll(fr, connectionBean.getReservation(), cc);
+					public void operationComplete(FutureChannelCreator future) throws Exception
+					{
+						if(future.isSuccess())
+						{
+							FutureResponse futureResponse=fireUDP(message.getSender(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, connectionBean.getReservation(), future.getChannelCreator());
+						}
+						else
+						{
+							if(logger.isWarnEnabled())
+							{
+								logger.warn("handleResponse for REQUEST_3 failed (UDP) "+future.getFailedReason());
+							}
+						}		
 					}
-					@Override
-					public void failed(String reason) {
-						logger.warn("handleResponse for REQUEST_3 failed (UDP) "+reason);
-					}
-				};
-				connectionBean.getScheduler().callLater(runner);
+				});
 			}
 			else 
 			{
-				FutureRunnable runner = new FutureRunnable() 
+				connectionBean.getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
-					public void run() {
-						ChannelCreator cc=connectionBean.getReservation().reserve(1);
-						FutureResponse fr=fireTCP(message.getSender(), cc);
-						Utils.addReleaseListenerAll(fr, connectionBean.getReservation(), cc);
+					public void operationComplete(FutureChannelCreator future) throws Exception
+					{
+						if(future.isSuccess())
+						{
+							FutureResponse futureResponse=fireTCP(message.getSender(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, connectionBean.getReservation(), future.getChannelCreator());
+						}
+						else
+						{
+							if(logger.isWarnEnabled())
+							{
+								logger.warn("handleResponse for REQUEST_3 failed (TCP) "+future.getFailedReason());
+							}
+						}
 					}
-					@Override
-					public void failed(String reason) {
-						logger.warn("handleResponse for REQUEST_3 failed (TCP) "+reason);
-					}
-				};
-				connectionBean.getScheduler().callLater(runner);
+				});
 			}
+			//we are here optimistic
 			return responseMessage;
 		}
 		// discover

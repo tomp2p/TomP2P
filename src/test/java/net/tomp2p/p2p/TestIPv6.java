@@ -9,6 +9,7 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -31,7 +32,9 @@ public class TestIPv6
 		peer.listen(4000, 4000, b);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
-				ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peer.getConnectionBean().getReservation().reserve(1);
+				fcc.awaitUninterruptibly();
+				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
 				fr1.awaitUninterruptibly();
 				

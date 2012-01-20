@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.utils.Utils;
 
@@ -49,13 +51,15 @@ public class ConnectionReservation
 	final private Statistics statistics;
 	// keeps the information about acquired channel and which semaphore has been used
 	final private Map<ChannelCreator, Semaphore> activeChannelCreators = new ConcurrentHashMap<ChannelCreator, Semaphore>();
+	final private Map<Long, Boolean> threads = new ConcurrentHashMap<Long, Boolean>();
 	// used for synchronization
 	final private AtomicInteger counter = new AtomicInteger(0);
+	final private Scheduler scheduler;
 	private volatile boolean shutdown = false;
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfigurationBean configuration,
-			MessageLogger messageLoggerFilter, Statistics statistics)
+			MessageLogger messageLoggerFilter, Statistics statistics, Scheduler scheduler)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;
 		this.udpChannelFactory = udpChannelFactory;
@@ -65,6 +69,7 @@ public class ConnectionReservation
 		this.semaphoreOpen = new Semaphore(maxPermitsOpen);
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.statistics = statistics;
+		this.scheduler = scheduler;
 	}
 	
 	/**
@@ -74,11 +79,11 @@ public class ConnectionReservation
 	 * connections that are created and released immediately.
 	 * 
 	 * @param permits The number of connections to be reserved
-	 * @return The channel creator object that can be used to create the
+	 * @return The future channel creator object that can be used to create the
 	 *         channels. Returns null if something went wrong (shutdown,
 	 *         interrupt)
 	 */
-	public ChannelCreator reserve(final int permits)
+	public FutureChannelCreator reserve(final int permits)
 	{
 		return reserve(permits, false, "default");
 	}
@@ -91,11 +96,11 @@ public class ConnectionReservation
 	 * 
 	 * @param permits The number of connections to be reserved
 	 * @param name The name of the ChannelCreator, used for easier debugging
-	 * @return The channel creator object that can be used to create the
+	 * @return The future channel creator object that can be used to create the
 	 *         channels. Returns null if something went wrong (shutdown,
 	 *         interrupt)
 	 */
-	public ChannelCreator reserve(final int permits, final String name)
+	public FutureChannelCreator reserve(final int permits, final String name)
 	{
 		return reserve(permits, false, name);
 	}
@@ -108,11 +113,11 @@ public class ConnectionReservation
 	 * @param permits The number of connections to be reserved
 	 * @param keepAliveAndReuse If the connection should stay open (TCP) for
 	 *        later reuse.
-	 * @return The channel creator object that can be used to create the
+	 * @return The future channel creator object that can be used to create the
 	 *         channels. Returns null if something went wrong (shutdown,
 	 *         interrupt)
 	 */
-	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse)
+	public FutureChannelCreator reserve(final int permits, final boolean keepAliveAndReuse)
 	{
 		return reserve(permits, keepAliveAndReuse, "default");
 	}
@@ -120,24 +125,71 @@ public class ConnectionReservation
 	/**
 	 * Reserves connections. If a reservation of 5 connection is made, then 5
 	 * parallel connections can be made. Until the connections are released, the
-	 * connections can be closed and reopened.
+	 * connections can be closed and reopened. Depending on the thread, this may block or not.
 	 * 
 	 * @param permits The number of connections to be reserved
 	 * @param keepAliveAndReuse If the connection should stay open (TCP) for
 	 *        later reuse.
 	 * @param name The name of the ChannelCreator, used for easier debugging
-	 * @return The channel creator object that can be used to create the
+	 * @return The future channel creator object that can be used to create the
 	 *         channels. Returns null if something went wrong (shutdown,
 	 *         interrupt)
 	 */
-	public ChannelCreator reserve(final int permits, final boolean keepAliveAndReuse, String name)
+	public FutureChannelCreator reserve(final int permits, final boolean keepAliveAndReuse, final String name)
 	{
-		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME))
+		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
+		// Here we need to figure out if we can block or not. We need to care
+		// for two cases: (1) when we come from a netty thread, we should not
+		// block, othrewise we may block nio worker threads which will slow down
+		// network and (2) if we previously reserved a connection from a specify
+		// thread. In this case we should not block, otherwise we will see a
+		// deadlock. The deadlock can happend becauese if we have 10 connections
+		// and 10 threads reserving one connection, then from those thread we
+		// want to reserve one more connection -> boom and we have a deadlock.
+		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME) || 
+				threads.containsKey(Thread.currentThread().getId()))
 		{
-			logger.warn("we are blocking in a thread that could cause a deadlock: "
-					+ Thread.currentThread().getName());
-			throw new RuntimeException("[Thread: " + Thread.currentThread().getName() + "] cannot block here");
+			scheduler.addQueue(new FutureRunnable()
+			{
+				@Override
+				public void run()
+				{
+					ChannelCreator channelCreator = reserve0(permits, keepAliveAndReuse, name, false);
+					if(channelCreator != null)
+					{
+						futureChannelCreator.reserved(channelCreator);
+					}
+					else
+					{
+						futureChannelCreator.setFailed("could not reserve connection, most likely we shutdown");
+					}
+				}
+				
+				@Override
+				public void failed(String reason)
+				{
+					futureChannelCreator.setFailed(reason);
+				}
+			});
 		}
+		else
+		{
+			ChannelCreator channelCreator = reserve0(permits, keepAliveAndReuse, name, true);
+			if(channelCreator != null)
+			{
+				futureChannelCreator.reserved(channelCreator);
+			}
+			else
+			{
+				futureChannelCreator.setFailed("could not reserve connection, most likely we shutdown");
+			}
+		}
+		return futureChannelCreator;
+		
+	}
+	
+	private ChannelCreator reserve0(final int permits, final boolean keepAliveAndReuse, String name, final boolean checkDeadlock)
+	{
 		if(counter.incrementAndGet()<0)
 		{
 			logger.warn("Cannot acquire " + permits + " connections, shutting down");
@@ -151,7 +203,15 @@ public class ConnectionReservation
 			{
 				ChannelCreator channelCreator = new ChannelCreator(permits, statistics,
 						messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory,
-						keepAliveAndReuse, name);
+						keepAliveAndReuse, name, Thread.currentThread().getId());
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("created channels for Thread "+ Thread.currentThread().getName()+"/"+Thread.currentThread().getId());
+				}
+				if(checkDeadlock)
+				{
+					threads.put(Thread.currentThread().getId(), Boolean.TRUE);
+				}
 				activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
 						: semaphoreCreating);
 				return channelCreator;
@@ -233,16 +293,17 @@ public class ConnectionReservation
 		if (channelCreator.hasNoPermits())
 		{
 			activeChannelCreators.remove(channelCreator);
+			threads.remove(channelCreator.getCreatorThread());
 			if (logger.isDebugEnabled())
 			{
-				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits());
+				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits()+", which was created from thread: "+channelCreator.getCreatorThread());
 			}
 		}
 		else
 		{
 			if (logger.isDebugEnabled())
 			{
-				logger.debug("partial release ("+permits+"), we cannot remove the channelcreator from the list "+semaphore.availablePermits());
+				logger.debug("partial release ("+permits+"), we cannot remove the channelcreator from the list "+semaphore.availablePermits()+", which was created from thread: "+channelCreator.getCreatorThread());
 			}
 		}
 		if (logger.isDebugEnabled())
@@ -273,6 +334,7 @@ public class ConnectionReservation
 	 */
 	public void shutdown()
 	{
+		scheduler.shutdown();
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("Shutdown");

@@ -187,6 +187,12 @@ public abstract class BaseFutureImpl implements BaseFuture
 			return completed && (type != FutureType.OK);
 		}
 	}
+	
+	@Override
+	public void setFailed(final BaseFuture origin)
+	{
+		setFailed(origin.getFailedReason());
+	}
 
 	@Override
 	public void setFailed(final String reason)

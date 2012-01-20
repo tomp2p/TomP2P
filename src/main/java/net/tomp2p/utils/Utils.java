@@ -485,13 +485,16 @@ public class Utils
 		});
 	}
 	
-	public static void addReleaseListenerAll(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator cc) 
+	public static void addReleaseListenerAll(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator channelCreator) 
 	{
+		if(channelCreator == null)
+			throw new IllegalArgumentException("channelCreator cannot be null");
 		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
 		{
 			@Override
-			public void operationComplete(BaseFuture future) throws Exception {
-				connectionReservation.release(cc);
+			public void operationComplete(BaseFuture future) throws Exception 
+			{
+				connectionReservation.release(channelCreator);
 			}
 		});
 	}
@@ -500,5 +503,14 @@ public class Utils
 			Map<Number160, TrackerData> activePeers, int trackerSize) {
 		// TODO Auto-generated method stub
 		return activePeers;
+	}
+
+	public static <K> K getLast(List<K> list)
+	{
+		if (!list.isEmpty())
+		{
+			return list.get(list.size()-1);
+		}
+		return null;
 	}
 }

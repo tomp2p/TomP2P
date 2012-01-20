@@ -44,7 +44,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	// This is a pointer to the other futures created based on this one.
 	final private FutureCreate<FutureDHT> futureCreate;
 	// A pointer to the routing process that run before the DHT operations
-	final private FutureRouting futureRouting;
+	private FutureRouting futureRouting;
 	// Stores futures of DHT operations, 6 is the maximum of futures being
 	// generates as seen in Configurations (min.res + parr.diff)
 	final private List<FutureResponse> requests = new ArrayList<FutureResponse>(6);
@@ -61,7 +61,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	@Deprecated
 	public FutureDHT()
 	{
-		this(0, new VotingSchemeDHT(), null, null);
+		this(0, new VotingSchemeDHT(), null);
 	}
 
 	/**
@@ -76,13 +76,11 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	 * @param futureRouting The futures from the routing process.
 	 */
 	public FutureDHT(final int min, final EvaluatingSchemeDHT evaluationScheme,
-			FutureCreate<FutureDHT> futureCreate,
-			FutureRouting futureRouting)
+			FutureCreate<FutureDHT> futureCreate)
 	{
 		this.min = min;
 		this.evaluationScheme = evaluationScheme;
 		this.futureCreate = futureCreate;
-		this.futureRouting = futureRouting;
 	}
 
 	@Deprecated
@@ -419,6 +417,20 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 		synchronized (lock)
 		{
 			return futureRouting;
+		}
+	}
+	
+	/**
+	 * Sets the future object that was used for the routing. Before the
+	 * FutureDHT is used, FutureRouting has to be completed successfully.
+	 * 
+	 * @param futureRouting The future object to set
+	 */
+	public void setFutureRouting(FutureRouting futureRouting)
+	{
+		synchronized (lock)
+		{
+			this.futureRouting = futureRouting;
 		}
 	}
 

@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PDecoderTCP;
@@ -63,6 +64,7 @@ public class ChannelCreator
 	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
 	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
 	final private String name;
+	final private long creatorThread;
 	// objects needed to create the connection
 	final private MessageLogger messageLoggerFilter;
 	final private ChannelFactory tcpClientChannelFactory;
@@ -88,7 +90,7 @@ public class ChannelCreator
 	 */
 	ChannelCreator(int permits, Statistics statistics,
 			MessageLogger messageLoggerFilter, ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse, String name)
+			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse, String name, long creatorThread)
 	{
 		this.permitsCount = new AtomicInteger(permits);
 		this.connectionSemaphore = new Semaphore(permits);
@@ -99,6 +101,7 @@ public class ChannelCreator
 		this.keepAliveAndReuse = keepAliveAndReuse;
 		this.statistics = statistics;
 		this.name = name;
+		this.creatorThread = creatorThread;
 	}
 
 	/**
@@ -180,7 +183,7 @@ public class ChannelCreator
 	 * @return The channel future or null if we are shutting down.
 	 */
 	public ChannelFuture createTCPChannel(ReplyTimeoutHandler timeoutHandler,
-			RequestHandlerTCP requestHandler,
+			RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			final FutureResponse futureResponse, int connectTimeoutMillis,
 			final InetSocketAddress recipient)
 	{
@@ -435,7 +438,7 @@ public class ChannelCreator
 	 * 
 	 * @param permits The number of permits to be released
 	 */
-	public void release(int permits)
+	void release(int permits)
 	{
 		connectionSemaphore.release(permits);
 		int result = permitsCount.addAndGet(-permits);
@@ -474,5 +477,10 @@ public class ChannelCreator
 	public String getName()
 	{
 		return name;
+	}
+
+	public long getCreatorThread()
+	{
+		return creatorThread;
 	}
 }

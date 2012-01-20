@@ -16,19 +16,19 @@ package net.tomp2p.replication;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TrackerStorageReplication implements ResponsibilityListener
 {
@@ -63,28 +63,26 @@ public class TrackerStorageReplication implements ResponsibilityListener
 		}
 		for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey))
 		{
-			FutureRunnable runner=new FutureRunnable()
+			peer.getConnectionBean().getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 			{
-				private volatile FutureResponse futureResponse;
 				@Override
-				public void run() 
+				public void operationComplete(FutureChannelCreator future) throws Exception
 				{
-					final ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
-					futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, cc);
-					Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), cc, 1);
-					pendingFutures.put(futureResponse, System.currentTimeMillis());
-					
-				}
-				@Override
-				public void failed(String reason) 
-				{
-					if(futureResponse!=null)
+					if(future.isSuccess())
 					{
-						futureResponse.setFailed(reason);
+						FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, future.getChannelCreator());
+						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), future.getChannelCreator(), 1);
+						pendingFutures.put(futureResponse, System.currentTimeMillis());
+					}
+					else
+					{
+						if(logger.isErrorEnabled())
+						{
+							logger.error("otherResponsible failed "+future.getFailedReason());
+						}
 					}
 				}
-			};
-			peer.getConnectionBean().getScheduler().callLater(runner);
+			});
 		}
 	}
 }

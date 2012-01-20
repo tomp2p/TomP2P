@@ -4,6 +4,7 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.p2p.Peer;
@@ -34,7 +35,10 @@ public class TestNeighbor
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.listen(8088, 8088);
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
+			
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
 					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
 			fr.awaitUninterruptibly();
@@ -68,7 +72,9 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
 					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
 			fr.awaitUninterruptibly();
@@ -102,7 +108,9 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			final ChannelCreator cc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
 			try
 			{
 

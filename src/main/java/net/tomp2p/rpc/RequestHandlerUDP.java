@@ -229,6 +229,10 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 			@Override
 			public void operationComplete(ChannelFuture arg0) throws Exception
 			{
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("channel close, set failure for request message: "+message);
+				}
 				futureResponse.setFailed("Channel closed event");
 			}
 		});

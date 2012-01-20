@@ -32,6 +32,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 	final private int nrMaxFutures;
 	final private int minSuccess;
 	final private List<K> futuresDone;
+	private K lastSuceessFuture;
 	private int successCount = 0;
 
 	/**
@@ -63,29 +64,40 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 	 * can add futures later on.
 	 * 
 	 * @param future The future to be added.
+	 * @return True if the future was added to the futurelist, false if the
+	 *         latejoin future is already finished and the future was not added.
 	 */
-	public void add(final K future)
+	public boolean add(final K future)
 	{
-		future.addListener(new BaseFutureAdapter<K>()
+		synchronized (lock)
 		{
-			@Override
-			public void operationComplete(K future) throws Exception
+			if (completed)
 			{
-				boolean done;
-				synchronized (lock)
-				{
-					if (future.isSuccess())
-					{
-						successCount++;
-					}
-					done = checkDone(future);
-				}
-				if (done)
-				{
-					notifyListerenrs();
-				}
+				return false;
 			}
-		});
+			future.addListener(new BaseFutureAdapter<K>()
+			{
+				@Override
+				public void operationComplete(K future) throws Exception
+				{
+					boolean done = false;
+					synchronized (lock)
+					{
+						if (future.isSuccess())
+						{
+							successCount++;
+							lastSuceessFuture = future;
+						}
+						done = checkDone(future);
+					}
+					if (done)
+					{
+						notifyListerenrs();
+					}
+				}
+			});
+			return true;
+		}
 	}
 
 	/**
@@ -100,7 +112,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		if (!completed)
 		{
 			futuresDone.add(future);
-			if (futuresDone.size() == nrMaxFutures)
+			if (futuresDone.size() >= nrMaxFutures || successCount >= minSuccess)
 			{
 				done = setCompletedAndNotify();
 				boolean isSuccess = successCount >= minSuccess;
@@ -121,6 +133,17 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		synchronized (lock)
 		{
 			return futuresDone;
+		}
+	}
+	
+	/**
+	 * @return the last successful finished future.
+	 */
+	public K getLastSuceessFuture()
+	{
+		synchronized (lock)
+		{
+			return lastSuceessFuture;
 		}
 	}
 }

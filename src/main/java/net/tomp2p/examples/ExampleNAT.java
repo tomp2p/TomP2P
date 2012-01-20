@@ -20,6 +20,7 @@ import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
@@ -44,7 +45,9 @@ public class ExampleNAT
 			{
 				for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) 
 				{
-					ChannelCreator cc=peer.getConnectionBean().getReservation().reserve(1);
+					FutureChannelCreator fcc=peer.getConnectionBean().getReservation().reserve(1);
+					fcc.awaitUninterruptibly();
+					ChannelCreator cc = fcc.getChannelCreator();
 					FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
 					fr1.awaitUninterruptibly();
 					if (fr1.isSuccess())

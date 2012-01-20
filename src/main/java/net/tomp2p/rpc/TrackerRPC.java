@@ -106,7 +106,7 @@ public class TrackerRPC extends ReplyHandler
 		if (attachement != null)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
 			message.setPayload(ChannelBuffers.wrappedBuffer(attachement, offset, legth));
 			return requestHandler.sendTCP(channelCreator);
@@ -137,7 +137,7 @@ public class TrackerRPC extends ReplyHandler
 		if (expectAttachement)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestTCP requestHandler = new TrackerRequestTCP(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
 			return requestHandler.sendTCP(channelCreator);
 		}
@@ -230,13 +230,13 @@ public class TrackerRPC extends ReplyHandler
 		return responseMessage;
 	}
 
-	private class TrackerRequestTCP extends RequestHandlerTCP
+	private class TrackerRequestTCP<K extends FutureResponse> extends RequestHandlerTCP<K>
 	{
 		final private Message message;
 		final private Number160 locationKey;
 		final private Number160 domainKey;
 
-		public TrackerRequestTCP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
+		public TrackerRequestTCP(K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
 				Number160 locationKey, Number160 domainKey)
 		{
 			super(futureResponse, peerBean, connectionBean, message);

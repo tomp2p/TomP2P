@@ -30,7 +30,6 @@ import net.tomp2p.message.TomP2PEncoderTCP;
 import net.tomp2p.message.TomP2PEncoderUDP;
 import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.PeerListener;
-import net.tomp2p.p2p.Scheduler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -153,17 +152,18 @@ public class ConnectionHandler
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
+		Scheduler scheduler = new Scheduler();
 		ConnectionReservation reservation = new ConnectionReservation(tcpClientChannelFactory,
-				udpChannelFactory, configuration, messageLoggerFilter, peerMap.getStatistics());
+				udpChannelFactory, configuration, messageLoggerFilter, peerMap.getStatistics(), scheduler);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean,
 				configuration.getIdleUDPMillis(),
 				configuration.getIdleTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
-		Scheduler scheduledPeer = new Scheduler();
+		
 		Sender sender = new Sender(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup,
-				scheduledPeer, reservation, configuration);
+				reservation, configuration);
 		if (listenAll)
 		{
 			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
@@ -365,7 +365,6 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
-			connectionBean.getScheduler().shutdownAndWait();
 			connectionBean.getReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources

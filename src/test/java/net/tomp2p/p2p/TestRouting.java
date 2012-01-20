@@ -14,7 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message.Command;
@@ -177,7 +179,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
 					peers[5].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -213,7 +217,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
 					peers[5].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -249,7 +255,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
 					peers[5].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -285,7 +293,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
 					peers[5].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -321,7 +331,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(), Utils2
 					.createAddress("0xffffff"));
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -359,7 +371,9 @@ public class TestRouting
 					.getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(), Utils2
 					.createAddress("0xffffff"));
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -396,7 +410,9 @@ public class TestRouting
 			addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			addToPeerMap(peers[5],  peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -433,7 +449,9 @@ public class TestRouting
 			addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(1);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -470,7 +488,9 @@ public class TestRouting
 			addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -510,7 +530,9 @@ public class TestRouting
 			addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(3);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(3);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 3, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -547,7 +569,9 @@ public class TestRouting
 			addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
 			// do testing
-			ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(3);
+			FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(3);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 3, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getReservation(), cc);
@@ -626,7 +650,9 @@ public class TestRouting
 			master = peers[0];
 			Utils2.perfectRouting(peers);
 			// do testing
-			ChannelCreator cc=peers[500].getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=peers[500].getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
 			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getReservation(), cc);
@@ -653,7 +679,9 @@ public class TestRouting
 			master = peers[0];
 			Utils2.perfectRouting(peers);
 			// do testing
-			ChannelCreator cc=peers[500].getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=peers[500].getConnectionBean().getReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
 					Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getReservation(), cc);
@@ -685,7 +713,9 @@ public class TestRouting
 			List<FutureRouting> frs = new ArrayList<FutureRouting>();
 			for (int i = 0; i < peers.length; i++)
 			{
-				ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(1);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, true, cc);
@@ -724,7 +754,9 @@ public class TestRouting
 			Map<Integer, FutureRouting> frs = new HashMap<Integer, FutureRouting>();
 			for (int i = 0; i < peers.length; i++)
 			{
-				ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+				FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 5, 0, 100, 2, true, cc);
@@ -764,7 +796,9 @@ public class TestRouting
 			List<FutureRouting> frs = new ArrayList<FutureRouting>();
 			for (int i = 0; i < peers.length; i++)
 			{
-				ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(1);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 0, 0, 100, 1, false, cc);
@@ -804,7 +838,9 @@ public class TestRouting
 			for (int i = 0; i < peers.length; i++)
 			{
 				int peerNr=((i * 7777) + 1) % peers.length;
-				ChannelCreator cc=peers[peerNr].getConnectionBean().getReservation().reserve(2);
+				FutureChannelCreator fcc=peers[peerNr].getConnectionBean().getReservation().reserve(2);
+				fcc.awaitUninterruptibly();
+				final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting frr = peers[peerNr].getRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Command.NEIGHBORS_STORAGE, 0, 1, 0, 100, 2, false, cc);
@@ -843,7 +879,9 @@ public class TestRouting
 			peerAddresses.add(master.getPeerAddress());
 			for (int i = 1; i < peers.length; i++)
 			{
-				ChannelCreator cc=peers[i].getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peers[i].getConnectionBean().getReservation().reserve(1);
+				fcc.awaitUninterruptibly();
+				final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting fm = peers[i].getRouting()
 						.bootstrap(peerAddresses, 5, 100, 100, 1, true, cc);
 				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getReservation(), cc);
@@ -873,7 +911,9 @@ public class TestRouting
 			{
 				Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
 				peerAddresses.add(peers[0].getPeerAddress());
-				ChannelCreator cc=peers[i].getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peers[i].getConnectionBean().getReservation().reserve(1);
+				fcc.awaitUninterruptibly();
+				final ChannelCreator cc = fcc.getChannelCreator();
 				FutureRouting fm = peers[i].getRouting().bootstrap(peerAddresses, 5, 100, 100, 1,
 						false, cc);
 				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getReservation(), cc);
@@ -897,7 +937,7 @@ public class TestRouting
 		{
 			master.listen(4000, 4000);
 			client.listen(4001, 4001);
-			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast(4000);
+			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4000);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
 			Assert.assertEquals(1, client.getPeerBean().getPeerMap().size());
@@ -918,7 +958,7 @@ public class TestRouting
 		{
 			master.listen(4002, 4002);
 			client.listen(4001, 4001);
-			FutureForkJoin<FutureResponse> tmp = client.pingBroadcast(4001);
+			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4001);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 			Assert.assertEquals(0, client.getPeerBean().getPeerMap().size());
@@ -953,7 +993,9 @@ public class TestRouting
 					ss.add(peers[i].getPeerAddress());
 				}
 				// do testing
-				ChannelCreator cc=peers[0].getConnectionBean().getReservation().reserve(2);
+				FutureChannelCreator fcc=peers[0].getConnectionBean().getReservation().reserve(2);
+fcc.awaitUninterruptibly();
+final ChannelCreator cc = fcc.getChannelCreator();
 				Configurations.defaultConfigurationDirect();
 				FutureRouting frr = peers[50].getRouting().route(find, null, null,
 						Command.NEIGHBORS_STORAGE, Integer.MAX_VALUE, 5, 10, 20, 2, false, cc);

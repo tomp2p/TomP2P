@@ -130,7 +130,7 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		message.setHashDataMap(hashDataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean,
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean,
 				connectionBean, message);
 		return request.sendTCP(channelCreator);
 	}
@@ -148,7 +148,7 @@ public class StorageRPC extends ReplyHandler
 		message.setDataMap(dataMap);
 		
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 		return request.sendTCP(channelCreator);
 	}
 
@@ -176,7 +176,7 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 		return request.sendTCP(channelCreator);
 	}
 
@@ -208,7 +208,7 @@ public class StorageRPC extends ReplyHandler
 		if (protectedDomains != null)
 			message.setPublicKey(protectedDomains);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 		return request.sendTCP(channelCreator);
 	}
 
@@ -226,7 +226,7 @@ public class StorageRPC extends ReplyHandler
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP request = new RequestHandlerTCP(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 		return request.sendTCP(channelCreator);
 	}
 

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -65,7 +66,7 @@ public class Sender
 	 * @param channelCreator ChannelCreator
 	 * @param idleTCPMillis Timeout
 	 */
-	public void sendTCP(final RequestHandlerTCP handler, final FutureResponse futureResponse,
+	public void sendTCP(final RequestHandlerTCP<? extends BaseFuture> handler, final FutureResponse futureResponse,
 			final Message message, final ChannelCreator channelCreator, final int idleTCPMillis)
 	{
 		if (logger.isDebugEnabled())
@@ -121,7 +122,7 @@ public class Sender
 	 * @param channelCreator ChannelCreator
 	 * @param idleTCPMillis Timeout when a connection is considered idle (no data send or receivedF)
 	 */
-	private void sendTCP0(final PeerAddress remoteNode, final RequestHandlerTCP requestHandler,
+	private void sendTCP0(final PeerAddress remoteNode, final RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator, final int idleTCPMillis)
 	{

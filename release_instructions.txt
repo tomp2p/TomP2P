@@ -19,10 +19,24 @@ E.g. upload snapshot of Netty using scp
 mvn deploy:deploy-file \
  -DgroupId=org.jboss.netty \
  -DartifactId=netty \
- -Dversion=3.2.7.Final-SNAPSHOT \
+ -Dversion=3.3.0.Patched \
  -Dpackaging=jar \
- -Dfile=netty-3.2.7.Final-SNAPSHOT.jar \ 
+ -Dfile=netty-3.3.0.Patched.jar \
  -DrepositoryId=ssh-tomp2p \
- -Durl=scp://tomp2p.net/home/##username##/maven \ 
+ -Durl=scp://tomp2p.net/home/##username##/maven \
  -Dusername=##username## \
  -Dpassword=##password##
+ 
+
+Netty Patches
+=============
+
+These are the patches against 3.3.0.
+
+In src/main/java/org/jboss/netty/channel/socket/nio/NioWorker.java:
+ 
+if (selector.keys().isEmpty()) { ->
+if (selector.keys().isEmpty() || thread.isInterrupted()) {
+
+if (registerTaskQueue.isEmpty() && selector.keys().isEmpty()) { ->
+if (registerTaskQueue.isEmpty() && (selector.keys().isEmpty() || thread.isInterrupted())) {

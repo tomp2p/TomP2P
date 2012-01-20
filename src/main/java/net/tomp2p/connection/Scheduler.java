@@ -39,7 +39,7 @@ public class Scheduler
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("we are called from a TCP netty thread, so send this in an other thread "
-					+ Thread.currentThread().getName());
+					+ Thread.currentThread().getName()+". The queue size is: "+queue.size());
 		}
 		if(queue.size() > WARNING_THRESHOLD)
 		{

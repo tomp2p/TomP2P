@@ -2,14 +2,21 @@ Release Management
 ==================
 To make a release, use the maven plugin:
 
-  mvn release:prepare -Dusername=##username## -Dpassword=##password##
+  mvn release:prepare
   mvn release:perform
   
 if using a netbook or similar, use:
 
-  mvn release:prepare -Dusername=##username## -Dpassword=##password## -Darguments='-Dmaven.test.skip=true'
+  mvn release:prepare -Darguments='-Dmaven.test.skip=true'
   mvn release:perform -Darguments='-Dmaven.test.skip=true'
   
+Announce on:
+
+ * tomp2p/downloads
+ * tomp2p/news
+ * tomp2p/mailinglist
+ * freecode.com (http://freecode.com/projects/tomp2p)
+ * update wikipedia with version number (http://en.wikipedia.org/wiki/TomP2P)  
 
 Adding 3rd party libraries to repository
 ========================================

@@ -56,7 +56,7 @@ public class TestMaintenance
 			master = new Peer(new Number160(rnd));
 			master.getP2PConfiguration().setStartMaintenance(false);
 			master.getP2PConfiguration().getWaitingTimeBetweenNodeMaintenenceSeconds()[0] = 0;
-			master.getP2PConfiguration().getWaitingTimeBetweenNodeMaintenenceSeconds()[1] = 3;
+			master.getP2PConfiguration().getWaitingTimeBetweenNodeMaintenenceSeconds()[1] = 4;
 			master.listen(4001, 4001);
 			Peer[] nodes = createNodes(master, 500);
 			// perfect routing
@@ -69,14 +69,13 @@ public class TestMaintenance
 					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
-			//
 			Collection<PeerAddress> pas = master.getPeerBean().getPeerMap().peersForMaintenance();
+			//this needs to be empty because its within the 4 seconds, where we do our second maintenance loop.
 			Assert.assertEquals(0, pas.size());
-			Utils.sleep(3000);
+			Utils.sleep(4000);
 			pas = master.getPeerBean().getPeerMap().peersForMaintenance();
+			//after 4 seconds we get all the peers back. 160 * bagsize is the maximum capacity
 			Assert.assertEquals(160 * master.getP2PConfiguration().getBagSize(), pas.size());
-			// master.startMaintainance(master.getPeerInfo().getPeerMap(),
-			// master.getHandshakeRPC());
 		}
 		finally
 		{

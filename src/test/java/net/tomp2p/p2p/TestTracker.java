@@ -326,7 +326,7 @@ public class TestTracker
 				System.err.println("not found: " + number160+ " out of 301");
 			}
 			System.err.println("not found: " + tmp.size());
-			Assert.assertEquals(true, tmp.size() < 100);
+			Assert.assertEquals(true, tmp.size() < 160);
 
 		}
 		finally

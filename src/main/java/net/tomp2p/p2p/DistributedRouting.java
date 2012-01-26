@@ -79,9 +79,9 @@ public class DistributedRouting
 	}
 
 	/**
-	 * Bootstraps to the given remoteNode, i.e. looking for near nodes
+	 * Bootstraps to the given peerAddresses, i.e. looking for near nodes
 	 * 
-	 * @param remoteNode
+	 * @param peerAddresses
 	 *            the node to which bootstrap should be performed to
 	 * @param maxNoNewInfo
 	 *            number of nodes asked without new information to stop at

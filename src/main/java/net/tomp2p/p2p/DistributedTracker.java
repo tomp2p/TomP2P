@@ -154,11 +154,11 @@ public class DistributedTracker
 		loop(locationKey, domainKey, queueToAsk, trackerConfiguration, futureTracker, true, knownPeers, new Operation()
 		{
 			@Override
-			public FutureResponse create(PeerAddress remoteNode, boolean primary)
+			public FutureResponse create(PeerAddress remotePeer, boolean primary)
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("tracker get: " + remoteNode + " location=" + locationKey + " ");
-				FutureResponse futureResponse = trackerRPC.getFromTracker(remoteNode, locationKey, domainKey,
+					logger.debug("tracker get: " + remotePeer + " location=" + locationKey + " ");
+				FutureResponse futureResponse = trackerRPC.getFromTracker(remotePeer, locationKey, domainKey,
 						expectAttachement, signMessage, knownPeers, cc);
 				if (logger.isDebugEnabled())
 				{
@@ -242,12 +242,12 @@ public class DistributedTracker
 										false, knownPeers, new Operation()
 										{
 											@Override
-											public FutureResponse create(PeerAddress remoteNode, boolean primary)
+											public FutureResponse create(PeerAddress remotePeer, boolean primary)
 											{
 												if (logger.isDebugEnabled())
 													logger.debug("tracker add (me=" + peerBean.getServerPeerAddress() + "): "
-															+ remoteNode + " location=" + locationKey);
-												return trackerRPC.addToTracker(remoteNode, locationKey, domainKey, attachment,
+															+ remotePeer + " location=" + locationKey);
+												return trackerRPC.addToTracker(remotePeer, locationKey, domainKey, attachment,
 														signMessage, primary, knownPeers, futureChannelCreator2.getChannelCreator());
 											}
 										});

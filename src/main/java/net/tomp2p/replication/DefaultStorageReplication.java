@@ -16,6 +16,7 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageRunner;
+import net.tomp2p.utils.Timing;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 							FutureResponse futureResponse=storageRPC.put(other, locationKey, domainKey, dataMap, false,
 								false, false, future.getChannelCreator());
 							Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), future.getChannelCreator(), 1);
-							pendingFutures.put(futureResponse, System.currentTimeMillis());
+							pendingFutures.put(futureResponse, Timing.currentTimeMillis());
 						}
 						else
 						{

@@ -15,6 +15,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.utils.Timing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -419,7 +420,7 @@ public class StorageDisk extends Storage implements Responsibility
 		{
 			List<Number480> toRemove = new ArrayList<Number480>();
 			for (Map.Entry<Long, Number480Long> entry : timeoutMapRev.subMap(0L,
-					System.currentTimeMillis()).entrySet())
+					Timing.currentTimeMillis()).entrySet())
 			{
 				toRemove.add(entry.getValue().getNumber480());
 			}

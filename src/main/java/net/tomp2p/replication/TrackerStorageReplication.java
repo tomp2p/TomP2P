@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.utils.Timing;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -72,7 +73,7 @@ public class TrackerStorageReplication implements ResponsibilityListener
 					{
 						FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, future.getChannelCreator());
 						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), future.getChannelCreator(), 1);
-						pendingFutures.put(futureResponse, System.currentTimeMillis());
+						pendingFutures.put(futureResponse, Timing.currentTimeMillis());
 					}
 					else
 					{

@@ -158,7 +158,7 @@ public class TrafficCounter {
                         // Delay goes to 0, so exit
                         return;
                     }
-                    long endTime = System.currentTimeMillis();
+                    long endTime = Timing.currentTimeMillis();
                     counter.resetAccounting(endTime);
                     if (trafficShapingHandler1 != null) {
                         trafficShapingHandler1.doAccounting(counter);
@@ -179,7 +179,7 @@ public class TrafficCounter {
             if (monitorActive.get()) {
                 return;
             }
-            lastTime.set(System.currentTimeMillis());
+            lastTime.set(Timing.currentTimeMillis());
             if (checkInterval.get() > 0) {
                 monitorActive.set(true);
                 trafficMonitoring = new TrafficMonitoring(
@@ -199,7 +199,7 @@ public class TrafficCounter {
                 return;
             }
             monitorActive.set(false);
-            resetAccounting(System.currentTimeMillis());
+            resetAccounting(Timing.currentTimeMillis());
             if (trafficShapingHandler != null) {
                 trafficShapingHandler.doAccounting(this);
             }
@@ -243,7 +243,7 @@ public class TrafficCounter {
         this.trafficShapingHandler = trafficShapingHandler;
         this.executor = executor;
         this.name = name;
-        lastCumulativeTime = System.currentTimeMillis();
+        lastCumulativeTime = Timing.currentTimeMillis();
         configure(checkInterval);
     }
 
@@ -259,7 +259,7 @@ public class TrafficCounter {
             if (newcheckInterval <= 0) {
                 stop();
                 // No more active monitoring
-                lastTime.set(System.currentTimeMillis());
+                lastTime.set(Timing.currentTimeMillis());
             } else {
                 // Start if necessary
                 start();
@@ -352,7 +352,7 @@ public class TrafficCounter {
     }
 
     /**
-     * @return the Time in millisecond of the last check as of System.currentTimeMillis()
+     * @return the Time in millisecond of the last check as of Timing.currentTimeMillis()
      */
     public long getLastTime() {
         return lastTime.get();
@@ -373,7 +373,7 @@ public class TrafficCounter {
     }
 
     /**
-     * @return the lastCumulativeTime in millisecond as of System.currentTimeMillis()
+     * @return the lastCumulativeTime in millisecond as of Timing.currentTimeMillis()
      * when the cumulative counters were reset to 0.
      */
     public long getLastCumulativeTime() {
@@ -384,7 +384,7 @@ public class TrafficCounter {
      * Reset both read and written cumulative bytes counters and the associated time.
      */
     public void resetCumulativeTime() {
-        lastCumulativeTime = System.currentTimeMillis();
+        lastCumulativeTime = Timing.currentTimeMillis();
         cumulativeReadBytes.set(0);
         cumulativeWrittenBytes.set(0);
     }

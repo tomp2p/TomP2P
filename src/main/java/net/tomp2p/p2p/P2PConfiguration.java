@@ -19,6 +19,7 @@ public class P2PConfiguration
 	// The default is not to assume that you are behind firewall
 	private boolean behindFirewall=false;
 	private int trackerTimoutSeconds=60;
+	private boolean disableBind = false;
 	public P2PConfiguration()
 	{
 		this.maintenanceThreads = 5;
@@ -135,5 +136,15 @@ public class P2PConfiguration
 	public void setTrackerTimoutSeconds(int trackerTimoutSeconds)
 	{
 		this.trackerTimoutSeconds = trackerTimoutSeconds;
+	}
+
+	public boolean isDisableBind()
+	{
+		return disableBind;
+	}
+
+	public void setDisableBind(boolean disableBind)
+	{
+		this.disableBind = disableBind;
 	}
 }

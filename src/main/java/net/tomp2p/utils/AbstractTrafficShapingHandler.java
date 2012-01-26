@@ -305,7 +305,7 @@ public abstract class AbstractTrafficShapingHandler extends
         writeLimit = newWriteLimit;
         readLimit = newReadLimit;
         if (trafficCounter != null) {
-            trafficCounter.resetAccounting(System.currentTimeMillis()+1);
+            trafficCounter.resetAccounting(Timing.currentTimeMillis()+1);
         }
     }
 
@@ -401,7 +401,7 @@ public abstract class AbstractTrafficShapingHandler extends
     public void messageReceived(ChannelHandlerContext arg0, MessageEvent arg1)
             throws Exception {
         try {
-            long curtime = System.currentTimeMillis();
+            long curtime = Timing.currentTimeMillis();
             long size = objectSizeEstimator.estimateSize(arg1.getMessage());
             if (trafficCounter != null) {
                 trafficCounter.bytesRecvFlowControl(arg0, size);
@@ -461,7 +461,7 @@ public abstract class AbstractTrafficShapingHandler extends
     public void writeRequested(ChannelHandlerContext arg0, MessageEvent arg1)
             throws Exception {
         try {
-            long curtime = System.currentTimeMillis();
+            long curtime = Timing.currentTimeMillis();
             long size = objectSizeEstimator.estimateSize(arg1.getMessage());
             if (trafficCounter != null) {
                 trafficCounter.bytesWriteFlowControl(size);

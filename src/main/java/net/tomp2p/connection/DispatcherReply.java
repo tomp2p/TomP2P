@@ -29,6 +29,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.ReplyHandler;
+import net.tomp2p.utils.Timing;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -230,7 +231,7 @@ public class DispatcherReply extends SimpleChannelHandler
 		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? timeoutUPDMillis
 				: timeoutTCPMillis;
 		// no need to reply, we are late anyway
-		if (System.currentTimeMillis() > message.getFinished() + timeout)
+		if (Timing.currentTimeMillis() > message.getFinished() + timeout)
 		{
 			logger.info("We are very busy and cannto reply in time (timeout=" + timeout
 					+ "), so we drop:" + message);

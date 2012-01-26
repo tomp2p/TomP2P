@@ -35,6 +35,8 @@ public class ConnectionConfigurationBean
 	private int maxCreating = 100;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
+	// for enabling threads for reservation. This may deadlock if set to false and if Netty is used
+	private Reservation reservation = new DefaultReservation();
 
 	public int getIdleTCPMillis()
 	{
@@ -104,5 +106,15 @@ public class ConnectionConfigurationBean
 	public void setMaxCreating(int maxCreating)
 	{
 		this.maxCreating = maxCreating;
+	}
+
+	public Reservation getReservation()
+	{
+		return reservation;
+	}
+	
+	public void setReservation(Reservation reservation)
+	{
+		this.reservation = reservation;
 	}
 }

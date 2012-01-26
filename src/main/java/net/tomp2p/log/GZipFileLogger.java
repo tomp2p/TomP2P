@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.zip.GZIPOutputStream;
 
+import net.tomp2p.utils.Timing;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,7 @@ public class GZipFileLogger implements PeerLogger
 	public void sendLog(final String name, final String value)
 	{
 		StringBuilder sb = new StringBuilder("[").append(name).append("]=[").append(value).append(
-				"],time[").append(System.currentTimeMillis()).append("]");
+				"],time[").append(Timing.currentTimeMillis()).append("]");
 		pw.println(sb.toString());
 	}
 

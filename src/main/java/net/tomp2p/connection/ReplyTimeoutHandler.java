@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.Cancellable;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Timing;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
@@ -72,7 +73,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
 		// time read update now
-		lastReadTime = System.currentTimeMillis();
+		lastReadTime = Timing.currentTimeMillis();
 		ctx.sendUpstream(e);
 	}
 
@@ -82,7 +83,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 		if (e.getWrittenAmount() > 0)
 		{
 			// time wirte update now
-			lastWriteTime = System.currentTimeMillis();
+			lastWriteTime = Timing.currentTimeMillis();
 		}
 		ctx.sendUpstream(e);
 	}
@@ -103,7 +104,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	 */
 	private void initialize(ChannelHandlerContext ctx)
 	{
-		lastReadTime = lastWriteTime = System.currentTimeMillis();
+		lastReadTime = lastWriteTime = Timing.currentTimeMillis();
 		if (allIdleTimeMillis > 0)
 		{
 			allIdleTimeout = timer.newTimeout(new AllIdleTimeoutTask(ctx), allIdleTimeMillis,
@@ -131,7 +132,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 			{
 				return;
 			}
-			long currentTime = System.currentTimeMillis();
+			long currentTime = Timing.currentTimeMillis();
 			long lastIoTime = Math.max(lastReadTime, lastWriteTime);
 			long nextDelay = allIdleTimeMillis - (currentTime - lastIoTime);
 			if (nextDelay <= 0)

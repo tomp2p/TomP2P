@@ -28,7 +28,7 @@ public class ConnectionBean
 	final private int p2pID;
 	final private ChannelGroup channelGroup;
 	final private DispatcherReply dispatcherRequest;
-	final private Sender sender;
+	private volatile Sender sender;
 	final private ConnectionReservation reservation;
 	final private ConnectionConfigurationBean configuration;
 
@@ -47,6 +47,11 @@ public class ConnectionBean
 	public Sender getSender()
 	{
 		return sender;
+	}
+	
+	public void setSender(Sender sender)
+	{
+		this.sender=sender;
 	}
 
 	public DispatcherReply getDispatcherRequest()

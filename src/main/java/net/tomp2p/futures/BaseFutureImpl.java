@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.tomp2p.connection.ConnectionHandler;
+import net.tomp2p.utils.Timing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,7 +119,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	private boolean await0(final long timeoutMillis, final boolean interrupt)
 			throws InterruptedException
 	{
-		final long startTime = (timeoutMillis <= 0) ? 0 : System.currentTimeMillis();
+		final long startTime = (timeoutMillis <= 0) ? 0 : Timing.currentTimeMillis();
 		long waitTime = timeoutMillis;
 		synchronized (lock)
 		{
@@ -150,7 +151,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 				}
 				else
 				{
-					waitTime = timeoutMillis - (System.currentTimeMillis() - startTime);
+					waitTime = timeoutMillis - (Timing.currentTimeMillis() - startTime);
 					if (waitTime <= 0)
 					{
 						return completed;

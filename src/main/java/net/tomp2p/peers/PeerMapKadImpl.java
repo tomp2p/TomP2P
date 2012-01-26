@@ -33,6 +33,7 @@ import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerStatusListener.Reason;
 import net.tomp2p.utils.CacheMap;
+import net.tomp2p.utils.Timing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,13 +84,13 @@ public class PeerMapKadImpl implements PeerMap
 		private void inc()
 		{
 			counter++;
-			lastOffline = System.currentTimeMillis();
+			lastOffline = Timing.currentTimeMillis();
 		}
 
 		private void set(int counter)
 		{
 			this.counter = counter;
-			lastOffline = System.currentTimeMillis();
+			lastOffline = Timing.currentTimeMillis();
 		}
 
 		private int getCounter()
@@ -452,14 +453,14 @@ public class PeerMapKadImpl implements PeerMap
 		long scheduledCheck;
 		if (peerMapStat.getLastSeenOnlineTime(remotePeer) == 0)
 			// we need to check now!
-			scheduledCheck = System.currentTimeMillis();
+			scheduledCheck = Timing.currentTimeMillis();
 		else
 		{
 			// check for next schedule
 			int checked = peerMapStat.getChecked(remotePeer);
 			if (checked >= maintenanceTimeoutsSeconds.length)
 				checked = maintenanceTimeoutsSeconds.length - 1;
-			scheduledCheck = System.currentTimeMillis()
+			scheduledCheck = Timing.currentTimeMillis()
 					+ (maintenanceTimeoutsSeconds[checked] * 1000L);
 		}
 		synchronized (maintenance)
@@ -478,7 +479,7 @@ public class PeerMapKadImpl implements PeerMap
 					.iterator(); iterator.hasNext();)
 			{
 				Map.Entry<PeerAddress, Long> entry = iterator.next();
-				if (entry.getValue() < System.currentTimeMillis())
+				if (entry.getValue() < Timing.currentTimeMillis())
 				{
 					iterator.remove();
 					result.add(entry.getKey());
@@ -570,17 +571,17 @@ public class PeerMapKadImpl implements PeerMap
 
 	private boolean shouldPeerBeRemoved(Log log)
 	{
-		return System.currentTimeMillis() - log.getLastOffline() <= cacheTimeout
+		return Timing.currentTimeMillis() - log.getLastOffline() <= cacheTimeout
 				&& log.getCounter() >= maxFail;
 	}
 
 	@Override
-	public boolean isPeerRemovedTemporarly(PeerAddress remoteNode)
+	public boolean isPeerRemovedTemporarly(PeerAddress remotePeer)
 	{
 		Log log;
 		synchronized (peerOfflineLogs)
 		{
-			log = peerOfflineLogs.get(remoteNode);
+			log = peerOfflineLogs.get(remotePeer);
 		}
 		if (log != null)
 		{
@@ -588,12 +589,12 @@ public class PeerMapKadImpl implements PeerMap
 			{
 				if (shouldPeerBeRemoved(log))
 					return true;
-				else if (System.currentTimeMillis() - log.getLastOffline() > cacheTimeout)
+				else if (Timing.currentTimeMillis() - log.getLastOffline() > cacheTimeout)
 				{
 					// remove the peer if timeout occured
 					synchronized (peerOfflineLogs)
 					{
-						peerOfflineLogs.remove(remoteNode);
+						peerOfflineLogs.remove(remotePeer);
 					}
 				}
 			}
@@ -764,9 +765,9 @@ public class PeerMapKadImpl implements PeerMap
 	{
 		return new Comparator<PeerAddress>()
 		{
-			public int compare(PeerAddress remoteNode, PeerAddress remoteNode2)
+			public int compare(PeerAddress remotePeer, PeerAddress remotePeer2)
 			{
-				return isKadCloser(id, remoteNode, remoteNode2);
+				return isKadCloser(id, remotePeer, remotePeer2);
 			}
 		};
 	}

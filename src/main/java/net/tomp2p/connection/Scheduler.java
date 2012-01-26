@@ -17,6 +17,7 @@ package net.tomp2p.connection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +33,7 @@ public class Scheduler
 	private static final int WARNING_THRESHOLD = 10000;
 	private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
 	private final ExecutorService executor = new ThreadPoolExecutor(NR_THREADS, NR_THREADS, 0L,
-			TimeUnit.MILLISECONDS, queue);
+			TimeUnit.MILLISECONDS, queue, new MyThreadFactory());
 
 	public void addQueue(FutureRunnable futureRunnable)
 	{
@@ -64,5 +65,17 @@ public class Scheduler
 			FutureRunnable futureRunnable = (FutureRunnable) runner;
 			futureRunnable.failed("Shutting down...");
 		}
+	}
+	
+	private class MyThreadFactory implements ThreadFactory 
+	{
+		private int nr = 0;
+		public Thread newThread(Runnable r) 
+		{
+		     Thread t = new Thread(r);
+		     t.setName("scheduler-"+nr);
+		     nr++;
+		     return t;
+		 }
 	}
 }

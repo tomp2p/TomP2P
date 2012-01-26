@@ -30,6 +30,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.utils.Timing;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -384,7 +385,7 @@ public class StorageMemory extends Storage
 	// TODO: make check timeout time based in a thread, but for now its ok.
 	private Collection<Number480> checkTimeout()
 	{
-		long time = System.currentTimeMillis();
+		long time = Timing.currentTimeMillis();
 		List<Number480> toRemove = new ArrayList<Number480>();
 		for (Map.Entry<Long, Set<Number480>> entry : timeoutMapRev.subMap(0L, time).entrySet())
 		{

@@ -55,7 +55,7 @@ public class ConnectionReservation
 	// used for synchronization
 	final private AtomicInteger counter = new AtomicInteger(0);
 	final private Scheduler scheduler;
-	private volatile boolean shutdown = false;
+	final private Reservation reservation;
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfigurationBean configuration,
@@ -70,6 +70,7 @@ public class ConnectionReservation
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.statistics = statistics;
 		this.scheduler = scheduler;
+		this.reservation = configuration.getReservation();
 	}
 	
 	/**
@@ -146,8 +147,11 @@ public class ConnectionReservation
 		// deadlock. The deadlock can happend becauese if we have 10 connections
 		// and 10 threads reserving one connection, then from those thread we
 		// want to reserve one more connection -> boom and we have a deadlock.
-		if (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME) || 
-				threads.containsKey(Thread.currentThread().getId()))
+		//
+		// If we use simgrid, we have to use a single thread, thus disable this with 
+		// useReservationThread
+		if ((reservation instanceof DefaultReservation) && (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME) || 
+				threads.containsKey(Thread.currentThread().getId())))
 		{
 			scheduler.addQueue(new FutureRunnable()
 			{
@@ -188,6 +192,14 @@ public class ConnectionReservation
 		
 	}
 	
+	/**
+	 * Acquires connections. Waits in a loop. If a connection is ready, the
+	 * wait() gets notified and the acquire() is tried again.
+	 * 
+	 * @param semaphore The semaphore to get the permits from,
+	 * @param permits The number of permits
+	 * @return True if the permits could be acquired
+	 */
 	private ChannelCreator reserve0(final int permits, final boolean keepAliveAndReuse, String name, final boolean checkDeadlock)
 	{
 		if(counter.incrementAndGet()<0)
@@ -197,7 +209,7 @@ public class ConnectionReservation
 		}
 		try
 		{	
-			boolean acquired = acquire(keepAliveAndReuse ? semaphoreOpen : semaphoreCreating,
+			boolean acquired = reservation.acquire(keepAliveAndReuse ? semaphoreOpen : semaphoreCreating,
 					permits);
 			if (acquired)
 			{
@@ -226,55 +238,6 @@ public class ConnectionReservation
 		{
 			counter.decrementAndGet();
 		}
-	}
-
-	/**
-	 * Acquires connections. Waits in a loop. If a connection is ready, the
-	 * wait() gets notified and the acquire() is tried again.
-	 * 
-	 * @param semaphore The semaphore to get the permits from,
-	 * @param permits The number of permits
-	 * @return True if the permits could be acquired
-	 */
-	private boolean acquire(Semaphore semaphore, int permits)
-	{
-		boolean acquired = false;
-		while (!acquired && !shutdown)
-		{
-			try
-			{
-				acquired = semaphore.tryAcquire(permits);
-				if (!acquired)
-				{
-					if (logger.isDebugEnabled())
-					{
-						logger.debug("cannot acquire " + permits + ", in total we have "
-								+ maxPermitsCreating + "/" + maxPermitsOpen
-								+ ", but now we have "
-								+ semaphore.availablePermits());
-					}
-					synchronized (semaphore)
-					{
-						semaphore.wait(250);
-					}
-				}
-				else
-				{
-					if (logger.isDebugEnabled())
-					{
-						logger.debug("acquired " + permits + ", in total we have "
-								+ maxPermitsCreating + "/" + maxPermitsOpen
-								+ ", but now we have "
-								+ semaphore.availablePermits());
-					}
-				}
-			}
-			catch (InterruptedException e)
-			{
-				return false;
-			}
-		}
-		return acquired;
 	}
 
 	/**
@@ -330,7 +293,8 @@ public class ConnectionReservation
 	}
 
 	/**
-	 * Close all open connections and prevent creating new ones.
+	 * Close all open connections and prevent creating new ones. This operations
+	 * blocks until everything is finished
 	 */
 	public void shutdown()
 	{
@@ -340,7 +304,7 @@ public class ConnectionReservation
 			logger.debug("Shutdown");
 		}
 		// wait until all reserev() calls know that we are shutting down.
-		shutdown = true;
+		reservation.shutdown();
 		while(counter.compareAndSet(0, Integer.MIN_VALUE))
 		{
 			synchronized (semaphoreCreating)

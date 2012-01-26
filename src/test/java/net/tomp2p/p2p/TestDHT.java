@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.connection.PeerConnection;
@@ -1753,6 +1754,38 @@ public class TestDHT
 			running.set(false);
 			master.shutdown();
 		}
+	}
+	
+	/**
+	 * This will probably fail on your machine since you have to have eth0 configured. This testcase is suited
+	 * for running on the tomp2p.net server
+	 * @throws Exception
+	 */
+	@Test
+	public void testBindings() throws Exception
+	{
+		final Random rnd = new Random(42L);
+			Peer p1 = null;
+			Peer p2 = null;
+			try
+			{
+				// setup (step 1)
+				p1 = new Peer(new Number160(rnd));
+				Bindings b = new Bindings();
+				b.addInterface("eth0");
+				p1.listen(4001, 4001, b);
+				
+				p2 = new Peer(new Number160(rnd));
+				p2.listen(4002, 4002, b);
+				FutureBootstrap fb=p2.bootstrap(p1.getPeerAddress());
+				fb.awaitUninterruptibly();
+				Assert.assertEquals(true, fb.isSuccess());
+			}
+			finally
+			{
+				p1.shutdown();
+				p2.shutdown();
+			}
 	}
 
 	// trackerStorage.setMyResponsibility(locationKey);

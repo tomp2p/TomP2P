@@ -137,7 +137,7 @@ public class SenderNetty implements Sender
 
 			if (channelFutureConnect == null)
 			{
-				futureResponse.setFailed("Shutdown");
+				futureResponse.setFailed("shutdown in progres");
 				return;
 			}
 			final Cancellable cancel = new Cancellable()
@@ -237,6 +237,7 @@ public class SenderNetty implements Sender
 			if (channel == null)
 			{
 				futureResponse.setFailed("shutdown in progres");
+				return;
 			}
 			final ChannelFuture writeFuture = channel.write(message, remotePeer.createSocketUDP());
 			afterSend(writeFuture, futureResponse, requestHandler == null);

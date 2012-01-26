@@ -1801,22 +1801,29 @@ public class Peer
 			{
 				FutureChannelCreator fcc = getConnectionBean().getReservation().reserve(1);
 				fcc.awaitUninterruptibly();
-				ChannelCreator cc = fcc.getChannelCreator();
-				FutureResponse futureResponse = handshakeRPC.pingUDP(na, cc);
-				Utils.addReleaseListener(futureResponse, getConnectionBean().getReservation(), cc, 1);
-				result.put(na, futureResponse);
-				if (result.size() >= max)
+				if(fcc.isSuccess())
 				{
-					if (!waitFor())
+					ChannelCreator cc = fcc.getChannelCreator();
+					FutureResponse futureResponse = handshakeRPC.pingUDP(na, cc);
+					Utils.addReleaseListener(futureResponse, getConnectionBean().getReservation(), cc, 1);
+					result.put(na, futureResponse);
+					if (result.size() >= max)
+					{
+						if (!waitFor())
+						{
+							cleanUp();
+							return;
+						}
+					}
+					if (Thread.interrupted())
 					{
 						cleanUp();
 						return;
 					}
 				}
-				if (Thread.interrupted())
+				else
 				{
-					cleanUp();
-					return;
+					logger.warn("could not reserve connection in maintenance");
 				}
 			}
 			if (!waitFor())

@@ -66,14 +66,14 @@ public class TrackerRPC extends ReplyHandler
 		return peerBean.getServerPeerAddress();
 	}
 
-	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
 			Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
 		if (attachement == null)
-			return addToTracker(remoteNode, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers, channelCreator);
+			return addToTracker(remotePeer, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers, channelCreator);
 		else
-			return addToTracker(remoteNode, locationKey, domainKey, attachement, 0, attachement.length, signMessage,
+			return addToTracker(remotePeer, locationKey, domainKey, attachement, 0, attachement.length, signMessage,
 					primary, knownPeers, channelCreator);
 	}
 
@@ -87,12 +87,12 @@ public class TrackerRPC extends ReplyHandler
 		return response.getRequest().getType() == Type.REQUEST_1;
 	}
 
-	public FutureResponse addToTracker(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
 			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.TRACKER_ADD, primary ? Type.REQUEST_3
+		nullCheck(remotePeer, locationKey, domainKey);
+		final Message message = createMessage(remotePeer, Command.TRACKER_ADD, primary ? Type.REQUEST_3
 				: Type.REQUEST_1);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
@@ -120,11 +120,11 @@ public class TrackerRPC extends ReplyHandler
 		}
 	}
 
-	public FutureResponse getFromTracker(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse getFromTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.TRACKER_GET, Type.REQUEST_1);
+		nullCheck(remotePeer, locationKey, domainKey);
+		final Message message = createMessage(remotePeer, Command.TRACKER_GET, Type.REQUEST_1);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}

@@ -51,7 +51,7 @@ public class NeighborRPC extends ReplyHandler
 
 	/**
 	 * 
-	 * @param remoteNode
+	 * @param remotePeer
 	 * @param locationKey
 	 * @param domainKey
 	 * @param contentKeys
@@ -60,14 +60,14 @@ public class NeighborRPC extends ReplyHandler
 	 * @param forceSocket
 	 * @return
 	 */
-	public FutureResponse closeNeighbors(PeerAddress remoteNode, Number160 locationKey,
+	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
 			Number160 domainKey, Collection<Number160> contentKeys, Command command,
 			boolean isDigest, boolean forceSocket, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey);
+		nullCheck(remotePeer, locationKey);
 		if (command != Command.NEIGHBORS_TRACKER && command != Command.NEIGHBORS_STORAGE)
 			throw new IllegalArgumentException("command not of type neighbor");
-		Message message = createMessage(remoteNode, command, isDigest ? Type.REQUEST_1
+		Message message = createMessage(remotePeer, command, isDigest ? Type.REQUEST_1
 				: Type.REQUEST_2);
 		message.setKeyKey(locationKey, domainKey == null ? Number160.ZERO : domainKey);
 		if (contentKeys != null)

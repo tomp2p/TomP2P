@@ -54,16 +54,16 @@ public class PeerExchangeRPC extends ReplyHandler
 		sentPeers = new MapMaker().concurrencyLevel(1).expireAfterAccess(DAY, TimeUnit.SECONDS).makeMap();
 	}
 
-	public FutureResponse peerExchange(final PeerAddress remoteNode, Number160 locationKey, Number160 domainKey,
+	public FutureResponse peerExchange(final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
 			boolean isReplication, ChannelCreator channelCreator)
 	{
-		final Message message = createMessage(remoteNode, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
-		Set<Number160> tmp1 = sentPeers.get(remoteNode.getID());
+		final Message message = createMessage(remotePeer, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
+		Set<Number160> tmp1 = sentPeers.get(remotePeer.getID());
 
 		if (tmp1 == null)
 		{
 			tmp1 = new HashSet<Number160>();
-			sentPeers.put(remoteNode.getID(), tmp1);
+			sentPeers.put(remotePeer.getID(), tmp1);
 		}
 
 		Map<Number160, TrackerData> peers;
@@ -98,7 +98,7 @@ public class PeerExchangeRPC extends ReplyHandler
 		if (peers.size() > 0) // || removed.size() > 0)
 		{
 			if (logger.isDebugEnabled())
-				logger.debug("sent (" + message.getSender().getID() + ") to " + remoteNode.getID() + " / "
+				logger.debug("sent (" + message.getSender().getID() + ") to " + remotePeer.getID() + " / "
 						+ peers.size());
 			FutureResponse futureResponse = new FutureResponse(message);
 			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);

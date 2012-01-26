@@ -53,7 +53,7 @@ public class StorageRPC extends ReplyHandler
 		return peerBean.getServerPeerAddress();
 	}
 
-	public FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
@@ -66,11 +66,11 @@ public class StorageRPC extends ReplyHandler
 		{
 			request = Type.REQUEST_1;
 		}
-		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
+		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator);
 	}
 
-	public FutureResponse putIfAbsent(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse putIfAbsent(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
@@ -83,7 +83,7 @@ public class StorageRPC extends ReplyHandler
 		{
 			request = Type.REQUEST_3;
 		}
-		return put(remoteNode, locationKey, domainKey, dataMap, request, protectDomain
+		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator);
 	}
 	
@@ -135,12 +135,12 @@ public class StorageRPC extends ReplyHandler
 		return request.sendTCP(channelCreator);
 	}
 
-	private FutureResponse put(final PeerAddress remoteNode, final Number160 locationKey,
+	private FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, final Type type,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey, domainKey, dataMap);
-		final Message message = createMessage(remoteNode, Command.PUT, type);
+		nullCheck(remotePeer, locationKey, domainKey, dataMap);
+		final Message message = createMessage(remotePeer, Command.PUT, type);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}
@@ -152,7 +152,7 @@ public class StorageRPC extends ReplyHandler
 		return request.sendTCP(channelCreator);
 	}
 
-	public FutureResponse add(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse add(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
 			boolean signMessage, ChannelCreator channelCreator)
 	{
@@ -165,11 +165,11 @@ public class StorageRPC extends ReplyHandler
 		{
 			type = Type.REQUEST_1;
 		}
-		nullCheck(remoteNode, locationKey, domainKey, dataSet);
+		nullCheck(remotePeer, locationKey, domainKey, dataSet);
 		Map<Number160, Data> dataMap = new HashMap<Number160, Data>(dataSet.size());
 		for (Data data : dataSet)
 			dataMap.put(data.getHash(), data);
-		final Message message = createMessage(remoteNode, Command.ADD, type);
+		final Message message = createMessage(remotePeer, Command.ADD, type);
 		if (protectDomain || signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}
@@ -183,7 +183,7 @@ public class StorageRPC extends ReplyHandler
 	/**
 	 * Starts an RPC to get the data from a remote peer.
 	 * 
-	 * @param remoteNode The remote peer to send this request
+	 * @param remotePeer The remote peer to send this request
 	 * @param locationKey The location key 
 	 * @param domainKey The domain key
 	 * @param contentKeys The content keys or null if requested all
@@ -193,12 +193,12 @@ public class StorageRPC extends ReplyHandler
 	 * @param channelCreator The channel creator that creates connections. Typically we need one connection here.
 	 * @return The future response to keep track of future events 
 	 */
-	public FutureResponse get(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
 			PublicKey protectedDomains, boolean signMessage, boolean digest, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
+		nullCheck(remotePeer, locationKey, domainKey);
+		final Message message = createMessage(remotePeer, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());
 		}
@@ -212,12 +212,12 @@ public class StorageRPC extends ReplyHandler
 		return request.sendTCP(channelCreator);
 	}
 
-	public FutureResponse remove(final PeerAddress remoteNode, final Number160 locationKey,
+	public FutureResponse remove(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
 			final boolean sendBackResults, final boolean signMessage, ChannelCreator channelCreator)
 	{
-		nullCheck(remoteNode, locationKey, domainKey);
-		final Message message = createMessage(remoteNode, Command.REMOVE, sendBackResults
+		nullCheck(remotePeer, locationKey, domainKey);
+		final Message message = createMessage(remotePeer, Command.REMOVE, sendBackResults
 				? Type.REQUEST_2 : Type.REQUEST_1);
 		if (signMessage) {
 			message.setPublicKeyAndSign(peerBean.getKeyPair());

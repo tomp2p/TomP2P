@@ -126,7 +126,7 @@ public class ConnectionHandler
 				Executors.newCachedThreadPool(),
 				Executors.newCachedThreadPool());
 		//
-		final boolean listenAll = bindings.isListenAll();
+		
 		String status = DiscoverNetworks.discoverInterfaces(bindings);
 		logger.info("Status of interface search: " + status);
 		InetAddress outsideAddress = bindings.getExternalAddress();
@@ -160,27 +160,31 @@ public class ConnectionHandler
 				configuration.getIdleTCPMillis(), channelGroup, peerMap, listeners);
 		// Dispatcher setup stop
 		
-		Sender sender = new Sender(configuration, timer);
+		Sender sender = new SenderNetty(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup,
 				reservation, configuration);
-		if (listenAll)
+		if (!peerConfiguration.isDisableBind())
 		{
-			logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
-			if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest,
-					configuration.getMaxMessageSize())
-					|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
-				throw new IOException("cannot bind TCP or UDP");
-		}
-		else
-		{
-			for (InetAddress addr : bindings.getAddresses())
+			final boolean listenAll = bindings.isListenAll();
+			if (listenAll)
 			{
-				logger.info("Listening on address: " + addr + " on port udp: " + udpPort
-						+ " and tcp:" + tcpPort);
-				if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest,
+				logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
+				if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest,
 						configuration.getMaxMessageSize())
-						|| !startupUDP(new InetSocketAddress(addr, udpPort), dispatcherRequest))
+						|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
 					throw new IOException("cannot bind TCP or UDP");
+			}
+			else
+			{
+				for (InetAddress addr : bindings.getAddresses0())
+				{
+					logger.info("Listening on address: " + addr + " on port udp: " + udpPort
+							+ " and tcp:" + tcpPort);
+					if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest,
+							configuration.getMaxMessageSize())
+							|| !startupUDP(new InetSocketAddress(addr, udpPort), dispatcherRequest))
+						throw new IOException("cannot bind TCP or UDP");
+				}
 			}
 		}
 		natUtils = new NATUtils();

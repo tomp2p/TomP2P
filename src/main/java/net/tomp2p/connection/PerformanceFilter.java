@@ -16,7 +16,7 @@
 package net.tomp2p.connection;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
 public class PerformanceFilter extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(PerformanceFilter.class);
-	private static AtomicLong startSend = new AtomicLong(Timing.currentTimeMillis());
-	private static AtomicLong startReceive = new AtomicLong(Timing.currentTimeMillis());
+	private static AtomicLong startSend = new AtomicLong(Timings.currentTimeMillis());
+	private static AtomicLong startReceive = new AtomicLong(Timings.currentTimeMillis());
 	private static AtomicLong messagesCountReceive = new AtomicLong(0);
 	private static AtomicLong messagesCountSend = new AtomicLong(0);
 
@@ -46,7 +46,7 @@ public class PerformanceFilter extends SimpleChannelHandler
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 	{
 		messagesCountReceive.incrementAndGet();
-		final long time = Timing.currentTimeMillis() - startReceive.get();
+		final long time = Timings.currentTimeMillis() - startReceive.get();
 		if (time > 1000)
 		{
 			double throughput = messagesCountReceive.doubleValue() / (time / 1000d);
@@ -55,7 +55,7 @@ public class PerformanceFilter extends SimpleChannelHandler
 				logger.debug("Incoming throughput="
 						+ throughput + "msg/s");
 			}
-			startReceive.set(Timing.currentTimeMillis());
+			startReceive.set(Timings.currentTimeMillis());
 			messagesCountReceive.set(0);
 		}
 		ctx.sendUpstream(e);
@@ -65,7 +65,7 @@ public class PerformanceFilter extends SimpleChannelHandler
 	public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception
 	{
 		messagesCountSend.incrementAndGet();
-		long time = Timing.currentTimeMillis() - startSend.get();
+		long time = Timings.currentTimeMillis() - startSend.get();
 		if (time > 1000)
 		{
 			double throughput = messagesCountSend.doubleValue() / (time / 1000d);
@@ -74,7 +74,7 @@ public class PerformanceFilter extends SimpleChannelHandler
 				logger.debug("[Outgoing throughput="
 						+ throughput + "msg/s");
 			}
-			startSend.set(Timing.currentTimeMillis());
+			startSend.set(Timings.currentTimeMillis());
 			messagesCountSend.set(0);
 		}
 		ctx.sendDownstream(e);

@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Statistics;
-import net.tomp2p.utils.Utils;
+import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.channel.ChannelFactory;
 import org.slf4j.Logger;
@@ -51,11 +51,12 @@ public class ConnectionReservation
 	final private Statistics statistics;
 	// keeps the information about acquired channel and which semaphore has been used
 	final private Map<ChannelCreator, Semaphore> activeChannelCreators = new ConcurrentHashMap<ChannelCreator, Semaphore>();
-	final private Map<Long, Boolean> threads = new ConcurrentHashMap<Long, Boolean>();
+	//final private Map<Long, Boolean> threads = new ConcurrentHashMap<Long, Boolean>();
+	final private Map<ChannelCreator, StackTraceElement[]> debug = new ConcurrentHashMap<ChannelCreator, StackTraceElement[]>();
 	// used for synchronization
 	final private AtomicInteger counter = new AtomicInteger(0);
 	final private Scheduler scheduler;
-	final private Reservation reservation;
+	private volatile Reservation reservation = new DefaultReservation();
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
 			ChannelFactory udpChannelFactory, ConnectionConfigurationBean configuration,
@@ -70,7 +71,6 @@ public class ConnectionReservation
 		this.messageLoggerFilter = messageLoggerFilter;
 		this.statistics = statistics;
 		this.scheduler = scheduler;
-		this.reservation = configuration.getReservation();
 	}
 	
 	/**
@@ -139,57 +139,29 @@ public class ConnectionReservation
 	public FutureChannelCreator reserve(final int permits, final boolean keepAliveAndReuse, final String name)
 	{
 		final FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
-		// Here we need to figure out if we can block or not. We need to care
-		// for two cases: (1) when we come from a netty thread, we should not
-		// block, othrewise we may block nio worker threads which will slow down
-		// network and (2) if we previously reserved a connection from a specify
-		// thread. In this case we should not block, otherwise we will see a
-		// deadlock. The deadlock can happend becauese if we have 10 connections
-		// and 10 threads reserving one connection, then from those thread we
-		// want to reserve one more connection -> boom and we have a deadlock.
-		//
-		// If we use simgrid, we have to use a single thread, thus disable this with 
-		// useReservationThread
-		if ((reservation instanceof DefaultReservation) && (Thread.currentThread().getName().startsWith(ConnectionHandler.THREAD_NAME) || 
-				threads.containsKey(Thread.currentThread().getId())))
+		getReservation().runDeadLockProof(scheduler, new FutureRunnable()
 		{
-			scheduler.addQueue(new FutureRunnable()
+			@Override
+			public void run()
 			{
-				@Override
-				public void run()
+				ChannelCreator channelCreator = reserve0(permits, keepAliveAndReuse, name);
+				if(channelCreator != null)
 				{
-					ChannelCreator channelCreator = reserve0(permits, keepAliveAndReuse, name, false);
-					if(channelCreator != null)
-					{
-						futureChannelCreator.reserved(channelCreator);
-					}
-					else
-					{
-						futureChannelCreator.setFailed("could not reserve connection, most likely we shutdown");
-					}
+					futureChannelCreator.reserved(channelCreator);
 				}
-				
-				@Override
-				public void failed(String reason)
+				else
 				{
-					futureChannelCreator.setFailed(reason);
+					futureChannelCreator.setFailed("could not reserve connection, most likely we shutdown");
 				}
-			});
-		}
-		else
-		{
-			ChannelCreator channelCreator = reserve0(permits, keepAliveAndReuse, name, true);
-			if(channelCreator != null)
-			{
-				futureChannelCreator.reserved(channelCreator);
 			}
-			else
+
+			@Override
+			public void failed(String reason)
 			{
-				futureChannelCreator.setFailed("could not reserve connection, most likely we shutdown");
+				futureChannelCreator.setFailed(reason);
 			}
-		}
+		});
 		return futureChannelCreator;
-		
 	}
 	
 	/**
@@ -200,7 +172,7 @@ public class ConnectionReservation
 	 * @param permits The number of permits
 	 * @return True if the permits could be acquired
 	 */
-	private ChannelCreator reserve0(final int permits, final boolean keepAliveAndReuse, String name, final boolean checkDeadlock)
+	private ChannelCreator reserve0(final int permits, final boolean keepAliveAndReuse, String name)
 	{
 		if(counter.incrementAndGet()<0)
 		{
@@ -209,7 +181,8 @@ public class ConnectionReservation
 		}
 		try
 		{	
-			boolean acquired = reservation.acquire(keepAliveAndReuse ? semaphoreOpen : semaphoreCreating,
+			getReservation().prepareDeadLockCheck();
+			boolean acquired = getReservation().acquire(keepAliveAndReuse ? semaphoreOpen : semaphoreCreating,
 					permits);
 			if (acquired)
 			{
@@ -219,10 +192,8 @@ public class ConnectionReservation
 				if(logger.isDebugEnabled())
 				{
 					logger.debug("created channels for Thread "+ Thread.currentThread().getName()+"/"+Thread.currentThread().getId());
-				}
-				if(checkDeadlock)
-				{
-					threads.put(Thread.currentThread().getId(), Boolean.TRUE);
+					//we do a bit of debugging here, since this is a dangerous place here that may deadlock upon shutdown
+					debug.put(channelCreator, Thread.currentThread().getStackTrace());
 				}
 				activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
 						: semaphoreCreating);
@@ -256,10 +227,11 @@ public class ConnectionReservation
 		if (channelCreator.hasNoPermits())
 		{
 			activeChannelCreators.remove(channelCreator);
-			threads.remove(channelCreator.getCreatorThread());
+			getReservation().removeDeadLockCheck(channelCreator.getCreatorThread());
 			if (logger.isDebugEnabled())
 			{
 				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits()+", which was created from thread: "+channelCreator.getCreatorThread());
+				debug.remove(channelCreator);
 			}
 		}
 		else
@@ -303,8 +275,8 @@ public class ConnectionReservation
 		{
 			logger.debug("Shutdown");
 		}
-		// wait until all reserev() calls know that we are shutting down.
-		reservation.shutdown();
+		// wait until all reserve() calls know that we are shutting down.
+		getReservation().shutdown();
 		while(counter.compareAndSet(0, Integer.MIN_VALUE))
 		{
 			synchronized (semaphoreCreating)
@@ -327,12 +299,21 @@ public class ConnectionReservation
 			//TODO:DBX debug why it hangs here
 			while(activeChannelCreators.size()!=0)
 			{
-				Utils.sleep(500);
+				Timings.sleepUninterruptibly(500);
 			}
 		}
 		//make sure we wait until all connections are finished.
-		
 		semaphoreCreating.acquireUninterruptibly(maxPermitsCreating);
 		semaphoreOpen.acquireUninterruptibly(maxPermitsOpen);
+	}
+
+	public Reservation getReservation()
+	{
+		return reservation;
+	}
+
+	public void setReservation(Reservation reservation)
+	{
+		this.reservation = reservation;
 	}
 }

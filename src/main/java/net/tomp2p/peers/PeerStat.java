@@ -18,7 +18,7 @@ public class PeerStat
 {
 	private volatile long lastSeenOnline = 0;
 	private volatile int checked = 0;
-	private volatile long crated = 0;
+	private volatile long created = 0;
 
 	public void setLastSeenOnline(long lastSeenOnline)
 	{
@@ -46,13 +46,21 @@ public class PeerStat
 		}
 	}
 
-	public void setCrated(long crated)
+	public void setCreated(long created)
 	{
-		this.crated = crated;
+		this.created = created;
 	}
 
-	public long getCrated()
+	public long getCreated()
 	{
-		return crated;
+		return created;
+	}
+
+	public long onlineTime()
+	{
+		synchronized (this)
+		{
+			return lastSeenOnline - created;
+		}
 	}
 }

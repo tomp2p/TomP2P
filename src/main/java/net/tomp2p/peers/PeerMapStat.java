@@ -17,7 +17,7 @@ package net.tomp2p.peers;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 
 public class PeerMapStat
 {
@@ -34,7 +34,7 @@ public class PeerMapStat
 	public void setSeenOnlineTime(PeerAddress peerAddress)
 	{
 		PeerStat peerStat = getOrCreate(peerAddress);
-		peerStat.setLastSeenOnline(Timing.currentTimeMillis());
+		peerStat.setLastSeenOnline(Timings.currentTimeMillis());
 	}
 
 	public long getLastSeenOnlineTime(PeerAddress peerAddress)
@@ -58,7 +58,7 @@ public class PeerMapStat
 			if (peerStat == null)
 			{
 				peerStat = new PeerStat();
-				peerStat.setCrated(Timing.currentTimeMillis());
+				peerStat.setCreated(Timings.currentTimeMillis());
 				mapStat.put(peerAddress, peerStat);
 			}
 		}
@@ -80,6 +80,6 @@ public class PeerMapStat
 	public long online(PeerAddress peerAddress)
 	{
 		PeerStat peerStat = getOrCreate(peerAddress);
-		return peerStat.getCrated()-peerStat.getLastSeenOnline();
+		return peerStat.onlineTime();
 	}
 }

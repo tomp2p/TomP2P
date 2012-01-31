@@ -27,8 +27,9 @@ public interface PeerStatusListener
 	 * 
 	 * @param peerAddress
 	 *            The address of the peer that failed
+	 * @param force Set to true if we are sure that the peer died.
 	 */
-	public void peerFail(PeerAddress peerAddress);
+	public void peerFail(PeerAddress peerAddress, boolean force);
 
 	/**
 	 * Called if the peer is online and we verified it. This method may get

@@ -28,6 +28,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
@@ -47,17 +48,17 @@ public class TrackerRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerRPC.class);
 	final public static int MAX_MSG_SIZE_UDP = 35;
+	final private P2PConfiguration p2pConfiguration;
 
 	/**
 	 * 
 	 * @param peerBean
-	 * @param atLeastTrackerSize
-	 *            Upper size is 27, lower size can be specified.
-	 * @param dataSize
+	 * @param connectionBean
 	 */
-	public TrackerRPC(PeerBean peerBean, ConnectionBean connectionBean)
+	public TrackerRPC(PeerBean peerBean, ConnectionBean connectionBean, P2PConfiguration p2pConfiguration)
 	{
 		super(peerBean, connectionBean);
+		this.p2pConfiguration = p2pConfiguration;
 		registerIoHandler(Command.TRACKER_ADD, Command.TRACKER_GET);
 	}
 
@@ -65,16 +66,27 @@ public class TrackerRPC extends ReplyHandler
 	{
 		return peerBean.getServerPeerAddress();
 	}
-
+	
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
 			Set<Number160> knownPeers, ChannelCreator channelCreator)
 	{
+		return addToTracker(remotePeer, locationKey, domainKey, attachement, signMessage, primary, knownPeers, channelCreator, false, false);
+	}
+
+	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
+			Set<Number160> knownPeers, ChannelCreator channelCreator, boolean forceUDP, boolean forceTCP)
+	{
 		if (attachement == null)
-			return addToTracker(remotePeer, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers, channelCreator);
+		{
+			return addToTracker(remotePeer, locationKey, domainKey, null, 0, 0, signMessage, primary, knownPeers, channelCreator, forceUDP, forceTCP);
+		}
 		else
+		{
 			return addToTracker(remotePeer, locationKey, domainKey, attachement, 0, attachement.length, signMessage,
-					primary, knownPeers, channelCreator);
+					primary, knownPeers, channelCreator, forceUDP, forceTCP);
+		}
 	}
 
 	public static boolean isPrimary(FutureResponse response)
@@ -86,10 +98,18 @@ public class TrackerRPC extends ReplyHandler
 	{
 		return response.getRequest().getType() == Type.REQUEST_1;
 	}
-
+	
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
 			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator)
+	{
+		return addToTracker(remotePeer, locationKey, domainKey, attachement, offset, legth, 
+				signMessage, primary, knownPeers, channelCreator, false, false);
+	}
+
+	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
+			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator, boolean forceUDP, boolean forceTCP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.TRACKER_ADD, primary ? Type.REQUEST_3
@@ -103,7 +123,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
 		
-		if (attachement != null)
+		if ((attachement != null || forceTCP) && !forceUDP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
 			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
@@ -119,9 +139,18 @@ public class TrackerRPC extends ReplyHandler
 			return requestHandler.sendUDP(channelCreator);
 		}
 	}
+	
+	public FutureResponse getFromTracker(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers, 
+			ChannelCreator channelCreator)
+	{
+		return getFromTracker(remotePeer, locationKey, domainKey, expectAttachement, 
+				signMessage, knownPeers, channelCreator, false, false);
+	}
 
 	public FutureResponse getFromTracker(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers, ChannelCreator channelCreator)
+			final Number160 domainKey, boolean expectAttachement, boolean signMessage, Set<Number160> knownPeers, 
+			ChannelCreator channelCreator, boolean forceUDP, boolean forceTCP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.TRACKER_GET, Type.REQUEST_1);
@@ -134,7 +163,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 			message.setPayload(ChannelBuffers.EMPTY_BUFFER);
 		
-		if (expectAttachement)
+		if ((expectAttachement || forceTCP) && !forceUDP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
 			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
@@ -194,7 +223,10 @@ public class TrackerRPC extends ReplyHandler
 			meshPeers = Utils.disjunction(meshPeers, knownPeers);
 		}
 		int size = meshPeers.size();
-		meshPeers = Utils.limit(meshPeers, TrackerRPC.MAX_MSG_SIZE_UDP);
+		if(p2pConfiguration.isLimitTracker())
+		{
+			meshPeers = Utils.limit(meshPeers, TrackerRPC.MAX_MSG_SIZE_UDP);
+		}
 		boolean couldProvideMoreData = size > meshPeers.size();
 		if (couldProvideMoreData)
 		{

@@ -407,7 +407,7 @@ public class Peer
 		TrackerStorageReplication trackerStorageReplication = new TrackerStorageReplication(this,
 				peerExchangeRPC, pendingFutures, storageTracker);
 		replicationTracker.addResponsibilityListener(trackerStorageReplication);
-		trackerRPC = new TrackerRPC(peerBean, connectionBean);
+		trackerRPC = new TrackerRPC(peerBean, connectionBean, peerConfiguration);
 
 		// distributed communication
 		routing = new DistributedRouting(peerBean, neighborRPC);

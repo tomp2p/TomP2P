@@ -159,7 +159,7 @@ public class DistributedTracker
 				if (logger.isDebugEnabled())
 					logger.debug("tracker get: " + remotePeer + " location=" + locationKey + " ");
 				FutureResponse futureResponse = trackerRPC.getFromTracker(remotePeer, locationKey, domainKey,
-						expectAttachement, signMessage, knownPeers, cc);
+						expectAttachement, signMessage, knownPeers, cc, trackerConfiguration.isForceUPD(), trackerConfiguration.isForceTCP());
 				if (logger.isDebugEnabled())
 				{
 					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
@@ -248,7 +248,8 @@ public class DistributedTracker
 													logger.debug("tracker add (me=" + peerBean.getServerPeerAddress() + "): "
 															+ remotePeer + " location=" + locationKey);
 												return trackerRPC.addToTracker(remotePeer, locationKey, domainKey, attachment,
-														signMessage, primary, knownPeers, futureChannelCreator2.getChannelCreator());
+														signMessage, primary, knownPeers, futureChannelCreator2.getChannelCreator(), 
+														trackerConfiguration.isForceUPD(), trackerConfiguration.isForceTCP());
 											}
 										});
 							}

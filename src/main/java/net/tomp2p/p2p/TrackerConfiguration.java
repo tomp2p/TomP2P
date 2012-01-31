@@ -23,15 +23,24 @@ public class TrackerConfiguration
 	//for tracker get, max full tracker is not relevant
 	final private int maxFullTrackers;
 	final private int maxPrimaryTrackers;
+	//set to force either UDP or TCP
+	final private boolean forceUPD;
+	final private boolean forceTCP;
 
 	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
-			int atLeastTrackers)
+			int atLeastEntriesFromTrackers)
 	{
-		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastTrackers, 20, 5);
+		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, 20, 5);
 	}
 	
 	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
 			int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers)
+	{
+		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, 20, 5, false, false);
+	}
+	
+	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
+			int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers, boolean forceUDP, boolean forceTCP)
 	{
 		if (maxFailure < 0 || parallel < 0 || atLeastSuccessfulRequests < 0 || atLeastEntriesFromTrackers < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
@@ -41,6 +50,8 @@ public class TrackerConfiguration
 		this.atLeastEntriesFromTrackers = atLeastEntriesFromTrackers;
 		this.maxFullTrackers = maxFullTrackers;
 		this.maxPrimaryTrackers = maxPrimaryTrackers;
+		this.forceUPD = forceUDP;
+		this.forceTCP = forceTCP;
 	}
 
 	public int getMaxFailure()
@@ -71,5 +82,15 @@ public class TrackerConfiguration
 	public int getMaxPrimaryTrackers()
 	{
 		return maxPrimaryTrackers;
+	}
+
+	public boolean isForceUPD()
+	{
+		return forceUPD;
+	}
+
+	public boolean isForceTCP()
+	{
+		return forceTCP;
 	}
 }

@@ -20,6 +20,8 @@ public class P2PConfiguration
 	private boolean behindFirewall=false;
 	private int trackerTimoutSeconds=60;
 	private boolean disableBind = false;
+	//disabel or enable the limitation of tracker results. If set to true, the tracker will return 35 entries. If set to false, it will return all of them.
+	private boolean limitTracker = true;
 	public P2PConfiguration()
 	{
 		this.maintenanceThreads = 5;
@@ -146,5 +148,15 @@ public class P2PConfiguration
 	public void setDisableBind(boolean disableBind)
 	{
 		this.disableBind = disableBind;
+	}
+
+	public boolean isLimitTracker()
+	{
+		return limitTracker;
+	}
+
+	public void setLimitTracker(boolean limitTracker)
+	{
+		this.limitTracker = limitTracker;
 	}
 }

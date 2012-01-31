@@ -44,7 +44,7 @@ public class SenderNetty implements Sender
 	// Timer used for ReplyTimeout
 	final private Timer timer;
 	final private ConnectionConfigurationBean configuration;
-
+	private volatile boolean shutdown = false;
 	/**
 	 * The sender is shared for all master and child peers
 	 * 
@@ -68,6 +68,11 @@ public class SenderNetty implements Sender
 		{
 			logger.debug("send TCP " + Thread.currentThread().getName());
 		}
+		if (shutdown)
+		{
+			futureResponse.setFailed("shutdown in progres");
+			return;
+		}
 		sendTCP0(message.getRecipient(), handler, futureResponse, message, channelCreator,
 				idleTCPMillis);
 	}
@@ -83,6 +88,11 @@ public class SenderNetty implements Sender
 		{
 			logger.debug("send UDP " + Thread.currentThread().getName());
 		}
+		if (shutdown)
+		{
+			futureResponse.setFailed("shutdown in progres");
+			return;
+		}
 		sendUDP0(message.getRecipient(), handler, futureResponse, message, false, channelCreator);
 	}
 
@@ -96,6 +106,11 @@ public class SenderNetty implements Sender
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("send UDP " + Thread.currentThread().getName());
+		}
+		if (shutdown)
+		{
+			futureResponse.setFailed("shutdown in progres");
+			return;
 		}
 		sendUDP0(message.getRecipient(), handler, futureResponse, message, true, channelCreator);
 	}
@@ -310,5 +325,11 @@ public class SenderNetty implements Sender
 				}
 			}
 		});
+	}
+
+	@Override
+	public void shutdown()
+	{
+		shutdown = true;
 	}
 }

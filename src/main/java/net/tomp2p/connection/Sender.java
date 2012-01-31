@@ -58,4 +58,6 @@ public interface Sender
 	public abstract void sendBroadcastUDP(final RequestHandlerUDP handler,
 			final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator);
+	
+	public abstract void shutdown();
 }

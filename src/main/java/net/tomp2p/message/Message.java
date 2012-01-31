@@ -27,7 +27,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.HashData;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
@@ -178,7 +178,7 @@ public class Message
 
 	public void finished()
 	{
-		this.finished = Timing.currentTimeMillis();
+		this.finished = Timings.currentTimeMillis();
 	}
 
 	public long getFinished()

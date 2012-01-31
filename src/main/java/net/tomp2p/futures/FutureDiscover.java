@@ -17,7 +17,7 @@ package net.tomp2p.futures;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
@@ -158,11 +158,11 @@ public class FutureDiscover extends BaseFutureImpl
 	 */
 	private final class DiscoverTimeoutTask implements TimerTask
 	{
-		private final long start=Timing.currentTimeMillis();
+		private final long start=Timings.currentTimeMillis();
 		@Override
 		public void run(Timeout timeout) throws Exception
 		{
-			setFailed("Timeout in Discover: "+(Timing.currentTimeMillis()-start)+ "ms");
+			setFailed("Timeout in Discover: "+(Timings.currentTimeMillis()-start)+ "ms");
 		}
 	}
 }

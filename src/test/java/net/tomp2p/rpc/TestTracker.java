@@ -32,7 +32,7 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
-			final FutureChannelCreator fcc=sender.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
@@ -47,7 +47,7 @@ public class TestTracker
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
-			sender.getConnectionBean().getReservation().release(cc);
+			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -77,7 +77,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
-			final FutureChannelCreator fcc=sender.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
@@ -91,7 +91,7 @@ public class TestTracker
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
-			sender.getConnectionBean().getReservation().release(cc);
+			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -116,7 +116,7 @@ public class TestTracker
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
-			final FutureChannelCreator fcc=sender.getConnectionBean().getReservation().reserve(2);
+			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
@@ -132,7 +132,7 @@ public class TestTracker
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
 			String tmp=new String(fr.getResponse().getTrackerData().iterator().next().getAttachement());
 			Assert.assertEquals(tmp,"data");
-			sender.getConnectionBean().getReservation().release(cc);
+			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -158,7 +158,7 @@ public class TestTracker
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
 			SimpleBloomFilter<Number160> bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
-			final FutureChannelCreator fcc=sender.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
@@ -172,7 +172,7 @@ public class TestTracker
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			Assert.assertEquals(0, fr.getResponse().getTrackerData().size());
-			sender.getConnectionBean().getReservation().release(cc);
+			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{

@@ -25,7 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.storage.TrackerStorage;
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -64,7 +64,7 @@ public class TrackerStorageReplication implements ResponsibilityListener
 		}
 		for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey))
 		{
-			peer.getConnectionBean().getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+			peer.getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 			{
 				@Override
 				public void operationComplete(FutureChannelCreator future) throws Exception
@@ -72,8 +72,8 @@ public class TrackerStorageReplication implements ResponsibilityListener
 					if(future.isSuccess())
 					{
 						FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, future.getChannelCreator());
-						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getReservation(), future.getChannelCreator(), 1);
-						pendingFutures.put(futureResponse, Timing.currentTimeMillis());
+						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
+						pendingFutures.put(futureResponse, Timings.currentTimeMillis());
 					}
 					else
 					{

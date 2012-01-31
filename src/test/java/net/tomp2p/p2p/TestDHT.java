@@ -51,6 +51,7 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage.ProtectionEnable;
 import net.tomp2p.storage.Storage.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
+import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -102,7 +103,7 @@ public class TestDHT
 				list.add(master.send(pc, ChannelBuffers.wrappedBuffer(b)));
 				pc.close();
 			}
-			for(int i=0;i<10000;i++)
+			for(int i=0;i<20000;i++)
 			{
 				list.add(master.discover(slave.getPeerAddress()));
 				final byte[] b=new byte[10000];
@@ -1075,7 +1076,7 @@ public class TestDHT
 			fdht.getFutureRequests().awaitUninterruptibly();
 			Collection<Number160> tmp = new ArrayList<Number160>();
 			tmp.add(new Number160(5));
-			final FutureChannelCreator fcc=master1.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=master1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			
@@ -1118,7 +1119,7 @@ public class TestDHT
 			fdht = master1.get(id, cg);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			master1.getConnectionBean().getReservation().release(cc);
+			master1.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -1419,7 +1420,7 @@ public class TestDHT
 				}
 			});
 			FutureDHT fdht = peers[1].put(peers[50].getPeerID(), new Data("test"), cs);
-			Utils.sleep(9 * 1000);
+			Timings.sleep(9 * 1000);
 			Assert.assertEquals(5, counter.get());
 			fdht.shutdown();
 			System.err.println("stop chain1");
@@ -1437,7 +1438,7 @@ public class TestDHT
 				}
 			});
 			FutureDHT fdht2 = peers[2].remove(peers[50].getPeerID(), cr);
-			Utils.sleep(9 * 1000);
+			Timings.sleep(9 * 1000);
 			Assert.assertEquals(5, counter.get());
 			Assert.assertEquals(true, fdht2.isSuccess());
 			Assert.assertEquals(5, counter2.get());
@@ -1499,12 +1500,12 @@ public class TestDHT
 			int i=0;
 			while(!peerClose.getPeerBean().getStorage().contains(new Number480(locationKey, Configurations.DEFAULT_DOMAIN, Number160.ZERO)))
 			{
-				Utils.sleep(250);
+				Timings.sleep(250);
 				i++;
 				if(i>10)
 					break;
 			}
-			final FutureChannelCreator fcc=master.getConnectionBean().getReservation().reserve(1);
+			final FutureChannelCreator fcc=master.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
@@ -1512,7 +1513,7 @@ public class TestDHT
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
-			master.getConnectionBean().getReservation().release(cc);
+			master.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -1580,13 +1581,13 @@ public class TestDHT
 			int i = 0;
 			for (PeerAddress closest : tmp)
 			{
-				final FutureChannelCreator fcc=master.getConnectionBean().getReservation().reserve(1);
+				final FutureChannelCreator fcc=master.getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
 						Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
 				futureResponse.awaitUninterruptibly();
-				master.getConnectionBean().getReservation().release(cc);
+				master.getConnectionBean().getConnectionReservation().release(cc);
 				Assert.assertEquals(true, futureResponse.isSuccess());
 				Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
 				i++;
@@ -1734,19 +1735,19 @@ public class TestDHT
 					{
 						peers[10].add(key, data1).awaitUninterruptibly();
 						peers[10].add(key, data2).awaitUninterruptibly();
-						Utils.sleep(1000);
+						Timings.sleepUninterruptibly(1000);
 					}
 				}
 			});
 			t.start();
 			//wait until the first data is stored.
-			Utils.sleep(1000);
+			Timings.sleep(1000);
 			for(int i=0;i<30;i++)
 			{
 				FutureDHT futureDHT = peers[20+i].getAll(key);
 				futureDHT.awaitUninterruptibly();
 				Assert.assertEquals(2, futureDHT.getData().size());
-				Utils.sleep(1000);
+				Timings.sleep(1000);
 			}
 		}
 		finally

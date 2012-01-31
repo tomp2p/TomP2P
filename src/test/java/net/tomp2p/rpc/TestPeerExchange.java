@@ -6,7 +6,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.utils.Utils;
+import net.tomp2p.utils.Timings;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class TestPeerExchange
 			recv1.listen(8088, 8088);
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
-			FutureChannelCreator fcc=recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			sender.getPeerBean().getTrackerStorage().addActive(locationKey, domainKey,sender.getPeerAddress(), null, 0, 0);
@@ -35,9 +35,9 @@ public class TestPeerExchange
 			if(fr.isFailed())
 				System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
-			Utils.sleep(200);
+			Timings.sleep(200);
 			Assert.assertEquals(1, recv1.getPeerBean().getTrackerStorage().sizeSecondary(locationKey, domainKey));
-			recv1.getConnectionBean().getReservation().release(cc);
+			recv1.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		catch (Exception e)
 		{

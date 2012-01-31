@@ -35,7 +35,7 @@ public class TestNeighbor
 			recv1 = new Peer(55, new Number160("0x20"));
 			recv1.listen(8088, 8088);
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			
@@ -48,7 +48,7 @@ public class TestNeighbor
 			Assert.assertEquals(new Number160("0x30"), pas.iterator().next().getID());
 			Assert.assertEquals(PORT_TCP, pas.iterator().next().portTCP());
 			Assert.assertEquals(PORT_UDP, pas.iterator().next().portUDP());
-			recv1.getConnectionBean().getReservation().release(cc);
+			recv1.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -72,7 +72,7 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
@@ -84,7 +84,7 @@ public class TestNeighbor
 			// I see only myself
 			Assert.assertEquals(1, pas.size());
 			Assert.assertEquals(new Number160("0x20"), pas.iterator().next().getID());
-			recv1.getConnectionBean().getReservation().release(cc);
+			recv1.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -108,7 +108,7 @@ public class TestNeighbor
 			recv1.listen(8088, 8088);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
-			FutureChannelCreator fcc = recv1.getConnectionBean().getReservation().reserve(1);
+			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			try
@@ -121,7 +121,7 @@ public class TestNeighbor
 			}
 			catch (IllegalArgumentException i)
 			{
-				recv1.getConnectionBean().getReservation().release(cc);
+				recv1.getConnectionBean().getConnectionReservation().release(cc);
 			}
 		}
 		finally

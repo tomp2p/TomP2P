@@ -12,7 +12,7 @@ import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapKadImpl;
-import net.tomp2p.utils.Utils;
+import net.tomp2p.utils.Timings;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -162,7 +162,7 @@ public class TestKadRouting
 	}
 
 	@Test
-	public void testRemoveConcurrent() throws UnknownHostException
+	public void testRemoveConcurrent() throws UnknownHostException, InterruptedException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
 				60 * 1000, 3, new int[] {});
@@ -194,13 +194,13 @@ public class TestKadRouting
 				}
 			}
 		}).start();
-		Utils.sleep(500);
+		Timings.sleep(500);
 		Assert.assertTrue(kadRouting.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
 		Assert.assertEquals(100, kadRouting.size());
 	}
 
 	@Test
-	public void testAddConcurrent() throws UnknownHostException
+	public void testAddConcurrent() throws UnknownHostException, InterruptedException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
 				60 * 1000, 3, new int[] {});
@@ -226,12 +226,12 @@ public class TestKadRouting
 				}
 			}
 		}).start();
-		Utils.sleep(500);
+		Timings.sleep(500);
 		Assert.assertEquals(100, kadRouting.size());
 	}
 
 	@Test
-	public void testRandomAddRemove()
+	public void testRandomAddRemove() throws InterruptedException
 	{
 		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 100,
 				60 * 1000, 3, new int[] {});
@@ -261,7 +261,7 @@ public class TestKadRouting
 				}
 			}
 		}).start();
-		Utils.sleep(2000);
+		Timings.sleep(2000);
 		Assert.assertEquals(11, kadRouting.size());
 	}
 

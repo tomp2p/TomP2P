@@ -32,7 +32,7 @@ public class TestIPv6
 		peer.listen(4000, 4000, b);
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
-				FutureChannelCreator fcc=peer.getConnectionBean().getReservation().reserve(1);
+				FutureChannelCreator fcc=peer.getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
@@ -44,7 +44,7 @@ public class TestIPv6
 					System.out.println("offline " + pa);
 				FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
 				fr2.awaitUninterruptibly();
-				peer.getConnectionBean().getReservation().release(cc);
+				peer.getConnectionBean().getConnectionReservation().release(cc);
 				if (fr2.isSuccess())
 					System.out.println("peer online UDP:" + pa);
 				else

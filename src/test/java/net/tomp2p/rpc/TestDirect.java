@@ -5,7 +5,7 @@ import net.tomp2p.futures.FutureData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Utils;
+import net.tomp2p.utils.Timings;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -102,7 +102,7 @@ public class TestDirect
 			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			fd1.awaitUninterruptibly();
-			Utils.sleep(2000);
+			Timings.sleep(2000);
 			System.err.println("send second with the same connection");
 			FutureData fd2=sender.send(peerConnection, "test");
 			fd2.awaitUninterruptibly();
@@ -200,7 +200,7 @@ public class TestDirect
 				});
 			}
 			System.err.println("done");
-			Utils.sleep(2000);
+			Timings.sleep(2000);
 			
 		}
 		finally

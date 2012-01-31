@@ -29,19 +29,22 @@ public class ConnectionBean
 	final private ChannelGroup channelGroup;
 	final private DispatcherReply dispatcherRequest;
 	private volatile Sender sender;
-	final private ConnectionReservation reservation;
+	private volatile Reservation reservation = new DefaultReservation();
+	final private ConnectionReservation connectionReservation;
 	final private ConnectionConfigurationBean configuration;
+	final private Scheduler scheduler;
 
 	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender,
-			ChannelGroup channelGroup, ConnectionReservation reservation,
-			ConnectionConfigurationBean configuration)
+			ChannelGroup channelGroup, ConnectionReservation connectionReservation,
+			ConnectionConfigurationBean configuration, Scheduler scheduler)
 	{
 		this.p2pID = p2pID;
 		this.channelGroup = channelGroup;
 		this.dispatcherRequest = dispatcherRequest;
 		this.sender = sender;
-		this.reservation = reservation;
+		this.connectionReservation = connectionReservation;
 		this.configuration = configuration;
+		this.scheduler = scheduler;
 	}
 
 	public Sender getSender()
@@ -69,13 +72,28 @@ public class ConnectionBean
 		return channelGroup;
 	}
 
-	public ConnectionReservation getReservation()
+	public ConnectionReservation getConnectionReservation()
 	{
-		return reservation;
+		return connectionReservation;
 	}
 
 	public ConnectionConfigurationBean getConfiguration()
 	{
 		return configuration;
+	}
+
+	public Scheduler getScheduler()
+	{
+		return scheduler;
+	}
+
+	public Reservation getReservation()
+	{
+		return reservation;
+	}
+
+	public void setReservation(Reservation reservation)
+	{
+		this.reservation = reservation;
 	}
 }

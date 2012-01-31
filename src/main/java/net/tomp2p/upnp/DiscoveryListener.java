@@ -54,6 +54,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.tomp2p.utils.Timings;
+
 /**
  * This class can be used to listen for UPNP devices responses when a
  * search message is sent by a control point ( using the
@@ -177,7 +179,7 @@ public class DiscoveryListener implements Runnable
 					// ms
 					try
 					{
-						Thread.sleep( 2 );
+						Timings.sleep( 2 );
 					}
 					catch( InterruptedException ex )
 					{

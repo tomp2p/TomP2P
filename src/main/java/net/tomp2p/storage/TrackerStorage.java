@@ -420,7 +420,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	}
 
 	@Override
-	public void peerFail(PeerAddress peerAddress)
+	public void peerFail(PeerAddress peerAddress, boolean force)
 	{
 		// not interested in this one
 	}

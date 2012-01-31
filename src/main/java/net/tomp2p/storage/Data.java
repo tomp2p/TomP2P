@@ -20,7 +20,7 @@ import java.security.PublicKey;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -74,7 +74,7 @@ public class Data implements Serializable
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
-		this.validFromMillis = Timing.currentTimeMillis();
+		this.validFromMillis = Timings.currentTimeMillis();
 		this.originator = originator;
 	}
 

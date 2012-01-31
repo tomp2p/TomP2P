@@ -55,6 +55,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tomp2p.utils.Timings;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -278,7 +280,7 @@ public class Discovery
 
 		try
 		{
-			Thread.sleep( timeOut );
+			Timings.sleep( timeOut );
 		}
 		catch( InterruptedException ex )
 		{

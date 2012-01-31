@@ -29,6 +29,7 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -155,7 +156,7 @@ public class HandshakeRPC extends ReplyHandler
 			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP()) 
 			{
-				connectionBean.getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+				connectionBean.getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
 					public void operationComplete(FutureChannelCreator future) throws Exception
@@ -163,7 +164,7 @@ public class HandshakeRPC extends ReplyHandler
 						if(future.isSuccess())
 						{
 							FutureResponse futureResponse=fireUDP(message.getSender(), future.getChannelCreator());
-							Utils.addReleaseListenerAll(futureResponse, connectionBean.getReservation(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, connectionBean.getConnectionReservation(), future.getChannelCreator());
 						}
 						else
 						{
@@ -177,7 +178,7 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			else 
 			{
-				connectionBean.getReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+				connectionBean.getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
 					public void operationComplete(FutureChannelCreator future) throws Exception
@@ -185,7 +186,7 @@ public class HandshakeRPC extends ReplyHandler
 						if(future.isSuccess())
 						{
 							FutureResponse futureResponse=fireTCP(message.getSender(), future.getChannelCreator());
-							Utils.addReleaseListenerAll(futureResponse, connectionBean.getReservation(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, connectionBean.getConnectionReservation(), future.getChannelCreator());
 						}
 						else
 						{
@@ -235,14 +236,18 @@ public class HandshakeRPC extends ReplyHandler
 				}
 				responseMessage.setMessageId(message.getMessageId());
 				if (wait)
-					Utils.sleep(10 * 1000);
+				{
+					Timings.sleepUninterruptibly(10 * 1000);
+				}
 				return responseMessage;
 			}
 			else
 			{
 				logger.debug("do not reply");
 				if (wait)
-					Utils.sleep(10 * 1000);
+				{
+					Timings.sleepUninterruptibly(10 * 1000);
+				}
 				return null;
 			}
 		}

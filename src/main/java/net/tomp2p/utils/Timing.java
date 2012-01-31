@@ -1,14 +1,9 @@
 package net.tomp2p.utils;
-
-public class Timing
+public interface Timing
 {
-	private static TimingImpl impl = new TimingImpl();
-	public static long currentTimeMillis()
-	{
-		return impl.currentTimeMillis();
-	}
-	public static void setImpl(TimingImpl impl2)
-	{
-		impl = impl2;
-	}
+	public abstract long currentTimeMillis();
+
+	public abstract void sleep(int millis) throws InterruptedException;
+
+	public abstract void sleepUninterruptibly(int millis);
 }

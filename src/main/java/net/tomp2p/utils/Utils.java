@@ -61,10 +61,6 @@ public class Utils
 
 	public static ByteBuffer loadFile(File file) throws IOException
 	{
-		// at at most 5 sec for file creation... We have the file, but its not
-		// created yet. This file creation needs to be blocking..
-		for (int i = 0; i < 50 && !file.exists(); i++)
-			Utils.sleep(100);
 		FileInputStream fis = null;
 		FileChannel channel = null;
 		try
@@ -160,18 +156,6 @@ public class Utils
 		random.nextBytes(me);
 		Number160 id = new Number160(me);
 		return id;
-	}
-
-	public static void sleep(long connectionTimeout)
-	{
-		try
-		{
-			Thread.sleep(connectionTimeout);
-		}
-		catch (InterruptedException e)
-		{
-			Thread.currentThread().interrupt();
-		}
 	}
 
 	public static byte[] compress(byte[] input)

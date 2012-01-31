@@ -45,7 +45,7 @@ public class ExampleNAT
 			{
 				for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) 
 				{
-					FutureChannelCreator fcc=peer.getConnectionBean().getReservation().reserve(1);
+					FutureChannelCreator fcc=peer.getConnectionBean().getConnectionReservation().reserve(1);
 					fcc.awaitUninterruptibly();
 					ChannelCreator cc = fcc.getChannelCreator();
 					FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
@@ -56,7 +56,7 @@ public class ExampleNAT
 						System.out.println("offline " + pa);
 					FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
 					fr2.awaitUninterruptibly();
-					peer.getConnectionBean().getReservation().release(cc);
+					peer.getConnectionBean().getConnectionReservation().release(cc);
 					if (fr2.isSuccess())
 						System.out.println("peer online U:" + pa);
 					else

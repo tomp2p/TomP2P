@@ -162,7 +162,7 @@ public class ConnectionHandler
 		
 		Sender sender = new SenderNetty(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup,
-				reservation, configuration);
+				reservation, configuration, scheduler);
 		if (!peerConfiguration.isDisableBind())
 		{
 			final boolean listenAll = bindings.isListenAll();
@@ -367,7 +367,7 @@ public class ConnectionHandler
 			// close server first, then all connected clients. This is only done
 			// by the master, other groups are
 			// empty
-			connectionBean.getReservation().shutdown();
+			connectionBean.getConnectionReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
 			// release resources
 			udpChannelFactory.releaseExternalResources();

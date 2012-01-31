@@ -33,7 +33,7 @@ import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerStatusListener.Reason;
 import net.tomp2p.utils.CacheMap;
-import net.tomp2p.utils.Timing;
+import net.tomp2p.utils.Timings;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,13 +84,13 @@ public class PeerMapKadImpl implements PeerMap
 		private void inc()
 		{
 			counter++;
-			lastOffline = Timing.currentTimeMillis();
+			lastOffline = Timings.currentTimeMillis();
 		}
 
 		private void set(int counter)
 		{
 			this.counter = counter;
-			lastOffline = Timing.currentTimeMillis();
+			lastOffline = Timings.currentTimeMillis();
 		}
 
 		private int getCounter()
@@ -268,13 +268,13 @@ public class PeerMapKadImpl implements PeerMap
 		}
 	}
 
-	private void notifyPeerFail(PeerAddress peerAddress)
+	private void notifyPeerFail(PeerAddress peerAddress, boolean force)
 	{
 		// synchronized should be ok, since we dont call addListener too often
 		synchronized (peerListeners)
 		{
 			for (PeerStatusListener listener : peerListeners)
-				listener.peerFail(peerAddress);
+				listener.peerFail(peerAddress, force);
 		}
 	}
 	
@@ -375,7 +375,7 @@ public class PeerMapKadImpl implements PeerMap
 			logger.info("peer " + remotePeer + " is offline");
 		if (remotePeer.getID().isZero() || self().equals(remotePeer.getID()))
 			return false;
-		notifyPeerFail(remotePeer);
+		notifyPeerFail(remotePeer, force);
 		Log log;
 		synchronized (peerOfflineLogs)
 		{
@@ -412,7 +412,6 @@ public class PeerMapKadImpl implements PeerMap
 
 	private boolean remove(PeerAddress remotePeer, Reason reason)
 	{
-		// System.err.println("remove");
 		final int classMember = classMember(remotePeer.getID());
 		final Map<Number160, PeerAddress> map = peerMap.get(classMember);
 		final boolean retVal = map.remove(remotePeer.getID()) != null;
@@ -452,15 +451,17 @@ public class PeerMapKadImpl implements PeerMap
 			return;
 		long scheduledCheck;
 		if (peerMapStat.getLastSeenOnlineTime(remotePeer) == 0)
+		{
 			// we need to check now!
-			scheduledCheck = Timing.currentTimeMillis();
+			scheduledCheck = Timings.currentTimeMillis();
+		}
 		else
 		{
 			// check for next schedule
 			int checked = peerMapStat.getChecked(remotePeer);
 			if (checked >= maintenanceTimeoutsSeconds.length)
 				checked = maintenanceTimeoutsSeconds.length - 1;
-			scheduledCheck = Timing.currentTimeMillis()
+			scheduledCheck = Timings.currentTimeMillis()
 					+ (maintenanceTimeoutsSeconds[checked] * 1000L);
 		}
 		synchronized (maintenance)
@@ -473,13 +474,14 @@ public class PeerMapKadImpl implements PeerMap
 	public Collection<PeerAddress> peersForMaintenance()
 	{
 		Collection<PeerAddress> result = new ArrayList<PeerAddress>();
+		long now = Timings.currentTimeMillis();
 		synchronized (maintenance)
 		{
 			for (Iterator<Map.Entry<PeerAddress, Long>> iterator = maintenance.entrySet()
 					.iterator(); iterator.hasNext();)
 			{
 				Map.Entry<PeerAddress, Long> entry = iterator.next();
-				if (entry.getValue() < Timing.currentTimeMillis())
+				if (entry.getValue() < now)
 				{
 					iterator.remove();
 					result.add(entry.getKey());
@@ -571,7 +573,7 @@ public class PeerMapKadImpl implements PeerMap
 
 	private boolean shouldPeerBeRemoved(Log log)
 	{
-		return Timing.currentTimeMillis() - log.getLastOffline() <= cacheTimeout
+		return Timings.currentTimeMillis() - log.getLastOffline() <= cacheTimeout
 				&& log.getCounter() >= maxFail;
 	}
 
@@ -589,7 +591,7 @@ public class PeerMapKadImpl implements PeerMap
 			{
 				if (shouldPeerBeRemoved(log))
 					return true;
-				else if (Timing.currentTimeMillis() - log.getLastOffline() > cacheTimeout)
+				else if (Timings.currentTimeMillis() - log.getLastOffline() > cacheTimeout)
 				{
 					// remove the peer if timeout occured
 					synchronized (peerOfflineLogs)
@@ -614,6 +616,11 @@ public class PeerMapKadImpl implements PeerMap
 	public boolean contains(PeerAddress peerAddress)
 	{
 		final int classMember = classMember(peerAddress.getID());
+		if(classMember == -1)
+		{
+			//-1 means we searched for ourself and we never are our neighbor
+			return false;
+		}
 		Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
 		return tmp.containsKey(peerAddress.getID());
 	}

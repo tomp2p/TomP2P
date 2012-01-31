@@ -435,11 +435,16 @@ public class PeerMapKadImpl implements PeerMap
 			// get the time we want to wait between maintenance checks
 			if (maintenanceTimeoutsSeconds.length > 0)
 			{
-				long time = maintenanceTimeoutsSeconds[peerMapStat.getChecked(remotePeer)] * 1000L;
+				int checked = peerMapStat.getChecked(remotePeer);
+				if (checked >= maintenanceTimeoutsSeconds.length)
+					checked = maintenanceTimeoutsSeconds.length - 1;
+				long time = maintenanceTimeoutsSeconds[checked] * 1000L;
 				// if we have a higer online time than the maintenance time,
 				// increase checked to increase the maintenace interval.
 				if (online >= time)
+				{
 					peerMapStat.incChecked(remotePeer);
+				}
 			}
 		}
 		addToMaintenanceQueue(remotePeer);

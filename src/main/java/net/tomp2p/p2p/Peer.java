@@ -267,7 +267,10 @@ public class Peer
 				scheduledFuture.cancel(true);
 		}
 		//don't send any new requests
-		getConnectionBean().getSender().shutdown();
+		if(masterFlag)
+		{
+			getConnectionBean().getSender().shutdown();
+		}
 		if (masterFlag && timer != null)
 			timer.stop();
 		if (masterFlag && scheduledExecutorServiceMaintenance != null)

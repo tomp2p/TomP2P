@@ -87,7 +87,7 @@ public class TestMaintenance
 	}
 
 	@Test
-	public void testMaintenance4() throws Exception
+	public void testMaintenance3() throws Exception
 	{
 		Peer master = null;
 		try
@@ -120,6 +120,7 @@ public class TestMaintenance
 			Timings.sleep(10000);
 			PeerAddress node3 = nodes[3].getPeerAddress();
 			nodes[3].shutdown();
+			System.err.println("node 3 shutdown");
 			Timings.sleep(15000);
 
 			Assert.assertEquals(false, master.getPeerBean().getPeerMap().contains(node3));

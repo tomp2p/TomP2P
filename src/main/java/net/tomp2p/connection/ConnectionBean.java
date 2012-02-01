@@ -29,7 +29,6 @@ public class ConnectionBean
 	final private ChannelGroup channelGroup;
 	final private DispatcherReply dispatcherRequest;
 	private volatile Sender sender;
-	private volatile Reservation reservation = new DefaultReservation();
 	final private ConnectionReservation connectionReservation;
 	final private ConnectionConfigurationBean configuration;
 	final private Scheduler scheduler;
@@ -85,15 +84,5 @@ public class ConnectionBean
 	public Scheduler getScheduler()
 	{
 		return scheduler;
-	}
-
-	public Reservation getReservation()
-	{
-		return reservation;
-	}
-
-	public void setReservation(Reservation reservation)
-	{
-		this.reservation = reservation;
 	}
 }

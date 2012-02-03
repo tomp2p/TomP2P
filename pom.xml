@@ -74,7 +74,7 @@
     <dependency>
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.3.0.Patched</version>
+      <version>3.3.0.Patched-1</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

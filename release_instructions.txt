@@ -21,7 +21,7 @@ Announce on:
 Adding 3rd party libraries to repository
 ========================================
 
-E.g. upload snapshot of Netty using scp 
+E.g. upload snapshot of Netty using scp from the TomP2P working directory
 
 mvn deploy:deploy-file \
  -DgroupId=org.jboss.netty \

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.p2p;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -366,10 +367,13 @@ public class DistributedTracker
 				if (future.isSuccess() || isFull)
 				{
 					if (!isFull)
+					{
 						successAsked.add(futureResponse.getRequest().getRecipient());
+					}
 					Collection<TrackerData> newDataMap = futureResponse.getResponse().getTrackerData();
-					mergeC(secondaryQueue, newDataMap, alreadyAsked);
-					merge(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
+					Collection<PeerAddress> newPeers = convert(newDataMap);
+					mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
+					storeResult(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
 							atLeastEntriesFromTrackers, isGet);
@@ -447,62 +451,92 @@ public class DistributedTracker
 				routingConfiguration.getParallel(), isDigest, routingConfiguration.isForceSocket(), cc);
 	}
 
-	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors, final SortedSet<PeerAddress> queueToAsk,
-			final Set<PeerAddress> alreadyAsked, final AtomicInteger noNewInfo, int maxNoNewInfo)
+	/**
+	 * Stores the data we found on the tracker. The future stores there raw
+	 * data, and the user can evaluate it in the future class.
+	 * 
+	 * @param peerOnTracker We store the results per peer. The result of each
+	 *        peer is stored in this map.
+	 * @param newDataMap The new data, we got from a peer
+	 * @param newDataProvider The peer we got the new data from
+	 * @param knownPeers The list of known peers. The list of know peers will be
+	 *        updated for every peer with get reports from and from its entries.
+	 *        This set is a bloomfilter, so there is no problem with growth, but
+	 *        it might result in false positives.
+	 */
+	private static void storeResult(Map<PeerAddress, Collection<TrackerData>> peerOnTracker, Collection<TrackerData> newDataMap,
+			PeerAddress newDataProvider, Set<Number160> knownPeers)
 	{
-		boolean newInformation = merge(queueToAsk, newNeighbors, alreadyAsked);
-		if (newInformation)
-		{
-			noNewInfo.set(0);
-			return false;
-		}
-		else
-			return noNewInfo.incrementAndGet() >= maxNoNewInfo;
-	}
-
-	static void merge(Map<PeerAddress, Collection<TrackerData>> peerOnTracker, Collection<TrackerData> newDataMap,
-			PeerAddress reporter, Set<Number160> knownPeers)
-	{
-		knownPeers.add(reporter.getID());
+		knownPeers.add(newDataProvider.getID());
 		for (TrackerData data : newDataMap)
 		{
 			PeerAddress peer = data.getPeerAddress();
 			knownPeers.add(peer.getID());
-			Collection<TrackerData> peerOnTrackerEntry = peerOnTracker.get(reporter);
+			Collection<TrackerData> peerOnTrackerEntry = peerOnTracker.get(newDataProvider);
 			if (peerOnTrackerEntry == null)
 			{
 				peerOnTrackerEntry = new HashSet<TrackerData>();
-				peerOnTracker.put(reporter, peerOnTrackerEntry);
+				peerOnTracker.put(newDataProvider, peerOnTrackerEntry);
 			}
 			peerOnTrackerEntry.add(data);
 		}
 	}
-
-	static boolean mergeC(Collection<PeerAddress> queueToAsk, Collection<TrackerData> newData,
-			Set<PeerAddress> alreadyAsked)
+	
+	/**
+	 * Filters the collection of new peers from already known peers. The result
+	 * of this operation is stored in queueToAsk, which will be queried next.
+	 * 
+	 * @param queueToAsk The queue where we store new peers we found
+	 * @param newPeers New peers that were sent from other peers. Since the
+	 *        other peers don't know what peers we know, we must filter this
+	 *        collection.
+	 * @param knownPeers1 Those peer we have already asked or are already in
+	 *        the queue
+	 * @param knownPeers2 Those peer we have already asked or are already in
+	 *        the queue
+	 * @return True, if new information has been added to queueToAsk
+	 */
+	private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
+			Collection<PeerAddress> knownPeers1, Collection<PeerAddress> knownPeers2)
 	{
-		Collection<PeerAddress> newNeighbors = new HashSet<PeerAddress>();
-		for (TrackerData data : newData)
-			newNeighbors.add(data.getPeerAddress());
-		return merge(queueToAsk, newNeighbors, alreadyAsked);
+		// result will be small, so we chose an array list.
+		@SuppressWarnings("unchecked")
+		final Collection<PeerAddress> result = Utils.difference(
+				newPeers, new ArrayList<PeerAddress>(), knownPeers1, knownPeers2);
+		// if result contains only elements that queueToAsk already has, false will be returned.
+		return queueToAsk.addAll(result);
 	}
 
-	static boolean merge(Collection<PeerAddress> queueToAsk, Collection<PeerAddress> newNeighbors,
-			Set<PeerAddress> alreadyAsked)
+	/**
+	 * Converts Collection<TrackerData> to Collection<PeerAddress>. The DHT
+	 * returns TrackerData and for further evaluation its sometimes necessary to
+	 * extract the PeerAddresses from it.
+	 * 
+	 * @param trackerData As returned from the DHT operation
+	 * @return The peer address found inside trackerdata
+	 */
+	private static Collection<PeerAddress> convert(Collection<TrackerData> trackerData)
 	{
-		// result will be small...
-		final Set<PeerAddress> result = new HashSet<PeerAddress>();
-		Utils.difference(newNeighbors, alreadyAsked, result);
-		if (result.size() == 0)
-			return false;
-		int size1 = queueToAsk.size();
-		queueToAsk.addAll(result);
-		int size2 = queueToAsk.size();
-		return size1 < size2;
+		Collection<PeerAddress> result = new ArrayList<PeerAddress>(trackerData.size());
+		for (TrackerData data : trackerData)
+		{
+			result.add(data.getPeerAddress());
+		}
+		return result;
 	}
 
+	/**
+	 * This interface is used for the RPC operations. It creates the calls to other peers
+	 */
 	public interface Operation
 	{
+		/**
+		 * Creates an RPC. For the distributed thracker, this is either addToTracker or getFromTracker 
+		 * 
+		 * @param address The address of the remote peer
+		 * @param primary If the remote peer is a primary tracker, the flag is set to true
+		 * @return The future reponse of the RPC
+		 */
 		public abstract FutureResponse create(PeerAddress address, boolean primary);
 	}
 }

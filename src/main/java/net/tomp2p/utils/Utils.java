@@ -247,15 +247,62 @@ public class Utils
 		// no need to call close of flush since we use ByteArrayInputStream
 		return obj;
 	}
-
-	public static <K> void difference(Collection<K> newNeighbors, Collection<K> alreadyAsked, Collection<K> result)
+	
+	/**
+	 * Stores the differences of two collections in a result collection.
+	 * The result will contain items from collection1 without those items that
+	 * are in collection2.
+	 * 
+	 * @param collection1 The first collection (master collection) that will be
+	 *        iterated and checked against duplicates in collection2.
+	 * @param result The collection to store the result
+	 * @param collection2 The second collection that will be searched for
+	 *        duplicates
+	 * @return Returns the collection the user specified as the resulting
+	 *         collection
+	 */
+	public static <K> Collection<K> difference(Collection<K> collection1, Collection<K> result, Collection<K> collection2)
 	{
-		for (Iterator<K> iterator = newNeighbors.iterator(); iterator.hasNext();)
+		for (Iterator<K> iterator = collection1.iterator(); iterator.hasNext();)
 		{
-			K newPeerAddress = iterator.next();
-			if (!alreadyAsked.contains(newPeerAddress))
-				result.add(newPeerAddress);
+			K item = iterator.next();
+			if (!collection2.contains(item))
+			{
+				result.add(item);
+			}
 		}
+		return result;
+	}
+
+	/**
+	 * Stores the differences of multiple collections in a result collection.
+	 * The result will contain items from collection1 without those items that
+	 * are in collections2. The calling method might need to provide a
+	 * @SuppressWarnings("unchecked") since generics and arrays do not mix well.
+	 * 
+	 * @param collection1 The first collection (master collection) that will be
+	 *        iterated and checked against duplicates in collection2.
+	 * @param result The collection to store the result
+	 * @param collection2 The second collections that will be searched for
+	 *        duplicates
+	 * @return Returns the collection the user specified as the resulting
+	 *         collection
+	 */
+	public static <K> Collection<K> difference(Collection<K> collection1, Collection<K> result, Collection<K>... collections2)
+	{
+		for (Iterator<K> iterator = collection1.iterator(); iterator.hasNext();)
+		{
+			K item = iterator.next();
+			int size = collections2.length;
+			for(int i=0;i<size;i++)
+			{
+				if (!collections2[i].contains(item))
+				{
+					result.add(item);
+				}
+			}
+		}
+		return result;
 	}
 
 	public static void bestEffortclose(Closeable... closables)

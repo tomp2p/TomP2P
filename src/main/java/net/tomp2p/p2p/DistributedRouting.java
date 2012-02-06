@@ -410,9 +410,6 @@ public class DistributedRouting
 	static boolean evaluateInformation(Collection<PeerAddress> newNeighbors, final SortedSet<PeerAddress> queueToAsk,
 			final Set<PeerAddress> alreadyAsked, final AtomicInteger noNewInfo, int maxNoNewInfo)
 	{
-		// TODO: check why this null check is required
-		// if (newNeighbors == null)
-		// return false;
 		boolean newInformation = merge(queueToAsk, newNeighbors, alreadyAsked);
 		if (newInformation)
 		{
@@ -425,26 +422,49 @@ public class DistributedRouting
 		}
 	}
 
-	// updates queuetoask with new data, returns if we found peers closer than
-	// we already know.
-	static boolean merge(SortedSet<PeerAddress> queueToAsk, Collection<PeerAddress> newNeighbors,
-			Set<PeerAddress> alreadyAsked)
+	/**
+	 * Updates queueToAsk with new data, returns if we found peers closer than
+	 * we already know.
+	 * 
+	 * @param queueToAsk The queue to get updated
+	 * @param newPeers The new peers reported from remote peers. Since the
+	 *        remote peers do not know what we know, we need to filter this
+	 *        information.
+	 * @param alreadyAsked The peers we already know.
+	 * @return True if we added peers that are closer to the target than we
+	 *         already knew. Please note, it will return false if we add new
+	 *         peers that are not closer to a target.
+	 */
+	static boolean merge(SortedSet<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
+			Collection<PeerAddress> alreadyAsked)
 	{
 		final SortedSet<PeerAddress> result = new TreeSet<PeerAddress>(queueToAsk.comparator());
-		Utils.difference(newNeighbors, alreadyAsked, result);
+		Utils.difference(newPeers, result, alreadyAsked);
 		if (result.size() == 0)
+		{
 			return false;
+		}
 		PeerAddress first = result.first();
 		boolean newInfo = isNew(queueToAsk, first);
 		queueToAsk.addAll(result);
 		return newInfo;
 	}
 
-	static boolean isNew(SortedSet<PeerAddress> queueToAsk, PeerAddress first)
+	/**
+	 * Checks if an item is will be the highest in a sorted set.
+	 * 
+	 * @param queueToAsk The sorted set to check
+	 * @param first The element to check if it will be the highest in the sorted
+	 *        set
+	 * @return True, if item will be the highest element.
+	 */
+	private static boolean isNew(SortedSet<PeerAddress> queueToAsk, PeerAddress item)
 	{
-		if (queueToAsk.contains(first))
+		if (queueToAsk.contains(item))
+		{
 			return false;
-		SortedSet<PeerAddress> tmp = queueToAsk.headSet(first);
+		}
+		SortedSet<PeerAddress> tmp = queueToAsk.headSet(item);
 		return tmp.size() == 0;
 	}
 }

@@ -36,7 +36,7 @@ public class TrackerConfiguration
 	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
 			int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers)
 	{
-		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, 20, 5, false, false);
+		this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, maxFullTrackers, maxPrimaryTrackers, false, false);
 	}
 	
 	public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,

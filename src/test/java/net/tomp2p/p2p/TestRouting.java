@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
@@ -58,7 +57,7 @@ public class TestRouting
 		already.add(Utils2.createAddress(90));
 		already.add(Utils2.createAddress(15));
 		// do testing
-		Utils.difference(newC, already, result);
+		Utils.difference(newC, result, already);
 		// verification
 		Assert.assertEquals(3, result.size());
 		Assert.assertEquals(Utils2.createAddress(88), result.first());

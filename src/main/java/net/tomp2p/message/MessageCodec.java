@@ -183,9 +183,9 @@ public class MessageCodec
 				{
 					input.copyToCurrent(entry.getKey().toByteArray());
 					count += 20;
-					input.copyToCurrent(entry.getValue().getLeft().toByteArray());
+					input.copyToCurrent(entry.getValue().getHash().toByteArray());
 					count += 20;
-					count += encodeData(input, message, entry.getValue().getRight());
+					count += encodeData(input, message, entry.getValue().getData());
 				}
 				return count;
 			case MAP_KEY_KEY:

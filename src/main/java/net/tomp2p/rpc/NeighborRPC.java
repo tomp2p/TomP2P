@@ -62,7 +62,7 @@ public class NeighborRPC extends ReplyHandler
 	 */
 	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
 			Number160 domainKey, Collection<Number160> contentKeys, Command command,
-			boolean isDigest, boolean forceSocket, ChannelCreator channelCreator)
+			boolean isDigest, boolean forceTCP, ChannelCreator channelCreator)
 	{
 		nullCheck(remotePeer, locationKey);
 		if (command != Command.NEIGHBORS_TRACKER && command != Command.NEIGHBORS_STORAGE)
@@ -72,7 +72,7 @@ public class NeighborRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey == null ? Number160.ZERO : domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
-		if (!forceSocket)
+		if (!forceTCP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
 			NeighborsRequestUDP request = new NeighborsRequestUDP(futureResponse, peerBean, connectionBean, message);

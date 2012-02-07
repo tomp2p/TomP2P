@@ -243,15 +243,21 @@ public abstract class Storage implements Digest, Responsibility
 			for (Map.Entry<Number160, HashData> entry : hashDataMap.entrySet())
 			{
 				Number480 key = new Number480(locationKey, domainKey, entry.getKey());
-				Number160 storedHash = get(key).getHash();
-				if (storedHash == null || !storedHash.equals(entry.getValue().getLeft()))
+				Data data = get(key);
+				if(data == null)
+				{
+					perfectMatch = false;
+					continue;
+				}
+				Number160 storedHash = data.getHash();
+				if (!storedHash.equals(entry.getValue().getHash()))
 				{
 					perfectMatch = false;
 					continue;
 				}
 				if (partial)
 				{
-					put(key, entry.getValue().getRight(), publicKey, false, protectDomain);
+					put(key, entry.getValue().getData(), publicKey, false, protectDomain);
 					retVal.add(key.getContentKey());
 				}
 			}
@@ -260,7 +266,7 @@ public abstract class Storage implements Digest, Responsibility
 				for (Map.Entry<Number160, HashData> entry : hashDataMap.entrySet())
 				{
 					Number480 key = new Number480(locationKey, domainKey, entry.getKey());
-					put(key, entry.getValue().getRight(), publicKey, false, protectDomain);
+					put(key, entry.getValue().getData(), publicKey, false, protectDomain);
 					retVal.add(key.getContentKey());
 				}
 			}

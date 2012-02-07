@@ -91,7 +91,7 @@ public class Scheduler
 		{
 			maintenance.shutdown();
 		}
-		timeoutExecutor.shutdown();
+		timeoutExecutor.shutdownNow();
 	}
 	
 	private class MyThreadFactory implements ThreadFactory 

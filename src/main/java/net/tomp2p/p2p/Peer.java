@@ -418,6 +418,7 @@ public class Peer
 			startMaintainance();
 		for (PeerListener listener : listeners)
 			listener.notifyOnStart();
+		getConnectionBean().getScheduler().startTimeout();
 	}
 
 	public void setDefaultStorageReplication()
@@ -1883,5 +1884,19 @@ public class Peer
 	public void release(ChannelCreator channelCreator)
 	{
 		getConnectionBean().getConnectionReservation().release(channelCreator);
+	}
+	
+	/**
+	 * Sets a timeout for this future. If the timeout passes, the future fails
+	 * with the reason provided
+	 * 
+	 * @param baseFuture The future to set the timeout
+	 * @param millis The time in milliseconds until this future is considered a
+	 *        failure.
+	 * @param reason The reason why this future failed
+	 */
+	public void setFutureTimeout(BaseFuture baseFuture, int millis, String reason)
+	{
+		getConnectionBean().getScheduler().scheduleTimeout(baseFuture, millis, reason);
 	}
 }

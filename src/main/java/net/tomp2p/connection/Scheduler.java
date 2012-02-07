@@ -18,12 +18,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
@@ -44,19 +48,22 @@ public class Scheduler
 	private static final Logger logger = LoggerFactory.getLogger(Scheduler.class);
 	private static final int NR_THREADS = Runtime.getRuntime().availableProcessors() + 1;
 	private static final int WARNING_THRESHOLD = 10000;
-	private final LinkedBlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+	private final LinkedBlockingQueue<Runnable> executorQueue = new LinkedBlockingQueue<Runnable>();
+	private final Queue<Timeout> timeouts = new PriorityQueue<Timeout>();
 	private final ExecutorService executor = new ThreadPoolExecutor(NR_THREADS, NR_THREADS, 0L,
-			TimeUnit.MILLISECONDS, queue, new MyThreadFactory());
+			TimeUnit.MILLISECONDS, executorQueue, new MyThreadFactory());
+	private final ExecutorService timeoutExecutor = Executors.newSingleThreadExecutor();
 	private volatile Maintenance maintenance;
+	private volatile boolean running = true;
 
 	public void addQueue(FutureRunnable futureRunnable)
 	{
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("we are called from a TCP netty thread, so send this in an other thread "
-					+ Thread.currentThread().getName()+". The queue size is: "+queue.size());
+					+ Thread.currentThread().getName()+". The queue size is: "+executorQueue.size());
 		}
-		if(queue.size() > WARNING_THRESHOLD)
+		if(executorQueue.size() > WARNING_THRESHOLD)
 		{
 			if(logger.isInfoEnabled())
 			{
@@ -73,6 +80,7 @@ public class Scheduler
 	
 	public void shutdown()
 	{
+		running = false;
 		List<Runnable> runners = executor.shutdownNow();
 		for (Runnable runner : runners)
 		{
@@ -83,6 +91,7 @@ public class Scheduler
 		{
 			maintenance.shutdown();
 		}
+		timeoutExecutor.shutdown();
 	}
 	
 	private class MyThreadFactory implements ThreadFactory 
@@ -98,7 +107,7 @@ public class Scheduler
 	
 	private class Maintenance extends Thread implements Runnable
 	{
-		private volatile boolean running = true;
+		//private volatile boolean running = true;
 		final private List<PeerMap> peerMaps = new ArrayList<PeerMap>();
 		final private HandshakeRPC handshakeRPC;
 		final private ConnectionReservation connectionReservation;
@@ -166,7 +175,6 @@ public class Scheduler
 		}
 		public void shutdown()
 		{
-			running = false;
 			interrupt();
 		}
 		public void add(PeerMap peerMap)
@@ -217,6 +225,121 @@ public class Scheduler
 					peerMap.peerOffline(peerAddress, force);
 				}
 			});
+		}
+	}
+	
+	public void startTimeout()
+	{
+		timeoutExecutor.execute(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				try
+				{
+					while (running)
+					{
+						final Timeout timeout;
+						synchronized (timeouts)
+						{
+							timeout = timeouts.poll();
+						}
+						int waitingTime;
+						if(timeout == null)
+						{
+							waitingTime = Integer.MAX_VALUE;
+						}
+						else
+						{
+							waitingTime = (int) (timeout.getExpiration() - Timings.currentTimeMillis());
+						}
+						if(waitingTime > 0)
+						{
+							synchronized (timeouts)
+							{
+								timeouts.wait(waitingTime);
+							}
+						}
+						if(waitingTime != Integer.MAX_VALUE)
+						{
+							//calculate again
+							waitingTime = (int) (timeout.getExpiration() - Timings.currentTimeMillis());
+							if(waitingTime > 0)
+							{
+								//not ready, we must have been notified -> reschedule
+								timeouts.add(timeout);
+							}
+							else
+							{
+								timeout.getBaseFuture().setFailed(timeout.getReason());
+							}
+						}
+					}
+				}
+				catch (InterruptedException e)
+				{
+					// exit here
+					Thread.currentThread().interrupt();
+				}
+			}
+		});
+	}
+
+	public void scheduleTimeout(BaseFuture baseFuture, int millis, String reason)
+	{
+		//add timeout with expiration time
+		synchronized (timeouts)
+		{
+			timeouts.add(new Timeout(baseFuture, Timings.currentTimeMillis()+millis, reason));
+			timeouts.notifyAll();
+		}
+	}
+	
+	/**
+	 * Used for debugging only
+	 * 
+	 * @return The next Timeout reason to expire
+	 */
+	String poll()
+	{
+		Timeout t= timeouts.poll();
+		if (t != null)
+		{
+			return t.getReason();
+		}
+		return null;
+	}
+	 
+	private static class Timeout implements Comparable<Timeout>
+	{
+		final private BaseFuture baseFuture;
+		final private long expiration;
+		final private String reason;
+		public Timeout(BaseFuture baseFuture, long expiration, String reason)
+		{
+			this.baseFuture = baseFuture;
+			this.expiration = expiration;
+			this.reason = reason;
+		}
+		public BaseFuture getBaseFuture()
+		{
+			return baseFuture;
+		}
+		public long getExpiration()
+		{
+			return expiration;
+		}
+		public String getReason()
+		{
+			return reason;
+		}
+		@Override
+		public int compareTo(Timeout o)
+		{
+			long diff = expiration - o.expiration;
+			if(diff> 0 ) return 1;
+			else if (diff < 0 ) return -1;
+			else return 0;
 		}
 	}
 }

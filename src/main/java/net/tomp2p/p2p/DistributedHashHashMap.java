@@ -112,8 +112,11 @@ public class DistributedHashHashMap
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												rawData.put(future.getRequest().getRecipient(), future
+												if(future.isSuccess())
+												{
+													rawData.put(future.getRequest().getRecipient(), future
 														.getResponse().getKeys());
+												}
 											}
 										});
 							}
@@ -192,13 +195,20 @@ public class DistributedHashHashMap
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												FutureData futureData = (FutureData) future;
-												if (raw)
-													rawChannels.put(future.getRequest().getRecipient(),
-															futureData.getBuffer());
-												else
-													rawObjects.put(future.getRequest().getRecipient(),
-															futureData.getObject());
+												if(future.isSuccess())
+												{
+													FutureData futureData = (FutureData) future;
+													if (raw)
+													{
+														rawChannels.put(future.getRequest().getRecipient(),
+																futureData.getBuffer());
+													}
+													else
+													{
+														rawObjects.put(future.getRequest().getRecipient(),
+																futureData.getObject());
+													}
+												}
 											}
 										});
 							}
@@ -278,8 +288,11 @@ public class DistributedHashHashMap
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												rawData.put(future.getRequest().getRecipient(), future
+												if(future.isSuccess())
+												{
+													rawData.put(future.getRequest().getRecipient(), future
 														.getResponse().getKeys());
+												}
 											}
 										});
 							}
@@ -366,15 +379,18 @@ public class DistributedHashHashMap
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if(digest)
+												if(future.isSuccess())
 												{
-													rawDigest.put(future.getRequest().getRecipient(), future
-															.getResponse().getKeys());	
-												}
-												else
-												{
-													rawData.put(future.getRequest().getRecipient(), future
-														.getResponse().getDataMap());
+													if(digest)
+													{
+														rawDigest.put(future.getRequest().getRecipient(), future
+																.getResponse().getKeys());	
+													}
+													else
+													{
+														rawData.put(future.getRequest().getRecipient(), future
+																.getResponse().getDataMap());
+													}
 												}
 												
 											}
@@ -456,12 +472,19 @@ public class DistributedHashHashMap
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if (returnResults)
-													rawDataResult.put(future.getRequest().getRecipient(),
+												if(future.isSuccess())
+												{
+													if (returnResults)
+													{
+														rawDataResult.put(future.getRequest().getRecipient(),
 															future.getResponse().getDataMap());
-												else
-													rawDataNoResult.put(future.getRequest().getRecipient(),
+													}
+													else
+													{
+														rawDataNoResult.put(future.getRequest().getRecipient(),
 															future.getResponse().getKeys());
+													}
+												}
 											}
 										});
 							}

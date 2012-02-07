@@ -14,7 +14,7 @@ Announce on:
 
  * tomp2p/downloads
  * tomp2p/news
- * tomp2p/mailinglist
+ * tomp2p/mailinglist - release notes and planning for next version
  * freecode.com (http://freecode.com/projects/tomp2p)
  * update wikipedia with version number (http://en.wikipedia.org/wiki/TomP2P)  
 

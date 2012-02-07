@@ -230,6 +230,40 @@ public class TestPing
 				recv1.shutdown();
 		}
 	}
+	
+	@Test
+	public void testPingTimeoutTCP3() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x9876"));
+			sender.listen(2424, 2424);
+			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
+					.getConnectionBean(), false, true, true);
+			recv1 = new Peer(55, new Number160("0x1234"));
+			recv1.listen(8088, 8088);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
+			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
+			FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().getServerPeerAddress(), cc);
+			String error ="##Test Failure**";
+			sender.setFutureTimeout(fr, 500, error);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(false, fr.isSuccess());
+			Assert.assertEquals(true, fr.getFailedReason().indexOf(error) > 0);
+			sender.getConnectionBean().getConnectionReservation().release(cc);
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
 
 	@Test
 	public void testPingTimeoutUDP() throws Exception

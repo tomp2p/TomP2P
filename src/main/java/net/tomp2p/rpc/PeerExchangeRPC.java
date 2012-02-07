@@ -107,14 +107,15 @@ public class PeerExchangeRPC extends ReplyHandler
 				logger.debug("we got stored activePeers size:" + peers.size());
 		}
 
-		peers = Utils.subtract(peers, tmp1);
-		peers = Utils.limit(peers, TrackerRPC.MAX_MSG_SIZE_UDP);
-
-		// add to our map that we sent the following information to this peer
-		tmp1.addAll(peers.keySet());
+		synchronized (tmp1)
+		{
+			peers = Utils.subtract(peers, tmp1);
+			peers = Utils.limit(peers, TrackerRPC.MAX_MSG_SIZE_UDP);
+			// add to our map that we sent the following information to this peer
+			tmp1.addAll(peers.keySet());
+		}
 
 		message.setKeyKey(locationKey, domainKey);
-
 		// offline peers notification
 		// TODO: enable it again...
 		// if(removed.size() > 0)

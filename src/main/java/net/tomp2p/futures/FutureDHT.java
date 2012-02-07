@@ -57,8 +57,8 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	private Map<PeerAddress, ChannelBuffer> rawChannels;
 	// Flag indicating if the minimum operations for put have been reached.
 	private boolean minReached;
-
-	@Deprecated
+	// used for general purpose setDone()
+	private Object attachement;
 	public FutureDHT()
 	{
 		this(0, new VotingSchemeDHT(), null);
@@ -87,6 +87,33 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	public void created(FutureDHT futureDHT)
 	{
 		repeated(futureDHT);
+	}
+	
+	/**
+	 * Finish the future and set a general purpose attachement.
+	 * 
+	 * @param object General purpose attachement
+	 */
+	public void setDone(Object attachement)
+	{
+		synchronized (lock)
+		{
+			if (!setCompletedAndNotify())
+			{
+				return;
+			}
+			this.attachement = attachement;
+			this.type = FutureType.OK;
+		}
+		notifyListerenrs();
+	}
+	
+	public Object getAttachement()
+	{
+		synchronized (lock)
+		{
+			return attachement;
+		}
 	}
 
 	/**

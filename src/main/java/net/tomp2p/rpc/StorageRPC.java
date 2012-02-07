@@ -41,7 +41,6 @@ public class StorageRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageRPC.class);
 
-	// final private ServerCache serverCache = new ServerCache();
 	public StorageRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
@@ -52,10 +51,41 @@ public class StorageRPC extends ReplyHandler
 	{
 		return peerBean.getServerPeerAddress();
 	}
-
+	
+	@Deprecated
 	public FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
+	{
+		return put(remotePeer, locationKey, domainKey, dataMap, protectDomain, 
+				protectEntry, signMessage, channelCreator, false);
+	}
+
+	/**
+	 * Stores data on a remote peer. Overwrites data if the data already exists. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param locationKey The location of the data
+	 * @param domainKey The domain of the data
+	 * @param dataMap The map with the content key and data
+	 * @param protectDomain Set to true if the domain should be set to
+	 *        protected. This means that this domain is flagged an a public key
+	 *        is stored for this entry. An update or removal can only be made
+	 *        with the matching private key.
+	 * @param protectEntry Set to true if the entry should be set to protected.
+	 *        This means that this domain is flagged an a public key is stored
+	 *        for this entry. An update or removal can only be made with the
+	 *        matching private key.
+	 * @param signMessage Set to true if the message should be signed. For
+	 *        protecting an entry, this needs to be set to true.
+	 * @param channelCreator The channel creator
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
+	public FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
+			boolean signMessage, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		final Type request;
 		if (protectDomain)
@@ -67,12 +97,43 @@ public class StorageRPC extends ReplyHandler
 			request = Type.REQUEST_1;
 		}
 		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage || protectEntry, channelCreator);
+				|| signMessage || protectEntry, channelCreator, forceUDP);
 	}
-
+	
+	@Deprecated
 	public FutureResponse putIfAbsent(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
 			boolean signMessage, ChannelCreator channelCreator)
+	{
+		return putIfAbsent(remotePeer, locationKey, domainKey, dataMap, protectDomain, protectEntry, 
+				signMessage, channelCreator, false);
+	}
+
+	/**
+	 * Stores data on a remote peer. Only stores data if the data does not already exist. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param locationKey The location of the data
+	 * @param domainKey The domain of the data
+	 * @param dataMap The map with the content key and data
+	 * @param protectDomain Set to true if the domain should be set to
+	 *        protected. This means that this domain is flagged an a public key
+	 *        is stored for this entry. An update or removal can only be made
+	 *        with the matching private key.
+	 * @param protectEntry Set to true if the entry should be set to protected.
+	 *        This means that this domain is flagged an a public key is stored
+	 *        for this entry. An update or removal can only be made with the
+	 *        matching private key.
+	 * @param signMessage Set to true if the message should be signed. For
+	 *        protecting an entry, this needs to be set to true.
+	 * @param channelCreator The channel creator
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
+	public FutureResponse putIfAbsent(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
+			boolean signMessage, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		final Type request;
 		if (protectDomain)
@@ -84,14 +145,24 @@ public class StorageRPC extends ReplyHandler
 			request = Type.REQUEST_3;
 		}
 		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
-				|| signMessage || protectEntry, channelCreator);
+				|| signMessage || protectEntry, channelCreator, forceUDP);
+	}
+	
+	@Deprecated
+	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Map<Number160, HashData> hashDataMap,
+			boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
+			ChannelCreator channelCreator)
+	{
+		return compareAndPut(remotePeer, locationKey, domainKey, hashDataMap, 
+				protectDomain, protectEntry, signMessage, partialPut, channelCreator, false);
 	}
 	
 	/**
 	 * Compares and puts data on a peer. It first compares the hashes that the
 	 * user provided on the remote peer, and if the hashes match, the data is
 	 * stored. If the flag partial put has been set, then it will store those
-	 * data where the hashes match and ignore the others.
+	 * data where the hashes match and ignore the others. This is an RPC.
 	 * 
 	 * @param remotePeer The remote peer to store the data
 	 * @param locationKey The location key
@@ -99,17 +170,19 @@ public class StorageRPC extends ReplyHandler
 	 * @param hashDataMap The map with the data and the hashes to compare to
 	 * @param protectDomain Protect the domain
 	 * @param protectEntry Protect the entry
-	 * @param signMessage Sing message
+	 * @param signMessage Set to true if the message should be signed. For
+	 *        protecting an entry, this needs to be set to true.
 	 * @param partialPut Set to true if partial puts should be allowed. If set
 	 *        to false, then the complete map must match the hash, otherwise it
 	 *        wont be stored.
 	 * @param channelCreator The channel creator
+	 * @param forceUDP Set to true if the communication should be UDP, default is TCP
 	 * @return FutureResponse that stores which content keys have been stored.
 	 */
 	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, HashData> hashDataMap,
 			boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
-			ChannelCreator channelCreator)
+			ChannelCreator channelCreator, boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey, hashDataMap);
 		final Message message;
@@ -130,14 +203,38 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		message.setHashDataMap(hashDataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean,
-				connectionBean, message);
-		return request.sendTCP(channelCreator);
+		if(!forceUDP)
+		{
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean,
+					connectionBean, message);
+			return request.sendTCP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean,
+					connectionBean, message);
+			return request.sendUDP(channelCreator);
+		}
 	}
 
+	/**
+	 * Stores the data either via put or putIfAbsent. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param dataMap The map with the content key and data
+	 * @param type The type of put request, this depends on
+	 *        put/putIfAbsent/protected/not-protected
+	 * @param signMessage Set to true to sign message
+	 * @param channelCreator The channel creator
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
 	private FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Map<Number160, Data> dataMap, final Type type,
-			boolean signMessage, ChannelCreator channelCreator)
+			boolean signMessage, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey, dataMap);
 		final Message message = createMessage(remotePeer, Command.PUT, type);
@@ -148,13 +245,54 @@ public class StorageRPC extends ReplyHandler
 		message.setDataMap(dataMap);
 		
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
-		return request.sendTCP(channelCreator);
+		if(!forceUDP)
+		{
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendTCP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendUDP(channelCreator);
+		}
 	}
-
+	
+	@Deprecated
 	public FutureResponse add(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
 			boolean signMessage, ChannelCreator channelCreator)
+	{
+		return add(remotePeer, locationKey, domainKey, dataSet, protectDomain, 
+				signMessage, channelCreator, false);
+	}
+
+	/**
+	 * Adds data on a remote peer. The main difference to
+	 * {@link #put(PeerAddress, Number160, Number160, Map, Type, boolean, ChannelCreator, boolean)}
+	 * and
+	 * {@link #putIfAbsent(PeerAddress, Number160, Number160, Map, boolean, boolean, boolean, ChannelCreator, boolean)}
+	 * is that it will convert the data collection to map. The key for the map
+	 * will be the SHA-1 hash of the data. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param dataSet The set with data. This will be converted to a map. The
+	 *        key for the map is the SHA-1 of the data.
+	 * @param protectDomain Set to true if the domain should be set to
+	 *        protected. This means that this domain is flagged an a public key
+	 *        is stored for this entry. An update or removal can only be made
+	 *        with the matching private key.
+	 * @param signMessage Set to true if the message should be signed. For
+	 *        protecting an entry, this needs to be set to true.
+	 * @param channelCreator The channel creator
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
+	public FutureResponse add(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
+			boolean signMessage, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		final Type type;
 		if (protectDomain)
@@ -176,26 +314,49 @@ public class StorageRPC extends ReplyHandler
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
-		return request.sendTCP(channelCreator);
+		if(!forceUDP)
+		{
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendTCP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendUDP(channelCreator);
+		}
+	}
+	
+	@Deprecated
+	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Collection<Number160> contentKeys,
+			PublicKey protectedDomains, boolean signMessage, boolean digest, 
+			ChannelCreator channelCreator)
+	{
+		return get(remotePeer, locationKey, domainKey, contentKeys, 
+				protectedDomains, signMessage, digest, channelCreator, false);
 	}
 
 	/**
-	 * Starts an RPC to get the data from a remote peer.
+	 * Get the data from a remote peer. This is an RPC.
 	 * 
 	 * @param remotePeer The remote peer to send this request
-	 * @param locationKey The location key 
+	 * @param locationKey The location key
 	 * @param domainKey The domain key
 	 * @param contentKeys The content keys or null if requested all
-	 * @param protectedDomains Add the public key to protect the domain. In order to make this work, the message needs to be signed
+	 * @param protectedDomains Add the public key to protect the domain. In
+	 *        order to make this work, the message needs to be signed
 	 * @param signMessage Adds a public key and signs the message
 	 * @param digest Returns a list of hashes of the data stored on this peer
-	 * @param channelCreator The channel creator that creates connections. Typically we need one connection here.
-	 * @return The future response to keep track of future events 
+	 * @param channelCreator The channel creator that creates connections.
+	 *        Typically we need one connection here.
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return The future response to keep track of future events
 	 */
 	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			PublicKey protectedDomains, boolean signMessage, boolean digest, ChannelCreator channelCreator)
+			PublicKey protectedDomains, boolean signMessage, boolean digest, 
+			ChannelCreator channelCreator, boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
@@ -208,13 +369,48 @@ public class StorageRPC extends ReplyHandler
 		if (protectedDomains != null)
 			message.setPublicKey(protectedDomains);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
-		return request.sendTCP(channelCreator);
+		if(!forceUDP)
+		{
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendTCP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return request.sendUDP(channelCreator);
+		}
 	}
-
+	
+	@Deprecated
 	public FutureResponse remove(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			final boolean sendBackResults, final boolean signMessage, ChannelCreator channelCreator)
+			final boolean sendBackResults, final boolean signMessage, 
+			ChannelCreator channelCreator)
+	{
+		return remove(remotePeer, locationKey, domainKey, contentKeys, 
+				sendBackResults, signMessage, channelCreator, false);
+	}
+
+	/**
+	 * Removes data from a peer. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to send this request
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param contentKeys The content keys or null if requested all
+	 * @param sendBackResults Set to true if the removed data should be sent
+	 *        back
+	 * @param signMessage Adds a public key and signs the message. For protected
+	 *        entry and domains, this needs to be provided.
+	 * @param channelCreator The channel creator that creates connections
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return The future response to keep track of future events
+	 */
+	public FutureResponse remove(final PeerAddress remotePeer, final Number160 locationKey,
+			final Number160 domainKey, final Collection<Number160> contentKeys,
+			final boolean sendBackResults, final boolean signMessage, 
+			ChannelCreator channelCreator, boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.REMOVE, sendBackResults
@@ -480,6 +676,10 @@ public class StorageRPC extends ReplyHandler
 		final Collection<Number160> result = peerBean.getStorage().compareAndPut(
 				locationKey, domainKey, hashDataMap, publicKey, partial, protectDomain);
 		
+		if (logger.isDebugEnabled())
+		{
+			logger.debug("stored " + result.size());
+		}
 		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
 			peerBean.getReplicationStorage().checkResponsibility(locationKey);
 		responseMessage.setKeys(result);

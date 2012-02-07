@@ -21,7 +21,7 @@ public class RoutingConfiguration
 	final private int maxFailures;
 	final private int maxSuccess;
 	final private int parallel;
-	final private boolean forceSocket;
+	final private boolean forceTCP;
 	
 	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int parallel)
 	{
@@ -38,7 +38,7 @@ public class RoutingConfiguration
 		this(directHits, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel, false);
 	}
 
-	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel, boolean forceSocket)
+	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel, boolean forceTCP)
 	{
 		if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
@@ -47,7 +47,7 @@ public class RoutingConfiguration
 		this.maxFailures = maxFailures;
 		this.maxSuccess = maxSuccess;
 		this.parallel = parallel;
-		this.forceSocket = forceSocket;
+		this.forceTCP = forceTCP;
 	}
 
 	public int getDirectHits()
@@ -88,8 +88,11 @@ public class RoutingConfiguration
 		return parallel;
 	}
 	
-	public boolean isForceSocket()
+	/**
+	 * @return True if the routing should use TCP instead of the default UDP
+	 */
+	public boolean isForceTCP()
 	{
-		return forceSocket;
+		return forceTCP;
 	}
 }

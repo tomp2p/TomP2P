@@ -35,8 +35,9 @@ public class ConnectionConfigurationBean
 	private int maxCreating = 100;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
-	// for enabling threads for reservation. This may deadlock if set to false and if Netty is used
-
+	// force TCP or UDP
+	private boolean forceTrackerTCP = false;
+	private boolean forceStorageUDP = false;
 	public int getIdleTCPMillis()
 	{
 		return idleTCPMillis;
@@ -105,5 +106,25 @@ public class ConnectionConfigurationBean
 	public void setMaxCreating(int maxCreating)
 	{
 		this.maxCreating = maxCreating;
+	}
+
+	public boolean isForceTrackerTCP()
+	{
+		return forceTrackerTCP;
+	}
+
+	public void setForceTrackerTCP(boolean forceTrackerTCP)
+	{
+		this.forceTrackerTCP = forceTrackerTCP;
+	}
+
+	public boolean isForceStorageUDP()
+	{
+		return forceStorageUDP;
+	}
+
+	public void setForceStorageUDP(boolean forceStorageUDP)
+	{
+		this.forceStorageUDP = forceStorageUDP;
 	}
 }

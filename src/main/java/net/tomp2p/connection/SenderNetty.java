@@ -81,7 +81,7 @@ public class SenderNetty implements Sender
 	 * @see net.tomp2p.connection.Sender#sendUDP(net.tomp2p.rpc.RequestHandlerUDP, net.tomp2p.futures.FutureResponse, net.tomp2p.message.Message, net.tomp2p.connection.ChannelCreator)
 	 */
 	@Override
-	public void sendUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse,
+	public void sendUDP(final RequestHandlerUDP<? extends BaseFuture> handler, final FutureResponse futureResponse,
 			final Message message, final ChannelCreator channelCreator)
 	{
 		if (logger.isDebugEnabled())
@@ -100,7 +100,7 @@ public class SenderNetty implements Sender
 	 * @see net.tomp2p.connection.Sender#sendBroadcastUDP(net.tomp2p.rpc.RequestHandlerUDP, net.tomp2p.futures.FutureResponse, net.tomp2p.message.Message, net.tomp2p.connection.ChannelCreator)
 	 */
 	@Override
-	public void sendBroadcastUDP(final RequestHandlerUDP handler, final FutureResponse futureResponse, 
+	public void sendBroadcastUDP(final RequestHandlerUDP<? extends BaseFuture> handler, final FutureResponse futureResponse, 
 			final Message message, final ChannelCreator channelCreator)
 	{
 		if (logger.isDebugEnabled())
@@ -227,7 +227,7 @@ public class SenderNetty implements Sender
 	 * @param broadcast True if message should be broadcasted (layer 2)
 	 * @param channelCreator ChannelCreator
 	 */
-	private void sendUDP0(final PeerAddress remotePeer, final RequestHandlerUDP requestHandler,
+	private void sendUDP0(final PeerAddress remotePeer, final RequestHandlerUDP<? extends BaseFuture> requestHandler,
 			final FutureResponse futureResponse, final Message message, final boolean broadcast,
 			final ChannelCreator channelCreator)
 	{

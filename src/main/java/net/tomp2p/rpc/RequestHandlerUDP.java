@@ -46,11 +46,11 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public class RequestHandlerUDP extends SimpleChannelHandler
+public class RequestHandlerUDP<K extends FutureResponse> extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(RequestHandlerUDP.class);
 	// The future response which is currently be waited for
-	final private FutureResponse futureResponse;
+	final private K futureResponse;
 	// The node this request handler is associated with
 	final private PeerBean peerBean;
 	final private ConnectionBean connectionBean;
@@ -63,7 +63,7 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 	 * @param objectHolder the bean representing the node this handler belongs
 	 *        to
 	 */
-	public RequestHandlerUDP(FutureResponse futureResponse, PeerBean peerBean,
+	public RequestHandlerUDP(K futureResponse, PeerBean peerBean,
 			ConnectionBean connectionBean, Message message)
 	{
 		this.peerBean = peerBean;
@@ -73,24 +73,24 @@ public class RequestHandlerUDP extends SimpleChannelHandler
 		this.sendMessageID = new MessageID(message);
 	}
 
-	public FutureResponse getFutureResponse()
+	public K getFutureResponse()
 	{
 		return futureResponse;
 	}
 
-	public FutureResponse sendUDP(ChannelCreator channelCreator)
+	public K sendUDP(ChannelCreator channelCreator)
 	{
 		connectionBean.getSender().sendUDP(this, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
-	public FutureResponse sendBroadcastUDP(ChannelCreator channelCreator)
+	public K sendBroadcastUDP(ChannelCreator channelCreator)
 	{
 		connectionBean.getSender().sendBroadcastUDP(this, futureResponse, message, channelCreator);
 		return futureResponse;
 	}
 
-	public FutureResponse fireAndForgetUDP(ChannelCreator channelCreator)
+	public K fireAndForgetUDP(ChannelCreator channelCreator)
 	{
 		connectionBean.getSender().sendUDP(null, futureResponse, message, channelCreator);
 		return futureResponse;

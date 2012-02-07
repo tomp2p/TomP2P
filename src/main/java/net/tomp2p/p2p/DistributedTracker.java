@@ -182,7 +182,7 @@ public class DistributedTracker
 
 	public FutureLateJoin<FutureResponse> startPeerExchange(final Number160 locationKey,
 			final Number160 domainKey, final FutureChannelCreator futureChannelCreator, 
-			final ConnectionReservation connectionReservation)
+			final ConnectionReservation connectionReservation, final boolean forceTCP)
 	{
 		final Map<Number160, TrackerData> activePeers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
 		//TODO: make a limitrandom here in case we have many activepeers, below is a sketch
@@ -197,7 +197,7 @@ public class DistributedTracker
 				{
 					for (TrackerData data : activePeers2.values())
 					{
-						FutureResponse futureResponses = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false, future.getChannelCreator());
+						FutureResponse futureResponses = peerExchangeRPC.peerExchange(data.getPeerAddress(), locationKey, domainKey, false, future.getChannelCreator(), forceTCP);
 						if(!futureLateJoin.add(futureResponses))
 						{
 							//the late join future is fininshed if the add returns false
@@ -448,7 +448,7 @@ public class DistributedTracker
 		return routing.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
 				routingConfiguration.getDirectHits(), routingConfiguration.getMaxNoNewInfo(0),
 				routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDigest, routingConfiguration.isForceSocket(), cc);
+				routingConfiguration.getParallel(), isDigest, routingConfiguration.isForceTCP(), cc);
 	}
 
 	/**

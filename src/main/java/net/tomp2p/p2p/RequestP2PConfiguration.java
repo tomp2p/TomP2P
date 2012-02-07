@@ -24,14 +24,24 @@ public class RequestP2PConfiguration
 	final private int minimumResults;
 	final private int maxFailure;
 	final private int parallelDiff;
-
+	//set to force either UDP or TCP
+	final private boolean forceUPD;
+	final private boolean forceTCP;
+	
 	public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff)
+	{
+		this(minimumResults, maxFailure, parallelDiff, false, false);
+	}
+
+	public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD, boolean forceTCP)
 	{
 		if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
 		this.minimumResults = minimumResults;
 		this.maxFailure = maxFailure;
 		this.parallelDiff = parallelDiff;
+		this.forceUPD = forceUPD;
+		this.forceTCP = forceTCP;
 	}
 
 	public int getMinimumResults()
@@ -52,5 +62,15 @@ public class RequestP2PConfiguration
 	public int getParallel()
 	{
 		return minimumResults+parallelDiff;
+	}
+
+	public boolean isForceUPD()
+	{
+		return forceUPD;
+	}
+
+	public boolean isForceTCP()
+	{
+		return forceTCP;
 	}
 }

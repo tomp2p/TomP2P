@@ -53,9 +53,31 @@ public class PeerExchangeRPC extends ReplyHandler
 		registerIoHandler(Command.PEX);
 		sentPeers = new MapMaker().concurrencyLevel(1).expireAfterAccess(DAY, TimeUnit.SECONDS).makeMap();
 	}
-
+	
+	@Deprecated
 	public FutureResponse peerExchange(final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
 			boolean isReplication, ChannelCreator channelCreator)
+	{
+		return peerExchange(remotePeer, locationKey, domainKey, isReplication, channelCreator, false);
+	}
+
+	/**
+	 * Peer exchange (PEX) information about other peers from the swarm, to not
+	 * ask the primary trackers too often. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to send this request
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param isReplication Set to true if the PEX is started as replication.
+	 *        This means that this peer learned that an other peer is closer and
+	 *        sends tracker information to that peer.
+	 * @param channelCreator The channel creator that creates connections
+	 * @param forceTCP Set to true if the communication should be TCP, default
+	 *        is UDP
+	 * @return The future response to keep track of future events
+	 */
+	public FutureResponse peerExchange(final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
+			boolean isReplication, ChannelCreator channelCreator, boolean forceTCP)
 	{
 		final Message message = createMessage(remotePeer, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
 		Set<Number160> tmp1 = sentPeers.get(remotePeer.getID());
@@ -101,8 +123,16 @@ public class PeerExchangeRPC extends ReplyHandler
 				logger.debug("sent (" + message.getSender().getID() + ") to " + remotePeer.getID() + " / "
 						+ peers.size());
 			FutureResponse futureResponse = new FutureResponse(message);
-			final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
-			return requestHandler.fireAndForgetUDP(channelCreator);
+			if(!forceTCP)
+			{
+				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				return requestHandler.fireAndForgetUDP(channelCreator);
+			}
+			else
+			{
+				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				return requestHandler.fireAndForgetTCP(channelCreator);
+			}
 		}
 		else
 		{

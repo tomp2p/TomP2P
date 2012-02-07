@@ -48,21 +48,36 @@ public class NeighborRPC extends ReplyHandler
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.NEIGHBORS_STORAGE, Command.NEIGHBORS_TRACKER);
 	}
-
-	/**
-	 * 
-	 * @param remotePeer
-	 * @param locationKey
-	 * @param domainKey
-	 * @param contentKeys
-	 * @param neighborType
-	 * @param requestType
-	 * @param forceSocket
-	 * @return
-	 */
+	
+	@Deprecated
 	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
 			Number160 domainKey, Collection<Number160> contentKeys, Command command,
 			boolean isDigest, boolean forceTCP, ChannelCreator channelCreator)
+	{
+		return closeNeighbors(remotePeer, locationKey, domainKey, contentKeys, 
+				command, isDigest, channelCreator, forceTCP);
+	}
+
+	/**
+	 * Requests close neighbors from the remote peer. The remote peer may
+	 * idicate if the data is present on that peer. This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to send this request
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param contentKeys For get() and remove() one can provide the content
+	 *        keys and the remote peer indicates if those keys are on that peer.
+	 * @param command either Command.NEIGHBORS_TRACKER or
+	 *        Command.NEIGHBORS_STORAGE
+	 * @param isDigest Set to true to return a digest of the remote content
+	 * @param channelCreator The channel creator that creates connections
+	 * @param forceTCP Set to true if the communication should be TCP, default
+	 *        is UDP
+	 * @return The future response to keep track of future events
+	 */
+	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
+			Number160 domainKey, Collection<Number160> contentKeys, Command command,
+			boolean isDigest, ChannelCreator channelCreator, boolean forceTCP)
 	{
 		nullCheck(remotePeer, locationKey);
 		if (command != Command.NEIGHBORS_TRACKER && command != Command.NEIGHBORS_STORAGE)
@@ -75,7 +90,7 @@ public class NeighborRPC extends ReplyHandler
 		if (!forceTCP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			NeighborsRequestUDP request = new NeighborsRequestUDP(futureResponse, peerBean, connectionBean, message);
+			NeighborsRequestUDP<FutureResponse> request = new NeighborsRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 			return request.sendUDP(channelCreator);
 		}
 		else
@@ -198,11 +213,11 @@ public class NeighborRPC extends ReplyHandler
 			super.handleUpstream(ctx, ce);
 		}
 	}
-	private class NeighborsRequestUDP extends RequestHandlerUDP
+	private class NeighborsRequestUDP<K extends FutureResponse> extends RequestHandlerUDP<K>
 	{
 		final private Message message;
 
-		public NeighborsRequestUDP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
+		public NeighborsRequestUDP(K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message)
 		{
 			super(futureResponse, peerBean, connectionBean, message);
 			this.message = message;

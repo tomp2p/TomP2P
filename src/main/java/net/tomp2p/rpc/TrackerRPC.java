@@ -67,6 +67,7 @@ public class TrackerRPC extends ReplyHandler
 		return peerBean.getServerPeerAddress();
 	}
 	
+	@Deprecated
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
 			Set<Number160> knownPeers, ChannelCreator channelCreator)
@@ -99,6 +100,7 @@ public class TrackerRPC extends ReplyHandler
 		return response.getRequest().getType() == Type.REQUEST_1;
 	}
 	
+	@Deprecated
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
 			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator)
@@ -134,7 +136,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
 			return requestHandler.sendUDP(channelCreator);
 		}
@@ -173,7 +175,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestUDP requestHandler = new TrackerRequestUDP(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
 					locationKey, domainKey);
 			return requestHandler.sendUDP(channelCreator);
 		}
@@ -284,13 +286,13 @@ public class TrackerRPC extends ReplyHandler
 		}
 	}
 
-	private class TrackerRequestUDP extends RequestHandlerUDP
+	private class TrackerRequestUDP<K extends FutureResponse> extends RequestHandlerUDP<K>
 	{
 		final private Message message;
 		final private Number160 locationKey;
 		final private Number160 domainKey;
 
-		public TrackerRequestUDP(FutureResponse futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
+		public TrackerRequestUDP(K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message,
 				Number160 locationKey, Number160 domainKey)
 		{
 			super(futureResponse, peerBean, connectionBean, message);

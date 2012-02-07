@@ -152,6 +152,8 @@ public class ConnectionHandler
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
 		Scheduler scheduler = new Scheduler();
+		//start the timeout thread.
+		scheduler.startTimeout();
 		ConnectionReservation reservation = new ConnectionReservation(tcpClientChannelFactory,
 				udpChannelFactory, configuration, messageLoggerFilter, peerMap.getStatistics(), scheduler);
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");

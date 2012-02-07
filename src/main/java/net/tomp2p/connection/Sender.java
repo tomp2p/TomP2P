@@ -44,7 +44,7 @@ public interface Sender
 	 * @param message Message
 	 * @param channelCreator ChannelCreator
 	 */
-	public abstract void sendUDP(final RequestHandlerUDP handler,
+	public abstract void sendUDP(final RequestHandlerUDP<? extends BaseFuture> handler,
 			final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator);
 
@@ -55,9 +55,12 @@ public interface Sender
 	 * @param message Message
 	 * @param channelCreator ChannelCreator
 	 */
-	public abstract void sendBroadcastUDP(final RequestHandlerUDP handler,
+	public abstract void sendBroadcastUDP(final RequestHandlerUDP<? extends BaseFuture> handler,
 			final FutureResponse futureResponse, final Message message,
 			final ChannelCreator channelCreator);
 	
+	/**
+	 * Shuts down the sender. After this the sender cannot be used again.
+	 */
 	public abstract void shutdown();
 }

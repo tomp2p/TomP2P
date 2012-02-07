@@ -93,14 +93,14 @@ public class DistributedRouting
 	 *         found
 	 */
 	public FutureRouting bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
-			int maxSuccess, int parallel, boolean forceSocket, final boolean isForceRoutingOnlyToSelf, final ChannelCreator cc)
+			int maxSuccess, int parallel, boolean forceTCP, final boolean isForceRoutingOnlyToSelf, final ChannelCreator cc)
 	{
 		// search close peers
 		if(logger.isDebugEnabled()) {
 			logger.debug("broadcast to " + peerAddresses);
 		}
 		FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
-				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceSocket, cc, true, isForceRoutingOnlyToSelf);
+				maxNoNewInfo, maxFailures, maxSuccess, parallel, Command.NEIGHBORS_STORAGE, false, forceTCP, cc, true, isForceRoutingOnlyToSelf);
 		return futureRouting;
 	}
 
@@ -137,12 +137,12 @@ public class DistributedRouting
 
 	public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, Command command, int maxDirectHits, int maxNoNewInfo,
-			int maxFailures, int maxSuccess, int parallel, boolean isDigest, boolean forceSocket, final ChannelCreator cc)
+			int maxFailures, int maxSuccess, int parallel, boolean isDigest, boolean forceTCP, final ChannelCreator cc)
 	{
 		// for bad distribution, use large NO_NEW_INFORMATION
 		Collection<PeerAddress> startPeers = peerBean.getPeerMap().closePeers(locationKey, parallel * 2);
 		return routing(startPeers, locationKey, domainKey, contentKeys, maxDirectHits, maxNoNewInfo, maxFailures,
-				maxSuccess, parallel, command, isDigest, forceSocket, cc, false, false);
+				maxSuccess, parallel, command, isDigest, forceTCP, cc, false, false);
 	}
 
 	/**
@@ -170,7 +170,7 @@ public class DistributedRouting
 	 */
 	private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits, int maxNoNewInfo,
-			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceSocket, 
+			int maxFailures, int maxSuccess, final int parallel, Command command, boolean isDigest, boolean forceTCP, 
 			final ChannelCreator cc, final boolean isBootstrap, final boolean isForceRoutingOnlyToSelf)
 	{
 		if (peerAddresses == null)
@@ -224,7 +224,7 @@ public class DistributedRouting
 			routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 					new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,
 					maxFailures, maxSuccess, parallel, locationKey, domainKey, contentKeys, true, command, isDigest,
-					forceSocket, false, cc, isBootstrap, !isRoutingOnlyToSelf);
+					forceTCP, false, cc, isBootstrap, !isRoutingOnlyToSelf);
 		}
 		return futureRouting;
 	}
@@ -276,7 +276,7 @@ public class DistributedRouting
 			final int maxDirectHits, final int maxNoNewInfo, final int maxFailures, final int maxSucess,
 			final int parallel, final Number160 locationKey, final Number160 domainKey,
 			final Collection<Number160> contentKeys, final boolean cancelOnFinish, final Command command,
-			final boolean isDigest, final boolean forceSocket, final boolean stopCreatingNewFutures, 
+			final boolean isDigest, final boolean forceTCP, final boolean stopCreatingNewFutures, 
 			final ChannelCreator cc, final boolean isBootstrap, final boolean isRoutingToOthers)
 	{
 		int active = 0;
@@ -291,7 +291,7 @@ public class DistributedRouting
 					alreadyAsked.add(next);
 					active++;
 					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey, contentKeys, command,
-							isDigest, forceSocket, cc);
+							isDigest, cc, forceTCP);
 					if (logger.isDebugEnabled()) {
 						logger.debug("get close neighbors: " + next);
 					}
@@ -375,7 +375,7 @@ public class DistributedRouting
 					routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
 							nrNoNewInfo, nrFailures, nrSuccess, maxDirectHits, maxNoNewInfo, maxFailures, maxSucess,
 							parallel, locationKey, domainKey, contentKeys, cancelOnFinish, command, isDigest,
-							forceSocket, stopCreatingNewFutures, cc, isBootstrap, isRoutingToOthers);
+							forceTCP, stopCreatingNewFutures, cc, isBootstrap, isRoutingToOthers);
 				}
 			}
 		});

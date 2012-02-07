@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -55,6 +56,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.natpmp.NatPmpException;
+import net.tomp2p.p2p.DistributedHashHashMap.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationBootstrap;
 import net.tomp2p.p2p.config.ConfigurationDirect;
@@ -405,7 +407,7 @@ public class Peer
 		directDataRPC = new DirectDataRPC(peerBean, connectionBean);
 		// replication for trackers, which needs PEX
 		TrackerStorageReplication trackerStorageReplication = new TrackerStorageReplication(this,
-				peerExchangeRPC, pendingFutures, storageTracker);
+				peerExchangeRPC, pendingFutures, storageTracker, connectionConfiguration.isForceTrackerTCP());
 		replicationTracker.addResponsibilityListener(trackerStorageReplication);
 		trackerRPC = new TrackerRPC(peerBean, connectionBean, peerConfiguration);
 
@@ -418,14 +420,13 @@ public class Peer
 			startMaintainance();
 		for (PeerListener listener : listeners)
 			listener.notifyOnStart();
-		getConnectionBean().getScheduler().startTimeout();
 	}
 
 	public void setDefaultStorageReplication()
 	{
 		Replication replicationStorage = getPeerBean().getReplicationStorage();
 		DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(this,
-				getPeerBean().getStorage(), storageRPC, pendingFutures);
+				getPeerBean().getStorage(), storageRPC, pendingFutures, connectionConfiguration.isForceStorageUDP());
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}
@@ -637,7 +638,7 @@ public class Peer
 	private FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer,
 			boolean raw)
 	{
-		RequestHandlerTCP<FutureData> request = getDirectDataRPC().send(connection.getDestination(),
+		RequestHandlerTCP<FutureData> request = getDirectDataRPC().prepareSend(connection.getDestination(),
 				requestBuffer.slice(), raw);
 		request.setKeepAlive(true);
 		// since we keep one connection open, we need to make sure that we do
@@ -665,7 +666,7 @@ public class Peer
 	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer,
 			boolean raw)
 	{
-		final RequestHandlerTCP<FutureData> request = getDirectDataRPC().send(remotePeer, requestBuffer.slice(),
+		final RequestHandlerTCP<FutureData> request = getDirectDataRPC().prepareSend(remotePeer, requestBuffer.slice(),
 				raw);
 		getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
@@ -775,7 +776,7 @@ public class Peer
 
 	public FutureResponse ping(final InetSocketAddress address)
 	{
-		final RequestHandlerUDP request = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
+		final RequestHandlerUDP<FutureResponse> request = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
 		getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
@@ -1328,6 +1329,27 @@ public class Peer
 		return futureDHT;
 	}
 	
+	//----------------- parallel request
+	
+	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
+			final boolean cancleOnFinish, final SortedSet<PeerAddress> queue, final Operation operation)
+	{
+		return parallelRequests(locationKey, config, reserve(config), cancleOnFinish, queue, operation);
+	}
+	
+	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
+			final FutureChannelCreator channelCreator, final boolean cancleOnFinish, 
+			final SortedSet<PeerAddress> queue, final Operation operation)
+	{
+		if (locationKey == null)
+			throw new IllegalArgumentException("null in get not allowed in locationKey");
+		
+		final FutureDHT futureDHT = getDHT().parallelRequests(config.getRequestP2PConfiguration(), 
+				queue, cancleOnFinish, channelCreator, getConnectionBean().getConnectionReservation(), 
+				config.isAutomaticCleanup(), operation);
+		return futureDHT;
+	}
+	
 	//----------------- digest
 	
 	public FutureDHT digestAll(final Number160 locationKey)
@@ -1788,8 +1810,8 @@ public class Peer
 				final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(
 						TrackerStorage.TRACKER_SIZE);
 				FutureLateJoin<FutureResponse> futureLateJoin = getTracker().startPeerExchange(
-						locationKey,
-						config.getDomain(), futureChannelCreator, getConnectionBean().getConnectionReservation());
+						locationKey, config.getDomain(), futureChannelCreator, 
+						getConnectionBean().getConnectionReservation(), config.getTrackerConfiguration().isForceTCP());
 				futureTracker.repeated(futureLateJoin);
 			}
 		};
@@ -1859,20 +1881,39 @@ public class Peer
 	
 	/**
 	 * Reserves a connection for a routing and DHT operation. This call blocks
-	 * until connections have been reserved.
+	 * until connections have been reserved. At least one of the arguments
+	 * routingConfiguration or requestP2PConfiguration must not be null.
 	 * 
 	 * @param routingConfiguration The information about the routing
 	 * @param requestP2PConfiguration The information about the DHT operation
 	 * @param name The name of the ChannelCreator, used for easier debugging
 	 * @return A ChannelCreator that can create channel according to
 	 *         routingConfiguration and requestP2PConfiguration
+	 * @throws IllegalArgumentException If both arguments routingConfiguration
+	 *         and requestP2PConfiguration are null
 	 */
 	public FutureChannelCreator reserve(final RoutingConfiguration routingConfiguration,
 			RequestP2PConfiguration requestP2PConfiguration, String name)
 	{
-		final int conn = Math.max(routingConfiguration.getParallel(),
+		if(routingConfiguration == null && requestP2PConfiguration == null)
+		{
+			throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
+		}
+		final int nrConnections;
+		if(routingConfiguration == null)
+		{
+			nrConnections = requestP2PConfiguration.getParallel();
+		}
+		else if(requestP2PConfiguration == null)
+		{
+			nrConnections = routingConfiguration.getParallel();
+		}
+		else
+		{
+			nrConnections = Math.max(routingConfiguration.getParallel(),
 				requestP2PConfiguration.getParallel());
-		return getConnectionBean().getConnectionReservation().reserve(conn, name);
+		}
+		return getConnectionBean().getConnectionReservation().reserve(nrConnections, name);
 	}
 	
 	/**

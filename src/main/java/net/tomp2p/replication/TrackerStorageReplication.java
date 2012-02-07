@@ -38,14 +38,16 @@ public class TrackerStorageReplication implements ResponsibilityListener
 	final private Map<BaseFuture, Long> pendingFutures;
 	final private TrackerStorage trackerStorage;
 	final private Peer peer;
+	final private boolean forceTCP;
 
 	public TrackerStorageReplication(Peer peer, PeerExchangeRPC peerExchangeRPC, Map<BaseFuture, Long> pendingFutures,
-			TrackerStorage trackerStorage)
+			TrackerStorage trackerStorage, boolean forceTCP)
 	{
 		this.peer = peer;
 		this.peerExchangeRPC = peerExchangeRPC;
 		this.pendingFutures = pendingFutures;
 		this.trackerStorage = trackerStorage;
+		this.forceTCP = forceTCP;
 	}
 
 	@Override
@@ -71,7 +73,7 @@ public class TrackerStorageReplication implements ResponsibilityListener
 				{
 					if(future.isSuccess())
 					{
-						FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, future.getChannelCreator());
+						FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey, domainKey, true, future.getChannelCreator(), forceTCP);
 						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
 						pendingFutures.put(futureResponse, Timings.currentTimeMillis());
 					}

@@ -114,7 +114,8 @@ public class ChannelCreator
 	 * @return The created channel or null if we are shutting down.
 	 */
 	public Channel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
-			RequestHandlerUDP requestHandler, final FutureResponse futureResponse, boolean broadcast)
+			RequestHandlerUDP<? extends BaseFuture> requestHandler, 
+			final FutureResponse futureResponse, boolean broadcast)
 	{
 		if (shutdown)
 		{

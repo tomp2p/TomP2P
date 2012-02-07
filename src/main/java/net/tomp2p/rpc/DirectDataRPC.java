@@ -39,22 +39,69 @@ public class DirectDataRPC extends ReplyHandler
 		registerIoHandler(Command.DIRECT_DATA);
 	}
 	
+	@Deprecated
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
-			boolean raw, ChannelCreator cc)
+			boolean raw, ChannelCreator channelCreator)
 	{
-		RequestHandlerTCP<FutureData> request=send(remotePeer, buffer, raw);
-		return request.sendTCP(cc, connectionBean.getConfiguration().getIdleTCPMillis());
+		return send(remotePeer, buffer, raw, channelCreator, false);
 	}
 	
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
-			boolean raw, ChannelCreator cc, int idleTCPMillis)
+			boolean raw, ChannelCreator channelCreator, boolean forceUDP)
 	{
-		RequestHandlerTCP<FutureData> request=send(remotePeer, buffer, raw);
-		return request.sendTCP(cc, idleTCPMillis);
+		return send(remotePeer, buffer, raw, channelCreator, connectionBean.getConfiguration().getIdleTCPMillis(), forceUDP);
 	}
-
-	public RequestHandlerTCP<FutureData> send(final PeerAddress remotePeer, final ChannelBuffer buffer,
-			boolean raw)
+	
+	@Deprecated
+	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
+			boolean raw, ChannelCreator channelCreator, int idleTCPMillis)
+	{
+		return send(remotePeer, buffer, raw, channelCreator, idleTCPMillis, false);
+	}
+	
+	/**
+	 * Send data directly to a peer. Make sure you have set up a reply handler.
+	 * This is an RPC.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param buffer The data to send to the remote peer
+	 * @param raw Set to true if a the byte array is expected or if it should be
+	 *        converted to an object
+	 * @param channelCreator The channel creator
+	 * @param idleTCPMillis Set the timeout when a connection is considered
+	 *        inactive (idle)
+	 * @param forceUDP Set to true if the communication should be UDP, default
+	 *        is TCP
+	 * @return FutureResponse that stores which content keys have been stored.
+	 */
+	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
+			boolean raw, ChannelCreator channelCreator, int idleTCPMillis, boolean forceUDP)
+	{
+		final Message message = createMessage(remotePeer, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
+		message.setPayload(buffer);
+		final FutureData futureData = new FutureData(message, raw);
+		if(!forceUDP)
+		{
+			final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, peerBean, connectionBean, message);
+			return requestHandler.sendTCP(channelCreator, idleTCPMillis);
+		}
+		else
+		{
+			final RequestHandlerUDP<FutureData> requestHandler = new RequestHandlerUDP<FutureData>(futureData, peerBean, connectionBean, message);
+			return requestHandler.sendUDP(channelCreator);
+		}
+	}
+	
+	/**
+	 * Prepares for sending to a remote peer.
+	 * 
+	 * @param remotePeer The remote peer to store the data
+	 * @param buffer The data to send to the remote peer
+	 * @param raw Set to true if a the byte array is expected or if it should be
+	 *        converted to an object
+	 * @return The request handler that sends with TCP
+	 */
+	public RequestHandlerTCP<FutureData> prepareSend(final PeerAddress remotePeer, final ChannelBuffer buffer, boolean raw)
 	{
 		final Message message = createMessage(remotePeer, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);

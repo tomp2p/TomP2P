@@ -31,13 +31,37 @@ public class QuitRPC extends ReplyHandler
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.QUIT);
 	}
-
+	
+	@Deprecated
 	public FutureResponse quit(final PeerAddress remotePeer, ChannelCreator channelCreator)
+	{
+		return quit(remotePeer, channelCreator, false);
+	}
+
+	/**
+	 * Sends a message that indicates this peer is about to quit. This is an
+	 * RPC.
+	 * 
+	 * @param remotePeer The remote peer to send this request
+	 * @param channelCreator The channel creator that creates connections
+	 * @param forceTCP Set to true if the communication should be TCP, default
+	 *        is UDP
+	 * @return The future response to keep track of future events
+	 */
+	public FutureResponse quit(final PeerAddress remotePeer, ChannelCreator channelCreator, boolean forceTCP)
 	{
 		final Message message = createMessage(remotePeer, Command.QUIT, Type.REQUEST_FF_1);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerUDP requestHandler = new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
-		return requestHandler.fireAndForgetUDP(channelCreator);
+		if(!forceTCP)
+		{
+			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return requestHandler.fireAndForgetUDP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			return requestHandler.fireAndForgetTCP(channelCreator);
+		}
 	}
 
 	@Override
@@ -50,7 +74,6 @@ public class QuitRPC extends ReplyHandler
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
 		peerBean.getPeerMap().peerOffline(message.getSender(), true);
-		//TODO: test this
 		return message;
 	}
 }

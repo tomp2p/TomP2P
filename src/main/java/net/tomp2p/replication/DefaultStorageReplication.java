@@ -29,14 +29,16 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 	private final StorageRPC storageRPC;
 	private final Peer peer;
 	private final Map<BaseFuture, Long> pendingFutures;
+	private final boolean forceUDP;
 
 	public DefaultStorageReplication(Peer peer, Storage storage, StorageRPC storageRPC,
-			Map<BaseFuture, Long> pendingFutures)
+			Map<BaseFuture, Long> pendingFutures, boolean forceUDP)
 	{
 		this.peer = peer;
 		this.storage = storage;
 		this.storageRPC = storageRPC;
 		this.pendingFutures = pendingFutures;
+		this.forceUDP = forceUDP;
 	}
 
 	@Override
@@ -67,7 +69,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 						if(future.isSuccess())
 						{
 							FutureResponse futureResponse=storageRPC.put(other, locationKey, domainKey, dataMap, false,
-								false, false, future.getChannelCreator());
+								false, false, future.getChannelCreator(), forceUDP);
 							Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
 							pendingFutures.put(futureResponse, Timings.currentTimeMillis());
 						}

@@ -61,7 +61,7 @@ public class HandshakeRPC extends ReplyHandler
 		return createHandlerUDP(remotePeer, Type.REQUEST_1).sendBroadcastUDP(channelCreator);
 	}
 	
-	public RequestHandlerUDP pingUDP(final PeerAddress remotePeer)
+	public RequestHandlerUDP<FutureResponse> pingUDP(final PeerAddress remotePeer)
 	{
 		return createHandlerUDP(remotePeer, Type.REQUEST_1);
 	}
@@ -86,11 +86,11 @@ public class HandshakeRPC extends ReplyHandler
 		return createHandlerTCP(remotePeer, Type.REQUEST_FF_1).fireAndForgetTCP(channelCreator);
 	}
 
-	private RequestHandlerUDP createHandlerUDP(final PeerAddress remotePeer, Type type)
+	private RequestHandlerUDP<FutureResponse> createHandlerUDP(final PeerAddress remotePeer, Type type)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
 	}
 
 	private RequestHandlerTCP<FutureResponse> createHandlerTCP(final PeerAddress remotePeer, Type type)
@@ -107,7 +107,7 @@ public class HandshakeRPC extends ReplyHandler
 		self.add(peerBean.getServerPeerAddress());
 		message.setNeighbors(self);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, ChannelCreator channelCreator)
@@ -124,7 +124,7 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		final Message message = createMessage(remotePeer, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCPProbe(final PeerAddress remotePeer, ChannelCreator channelCreator)

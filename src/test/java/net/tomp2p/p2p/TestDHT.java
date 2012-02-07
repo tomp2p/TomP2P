@@ -8,10 +8,13 @@ import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
@@ -36,6 +39,8 @@ import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.DistributedHashHashMap.Operation;
+import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
 import net.tomp2p.p2p.config.ConfigurationStore;
@@ -45,8 +50,10 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.ShortString;
+import net.tomp2p.rpc.HashData;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
+import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage.ProtectionEnable;
 import net.tomp2p.storage.Storage.ProtectionMode;
@@ -1788,8 +1795,92 @@ public class TestDHT
 				p2.shutdown();
 			}
 	}
+	
+	@Test
+	public void testCompareAndPut() throws Exception
+	{
+		final AtomicBoolean running = new AtomicBoolean(true);
+		Peer master = null;
+		try
+		{
+			// setup
+			final Peer[] peers = Utils2.createNodes(100, rnd, 4001);
+			master = peers[0];
+			final StorageRPC storageRPC = master.getStoreRPC();
+			Utils2.perfectRouting(peers);
+			final Number160 locationKey = Number160.createHash("1");
+			final Number160 domainKey = Number160.createHash("2");
+			final Data testDataOld = new Data("test old");
+			final Data testDataOld2 = new Data("test old2");
+			final Data testDataNew = new Data("test new");
+			final SortedSet<PeerAddress> queue = Collections.synchronizedSortedSet(new TreeSet<PeerAddress>());
+			queue.add(peers[1].getPeerAddress()); 
+			queue.add(peers[2].getPeerAddress());
+			queue.add(peers[3].getPeerAddress());
+			RequestP2PConfiguration p2pConfiguration = new RequestP2PConfiguration(3, Integer.MAX_VALUE, 0);
+			
+			setData(peers[1], "1", "2", "3", testDataOld);
+			setData(peers[2], "1", "2", "3", testDataOld);
+			// wrong hash here
+			setData(peers[3], "1", "2", "3", testDataOld2);
+			
+			ConfigurationBaseDHT config = new ConfigurationBaseDHT();
+			config.setRequestP2PConfiguration(p2pConfiguration);
+			config.setAutomaticCleanup(true);
+			config.setDomain(domainKey);
+			FutureDHT futureDHT = master.parallelRequests(locationKey, config, false, queue, new Operation()
+			{
+				@Override
+				public void response(FutureDHT futureDHT)
+				{
+					System.out.println("done! "+futureDHT);
+					futureDHT.setDone("not failed");
+				}
+				
+				@Override
+				public void interMediateResponse(FutureResponse futureResponse)
+				{
+					System.out.println("progres! "+futureResponse);
+					if(futureResponse.isFailed())
+					{
+						//go again...
+						queue.add(futureResponse.getRequest().getRecipient());
+					}
+				}
+				
+				@Override
+				public FutureResponse create(ChannelCreator channelCreator, PeerAddress address)
+				{
+					Map<Number160, HashData> hashDataMap = new HashMap<Number160, HashData>();
+					hashDataMap.put(Number160.createHash("3"), new HashData(testDataOld.getHash(), testDataNew));
+					return storageRPC.compareAndPut(address, locationKey, domainKey, hashDataMap, 
+							false, false, false, false, channelCreator, false);
+				}
+			});
+			Timings.sleepUninterruptibly(1300);
+			Assert.assertEquals(false, futureDHT.isCompleted());
+			//update peer with old data
+			setData(peers[3], "1", "2", "3", testDataOld);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isCompleted());
+			Assert.assertEquals("not failed", futureDHT.getAttachement());
+		}
+		finally
+		{
+			running.set(false);
+			master.shutdown();
+		}
+	}
+	
+	private void setData(Peer peer, String location, String domain, String content, Data data) throws IOException
+	{
+		final Number160 locationKey = Number160.createHash(location);
+		final Number160 domainKey = Number160.createHash(domain);
+		final Number160 contentKey = Number160.createHash(content);
+		Number480 key = new Number480(new Number320(locationKey, domainKey), contentKey);
+		peer.getPeerBean().getStorage().put(key, data, null, false, false);
+	}
 
-	// trackerStorage.setMyResponsibility(locationKey);
 	private void send2(final Peer p1, final Peer p2, final ChannelBuffer toStore1, final int count)
 			throws IOException
 	{

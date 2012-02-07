@@ -80,12 +80,17 @@ public class PeerExchangeRPC extends ReplyHandler
 			boolean isReplication, ChannelCreator channelCreator, boolean forceTCP)
 	{
 		final Message message = createMessage(remotePeer, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
-		Set<Number160> tmp1 = sentPeers.get(remotePeer.getID());
-
-		if (tmp1 == null)
+		Set<Number160> tmp1;
+		
+		//Can run concurrently
+		synchronized(sentPeers)
 		{
-			tmp1 = new HashSet<Number160>();
-			sentPeers.put(remotePeer.getID(), tmp1);
+			tmp1 = sentPeers.get(remotePeer.getID());
+			if (tmp1 == null)
+			{
+				tmp1 = new HashSet<Number160>();
+				sentPeers.put(remotePeer.getID(), tmp1);
+			}
 		}
 
 		Map<Number160, TrackerData> peers;

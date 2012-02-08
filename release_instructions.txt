@@ -30,9 +30,7 @@ mvn deploy:deploy-file \
  -Dpackaging=jar \
  -Dfile=netty-3.3.0.Patched.jar \
  -DrepositoryId=ssh-tomp2p \
- -Durl=scp://tomp2p.net/home/##username##/maven \
- -Dusername=##username## \
- -Dpassword=##password##
+ -Durl=scp://tomp2p.net/home/##username##/maven
  
 
 Netty Patches

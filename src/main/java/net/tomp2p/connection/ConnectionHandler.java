@@ -118,13 +118,22 @@ public class ConnectionHandler
 			List<PeerListener> listeners, P2PConfiguration peerConfiguration, Timer timer) throws Exception
 	{
 		this.timer = timer;
-		this.udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
-		this.tcpServerChannelFactory = new NioServerSocketChannelFactory(
-				Executors.newCachedThreadPool(),
-				Executors.newCachedThreadPool());
-		this.tcpClientChannelFactory = new NioClientSocketChannelFactory(
-				Executors.newCachedThreadPool(),
-				Executors.newCachedThreadPool());
+		if(peerConfiguration.isDisableBind())
+		{
+			udpChannelFactory = null;
+			tcpServerChannelFactory = null;
+			tcpClientChannelFactory = null;
+		}
+		else
+		{
+			udpChannelFactory = new NioDatagramChannelFactory(Executors.newCachedThreadPool());
+			tcpServerChannelFactory = new NioServerSocketChannelFactory(
+					Executors.newCachedThreadPool(),
+					Executors.newCachedThreadPool());
+			tcpClientChannelFactory = new NioClientSocketChannelFactory(
+					Executors.newCachedThreadPool(),
+					Executors.newCachedThreadPool());
+		}
 		//
 		
 		String status = DiscoverNetworks.discoverInterfaces(bindings);
@@ -371,10 +380,15 @@ public class ConnectionHandler
 			// empty
 			connectionBean.getConnectionReservation().shutdown();
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
-			// release resources
-			udpChannelFactory.releaseExternalResources();
-			tcpServerChannelFactory.releaseExternalResources();
-			tcpClientChannelFactory.releaseExternalResources();
+			
+			//if udpChannelFactory is null, tcpServerChannelFactory and tcpClientChannelFactory are also null
+			if(udpChannelFactory != null)
+			{
+				// release resources
+				udpChannelFactory.releaseExternalResources();
+				tcpServerChannelFactory.releaseExternalResources();
+				tcpClientChannelFactory.releaseExternalResources();
+			}
 			if (logger.isDebugEnabled())
 			{
 				logger.debug("shutdown complete");

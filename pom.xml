@@ -149,25 +149,34 @@
         </executions>
       </plugin>
       <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
-            <id>generate-distribution</id>
-            <phase>package</phase>
+          <id>attach-javadocs</id>
             <goals>
-              <goal>single</goal>
+              <goal>jar</goal>
             </goals>
           </execution>
         </executions>
-        <configuration>
-          <descriptors>
-            <descriptor>${basedir}/src/assembly/default.xml</descriptor>
-          </descriptors>
-          <attach>${attach-distribution}</attach>
-          <appendAssemblyId>true</appendAssemblyId>
-          <tarLongFileMode>gnu</tarLongFileMode>
-        </configuration>
       </plugin>
+      <plugin>
+		<artifactId>maven-assembly-plugin</artifactId>
+		<executions>
+		  <execution>
+			<id>jar-with-deps</id>
+			<phase>package</phase>
+			<goals>
+			  <goal>single</goal>
+			</goals>
+		  </execution>
+		</executions>
+		<configuration>
+		  <descriptors>
+			<descriptor>src/main/assembly/assembly.xml</descriptor>
+		  </descriptors>
+		</configuration>
+	  </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>

@@ -42,7 +42,7 @@ public class DiscoverNetwork5 implements DiscoverNetwork
 		{
 			// works in 1.5
 			InetAddress inet = e.nextElement();
-			if (bindings.getAddresses0().contains(inet))
+			if (bindings.getFoundAddresses().contains(inet))
 			{
 				continue;
 			}
@@ -57,12 +57,12 @@ public class DiscoverNetwork5 implements DiscoverNetwork
 			if (inet instanceof Inet4Address && bindings.isIPv4())
 			{
 				sb.append(inet).append(",");
-				bindings.addAddress0(inet);
+				bindings.addFoundAddress(inet);
 			}
 			else if (inet instanceof Inet6Address && bindings.isIPv6())
 			{
 				sb.append(inet).append(",");
-				bindings.addAddress0(inet);
+				bindings.addFoundAddress(inet);
 			}
 		}
 		sb.deleteCharAt(sb.length() - 1);

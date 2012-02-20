@@ -142,10 +142,10 @@ public class ConnectionHandler
 		PeerAddress self;
 		if (outsideAddress == null)
 		{
-			if (bindings.getAddresses0().size() == 0)
+			if (bindings.getFoundAddresses().size() == 0)
 				throw new IOException(
 						"Not listening to anything. Maybe your binding information is wrong.");
-			outsideAddress = bindings.getAddresses0().get(0);
+			outsideAddress = bindings.getFoundAddresses().get(0);
 			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort,
 					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
 		}
@@ -187,7 +187,7 @@ public class ConnectionHandler
 			}
 			else
 			{
-				for (InetAddress addr : bindings.getAddresses0())
+				for (InetAddress addr : bindings.getFoundAddresses())
 				{
 					logger.info("Listening on address: " + addr + " on port udp: " + udpPort
 							+ " and tcp:" + tcpPort);

@@ -274,15 +274,21 @@ public class HandshakeRPC extends ReplyHandler
 			{
 				PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
 				peerBean.setServerPeerAddress(newServerAddress);
-				for (PeerListener listener : listeners)
-					listener.serverAddressChanged(newServerAddress, false);
+				synchronized (listeners)
+				{
+					for (PeerListener listener : listeners)
+						listener.serverAddressChanged(newServerAddress, false);
+				}
 			}
 			else
 			{
 				PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
 				peerBean.setServerPeerAddress(newServerAddress);
-				for (PeerListener listener : listeners)
-					listener.serverAddressChanged(newServerAddress, true);
+				synchronized (listeners)
+				{
+					for (PeerListener listener : listeners)
+						listener.serverAddressChanged(newServerAddress, true);
+				}
 			}
 			return message;
 		}

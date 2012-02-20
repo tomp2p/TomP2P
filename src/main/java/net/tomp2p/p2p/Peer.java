@@ -353,7 +353,7 @@ public class Peer
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
 				connectionConfiguration,
-				messageLogger, keyPair, peerMap, listeners, peerConfiguration, timer), statistics);
+				messageLogger, keyPair, peerMap, peerConfiguration, timer), statistics);
 		logger.debug("init done");
 	}
 
@@ -400,7 +400,7 @@ public class Peer
 		peerMap.addPeerOfflineListener(storageTracker);
 
 		// RPC communication
-		handshakeRCP = new HandshakeRPC(peerBean, connectionBean);
+		handshakeRCP = new HandshakeRPC(peerBean, connectionBean, listeners);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
 		neighborRPC = new NeighborRPC(peerBean, connectionBean);
 		quitRCP = new QuitRPC(peerBean, connectionBean);

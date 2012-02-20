@@ -17,6 +17,7 @@ package net.tomp2p.rpc;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -27,6 +28,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Timings;
@@ -38,20 +40,27 @@ import org.slf4j.LoggerFactory;
 public class HandshakeRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(HandshakeRPC.class);
+	final private List<PeerListener> listeners;
 	final private boolean enable;
 	final private boolean wait;
-
+	
 	public HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
-		this(peerBean, connectionBean, true, true, false);
+		this(peerBean, connectionBean, new ArrayList<PeerListener>());
 	}
 
-	HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, final boolean enable, final boolean register,
+	public HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, List<PeerListener> listeners)
+	{
+		this(peerBean, connectionBean, listeners, true, true, false);
+	}
+
+	HandshakeRPC(PeerBean peerBean, ConnectionBean connectionBean, List<PeerListener> listeners, final boolean enable, final boolean register,
 			final boolean wait)
 	{
 		super(peerBean, connectionBean);
 		this.enable = enable;
 		this.wait = wait;
+		this.listeners = listeners;
 		if (register)
 			registerIoHandler(Command.PING);
 	}
@@ -147,7 +156,9 @@ public class HandshakeRPC extends ReplyHandler
 		// probe
 		if (message.getType() == Type.REQUEST_3)
 		{
-			logger.debug("reply to probing, fire message to " + message.getSender());
+			if(logger.isDebugEnabled()) {
+				logger.debug("reply to probing, fire message to " + message.getSender());
+			}
 			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
 			if (sign)
 			{
@@ -219,7 +230,7 @@ public class HandshakeRPC extends ReplyHandler
 			return responseMessage;
 		}
 		// regular ping
-		else  if (message.getType() == Type.REQUEST_1)
+		else if (message.getType() == Type.REQUEST_1)
 		{
 			//test if this is a broadcast message to ourselfs. If it is, do not reply.
 			if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID())
@@ -243,7 +254,10 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			else
 			{
+				if(logger.isDebugEnabled()) {
 				logger.debug("do not reply");
+				}
+				//used for debugging
 				if (wait)
 				{
 					Timings.sleepUninterruptibly(10 * 1000);
@@ -252,9 +266,30 @@ public class HandshakeRPC extends ReplyHandler
 			}
 		}
 		// fire and forget
-		else 
+		else if (message.getType() == Type.REQUEST_FF_1)
 		{
+			//we received a fire and forget ping. This means we are reachable from outside
+			PeerAddress serverAddress = peerBean.getServerPeerAddress();
+			if (message.isUDP())
+			{
+				PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
+				peerBean.setServerPeerAddress(newServerAddress);
+				for (PeerListener listener : listeners)
+					listener.serverAddressChanged(newServerAddress, false);
+			}
+			else
+			{
+				PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
+				peerBean.setServerPeerAddress(newServerAddress);
+				for (PeerListener listener : listeners)
+					listener.serverAddressChanged(newServerAddress, true);
+			}
 			return message;
+		}
+		else
+		{
+			// don't know what to do
+			return null;
 		}
 	}
 }

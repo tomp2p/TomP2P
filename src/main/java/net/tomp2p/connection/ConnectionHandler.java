@@ -29,7 +29,6 @@ import net.tomp2p.message.TomP2PDecoderUDP;
 import net.tomp2p.message.TomP2PEncoderTCP;
 import net.tomp2p.message.TomP2PEncoderUDP;
 import net.tomp2p.p2p.P2PConfiguration;
-import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -114,8 +113,7 @@ public class ConnectionHandler
 	 */
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfigurationBean configuration, File messageLogger, KeyPair keyPair,
-			PeerMap peerMap,
-			List<PeerListener> listeners, P2PConfiguration peerConfiguration, Timer timer) throws Exception
+			PeerMap peerMap, P2PConfiguration peerConfiguration, Timer timer) throws Exception
 	{
 		this.timer = timer;
 		if(peerConfiguration.isDisableBind())
@@ -168,7 +166,7 @@ public class ConnectionHandler
 		ChannelGroup channelGroup = new DefaultChannelGroup("TomP2P ConnectionHandler");
 		DispatcherReply dispatcherRequest = new DispatcherReply(p2pID, peerBean,
 				configuration.getIdleUDPMillis(),
-				configuration.getIdleTCPMillis(), channelGroup, peerMap, listeners);
+				configuration.getIdleTCPMillis(), channelGroup, peerMap);
 		// Dispatcher setup stop
 		
 		Sender sender = new SenderNetty(configuration, timer);

@@ -17,14 +17,12 @@ package net.tomp2p.connection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -33,15 +31,14 @@ import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
-import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.socket.DatagramChannel;
-import org.jboss.netty.channel.socket.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +76,6 @@ public class DispatcherReply extends SimpleChannelHandler
 	final private int timeoutTCPMillis;
 	final private ChannelGroup channelGroup;
 	final private PeerMap peerMap;
-	final private List<PeerListener> listeners;
 
 	/**
 	 * Constructor
@@ -88,8 +84,7 @@ public class DispatcherReply extends SimpleChannelHandler
 	 * @param routing
 	 */
 	public DispatcherReply(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
-			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap,
-			List<PeerListener> listeners)
+			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
@@ -99,7 +94,6 @@ public class DispatcherReply extends SimpleChannelHandler
 		this.timeoutTCPMillis = timeoutTCPMillis;
 		this.channelGroup = channelGroup;
 		this.peerMap = peerMap;
-		this.listeners = listeners;
 	}
 
 	/**
@@ -237,22 +231,6 @@ public class DispatcherReply extends SimpleChannelHandler
 					+ "), so we drop:" + message);
 			close(ctx);
 			return;
-		}
-		// confirm our outside address, that we can receive messages.
-		PeerAddress serverAddress = peerBean.getServerPeerAddress();
-		if (serverAddress.isFirewalledUDP() && ctx.getChannel() instanceof DatagramChannel)
-		{
-			PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
-			peerBean.setServerPeerAddress(newServerAddress);
-			for (PeerListener listener : listeners)
-				listener.serverAddressChanged(newServerAddress, false);
-		}
-		else if (serverAddress.isFirewalledTCP() && ctx.getChannel() instanceof SocketChannel)
-		{
-			PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
-			peerBean.setServerPeerAddress(newServerAddress);
-			for (PeerListener listener : listeners)
-				listener.serverAddressChanged(newServerAddress, true);
 		}
 		Message responseMessage = null;
 		// Look for a handler for the received message

@@ -63,17 +63,19 @@ public class Message
 		// REQUEST_4 for COMPARE_PUT means partial and protect domain
 		// REQUEST_2 for REMOVE means send back results
 		// REQUEST_2 for RAW_DATA means serilazie object
-		// *** NEIGHBORS has four different cases
+		// *** NEIGHBORS has two different cases
 		// REQUEST_1 for NEIGHBORS_* means check for get (withDigest)
 		// REQUEST_2 for NEIGHBORS_* means check for put (no digest)
 		// REQUEST_FF_1 for PEX means fire and forget, coming from mesh
 		// REQUEST_FF_1 for PEX means fire and forget, coming from primary
+		// REQUEST_1 for TASK is submit
+		// REQUEST_2 for TASK is status
 		REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, REQUEST_FF_1, REQUEST_FF_2, OK, PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2
 	};
 	// 1 x 4 bit
 	public enum Command
 	{
-		PING, PUT, COMPARE_PUT, GET, ADD, REMOVE, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, USER1, USER2, USER3
+		PING, PUT, COMPARE_PUT, GET, ADD, REMOVE, NEIGHBORS_STORAGE, NEIGHBORS_TRACKER, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, TASK, USER1, USER2
 	};
 	// header
 	private volatile int messageId;

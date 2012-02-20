@@ -278,9 +278,7 @@ public abstract class Storage implements Digest, Responsibility
 		return retVal;
 	}
 
-	
-
-	private Lock acquire(Number160 locationKey, Number160 domainKey)
+	public Lock acquire(Number160 locationKey)
 	{
 		// TODO make this more smart and lock only for location and domain
 		Lock lock = new ReentrantLock();
@@ -288,7 +286,33 @@ public abstract class Storage implements Digest, Responsibility
 		return lock;
 	}
 	
-	private void release(Lock lock)
+	public Lock acquire(Number320 locationDomainKey)
+	{
+		return acquire(locationDomainKey.getLocationKey(), locationDomainKey.getDomainKey());
+	}
+
+	public Lock acquire(Number160 locationKey, Number160 domainKey)
+	{
+		// TODO make this more smart and lock only for location and domain
+		Lock lock = new ReentrantLock();
+		lock.tryLock();
+		return lock;
+	}
+	
+	public Lock acquire(Number480 locationDomainContentKey)
+	{
+		return acquire(locationDomainContentKey.getLocationKey(), locationDomainContentKey.getDomainKey(), locationDomainContentKey.getContentKey());
+	}
+	
+	public Lock acquire(Number160 locationKey, Number160 domainKey, Number160 contentKey)
+	{
+		// TODO make this more smart and lock only for location and domain
+		Lock lock = new ReentrantLock();
+		lock.tryLock();
+		return lock;
+	}
+	
+	public void release(Lock lock)
 	{
 		lock.unlock();
 	}

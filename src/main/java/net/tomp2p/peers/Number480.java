@@ -37,6 +37,11 @@ public class Number480 implements Comparable<Number480>
 	{
 		return contentKey;
 	}
+	
+	public Number480 changeDomain(Number160 newDomain)
+	{
+		return new Number480(locationKey, newDomain, contentKey);
+	}
 
 	@Override
 	public int hashCode()

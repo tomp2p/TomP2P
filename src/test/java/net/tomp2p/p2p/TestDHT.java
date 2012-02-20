@@ -154,8 +154,8 @@ public class TestDHT
 			slave = new Peer(new Number160(rnd));
 			slave.listen(4002, 4002);
 			FutureDiscover fd=master.discover(slave.getPeerAddress());
-			System.err.println(fd.getFailedReason());
 			fd.awaitUninterruptibly();
+			System.err.println(fd.getFailedReason());
 			Assert.assertEquals(true, fd.isSuccess());
 		}
 		finally

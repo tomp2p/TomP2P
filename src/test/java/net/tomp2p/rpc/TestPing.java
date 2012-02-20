@@ -8,6 +8,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.utils.Timings;
@@ -178,10 +179,10 @@ public class TestPing
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
-					.getConnectionBean(), false, true, false);
+					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
@@ -209,10 +210,10 @@ public class TestPing
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
-					.getConnectionBean(), false, true, true);
+					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
@@ -241,10 +242,10 @@ public class TestPing
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
-					.getConnectionBean(), false, true, true);
+					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
@@ -275,10 +276,10 @@ public class TestPing
 			sender = new Peer(55, new Number160("0x9876"));
 			sender.listen(2424, 2424);
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
-					.getConnectionBean(), false, true, false);
+					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			recv1 = new Peer(55, new Number160("0x1234"));
 			recv1.listen(8088, 8088);
-			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
+			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();

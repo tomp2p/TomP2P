@@ -19,43 +19,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * FutureLateJoin is similar to FutureForkJoin. The main difference is that with
- * this class you don't need to specify all the futures in advance. You can just
- * tell how many futures you expect and add them later on.
+ * FutureLaterJoin is similar to FutureLateJoin. The main difference is that
+ * with this class you don't need to specify all the futures in advance and you
+ * don't need to specify how many futures you excpect. Once you are done, just
+ * call done().
  * 
  * @author Thomas Bocek
  * 
  * @param <K>
  */
-public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl implements BaseFuture
+public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl implements BaseFuture
 {
-	final private int nrMaxFutures;
-	final private int minSuccess;
 	final private List<K> futuresDone;
+	private int nrMaxFutures = Integer.MAX_VALUE;
+	private int minSuccess = Integer.MAX_VALUE;
 	private K lastSuceessFuture;
 	private int successCount = 0;
-
-	/**
-	 * Create this future and set the minSuccess to the number of expected
-	 * futures.
-	 * 
-	 * @param nrMaxFutures The number of expected futures.
-	 */
-	public FutureLateJoin(int nrMaxFutures)
-	{
-		this(nrMaxFutures, nrMaxFutures);
-	}
+	private int futureCount = 0;
 
 	/**
 	 * Create this future.
-	 * 
-	 * @param nrMaxFutures The number of expected futures.
-	 * @param minSuccess The number of expected successful futures.
 	 */
-	public FutureLateJoin(int nrMaxFutures, int minSuccess)
+	public FutureLaterJoin()
 	{
-		this.nrMaxFutures = nrMaxFutures;
-		this.minSuccess = minSuccess;
 		this.futuresDone = new ArrayList<K>(nrMaxFutures);
 	}
 
@@ -75,6 +61,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 			{
 				return false;
 			}
+			futureCount ++;
 			future.addListener(new BaseFutureAdapter<K>()
 			{
 				@Override
@@ -101,6 +88,41 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 				}
 			});
 			return true;
+		}
+	}
+	
+	/**
+	 * If no more futures are added, done() must be called to evaluate the
+	 * results. If the futures already finished by the time done() is called,
+	 * the listeners are called from this thread. Otherwise the notify may be
+	 * called from a different thread.
+	 */
+	public void done()
+	{
+		done(futureCount);
+	}
+	
+	/**
+	 * If no more futures are added, done() must be called to evaluate the
+	 * results. If the futures already finished by the time done() is called,
+	 * the listeners are called from this thread. Otherwise the notify may be
+	 * called from a different thread.
+	 * 
+	 * @param minSuccess The number of minimum futures that needs to be
+	 *        successful to consider this future as a success.
+	 */
+	public void done(int minSuccess)
+	{
+		boolean done = false;
+		synchronized (lock)
+		{
+			this.nrMaxFutures = futureCount;
+			this.minSuccess = minSuccess;
+			done = checkDone();
+		}
+		if (done)
+		{
+			notifyListerenrs();
 		}
 	}
 

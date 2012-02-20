@@ -39,6 +39,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.connection.ConnectionHandler;
+import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
@@ -1053,33 +1054,35 @@ public class Peer
 						logger.info("I'm seen as " + seenAs + " by peer " + peerAddress+" I see myself as "+getPeerAddress().getInetAddress());
 						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
 						{
-							// now we know our internal IP, where we receive
-							// packets
-							setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
+							// check if we have this interface in that we can listen to
+							Bindings bindings2 = new Bindings(seenAs.getInetAddress());
+							String status = DiscoverNetworks.discoverInterfaces(bindings2);
+							logger.info("2nd interface discovery: "+status);
+							if (bindings2.getFoundAddresses().size() > 0 &&  bindings2.getFoundAddresses().contains(seenAs.getInetAddress()))
+							{
+								serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
+								getPeerBean().setServerPeerAddress(serverAddress);
+							}
+							else
+							{
+								// now we know our internal IP, where we receive packets
+								setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
 									.getInetAddress().getHostAddress());
-							//
-							serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
-									bindings.getOutsideTCPPort());
-							serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-							getPeerBean().setServerPeerAddress(serverAddress);
-
-							//
-							FutureResponse fr1 = getHandshakeRPC().pingTCPProbe(peerAddress, cc);
-							FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);
-							Utils.addReleaseListener(fr1, getConnectionBean().getConnectionReservation(), cc, 1);
-							Utils.addReleaseListener(fr2, getConnectionBean().getConnectionReservation(), cc, 1);
-							// from here we probe, set the timeout here
-							futureDiscover.setTimeout(timer, peerConfiguration.getDiscoverTimeoutSec());
+								//
+								serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
+										bindings.getOutsideTCPPort());
+								serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
+								getPeerBean().setServerPeerAddress(serverAddress);
+							}
 						}
-						// else -> we announce exactly how the other peer sees
-						// us
-						else
-						{
-							// important to release connection if not needed
-							getConnectionBean().getConnectionReservation().release(cc, 2);
-							//System.err.println("release 2"+cc);
-							futureDiscover.done(seenAs);
-						}
+						// else -> we announce exactly how the other peer sees us
+						FutureResponse fr1 = getHandshakeRPC().pingTCPProbe(peerAddress, cc);
+						FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);
+						Utils.addReleaseListener(fr1, getConnectionBean().getConnectionReservation(), cc, 1);
+						Utils.addReleaseListener(fr2, getConnectionBean().getConnectionReservation(), cc, 1);
+						// from here we probe, set the timeout here
+						futureDiscover.setTimeout(timer, peerConfiguration.getDiscoverTimeoutSec());
+						return;
 					}
 					else
 					{

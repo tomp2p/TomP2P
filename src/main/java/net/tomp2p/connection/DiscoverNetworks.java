@@ -29,14 +29,14 @@ import java.util.Enumeration;
 public class DiscoverNetworks
 {
 	/**
-	 * Serach for local interfaces. Hints how to search for those interfaces are
-	 * provided by the user throung the {@link Bindings} class. The results of that
+	 * Search for local interfaces. Hints how to search for those interfaces are
+	 * provided by the user throug the {@link Bindings} class. The results of that
 	 * search (InetAddress) are stored in {@link Bindings} as well.
 	 * 
 	 * @param bindings The hints for the search and also the results are stored
 	 *        there
 	 * @return The status of the search
-	 * @throws Exception If anything goes wrong, such as refelcetion.
+	 * @throws Exception If anything goes wrong, such as reflecetion.
 	 */
 	public static String discoverInterfaces(Bindings bindings) throws Exception
 	{

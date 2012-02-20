@@ -143,7 +143,7 @@ public class Bindings
 	 * 
 	 * @param protocol The protocol to bind to
 	 * @param externalAddress The external address, how other peers will see us.
-	 *        Use null if you dont want to use external address
+	 *        Use null if you don't want to use external address
 	 * @param externalTCPPort The external port, how other peers will see us, if
 	 *        0 is provided, a random port will be used
 	 * @param externalUDPPort The external port, how other peers will see us, if
@@ -153,7 +153,7 @@ public class Bindings
 			int externalUDPPort)
 	{
 		if (externalTCPPort < 0 || externalUDPPort < 0)
-			throw new IllegalArgumentException("port needs to be > 0");
+			throw new IllegalArgumentException("port needs to be >= 0");
 		this.externalAddress = externalAddress;
 		this.externalTCPPort = externalTCPPort == 0 ? (RND.nextInt(RANGE) + 49152)
 				: externalTCPPort;
@@ -168,7 +168,7 @@ public class Bindings
 	 * 
 	 * @param address The current class
 	 */
-	Bindings addAddress0(InetAddress address)
+	Bindings addFoundAddress(InetAddress address)
 	{
 		if (address == null)
 		{
@@ -191,11 +191,12 @@ public class Bindings
 
 	/**
 	 * Returns a list of InetAddresses to listen to. First Inet4Addresses, then
-	 * Inet6Addresses are present in the list.
+	 * Inet6Addresses are present in the list. This returns the matching
+	 * addresses from DiscoverNetworks.
 	 * 
 	 * @return A list of InetAddresses to listen to
 	 */
-	List<InetAddress> getAddresses0()
+	public List<InetAddress> getFoundAddresses()
 	{
 		// first return ipv4, then ipv6
 		List<InetAddress> listenAddresses = new ArrayList<InetAddress>();

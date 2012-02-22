@@ -74,6 +74,11 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		return createHandlerUDP(remotePeer, Type.REQUEST_1);
 	}
+	
+	public RequestHandlerTCP<FutureResponse> pingTCP(final PeerAddress remotePeer)
+	{
+		return createHandlerTCP(remotePeer, Type.REQUEST_1);
+	}
 
 	public FutureResponse pingUDP(final PeerAddress remotePeer, ChannelCreator channelCreator)
 	{
@@ -277,7 +282,7 @@ public class HandshakeRPC extends ReplyHandler
 				synchronized (listeners)
 				{
 					for (PeerListener listener : listeners)
-						listener.serverAddressChanged(newServerAddress, false);
+						listener.serverAddressChanged(newServerAddress, message.getSender(), false);
 				}
 			}
 			else
@@ -287,7 +292,7 @@ public class HandshakeRPC extends ReplyHandler
 				synchronized (listeners)
 				{
 					for (PeerListener listener : listeners)
-						listener.serverAddressChanged(newServerAddress, true);
+						listener.serverAddressChanged(newServerAddress, message.getSender(), true);
 				}
 			}
 			return message;

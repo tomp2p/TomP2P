@@ -36,7 +36,8 @@ public class FutureDiscover extends BaseFutureImpl
 	// timeout to tell us when discovery failed.
 	private Timeout timeout;
 	// result
-	private PeerAddress peerAddress;
+	private PeerAddress ourPeerAddress;
+	private PeerAddress reporter;
 	private boolean discoveredTCP = false;
 	private boolean discoveredUDP = false;
 
@@ -75,8 +76,9 @@ public class FutureDiscover extends BaseFutureImpl
 	 * us with TCP and UDP.
 	 * 
 	 * @param peerAddress The peerAddress of our server
+	 * @param peerAddress The peerAddress of the peer that reported our address
 	 */
-	public void done(PeerAddress peerAddress)
+	public void done(PeerAddress ourPeerAddress, PeerAddress reporter)
 	{
 		//System.err.println("called done");
 		synchronized (lock)
@@ -84,7 +86,8 @@ public class FutureDiscover extends BaseFutureImpl
 			if (!setCompletedAndNotify())
 				return;
 			this.type = FutureType.OK;
-			this.peerAddress = peerAddress;
+			this.ourPeerAddress = ourPeerAddress;
+			this.reporter = reporter;
 		}
 		notifyListerenrs();
 	}
@@ -98,7 +101,18 @@ public class FutureDiscover extends BaseFutureImpl
 	{
 		synchronized (lock)
 		{
-			return peerAddress;
+			return ourPeerAddress;
+		}
+	}
+	
+	/**
+	 * @return The reporter that told us what peer address we have
+	 */
+	public PeerAddress getReporter()
+	{
+		synchronized (lock)
+		{
+			return reporter;
 		}
 	}
 

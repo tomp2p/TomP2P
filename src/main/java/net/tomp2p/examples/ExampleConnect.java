@@ -50,15 +50,14 @@ public class ExampleConnect
 		}
 		if (args.length == 3) { // Parameters: 4004 key value
 			try {
-				final PeerAddress pb = new PeerAddress(Number160.ZERO,
-						InetAddress.getByName(args[0]), port, port);
 				peer2.getP2PConfiguration().setBehindFirewall(true);
-				FutureDiscover fd = peer2.discover(pb); // discover of UPNP and
-				fd.addListener(new BaseFutureListener<BaseFuture>() {
+				FutureDiscover fd = peer2.discover(InetAddress.getByName(args[0]), port, port); // discover of UPNP and
+				fd.addListener(new BaseFutureListener<FutureDiscover>() {
 
 					@Override
-					public void operationComplete(BaseFuture future)
+					public void operationComplete(FutureDiscover future)
 							throws Exception {
+						PeerAddress pb = future.getReporter();
 						FutureBootstrap fb = peer2.bootstrap(pb);
 						fb.addListener(new BaseFutureListener<BaseFuture>() {
 

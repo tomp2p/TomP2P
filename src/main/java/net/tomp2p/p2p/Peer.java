@@ -774,33 +774,84 @@ public class Peer
 		}
 		return futureLateJoin;
 	}
-
+	
+	/**
+	 * Pings a peer. Default is to use UDP
+	 * 
+	 * @param address The address of the remote peer.
+	 * @return The future response
+	 */
 	public FutureResponse ping(final InetSocketAddress address)
 	{
-		final RequestHandlerUDP<FutureResponse> request = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
-		getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-		{
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception
-			{
-				if(future.isSuccess())
-				{
-					FutureResponse futureResponse = request.sendUDP(future.getChannelCreator());
-					Utils.addReleaseListener(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-				}
-				else
-				{
-					request.getFutureResponse().setFailed(future);
-				}
-			}
-		});
-		return request.getFutureResponse();
+		return ping(address, true);
 	}
 
+	/**
+	 * Pings a peer.
+	 * 
+	 * @param address The address of the remote peer.
+	 * @param isUDP Set to true if UDP should be used, false for TCP.
+	 * @return The future response
+	 */
+	public FutureResponse ping(final InetSocketAddress address, boolean isUDP)
+	{
+		if (isUDP)
+		{
+			final RequestHandlerUDP<FutureResponse> request = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
+			getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+			{
+				@Override
+				public void operationComplete(FutureChannelCreator future) throws Exception
+				{
+					if (future.isSuccess())
+					{
+						FutureResponse futureResponse = request.sendUDP(future.getChannelCreator());
+						Utils.addReleaseListener(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
+					}
+					else
+					{
+						request.getFutureResponse().setFailed(future);
+					}
+				}
+			});
+			return request.getFutureResponse();
+		}
+		else
+		{
+			final RequestHandlerTCP<FutureResponse> request = getHandshakeRPC().pingTCP(new PeerAddress(Number160.ZERO, address));
+			getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+			{
+				@Override
+				public void operationComplete(FutureChannelCreator future) throws Exception
+				{
+					if (future.isSuccess())
+					{
+						FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
+						Utils.addReleaseListener(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
+					}
+					else
+					{
+						request.getFutureResponse().setFailed(future);
+					}
+				}
+			});
+			return request.getFutureResponse();
+		}
+	}
+
+	/**
+	 * Boostraps to a known peer. First the ID of the peer is searched. Then
+	 * channels are reserved, then #discover(PeerAddress) is called to verify
+	 * this Internet connection settings. Then the routing is initiated to the
+	 * same peer as used for {@link #discover(PeerAddress)}.
+	 * 
+	 * @param address InetAddress and the UDP port of the peer to boostrap to
+	 * @return The future bootstrap
+	 */
 	public FutureBootstrap bootstrap(final InetSocketAddress address)
 	{
 		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		final FutureResponse tmp = ping(address);
+		final FutureResponse tmp = ping(address, true);
 		tmp.addListener(new BaseFutureAdapter<FutureResponse>()
 		{
 			@Override
@@ -823,19 +874,44 @@ public class Peer
 		return result;
 	}
 
+	/**
+	 * Boostraps to a known peer. First channels are reserved, then
+	 * #discover(PeerAddress) is called to verify this Internet connection
+	 * settings. Then the routing is initiated to the same peer as used for
+	 * {@link #discover(PeerAddress)}. Please be aware that in order to boostrap
+	 * you need to know the peer ID of the remote peer. Passing Number160.ZERO
+	 * does *not* work. If the peerID is not known, use
+	 * {@link #bootstrap(InetSocketAddress)}.
+	 * 
+	 * @param peerAddress The peer address to bootstrap to
+	 * @return The future bootstrap
+	 * @throws IllegalArgumentException If the peer ID is Number160.ZERO,
+	 *         because routing would fail.
+	 */
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress)
 	{
+		if(peerAddress.getID() == Number160.ZERO)
+		{
+			if(logger.isWarnEnabled())
+			{
+				logger.warn("The peer ID is Number160.ZERO, " +
+						"which cannot be used to bootstrap. If the ID is unknown, use bootstrap(InetSocketAddress)");
+			}
+			throw new IllegalArgumentException("The peer ID is Number160.ZERO, " +
+					"which cannot be used to bootstrap. If the ID is unknown, use bootstrap(InetSocketAddress)");
+		}
 		Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
 		bootstrapTo.add(peerAddress);
-		return bootstrap(peerAddress, bootstrapTo, Configurations.defaultBootstrapConfiguration());
+		return bootstrap(peerAddress, new ArrayList<PeerAddress>(0), Configurations.defaultBootstrapConfiguration());
 	}
 	
 	/**
-	 * For backwards compatibility, do not use
-	 * @param peerAddress
-	 * @param bootstrapTo
-	 * @param config
-	 * @return
+	 * For backwards compatibility, do not use!
+	 * 
+	 * @param peerAddress The peer address to use for discovery
+	 * @param bootstrapTo The peers used to bootstrap
+	 * @param config The configuration
+	 * @return  The future bootstrap
 	 */
 	@Deprecated
 	public FutureBootstrap bootstrap(final PeerAddress peerAddress,
@@ -847,68 +923,41 @@ public class Peer
 		return bootstrap(peerAddress, bootstrapTo, config2);
 	}
 
-	public FutureBootstrap bootstrap(final PeerAddress peerAddress,
+	/**
+	 * Boostraps to a known peer. First channels are reserved, then
+	 * #discover(PeerAddress) is called to verify this Internet connection
+	 * settings using the argument peerAddress. Then the routing is initiated to
+	 * the peers specified in bootstrapTo. Please be aware that in order to
+	 * boostrap you need to know the peer ID of all peers in the collection
+	 * bootstrapTo. Passing Number160.ZERO does *not* work.
+	 * 
+	 * @param discoveryPeerAddress The peer address to use for discovery
+	 * @param bootstrapTo The peers used to bootstrap
+	 * @param config The configuration
+	 * @return The future bootstrap
+	 */
+	public FutureBootstrap bootstrap(final PeerAddress discoveryPeerAddress,
 			final Collection<PeerAddress> bootstrapTo, final ConfigurationBootstrap config)
 	{
 		final FutureWrappedBootstrap<FutureRouting> result = new FutureWrappedBootstrap<FutureRouting>();
 		result.setBootstrapTo(bootstrapTo);
 		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
 				.getRequestP2PConfiguration().getParallel());
-		//3 is for discovery
-		getConnectionBean().getConnectionReservation().reserve(conn+3).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+		getConnectionBean().getConnectionReservation().reserve(conn).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception
 			{
 				if(futureChannelCreator.isSuccess())
 				{
-					if (peerConfiguration.isBehindFirewall())
-					{
-						final FutureDiscover futureDiscover = new FutureDiscover();
-						discover(futureDiscover, peerAddress, futureChannelCreator.getChannelCreator());
-						futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>()
-						{
-							@Override
-							public void operationComplete(FutureDiscover future) throws Exception
-							{
-								if (future.isSuccess())
-								{
-									FutureRouting futureBootstrap = routing.bootstrap(
-											bootstrapTo,
-											config.getRoutingConfiguration().getMaxNoNewInfo(
-													config.getRequestP2PConfiguration().getMinimumResults()),
-											config
-													.getRoutingConfiguration().getMaxFailures(), config
-													.getRoutingConfiguration()
-													.getMaxSuccess(), config.getRoutingConfiguration()
-													.getParallel(), false, config.isForceRoutingOnlyToSelf(), futureChannelCreator.getChannelCreator());
-									result.waitFor(futureBootstrap);
-									Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getConnectionReservation(), futureChannelCreator.getChannelCreator());
-								}
-								else
-								{
-									result.setFailed("Network discovery failed.");
-									getConnectionBean().getConnectionReservation().release(futureChannelCreator.getChannelCreator());
-								}
-
-							}
-						});
-					}
-					else
-					{
-						//since we do not discover, we dont need those 3 connections
-						getConnectionBean().getConnectionReservation().release(futureChannelCreator.getChannelCreator(), 3);
-						FutureRouting futureBootstrap = routing.bootstrap(bootstrapTo, config
-								.getRoutingConfiguration()
-								.getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()),
-								config
-										.getRoutingConfiguration().getMaxFailures(), config
-										.getRoutingConfiguration().getMaxSuccess(),
-								config.getRoutingConfiguration().getParallel(), false, config.isForceRoutingOnlyToSelf(), futureChannelCreator.getChannelCreator());
-						Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getConnectionReservation(), futureChannelCreator.getChannelCreator());
-						result.waitFor(futureBootstrap);
-						
-					}
+					FutureRouting futureBootstrap = routing.bootstrap(bootstrapTo, config
+							.getRoutingConfiguration().getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()),
+							config.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
+							config.getRoutingConfiguration().getParallel(), false, 
+							config.isForceRoutingOnlyToSelf(), futureChannelCreator.getChannelCreator());
+					Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getConnectionReservation(), 
+							futureChannelCreator.getChannelCreator());
+					result.waitFor(futureBootstrap);
 				}
 				else
 				{
@@ -965,15 +1014,35 @@ public class Peer
 			}
 		}
 	}
+	
+	/**
+	 * Discover attempts to find the external IP address of this peer. This is
+	 * done by first trying to set UPNP with port forwarding (gives us the
+	 * external address), query UPNP for the external address, and pinging a
+	 * well known peer. The fallback is NAT-PMP.
+	 * 
+	 * @param inetAddress The Internet address of the peer to send the discover request
+	 * @param portUDP The UDP port of the peer to send the discover request
+	 * @param portTCP The TCP port of the peer to send the discover request
+	 * @return The future discover. This future holds also the real ID of the
+	 *         peer we send the discover request
+	 */
+	public FutureDiscover discover(final InetAddress inetAddress, int portUDP, int portTCP)
+	{
+		PeerAddress peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
+		return discover(peerAddress);
+	}
 
 	/**
 	 * Discover attempts to find the external IP address of this peer. This is
 	 * done by first trying to set UPNP with port forwarding (gives us the
 	 * external address), query UPNP for the external address, and pinging a
-	 * well known peer. The fallback is NAT-PMP
+	 * well known peer. The fallback is NAT-PMP.
 	 * 
-	 * @param peerAddress
-	 * @return
+	 * @param peerAddress The peer address. Since pings are used the peer ID can
+	 *        be Number160.ZERO
+	 * @return The future discover. This future holds also the real ID of the
+	 *         peer we send the discover request
 	 */
 	public FutureDiscover discover(final PeerAddress peerAddress)
 	{
@@ -1013,7 +1082,7 @@ public class Peer
 			private boolean changedTCP = false;
 
 			@Override
-			public void serverAddressChanged(PeerAddress peerAddress, boolean tcp)
+			public void serverAddressChanged(PeerAddress peerAddress, PeerAddress reporter, boolean tcp)
 			{
 				if (tcp)
 				{
@@ -1027,7 +1096,7 @@ public class Peer
 				}
 				if (changedTCP && changedUDP)
 				{
-					futureDiscover.done(peerAddress);
+					futureDiscover.done(peerAddress, reporter);
 				}
 			}
 

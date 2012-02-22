@@ -907,7 +907,7 @@ public class Peer
 		}
 		Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
 		bootstrapTo.add(peerAddress);
-		return bootstrap(peerAddress, new ArrayList<PeerAddress>(0), Configurations.defaultBootstrapConfiguration());
+		return bootstrap(peerAddress, bootstrapTo, Configurations.defaultBootstrapConfiguration());
 	}
 	
 	/**

@@ -372,7 +372,9 @@ public class PeerMapKadImpl implements PeerMap
 	public boolean peerOffline(final PeerAddress remotePeer, boolean force)
 	{
 		if (logger.isDebugEnabled())
-			logger.info("peer " + remotePeer + " is offline");
+		{
+			logger.debug("peer " + remotePeer + " is offline");
+		}
 		if (remotePeer.getID().isZero() || self().equals(remotePeer.getID()))
 			return false;
 		notifyPeerFail(remotePeer, force);

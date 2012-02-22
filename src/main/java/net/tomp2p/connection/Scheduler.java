@@ -142,7 +142,7 @@ public class Scheduler
 				int i=0;
 				final int max2 = Math.min(max, checkPeers.size());
 				final FutureLateJoin<FutureResponse> lateJoin = new FutureLateJoin<FutureResponse>(max2);
-				for(Iterator<PeerAddress> iterator = checkPeers.iterator(); i<max2;i++)
+				for(Iterator<PeerAddress> iterator = checkPeers.iterator(); i<max2 && running;i++)
 				{
 					final PeerAddress peerAddress = iterator.next();
 					FutureChannelCreator fcc = connectionReservation.reserve(1);
@@ -161,6 +161,10 @@ public class Scheduler
 						}
 					});
 					iterator.remove();
+				}
+				if(!running)
+				{
+					return;
 				}
 				try
 				{	

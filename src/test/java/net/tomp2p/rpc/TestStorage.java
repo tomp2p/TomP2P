@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -1022,7 +1023,8 @@ public class TestStorage
 			slave1.listen(8001,8001);
 			slave2 = new Peer(new Number160(rnd));
 			slave2.listen(8002,8002);
-			slave1.bootstrap(master.getPeerAddress()).awaitUninterruptibly();
+			FutureBootstrap futureBootstrap = slave1.bootstrap(master.getPeerAddress());
+			futureBootstrap.awaitUninterruptibly();
 			slave2.bootstrap(master.getPeerAddress()).awaitUninterruptibly();
 			master.getPeerBean().getPeerMap().peerOffline(slave2.getPeerAddress(), true);
 			slave2.shutdown();
@@ -1030,7 +1032,7 @@ public class TestStorage
 			Assert.assertEquals(2, test2.get());
 			master.getConnectionBean().getConnectionReservation().release(cc);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			e.printStackTrace();
 		}

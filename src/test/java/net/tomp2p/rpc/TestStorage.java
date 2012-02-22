@@ -861,11 +861,11 @@ public class TestStorage
 	@Test
 	public void testConcurrentStoreAddGet() throws Exception
 	{
-		for(int i=0;i<1000;i++)
-		{
+		//for(int i=0;i<1000;i++)
+		//{
 		testConcurrentStoreAddGet(new StorageMemory(), new StorageMemory());
 		testConcurrentStoreAddGet(new StorageDisk(DIR), new StorageDisk(DIR));
-		}
+		//}
 	}
 
 	

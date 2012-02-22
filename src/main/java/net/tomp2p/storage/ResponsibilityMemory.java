@@ -20,11 +20,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import net.tomp2p.peers.Number160;
-
-import com.google.common.collect.MapMaker;
 
 public class ResponsibilityMemory implements Responsibility
 {
@@ -35,8 +34,8 @@ public class ResponsibilityMemory implements Responsibility
 
 	public ResponsibilityMemory()
 	{
-		responsibilityMap = new MapMaker().makeMap();
-		responsibilityMapRev = new MapMaker().makeMap();
+		responsibilityMap = new ConcurrentHashMap<Number160, Number160>();
+		responsibilityMapRev = new ConcurrentHashMap<Number160, Set<Number160>>();
 	}
 
 	/** {@inheritDoc} */

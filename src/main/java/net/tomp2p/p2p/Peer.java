@@ -264,6 +264,10 @@ public class Peer
 	public void shutdown()
 	{
 		logger.info("begin shutdown in progres at "+System.nanoTime());
+		if(peerExchangeRPC != null)
+		{
+			peerExchangeRPC.shutdown();
+		}
 		synchronized (scheduledFutures)
 		{
 			for (ScheduledFuture<?> scheduledFuture : scheduledFutures)
@@ -288,6 +292,7 @@ public class Peer
 				listener.notifyOnShutdown();
 		}
 		getPeerBean().getStorage().close();
+		getPeerBean().getTrackerStorage().shutdown();
 		connectionHandler = null;
 	}
 

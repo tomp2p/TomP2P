@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -32,26 +31,31 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 import net.tomp2p.storage.TrackerStorage.ReferrerType;
+import net.tomp2p.utils.ExpiringMap;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.MapMaker;
 
 public class PeerExchangeRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(PeerExchangeRPC.class);
 	// since PEX is push based, each peer needs to keep track what was sent to
 	// whom.
-	final private Map<Number160, Set<Number160>> sentPeers;
+	final private ExpiringMap<Number160, Set<Number160>> sentPeers;
 	final private static int DAY = 60 * 60 * 24;
 
 	public PeerExchangeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.PEX);
-		sentPeers = new MapMaker().concurrencyLevel(1).expireAfterAccess(DAY, TimeUnit.SECONDS).makeMap();
+		sentPeers = new ExpiringMap<Number160, Set<Number160>>(DAY);
+		sentPeers.getExpirer().startExpiring();
+	}
+	
+	public void shutdown()
+	{
+		sentPeers.getExpirer().stopExpiring();
 	}
 	
 	@Deprecated

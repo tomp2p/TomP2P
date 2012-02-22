@@ -24,12 +24,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -504,7 +508,6 @@ public class Utils
 		}
 		return false;
 	}
-	
 	public static void addReleaseListener(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator cc, final int nr) 
 	{
 		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
@@ -543,5 +546,112 @@ public class Utils
 			return list.get(list.size()-1);
 		}
 		return null;
+	}
+	
+	
+	/*
+	 * Copyright (C) 2008 The Guava Authors
+	 *
+	 * Licensed under the Apache License, Version 2.0 (the "License");
+	 * you may not use this file except in compliance with the License.
+	 * You may obtain a copy of the License at
+	 *
+	 * http://www.apache.org/licenses/LICENSE-2.0
+	 *
+	 * Unless required by applicable law or agreed to in writing, software
+	 * distributed under the License is distributed on an "AS IS" BASIS,
+	 * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	 * See the License for the specific language governing permissions and
+	 * limitations under the License.
+	 */
+	/**
+     * Returns an Inet4Address having the integer value specified by
+	 * the argument.
+	 *
+	 * @param address {@code int}, the 32bit integer address to be converted
+	 * @return {@link Inet4Address} equivalent of the argument
+	 */
+	public static Inet4Address fromInteger(int address) 
+	{
+		return getInet4Address(toByteArray(address));
+	}
+	/**
+	 * Returns a big-endian representation of {@code value} in a 4-element byte
+	 * array; equivalent to {@code ByteBuffer.allocate(4).putInt(value).array()}.
+	 * For example, the input value {@code 0x12131415} would yield the byte array
+	 * {@code {0x12, 0x13, 0x14, 0x15}}.
+	 *
+	 * <p>If you need to convert and concatenate several values (possibly even of
+	 * different types), use a shared {@link java.nio.ByteBuffer} instance, or use
+	 * {@link com.google.common.io.ByteStreams#newDataOutput()} to get a growable
+	 * buffer.
+	 */
+	private static byte[] toByteArray(int value) 
+	{
+		return new byte[] {
+				(byte) (value >> 24),
+				(byte) (value >> 16),
+				(byte) (value >> 8),
+				(byte) value};
+	}
+	/**
+	 * Returns an {@link Inet4Address}, given a byte array representation
+	 * of the IPv4 address.
+	 *
+	 * @param bytes byte array representing an IPv4 address (should be
+	 *              of length 4).
+	 * @return {@link Inet4Address} corresponding to the supplied byte
+	 *         array.
+	 * @throws IllegalArgumentException if a valid {@link Inet4Address}
+	 *         can not be created.
+	 */
+	private static Inet4Address getInet4Address(byte[] bytes) 
+	{
+		if(bytes.length != 4)
+		{
+			throw new IllegalArgumentException("Byte array has invalid length for an IPv4 address");
+		}
+
+		try 
+		{
+			InetAddress ipv4 = InetAddress.getByAddress(bytes);
+			if (!(ipv4 instanceof Inet4Address)) 
+			{
+				throw new UnknownHostException(String.format("'%s' is not an IPv4 address.", ipv4.getHostAddress()));
+			}
+			return (Inet4Address) ipv4;
+		} 
+		catch (UnknownHostException e) 
+		{
+			/*
+			 * This really shouldn't happen in practice since all our byte
+			 * sequences should be valid IP addresses.
+			 *
+			 * However {@link InetAddress#getByAddress} is documented as
+			 * potentially throwing this "if IP address is of illegal length".
+			 *
+			 * This is mapped to IllegalArgumentException since, presumably,
+			 * the argument triggered some bizarre processing bug.
+			 */
+			throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.", Arrays.toString(bytes)), e);
+		}
+	}
+	
+	// as seen here: http://stackoverflow.com/questions/617414/create-a-temporary-directory-in-java
+	public static File createTempDir() throws IOException
+	{
+	    final File temp;
+	    temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
+
+	    if(!(temp.delete()))
+		{
+	    	throw new IOException("Could not delete temp file: " + temp.getAbsolutePath());
+		}
+	    
+	    if(!(temp.mkdir()))
+		{
+	    	throw new IOException("Could not create temp directory: " + temp.getAbsolutePath());
+		}
+	    return (temp);
 	}
 }

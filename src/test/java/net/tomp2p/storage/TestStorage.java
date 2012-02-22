@@ -12,12 +12,11 @@ import junit.framework.Assert;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.utils.Utils;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.google.common.io.Files;
 
 public class TestStorage
 {
@@ -34,9 +33,9 @@ public class TestStorage
 	private static String DIR;
 
 	@Before
-	public void befor()
+	public void befor() throws IOException
 	{
-		File tmpDir = Files.createTempDir();
+		File tmpDir = Utils.createTempDir();
 		DIR = tmpDir.getPath();
 	}
 

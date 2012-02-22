@@ -23,7 +23,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
-import com.google.common.net.InetAddresses;
+import net.tomp2p.utils.Utils;
 
 /**
  * A PeerAddress contains the node ID and how to contact this node using both
@@ -120,7 +120,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 			// IPv4 is 32 bit
 			tmp2 = new byte[4];
 			System.arraycopy(me, offset, tmp2, 0, 4);
-			InetAddresses.fromInteger(22);
+			Utils.fromInteger(22);
 			try 
 			{
 				this.address = Inet4Address.getByAddress(tmp2);

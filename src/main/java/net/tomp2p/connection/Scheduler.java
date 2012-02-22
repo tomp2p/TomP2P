@@ -279,7 +279,7 @@ public class Scheduler
 				catch (InterruptedException e)
 				{
 					// exit here
-					Thread.currentThread().interrupt();
+					//Thread.currentThread().interrupt();
 				}
 			}
 		});

@@ -21,8 +21,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.p2p.IdentityManagement;
 import net.tomp2p.p2p.Maintenance;
@@ -32,11 +32,10 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.utils.ExpiringMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.MapMaker;
 
 /**
  * The maintenance for the tracker is done by the client peer. Thus the peers on
@@ -61,15 +60,15 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	final public static int TRACKER_SIZE = 35;
 	// K=location and domain, V=peerId and attachment
 	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataActive;
-	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataMesh;
-	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataSecondary;
+	final private ExpiringMap<Number320, Map<Number160, TrackerData>> trackerDataMesh;
+	final private ExpiringMap<Number320, Map<Number160, TrackerData>> trackerDataSecondary;
 	// for timeouts we need to know which peer stores what data to remove it
 	// from the primary and secondary tracker
 	// K=peerId of the offline peer, V=location and domain
-	final private ConcurrentMap<Number160, Collection<Number320>> reverseTrackerDataMesh;
-	final private ConcurrentMap<Number160, Collection<Number320>> reverseTrackerDataSecondary;
+	final private ExpiringMap<Number160, Collection<Number320>> reverseTrackerDataMesh;
+	final private ExpiringMap<Number160, Collection<Number320>> reverseTrackerDataSecondary;
 	// K=peerId of the offline peer, V=reporter
-	final private ConcurrentMap<Number160, Collection<Number160>> peerOffline;
+	final private ExpiringMap<Number160, Collection<Number160>> peerOffline;
 	final private IdentityManagement identityManagement;
 	final private int trackerTimoutSeconds;
 	final private Replication replication;
@@ -91,17 +90,30 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		this.identityManagement = identityManagement;
 		this.replication = replication;
 		this.maintenance = maintenance;
-		trackerDataActive = new MapMaker().makeMap();
-		trackerDataMesh = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
-		trackerDataSecondary = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
+		trackerDataActive = new ConcurrentHashMap<Number320, Map<Number160,TrackerData>>();
+		trackerDataMesh = new ExpiringMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds);
+		trackerDataMesh.getExpirer().startExpiring();
+		trackerDataSecondary = new ExpiringMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds);
+		trackerDataSecondary.getExpirer().startExpiring();
 		//
-		reverseTrackerDataMesh = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS).makeMap();
-		reverseTrackerDataSecondary = new MapMaker().expireAfterAccess(trackerTimoutSeconds, TimeUnit.SECONDS)
-				.makeMap();
+		reverseTrackerDataMesh = new ExpiringMap<Number160, Collection<Number320>>(trackerTimoutSeconds);
+		reverseTrackerDataMesh.getExpirer().startExpiring();
+		reverseTrackerDataSecondary = new ExpiringMap<Number160, Collection<Number320>>(trackerTimoutSeconds);
+		reverseTrackerDataSecondary.getExpirer().startExpiring();
+				
 		// if everything is perfect, a factor of 2 is enough, to be on the safe
 		// side factor 5 is used.
-		peerOffline = new MapMaker().expireAfterAccess(trackerTimoutSeconds * 5, TimeUnit.SECONDS).makeMap();
-
+		peerOffline = new ExpiringMap<Number160, Collection<Number160>>(trackerTimoutSeconds * 5);
+		peerOffline.getExpirer().startExpiring();
+	}
+	
+	public void shutdown()
+	{
+		trackerDataMesh.getExpirer().stopExpiring();
+		trackerDataSecondary.getExpirer().stopExpiring();
+		reverseTrackerDataMesh.getExpirer().stopExpiring();
+		reverseTrackerDataSecondary.getExpirer().stopExpiring();
+		peerOffline.getExpirer().stopExpiring();
 	}
 
 	public Map<Number160, TrackerData> activePeers(Number160 locationKey, Number160 domainKey)

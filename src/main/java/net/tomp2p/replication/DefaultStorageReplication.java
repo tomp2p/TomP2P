@@ -14,7 +14,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageRunner;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
@@ -25,13 +25,13 @@ import org.slf4j.LoggerFactory;
 public class DefaultStorageReplication implements ResponsibilityListener, Runnable
 {
 	final private static Logger logger = LoggerFactory.getLogger(DefaultStorageReplication.class);
-	private final Storage storage;
+	private final StorageGeneric storage;
 	private final StorageRPC storageRPC;
 	private final Peer peer;
 	private final Map<BaseFuture, Long> pendingFutures;
 	private final boolean forceUDP;
 
-	public DefaultStorageReplication(Peer peer, Storage storage, StorageRPC storageRPC,
+	public DefaultStorageReplication(Peer peer, StorageGeneric storage, StorageRPC storageRPC,
 			Map<BaseFuture, Long> pendingFutures, boolean forceUDP)
 	{
 		this.peer = peer;

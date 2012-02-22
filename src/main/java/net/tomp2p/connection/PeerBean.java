@@ -20,7 +20,7 @@ import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.Replication;
-import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.TrackerStorage;
 
 /**
@@ -39,7 +39,7 @@ public class PeerBean
 	// thread.
 	private volatile PeerAddress serverPeerAddress;
 	private volatile PeerMap peerMap;
-	private volatile Storage storage;
+	private volatile StorageGeneric storage;
 	private volatile TrackerStorage trackerStorage;
 	private volatile Replication replicationStorage;
 	private volatile Statistics statistics;
@@ -69,12 +69,12 @@ public class PeerBean
 		this.peerMap = routing;
 	}
 
-	public void setStorage(Storage storage)
+	public void setStorage(StorageGeneric storage)
 	{
 		this.storage = storage;
 	}
 
-	public Storage getStorage()
+	public StorageGeneric getStorage()
 	{
 		return storage;
 	}

@@ -35,7 +35,7 @@ import com.sleepycat.je.SecondaryConfig;
 import com.sleepycat.je.SecondaryDatabase;
 import com.sleepycat.je.Transaction;
 
-public class StorageDisk extends Storage implements Responsibility
+public class StorageDisk extends StorageGeneric implements Responsibility
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageDisk.class);
 	private final Environment env;

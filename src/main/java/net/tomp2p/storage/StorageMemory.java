@@ -35,7 +35,7 @@ import net.tomp2p.utils.Timings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StorageMemory extends Storage
+public class StorageMemory extends StorageGeneric
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageMemory.class);
 	// these data need to be consistent

@@ -13,8 +13,8 @@ import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage.ProtectionEnable;
-import net.tomp2p.storage.Storage.ProtectionMode;
+import net.tomp2p.storage.StorageGeneric.ProtectionEnable;
+import net.tomp2p.storage.StorageGeneric.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Utils;
 

@@ -204,7 +204,7 @@ public class TestStorage
 		testResponsibility(new StorageMemory());
 	}
 
-	private void testResponsibility(Storage storage) throws Exception
+	private void testResponsibility(StorageGeneric storage) throws Exception
 	{
 		storage.updateResponsibilities(content1, locationKey);
 		storage.updateResponsibilities(content2, locationKey);

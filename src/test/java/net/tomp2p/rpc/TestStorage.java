@@ -30,6 +30,7 @@ import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ResponsibilityListener;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageDisk;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
@@ -96,7 +97,7 @@ public class TestStorage
 		testStorePut(new StorageMemory(), new StorageMemory());
 		testStorePut(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
-	private void testStorePut(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -171,7 +172,7 @@ public class TestStorage
 		testComparePut(new StorageMemory(), new StorageMemory());
 		testComparePut(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
-	private void testComparePut(Storage storeSender, Storage storeRecv) throws Exception
+	private void testComparePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -264,7 +265,7 @@ public class TestStorage
 		testStorePutIfAbsent(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testStorePutIfAbsent(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePutIfAbsent(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -329,7 +330,7 @@ public class TestStorage
 		testStorePutGet(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testStorePutGet(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePutGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -381,7 +382,7 @@ public class TestStorage
 	}
 
 	
-	private void testStorePutGet2(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePutGet2(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -454,7 +455,7 @@ public class TestStorage
 		testStorePutRemoveGet(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testStorePutRemoveGet(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePutRemoveGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -513,7 +514,7 @@ public class TestStorage
 		testStorePutRemoveGet2(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testStorePutRemoveGet2(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStorePutRemoveGet2(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -572,7 +573,7 @@ public class TestStorage
 		testStoreGet(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testStoreGet(Storage storeSender, Storage storeRecv) throws Exception
+	private void testStoreGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -623,7 +624,7 @@ public class TestStorage
 		testBigStorePut(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testBigStorePut(Storage storeSender, Storage storeRecv) throws Exception
+	private void testBigStorePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -668,7 +669,7 @@ public class TestStorage
 	}
 
 	
-	private void testBigStore2(Storage storeSender, Storage storeRecv) throws Exception
+	private void testBigStore2(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -714,7 +715,7 @@ public class TestStorage
 		testBigStoreGet(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testBigStoreGet(Storage storeSender, Storage storeRecv) throws Exception
+	private void testBigStoreGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -766,7 +767,7 @@ public class TestStorage
 	}
 
 	
-	private void testBigStoreCancel(Storage storeSender, Storage storeRecv) throws Exception
+	private void testBigStoreCancel(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -810,7 +811,7 @@ public class TestStorage
 		testBigStoreGetCancel(new StorageDisk(DIR), new StorageDisk(DIR));
 	}
 
-	private void testBigStoreGetCancel(Storage storeSender, Storage storeRecv) throws Exception
+	private void testBigStoreGetCancel(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = null;
 		Peer recv1 = null;
@@ -860,12 +861,15 @@ public class TestStorage
 	@Test
 	public void testConcurrentStoreAddGet() throws Exception
 	{
+		for(int i=0;i<1000;i++)
+		{
 		testConcurrentStoreAddGet(new StorageMemory(), new StorageMemory());
 		testConcurrentStoreAddGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		}
 	}
 
 	
-	private void testConcurrentStoreAddGet(Storage storeSender, Storage storeRecv) throws Exception
+	private void testConcurrentStoreAddGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
 		Peer sender = new Peer(55, new Number160("0x50"));
 		Peer recv1 = new Peer(55, new Number160("0x20"));
@@ -930,7 +934,7 @@ public class TestStorage
 			master = new Peer(new Number160("0xee"));
 			master.listen();
 			
-			Storage s1 = new StorageMemory();
+			StorageGeneric s1 = new StorageMemory();
 			master.getPeerBean().setStorage(s1);
 			final AtomicInteger test1 = new AtomicInteger(0);
 			final AtomicInteger test2 = new AtomicInteger(0);

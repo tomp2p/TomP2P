@@ -21,6 +21,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
+import net.tomp2p.storage.StorageGeneric;
 
 public class ExampleMapReduce
 {
@@ -103,7 +104,7 @@ public class ExampleMapReduce
 				FutureReduce futureReduce = remotePeer.reduce(Number160.createHash(word), new Data(1), new Reducer()
 				{
 					@Override
-					public void reduce(Number480 key, Storage storage) throws Exception
+					public void reduce(Number480 key, StorageGeneric storage) throws Exception
 					{
 						Data dataCount = storage.get(key);
 						Number480 resultKey = key.changeDomain(new Number160(1));

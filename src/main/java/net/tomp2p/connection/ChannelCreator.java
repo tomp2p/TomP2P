@@ -73,6 +73,7 @@ public class ChannelCreator
 	final private boolean keepAliveAndReuse;
 	final private Map<InetSocketAddress, ChannelFuture> cacheMap;
 	final private Statistics statistics;
+	final private int permits;
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
 	
@@ -102,6 +103,7 @@ public class ChannelCreator
 		this.statistics = statistics;
 		this.name = name;
 		this.creatorThread = creatorThread;
+		this.permits = permits;
 	}
 
 	/**
@@ -126,8 +128,9 @@ public class ChannelCreator
 		// it.
 		if (!connectionSemaphore.tryAcquire())
 		{
-			throw new RuntimeException("you ran out of permits. You had " + permitsCount
-					+ " available, but now its down to 0");
+			//TODO:disabled for now, we need to return a future object
+			//throw new RuntimeException("you ran out of permits. You had " + permitsCount
+			//		+ " available, but now its down to 0");
 		}
 		statistics.incrementUDPChannelCreation();
 		// now, we don't exceeded the limits, so create channels
@@ -204,8 +207,9 @@ public class ChannelCreator
 				// we can reserve it.
 				if (!connectionSemaphore.tryAcquire())
 				{
-					throw new RuntimeException("you ran out of permits. You had " + permitsCount
-							+ " available, but now its down to 0");
+					//TODO:disabled for now, we need to return a future object
+					//throw new RuntimeException("you ran out of permits. You had " + permitsCount
+					//		+ " available, but now its down to 0");
 				}
 				statistics.incrementTCPChannelCreation();
 				// now, we don't exceeded the limits, so create channels
@@ -233,8 +237,9 @@ public class ChannelCreator
 			// reserve it.
 			if (!connectionSemaphore.tryAcquire())
 			{
-				throw new RuntimeException("you ran out of permits. You had " + permitsCount
-						+ " available, but now its down to 0");
+				//TODO:disabled for now, we need to return a future object
+				//throw new RuntimeException("you ran out of permits. You had " + permitsCount
+				//		+ " available, but now its down to 0");
 			}
 			statistics.incrementTCPChannelCreation();
 			try
@@ -431,31 +436,23 @@ public class ChannelCreator
 	 */
 	public int getPermits()
 	{
-		return permitsCount.get();
+		return permits;
 	}
 
 	/**
 	 * Releases permits. This can also be a partial release
 	 * 
 	 * @param permits The number of permits to be released
+	 * @return Returns true if the channel creator has no permits anymore
 	 */
-	void release(int permits)
+	boolean release(int permits)
 	{
-		connectionSemaphore.release(permits);
 		int result = permitsCount.addAndGet(-permits);
 		if(result < 0)
 		{
 			throw new RuntimeException("Cannot release more than I acquired");
 		}
-		
-	}
-
-	/**
-	 * @return Returns true if the channel creator has no permits anymore
-	 */
-	public boolean hasNoPermits()
-	{
-		return permitsCount.compareAndSet(0, 0);
+		return result == 0;
 	}
 
 	/**

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -50,7 +51,7 @@ public class ConnectionReservation
 	final private int maxPermitsOpen;
 	final private Statistics statistics;
 	// keeps the information about acquired channel and which semaphore has been used
-	final private Map<ChannelCreator, Semaphore> activeChannelCreators = new ConcurrentHashMap<ChannelCreator, Semaphore>();
+	final private Map<ChannelCreator, Semaphore> activeChannelCreators = new HashMap<ChannelCreator, Semaphore>();
 	//final private Map<Long, Boolean> threads = new ConcurrentHashMap<Long, Boolean>();
 	final private Map<ChannelCreator, StackTraceElement[]> debug = new ConcurrentHashMap<ChannelCreator, StackTraceElement[]>();
 	// used for synchronization
@@ -195,8 +196,11 @@ public class ConnectionReservation
 					//we do a bit of debugging here, since this is a dangerous place here that may deadlock upon shutdown
 					debug.put(channelCreator, Thread.currentThread().getStackTrace());
 				}
-				activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
-						: semaphoreCreating);
+				synchronized (activeChannelCreators)
+				{
+					activeChannelCreators.put(channelCreator, keepAliveAndReuse ? semaphoreOpen
+							: semaphoreCreating);
+				}
 				return channelCreator;
 			}
 			else
@@ -221,16 +225,31 @@ public class ConnectionReservation
 	 */
 	public void release(ChannelCreator channelCreator, int permits)
 	{
-		channelCreator.release(permits);
-		Semaphore semaphore = activeChannelCreators.get(channelCreator);
-		semaphore.release(permits);
-		if (channelCreator.hasNoPermits())
+		final Semaphore semaphore;
+		final boolean hasNoPermits;
+		synchronized (activeChannelCreators)
 		{
-			activeChannelCreators.remove(channelCreator);
+			hasNoPermits = channelCreator.release(permits);
+			if (hasNoPermits)
+			{
+				semaphore = activeChannelCreators.remove(channelCreator);
+			}
+			else
+			{
+				semaphore = activeChannelCreators.get(channelCreator);
+			}
+		}
+		semaphore.release(permits);
+		synchronized (semaphore)
+		{
+			semaphore.notifyAll();
+		}
+		if (hasNoPermits)
+		{
 			getReservation().removeDeadLockCheck(channelCreator.getCreatorThread());
 			if (logger.isDebugEnabled())
 			{
-				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits()+", which was created from thread: "+channelCreator.getCreatorThread());
+				logger.debug("full release ("+permits+"), we can remove the channelcreator from the list "+semaphore.availablePermits()+", which was created from thread: " + channelCreator.getCreatorThread() +" / " + channelCreator.getName());
 				debug.remove(channelCreator);
 			}
 		}
@@ -246,10 +265,6 @@ public class ConnectionReservation
 			logger.debug("released " + channelCreator.getPermits() + ", in total we have "
 					+ maxPermitsCreating + "/"
 					+ maxPermitsOpen + ", now we have " + semaphore.availablePermits());
-		}
-		synchronized (semaphore)
-		{
-			semaphore.notifyAll();
 		}
 	}
 

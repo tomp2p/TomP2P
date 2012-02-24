@@ -31,7 +31,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 import net.tomp2p.storage.TrackerStorage.ReferrerType;
-import net.tomp2p.utils.ExpiringMap;
+import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -42,20 +42,13 @@ public class PeerExchangeRPC extends ReplyHandler
 	final private static Logger logger = LoggerFactory.getLogger(PeerExchangeRPC.class);
 	// since PEX is push based, each peer needs to keep track what was sent to
 	// whom.
-	final private ExpiringMap<Number160, Set<Number160>> sentPeers;
-	final private static int DAY = 60 * 60 * 24;
+	final private Map<Number160, Set<Number160>> sentPeers;
 
 	public PeerExchangeRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.PEX);
-		sentPeers = new ExpiringMap<Number160, Set<Number160>>(DAY);
-		sentPeers.getExpirer().startExpiring();
-	}
-	
-	public void shutdown()
-	{
-		sentPeers.getExpirer().stopExpiring();
+		sentPeers = new CacheMap<Number160, Set<Number160>>(1000);
 	}
 	
 	@Deprecated

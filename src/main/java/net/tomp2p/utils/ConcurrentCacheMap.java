@@ -124,6 +124,10 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
     		{
     			oldValue = segment.put(key, newValue);
     		}
+    		else
+    		{
+    			oldValue = segment.get(key);
+    		}
 		}
         if (oldValue == null || oldValue.isExpired())
         {
@@ -493,7 +497,6 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
     			while(iterator.hasNext())
     			{
     				ExpiringObject expiringObject = iterator.next();
-    				System.err.println("check "+expiringObject.getValue());
     				if(expiringObject.isExpired())
     				{
     					iterator.remove();

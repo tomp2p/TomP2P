@@ -16,7 +16,7 @@ public class TestCache
 		Timings.sleepUninterruptibly(500);
 		test.put("hallo2", "test2");
 		test.put("hallo3", "test3");
-		Timings.sleepUninterruptibly(500);
+		Timings.sleepUninterruptibly(600);
 		Assert.assertEquals(2, test.size());
 	}
 	

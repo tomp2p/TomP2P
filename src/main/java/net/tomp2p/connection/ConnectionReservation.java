@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.p2p.Statistics;
-import net.tomp2p.utils.Timings;
 
 import org.jboss.netty.channel.ChannelFactory;
 import org.slf4j.Logger;
@@ -229,12 +228,15 @@ public class ConnectionReservation
 	{
 		final Semaphore semaphore;
 		final boolean hasNoPermits;
+		// needs to be in a sync block, othrewise we see a remove first, then a
+		// get which returns null -> bang null pointer
 		synchronized (activeChannelCreators)
 		{
 			hasNoPermits = channelCreator.release(permits);
 			if (hasNoPermits)
 			{
 				semaphore = activeChannelCreators.remove(channelCreator);
+				activeChannelCreators.notifyAll();
 			}
 			else
 			{
@@ -319,9 +321,17 @@ public class ConnectionReservation
 		}
 		synchronized (activeChannelCreators)
 		{
-			while(activeChannelCreators.size()!=0)
+			while(activeChannelCreators.size() != 0)
 			{
-				Timings.sleepUninterruptibly(500);
+				try
+				{
+					activeChannelCreators.wait(500);
+				}
+				catch (InterruptedException e)
+				{
+					//ignore
+					Thread.currentThread().interrupt();
+				}
 			}
 		}
 		//make sure we wait until all connections are finished.

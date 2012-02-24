@@ -14,6 +14,8 @@
  * the License.
  */
 package net.tomp2p.connection;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -304,14 +306,19 @@ public class ConnectionReservation
 			}
 		}
 		//this needs synchronized, otherwise a thread may add to the list a value, then we fail here
+		Collection<ChannelCreator> allCreators;
 		synchronized (activeChannelCreators)
 		{
-			for (ChannelCreator channelCreator : activeChannelCreators.keySet())
-			{
-				//this makes them faster to call ConnectionReservation.release
-				channelCreator.shutdown();
-			}
-			//TODO:DBX debug why it hangs here
+			allCreators = new ArrayList<ChannelCreator>(activeChannelCreators.size());
+			allCreators.addAll(activeChannelCreators.keySet());
+		}
+		for (ChannelCreator channelCreator : allCreators)
+		{
+			//this makes them faster to call ConnectionReservation.release
+			channelCreator.shutdown();
+		}
+		synchronized (activeChannelCreators)
+		{
 			while(activeChannelCreators.size()!=0)
 			{
 				Timings.sleepUninterruptibly(500);

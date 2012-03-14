@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -57,7 +57,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.natpmp.NatPmpException;
-import net.tomp2p.p2p.DistributedHashHashMap.Operation;
+import net.tomp2p.p2p.DistributedHashMap.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationBootstrap;
 import net.tomp2p.p2p.config.ConfigurationDirect;
@@ -68,8 +68,6 @@ import net.tomp2p.p2p.config.ConfigurationTrackerGet;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
@@ -89,7 +87,6 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.ResponsibilityMemory;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.CacheMap;
@@ -138,7 +135,7 @@ public class Peer
 	// ports
 	private final int p2pID;
 	private final KeyPair keyPair;
-	private DistributedHashHashMap dht;
+	private DistributedHashMap dht;
 	private DistributedTracker tracker;
 	// private Replication replication;
 	// private final List<NodeListener> nodeListeners = new
@@ -384,21 +381,18 @@ public class Peer
 		PeerAddress selfAddress = getPeerAddress();
 		PeerMap peerMap = connectionHandler.getPeerBean().getPeerMap();
 		// create storage and add replication feature
-		ResponsibilityMemory responsibilityMemory = new ResponsibilityMemory();
-		StorageMemory storage = new StorageMemory(responsibilityMemory);
+		StorageMemory storage = new StorageMemory();
 		peerBean.setStorage(storage);
-		Replication replicationStorage = new Replication(responsibilityMemory, selfAddress, peerMap);
+		Replication replicationStorage = new Replication(storage, selfAddress, peerMap);
 		peerBean.setReplicationStorage(replicationStorage);
 		// create tracker and add replication feature
 		identityManagement = new IdentityManagement(getPeerAddress());
 		maintenance = new Maintenance();
-		Replication replicationTracker = new Replication(new ResponsibilityMemory(), selfAddress,
-				peerMap);
+		Replication replicationTracker = new Replication(storage, selfAddress, peerMap);
 		TrackerStorage storageTracker = new TrackerStorage(identityManagement,
 				getP2PConfiguration().getTrackerTimoutSeconds(), replicationTracker, maintenance);
 		peerBean.setTrackerStorage(storageTracker);
 		peerMap.addPeerOfflineListener(storageTracker);
-
 		// RPC communication
 		handshakeRCP = new HandshakeRPC(peerBean, connectionBean, listeners);
 		storageRPC = new StorageRPC(peerBean, connectionBean);
@@ -406,19 +400,19 @@ public class Peer
 		quitRCP = new QuitRPC(peerBean, connectionBean);
 		peerExchangeRPC = new PeerExchangeRPC(peerBean, connectionBean);
 		directDataRPC = new DirectDataRPC(peerBean, connectionBean);
+		trackerRPC = new TrackerRPC(peerBean, connectionBean, peerConfiguration);
 		// replication for trackers, which needs PEX
 		TrackerStorageReplication trackerStorageReplication = new TrackerStorageReplication(this,
 				peerExchangeRPC, pendingFutures, storageTracker, connectionConfiguration.isForceTrackerTCP());
 		replicationTracker.addResponsibilityListener(trackerStorageReplication);
-		trackerRPC = new TrackerRPC(peerBean, connectionBean, peerConfiguration);
-
 		// distributed communication
 		routing = new DistributedRouting(peerBean, neighborRPC);
-		dht = new DistributedHashHashMap(routing, storageRPC, directDataRPC);
+		dht = new DistributedHashMap(routing, storageRPC, directDataRPC);
 		tracker = new DistributedTracker(peerBean, routing, trackerRPC, peerExchangeRPC);
 		// maintenance
 		if (peerConfiguration.isStartMaintenance())
 			startMaintainance();
+		connectionBean.getScheduler().startDelayedChannelCreator();
 		for (PeerListener listener : listeners)
 			listener.notifyOnStart();
 	}
@@ -529,7 +523,7 @@ public class Peer
 			return connectionHandler;
 	}
 
-	public DistributedHashHashMap getDHT()
+	public DistributedHashMap getDHT()
 	{
 		if (dht == null)
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
@@ -906,24 +900,6 @@ public class Peer
 	}
 	
 	/**
-	 * For backwards compatibility, do not use!
-	 * 
-	 * @param peerAddress The peer address to use for discovery
-	 * @param bootstrapTo The peers used to bootstrap
-	 * @param config The configuration
-	 * @return  The future bootstrap
-	 */
-	@Deprecated
-	public FutureBootstrap bootstrap(final PeerAddress peerAddress,
-			final Collection<PeerAddress> bootstrapTo, final ConfigurationStore config)
-	{
-		ConfigurationBootstrap config2 = Configurations.defaultBootstrapConfiguration();
-		config2.setRequestP2PConfiguration(config.getRequestP2PConfiguration());
-		config2.setRoutingConfiguration(config.getRoutingConfiguration());
-		return bootstrap(peerAddress, bootstrapTo, config2);
-	}
-
-	/**
 	 * Boostraps to a known peer. First channels are reserved, then
 	 * #discover(PeerAddress) is called to verify this Internet connection
 	 * settings using the argument peerAddress. Then the routing is initiated to
@@ -966,12 +942,6 @@ public class Peer
 			}
 		});
 		return result;
-	}
-
-	@Deprecated
-	public void setupPortForwandingUPNP(String internalHost)
-	{
-		setupPortForwanding(internalHost);
 	}
 
 	/**
@@ -1404,14 +1374,14 @@ public class Peer
 	//----------------- parallel request
 	
 	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
-			final boolean cancleOnFinish, final SortedSet<PeerAddress> queue, final Operation operation)
+			final boolean cancleOnFinish, final NavigableSet<PeerAddress> queue, final Operation operation)
 	{
 		return parallelRequests(locationKey, config, reserve(config), cancleOnFinish, queue, operation);
 	}
 	
 	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
 			final FutureChannelCreator channelCreator, final boolean cancleOnFinish, 
-			final SortedSet<PeerAddress> queue, final Operation operation)
+			final NavigableSet<PeerAddress> queue, final Operation operation)
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
@@ -1534,12 +1504,12 @@ public class Peer
 		{
 			for (Number160 contentKey : keyCollection)
 				getPeerBean().getStorage().remove(
-						new Number480(locationKey, config.getDomain(), contentKey),
+						locationKey, config.getDomain(), contentKey,
 						keyPair.getPublic());
 		}
 		else
 		{
-			getPeerBean().getStorage().remove(new Number320(locationKey, config.getDomain()),
+			getPeerBean().getStorage().remove(locationKey, config.getDomain(), Number160.ZERO, Number160.MAX_VALUE,
 					keyPair.getPublic());
 		}
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),

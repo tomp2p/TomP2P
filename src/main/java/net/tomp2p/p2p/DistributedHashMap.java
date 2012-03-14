@@ -19,9 +19,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -34,7 +34,7 @@ import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
-import net.tomp2p.message.Message.Command;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
@@ -47,14 +47,14 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DistributedHashHashMap
+public class DistributedHashMap
 {
-	final private static Logger logger = LoggerFactory.getLogger(DistributedHashHashMap.class);
+	final private static Logger logger = LoggerFactory.getLogger(DistributedHashMap.class);
 	final private DistributedRouting routing;
 	final private StorageRPC storeRCP;
 	final private DirectDataRPC directDataRPC;
 
-	public DistributedHashHashMap(DistributedRouting routing, StorageRPC storeRCP,
+	public DistributedHashMap(DistributedRouting routing, StorageRPC storeRCP,
 			DirectDataRPC directDataRPC)
 	{
 		this.routing = routing;
@@ -79,7 +79,7 @@ public class DistributedHashHashMap
 				if(future.isSuccess())
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
-							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+							routingConfiguration, p2pConfiguration, Type.REQUEST_1, future.getChannelCreator());
 					futureDHT.setFutureRouting(futureRouting);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
@@ -159,7 +159,7 @@ public class DistributedHashHashMap
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, null, null,
 							routingConfiguration,
-							p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+							p2pConfiguration, Type.REQUEST_1, future.getChannelCreator());
 					futureDHT.setFutureRouting(futureRouting);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
@@ -251,7 +251,7 @@ public class DistributedHashHashMap
 				if(future.isSuccess())
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null,
-							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, false, future.getChannelCreator());
+							routingConfiguration, p2pConfiguration, Type.REQUEST_1, future.getChannelCreator());
 					futureDHT.setFutureRouting(futureRouting);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
@@ -334,7 +334,7 @@ public class DistributedHashHashMap
 				if(future.isSuccess())
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
-							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, future.getChannelCreator());
+							routingConfiguration, p2pConfiguration, Type.REQUEST_2, future.getChannelCreator());
 					futureDHT.setFutureRouting(futureRouting);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
@@ -435,7 +435,7 @@ public class DistributedHashHashMap
 				if(future.isSuccess())
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, domainKey, contentKeys,
-							routingConfiguration, p2pConfiguration, Command.NEIGHBORS_STORAGE, true, future.getChannelCreator());
+							routingConfiguration, p2pConfiguration, Type.REQUEST_2, future.getChannelCreator());
 					futureDHT.setFutureRouting(futureRouting);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
@@ -520,7 +520,7 @@ public class DistributedHashHashMap
 	 * @param operation The operation that creates the request
 	 */
 	public FutureDHT parallelRequests(final RequestP2PConfiguration p2pConfiguration,
-			final SortedSet<PeerAddress> queue, final boolean cancleOnFinish,
+			final NavigableSet<PeerAddress> queue, final boolean cancleOnFinish,
 			final FutureChannelCreator futureChannelCreator,
 			final ConnectionReservation connectionReservation, final boolean isAutomaticCleanup,
 			final Operation operation)
@@ -550,7 +550,7 @@ public class DistributedHashHashMap
 		return futureDHT;
 	}	
 	
-	private void parallelRequests(RequestP2PConfiguration p2pConfiguration, SortedSet<PeerAddress> queue,
+	private void parallelRequests(RequestP2PConfiguration p2pConfiguration, NavigableSet<PeerAddress> queue,
 			FutureDHT futureDHT, boolean cancleOnFinish, ChannelCreator channelCreator, Operation operation)
 	{
 		if (p2pConfiguration.getMinimumResults() == 0)
@@ -565,7 +565,7 @@ public class DistributedHashHashMap
 				cancleOnFinish, channelCreator, operation);
 	}
 
-	private void loopRec(final SortedSet<PeerAddress> queue, final int min,
+	private void loopRec(final NavigableSet<PeerAddress> queue, final int min,
 			final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
 			final FutureResponse[] futures, final FutureDHT futureDHT,
 			final boolean cancelOnFinish, final ChannelCreator channelCreator, final Operation operation)
@@ -576,9 +576,7 @@ public class DistributedHashHashMap
 		{
 			if (futures[i] == null)
 			{
-				PeerAddress next = Utils.pollFirst(queue);
-				// not available in java5
-				// PeerAddress next = queue.pollFirst();
+				PeerAddress next = queue.pollFirst();
 				if (next != null)
 				{
 					active++;
@@ -629,15 +627,14 @@ public class DistributedHashHashMap
 
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
 			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
-			RequestP2PConfiguration p2pConfiguration, Command command, boolean isDirect,
-			final ChannelCreator cc)
+			RequestP2PConfiguration p2pConfiguration, Type type, ChannelCreator channelCreator)
 	{
-		return routing.route(locationKey, domainKey, contentKeys, command, routingConfiguration
+		return routing.route(locationKey, domainKey, contentKeys, type, routingConfiguration
 				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(p2pConfiguration
 				.getMinimumResults()), routingConfiguration.getMaxFailures(),
 				routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDirect, routingConfiguration.isForceTCP(),
-				cc);
+				routingConfiguration.getParallel(), routingConfiguration.isForceTCP(),
+				channelCreator);
 	}
 	public interface Operation
 	{

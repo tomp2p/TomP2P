@@ -20,9 +20,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -38,7 +38,6 @@ import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -97,7 +96,7 @@ public class DistributedTracker
 					{			
 						Map<Number160, TrackerData> meshPeers = peerBean.getTrackerStorage().meshPeers(locationKey, domainKey);
 						Map<Number160, TrackerData> secondaryPeers = peerBean.getTrackerStorage().secondaryPeers(locationKey, domainKey);
-						SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
+						NavigableSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap()
 								.createPeerComparator(stableRandom));
 						for (TrackerData trackerData : meshPeers.values())
 						{
@@ -113,7 +112,7 @@ public class DistributedTracker
 					else
 					{
 						final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, 
-								routingConfiguration, true, futureChannelCreator2.getChannelCreator());
+								routingConfiguration, Type.REQUEST_3, futureChannelCreator2.getChannelCreator());
 						// final Number160 searchCloseTo=new Number160(rnd);
 						futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 						{
@@ -150,7 +149,7 @@ public class DistributedTracker
 	private void startLoop(final Number160 locationKey, final Number160 domainKey,
 			final TrackerConfiguration trackerConfiguration, final boolean expectAttachement,
 			final boolean signMessage, final Set<Number160> knownPeers, final FutureTracker futureTracker,
-			final SortedSet<PeerAddress> queueToAsk, final ChannelCreator cc)
+			final NavigableSet<PeerAddress> queueToAsk, final ChannelCreator cc)
 	{
 		loop(locationKey, domainKey, queueToAsk, trackerConfiguration, futureTracker, true, knownPeers, new Operation()
 		{
@@ -229,7 +228,7 @@ public class DistributedTracker
 				if(futureChannelCreator2.isSuccess())
 				{
 					final FutureRouting futureRouting = createRouting(locationKey, domainKey, null, 
-							routingConfiguration, false, futureChannelCreator2.getChannelCreator());
+							routingConfiguration, Type.REQUEST_1, futureChannelCreator2.getChannelCreator());
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
 						@Override
@@ -272,12 +271,12 @@ public class DistributedTracker
 		return futureTracker;
 	}
 
-	private void loop(Number160 locationKey, final Number160 domainKey, SortedSet<PeerAddress> queueToAsk,
+	private void loop(Number160 locationKey, final Number160 domainKey, NavigableSet<PeerAddress> queueToAsk,
 			TrackerConfiguration trackerConfiguration, FutureTracker futureTracker, boolean isGet,
 			final Set<Number160> knownPeers, Operation operation)
 	{
 		FutureResponse[] futureResponses = new FutureResponse[trackerConfiguration.getParallel()];
-		SortedSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap().createPeerComparator(
+		NavigableSet<PeerAddress> secondaryQueue = new TreeSet<PeerAddress>(peerBean.getPeerMap().createPeerComparator(
 				stableRandom));
 		loopRec(locationKey, domainKey, queueToAsk, secondaryQueue, new HashSet<PeerAddress>(),
 				new HashSet<PeerAddress>(), new HashMap<PeerAddress, Collection<TrackerData>>(), operation,
@@ -289,7 +288,7 @@ public class DistributedTracker
 	}
 
 	private void loopRec(final Number160 locationKey, final Number160 domainKey,
-			final SortedSet<PeerAddress> queueToAsk, final SortedSet<PeerAddress> secondaryQueue,
+			final NavigableSet<PeerAddress> queueToAsk, final NavigableSet<PeerAddress> secondaryQueue,
 			final Set<PeerAddress> alreadyAsked, final Set<PeerAddress> successAsked,
 			final Map<PeerAddress, Collection<TrackerData>> peerOnTracker, final Operation operation,
 			final int parallel, final AtomicInteger nrFailures, final int maxFailures, final AtomicInteger trackerFull,
@@ -317,14 +316,14 @@ public class DistributedTracker
 					if (isGet)
 						next = Utils.pollRandom(queueToAsk, rnd);
 					else
-						next = Utils.pollFirst(queueToAsk);
+						next = queueToAsk.pollFirst(); 
 				}
 				if (next == null)
 				{
 					if (isGet)
 						next = Utils.pollRandom(secondaryQueue, rnd);
 					else
-						next = Utils.pollFirst(secondaryQueue);
+						next = secondaryQueue.pollFirst();
 					primary = false;
 				}
 				if (next != null)
@@ -443,12 +442,12 @@ public class DistributedTracker
 	}
 
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey, Set<Number160> contentKeys,
-			RoutingConfiguration routingConfiguration, boolean isDigest, final ChannelCreator cc)
+			RoutingConfiguration routingConfiguration, Type type, final ChannelCreator channelCreator)
 	{
-		return routing.route(locationKey, domainKey, contentKeys, Command.NEIGHBORS_TRACKER,
+		return routing.route(locationKey, domainKey, contentKeys, type,
 				routingConfiguration.getDirectHits(), routingConfiguration.getMaxNoNewInfo(0),
 				routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-				routingConfiguration.getParallel(), isDigest, routingConfiguration.isForceTCP(), cc);
+				routingConfiguration.getParallel(), routingConfiguration.isForceTCP(), channelCreator);
 	}
 
 	/**

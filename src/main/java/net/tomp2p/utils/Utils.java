@@ -40,7 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.zip.DataFormatException;
@@ -52,8 +51,6 @@ import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Digest;
@@ -328,27 +325,6 @@ public class Utils
 		}
 	}
 
-	// TODO: in Java6, there is navigablemap, which does this much better
-	public static PeerAddress pollFirst(SortedSet<PeerAddress> queue)
-	{
-		try
-		{
-			if (queue.size() > 0)
-			{
-				PeerAddress tmp = queue.first();
-				queue.remove(tmp);
-				return tmp;
-			}
-			else
-				return null;
-		}
-		catch (NoSuchElementException e)
-		{
-			e.printStackTrace();
-			return null;
-		}
-	}
-
 	public static final byte[] intToByteArray(int value)
 	{
 		return new byte[] { (byte) (value >>> 24), (byte) (value >>> 16), (byte) (value >>> 8), (byte) value };
@@ -357,17 +333,6 @@ public class Utils
 	public static final int byteArrayToInt(byte[] b)
 	{
 		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
-	}
-
-	public static DigestInfo digest(Digest storage, Number160 locationKey, final Number160 domainKey,
-			final Collection<Number160> contentKeys)
-	{
-		DigestInfo digestInfo;
-		if (contentKeys != null)
-			digestInfo = storage.digest(new Number320(locationKey, domainKey), contentKeys);
-		else
-			digestInfo = storage.digest(new Number320(locationKey, domainKey));
-		return digestInfo;
 	}
 
 	public static <K> K pollRandom(SortedSet<K> queueToAsk, Random rnd)

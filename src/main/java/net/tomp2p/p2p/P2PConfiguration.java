@@ -120,6 +120,17 @@ public class P2PConfiguration
 		return maxNrBeforeExclude;
 	}
 	
+	/**
+	 * By setting this flag, the peer assumes that it is behind a firewall and
+	 * will announce itself as unreachable. As soon as this peer receives an
+	 * incoming message from its advertised address, the peer marks itself as
+	 * reachable. To receive an incoming message, the peer has to call
+	 * {@link Peer#discover(net.tomp2p.peers.PeerAddress)} to mark itself as
+	 * reachable.
+	 * 
+	 * @param behindFirewall If set to true, peer is assumed to be behind
+	 *        firewall and is unreable.
+	 */
 	public void setBehindFirewall(boolean behindFirewall)
 	{
 		this.behindFirewall = behindFirewall;

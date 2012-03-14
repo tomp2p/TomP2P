@@ -1,6 +1,7 @@
 package net.tomp2p.peers;
-public class Number320 implements Comparable<Number320>
+public class Number320 extends Number implements Comparable<Number320>
 {
+	private static final long serialVersionUID = -7200924461230885512L;
 	private final Number160 locationKey;
 	private final Number160 domainKey;
 
@@ -61,6 +62,30 @@ public class Number320 implements Comparable<Number320>
 	public Number480 max()
 	{
 		return new Number480(locationKey, domainKey, Number160.MAX_VALUE);
+	}
+
+	@Override
+	public int intValue()
+	{
+		return domainKey.intValue();
+	}
+
+	@Override
+	public long longValue()
+	{
+		return domainKey.longValue();
+	}
+
+	@Override
+	public float floatValue()
+	{
+		return (float) doubleValue();
+	}
+
+	@Override
+	public double doubleValue()
+	{
+		return (locationKey.doubleValue() * Math.pow(2, Number160.BITS)) + domainKey.doubleValue();
 	}
 	
 }

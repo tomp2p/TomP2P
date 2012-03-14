@@ -1,6 +1,7 @@
 package net.tomp2p.peers;
-public class Number480 implements Comparable<Number480>
+public class Number480 extends Number implements Comparable<Number480>
 {
+	private static final long serialVersionUID = 1L;
 	private final Number160 locationKey;
 	private final Number160 domainKey;
 	private final Number160 contentKey;
@@ -79,5 +80,31 @@ public class Number480 implements Comparable<Number480>
 		sb.append(domainKey.toString()).append(",");
 		sb.append(contentKey.toString()).append("]");
 		return sb.toString();
+	}
+
+	@Override
+	public int intValue()
+	{
+		return contentKey.intValue();
+	}
+
+	@Override
+	public long longValue()
+	{
+		return contentKey.longValue();
+	}
+
+	@Override
+	public float floatValue()
+	{
+		return (float) doubleValue();
+	}
+
+	@Override
+	public double doubleValue()
+	{
+		return (locationKey.doubleValue() * Math.pow(2, Number160.BITS * 2)) + 
+				(domainKey.doubleValue() * Math.pow(2, Number160.BITS)) + 
+				contentKey.doubleValue();
 	}
 }

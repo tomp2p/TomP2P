@@ -18,21 +18,29 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreation;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRunnable;
+import net.tomp2p.mapreduce.TaskRPC;
+import net.tomp2p.mapreduce.TaskResultListener;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
@@ -54,6 +62,8 @@ public class Scheduler
 			TimeUnit.MILLISECONDS, executorQueue, new MyThreadFactory());
 	private final ExecutorService timeoutExecutor = Executors.newSingleThreadExecutor();
 	private volatile Maintenance maintenance;
+	private volatile Tracking tracking;
+	private volatile DelayedChannelCreator delayedChannelCreator;
 	private volatile boolean running = true;
 
 	public void addQueue(FutureRunnable futureRunnable)
@@ -90,6 +100,14 @@ public class Scheduler
 		if(maintenance!=null)
 		{
 			maintenance.shutdown();
+		}
+		if(tracking!=null)
+		{
+			tracking.shutdown();
+		}
+		if(delayedChannelCreator!=null)
+		{
+			delayedChannelCreator.shutdown();
 		}
 		timeoutExecutor.shutdownNow();
 	}
@@ -192,6 +210,24 @@ public class Scheduler
 		public PeerMap getMasterPeerMap()
 		{
 			return masterPeerMap;
+		}
+	}
+	
+	public void startTracking(TaskRPC taskRPC, ConnectionReservation connectionReservation)
+	{
+		if(tracking == null)
+		{
+			tracking = new Tracking(taskRPC, connectionReservation);
+			tracking.start();
+		}
+	}
+	
+	public void startDelayedChannelCreator()
+	{
+		if(delayedChannelCreator == null)
+		{
+			delayedChannelCreator = new DelayedChannelCreator();
+			delayedChannelCreator.start();
 		}
 	}
 
@@ -345,5 +381,186 @@ public class Scheduler
 			else if (diff < 0 ) return -1;
 			else return 0;
 		}
+	}
+
+	public void keepTrack(PeerAddress remotePeer, Number160 taskId,
+			TaskResultListener taskResultListener)
+	{
+		tracking.put(taskId, new TrackingItem(remotePeer, taskResultListener));
+		
+	}
+
+	public void stopKeepTrack(Number160 taskId)
+	{
+		tracking.remove(taskId);
+	}
+	
+	private class Tracking extends Thread implements Runnable
+	{
+		private final TaskRPC taskRPC;
+		private final ConnectionReservation connectionReservation;
+		private Map<Number160, TrackingItem> toTrack = new ConcurrentHashMap<Number160, TrackingItem>();
+		
+		public Tracking(TaskRPC taskRPC, ConnectionReservation connectionReservation)
+		{
+			this.taskRPC = taskRPC;
+			this.connectionReservation = connectionReservation;
+			setName("tracking");
+		}
+		
+		public void remove(Number160 taskId)
+		{
+			toTrack.remove(taskId);
+		}
+
+		@Override
+		public void run()
+		{
+			while(running)
+			{
+				try
+				{
+					Timings.sleep(1000);
+				}
+				catch (InterruptedException e)
+				{
+					//do nothing
+				}
+				final List<FutureLateJoin<BaseFuture>> list = new ArrayList<FutureLateJoin<BaseFuture>>();
+				for(final Map.Entry<Number160, TrackingItem> entry:toTrack.entrySet())
+				{
+					final FutureLateJoin<BaseFuture> join = new FutureLateJoin<BaseFuture>(2);
+					list.add(join);
+					FutureChannelCreator futureChannelCreator = connectionReservation.reserve(1);
+					join.add(futureChannelCreator);
+					
+					futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
+					{
+						@Override
+						public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception
+						{
+							Collection<Number160> taskIDs = new ArrayList<Number160>();
+							taskIDs.add(entry.getKey());
+							FutureResponse futureResponse = taskRPC.taskStatus(entry.getValue().getRemotePeer(), futureChannelCreator.getChannelCreator(), taskIDs, false);
+							join.add(futureResponse);
+							futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
+							{
+								@Override
+								public void operationComplete(FutureResponse future) throws Exception
+								{
+									connectionReservation.release(futureChannelCreator.getChannelCreator());
+									if(future.isFailed())
+									{
+										//only do something if we fail
+										entry.getValue().getTaskResultListener().taskFailed(entry.getKey());
+									}
+								}
+							});
+						}
+					});
+					for(FutureLateJoin<BaseFuture> futureLateJoin:list)
+					{
+						futureLateJoin.awaitUninterruptibly();
+					}
+				}
+			}
+		}
+		public void put(Number160 taskId, TrackingItem trackingItem)
+		{
+			toTrack.put(taskId, trackingItem);
+		}
+		public void shutdown()
+		{
+			interrupt();
+		}		
+	}
+	
+	private class TrackingItem
+	{
+		private final PeerAddress remotePeer;
+		private final TaskResultListener taskResultListener; 
+		public TrackingItem(PeerAddress remotePeer, TaskResultListener taskResultListener)
+		{
+			this.remotePeer = remotePeer;
+			this.taskResultListener = taskResultListener;
+		}
+		public PeerAddress getRemotePeer()
+		{
+			return remotePeer;
+		}
+		public TaskResultListener getTaskResultListener()
+		{
+			return taskResultListener;
+		}
+	}
+	
+	private class DelayedChannelCreator extends Thread implements Runnable
+	{
+		BlockingQueue<DelayedChannelCreatorItem> queue = new LinkedBlockingQueue<Scheduler.DelayedChannelCreatorItem>();
+		
+		@Override
+		public void run()
+		{
+			while(running)
+			{
+				try
+				{
+					DelayedChannelCreatorItem item = queue.take();
+					item.getSemaphore().acquire();
+					item.getFutureChannelCreation().setAcquired(true);
+					item.getRunnable().run();
+				}
+				catch (InterruptedException e)
+				{
+					// do nothing
+				}
+			}
+		}
+		
+		public void addItem(DelayedChannelCreatorItem item)
+		{
+			queue.add(item);
+		}
+		
+		public void shutdown()
+		{
+			interrupt();
+		}	
+	}
+	
+	private class DelayedChannelCreatorItem
+	{
+		private final FutureChannelCreation futureChannelCreation;
+		private final Semaphore semaphore;
+		private final Runnable runnable;
+		
+		public DelayedChannelCreatorItem(FutureChannelCreation futureChannelCreation, Semaphore semaphore, Runnable runnable)
+		{
+			this.futureChannelCreation = futureChannelCreation;
+			this.semaphore = semaphore;
+			this.runnable = runnable;
+		}
+
+		public FutureChannelCreation getFutureChannelCreation()
+		{
+			return futureChannelCreation;
+		}
+
+		public Semaphore getSemaphore()
+		{
+			return semaphore;
+		}
+
+		public Runnable getRunnable()
+		{
+			return runnable;
+		}
+	}
+
+	public void addConnectionQueue(FutureChannelCreation futureChannelCreation,
+			Semaphore semaphore, Runnable runnable)
+	{
+		DelayedChannelCreatorItem item = new DelayedChannelCreatorItem(futureChannelCreation, semaphore, runnable);
+		delayedChannelCreator.addItem(item);
 	}
 }

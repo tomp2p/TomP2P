@@ -238,7 +238,9 @@ public class DispatcherReply extends SimpleChannelHandler
 		if (myHandler != null)
 		{
 			if (logger.isDebugEnabled())
+			{
 				logger.debug("about to respond to " + message);
+			}
 			responseMessage = myHandler.forwardMessage(message);
 			if (responseMessage == null)
 			{

@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureChannelCreation;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -74,6 +74,7 @@ public class ChannelCreator
 	final private Map<InetSocketAddress, ChannelFuture> cacheMap;
 	final private Statistics statistics;
 	final private int permits;
+	final private Scheduler scheduler;
 	private volatile boolean shutdown;
 	private volatile AtomicInteger permitsCount;
 	
@@ -91,7 +92,7 @@ public class ChannelCreator
 	 */
 	ChannelCreator(int permits, Statistics statistics,
 			MessageLogger messageLoggerFilter, ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse, String name, long creatorThread)
+			ChannelFactory udpClientChannelFactory, boolean keepAliveAndReuse, String name, long creatorThread, Scheduler scheduler)
 	{
 		this.permitsCount = new AtomicInteger(permits);
 		this.connectionSemaphore = new Semaphore(permits);
@@ -104,6 +105,7 @@ public class ChannelCreator
 		this.name = name;
 		this.creatorThread = creatorThread;
 		this.permits = permits;
+		this.scheduler = scheduler;
 	}
 
 	/**
@@ -115,22 +117,30 @@ public class ChannelCreator
 	 * @param broadcast Set to true if broadcast is allowed
 	 * @return The created channel or null if we are shutting down.
 	 */
-	public Channel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
-			RequestHandlerUDP<? extends BaseFuture> requestHandler, 
-			final FutureResponse futureResponse, boolean broadcast)
+	public FutureChannelCreation createUDPChannel(ReplyTimeoutHandler timeoutHandler,
+			RequestHandlerUDP<? extends BaseFuture> requestHandler, boolean broadcast)
+	{
+		final FutureChannelCreation futureChannelCreation = new FutureChannelCreation();
+		createUDPChannel(futureChannelCreation, timeoutHandler, requestHandler, broadcast);
+		return futureChannelCreation;
+	}
+	private void createUDPChannel(FutureChannelCreation futureChannelCreation, 
+			ReplyTimeoutHandler timeoutHandler, RequestHandlerUDP<? extends BaseFuture> requestHandler, 
+			boolean broadcast)
 	{
 		if (shutdown)
 		{
-			return null;
+			futureChannelCreation.setFailed("shutting down");
+			return;
 		}
 		// If we are out of semaphores, we cannot create any channels. Since we
 		// know how many channels max. in parallel are created, we can reserve
 		// it.
-		if (!connectionSemaphore.tryAcquire())
+		if (!futureChannelCreation.isAcquired() && !connectionSemaphore.tryAcquire())
 		{
-			//TODO:disabled for now, we need to return a future object
-			//throw new RuntimeException("you ran out of permits. You had " + permitsCount
-			//		+ " available, but now its down to 0");
+			connectionNotReadyYetUDP(futureChannelCreation, timeoutHandler, requestHandler, 
+					broadcast, connectionSemaphore);
+			return;
 		}
 		statistics.incrementUDPChannelCreation();
 		// now, we don't exceeded the limits, so create channels
@@ -138,26 +148,14 @@ public class ChannelCreator
 		try
 		{
 			channel = createChannelUDP(timeoutHandler, requestHandler, broadcast);
+			futureChannelCreation.setChannel(channel);
 		}
 		catch (Exception e)
 		{
-			futureResponse.setFailed("Cannot create channel " + e);
+			futureChannelCreation.setFailed("Cannot create channel " + e);
 			connectionSemaphore.release();
 			statistics.decrementUDPChannelCreation();
-			return null;
-		}
-
-		synchronized (this)
-		{
-			if (shutdown)
-			{
-				channel.close().awaitUninterruptibly();
-				futureResponse.setFailed("shutdown in progres (ChannelCreator/UDP)");
-				connectionSemaphore.release();
-				statistics.decrementUDPChannelCreation();
-				return null;
-			}
-			channelsUDP.add(channel);
+			return;
 		}
 
 		channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -167,10 +165,18 @@ public class ChannelCreator
 			{
 				connectionSemaphore.release();
 				statistics.decrementUDPChannelCreation();
-				
 			}
 		});
-		return channel;
+		synchronized (this)
+		{
+			if (shutdown)
+			{
+				channel.close();
+				futureChannelCreation.setFailed("shutdown in progres (ChannelCreator/UDP)");
+				return;
+			}
+			channelsUDP.add(channel);
+		}
 	}
 
 	/**
@@ -184,16 +190,25 @@ public class ChannelCreator
 	 *        is considered a failure
 	 * @param recipient The recipient to create the connection. If the recipient
 	 *        is already open, the connection will be reused.
-	 * @return The channel future or null if we are shutting down.
+	 * @return The channel future
 	 */
-	public ChannelFuture createTCPChannel(ReplyTimeoutHandler timeoutHandler,
+	public FutureChannelCreation createTCPChannel(ReplyTimeoutHandler timeoutHandler,
 			RequestHandlerTCP<? extends BaseFuture> requestHandler,
-			final FutureResponse futureResponse, int connectTimeoutMillis,
-			final InetSocketAddress recipient)
+			int connectTimeoutMillis, final InetSocketAddress recipient)
+	{
+		final FutureChannelCreation futureChannelCreation = new FutureChannelCreation();
+		createTCPChannel(futureChannelCreation, timeoutHandler, requestHandler, connectTimeoutMillis, recipient);
+		return futureChannelCreation;
+	}
+	
+	private void createTCPChannel(final FutureChannelCreation futureChannelCreation, 
+			ReplyTimeoutHandler timeoutHandler, RequestHandlerTCP<? extends BaseFuture> requestHandler,
+			int connectTimeoutMillis, final InetSocketAddress recipient)
 	{
 		if (shutdown)
 		{
-			return null;
+			futureChannelCreation.setFailed("shutting down");
+			return;
 		}
 		ChannelFuture channelFuture;
 		boolean newConnection = true;
@@ -204,30 +219,57 @@ public class ChannelCreator
 			{
 				// If we are out of semaphores, we cannot create any channels.
 				// Since we know how many channels max. in parallel are created,
-				// we can reserve it.
-				if (!connectionSemaphore.tryAcquire())
+				// we can reserve it. The acquiering can be done in Scheduler
+				if (!futureChannelCreation.isAcquired() && !connectionSemaphore.tryAcquire())
 				{
-					//TODO:disabled for now, we need to return a future object
-					//throw new RuntimeException("you ran out of permits. You had " + permitsCount
-					//		+ " available, but now its down to 0");
+					connectionNotReadyYetTCP(futureChannelCreation, timeoutHandler, requestHandler, 
+							connectTimeoutMillis, recipient, connectionSemaphore);
+					return;
 				}
 				statistics.incrementTCPChannelCreation();
-				// now, we don't exceeded the limits, so create channels
-				channelFuture = createChannelTCP(timeoutHandler, requestHandler,
-						recipient, new InetSocketAddress(0), connectTimeoutMillis);
-				cacheMap.put(recipient, channelFuture);
+				try
+				{
+					// now, we don't exceeded the limits, so create channels
+					channelFuture = createChannelTCP(timeoutHandler, requestHandler,
+							recipient, new InetSocketAddress(0), connectTimeoutMillis);
+					channelFuture.addListener(new ChannelFutureListener()
+					{
+						@Override
+						public void operationComplete(ChannelFuture future) throws Exception
+						{
+							if(future.isSuccess())
+							{
+								futureChannelCreation.setChannel(future.getChannel());
+							}
+							else
+							{
+								futureChannelCreation.setFailed("ChannelFuture failed");
+								connectionSemaphore.release();
+								statistics.decrementTCPChannelCreation();
+							}
+						}
+					});
+					cacheMap.put(recipient, channelFuture);
+				}
+				catch (Exception e)
+				{
+					futureChannelCreation.setFailed("Cannot create channel " + e);
+					connectionSemaphore.release();
+					statistics.decrementTCPChannelCreation();
+					return;
+				}
 			}
 			else
 			{
 				newConnection = false;
-				ReplyTimeoutHandler oldTimoutHandler = (ReplyTimeoutHandler) channelFuture
-						.getChannel().getPipeline().replace("timeout", "timeout", timeoutHandler);
+				Channel channel = channelFuture.getChannel();
+				ReplyTimeoutHandler oldTimoutHandler = (ReplyTimeoutHandler) channel.getPipeline().replace("timeout", "timeout", timeoutHandler);
 				// abort the old timeouthandler. If we have not dealt with it
 				// (should not happen), then abort and throw exception
 				oldTimoutHandler.cancel();
-				channelFuture.getChannel().getPipeline()
-						.replace("request", "request", requestHandler);
 				// we need a new RequestHandlerTCP in order for the new message
+				channel.getPipeline().replace("request", "request", requestHandler);
+				futureChannelCreation.setChannel(channel);
 			}
 		}
 		else
@@ -235,41 +277,44 @@ public class ChannelCreator
 			// If we are out of semaphores, we cannot create any channels. Since
 			// we know how many channels max. in parallel are created, we can
 			// reserve it.
-			if (!connectionSemaphore.tryAcquire())
+			if (!futureChannelCreation.isAcquired() && !connectionSemaphore.tryAcquire())
 			{
-				//TODO:disabled for now, we need to return a future object
-				//throw new RuntimeException("you ran out of permits. You had " + permitsCount
-				//		+ " available, but now its down to 0");
+				connectionNotReadyYetTCP(futureChannelCreation, timeoutHandler, requestHandler, 
+						connectTimeoutMillis, recipient, connectionSemaphore);
+				return;
 			}
 			statistics.incrementTCPChannelCreation();
 			try
 			{
 				channelFuture = createChannelTCP(timeoutHandler, requestHandler,
 						recipient, new InetSocketAddress(0), connectTimeoutMillis);
+				channelFuture.addListener(new ChannelFutureListener()
+				{
+					@Override
+					public void operationComplete(ChannelFuture future) throws Exception
+					{
+						if(future.isSuccess())
+						{
+							futureChannelCreation.setChannel(future.getChannel());
+						}
+						else
+						{
+							futureChannelCreation.setFailed("ChannelFuture failed");
+							connectionSemaphore.release();
+							statistics.decrementTCPChannelCreation();
+						}
+					}
+				});
 			}
 			catch (Exception e)
 			{
-				futureResponse.setFailed("Cannot create channel " + e);
+				futureChannelCreation.setFailed("Cannot create channel " + e);
 				connectionSemaphore.release();
 				statistics.decrementTCPChannelCreation();
-				return null;
+				return;
 			}
 		}
 		final Channel channel = channelFuture.getChannel();
-
-		synchronized (this)
-		{
-			if (shutdown)
-			{
-				channel.close().awaitUninterruptibly();
-				futureResponse.setFailed("shutdown in progres (ChannelCreator/TCP)");
-				connectionSemaphore.release();
-				statistics.decrementTCPChannelCreation();
-				return null;
-			}
-			channelsTCP.add(channel);
-		}
-
 		if (newConnection)
 		{
 			channel.getCloseFuture().addListener(new ChannelFutureListener()
@@ -286,7 +331,47 @@ public class ChannelCreator
 				}
 			});
 		}
-		return channelFuture;
+		synchronized (this)
+		{
+			if (shutdown)
+			{
+				channel.close();
+				futureChannelCreation.setFailed("shutdown in progres (ChannelCreator/TCP)");
+				return;
+			}
+			channelsTCP.add(channel);
+		}
+	}
+
+	private void connectionNotReadyYetTCP(final FutureChannelCreation futureChannelCreation,
+			final ReplyTimeoutHandler timeoutHandler,
+			final RequestHandlerTCP<? extends BaseFuture> requestHandler, final int connectTimeoutMillis,
+			final InetSocketAddress recipient, final Semaphore connectionSemaphore2)
+	{
+		scheduler.addConnectionQueue(futureChannelCreation, connectionSemaphore2, new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				createTCPChannel(futureChannelCreation, timeoutHandler, requestHandler, connectTimeoutMillis, recipient);
+			}
+		});
+	}
+	
+	private void connectionNotReadyYetUDP(final FutureChannelCreation futureChannelCreation,
+			final ReplyTimeoutHandler timeoutHandler,
+			final RequestHandlerUDP<? extends BaseFuture> requestHandler, final boolean broadcast,
+			final Semaphore connectionSemaphore2)
+	{
+		scheduler.addConnectionQueue(futureChannelCreation, connectionSemaphore2, new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				createUDPChannel(futureChannelCreation, timeoutHandler, requestHandler, broadcast);
+			}
+		});
+		
 	}
 
 	/**
@@ -311,7 +396,7 @@ public class ChannelCreator
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
 		bootstrap.setOption("tcpNoDelay", true);
 		bootstrap.setOption("soLinger", 0);
-		bootstrap.setOption("reuseAddress", true);
+		//bootstrap.setOption("reuseAddress", true);
 		bootstrap.setOption("keepAlive", true);
 		setupBootstrapTCP(bootstrap, timeoutHandler, requestHandler, new TomP2PDecoderTCP(),
 				new TomP2PEncoderTCP(), new ChunkedWriteHandler(), messageLoggerFilter);
@@ -452,6 +537,11 @@ public class ChannelCreator
 		{
 			throw new RuntimeException("Cannot release more than I acquired");
 		}
+		if(result == 0)
+		{
+			shutdown = true;
+		}
+		//return connectionSemaphore.tryAcquire(permits);
 		return result == 0;
 	}
 

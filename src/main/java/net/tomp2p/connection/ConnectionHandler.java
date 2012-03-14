@@ -86,7 +86,7 @@ public class ConnectionHandler
 	final private NATUtils natUtils;
 	final public static int UDP_LIMIT = 1400;
 	// Used to calculate the throughput
-	final private static PerformanceFilter performanceFilter = new PerformanceFilter();
+	//final private static PerformanceFilter performanceFilter = new PerformanceFilter();
 	final private MessageLogger messageLoggerFilter;
 	final private List<ConnectionHandler> childConnections = new ArrayList<ConnectionHandler>();
 	final private Timer timer;
@@ -273,7 +273,7 @@ public class ConnectionHandler
 				{
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
 				}
-				pipe.addLast("performance", performanceFilter);
+				//pipe.addLast("performance", performanceFilter);
 				pipe.addLast("handler", dispatcher);
 				return pipe;
 			}
@@ -316,13 +316,15 @@ public class ConnectionHandler
 				pipe.addLast("decoder", new TomP2PDecoderTCP());
 				if (messageLoggerFilter != null)
 					pipe.addLast("loggerUpstream", messageLoggerFilter);
-				pipe.addLast("performance", performanceFilter);
+				//pipe.addLast("performance", performanceFilter);
 				pipe.addLast("handler", dispatcher);
 				return pipe;
 			}
 		});
 		//as suggested by http://stackoverflow.com/questions/8442166/how-to-allow-more-concurrent-client-connections-with-netty
-		bootstrap.setOption("backlog", 1000);
+		bootstrap.setOption("backlog", 8192);
+		//as suggested by http://stackoverflow.com/questions/8655973/latency-in-netty-due-to-passing-requests-from-boss-thread-to-worker-thread
+		bootstrap.setOption("child.tcpNoDelay", true);
 		Channel channel = bootstrap.bind(listenAddressesTCP);
 		connectionBean.getChannelGroup().add(channel);
 		logger.info("Listening on TCP socket: " + listenAddressesTCP);

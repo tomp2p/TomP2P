@@ -32,7 +32,7 @@ public class ConnectionConfigurationBean
 	private int connectTimeouMillis = 3 * 1000;
 	// doing tests on localhost, we open 2 * maxOpenConnection
 	private int maxOpenConnection = 400;
-	private int maxCreating = 100;
+	private int maxCreating = 200;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
 	// force TCP or UDP

@@ -15,7 +15,9 @@
  */
 package net.tomp2p.connection;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancellable;
+import net.tomp2p.futures.FutureChannelCreation;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -23,7 +25,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.util.Timer;
@@ -145,16 +146,9 @@ public class SenderNetty implements Sender
 			{
 				throw new RuntimeException("This send needs to be a fire and forget request");
 			}
-			final ChannelFuture channelFutureConnect = channelCreator.createTCPChannel(
-					replyTimeoutHandler, requestHandler, futureResponse,
-					configuration.getConnectTimeoutMillis(), message.getRecipient()
-							.createSocketTCP());
-
-			if (channelFutureConnect == null)
-			{
-				futureResponse.setFailed("shutdown in progres");
-				return;
-			}
+			final FutureChannelCreation channelFutureConnect = channelCreator.createTCPChannel(
+					replyTimeoutHandler, requestHandler, configuration.getConnectTimeoutMillis(), 
+					message.getRecipient().createSocketTCP());
 			final Cancellable cancel = new Cancellable()
 			{
 				@Override
@@ -164,13 +158,13 @@ public class SenderNetty implements Sender
 				}
 			};
 			futureResponse.addCancellation(cancel);
-			channelFutureConnect.addListener(new ChannelFutureListener()
+			channelFutureConnect.addListener(new BaseFutureAdapter<FutureChannelCreation>()
 			{
 				@Override
-				public void operationComplete(final ChannelFuture future)
+				public void operationComplete(FutureChannelCreation future) throws Exception
 				{
 					futureResponse.removeCancellation(cancel);
-					if (future.isSuccess() && !channelFutureConnect.isCancelled())
+					if(future.isSuccess())
 					{
 						if (logger.isDebugEnabled())
 						{
@@ -181,22 +175,10 @@ public class SenderNetty implements Sender
 					}
 					else
 					{
-						// most likely its closed, but just to be sure
-						future.getChannel().close();
-						if (channelFutureConnect.isCancelled())
+						futureResponse.setFailed(future);
+						if(logger.isWarnEnabled())
 						{
-							futureResponse.cancel();
-						}
-						else
-						{
-							logger.warn("Failed to connect channel " + future.isCancelled()
-									+"/"+ future.getCause() + "msg:"+message);
-							futureResponse.setFailed("Connect failed " + future.getCause());
-							if (logger.isWarnEnabled() && future.getCause() != null)
-							{
-								future.getCause().printStackTrace();
-							}
-
+							logger.warn("Failed to connect channel:"+message);
 						}
 					}
 				}
@@ -246,16 +228,24 @@ public class SenderNetty implements Sender
 		}
 		try
 		{
-			final Channel channel = channelCreator.createUDPChannel(replyTimeoutHandler,
-					requestHandler, futureResponse, broadcast);
-			// in case of shutdown
-			if (channel == null)
+			final FutureChannelCreation futureChannelCreation = channelCreator.createUDPChannel(replyTimeoutHandler,
+					requestHandler, broadcast);
+			futureChannelCreation.addListener(new BaseFutureAdapter<FutureChannelCreation>()
 			{
-				futureResponse.setFailed("shutdown in progres");
-				return;
-			}
-			final ChannelFuture writeFuture = channel.write(message, remotePeer.createSocketUDP());
-			afterSend(writeFuture, futureResponse, requestHandler == null);
+				@Override
+				public void operationComplete(FutureChannelCreation future) throws Exception
+				{
+					if(future.isSuccess())
+					{
+						final ChannelFuture writeFuture = future.getChannel().write(message, remotePeer.createSocketUDP());
+						afterSend(writeFuture, futureResponse, requestHandler == null);
+					}
+					else
+					{
+						futureResponse.setFailed("shutdown in progres");
+					}
+				}
+			});
 		}
 		catch (Exception ce)
 		{

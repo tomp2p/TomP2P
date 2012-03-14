@@ -190,7 +190,7 @@ public class ConnectionReservation
 			{
 				ChannelCreator channelCreator = new ChannelCreator(permits, statistics,
 						messageLoggerFilter, tcpClientChannelFactory, udpChannelFactory,
-						keepAliveAndReuse, name, Thread.currentThread().getId());
+						keepAliveAndReuse, name, Thread.currentThread().getId(), scheduler);
 				if(logger.isDebugEnabled())
 				{
 					logger.debug("created channels for Thread "+ Thread.currentThread().getName()+"/"+Thread.currentThread().getId());

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.futures;
 
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -38,7 +39,7 @@ import net.tomp2p.rpc.DigestInfo;
  */
 public class FutureRouting extends BaseFutureImpl
 {
-	private SortedSet<PeerAddress> potentialHits;
+	private NavigableSet<PeerAddress> potentialHits;
 	private SortedMap<PeerAddress, DigestInfo> directHits;
 	private SortedSet<PeerAddress> routingPath;
 
@@ -59,7 +60,7 @@ public class FutureRouting extends BaseFutureImpl
 	 * @param isBootstrap Whether the future was triggered by the bootstrap process or the a P2P process
 	 * @param isRoutingToOther Whether routing peers have been specified others than myself.
 	 */
-	public void setNeighbors(final SortedMap<PeerAddress, DigestInfo> directHits, final SortedSet<PeerAddress> potentialHits,
+	public void setNeighbors(final SortedMap<PeerAddress, DigestInfo> directHits, final NavigableSet<PeerAddress> potentialHits,
 			final SortedSet<PeerAddress> routingPath, boolean isBootstrap, boolean isRoutingToOther)
 	{
 		synchronized (lock)
@@ -97,7 +98,7 @@ public class FutureRouting extends BaseFutureImpl
 	 * @return The potential hits, the peers in the direct set and those peers that reports to *not* have the key (Number160) we 
 	 * 		were looking for. 
 	 */
-	public SortedSet<PeerAddress> getPotentialHits()
+	public NavigableSet<PeerAddress> getPotentialHits()
 	{
 		synchronized (lock)
 		{
@@ -115,7 +116,7 @@ public class FutureRouting extends BaseFutureImpl
 	 * 
 	 * @return The direct hits, the peers in the direct set that reports to have the key (Number160) we were looking for. 
 	 */
-	public SortedSet<PeerAddress> getDirectHits()
+	public NavigableSet<PeerAddress> getDirectHits()
 	{
 		synchronized (lock)
 		{
@@ -125,15 +126,15 @@ public class FutureRouting extends BaseFutureImpl
 			}
 			//some Java implementations always return SortedSet, some don't.
 			Set<PeerAddress> tmp = directHits.keySet();
-			//if we have a SortedSet, we are fine
-			if(tmp instanceof SortedSet)
+			//if we have a NavigableSet, we are fine
+			if(tmp instanceof NavigableSet)
 			{
-				return (SortedSet<PeerAddress>)directHits.keySet();
+				return (NavigableSet<PeerAddress>)directHits.keySet();
 			}
 			//otherwise, create a new sorted set, put the existing values there, and return this.
 			else
 			{
-				TreeSet<PeerAddress> tmp2 = new TreeSet<PeerAddress>(directHits.comparator());
+				NavigableSet<PeerAddress> tmp2 = new TreeSet<PeerAddress>(directHits.comparator());
 				tmp2.addAll(tmp);
 				return tmp2;
 			}

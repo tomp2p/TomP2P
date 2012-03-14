@@ -82,12 +82,6 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 		this.evaluationScheme = evaluationScheme;
 		this.futureCreate = futureCreate;
 	}
-
-	@Deprecated
-	public void created(FutureDHT futureDHT)
-	{
-		repeated(futureDHT);
-	}
 	
 	/**
 	 * Finish the future and set a general purpose attachement.

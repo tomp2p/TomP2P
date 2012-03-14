@@ -372,33 +372,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 		return toByteArraySocketAddress(me, newOffset);
 	}
 
-	/**
-	 * Please use toByteArraySocketAddress
-	 * 
-	 * @return
-	 */
-	@Deprecated
-	public byte[] getSocketAddress()
-	{
-		return toByteArraySocketAddress();
-	}
-
 	public byte[] toByteArraySocketAddress()
 	{
 		byte[] me = new byte[getSocketAddressSize()];
 		toByteArraySocketAddress(me, 0);
 		return me;
-	}
-
-	/**
-	 * Please use toByteArraySocketAddress
-	 * 
-	 * @return
-	 */
-	@Deprecated
-	public int getSocketAddress(byte[] me, int offset)
-	{
-		return toByteArraySocketAddress(me, offset);
 	}
 
 	public int toByteArraySocketAddress(byte[] me, int offset)

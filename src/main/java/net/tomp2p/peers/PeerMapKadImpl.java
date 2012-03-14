@@ -148,40 +148,6 @@ public class PeerMapKadImpl implements PeerMap
 		}
 	}
 
-	/**
-	 * Please use
-	 * {@link PeerMapKadImpl#PeerMapKadImpl(Number160, P2PConfiguration)}
-	 */
-	@Deprecated
-	public PeerMapKadImpl(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
-			int maxFail, int[] maintenanceTimeoutsSeconds)
-	{
-		if (self == null || self.isZero())
-			throw new IllegalArgumentException("Zero or null are not a valid IDs");
-		this.self = self;
-		this.peerMapStat = new PeerMapStat();
-		this.bagSize = bagSize;
-		this.maxPeers = bagSize * Number160.BITS;
-		this.cacheTimeout = cacheTimeout;
-		this.maxFail = maxFail;
-		this.maintenanceTimeoutsSeconds = maintenanceTimeoutsSeconds;
-		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cacheSize);
-		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
-		this.assumeBehindFirewall = false;
-		for (int i = 0; i < Number160.BITS; i++)
-		{
-			// I made some experiments here and concurrent sets are not
-			// necessary, as we divide similar to segments aNonBlockingHashSets
-			// in a
-			// concurrent map. In a full network, we have 160 segments, for
-			// smaller we see around 3-4 segments, growing with the number of
-			// peers. bags closer to 0 will see more read than write, and bags
-			// closer to 160 will see more writes than reads.
-			peerMap.add(Collections
-					.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
-		}
-	}
-
 	@Override
 	public void addPeerMapChangeListener(PeerMapChangeListener peerMapChangeListener)
 	{

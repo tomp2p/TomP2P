@@ -15,6 +15,10 @@
  */
 
 package net.tomp2p.connection;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
@@ -69,32 +73,47 @@ public class DiscoverNetworks
 	}
 
 	/**
-	 * Calls depending on Java5 or Java6 via reflection the network discovery.
-	 * This is the only part in the library that uses reflection.
+	 * Discovers network interfaces and addresses.
 	 * 
-	 * @param networkInterface The network interface to inspect
-	 * @param bindings The results will be stored in bindings
+	 * @param networkInterface The networkInterface to search for addresses to listen to
+	 * @param bindings The search hints and result storage.
 	 * @return The status of the discovery
-	 * @throws Exception If something goes wrong
 	 */
-	private static String discoverNetwork(NetworkInterface networkInterface,
-			Bindings bindings) throws Exception
+	public static String discoverNetwork(NetworkInterface networkInterface, Bindings bindings)
 	{
-		final Class<?> dn;
-		// TODO: I don't like this at all, the best thing would be to test if
-		// its Java 1.5. Newer Android devices should support Java 1.6
-		if (System.getProperty("java.vm.name").equals("Dalvik")
-				|| System.getProperty("java.version").startsWith("1.5"))
+		StringBuilder sb = new StringBuilder("( ");
+		for (InterfaceAddress iface : networkInterface.getInterfaceAddresses())
 		{
-			// we are Java 1.5 or running on Android, which is comparable to 1.5
-			dn = Class.forName("net.tomp2p.connection.DiscoverNetwork5");
+			InetAddress inet = iface.getAddress();
+			if (iface.getBroadcast() != null && !bindings.getBroadcastAddresses().contains(iface.getBroadcast()))
+			{
+				bindings.addBroadcastAddress(iface.getBroadcast());
+			}
+			if (bindings.getFoundAddresses().contains(inet)) 
+			{
+				continue;
+			}
+			// ignore if a user specifies an address and inet is not part of it
+			if(!bindings.isAllAddresses())
+			{
+				if(!bindings.getAddresses().contains(inet))
+				{
+					continue;
+				}
+			}
+			
+			if (inet instanceof Inet4Address && bindings.isIPv4())
+			{
+				sb.append(inet).append(",");
+				bindings.addFoundAddress(inet);
+			}
+			else if (inet instanceof Inet6Address && bindings.isIPv6())
+			{
+				sb.append(inet).append(",");
+				bindings.addFoundAddress(inet);
+			}
 		}
-		else
-		{
-			// we are most likely Java 1.6, if not, you'll see an error here
-			dn = Class.forName("net.tomp2p.connection.DiscoverNetwork6");
-		}
-		DiscoverNetwork discoverNetwork = (DiscoverNetwork) dn.newInstance();
-		return discoverNetwork.discoverNetwork(networkInterface, bindings);
+		sb.deleteCharAt(sb.length() - 1);
+		return sb.append(")").toString();
 	}
 }

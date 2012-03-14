@@ -9,7 +9,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.storage.Responsibility;
+import net.tomp2p.storage.StorageGeneric;
 
 /**
  * This class has 3 methods that are called from outside eventes: check,
@@ -20,11 +20,11 @@ public class Replication implements PeerMapChangeListener
 	final private List<ResponsibilityListener> listeners = new ArrayList<ResponsibilityListener>();
 	final private PeerMap peerMap;
 	final private PeerAddress selfAddress;
-	final private Responsibility responsibility;
+	final private StorageGeneric storageGeneric;
 
-	public Replication(Responsibility responsibility, PeerAddress selfAddress, PeerMap peerMap)
+	public Replication(StorageGeneric storageGeneric, PeerAddress selfAddress, PeerMap peerMap)
 	{
-		this.responsibility = responsibility;
+		this.storageGeneric = storageGeneric;
 		this.selfAddress = selfAddress;
 		this.peerMap = peerMap;
 		peerMap.addPeerMapChangeListener(this);
@@ -54,12 +54,12 @@ public class Replication implements PeerMapChangeListener
 		{
 			// if(peerMap.isCloser(locationKey, key1, key2)
 
-			if (responsibility.updateResponsibilities(locationKey, closest.getID()))
+			if (storageGeneric.updateResponsibilities(locationKey, closest.getID()))
 				notifyMeResponsible(locationKey);
 		}
 		else
 		{
-			if (responsibility.updateResponsibilities(locationKey, closest.getID()))
+			if (storageGeneric.updateResponsibilities(locationKey, closest.getID()))
 				// notify that someone else is now responsible for the
 				// content with key responsibleLocations
 				notifyOtherResponsible(locationKey, closest);
@@ -71,10 +71,10 @@ public class Replication implements PeerMapChangeListener
 		// we need to exclude ourselfs to get the "I'm responsible" notification
 		if (!isReplicationEnabled() || current.equals(selfAddress.getID()))
 			return;
-		Number160 test = responsibility.findPeerIDForResponsibleContent(locationKey);
+		Number160 test = storageGeneric.findPeerIDForResponsibleContent(locationKey);
 		if (test == null || peerMap.isCloser(locationKey, current, test) == -1)
 		{
-			responsibility.updateResponsibilities(locationKey, current);
+			storageGeneric.updateResponsibilities(locationKey, current);
 		}
 	}
 
@@ -84,14 +84,14 @@ public class Replication implements PeerMapChangeListener
 		if (!isReplicationEnabled())
 			return;
 		// check if we should change responibility.
-		Collection<Number160> myResponsibleLocations = responsibility.findContentForResponsiblePeerID(selfAddress
+		Collection<Number160> myResponsibleLocations = storageGeneric.findContentForResponsiblePeerID(selfAddress
 				.getID());
 		for (Number160 myResponsibleLocation : myResponsibleLocations)
 		{
 			PeerAddress closest = closest(myResponsibleLocation);
 			if (!closest.getID().equals(selfAddress.getID()))
 			{
-				if (responsibility.updateResponsibilities(myResponsibleLocation, closest.getID()))
+				if (storageGeneric.updateResponsibilities(myResponsibleLocation, closest.getID()))
 					// notify that someone else is now responsible for the
 					// content with key responsibleLocations
 					notifyOtherResponsible(myResponsibleLocation, closest);
@@ -105,7 +105,7 @@ public class Replication implements PeerMapChangeListener
 		if (!isReplicationEnabled())
 			return;
 		// check if we should change responibility.
-		Collection<Number160> otherResponsibleLocations = responsibility.findContentForResponsiblePeerID(peerAddress
+		Collection<Number160> otherResponsibleLocations = storageGeneric.findContentForResponsiblePeerID(peerAddress
 				.getID());
 		if (otherResponsibleLocations == null)
 			return;
@@ -114,7 +114,7 @@ public class Replication implements PeerMapChangeListener
 			PeerAddress closest = closest(otherResponsibleLocation);
 			if (closest.getID().equals(selfAddress.getID()))
 			{
-				if (responsibility.updateResponsibilities(otherResponsibleLocation, closest.getID()))
+				if (storageGeneric.updateResponsibilities(otherResponsibleLocation, closest.getID()))
 					// notify that someone I'm now responsible for the
 					// content
 					// with key responsibleLocations

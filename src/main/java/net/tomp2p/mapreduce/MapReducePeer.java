@@ -1,27 +1,50 @@
 package net.tomp2p.mapreduce;
 
 
+import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.storage.Data;
 
 public class MapReducePeer extends Peer
 {
-
-	public MapReducePeer(Number160 nodeId)
+	private final int workerThreads;
+	private AsyncTask asyncTask;
+	private TaskRPC taskRPC;
+	
+	public MapReducePeer(Number160 nodeId, int workerThreads)
 	{
 		super(nodeId);
+		this.workerThreads = workerThreads;
 	}
-
-	public FutureMapReduce map(Number160 createHash, Data data, Mapper map)
+	@Override
+	protected void init(ConnectionHandler connectionHandler, Statistics statistics)
 	{
-		return null;
-		
+		super.init(connectionHandler, statistics);
+		// create task manager
+		getPeerBean().setTaskManager(new TaskManager(getPeerBean(), getConnectionBean(), workerThreads));
+		taskRPC = new TaskRPC(getPeerBean(), getConnectionBean());
+		getPeerBean().getTaskManager().init(taskRPC);
+		asyncTask = new AsyncTask(taskRPC, getConnectionBean().getScheduler(), getPeerBean());
+		getPeerBean().getTaskManager().addListener(asyncTask);
+		getConnectionBean().getScheduler().startTracking(taskRPC, getConnectionBean().getConnectionReservation());
 	}
-
-	public FutureReduce reduce(Number160 createHash, Data data, Reducer reducer)
+	
+	public TaskRPC getTaskRPC()
 	{
-		return null;
-		
+		if(taskRPC == null)
+		{
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
+		return taskRPC;
+	}
+	
+	public AsyncTask getAsyncTask()
+	{
+		if(asyncTask == null)
+		{
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
+		return asyncTask;
 	}
 }

@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.rpc;
+package net.tomp2p.mapreduce;
 
 import java.io.IOException;
 import java.security.KeyPair;
@@ -21,32 +21,35 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.mapreduce.Mapper;
-import net.tomp2p.mapreduce.TaskManager;
-import net.tomp2p.mapreduce.TaskStatus;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.ReplyHandler;
+import net.tomp2p.rpc.RequestHandlerTCP;
+import net.tomp2p.rpc.RequestHandlerUDP;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class TaskRPC extends ReplyHandler
 {
+	final private static Logger logger = LoggerFactory.getLogger(TaskRPC.class);
 	private final TaskManager taskManager;
 	
-	public TaskRPC(PeerBean peerBean, ConnectionBean connectionBean, TaskManager taskManager)
+	public TaskRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
-		this.taskManager = taskManager;
+		this.taskManager = peerBean.getTaskManager();
 		registerIoHandler(Command.TASK);
 	}
 
@@ -59,8 +62,8 @@ public class TaskRPC extends ReplyHandler
 	 *        is UDP
 	 * @return The future response to keep track of future events
 	 */
-	public FutureResponse task(final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID, 
-			Map<Number160, Data> dataMap, Mapper mapper, KeyPair keyPair, boolean forceUDP)
+	public FutureResponse sendTask(final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID, 
+			Map<Number160, Data> dataMap, Worker mapper, KeyPair keyPair, boolean forceUDP, boolean sign)
 	{
 		final Message message = createMessage(remotePeer, Command.TASK, Type.REQUEST_1);
 		FutureResponse futureResponse = new FutureResponse(message);
@@ -71,25 +74,63 @@ public class TaskRPC extends ReplyHandler
 			message.setPayload(payload);
 			message.setDataMap(dataMap);
 			message.setKey(taskID);
-			if(keyPair != null)
+			if(sign)
 			{
 				message.setPublicKeyAndSign(keyPair);
 			}
 			if(forceUDP)
 			{
-				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("send Task "+ message);
+				}
 				return requestHandler.sendUDP(channelCreator);
 			}
 			else
 			{
-				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
+				if(logger.isDebugEnabled())
+				{
+					logger.debug("send Task "+ message);
+				}
 				return requestHandler.sendTCP(channelCreator);
 			}
 		}
 		catch(IOException ioe)
 		{
 			futureResponse.setFailed(ioe.toString());
+			if(logger.isErrorEnabled())
+			{
+				ioe.printStackTrace();
+			}
 			return futureResponse;
+		}
+	}
+	
+	public FutureResponse sendResult(final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID, 
+			Map<Number160, Data> dataMap, KeyPair keyPair, boolean forceUDP, boolean sign)
+	{
+		final Message message = createMessage(remotePeer, Command.TASK, Type.REQUEST_3);
+		FutureResponse futureResponse = new FutureResponse(message);
+		if(dataMap != null)
+		{
+			message.setDataMap(dataMap);
+		}
+		message.setKey(taskID);
+		if(sign)
+		{
+			message.setPublicKeyAndSign(keyPair);
+		}
+		if(forceUDP)
+		{
+			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
+			return requestHandler.sendUDP(channelCreator);
+		}
+		else
+		{
+			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
+			return requestHandler.sendTCP(channelCreator);
 		}
 	}
 	
@@ -100,29 +141,29 @@ public class TaskRPC extends ReplyHandler
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceTCP)
 		{
-			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendUDP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendTCP(channelCreator);
 		}
 	}
 
 	@Override
-	public boolean checkMessage(final Message message)
-	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) 
-				&& message.getCommand() == Command.TASK;
-	}
-
-	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
-		final Message responseMessage = createMessage(message.getSender(), message.getCommand(),
-				Type.OK);
-		
+		if(!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 
+				|| message.getType() == Type.REQUEST_3) && message.getCommand() == Command.TASK))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		final Message responseMessage = createResponseMessage(message, Type.OK);
+		if (sign)
+		{
+			responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
+		}
 		if(message.getType() == Type.REQUEST_1)
 		{
 			Number160 taskId = message.getKey();
@@ -131,21 +172,31 @@ public class TaskRPC extends ReplyHandler
 			ChannelBuffer channelBuffer = message.getPayload1();
 			Object obj = Utils.decodeJavaObject(channelBuffer.array(), channelBuffer.arrayOffset(),
 					channelBuffer.capacity());
-			Mapper mapper = (Mapper) obj;
-			int queuePosition = taskManager.submitTask(taskId, mapper, dataMap);
+			Worker mapper = (Worker) obj;
+			int queuePosition = taskManager.submitTask(taskId, mapper, dataMap, message.getSender(), sign);
 			responseMessage.setInteger(queuePosition);
 		}
 		else if(message.getType() == Type.REQUEST_2)
 		{
 			Collection<Number160> taskIDs = message.getKeys();
+			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 			for(Number160 taskId: taskIDs)
 			{
 				TaskStatus taskStatus = taskManager.taskStatus(taskId);
 				Data data = new Data(taskStatus);
-				Map<Number160, Data> resultMap = new HashMap<Number160, Data>();
-				resultMap.put(taskId, data);
-				message.setDataMap(resultMap);
+				dataMap.put(taskId, data);
 			}
+			responseMessage.setDataMap(dataMap);
+			if(logger.isDebugEnabled())
+			{
+				logger.debug("finished task status for tasks "+ taskIDs);
+			}
+		}
+		else if(message.getType() == Type.REQUEST_3)
+		{
+			Number160 taskId = message.getKey();
+			Map<Number160, Data> dataMap = message.getDataMap();
+			taskManager.notifyListeners(taskId, dataMap);
 		}
 		else
 		{

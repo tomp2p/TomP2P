@@ -150,6 +150,8 @@ public class ProtocolChunkedInput implements ChunkedInput
 	{
 		if (done)
 			return;
+		if(slice.writerIndex() == 0)
+			return;
 		flush(false);
 		queue.add(slice);
 	}
@@ -157,6 +159,8 @@ public class ProtocolChunkedInput implements ChunkedInput
 	public void copyToCurrent(byte[] array, int offset, int length)
 	{
 		if (done)
+			return;
+		if(length == 0)
 			return;
 		flush(false);
 		queue.add(ChannelBuffers.wrappedBuffer(array, offset, length));
@@ -175,5 +179,4 @@ public class ProtocolChunkedInput implements ChunkedInput
 		if (last)
 			done = true;
 	}
-
 }

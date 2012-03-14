@@ -13,7 +13,7 @@ import net.tomp2p.mapreduce.FutureMap;
 import net.tomp2p.mapreduce.FutureMapReduce;
 import net.tomp2p.mapreduce.FutureReduce;
 import net.tomp2p.mapreduce.MapReducePeer;
-import net.tomp2p.mapreduce.Mapper;
+import net.tomp2p.mapreduce.Worker;
 import net.tomp2p.mapreduce.Reducer;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.Configurations;
@@ -82,7 +82,7 @@ public class ExampleMapReduce
 
 	private static FutureMapReduce map(MapReducePeer master, String text) throws IOException
 	{
-		FutureMapReduce futureMapReduce = master.map(Number160.createHash(text), new Data(text), new Mapper()
+		FutureMapReduce futureMapReduce = master.map(Number160.createHash(text), new Data(text), new Worker()
 		{
 			private static final long serialVersionUID = 521373195432813612L;
 
@@ -90,7 +90,7 @@ public class ExampleMapReduce
 			public void map(FutureMap futureMap, MapReducePeer remotePeer, Number480 key, Storage storage) throws Exception
 			{
 				//this is going to be executed on a remote peer
-				Data data = storage.get(key);
+				Data data = storage.get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
 				String text = (String)data.getObject();
 				String[] words = text.split(" ");  
 				for (String word : words)  
@@ -106,14 +106,14 @@ public class ExampleMapReduce
 					@Override
 					public void reduce(Number480 key, StorageGeneric storage) throws Exception
 					{
-						Data dataCount = storage.get(key);
+						Data dataCount = storage.get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
 						Number480 resultKey = key.changeDomain(new Number160(1));
 						Lock lock = storage.acquire(resultKey);
-						Data dataResult = storage.get(resultKey);
+						Data dataResult = storage.get(resultKey.getLocationKey(), resultKey.getDomainKey(), resultKey.getContentKey());
 						Integer count = (Integer) dataCount.getObject();
 						Pair result = (Pair) dataResult.getObject();
 						int sum = count + result.getInteger();
-						storage.put(resultKey, new Data(new Pair(result.getString(), sum)), null, false, false);
+						storage.put(resultKey.getLocationKey(), resultKey.getDomainKey(), resultKey.getContentKey(), new Data(new Pair(result.getString(), sum)), null, false, false);
 						storage.release(lock);
 					}
 				});

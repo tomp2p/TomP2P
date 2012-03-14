@@ -50,13 +50,6 @@ public class PeerExchangeRPC extends ReplyHandler
 		registerIoHandler(Command.PEX);
 		sentPeers = new CacheMap<Number160, Set<Number160>>(1000);
 	}
-	
-	@Deprecated
-	public FutureResponse peerExchange(final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
-			boolean isReplication, ChannelCreator channelCreator)
-	{
-		return peerExchange(remotePeer, locationKey, domainKey, isReplication, channelCreator, false);
-	}
 
 	/**
 	 * Peer exchange (PEX) information about other peers from the swarm, to not
@@ -93,13 +86,13 @@ public class PeerExchangeRPC extends ReplyHandler
 		Map<Number160, TrackerData> peers;
 		if (isReplication)
 		{
-			peers = peerBean.getTrackerStorage().meshPeers(locationKey, domainKey);
+			peers = getPeerBean().getTrackerStorage().meshPeers(locationKey, domainKey);
 			if (logger.isDebugEnabled())
 				logger.debug("we got stored meshPeers size:" + peers.size());
 		}
 		else
 		{
-			peers = peerBean.getTrackerStorage().activePeers(locationKey, domainKey);
+			peers = getPeerBean().getTrackerStorage().activePeers(locationKey, domainKey);
 			if (logger.isDebugEnabled())
 				logger.debug("we got stored activePeers size:" + peers.size());
 		}
@@ -128,12 +121,12 @@ public class PeerExchangeRPC extends ReplyHandler
 			FutureResponse futureResponse = new FutureResponse(message);
 			if(!forceTCP)
 			{
-				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 				return requestHandler.fireAndForgetUDP(channelCreator);
 			}
 			else
 			{
-				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 				return requestHandler.fireAndForgetTCP(channelCreator);
 			}
 		}
@@ -147,17 +140,13 @@ public class PeerExchangeRPC extends ReplyHandler
 	}
 
 	@Override
-	public boolean checkMessage(final Message message)
-	{
-		return (message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2)
-				&& message.getCommand() == Command.PEX;
-	}
-
-	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
-		if (logger.isDebugEnabled())
-			logger.debug("Received Peer Exchange Message " + message);
+		if(!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2)
+				&& message.getCommand() == Command.PEX))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
 		Collection<TrackerData> tmp = message.getTrackerData();
 		Number160 locationKey = message.getKeyKey1();
 		Number160 domainKey = message.getKeyKey2();
@@ -168,16 +157,20 @@ public class PeerExchangeRPC extends ReplyHandler
 			for (TrackerData data : tmp)
 			{
 				PeerAddress trackerEntry = data.getPeerAddress();
-				peerBean.getTrackerStorage().putReferred(locationKey, domainKey, trackerEntry, referrer,
+				getPeerBean().getTrackerStorage().putReferred(locationKey, domainKey, trackerEntry, referrer,
 						data.getAttachement(), data.getOffset(), data.getLength(),
 						message.getType() == Type.REQUEST_FF_1 ? ReferrerType.ACTIVE : ReferrerType.MESH);
 				if (logger.isDebugEnabled())
+				{
 					logger.debug("Adding " + data.getPeerAddress() + " to the map. I'm " + message.getRecipient());
+				}
 			}
 			if (removedKeys != null)
 			{
 				for (Number160 key : removedKeys)
-					peerBean.getTrackerStorage().removeReferred(locationKey, domainKey, key, referrer);
+				{
+					getPeerBean().getTrackerStorage().removeReferred(locationKey, domainKey, key, referrer);
+				}
 			}
 		}
 		return message;

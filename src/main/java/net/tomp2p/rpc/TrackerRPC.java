@@ -64,15 +64,7 @@ public class TrackerRPC extends ReplyHandler
 
 	public PeerAddress getPeerAddress()
 	{
-		return peerBean.getServerPeerAddress();
-	}
-	
-	@Deprecated
-	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final byte[] attachement, boolean signMessage, boolean primary,
-			Set<Number160> knownPeers, ChannelCreator channelCreator)
-	{
-		return addToTracker(remotePeer, locationKey, domainKey, attachement, signMessage, primary, knownPeers, channelCreator, false, false);
+		return getPeerBean().getServerPeerAddress();
 	}
 
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
@@ -99,15 +91,6 @@ public class TrackerRPC extends ReplyHandler
 	{
 		return response.getRequest().getType() == Type.REQUEST_1;
 	}
-	
-	@Deprecated
-	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
-			boolean primary, Set<Number160> knownPeers, ChannelCreator channelCreator)
-	{
-		return addToTracker(remotePeer, locationKey, domainKey, attachement, offset, legth, 
-				signMessage, primary, knownPeers, channelCreator, false, false);
-	}
 
 	public FutureResponse addToTracker(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final byte[] attachement, int offset, int legth, boolean signMessage,
@@ -117,7 +100,7 @@ public class TrackerRPC extends ReplyHandler
 		final Message message = createMessage(remotePeer, Command.TRACKER_ADD, primary ? Type.REQUEST_3
 				: Type.REQUEST_1);
 		if (signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
@@ -128,7 +111,7 @@ public class TrackerRPC extends ReplyHandler
 		if ((attachement != null || forceTCP) && !forceUDP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message,
 					locationKey, domainKey);
 			message.setPayload(ChannelBuffers.wrappedBuffer(attachement, offset, legth));
 			return requestHandler.sendTCP(channelCreator);
@@ -136,7 +119,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message,
 					locationKey, domainKey);
 			return requestHandler.sendUDP(channelCreator);
 		}
@@ -157,7 +140,7 @@ public class TrackerRPC extends ReplyHandler
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.TRACKER_GET, Type.REQUEST_1);
 		if (signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		if (knownPeers != null && (knownPeers instanceof SimpleBloomFilter))
@@ -168,34 +151,32 @@ public class TrackerRPC extends ReplyHandler
 		if ((expectAttachement || forceTCP) && !forceUDP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestTCP<FutureResponse> requestHandler = new TrackerRequestTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message,
 					locationKey, domainKey);
 			return requestHandler.sendTCP(channelCreator);
 		}
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message,
+			final TrackerRequestUDP<FutureResponse> requestHandler = new TrackerRequestUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message,
 					locationKey, domainKey);
 			return requestHandler.sendUDP(channelCreator);
 		}
 	}
 
 	@Override
-	public boolean checkMessage(Message message)
-	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
-				&& message.getKeyKey1() != null && message.getKeyKey2() != null;
-	}
-
-	@Override
 	public Message handleResponse(Message message, boolean sign) throws Exception
 	{
-		final Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
-		if(sign) {
-    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+		if(!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
+				&& message.getKeyKey1() != null && message.getKeyKey2() != null))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		final Message responseMessage = createResponseMessage(message, Type.OK);
+		if(sign) 
+		{
+    		responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
     	}
-		responseMessage.setMessageId(message.getMessageId());
 		// get data
 		Number160 locationKey = message.getKeyKey1();
 		Number160 domainKey = message.getKeyKey2();
@@ -218,7 +199,7 @@ public class TrackerRPC extends ReplyHandler
 		}
 		PublicKey publicKey = message.getPublicKey();
 		//
-		final TrackerStorage trackerStorage = peerBean.getTrackerStorage();
+		final TrackerStorage trackerStorage = getPeerBean().getTrackerStorage();
 
 		Map<Number160, TrackerData> meshPeers = trackerStorage.meshPeers(locationKey, domainKey);
 		if(knownPeers != null){
@@ -242,13 +223,13 @@ public class TrackerRPC extends ReplyHandler
 			{
 				responseMessage.setType(Message.Type.DENIED);
 				if (logger.isDebugEnabled())
-					logger.debug("tracker NOT put on(" + peerBean.getServerPeerAddress() + ") locationKey:"
+					logger.debug("tracker NOT put on(" + getPeerBean().getServerPeerAddress() + ") locationKey:"
 							+ locationKey + ", domainKey:" + domainKey + ", address:" + senderAddress);
 			}
 			else
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("tracker put on(" + peerBean.getServerPeerAddress() + ") locationKey:" + locationKey
+					logger.debug("tracker put on(" + getPeerBean().getServerPeerAddress() + ") locationKey:" + locationKey
 							+ ", domainKey:" + domainKey + ", address:" + senderAddress + "sizeP: "
 							+ trackerStorage.sizePrimary(locationKey, domainKey));
 			}
@@ -257,7 +238,7 @@ public class TrackerRPC extends ReplyHandler
 		else
 		{
 			if (logger.isDebugEnabled())
-				logger.debug("tracker get on(" + peerBean.getServerPeerAddress() + ") locationKey:" + locationKey
+				logger.debug("tracker get on(" + getPeerBean().getServerPeerAddress() + ") locationKey:" + locationKey
 						+ ", domainKey:" + domainKey + ", address:" + senderAddress + " returning: "
 						+ (meshPeers == null ? "0" : meshPeers.size()));
 		}
@@ -281,7 +262,7 @@ public class TrackerRPC extends ReplyHandler
 
 		@Override
 		public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent ce) throws Exception {
-			preHandleMessage(message, peerBean.getTrackerStorage(), this.message.getRecipient(), locationKey, domainKey);
+			preHandleMessage(message, getPeerBean().getTrackerStorage(), this.message.getRecipient(), locationKey, domainKey);
 			super.handleUpstream(ctx, ce);
 		}
 	}
@@ -306,7 +287,7 @@ public class TrackerRPC extends ReplyHandler
 		{
 			Object object = e.getMessage();
 			if (object instanceof Message)
-				preHandleMessage((Message) object, peerBean.getTrackerStorage(), this.message.getRecipient(),
+				preHandleMessage((Message) object, getPeerBean().getTrackerStorage(), this.message.getRecipient(),
 						locationKey, domainKey);
 			else
 				logger.error("Response received, but not a message: " + object);

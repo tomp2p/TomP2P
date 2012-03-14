@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 public abstract class ReplyHandler extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(ReplyHandler.class);
-	final PeerBean peerBean;
-	final ConnectionBean connectionBean;
+	final private PeerBean peerBean;
+	final private ConnectionBean connectionBean;
 	private boolean sign = false;
 
 	public ReplyHandler(PeerBean peerBean, ConnectionBean connectionBean)
@@ -42,19 +42,31 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 
 	protected void registerIoHandler(Command... names)
 	{
-		connectionBean.getDispatcherRequest().registerIoHandler(peerBean.getServerPeerAddress().getID(), this,
+		getConnectionBean().getDispatcherRequest().registerIoHandler(getPeerBean().getServerPeerAddress().getID(), this,
 				names);
 	}
 
-	// public void removeTemporarly(PeerAddress sender)
-	// /{
-	// peerBean.getPeerMap().peerOffline(sender);
-	// }
 	public Message createMessage(PeerAddress recipient, Command name, Type type)
 	{
 		Message m = new Message();
-		return m.setRecipient(recipient).setSender(peerBean.getServerPeerAddress())
-				.setCommand(name).setType(type).setVersion(connectionBean.getP2PID());
+		m.setRecipient(recipient);
+		m.setSender(getPeerBean().getServerPeerAddress());
+		m.setCommand(name);
+		m.setType(type);
+		m.setVersion(getConnectionBean().getP2PID());
+		return m;
+	}
+	
+	public Message createResponseMessage(Message message, Type type)
+	{
+		Message m = new Message();
+		m.setRecipient(message.getSender());
+		m.setSender(getPeerBean().getServerPeerAddress());
+		m.setCommand(message.getCommand());
+		m.setType(type);
+		m.setVersion(getConnectionBean().getP2PID());
+		m.setMessageId(message.getMessageId());
+		return m;
 	}
 
 	@Override
@@ -62,48 +74,35 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 	{
 		logger.equals("error in reply " + e.toString());
 		if (logger.isDebugEnabled())
+		{
 			e.getCause().printStackTrace();
+		}
 		// TODO: we never attach the message to the context!
 		Message message = (Message) ctx.getAttachment();
 		if (message != null)
-			peerBean.getPeerMap().peerOffline(message.getSender(), true);
+			getPeerBean().getPeerMap().peerOffline(message.getSender(), true);
 		ctx.getChannel().close();
 	}
 
 	public Message forwardMessage(Message message)
 	{
-		if (checkMessage(message))
-		{
-			// here we need a referral, since we got contacted and we dont know
-			// if we can contact the peer with its address. The peer may be
-			// behind a NAT
-			peerBean.getPeerMap().peerFound(message.getSender(), message.getSender());
-			try
-			{//
-				Message reply = handleResponse(message, sign);
-				return reply;
-			}
-			catch (Throwable e)
-			{
-				logger.error("Exception in custom handler: " + e.toString());
-				e.printStackTrace();
-			}
+		// here we need a referral, since we got contacted and we don't know
+		// if we can contact the peer with its address. The peer may be
+		// behind a NAT
+		getPeerBean().getPeerMap().peerFound(message.getSender(), message.getSender());
+		try
+		{//
+			Message reply = handleResponse(message, sign);
+			return reply;
 		}
-		peerBean.getPeerMap().peerOffline(message.getSender(), true);
-		logger.error("Check failed: " + message);
-		return null;
+		catch (Throwable e)
+		{
+			getPeerBean().getPeerMap().peerOffline(message.getSender(), true);
+			logger.error("Exception in custom handler: " + e.toString());
+			e.printStackTrace();
+			return null;
+		}
 	}
-
-	/**
-	 * Before a reply can be done, the message needs to be checked. If you
-	 * return false, then the peer is removed from the map and the channel is
-	 * closed.
-	 * 
-	 * @param message Request message
-	 * @return True if a request should be generated, false if channel should be
-	 *         closed and nothing should be replied
-	 */
-	public abstract boolean checkMessage(Message message);
 
 	/**
 	 * If the message is OK, that has been previously checked by the user using
@@ -125,6 +124,16 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 	public void setSignReply(boolean sign)
 	{
 		this.sign = sign;
+	}
+
+	public PeerBean getPeerBean()
+	{
+		return peerBean;
+	}
+
+	public ConnectionBean getConnectionBean()
+	{
+		return connectionBean;
 	}
 
 }

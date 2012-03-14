@@ -27,10 +27,8 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -46,16 +44,7 @@ public class NeighborRPC extends ReplyHandler
 	public NeighborRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
-		registerIoHandler(Command.NEIGHBORS_STORAGE, Command.NEIGHBORS_TRACKER);
-	}
-	
-	@Deprecated
-	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
-			Number160 domainKey, Collection<Number160> contentKeys, Command command,
-			boolean isDigest, boolean forceTCP, ChannelCreator channelCreator)
-	{
-		return closeNeighbors(remotePeer, locationKey, domainKey, contentKeys, 
-				command, isDigest, channelCreator, forceTCP);
+		registerIoHandler(Command.NEIGHBORS);
 	}
 
 	/**
@@ -67,8 +56,13 @@ public class NeighborRPC extends ReplyHandler
 	 * @param domainKey The domain key
 	 * @param contentKeys For get() and remove() one can provide the content
 	 *        keys and the remote peer indicates if those keys are on that peer.
-	 * @param command either Command.NEIGHBORS_TRACKER or
-	 *        Command.NEIGHBORS_STORAGE
+	 * @param type The type of the neigbor request:
+	 * <ul>
+	 *  <li>REQUEST_1 for NEIGHBORS means check for put (no digest) for tracker and storage</li>
+	 *  <li>REQUEST_2 for NEIGHBORS means check for get (with digest) for storage</li>
+	 *	<li>REQUEST_3 for NEIGHBORS means check for get (with digest) for tracker</li>
+	 *	<li>REQUEST_4 for NEIGHBORS means check for put (with digest) for task</li>
+	 * </ul>
 	 * @param isDigest Set to true to return a digest of the remote content
 	 * @param channelCreator The channel creator that creates connections
 	 * @param forceTCP Set to true if the communication should be TCP, default
@@ -76,55 +70,48 @@ public class NeighborRPC extends ReplyHandler
 	 * @return The future response to keep track of future events
 	 */
 	public FutureResponse closeNeighbors(PeerAddress remotePeer, Number160 locationKey,
-			Number160 domainKey, Collection<Number160> contentKeys, Command command,
-			boolean isDigest, ChannelCreator channelCreator, boolean forceTCP)
+			Number160 domainKey, Collection<Number160> contentKeys, Type type, 
+			ChannelCreator channelCreator, boolean forceTCP)
 	{
 		nullCheck(remotePeer, locationKey);
-		if (command != Command.NEIGHBORS_TRACKER && command != Command.NEIGHBORS_STORAGE)
-			throw new IllegalArgumentException("command not of type neighbor");
-		Message message = createMessage(remotePeer, command, isDigest ? Type.REQUEST_1
-				: Type.REQUEST_2);
+		Message message = createMessage(remotePeer, Command.NEIGHBORS, type);
 		message.setKeyKey(locationKey, domainKey == null ? Number160.ZERO : domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
 		if (!forceTCP)
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			NeighborsRequestUDP<FutureResponse> request = new NeighborsRequestUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			NeighborsRequestUDP<FutureResponse> request = new NeighborsRequestUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendUDP(channelCreator);
 		}
 		else
 		{
 			FutureResponse futureResponse = new FutureResponse(message);
-			NeighborsRequestTCP<FutureResponse> request = new NeighborsRequestTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			NeighborsRequestTCP<FutureResponse> request = new NeighborsRequestTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendTCP(channelCreator);
 		}
 	}
 
 	@Override
-	public boolean checkMessage(Message message)
-	{
-		return message.getKeyKey1() != null && message.getKeyKey2() != null
-				&& message.getContentType1() == Content.KEY_KEY
-				&& (message.getContentType2() == Content.EMPTY || message.getContentType2() == Content.SET_KEYS)
-				&& (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
-				&& (message.getCommand() == Command.NEIGHBORS_STORAGE || message.getCommand() == Command.NEIGHBORS_TRACKER);
-	}
-
-	@Override
 	public Message handleResponse(Message message, boolean sign) throws IOException
 	{
-		if (logger.isDebugEnabled())
-			logger.debug("handleResponse for " + message);
+		nullCheck(message.getKeyKey1(), message.getKeyKey2());
+		if(!(message.getContentType1() == Content.KEY_KEY
+				&& (message.getContentType2() == Content.EMPTY || message.getContentType2() == Content.SET_KEYS)
+				&& (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4)
+				&& (message.getCommand() == Command.NEIGHBORS)))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
 		Number160 locationKey = message.getKeyKey1();
 		Number160 domainKey = message.getKeyKey2();
 		// Create response message and set neighbors
-		final Message responseMessage = createMessage(message.getSender(), message.getCommand(), Type.OK);
-		if(sign) {
-    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+		final Message responseMessage = createResponseMessage(message, Type.OK);
+		if(sign) 
+		{
+    		responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
     	}
-		responseMessage.setMessageId(message.getMessageId());
-		Collection<PeerAddress> neighbors = peerBean.getPeerMap().closePeers(locationKey,
+		Collection<PeerAddress> neighbors = getPeerBean().getPeerMap().closePeers(locationKey,
 				NEIGHBOR_SIZE);
 		responseMessage.setNeighbors(neighbors, NEIGHBOR_SIZE);
 		// check for fastget, -1 if, no domain provided, so we cannot
@@ -132,69 +119,67 @@ public class NeighborRPC extends ReplyHandler
 		// int contentLength = -1;
 		Collection<Number160> contentKeys = message.getKeys();
 		// it is important to set an integer if a value is present
-		boolean isDigest = message.getType() == Type.REQUEST_1;
+		boolean isDigest = message.getType() != Type.REQUEST_1;
 		if (isDigest)
 		{
-			if (message.getCommand() == Command.NEIGHBORS_STORAGE)
+			if (message.getType() == Type.REQUEST_2)
 			{
-				// TODO make difference between get and put
-				// boolean withDigest = message.getType() == Type.REQUEST_1;
-				// if (withDigest)
-				{
-					DigestInfo digestInfo = Utils.digest(peerBean.getStorage(), locationKey,
-							domainKey, contentKeys);
-					responseMessage.setInteger(digestInfo.getSize());
-					responseMessage.setKey(digestInfo.getKeyDigest());
-				}
+				DigestInfo digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, contentKeys);
+				responseMessage.setInteger(digestInfo.getSize());
+				responseMessage.setKey(digestInfo.getKeyDigest());
 			}
-			else if (message.getCommand() == Command.NEIGHBORS_TRACKER)
+			else if(message.getType() == Type.REQUEST_3)
 			{
-				DigestInfo digest = peerBean.getTrackerStorage().digest(
-						new Number320(locationKey, domainKey));
-				int size = digest.getSize();
-				if (logger.isDebugEnabled())
-					logger.debug("found trackre size " + size);
-				responseMessage.setInteger(size);
+				DigestInfo digestInfo = getPeerBean().getTrackerStorage().digest(locationKey, domainKey, null);
+				responseMessage.setInteger(digestInfo.getSize());
 			}
-			else
-				throw new RuntimeException("Implement new type");
+			else if(message.getType() == Type.REQUEST_4)
+			{
+				DigestInfo digestInfo = getPeerBean().getTaskManager().digest();
+				responseMessage.setInteger(digestInfo.getSize());
+			}
 		}
 		return responseMessage;
 	}
 
 	private void preHandleMessage(Message message, PeerMap peerMap, PeerAddress referrer)
 	{
-		if (message.getType() == Type.OK
-				&& (message.getCommand() == Command.NEIGHBORS_STORAGE || message.getCommand() == Command.NEIGHBORS_TRACKER))
-		{
-			Collection<PeerAddress> tmp = message.getNeighbors();
-			if (tmp != null)
-			{
-				Iterator<PeerAddress> iterator = tmp.iterator();
-				while (iterator.hasNext())
-				{
-					PeerAddress addr = iterator.next();
-					// if peer is removed due to failure, don't consider
-					// that peer for routing anymore
-					if (peerMap.isPeerRemovedTemporarly(addr))
-					{
-						iterator.remove();
-					}
-					// otherwise try to add it to the map
-					else
-						peerMap.peerFound(addr, referrer);
-				}
-			}
-			else
-				logger.warn("Neighbor message received, but does not contain any neighbors.");
-		}
-		else
+		if (!(message.getType() == Type.OK && message.getCommand() == Command.NEIGHBORS))
 		{
 			if(logger.isDebugEnabled())
 			{
 				logger.debug("Message not of type Neighbor, ignoring "+message);
 			}
+			return;
 		}
+		Collection<PeerAddress> tmp = message.getNeighbors();
+		if (tmp != null)
+		{
+			Iterator<PeerAddress> iterator = tmp.iterator();
+			while (iterator.hasNext())
+			{
+				PeerAddress addr = iterator.next();
+				// if peer is removed due to failure, don't consider
+				// that peer for routing anymore
+				if (peerMap.isPeerRemovedTemporarly(addr))
+				{
+					iterator.remove();
+				}
+				// otherwise try to add it to the map
+				else
+				{
+					peerMap.peerFound(addr, referrer);
+				}
+			}
+		}
+		else
+		{
+			if(logger.isWarnEnabled())
+			{
+				logger.warn("Neighbor message received, but does not contain any neighbors.");
+			}
+		}
+		
 	}
 	private class NeighborsRequestTCP<K extends FutureResponse> extends RequestHandlerTCP<K>
 	{

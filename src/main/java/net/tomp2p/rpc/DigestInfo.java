@@ -38,8 +38,17 @@ public class DigestInfo
 	/**
 	 * Empty constructor is used to add the hashes to the list.
 	 */
-	public DigestInfo()
-	{}
+	public DigestInfo(){}
+	
+	/**
+	 * Create a digest with the size only.
+	 * 
+	 * @param size
+	 */
+	public DigestInfo(int size)
+	{
+		this.size = size;
+	}
 
 	/**
 	 * If a global hash has already been calculated, then this constructor is

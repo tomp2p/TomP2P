@@ -104,75 +104,73 @@ public class HandshakeRPC extends ReplyHandler
 	{
 		final Message message = createMessage(remotePeer, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 	}
 
 	private RequestHandlerTCP<FutureResponse> createHandlerTCP(final PeerAddress remotePeer, Type type)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, type);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 	}
 
 	public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, Type.REQUEST_2);
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
-		self.add(peerBean.getServerPeerAddress());
+		self.add(getPeerBean().getServerPeerAddress());
 		message.setNeighbors(self);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, Type.REQUEST_2);
 		Collection<PeerAddress> self = new ArrayList<PeerAddress>();
-		self.add(peerBean.getServerPeerAddress());
+		self.add(getPeerBean().getServerPeerAddress());
 		message.setNeighbors(self);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message).sendTCP(channelCreator);
 	}
 
 	public FutureResponse pingUDPProbe(final PeerAddress remotePeer, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendUDP(channelCreator);
+		return new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message).sendUDP(channelCreator);
 	}
 
 	public FutureResponse pingTCPProbe(final PeerAddress remotePeer, ChannelCreator channelCreator)
 	{
 		final Message message = createMessage(remotePeer, Command.PING, Type.REQUEST_3);
 		FutureResponse futureResponse = new FutureResponse(message);
-		return new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message).sendTCP(channelCreator);
-	}
-
-	@Override
-	public boolean checkMessage(final Message message)
-	{
-		return (message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3)
-				&& message.getCommand() == Command.PING;
+		return new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message).sendTCP(channelCreator);
 	}
 
 	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
+		if(!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3)
+				&& message.getCommand() == Command.PING))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
 		// probe
 		if (message.getType() == Type.REQUEST_3)
 		{
-			if(logger.isDebugEnabled()) {
+			if(logger.isDebugEnabled()) 
+			{
 				logger.debug("reply to probing, fire message to " + message.getSender());
 			}
-			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
+			final Message responseMessage = createResponseMessage(message, Type.OK);
 			if (sign)
 			{
-				responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+				responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
 			}
-			responseMessage.setMessageId(message.getMessageId());
 			if (message.isUDP()) 
 			{
-				connectionBean.getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+				getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
 					public void operationComplete(FutureChannelCreator future) throws Exception
@@ -180,7 +178,7 @@ public class HandshakeRPC extends ReplyHandler
 						if(future.isSuccess())
 						{
 							FutureResponse futureResponse=fireUDP(message.getSender(), future.getChannelCreator());
-							Utils.addReleaseListenerAll(futureResponse, connectionBean.getConnectionReservation(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator());
 						}
 						else
 						{
@@ -194,7 +192,7 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			else 
 			{
-				connectionBean.getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+				getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
 					public void operationComplete(FutureChannelCreator future) throws Exception
@@ -202,7 +200,7 @@ public class HandshakeRPC extends ReplyHandler
 						if(future.isSuccess())
 						{
 							FutureResponse futureResponse=fireTCP(message.getSender(), future.getChannelCreator());
-							Utils.addReleaseListenerAll(futureResponse, connectionBean.getConnectionReservation(), future.getChannelCreator());
+							Utils.addReleaseListenerAll(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator());
 						}
 						else
 						{
@@ -220,13 +218,14 @@ public class HandshakeRPC extends ReplyHandler
 		// discover
 		else if (message.getType() == Type.REQUEST_2)
 		{
-			if(logger.isDebugEnabled()) {
+			if(logger.isDebugEnabled()) 
+			{
 				logger.debug("reply to discover, found " + message.getSender());
 			}
 			final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
 			if (sign)
 			{
-				responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+				responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
 			}
 			responseMessage.setMessageId(message.getMessageId());
 			Collection<PeerAddress> self = new ArrayList<PeerAddress>();
@@ -238,7 +237,7 @@ public class HandshakeRPC extends ReplyHandler
 		else if (message.getType() == Type.REQUEST_1)
 		{
 			//test if this is a broadcast message to ourselfs. If it is, do not reply.
-			if (message.getSender().getID().equals(peerBean.getServerPeerAddress().getID())
+			if (message.getSender().getID().equals(getPeerBean().getServerPeerAddress().getID())
 					&& message.getRecipient().getID().equals(Number160.ZERO))
 			{
 				return message;
@@ -248,7 +247,7 @@ public class HandshakeRPC extends ReplyHandler
 				final Message responseMessage = createMessage(message.getSender(), Command.PING, Type.OK);
 				if (sign)
 				{
-					responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+					responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
 				}
 				responseMessage.setMessageId(message.getMessageId());
 				if (wait)
@@ -259,8 +258,9 @@ public class HandshakeRPC extends ReplyHandler
 			}
 			else
 			{
-				if(logger.isDebugEnabled()) {
-				logger.debug("do not reply");
+				if(logger.isDebugEnabled()) 
+				{
+					logger.debug("do not reply");
 				}
 				//used for debugging
 				if (wait)
@@ -271,36 +271,35 @@ public class HandshakeRPC extends ReplyHandler
 			}
 		}
 		// fire and forget
-		else if (message.getType() == Type.REQUEST_FF_1)
+		else// if (message.getType() == Type.REQUEST_FF_1)
 		{
 			//we received a fire and forget ping. This means we are reachable from outside
-			PeerAddress serverAddress = peerBean.getServerPeerAddress();
+			PeerAddress serverAddress = getPeerBean().getServerPeerAddress();
 			if (message.isUDP())
 			{
 				PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
-				peerBean.setServerPeerAddress(newServerAddress);
+				getPeerBean().setServerPeerAddress(newServerAddress);
 				synchronized (listeners)
 				{
 					for (PeerListener listener : listeners)
+					{
 						listener.serverAddressChanged(newServerAddress, message.getSender(), false);
+					}
 				}
 			}
 			else
 			{
 				PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
-				peerBean.setServerPeerAddress(newServerAddress);
+				getPeerBean().setServerPeerAddress(newServerAddress);
 				synchronized (listeners)
 				{
 					for (PeerListener listener : listeners)
+					{
 						listener.serverAddressChanged(newServerAddress, message.getSender(), true);
+					}
 				}
 			}
 			return message;
-		}
-		else
-		{
-			// don't know what to do
-			return null;
 		}
 	}
 }

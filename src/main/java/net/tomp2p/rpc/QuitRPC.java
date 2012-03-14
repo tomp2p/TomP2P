@@ -31,12 +31,6 @@ public class QuitRPC extends ReplyHandler
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.QUIT);
 	}
-	
-	@Deprecated
-	public FutureResponse quit(final PeerAddress remotePeer, ChannelCreator channelCreator)
-	{
-		return quit(remotePeer, channelCreator, false);
-	}
 
 	/**
 	 * Sends a message that indicates this peer is about to quit. This is an
@@ -54,26 +48,24 @@ public class QuitRPC extends ReplyHandler
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceTCP)
 		{
-			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.fireAndForgetUDP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.fireAndForgetTCP(channelCreator);
 		}
 	}
 
 	@Override
-	public boolean checkMessage(final Message message)
-	{
-		return message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT;
-	}
-
-	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
-		peerBean.getPeerMap().peerOffline(message.getSender(), true);
+		if(!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		getPeerBean().getPeerMap().peerOffline(message.getSender(), true);
 		return message;
 	}
 }

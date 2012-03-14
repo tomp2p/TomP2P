@@ -197,7 +197,7 @@ public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHa
 		else if (!sendMessageID.equals(recvMessageID))
 		{
 			String msg = "Message [" + responseMessage
-					+ "] sent to the node is not the same as we expect (UDP). We sent ["
+					+ "] sent to the node is not the same as we expect (TCP). We sent ["
 					+ this.message + "]";
 			if (logger.isWarnEnabled())
 			{

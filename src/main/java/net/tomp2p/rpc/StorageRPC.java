@@ -29,7 +29,6 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -49,16 +48,7 @@ public class StorageRPC extends ReplyHandler
 
 	public PeerAddress getPeerAddress()
 	{
-		return peerBean.getServerPeerAddress();
-	}
-	
-	@Deprecated
-	public FutureResponse put(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
-			boolean signMessage, ChannelCreator channelCreator)
-	{
-		return put(remotePeer, locationKey, domainKey, dataMap, protectDomain, 
-				protectEntry, signMessage, channelCreator, false);
+		return getPeerBean().getServerPeerAddress();
 	}
 
 	/**
@@ -99,15 +89,6 @@ public class StorageRPC extends ReplyHandler
 		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator, forceUDP);
 	}
-	
-	@Deprecated
-	public FutureResponse putIfAbsent(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, Data> dataMap, boolean protectDomain, boolean protectEntry,
-			boolean signMessage, ChannelCreator channelCreator)
-	{
-		return putIfAbsent(remotePeer, locationKey, domainKey, dataMap, protectDomain, protectEntry, 
-				signMessage, channelCreator, false);
-	}
 
 	/**
 	 * Stores data on a remote peer. Only stores data if the data does not already exist. This is an RPC.
@@ -146,16 +127,6 @@ public class StorageRPC extends ReplyHandler
 		}
 		return put(remotePeer, locationKey, domainKey, dataMap, request, protectDomain
 				|| signMessage || protectEntry, channelCreator, forceUDP);
-	}
-	
-	@Deprecated
-	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, HashData> hashDataMap,
-			boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
-			ChannelCreator channelCreator)
-	{
-		return compareAndPut(remotePeer, locationKey, domainKey, hashDataMap, 
-				protectDomain, protectEntry, signMessage, partialPut, channelCreator, false);
 	}
 	
 	/**
@@ -198,21 +169,21 @@ public class StorageRPC extends ReplyHandler
 		}
 		if (signMessage)
 		{
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setHashDataMap(hashDataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean,
-					connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(),
+					getConnectionBean(), message);
 			return request.sendTCP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean,
-					connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(),
+					getConnectionBean(), message);
 			return request.sendUDP(channelCreator);
 		}
 	}
@@ -239,31 +210,22 @@ public class StorageRPC extends ReplyHandler
 		nullCheck(remotePeer, locationKey, domainKey, dataMap);
 		final Message message = createMessage(remotePeer, Command.PUT, type);
 		if (signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
-		
+				
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendTCP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendUDP(channelCreator);
 		}
-	}
-	
-	@Deprecated
-	public FutureResponse add(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
-			boolean signMessage, ChannelCreator channelCreator)
-	{
-		return add(remotePeer, locationKey, domainKey, dataSet, protectDomain, 
-				signMessage, channelCreator, false);
 	}
 
 	/**
@@ -309,33 +271,23 @@ public class StorageRPC extends ReplyHandler
 			dataMap.put(data.getHash(), data);
 		final Message message = createMessage(remotePeer, Command.ADD, type);
 		if (protectDomain || signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setDataMap(dataMap);
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendTCP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendUDP(channelCreator);
 		}
 	}
 	
-	@Deprecated
-	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Collection<Number160> contentKeys,
-			PublicKey protectedDomains, boolean signMessage, boolean digest, 
-			ChannelCreator channelCreator)
-	{
-		return get(remotePeer, locationKey, domainKey, contentKeys, 
-				protectedDomains, signMessage, digest, channelCreator, false);
-	}
-
 	/**
 	 * Get the data from a remote peer. This is an RPC.
 	 * 
@@ -361,7 +313,7 @@ public class StorageRPC extends ReplyHandler
 		nullCheck(remotePeer, locationKey, domainKey);
 		final Message message = createMessage(remotePeer, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
 		if (signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
@@ -371,24 +323,14 @@ public class StorageRPC extends ReplyHandler
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendTCP(channelCreator);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureResponse> request = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return request.sendUDP(channelCreator);
 		}
-	}
-	
-	@Deprecated
-	public FutureResponse remove(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Collection<Number160> contentKeys,
-			final boolean sendBackResults, final boolean signMessage, 
-			ChannelCreator channelCreator)
-	{
-		return remove(remotePeer, locationKey, domainKey, contentKeys, 
-				sendBackResults, signMessage, channelCreator, false);
 	}
 
 	/**
@@ -416,64 +358,64 @@ public class StorageRPC extends ReplyHandler
 		final Message message = createMessage(remotePeer, Command.REMOVE, sendBackResults
 				? Type.REQUEST_2 : Type.REQUEST_1);
 		if (signMessage) {
-			message.setPublicKeyAndSign(peerBean.getKeyPair());
+			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 		return request.sendTCP(channelCreator);
-	}
-
-	@Override
-	public boolean checkMessage(final Message message)
-	{
-		if (message.isRequest())
-		{
-			switch (message.getCommand())
-			{
-				case ADD:
-				case PUT:
-					return message.getKeyKey1() != null && message.getKeyKey2() != null
-							&& message.getDataMap() != null;
-				case GET:
-				case REMOVE:
-					return message.getKeyKey1() != null && message.getKeyKey2() != null;
-				case COMPARE_PUT:
-					return message.getHashDataMap() != null; 
-			}
-		}
-		return false;
 	}
 
 	@Override
 	public Message handleResponse(final Message message, boolean sign) throws IOException
 	{
-		if (logger.isDebugEnabled())
-			logger.debug("handle " + message);
-		final Message responseMessage = createMessage(message.getSender(), message.getCommand(),
-				Type.OK);
-		if(sign) {
-    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+		if(!(message.getCommand() == Command.ADD || message.getCommand() == Command.PUT 
+				|| message.getCommand() == Command.GET || message.getCommand() == Command.REMOVE 
+				|| message.getCommand() == Command.COMPARE_PUT))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		final Message responseMessage = createResponseMessage(message, Type.OK);
+		if(sign) 
+		{
+    		responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
     	}
-		responseMessage.setMessageId(message.getMessageId());
 		switch (message.getCommand())
 		{
+			case ADD:
+			{
+				nullCheck(message.getKeyKey1(), message.getKeyKey2(), message.getDataMap());
+				return handleAdd(message, responseMessage, isDomainProtected(message));
+			}
 			case PUT:
+			{
+				nullCheck(message.getKeyKey1(), message.getKeyKey2(), message.getDataMap());
 				return handlePut(message, responseMessage, isStoreIfAbsent(message),
 						isDomainProtected(message));
+			}
 			case GET:
+			{
+				nullCheck(message.getKeyKey1(), message.getKeyKey2());
 				return handleGet(message, responseMessage);
-			case ADD:
-				return handleAdd(message, responseMessage, isDomainProtected(message));
+			}
+			
 			case REMOVE:
+			{
+				nullCheck(message.getKeyKey1(), message.getKeyKey2());
 				return handleRemove(message, responseMessage, message.getType() == Type.REQUEST_2);
+			}
 			case COMPARE_PUT:
+			{
+				nullCheck(message.getKeyKey1(), message.getKeyKey2(), message.getHashDataMap());
 				return handleCompareAndPut(message, responseMessage, isPartial(message),
 						isDomainProtected(message));
+			}
 			default:
-				return null;
+			{
+				throw new IllegalArgumentException("Message content is wrong");
+			}
 		}
 	}
 
@@ -506,31 +448,31 @@ public class StorageRPC extends ReplyHandler
 		// here we set the map with the close peers. If we get data by a sender
 		// and the sender is closer than us, we assume that the sender has the
 		// data and we don't need to transfer data to the closest (sender) peer.
-		if (peerBean.getReplicationStorage() != null)
-			peerBean.getReplicationStorage().updatePeerMapIfCloser(locationKey,
+		if (getPeerBean().getReplicationStorage() != null)
+			getPeerBean().getReplicationStorage().updatePeerMapIfCloser(locationKey,
 					message.getSender().getID());
 		Collection<Number160> result = new HashSet<Number160>();
 		for (Map.Entry<Number160, Data> entry : toStore.entrySet())
 		{
-			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
+			if (getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
 					entry.getValue(), publicKey, putIfAbsent, protectDomain)) {
 				if(logger.isDebugEnabled()) {
-					logger.debug("put data with key "+locationKey+" on "+peerBean.getServerPeerAddress());
+					logger.debug("put data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
 				result.add(entry.getKey());
 			}
 			else {
 				if(logger.isDebugEnabled()) {
-					logger.debug("could not add "+locationKey+" on "+peerBean.getServerPeerAddress());
+					logger.debug("could not add "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
-				peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
+				getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
 						entry.getValue(), publicKey, putIfAbsent, protectDomain);
 			}
 		}
 		// check the responsibility of the newly added data, do something
 		// (notify) if we are responsible
-		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
-			peerBean.getReplicationStorage().checkResponsibility(locationKey);
+		if (result.size() > 0 && getPeerBean().getReplicationStorage() != null)
+			getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
 		if (result.size() == 0 && !putIfAbsent)
 			responseMessage.setType(Type.DENIED);
 		else if(result.size() == 0 && putIfAbsent)
@@ -558,24 +500,24 @@ public class StorageRPC extends ReplyHandler
 		// here we set the map with the close peers. If we get data by a sender
 		// and the sender is closer than us, we assume that the sender has the
 		// data and we don't need to transfer data to the closest (sender) peer.
-		if (peerBean.getReplicationStorage() != null)
-			peerBean.getReplicationStorage().updatePeerMapIfCloser(locationKey,
+		if (getPeerBean().getReplicationStorage() != null)
+			getPeerBean().getReplicationStorage().updatePeerMapIfCloser(locationKey,
 					message.getSender().getID());
 		Collection<Number160> result = new HashSet<Number160>();
 		for (Map.Entry<Number160, Data> entry : data.entrySet())
 		{
-			if (peerBean.getStorage().put(new Number480(locationKey, domainKey, entry.getKey()),
+			if (getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
 					entry.getValue(), publicKey, false, protectDomain)) {
 				if(logger.isDebugEnabled()) {
-					logger.debug("add data with key "+locationKey+" on "+peerBean.getServerPeerAddress());
+					logger.debug("add data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
 				result.add(entry.getKey());
 			}
 		}
 		// check the responsibility of the newly added data, do something
 		// (notify) if we are responsible
-		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
-			peerBean.getReplicationStorage().checkResponsibility(locationKey);
+		if (result.size() > 0 && getPeerBean().getReplicationStorage() != null)
+			getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
 		responseMessage.setKeys(result);
 		return responseMessage;
 	}
@@ -589,16 +531,7 @@ public class StorageRPC extends ReplyHandler
 		final boolean digest = message.getType() == Type.REQUEST_2;
 		if(digest)
 		{
-			final Number320 key = new Number320(locationKey, domainKey);
-			final DigestInfo digestInfo;
-			if (contentKeys != null)
-			{
-				digestInfo = peerBean.getStorage().digest(key, contentKeys);	
-			}
-			else	
-			{ 
-				digestInfo = peerBean.getStorage().digest(key);
-			}
+			final DigestInfo digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, contentKeys);	
 			responseMessage.setKeys(digestInfo.getKeyDigests());
 			return responseMessage;
 		}
@@ -611,7 +544,7 @@ public class StorageRPC extends ReplyHandler
 				for (Number160 contentKey : contentKeys)
 				{
 					Number480 key = new Number480(locationKey, domainKey, contentKey);
-					Data data = peerBean.getStorage().get(key);
+					Data data = getPeerBean().getStorage().get(locationKey, domainKey, contentKey);
 					if (data != null)
 					{
 						result.put(key, data);
@@ -620,7 +553,7 @@ public class StorageRPC extends ReplyHandler
 			}
 			else	
 			{
-				result = peerBean.getStorage().get(new Number320(locationKey, domainKey));
+				result = getPeerBean().getStorage().get(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
 			}
 			responseMessage.setDataMapConvert(result);
 			return responseMessage;
@@ -641,14 +574,14 @@ public class StorageRPC extends ReplyHandler
 			for (Number160 contentKey : contentKeys)
 			{
 				Number480 key = new Number480(locationKey, domainKey, contentKey);
-				Data data = peerBean.getStorage().remove(key, publicKey);
+				Data data = getPeerBean().getStorage().remove(locationKey, domainKey, contentKey, publicKey);
 				if (data != null)
 					result.put(key, data);
 			}
 		}
 		else
 		{
-			result = peerBean.getStorage().remove(new Number320(locationKey, domainKey), publicKey);
+			result = getPeerBean().getStorage().remove(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE, publicKey);
 		}
 		if (!sendBackResults)
 		{
@@ -673,15 +606,15 @@ public class StorageRPC extends ReplyHandler
 		final Map<Number160, HashData> hashDataMap = message.getHashDataMap();
 		final PublicKey publicKey = message.getPublicKey();
 		
-		final Collection<Number160> result = peerBean.getStorage().compareAndPut(
+		final Collection<Number160> result = getPeerBean().getStorage().compareAndPut(
 				locationKey, domainKey, hashDataMap, publicKey, partial, protectDomain);
 		
 		if (logger.isDebugEnabled())
 		{
 			logger.debug("stored " + result.size());
 		}
-		if (result.size() > 0 && peerBean.getReplicationStorage() != null)
-			peerBean.getReplicationStorage().checkResponsibility(locationKey);
+		if (result.size() > 0 && getPeerBean().getReplicationStorage() != null)
+			getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
 		responseMessage.setKeys(result);
 		if(result.size()==0)
 		{

@@ -39,24 +39,10 @@ public class DirectDataRPC extends ReplyHandler
 		registerIoHandler(Command.DIRECT_DATA);
 	}
 	
-	@Deprecated
-	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
-			boolean raw, ChannelCreator channelCreator)
-	{
-		return send(remotePeer, buffer, raw, channelCreator, false);
-	}
-	
 	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
 			boolean raw, ChannelCreator channelCreator, boolean forceUDP)
 	{
-		return send(remotePeer, buffer, raw, channelCreator, connectionBean.getConfiguration().getIdleTCPMillis(), forceUDP);
-	}
-	
-	@Deprecated
-	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
-			boolean raw, ChannelCreator channelCreator, int idleTCPMillis)
-	{
-		return send(remotePeer, buffer, raw, channelCreator, idleTCPMillis, false);
+		return send(remotePeer, buffer, raw, channelCreator, getConnectionBean().getConfiguration().getIdleTCPMillis(), forceUDP);
 	}
 	
 	/**
@@ -82,12 +68,12 @@ public class DirectDataRPC extends ReplyHandler
 		final FutureData futureData = new FutureData(message, raw);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, peerBean, connectionBean, message);
+			final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendTCP(channelCreator, idleTCPMillis);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureData> requestHandler = new RequestHandlerUDP<FutureData>(futureData, peerBean, connectionBean, message);
+			final RequestHandlerUDP<FutureData> requestHandler = new RequestHandlerUDP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendUDP(channelCreator);
 		}
 	}
@@ -106,7 +92,7 @@ public class DirectDataRPC extends ReplyHandler
 		final Message message = createMessage(remotePeer, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);
 		final FutureData futureData = new FutureData(message, raw);
-		final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, peerBean, connectionBean, message);
+		final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
 		return requestHandler;
 	}
 
@@ -118,13 +104,6 @@ public class DirectDataRPC extends ReplyHandler
 	public void setReply(ObjectDataReply objectDataReply)
 	{
 		this.objectDataReply = objectDataReply;
-	}
-
-	@Override
-	public boolean checkMessage(final Message message)
-	{
-		return (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
-				&& message.getCommand() == Command.DIRECT_DATA;
 	}
 
 	public boolean hasRawDataReply()
@@ -140,17 +119,26 @@ public class DirectDataRPC extends ReplyHandler
 	@Override
 	public Message handleResponse(final Message message, boolean sign) throws Exception
 	{
-		final Message responseMessage = createMessage(message.getSender(), Command.DIRECT_DATA, Type.OK);
-		if(sign) {
-    		responseMessage.setPublicKeyAndSign(peerBean.getKeyPair());
+		if(!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2)
+				&& message.getCommand() == Command.DIRECT_DATA))
+		{
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		final Message responseMessage = createResponseMessage(message, Type.OK);
+		if(sign) 
+		{
+    		responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
     	}
-		responseMessage.setMessageId(message.getMessageId());
 		final RawDataReply rawDataReply2 = rawDataReply;
 		final ObjectDataReply objectDataReply2 = objectDataReply;
 		if (message.getType() == Type.REQUEST_1 && rawDataReply2 == null)
-			responseMessage.setType(Type.NOT_FOUND);
+		{
+			responseMessage.setType(Type.NOT_FOUND);	
+		}
 		else if (message.getType() == Type.REQUEST_2 && objectDataReply2 == null)
+		{
 			responseMessage.setType(Type.NOT_FOUND);
+		}
 		else
 		{
 			final ChannelBuffer requestBuffer = message.getPayload1();

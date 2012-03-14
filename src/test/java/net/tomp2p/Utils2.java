@@ -6,6 +6,7 @@ import java.util.Random;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.P2PConfiguration;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -103,6 +104,21 @@ public class Utils2
 		System.err.println("peers created.");
 		return peers;
 	}
+	
+	public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort)
+			throws Exception {
+		if (nrOfPeers < 1) {
+			throw new IllegalArgumentException("Cannot create less than 1 peer");
+		}
+		Peer[] peers = new Peer[nrOfPeers];
+		for (int i = 0; i < nrOfPeers; i++) {
+			peers[i] = new Peer(new Number160(rnd));
+			peers[i].getP2PConfiguration().setStartMaintenance(false);
+			peers[i].listen(startPort + i, startPort + i);
+		}
+		System.err.println("real peers created.");
+		return peers;
+	}
 
 	/**
 	 * Perfect routing, where each neighbor has contacted each other. This means
@@ -118,6 +134,17 @@ public class Utils2
 						.peerFound(peers[j].getPeerAddress(), null);
 		}
 		System.err.println("perfect routing done.");
+	}
+	
+	public static P2PConfiguration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
+			int maxFail, int[] maintenanceTimeoutsSeconds)
+	{
+		P2PConfiguration p2pConfiguration = new P2PConfiguration();
+		p2pConfiguration.setBagSize(bagSize);
+		p2pConfiguration.setCacheSize(cacheSize);
+		p2pConfiguration.setCacheTimeoutMillis(cacheTimeout);
+		p2pConfiguration.setMaxNrBeforeExclude(maxFail);
+		return p2pConfiguration;
 	}
 	
 }

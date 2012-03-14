@@ -11,7 +11,6 @@ import net.tomp2p.p2p.config.ConfigurationRemove;
 import net.tomp2p.p2p.config.ConfigurationStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageGeneric.ProtectionEnable;
 import net.tomp2p.storage.StorageGeneric.ProtectionMode;
@@ -45,13 +44,13 @@ public class TestSecurity
 			slave1.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number480 key, Data newData, PublicKey publicKey,
-						boolean putIfAbsent, boolean domainProtection)
+				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					System.err.println("P is " + publicKey);
 					gotPK.set(publicKey != null);
 					System.err.println("PK is " + gotPK);
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+					return super.put(locationKey,domainKey, contentKey, newData, publicKey, putIfAbsent, domainProtection);
 				}
 			});
 			// perfect routing
@@ -102,12 +101,12 @@ public class TestSecurity
 			master.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number480 key, Data newData, PublicKey publicKey,
-						boolean putIfAbsent, boolean domainProtection)
+				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					gotPK.set(publicKey != null);
 					System.err.println("PK is " + gotPK);
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+					return super.put(locationKey,domainKey,contentKey , newData, publicKey, putIfAbsent, domainProtection);
 				}
 			});
 			//
@@ -298,22 +297,21 @@ public class TestSecurity
 			slave1.listen(master);
 			master.getPeerBean().setStorage(new StorageMemory()
 			{
-				@Override
-				public boolean put(Number480 key, Data newData, PublicKey publicKey,
-						boolean putIfAbsent, boolean domainProtection)
+				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					//System.out.println("store1");
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+					return super.put(locationKey, domainKey, contentKey, newData, publicKey, putIfAbsent, domainProtection);
 				}
 			});
 			slave1.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number480 key, Data newData, PublicKey publicKey,
-						boolean putIfAbsent, boolean domainProtection)
+				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					//System.out.println("store2");
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+					return super.put(locationKey, domainKey, contentKey, newData, publicKey, putIfAbsent, domainProtection);
 				}
 			});
 			// perfect routing

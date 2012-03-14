@@ -450,4 +450,37 @@ public class TestPing
 				recv1.shutdown();
 		}
 	}
+	
+	@Test
+	public void testPingReserve() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new Peer(55, new Number160("0x9876"));
+			sender.listen(2424, 2424);
+			recv1 = new Peer(55, new Number160("0x1234"));
+			recv1.listen(8088, 8088);
+			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
+			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
+			Utils.addReleaseListenerAll(fr, recv1.getConnectionBean().getConnectionReservation(), cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(true, fr.isSuccess());
+			FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
+			fr2.awaitUninterruptibly();
+			//we have released the reservation here
+			Assert.assertEquals(false, fr2.isSuccess());
+			
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
 }

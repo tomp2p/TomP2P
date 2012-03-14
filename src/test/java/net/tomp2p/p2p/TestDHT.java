@@ -8,14 +8,13 @@ import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
 import java.util.Map.Entry;
+import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
@@ -36,10 +35,9 @@ import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.DistributedHashHashMap.Operation;
+import net.tomp2p.p2p.DistributedHashMap.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;
@@ -381,7 +379,7 @@ public class TestDHT
 			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
 			bootstrapTo.add(peer.getPeerAddress());
 			bootstrapTo.add(pa);
-			FutureBootstrap tmp = peer.bootstrap(null, bootstrapTo, Configurations.defaultStoreConfiguration());
+			FutureBootstrap tmp = peer.bootstrap(null, bootstrapTo, Configurations.defaultBootstrapConfiguration());
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 		}
@@ -1088,15 +1086,15 @@ public class TestDHT
 			ChannelCreator cc = fcc.getChannelCreator();
 			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
+					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master3.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
+					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master1.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false,false,  cc);
+					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			//
@@ -1107,7 +1105,7 @@ public class TestDHT
 			master2.listen(4002, 4002);
 			//
 			fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(0, fr.getResponse().getDataMap().size());
 			//
@@ -1407,12 +1405,12 @@ public class TestDHT
 			final class MyStorageMemory extends StorageMemory
 			{
 				@Override
-				public boolean put(Number480 key, Data newData, PublicKey publicKey,
-						boolean putIfAbsent, boolean domainProtection)
+				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					System.err.println("here");
 					counter.incrementAndGet();
-					return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+					return super.put(locationKey, domainKey, contentKey , newData, publicKey, putIfAbsent, domainProtection);
 				}
 			}
 			peers[50].getPeerBean().setStorage(new MyStorageMemory());
@@ -1505,7 +1503,7 @@ public class TestDHT
 			//wait for the replication
 			Peer peerClose = searchPeer(closest, peers);
 			int i=0;
-			while(!peerClose.getPeerBean().getStorage().contains(new Number480(locationKey, Configurations.DEFAULT_DOMAIN, Number160.ZERO)))
+			while(!peerClose.getPeerBean().getStorage().contains(locationKey, Configurations.DEFAULT_DOMAIN, Number160.ZERO))
 			{
 				Timings.sleep(250);
 				i++;
@@ -1516,7 +1514,7 @@ public class TestDHT
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
-					Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
+					Configurations.DEFAULT_DOMAIN, null, null, false, false, cc, false);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
@@ -1592,7 +1590,7 @@ public class TestDHT
 				fcc.awaitUninterruptibly();
 				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-						Configurations.DEFAULT_DOMAIN, null, null, false,false,  cc);
+						Configurations.DEFAULT_DOMAIN, null, null, false, false, cc, false);
 				futureResponse.awaitUninterruptibly();
 				master.getConnectionBean().getConnectionReservation().release(cc);
 				Assert.assertEquals(true, futureResponse.isSuccess());
@@ -1813,7 +1811,7 @@ public class TestDHT
 			final Data testDataOld = new Data("test old");
 			final Data testDataOld2 = new Data("test old2");
 			final Data testDataNew = new Data("test new");
-			final SortedSet<PeerAddress> queue = Collections.synchronizedSortedSet(new TreeSet<PeerAddress>());
+			final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>();
 			queue.add(peers[1].getPeerAddress()); 
 			queue.add(peers[2].getPeerAddress());
 			queue.add(peers[3].getPeerAddress());
@@ -1877,8 +1875,7 @@ public class TestDHT
 		final Number160 locationKey = Number160.createHash(location);
 		final Number160 domainKey = Number160.createHash(domain);
 		final Number160 contentKey = Number160.createHash(content);
-		Number480 key = new Number480(new Number320(locationKey, domainKey), contentKey);
-		peer.getPeerBean().getStorage().put(key, data, null, false, false);
+		peer.getPeerBean().getStorage().put(locationKey, domainKey, contentKey, data, null, false, false);
 	}
 
 	private void send2(final Peer p1, final Peer p2, final ChannelBuffer toStore1, final int count)
@@ -1931,12 +1928,11 @@ public class TestDHT
 	{
 		Collection<Number160> tmp = new ArrayList<Number160>();
 		tmp.add(new Number160(5));
-		Number320 number320=new Number320(locationKey, new ShortString("test").toNumber160());
-		Map<Number480, Data> test =peer.getPeerBean().getStorage().get(number320);
+		Map<Number480, Data> test =peer.getPeerBean().getStorage().subMap(locationKey, new ShortString("test").toNumber160(), Number160.ZERO, Number160.MAX_VALUE);
 		if (find)
 		{
 			Assert.assertEquals(1, test.size());
-			Assert.assertEquals(44444, test.get(new Number480(number320, new Number160(5))).getLength());
+			Assert.assertEquals(44444, test.get(new Number480(new Number320(locationKey, new ShortString("test").toNumber160()), new Number160(5))).getLength());
 		}
 		else
 			Assert.assertEquals(0, test.size());

@@ -36,7 +36,7 @@ public class TestTracker
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, null, false, false, bloomFilter, cc);
+					dom, null, false, false, bloomFilter, cc, false, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
@@ -81,7 +81,7 @@ public class TestTracker
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, null, false, false, null, cc);
+					dom, null, false, false, null, cc, false, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
@@ -120,7 +120,7 @@ public class TestTracker
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new String("data").getBytes(), false, false, null, cc);
+					dom, new String("data").getBytes(), false, false, null, cc, false, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
@@ -162,7 +162,7 @@ public class TestTracker
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.getPeerAddress(), loc,
-					dom, new String("data").getBytes(), false, false, bloomFilter, cc);
+					dom, new String("data").getBytes(), false, false, bloomFilter, cc, false, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			bloomFilter.add(sender.getPeerID());

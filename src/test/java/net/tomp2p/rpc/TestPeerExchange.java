@@ -30,7 +30,7 @@ public class TestPeerExchange
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			sender.getPeerBean().getTrackerStorage().addActive(locationKey, domainKey,sender.getPeerAddress(), null, 0, 0);
-			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey, false, cc);
+			FutureResponse fr = sender.getPeerExchangeRPC().peerExchange(recv1.getPeerAddress(), locationKey, domainKey, false, cc, false);
 			fr.awaitUninterruptibly();
 			if(fr.isFailed())
 				System.err.println(fr.getFailedReason());

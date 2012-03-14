@@ -6,7 +6,7 @@ import java.util.Collection;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message.Command;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -40,7 +40,8 @@ public class TestNeighbor
 			ChannelCreator cc = fcc.getChannelCreator();
 			
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
-					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
+					"0x30"), null, null, Type.REQUEST_2, cc, false);
+			
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
@@ -76,7 +77,7 @@ public class TestNeighbor
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), new Number160(
-					"0x30"), null, null, Command.NEIGHBORS_STORAGE, true, false, cc);
+					"0x30"), null, null, Type.REQUEST_2, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
@@ -113,10 +114,9 @@ public class TestNeighbor
 			ChannelCreator cc = fcc.getChannelCreator();
 			try
 			{
-
 				neighbors2.closeNeighbors(sender.getPeerAddress(),
 						new Number160("0x30"), null,
-						null, Command.PUT, true, false, cc);
+						null, Type.EXCEPTION, cc, false);
 				Assert.fail("");
 			}
 			catch (IllegalArgumentException i)

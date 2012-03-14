@@ -30,9 +30,8 @@ import net.tomp2p.peers.ShortString;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ResponsibilityListener;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
-import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageDisk;
+import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
@@ -59,12 +58,10 @@ public class TestStorage
 		}
 		catch (SecurityException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		catch (IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -123,7 +120,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
@@ -131,7 +128,7 @@ public class TestStorage
 			Number320 key=new Number320(new Number160(33), new ShortString("test")
 			.toNumber160());
 			//Set<Number480> tofetch = new HashSet<Number480>();
-			Data c = storeRecv.get(new Number480(key, new Number160(77)));
+			Data c = storeRecv.get(key.getLocationKey(), key.getDomainKey(), new Number160(77));
 			for (int i = 0; i < me1.length; i++)
 				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
 			//
@@ -141,11 +138,11 @@ public class TestStorage
 			tmp.put(new Number160(77), new Data(me1));
 			tmp.put(new Number160(88), new Data(me2));
 			fr = smmSender.put(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp, false, false, false, cc);
+					.toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
-			Map<Number480, Data>  result2 = storeRecv.get(key);
+			Map<Number480, Data>  result2 = storeRecv.subMap(key.getLocationKey(), key.getDomainKey(), Number160.ZERO, Number160.MAX_VALUE);
 			Assert.assertEquals(result2.size(), 2);
 			Number480 search=new Number480(key, new Number160(88));
 			c = result2.get(search);
@@ -200,7 +197,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
@@ -208,7 +205,7 @@ public class TestStorage
 			Number320 key=new Number320(new Number160(33), new ShortString("test")
 			.toNumber160());
 			//Set<Number480> tofetch = new HashSet<Number480>();
-			Data c = storeRecv.get(new Number480(key, new Number160(77)));
+			Data c = storeRecv.get(key.getLocationKey(), key.getDomainKey(), new Number160(77));
 			for (int i = 0; i < me1.length; i++)
 				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
 			//
@@ -221,7 +218,7 @@ public class TestStorage
 			hashDataMap.put(new Number160(88), new HashData(new Number160(33), new Data(me2)));
 			
 			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
-					hashDataMap, false, false, false, false, cc);
+					hashDataMap, false, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			//we fail because we provided a false hash
 			Assert.assertEquals(false, fr.isSuccess());
@@ -230,14 +227,14 @@ public class TestStorage
 			//set the correct hash
 			hashDataMap.put(new Number160(88), new HashData(d2.getHash(), new Data(me2)));
 			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
-					hashDataMap, false, false, false, false, cc);
+					hashDataMap, false, false, false, false, cc, false);
 			
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			
 			Assert.assertEquals(true, fr.isSuccess());
-			Map<Number480, Data>  result2 = storeRecv.get(key);
+			Map<Number480, Data>  result2 = storeRecv.subMap(key.getLocationKey(), key.getDomainKey(), Number160.ZERO, Number160.MAX_VALUE);
 			Assert.assertEquals(result2.size(), 2);
 			Number480 search=new Number480(key, new Number160(88));
 			c = result2.get(search);
@@ -290,11 +287,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
-			Data c = storeRecv.get(new Number480(new Number160(33), new ShortString("test")
-			.toNumber160(), new Number160(77)));
+			Data c = storeRecv.get(new Number160(33), new ShortString("test")
+			.toNumber160(), new Number160(77));
 			for (int i = 0; i < me1.length; i++)
 				Assert.assertEquals(me1[i], c.getData()[i + c.getOffset()]);
 			//
@@ -304,13 +301,13 @@ public class TestStorage
 			tmp.put(new Number160(77), new Data(me3));
 			tmp.put(new Number160(88), new Data(me4));
 			fr = smmSender.putIfAbsent(recv1.getPeerAddress(), new Number160(33), new ShortString(
-					"test").toNumber160(), tmp, false, false, false, cc);
+					"test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// we cannot put anything there, since there already is 
 			Assert.assertEquals(true, fr.isSuccess());
 			Collection<Number160> putKeys = fr.getResponse().getKeys();
 			Assert.assertEquals(0, putKeys.size());
-			c = storeRecv.get(new Number480(new Number160(33), new ShortString("test").toNumber160(),new Number160(88)));
+			c = storeRecv.get(new Number160(33), new ShortString("test").toNumber160(),new Number160(88));
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
 			sender.getConnectionBean().getConnectionReservation().release(cc);
@@ -354,11 +351,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, false,false,  cc);
+					.toNumber160(), tmp.keySet(), null, false,false,  cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -406,11 +403,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, false,false,  cc);
+					.toNumber160(), null, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -479,11 +476,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// remove
 			fr = smmSender.remove(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp.keySet(), true, false, cc);
+					new ShortString("test").toNumber160(), tmp.keySet(), true, false, cc, false);
 			fr.awaitUninterruptibly();
 			Message m = fr.getResponse();
 			Assert.assertEquals(true, fr.isSuccess());
@@ -491,7 +488,7 @@ public class TestStorage
 			compare(tmp, removed);
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, false,false,  cc);
+					.toNumber160(), tmp.keySet(), null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			m = fr.getResponse();
@@ -538,11 +535,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// remove
 			fr = smmSender.remove(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), null, true, false, cc);
+					new ShortString("test").toNumber160(), null, true, false, cc, false);
 			fr.awaitUninterruptibly();
 			Message m = fr.getResponse();
 			Assert.assertEquals(true, fr.isSuccess());
@@ -550,7 +547,7 @@ public class TestStorage
 			compare(tmp, removed);
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, false,false,  cc);
+					.toNumber160(), tmp.keySet(), null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			m = fr.getResponse();
@@ -597,11 +594,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.add(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp.values(), false, false, cc);
+					new ShortString("test").toNumber160(), tmp.values(), false, false, cc, false);
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, false,false,  cc);
+					.toNumber160(), null, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -648,7 +645,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			sender.getConnectionBean().getConnectionReservation().release(cc);
@@ -695,7 +692,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			sender.getConnectionBean().getConnectionReservation().release(cc);
@@ -741,12 +738,12 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			//
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, false,false,  cc);
+					.toNumber160(), null, null, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			sender.getConnectionBean().getConnectionReservation().release(cc);
@@ -789,7 +786,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			Timings.sleep(100);
 			fr.cancel();
@@ -837,14 +834,14 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
-					new ShortString("test").toNumber160(), tmp, false, false, false, cc);
+					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			Utils.addReleaseListener(fr, sender.getConnectionBean().getConnectionReservation(), cc, 1);
 			fr.awaitUninterruptibly();
 			System.err.println("XX:"+fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			//
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, false,false,  cc);
+					.toNumber160(), null, null, false, false, cc, false);
 			Utils.addReleaseListener(fr, sender.getConnectionBean().getConnectionReservation(), cc, 1);
 			Timings.sleep(100);
 			fr.cancel();
@@ -964,7 +961,7 @@ public class TestStorage
 			final FutureChannelCreator fcc=master.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), location, location, dataMap, false, false, false, cc);
+			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), location, location, dataMap, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Utils.addReleaseListenerAll(fr, master.getConnectionBean().getConnectionReservation(), cc);
 			//s1.put(location, Number160.ZERO, null, dataMap, false, false);
@@ -1018,7 +1015,7 @@ public class TestStorage
 			final FutureChannelCreator fcc=master.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			master.getStoreRPC().put(master.getPeerAddress(), loc, domainKey,  contentMap, false, false, false, cc).awaitUninterruptibly();
+			master.getStoreRPC().put(master.getPeerAddress(), loc, domainKey,  contentMap, false, false, false, cc, false).awaitUninterruptibly();
 			slave1 = new Peer(new Number160(rnd));
 			slave1.listen(8001,8001);
 			slave2 = new Peer(new Number160(rnd));
@@ -1053,7 +1050,7 @@ public class TestStorage
 		tmp.put(new Number160(77), new Data(me1));
 		tmp.put(new Number160(88), new Data(me2));
 		FutureResponse fr = smmSender.add(recv1.getPeerAddress(), new Number160(33),
-				new ShortString("test").toNumber160(), tmp.values(), false, false, cc);
+				new ShortString("test").toNumber160(), tmp.values(), false, false, cc, false);
 		return fr;
 	}
 }

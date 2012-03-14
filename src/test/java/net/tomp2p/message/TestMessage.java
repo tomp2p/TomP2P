@@ -77,7 +77,7 @@ public class TestMessage
 		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 		// encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.setCommand(Command.NEIGHBORS_TRACKER);
+		m1.setCommand(Command.NEIGHBORS);
 		m1.setType(Message.Type.DENIED);
 		Number160 key1 = new Number160(5667);
 		Number160 key2 = new Number160(5667);

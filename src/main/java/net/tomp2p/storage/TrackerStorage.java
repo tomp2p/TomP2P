@@ -52,7 +52,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
 	final private static Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
-	final private static DigestInfo EMPTY_DIGEST_INFO = new DigestInfo(Number160.ZERO, 0);
+	final private static DigestInfo EMPTY_DIGEST_INFO = new DigestInfo(0);
 	// once you call listen, changing this value has no effect unless a new
 	// TrackerRPC is created. The value is chosen to fit into one single UDP
 	// packet. This means that the attached data must be 0, otherwise you have
@@ -429,47 +429,43 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		peerOffline.remove(peerAddress.getID());
 	}
 
-	@Override
-	public DigestInfo digest(Number320 key)
+	private DigestInfo digest(Number160 locationKey, Number160 domainKey)
 	{
-		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
+		Map<Number160, TrackerData> data = trackerDataMesh.get(new Number320(locationKey, domainKey));
 		if (data == null)
 		{
 			return EMPTY_DIGEST_INFO;
 		}
 		synchronized (data)
 		{
-			DigestInfo digestInfo = new DigestInfo();
-			for (Number160 tmpKey : data.keySet())
-			{
-				digestInfo.getKeyDigests().add(tmpKey);	
-			}
-			return digestInfo;
+			return new DigestInfo(data.size());
 		}
 	}
 
 	@Override
-	public DigestInfo digest(Number320 key, Collection<Number160> contentKeys)
+	public DigestInfo digest(Number160 locationKey, Number160 domainKey, Collection<Number160> contentKeys)
 	{
 		if (contentKeys == null)
 		{
-			return digest(key);
+			return digest(locationKey, domainKey);
 		}
-		Map<Number160, TrackerData> data = trackerDataMesh.get(key);
+		Map<Number160, TrackerData> data = trackerDataMesh.get(new Number320(locationKey, domainKey));
 		if (data == null)
+		{
 			return EMPTY_DIGEST_INFO;
+		}
+		int counter = 0;
 		synchronized (data)
 		{
-			DigestInfo digestInfo = new DigestInfo();
 			for (Number160 tmpKey : contentKeys)
 			{
 				if (data.containsKey(tmpKey))
 				{
-					digestInfo.getKeyDigests().add(tmpKey);
+					counter ++;
 				}
 			}
-			return digestInfo;
 		}
+		return new DigestInfo(counter);
 	}
 
 	public void removeReferred(Number160 locationKey, Number160 domainKey, Number160 key, PeerAddress referrer)

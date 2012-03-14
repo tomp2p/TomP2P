@@ -6,3 +6,4 @@ bin
 .idea
 *.iml
 *~
+/mapreduce.txt

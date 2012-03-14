@@ -75,26 +75,21 @@
       <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
       <version>3.3.0.Patched-1</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.6.4</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-jdk14</artifactId>
       <version>1.6.4</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>com.sleepycat</groupId>
-      <artifactId>je</artifactId>
-      <version>4.1.10</version>
-      <scope>compile</scope>
-      <optional>true</optional>
+      <groupId>JDBM</groupId>
+      <artifactId>JDBM</artifactId>
+      <version>3.0-SNAPSHOT</version>
     </dependency>
 
     <dependency>
@@ -174,7 +169,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>2.3.2</version>
         <configuration>
           <source>1.6</source>
           <target>1.6</target>

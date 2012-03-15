@@ -1,6 +1,10 @@
 package net.tomp2p.storage;
 
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,7 +31,7 @@ public class StorageDisk extends StorageGeneric
 	final private Map<Number480, Long> timeoutMap;
 	final private SortedMap<Long, Set<Number480>> timeoutMapRev;
 	// Protection
-	final private Map<Number320, PublicKey> protectedMap;
+	final private Map<Number320, byte[]> protectedMap;
 	// Replication
 	// maps content (locationKey) to peerid
 	final private Map<Number160, Number160> responsibilityMap;
@@ -43,7 +47,7 @@ public class StorageDisk extends StorageGeneric
 		dataMap = db.<Number480, Data>createTreeMap("dataMap");
 		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
 		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");
-		protectedMap = db.<Number320, PublicKey>createHashMap("protectedMap");
+		protectedMap = db.<Number320, byte[]>createHashMap("protectedMap");
 		responsibilityMap = db.<Number160, Number160>createHashMap("responsibilityMap");
 		responsibilityMapRev = db.<Number160, Set<Number160>>createHashMap("responsibilityMapRev");
 	}
@@ -186,7 +190,8 @@ public class StorageDisk extends StorageGeneric
 	@Override
 	public boolean protectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey)
 	{
-		protectedMap.put(new Number320(locationKey, domainKey), publicKey);
+		byte[] encodedPublicKey = publicKey.getEncoded();
+		protectedMap.put(new Number320(locationKey, domainKey), encodedPublicKey);
 		return true;
 	}
 
@@ -194,10 +199,28 @@ public class StorageDisk extends StorageGeneric
 	public boolean isDomainProtectedByOthers(Number160 locationKey, Number160 domainKey,
 			PublicKey publicKey)
 	{
-		PublicKey other = protectedMap.get(new Number320(locationKey, domainKey));
-		if (other == null)
+		byte[] encodedOther = protectedMap.get(new Number320(locationKey, domainKey));
+		String alg = publicKey.getAlgorithm();
+		if (encodedOther == null)
 			return false;
-		return !publicKey.equals(other);
+		X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encodedOther);
+		KeyFactory keyFactory;
+		try
+		{
+			keyFactory = KeyFactory.getInstance(alg);
+			PublicKey other = keyFactory.generatePublic(pubKeySpec);
+			return !publicKey.equals(other);
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			e.printStackTrace();
+			return false;
+		}
+		catch (InvalidKeySpecException e)
+		{
+			e.printStackTrace();
+			return false;
+		}
 	}
 	
 	public Number160 findPeerIDForResponsibleContent(Number160 locationKey)

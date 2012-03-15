@@ -258,9 +258,9 @@ public abstract class StorageGeneric implements Storage
 				return null;
 			}
 			SortedMap<Number480, Data> tmp = subMap(locationKey, domainKey, fromContentKey, toContentKey);
-			//Collection<Number480> keys = new ArrayList<Number480>(tmp.keySet());
+			Collection<Number480> keys = new ArrayList<Number480>(tmp.keySet());
 			SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
-			for (Number480 key : tmp.keySet())
+			for (Number480 key : keys)
 			{
 				Data data = get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
 				if (data.getPublicKey() == null || data.getPublicKey().equals(publicKey))

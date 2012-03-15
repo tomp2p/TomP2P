@@ -68,6 +68,14 @@ public class TestStorage
 	{
 		store(storage, null, false);
 	}
+	
+	private void store(StorageGeneric storage, int nr) throws IOException
+	{
+		boolean store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test1"), null, false, false);
+		Assert.assertEquals(true, store);
+		store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test2"), null, false, false);
+		Assert.assertEquals(true, store);
+	}
 
 	private void store(StorageGeneric storage, PublicKey publicKey, boolean protectDomain)
 			throws IOException
@@ -81,8 +89,12 @@ public class TestStorage
 	@Test
 	public void testGet() throws Exception
 	{
-		testGet(new StorageMemory());
-		testGet(new StorageDisk(DIR));
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testGet(storageM);
+		testGet(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testGet(StorageGeneric storage) throws IOException, ClassNotFoundException
@@ -94,14 +106,17 @@ public class TestStorage
 		Assert.assertEquals("test2", result2.getObject());
 		Data result3 = storage.get(locationKey, domainKey, content3);
 		Assert.assertEquals(null, result3);
-		storage.close();
 	}
 
 	@Test
 	public void testPut() throws Exception
 	{
-		testPut(new StorageMemory());
-		testPut(new StorageDisk(DIR));
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testPut(storageM);
+		testPut(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testPut(StorageGeneric storage) throws IOException
@@ -112,14 +127,17 @@ public class TestStorage
 		storage.put(locationKey, domainKey, content3, new Data("test4"), null, false, false);
 		SortedMap<Number480, Data> result = storage.subMap(locationKey, domainKey, content1, content4);
 		Assert.assertEquals(3, result.size());
-		storage.close();
 	}
 
 	@Test
 	public void testPutIfAbsent() throws Exception
 	{
-		testPutIfAbsent(new StorageMemory());
-		testPutIfAbsent(new StorageDisk(DIR));
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testPutIfAbsent(storageM);
+		testPutIfAbsent(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testPutIfAbsent(StorageGeneric storage) throws IOException
@@ -132,14 +150,17 @@ public class TestStorage
 		Assert.assertEquals(3, result1.size());
 		SortedMap<Number480, Data> result2 = storage.subMap(locationKey, domainKey, content1, content3);
 		Assert.assertEquals(2, result2.size());
-		storage.close();
 	}
 
 	@Test
 	public void testRemove() throws Exception
 	{
-		testRemove(new StorageMemory());
-		testRemove(new StorageDisk(DIR));
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testRemove(storageM);
+		testRemove(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testRemove(StorageGeneric storage) throws IOException, ClassNotFoundException
@@ -154,14 +175,17 @@ public class TestStorage
 		Assert.assertEquals(2, result3.size());
 		SortedMap<Number480, Data> result4 = storage.subMap(locationKey, domainKey, content1, content4);
 		Assert.assertEquals(0, result4.size());
-		storage.close();
 	}
 
 	@Test
 	public void testTTL1() throws Exception
 	{
-		testTTL1(new StorageDisk(DIR));
-		testTTL1(new StorageMemory());
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testTTL1(storageM);
+		testTTL1(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testTTL1(StorageGeneric storage) throws Exception
@@ -172,14 +196,17 @@ public class TestStorage
 		Thread.sleep(2000);
 		Data tmp = storage.get(locationKey, domainKey, content1);
 		Assert.assertEquals(true, tmp != null);
-		storage.close();
 	}
 
 	@Test
 	public void testTTL2() throws Exception
 	{
-		testTTL2(new StorageDisk(DIR));
-		testTTL2(new StorageMemory());
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testTTL2(storageM);
+		testTTL2(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testTTL2(StorageGeneric storage) throws Exception
@@ -191,14 +218,17 @@ public class TestStorage
 		storage.checkTimeout();
 		Data tmp = storage.get(locationKey, domainKey, content1);
 		Assert.assertEquals(true, tmp == null);
-		storage.close();
 	}
 
 	@Test
 	public void testResponsibility() throws Exception
 	{
-		testResponsibility(new StorageDisk(DIR));
-		testResponsibility(new StorageMemory());
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testResponsibility(storageM);
+		testResponsibility(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testResponsibility(StorageGeneric storage) throws Exception
@@ -210,14 +240,17 @@ public class TestStorage
 		storage.updateResponsibilities(content1, domainKey);
 		storage.updateResponsibilities(content2, locationKey);
 		Assert.assertEquals(domainKey, storage.findPeerIDForResponsibleContent(content1));
-		storage.close();
 	}
 
 	@Test
 	public void testPublicKeyDomain() throws Exception
 	{
-		testPublicKeyDomain(new StorageDisk(DIR));
-		testPublicKeyDomain(new StorageMemory());
+		StorageGeneric storageM = new StorageMemory();
+		StorageGeneric storageD = new StorageDisk(DIR);
+		testPublicKeyDomain(storageM);
+		testPublicKeyDomain(storageD);
+		storageM.close();
+		storageD.close();
 	}
 
 	private void testPublicKeyDomain(StorageGeneric storage) throws Exception
@@ -233,7 +266,6 @@ public class TestStorage
 		// domain is protected by pair1
 		boolean result2 = storage.put(locationKey, domainKey, content3, new Data("test5"), pair2.getPublic(), false, true);
 		Assert.assertEquals(false, result2);
-		storage.close();
 	}
 	
 	@Test
@@ -306,64 +338,50 @@ public class TestStorage
 	}
 	
 	@Test
-	public void testConcurrency() throws InterruptedException
+	public void testConcurrency() throws InterruptedException, IOException
 	{
+		final StorageGeneric sM = new StorageMemory();
+		final StorageGeneric sD = new StorageDisk(DIR);
+		store(sM);
+		store(sD);
 		final AtomicInteger counter = new AtomicInteger();
 		for(int i=0;i<100;i++)
 		{
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
+			new Thread(new Runnable()
 			{
-				try
+				@Override
+				public void run()
 				{
-					testGet();
-					testPutInitial();
+					try
+					{
+						Data result1 = sM.get(locationKey, domainKey, content1);
+						Assert.assertEquals("test1", result1.getObject());
+						Data result2 = sM.get(locationKey, domainKey, content2);
+						Assert.assertEquals("test2", result2.getObject());
+						Data result3 = sM.get(locationKey, domainKey, content3);
+						Assert.assertEquals(null, result3);
+						
+						result1 = sD.get(locationKey, domainKey, content1);
+						Assert.assertEquals("test1", result1.getObject());
+						result2 = sD.get(locationKey, domainKey, content2);
+						Assert.assertEquals("test2", result2.getObject());
+						result3 = sD.get(locationKey, domainKey, content3);
+						Assert.assertEquals(null, result3);
+						
+						store(sM,1);
+						store(sD,1);
+					}
+					catch (Throwable t)
+					{
+						t.printStackTrace();
+						counter.incrementAndGet();
+					}
 				}
-				catch (Throwable t)
-				{
-					t.printStackTrace();
-					counter.incrementAndGet();
-				}
-			}
-		}).start();
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					testPut();
-					testPutIfAbsent();
-				}
-				catch (Throwable t)
-				{
-					t.printStackTrace();
-					counter.incrementAndGet();
-				}
-			}
-		}).start();
-		new Thread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				try
-				{
-					testPutInitial();
-					testRemove();
-				}
-				catch (Throwable t)
-				{
-					t.printStackTrace();
-					counter.incrementAndGet();
-				}
-			}
-		}).start();
+			}).start();
 		}
 		Thread.sleep(500);
 		Assert.assertEquals(0, counter.get());
+		sM.close();
+		sD.close();
 	}
 }

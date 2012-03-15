@@ -952,14 +952,15 @@ public class Peer
 	 * @param port
 	 * @return
 	 */
-	public void setupPortForwanding(String internalHost)
+	public boolean setupPortForwanding(String internalHost)
 	{
 		int portUDP = bindings.getOutsideUDPPort();
 		int portTCP = bindings.getOutsideTCPPort();
+		boolean success = false;
 
 		try
 		{
-			connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),
+			success = connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),
 					getPeerAddress().portTCP(), portUDP, portTCP);
 			// connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
 			// getPeerAddress().portTCP(), portUDP, portTCP);
@@ -967,22 +968,26 @@ public class Peer
 		catch (IOException e)
 		// catch (NatPmpException e)
 		{
-			logger.warn("cannot find UPNP devices " + e);
-			boolean retVal;
+		}
+
+		if (!success)
+		{
+			logger.warn("cannot find UPNP devices");
 			try
 			{
-				retVal = connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
+				success = connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
 						getPeerAddress().portTCP(), portUDP, portTCP);
-				if (!retVal)
+				if (!success)
 				{
 					logger.warn("cannot find NAT-PMP devices");
 				}
 			}
 			catch (NatPmpException e1)
 			{
-				logger.warn("cannot find NAT-PMP devices " + e);
+				logger.warn("cannot find NAT-PMP devices " + e1);
 			}
 		}
+		return success;
 	}
 	
 	/**
@@ -1105,13 +1110,14 @@ public class Peer
 							else
 							{
 								// now we know our internal IP, where we receive packets
-								setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
-									.getInetAddress().getHostAddress());
-								//
-								serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
-										bindings.getOutsideTCPPort());
-								serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-								getPeerBean().setServerPeerAddress(serverAddress);
+								if (setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
+									.getInetAddress().getHostAddress()))
+								{
+									serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
+											bindings.getOutsideTCPPort());
+									serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
+									getPeerBean().setServerPeerAddress(serverAddress);
+								}
 							}
 						}
 						// else -> we announce exactly how the other peer sees us

@@ -148,7 +148,7 @@ public class TestTaskRPC
 			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 			dataMap.put(new Number160(22), new Data("testme"));
 			FutureAsyncTask futureAsyncTask = peer1.getAsyncTask().submit(peer2.getPeerAddress(), 
-					futureChannelCreator.getChannelCreator(), taskId, dataMap, new MyWorker3(), null, false, false);
+					futureChannelCreator.getChannelCreator(), taskId, dataMap, new MyWorker3(), false, false);
 			Utils.addReleaseListenerAll(futureAsyncTask, peer1.getConnectionBean().getConnectionReservation(), futureChannelCreator.getChannelCreator());
 			futureAsyncTask.awaitUninterruptibly();
 			Assert.assertEquals(true, futureAsyncTask.isSuccess());
@@ -184,7 +184,7 @@ public class TestTaskRPC
 			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 			dataMap.put(new Number160(22), new Data("testme"));
 			FutureAsyncTask futureAsyncTask = peer1.getAsyncTask().submit(peer2.getPeerAddress(), 
-					futureChannelCreator.getChannelCreator(), taskId, dataMap, new MyWorker3(), null, false, false);
+					futureChannelCreator.getChannelCreator(), taskId, dataMap, new MyWorker3(), false, false);
 			Utils.addReleaseListenerAll(futureAsyncTask, peer1.getConnectionBean().getConnectionReservation(), futureChannelCreator.getChannelCreator());
 			peer2.shutdown();
 			futureAsyncTask.awaitUninterruptibly();

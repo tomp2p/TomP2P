@@ -55,10 +55,6 @@
       <url>http://repository.jboss.org/nexus/content/groups/public/</url>
     </repository>
     <repository>
-      <id>download.oracle.com</id>
-      <url>http://download.oracle.com/maven</url>
-    </repository>
-    <repository>
       <id>repository.tomp2p.net</id>
       <url>http://tomp2p.net/dev/mvn</url>
     </repository>

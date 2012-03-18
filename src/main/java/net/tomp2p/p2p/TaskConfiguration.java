@@ -27,13 +27,14 @@ public class TaskConfiguration
 	//set to force either UDP or TCP
 	final private boolean forceUPD;
 	final private boolean forceTCP;
+	final private boolean sign;
 	
 	public TaskConfiguration(int minimumResults, int maxFailure, int parallelDiff)
 	{
-		this(minimumResults, maxFailure, parallelDiff, false, false);
+		this(minimumResults, maxFailure, parallelDiff, false, false, false);
 	}
 
-	public TaskConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD, boolean forceTCP)
+	public TaskConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD, boolean forceTCP, boolean sign)
 	{
 		if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0)
 			throw new IllegalArgumentException("need to be larger or equals zero");
@@ -42,6 +43,7 @@ public class TaskConfiguration
 		this.parallelDiff = parallelDiff;
 		this.forceUPD = forceUPD;
 		this.forceTCP = forceTCP;
+		this.sign = sign;
 	}
 
 	public int getMinimumResults()
@@ -72,5 +74,10 @@ public class TaskConfiguration
 	public boolean isForceTCP()
 	{
 		return forceTCP;
+	}
+
+	public boolean isSign()
+	{
+		return sign;
 	}
 }

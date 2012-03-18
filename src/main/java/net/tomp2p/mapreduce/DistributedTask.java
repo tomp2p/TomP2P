@@ -1,35 +1,30 @@
 package net.tomp2p.mapreduce;
 
-import java.security.KeyPair;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTask;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.DistributedHashMap;
 import net.tomp2p.p2p.DistributedRouting;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.TaskConfiguration;
-import net.tomp2p.p2p.DistributedHashMap.Operation;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
-import net.tomp2p.utils.Utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DistributedTask
 {
@@ -83,7 +78,7 @@ public class DistributedTask
 							if (futureRouting.isSuccess())
 							{
 								SortedMap<PeerAddress, DigestInfo> map = future.getDirectHitsDigest();
-								NavigableSet<PeerAddress> queue = findBest(map);
+								NavigableSet<Pair> queue = findBest(map);
 								parallelRequests(futureTask, queue, taskConfiguration, channelCreator, locationKey, dataMap, 
 										worker, taskConfiguration.isForceUPD(), taskConfiguration.isSign());
 							}
@@ -103,7 +98,7 @@ public class DistributedTask
 		return futureTask;
 	}
 	
-	private void parallelRequests(FutureTask futureTask, NavigableSet<PeerAddress> queue, 
+	private void parallelRequests(FutureTask futureTask, NavigableSet<Pair> queue, 
 			TaskConfiguration taskConfiguration, ChannelCreator channelCreator, Number160 taskId, 
 			Map<Number160, Data> dataMap, Worker worker, boolean forceUDP, boolean sign)
 	{
@@ -113,7 +108,7 @@ public class DistributedTask
 				true, channelCreator, taskId, dataMap, worker, forceUDP, sign);
 	}
 	
-	private void loopRec(final NavigableSet<PeerAddress> queue, final int min,
+	private void loopRec(final NavigableSet<Pair> queue, final int min,
 			final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
 			final FutureAsyncTask[] futures, final FutureTask futureTask,
 			final boolean cancelOnFinish, final ChannelCreator channelCreator,
@@ -125,7 +120,7 @@ public class DistributedTask
 		{
 			if (futures[i] == null)
 			{
-				PeerAddress next = queue.pollFirst();
+				PeerAddress next = queue.pollFirst().peerAddress;
 				if (next != null)
 				{
 					active++;
@@ -176,7 +171,6 @@ public class DistributedTask
 			}
 		});
 	}
-
 	
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
 			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
@@ -190,9 +184,39 @@ public class DistributedTask
 				channelCreator);
 	}
 	
-	static NavigableSet<PeerAddress> findBest(SortedMap<PeerAddress, DigestInfo> map)
+	static NavigableSet<Pair> findBest(SortedMap<PeerAddress, DigestInfo> map)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		NavigableSet<Pair> set = new TreeSet<DistributedTask.Pair>();
+		for(Map.Entry<PeerAddress, DigestInfo> entry:map.entrySet())
+		{
+			set.add(new Pair(entry.getKey(), entry.getValue().getSize()));
+		}
+		return set;
+	}
+	
+	private static class Pair implements Comparable<Pair>
+	{
+		private final PeerAddress peerAddress;
+		private final int queueSize;
+		public Pair(PeerAddress peerAddress, int queueSize)
+		{
+			this.peerAddress = peerAddress;
+			this.queueSize = queueSize;
+		}
+		@Override
+		public int compareTo(Pair o)
+		{
+			int diff = queueSize - o.queueSize;
+			if(diff != 0) return diff;
+			return peerAddress.compareTo(o.peerAddress);
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			if(!(obj instanceof Pair))
+				return false;
+			return compareTo((Pair) obj) == 0;
+		}
 	}
 }

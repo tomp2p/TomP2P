@@ -16,13 +16,13 @@
 package net.tomp2p.connection;
 import java.security.KeyPair;
 
-import net.tomp2p.mapreduce.TaskManager;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.task.TaskManager;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings

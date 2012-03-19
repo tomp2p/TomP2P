@@ -17,10 +17,11 @@ package net.tomp2p.connection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancellable;
-import net.tomp2p.futures.FutureChannelCreation;
+import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
@@ -44,7 +45,7 @@ public class SenderNetty implements Sender
 	final private static Logger logger = LoggerFactory.getLogger(SenderNetty.class);
 	// Timer used for ReplyTimeout
 	final private Timer timer;
-	final private ConnectionConfigurationBean configuration;
+	final private Configuration configuration;
 	private volatile boolean shutdown = false;
 	/**
 	 * The sender is shared for all master and child peers
@@ -52,7 +53,7 @@ public class SenderNetty implements Sender
 	 * @param configuration ConnectionConfigurationBean
 	 * @param timer Timer
 	 */
-	public SenderNetty(final ConnectionConfigurationBean configuration, Timer timer)
+	public SenderNetty(final Configuration configuration, Timer timer)
 	{
 		this.configuration = configuration;
 		this.timer = timer;
@@ -146,7 +147,7 @@ public class SenderNetty implements Sender
 			{
 				throw new RuntimeException("This send needs to be a fire and forget request");
 			}
-			final FutureChannelCreation channelFutureConnect = channelCreator.createTCPChannel(
+			final FutureChannel channelFutureConnect = channelCreator.createTCPChannel(
 					replyTimeoutHandler, requestHandler, configuration.getConnectTimeoutMillis(), 
 					message.getRecipient().createSocketTCP());
 			final Cancellable cancel = new Cancellable()
@@ -158,10 +159,10 @@ public class SenderNetty implements Sender
 				}
 			};
 			futureResponse.addCancellation(cancel);
-			channelFutureConnect.addListener(new BaseFutureAdapter<FutureChannelCreation>()
+			channelFutureConnect.addListener(new BaseFutureAdapter<FutureChannel>()
 			{
 				@Override
-				public void operationComplete(FutureChannelCreation future) throws Exception
+				public void operationComplete(FutureChannel future) throws Exception
 				{
 					futureResponse.removeCancellation(cancel);
 					if(future.isSuccess())
@@ -228,12 +229,12 @@ public class SenderNetty implements Sender
 		}
 		try
 		{
-			final FutureChannelCreation futureChannelCreation = channelCreator.createUDPChannel(replyTimeoutHandler,
+			final FutureChannel futureChannelCreation = channelCreator.createUDPChannel(replyTimeoutHandler,
 					requestHandler, broadcast);
-			futureChannelCreation.addListener(new BaseFutureAdapter<FutureChannelCreation>()
+			futureChannelCreation.addListener(new BaseFutureAdapter<FutureChannel>()
 			{
 				@Override
-				public void operationComplete(FutureChannelCreation future) throws Exception
+				public void operationComplete(FutureChannel future) throws Exception
 				{
 					if(future.isSuccess())
 					{

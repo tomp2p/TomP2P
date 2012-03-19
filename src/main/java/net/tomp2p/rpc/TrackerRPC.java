@@ -28,7 +28,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.P2PConfiguration;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
@@ -48,14 +48,14 @@ public class TrackerRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerRPC.class);
 	final public static int MAX_MSG_SIZE_UDP = 35;
-	final private P2PConfiguration p2pConfiguration;
+	final private Configuration p2pConfiguration;
 
 	/**
 	 * 
 	 * @param peerBean
 	 * @param connectionBean
 	 */
-	public TrackerRPC(PeerBean peerBean, ConnectionBean connectionBean, P2PConfiguration p2pConfiguration)
+	public TrackerRPC(PeerBean peerBean, ConnectionBean connectionBean, Configuration p2pConfiguration)
 	{
 		super(peerBean, connectionBean);
 		this.p2pConfiguration = p2pConfiguration;

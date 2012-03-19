@@ -1,4 +1,4 @@
-package net.tomp2p.mapreduce;
+package net.tomp2p.task;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,9 +8,11 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.Scheduler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancellable;
+import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.storage.Data;
 
 import org.slf4j.Logger;

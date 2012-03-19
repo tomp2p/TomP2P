@@ -28,7 +28,7 @@ import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
 import net.tomp2p.message.TomP2PEncoderTCP;
 import net.tomp2p.message.TomP2PEncoderUDP;
-import net.tomp2p.p2p.P2PConfiguration;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -112,11 +112,11 @@ public class ConnectionHandler
 	 * @throws Exception
 	 */
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
-			ConnectionConfigurationBean configuration, File messageLogger, KeyPair keyPair,
-			PeerMap peerMap, P2PConfiguration peerConfiguration, Timer timer) throws Exception
+			Configuration configuration, File messageLogger, KeyPair keyPair,
+			PeerMap peerMap, Timer timer) throws IOException
 	{
 		this.timer = timer;
-		if(peerConfiguration.isDisableBind())
+		if(configuration.isDisableBind())
 		{
 			udpChannelFactory = null;
 			tcpServerChannelFactory = null;
@@ -145,13 +145,13 @@ public class ConnectionHandler
 						"Not listening to anything. Maybe your binding information is wrong.");
 			outsideAddress = bindings.getFoundAddresses().get(0);
 			self = new PeerAddress(id, outsideAddress, tcpPort, udpPort,
-					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+					configuration.isBehindFirewall(), configuration.isBehindFirewall());
 		}
 		else
 		{
 			self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(),
 					bindings.getOutsideUDPPort(),
-					peerConfiguration.isBehindFirewall(), peerConfiguration.isBehindFirewall());
+					configuration.isBehindFirewall(), configuration.isBehindFirewall());
 		}
 		peerBean = new PeerBean(keyPair);
 		peerBean.setServerPeerAddress(self);
@@ -172,7 +172,7 @@ public class ConnectionHandler
 		Sender sender = new SenderNetty(configuration, timer);
 		connectionBean = new ConnectionBean(p2pID, dispatcherRequest, sender, channelGroup,
 				reservation, configuration, scheduler);
-		if (!peerConfiguration.isDisableBind())
+		if (!configuration.isDisableBind())
 		{
 			final boolean listenAll = bindings.isListenAll();
 			if (listenAll)

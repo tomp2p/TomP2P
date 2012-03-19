@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureRunnable;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.p2p.Statistics;
 
 import org.jboss.netty.channel.ChannelFactory;
@@ -61,7 +62,7 @@ public class ConnectionReservation
 	private volatile Reservation reservation = new DefaultReservation();
 
 	public ConnectionReservation(ChannelFactory tcpClientChannelFactory,
-			ChannelFactory udpChannelFactory, ConnectionConfigurationBean configuration,
+			ChannelFactory udpChannelFactory, Configuration configuration,
 			MessageLogger messageLoggerFilter, Statistics statistics, Scheduler scheduler)
 	{
 		this.tcpClientChannelFactory = tcpClientChannelFactory;

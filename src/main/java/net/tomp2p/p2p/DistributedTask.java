@@ -1,4 +1,4 @@
-package net.tomp2p.mapreduce;
+package net.tomp2p.p2p;
 
 import java.util.Map;
 import java.util.NavigableSet;
@@ -10,18 +10,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTask;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.DistributedRouting;
-import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.TaskConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
+import net.tomp2p.task.AsyncTask;
+import net.tomp2p.task.Worker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

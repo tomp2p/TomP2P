@@ -21,6 +21,7 @@ import net.tomp2p.connection.ChannelCreator;
  * a connection could have been reserved.
  * 
  * @author Thomas Bocek
+ * 
  */
 public class FutureChannelCreator extends BaseFutureImpl
 {

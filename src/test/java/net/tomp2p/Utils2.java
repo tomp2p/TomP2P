@@ -6,7 +6,7 @@ import java.util.Random;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.P2PConfiguration;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -136,10 +136,10 @@ public class Utils2
 		System.err.println("perfect routing done.");
 	}
 	
-	public static P2PConfiguration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
+	public static Configuration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
 			int maxFail, int[] maintenanceTimeoutsSeconds)
 	{
-		P2PConfiguration p2pConfiguration = new P2PConfiguration();
+		Configuration p2pConfiguration = new Configuration();
 		p2pConfiguration.setBagSize(bagSize);
 		p2pConfiguration.setCacheSize(cacheSize);
 		p2pConfiguration.setCacheTimeoutMillis(cacheTimeout);

@@ -37,7 +37,6 @@ import java.util.concurrent.TimeUnit;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.connection.PeerBean;
@@ -85,10 +84,13 @@ import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
+import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.task.AsyncTask;
+import net.tomp2p.task.TaskManager;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.Utils;
 
@@ -126,7 +128,7 @@ public class Peer
 {
 	// domain used if no domain provided
 	final private static Logger logger = LoggerFactory.getLogger(Peer.class);
-	final private static KeyPair EMPTY_KEYPAIR = new KeyPair(null, null);
+	final public static int DEFAULT_PORT = 7700;
 	// As soon as the user calls listen, this connection handler is set
 	private ConnectionHandler connectionHandler;
 	// the id of this node
@@ -158,8 +160,7 @@ public class Peer
 	// final private Semaphore semaphoreLongMessages = new Semaphore(20);
 	private Bindings bindings;
 	//
-	final private P2PConfiguration peerConfiguration;
-	final private ConnectionConfigurationBean connectionConfiguration;
+	final private Configuration configuration;
 	// for maintenannce
 	private ScheduledExecutorService scheduledExecutorServiceMaintenance;
 	private ScheduledExecutorService scheduledExecutorServiceReplication;
@@ -172,52 +173,31 @@ public class Peer
 	final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 	private Timer timer;
 	final public static int BLOOMFILTER_SIZE = 1024;
+	final public static int WORKER_THREADS = Runtime.getRuntime().availableProcessors()+1;
+	//map reduce
+	private final int workerThreads;
+	private AsyncTask asyncTask;
+	private TaskRPC taskRPC;
+	//
+	final private int maintenanceThreads;
+	final private int replicationThreads;
+	final private boolean startMaintenance;
+	final private int replicationRefreshMillis;
 
-	// private volatile boolean running = false;
-	public Peer(final KeyPair keyPair)
-	{
-		this(Utils.makeSHAHash(keyPair.getPublic().getEncoded()), keyPair);
-	}
 
-	public Peer(final Number160 nodeId)
-	{
-		this(1, nodeId, new P2PConfiguration(), new ConnectionConfigurationBean(), EMPTY_KEYPAIR);
-	}
-
-	public Peer(final Number160 nodeId, final KeyPair keyPair)
-	{
-		this(1, nodeId, new P2PConfiguration(), new ConnectionConfigurationBean(), keyPair);
-	}
-
-	public Peer(final int p2pID, final KeyPair keyPair)
-	{
-		this(p2pID, Utils.makeSHAHash(keyPair.getPublic().getEncoded()), keyPair);
-	}
-
-	public Peer(final int p2pID, final Number160 nodeId)
-	{
-		this(p2pID, nodeId, new P2PConfiguration(), new ConnectionConfigurationBean(), EMPTY_KEYPAIR);
-	}
-
-	public Peer(final int p2pID, final Number160 nodeId, KeyPair keyPair)
-	{
-		this(p2pID, nodeId, new P2PConfiguration(), new ConnectionConfigurationBean(), keyPair);
-	}
-
-	public Peer(final int p2pID, final Number160 nodeId,
-			final ConnectionConfigurationBean connectionConfiguration)
-	{
-		this(p2pID, nodeId, new P2PConfiguration(), connectionConfiguration, EMPTY_KEYPAIR);
-	}
-
-	public Peer(final int p2pID, final Number160 nodeId, final P2PConfiguration peerConfiguration,
-			final ConnectionConfigurationBean connectionConfiguration, final KeyPair keyPair)
+	public Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair, int workerThreads, 
+			int maintenanceThreads, int replicationThreads, boolean startMaintenance, int replicationRefreshMillis,
+			Configuration configuration )
 	{
 		this.p2pID = p2pID;
 		this.peerId = nodeId;
-		this.peerConfiguration = peerConfiguration;
-		this.connectionConfiguration = connectionConfiguration;
+		this.configuration = configuration;
 		this.keyPair = keyPair;
+		this.workerThreads = workerThreads;
+		this.maintenanceThreads = maintenanceThreads;
+		this.replicationThreads = replicationThreads;
+		this.startMaintenance = startMaintenance;
+		this.replicationRefreshMillis = replicationRefreshMillis;
 	}
 
 	/**
@@ -290,13 +270,12 @@ public class Peer
 
 	public void listen() throws Exception
 	{
-		listen(connectionConfiguration.getDefaultPort(), connectionConfiguration.getDefaultPort());
+		listen(DEFAULT_PORT, DEFAULT_PORT);
 	}
 
 	public void listen(File messageLogger) throws Exception
 	{
-		listen(connectionConfiguration.getDefaultPort(), connectionConfiguration.getDefaultPort(),
-				messageLogger);
+		listen(DEFAULT_PORT, DEFAULT_PORT, messageLogger);
 	}
 
 	public void listen(final int udpPort, final int tcpPort) throws Exception
@@ -332,25 +311,21 @@ public class Peer
 	 * @throws Exception
 	 */
 	public void listen(final int udpPort, final int tcpPort, final Bindings bindings,
-			final File messageLogger)
-			throws Exception
+			final File messageLogger) throws IOException
 	{
 		// I'm the master
 		masterFlag = true;
 		this.timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
 		this.bindings = bindings;
 		this.scheduledExecutorServiceMaintenance = Executors
-				.newScheduledThreadPool(peerConfiguration
-						.getMaintenanceThreads());
+				.newScheduledThreadPool(maintenanceThreads);
 		this.scheduledExecutorServiceReplication = Executors
-				.newScheduledThreadPool(peerConfiguration
-						.getReplicationThreads());
+				.newScheduledThreadPool(replicationThreads);
 
-		PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration);
+		PeerMap peerMap = new PeerMapKadImpl(peerId, configuration);
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				connectionConfiguration,
-				messageLogger, keyPair, peerMap, peerConfiguration, timer), statistics);
+				configuration, messageLogger, keyPair, peerMap, timer), statistics);
 		logger.debug("init done");
 	}
 
@@ -362,7 +337,7 @@ public class Peer
 		this.bindings = master.bindings;
 		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
 		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
-		final PeerMap peerMap = new PeerMapKadImpl(peerId, peerConfiguration);
+		final PeerMap peerMap = new PeerMapKadImpl(peerId, configuration);
 		//listen to the masters peermap
 		Statistics statistics = peerMap.getStatistics();
 		init(new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap),
@@ -390,7 +365,7 @@ public class Peer
 		maintenance = new Maintenance();
 		Replication replicationTracker = new Replication(storage, selfAddress, peerMap);
 		TrackerStorage storageTracker = new TrackerStorage(identityManagement,
-				getP2PConfiguration().getTrackerTimoutSeconds(), replicationTracker, maintenance);
+				configuration.getTrackerTimoutSeconds(), replicationTracker, maintenance);
 		peerBean.setTrackerStorage(storageTracker);
 		peerMap.addPeerOfflineListener(storageTracker);
 		// RPC communication
@@ -400,17 +375,24 @@ public class Peer
 		quitRCP = new QuitRPC(peerBean, connectionBean);
 		peerExchangeRPC = new PeerExchangeRPC(peerBean, connectionBean);
 		directDataRPC = new DirectDataRPC(peerBean, connectionBean);
-		trackerRPC = new TrackerRPC(peerBean, connectionBean, peerConfiguration);
+		trackerRPC = new TrackerRPC(peerBean, connectionBean, configuration);
 		// replication for trackers, which needs PEX
 		TrackerStorageReplication trackerStorageReplication = new TrackerStorageReplication(this,
-				peerExchangeRPC, pendingFutures, storageTracker, connectionConfiguration.isForceTrackerTCP());
+				peerExchangeRPC, pendingFutures, storageTracker, configuration.isForceTrackerTCP());
 		replicationTracker.addResponsibilityListener(trackerStorageReplication);
 		// distributed communication
 		routing = new DistributedRouting(peerBean, neighborRPC);
 		dht = new DistributedHashMap(routing, storageRPC, directDataRPC);
 		tracker = new DistributedTracker(peerBean, routing, trackerRPC, peerExchangeRPC);
+		// create task manager
+		getPeerBean().setTaskManager(new TaskManager(getPeerBean(), getConnectionBean(), workerThreads));
+		taskRPC = new TaskRPC(getPeerBean(), getConnectionBean());
+		getPeerBean().getTaskManager().init(taskRPC);
+		asyncTask = new AsyncTask(taskRPC, getConnectionBean().getScheduler(), getPeerBean());
+		getPeerBean().getTaskManager().addListener(asyncTask);
+		getConnectionBean().getScheduler().startTracking(taskRPC, getConnectionBean().getConnectionReservation());
 		// maintenance
-		if (peerConfiguration.isStartMaintenance())
+		if (startMaintenance)
 			startMaintainance();
 		connectionBean.getScheduler().startDelayedChannelCreator();
 		for (PeerListener listener : listeners)
@@ -421,7 +403,7 @@ public class Peer
 	{
 		Replication replicationStorage = getPeerBean().getReplicationStorage();
 		DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(this,
-				getPeerBean().getStorage(), storageRPC, pendingFutures, connectionConfiguration.isForceStorageUDP());
+				getPeerBean().getStorage(), storageRPC, pendingFutures, configuration.isForceStorageUDP());
 		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
 		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}
@@ -461,58 +443,88 @@ public class Peer
 	public HandshakeRPC getHandshakeRPC()
 	{
 		if (handshakeRCP == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return handshakeRCP;
 	}
 
 	public StorageRPC getStoreRPC()
 	{
 		if (storageRPC == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return storageRPC;
 	}
 
 	public QuitRPC getQuitRPC()
 	{
 		if (quitRCP == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return quitRCP;
 	}
 
 	public PeerExchangeRPC getPeerExchangeRPC()
 	{
 		if (peerExchangeRPC == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return peerExchangeRPC;
 	}
 
 	public DirectDataRPC getDirectDataRPC()
 	{
 		if (directDataRPC == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return directDataRPC;
 	}
 
 	public TrackerRPC getTrackerRPC()
 	{
 		if (trackerRPC == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return trackerRPC;
 	}
 
 	public DistributedRouting getRouting()
 	{
 		if (routing == null)
+		{
 			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
 		return routing;
+	}
+	
+	public TaskRPC getTaskRPC()
+	{
+		if(taskRPC == null)
+		{
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
+		return taskRPC;
+	}
+	
+	public AsyncTask getAsyncTask()
+	{
+		if(asyncTask == null)
+		{
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		}
+		return asyncTask;
 	}
 
 	public ScheduledFuture<?> addIndirectReplicaiton(Runnable runnable)
 	{
 		return scheduledExecutorServiceReplication.scheduleWithFixedDelay(runnable,
-				peerConfiguration.getReplicationRefreshMillis(),
-				peerConfiguration.getReplicationRefreshMillis(),
-				TimeUnit.MILLISECONDS);
+				replicationRefreshMillis, replicationRefreshMillis, TimeUnit.MILLISECONDS);
 	}
 
 	public ConnectionHandler getConnectionHandler()
@@ -686,7 +698,7 @@ public class Peer
 
 	public FutureBootstrap bootstrapBroadcast()
 	{
-		return bootstrapBroadcast(connectionConfiguration.getDefaultPort());
+		return bootstrapBroadcast(DEFAULT_PORT);
 	}
 
 	public FutureBootstrap bootstrapBroadcast(int port)
@@ -1126,7 +1138,7 @@ public class Peer
 						Utils.addReleaseListener(fr1, getConnectionBean().getConnectionReservation(), cc, 1);
 						Utils.addReleaseListener(fr2, getConnectionBean().getConnectionReservation(), cc, 1);
 						// from here we probe, set the timeout here
-						futureDiscover.setTimeout(timer, peerConfiguration.getDiscoverTimeoutSec());
+						futureDiscover.setTimeout(timer, configuration.getDiscoverTimeoutSec());
 						return;
 					}
 					else
@@ -1871,14 +1883,9 @@ public class Peer
 		return tmp;
 	}
 
-	public ConnectionConfigurationBean getConnectionConfiguration()
+	public Configuration getConfiguration()
 	{
-		return connectionConfiguration;
-	}
-
-	public P2PConfiguration getP2PConfiguration()
-	{
-		return peerConfiguration;
+		return configuration;
 	}
 
 	public static RequestP2PConfiguration adjustConfiguration(
@@ -1928,9 +1935,9 @@ public class Peer
 	}
 	
 	/**
-	 * Reserves a connection for a routing and DHT operation. This call blocks
-	 * until connections have been reserved. At least one of the arguments
-	 * routingConfiguration or requestP2PConfiguration must not be null.
+	 * Reserves a connection for a routing and DHT operation. This call does not
+	 * blocks. At least one of the arguments routingConfiguration or
+	 * requestP2PConfiguration must not be null.
 	 * 
 	 * @param routingConfiguration The information about the routing
 	 * @param requestP2PConfiguration The information about the DHT operation

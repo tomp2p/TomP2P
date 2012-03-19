@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.FutureChannelCreation;
+import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -117,14 +117,14 @@ public class ChannelCreator
 	 * @param broadcast Set to true if broadcast is allowed
 	 * @return The created channel or null if we are shutting down.
 	 */
-	public FutureChannelCreation createUDPChannel(ReplyTimeoutHandler timeoutHandler,
+	public FutureChannel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
 			RequestHandlerUDP<? extends BaseFuture> requestHandler, boolean broadcast)
 	{
-		final FutureChannelCreation futureChannelCreation = new FutureChannelCreation();
+		final FutureChannel futureChannelCreation = new FutureChannel();
 		createUDPChannel(futureChannelCreation, timeoutHandler, requestHandler, broadcast);
 		return futureChannelCreation;
 	}
-	private void createUDPChannel(FutureChannelCreation futureChannelCreation, 
+	private void createUDPChannel(FutureChannel futureChannelCreation, 
 			ReplyTimeoutHandler timeoutHandler, RequestHandlerUDP<? extends BaseFuture> requestHandler, 
 			boolean broadcast)
 	{
@@ -192,16 +192,16 @@ public class ChannelCreator
 	 *        is already open, the connection will be reused.
 	 * @return The channel future
 	 */
-	public FutureChannelCreation createTCPChannel(ReplyTimeoutHandler timeoutHandler,
+	public FutureChannel createTCPChannel(ReplyTimeoutHandler timeoutHandler,
 			RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			int connectTimeoutMillis, final InetSocketAddress recipient)
 	{
-		final FutureChannelCreation futureChannelCreation = new FutureChannelCreation();
+		final FutureChannel futureChannelCreation = new FutureChannel();
 		createTCPChannel(futureChannelCreation, timeoutHandler, requestHandler, connectTimeoutMillis, recipient);
 		return futureChannelCreation;
 	}
 	
-	private void createTCPChannel(final FutureChannelCreation futureChannelCreation, 
+	private void createTCPChannel(final FutureChannel futureChannelCreation, 
 			ReplyTimeoutHandler timeoutHandler, RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			int connectTimeoutMillis, final InetSocketAddress recipient)
 	{
@@ -220,6 +220,9 @@ public class ChannelCreator
 				// If we are out of semaphores, we cannot create any channels.
 				// Since we know how many channels max. in parallel are created,
 				// we can reserve it. The acquiering can be done in Scheduler
+				//
+				// The connectionSemaphore can be either acquired in this place
+				// or in the Scheduler.
 				if (!futureChannelCreation.isAcquired() && !connectionSemaphore.tryAcquire())
 				{
 					connectionNotReadyYetTCP(futureChannelCreation, timeoutHandler, requestHandler, 
@@ -343,7 +346,7 @@ public class ChannelCreator
 		}
 	}
 
-	private void connectionNotReadyYetTCP(final FutureChannelCreation futureChannelCreation,
+	private void connectionNotReadyYetTCP(final FutureChannel futureChannelCreation,
 			final ReplyTimeoutHandler timeoutHandler,
 			final RequestHandlerTCP<? extends BaseFuture> requestHandler, final int connectTimeoutMillis,
 			final InetSocketAddress recipient, final Semaphore connectionSemaphore2)
@@ -358,7 +361,7 @@ public class ChannelCreator
 		});
 	}
 	
-	private void connectionNotReadyYetUDP(final FutureChannelCreation futureChannelCreation,
+	private void connectionNotReadyYetUDP(final FutureChannel futureChannelCreation,
 			final ReplyTimeoutHandler timeoutHandler,
 			final RequestHandlerUDP<? extends BaseFuture> requestHandler, final boolean broadcast,
 			final Semaphore connectionSemaphore2)

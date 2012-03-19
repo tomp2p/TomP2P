@@ -1,4 +1,4 @@
-package net.tomp2p.mapreduce;
+package net.tomp2p.task;
 
 import java.util.Map;
 

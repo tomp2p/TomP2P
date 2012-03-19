@@ -14,7 +14,7 @@ import java.util.TreeSet;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.message.Message.Command;
-import net.tomp2p.p2p.P2PConfiguration;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -339,7 +339,7 @@ public class TestMessage
 		PeerAddress n3 = new PeerAddress(b3);
 		PeerAddress n4 = new PeerAddress(b4);
 		
-		P2PConfiguration conf= new P2PConfiguration();
+		Configuration conf= new Configuration();
 		conf.setBagSize(2);
 		conf.setCacheSize(100);
 		conf.setCacheTimeoutMillis(60*1000);

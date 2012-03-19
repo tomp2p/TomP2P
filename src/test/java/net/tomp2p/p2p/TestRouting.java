@@ -36,7 +36,7 @@ public class TestRouting
 	public void testDifference() throws UnknownHostException
 	{
 		// setup
-		P2PConfiguration p2pConfiguration = new P2PConfiguration(0, 0, false);
+		Configuration p2pConfiguration = new Configuration(0, 0, false);
 		p2pConfiguration.setBagSize(2);
 		p2pConfiguration.setCacheSize(100);
 		p2pConfiguration.setCacheTimeoutMillis(60*1000);
@@ -67,7 +67,7 @@ public class TestRouting
 	public void testMerge() throws UnknownHostException
 	{
 		// setup
-		P2PConfiguration p2pConfiguration = new P2PConfiguration(0, 0, false);
+		Configuration p2pConfiguration = new Configuration(0, 0, false);
 		p2pConfiguration.setBagSize(2);
 		p2pConfiguration.setCacheSize(100);
 		p2pConfiguration.setCacheTimeoutMillis(60*1000);
@@ -106,7 +106,7 @@ public class TestRouting
 	public void testEvaluate() throws UnknownHostException
 	{
 		// setup
-		P2PConfiguration p2pConfiguration = new P2PConfiguration(0, 0, false);
+		Configuration p2pConfiguration = new Configuration(0, 0, false);
 		p2pConfiguration.setBagSize(2);
 		p2pConfiguration.setCacheSize(100);
 		p2pConfiguration.setCacheTimeoutMillis(60*1000);

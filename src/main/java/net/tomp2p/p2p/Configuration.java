@@ -1,18 +1,12 @@
 package net.tomp2p.p2p;
 
-public class P2PConfiguration
+public class Configuration
 {
 	private final int[] waitingTimeBetweenNodeMaintenenceSeconds = { 5, 10, 20, 40, 80, 160 };
-	// cannot be changed during runtime
-	private final int maintenanceThreads;
-	private final int replicationThreads;
-	private boolean startMaintenance = true;
 	// peermap configuration
 	private int bagSize = 2;
 	private int cacheSize = 100;
 	private int cacheTimeoutMillis = 60 * 1000;
-	// indirect replication
-	private int replicationRefreshMillis=60 * 1000;
 	// discover timeout
 	private int discoverTimeoutSec=5;
 	private int maxNrBeforeExclude = 2;
@@ -22,37 +16,25 @@ public class P2PConfiguration
 	private boolean disableBind = false;
 	//disabel or enable the limitation of tracker results. If set to true, the tracker will return 35 entries. If set to false, it will return all of them.
 	private boolean limitTracker = true;
-	public P2PConfiguration()
-	{
-		this.maintenanceThreads = 5;
-		replicationThreads=5;
-	}
 	
-	public P2PConfiguration(int maintenanceThreads, int replicationThreads, boolean startMaintenance)
-	{
-		this.maintenanceThreads = maintenanceThreads;
-		this.replicationThreads = replicationThreads;
-		this.startMaintenance = startMaintenance;
-	}
+	//connection configuration
+	// idle needs to be larger than timeout for TCP
+	private int idleTCPMillis = 6 * 1000;
+	// private int timeoutTCPMillis = 3 * 1000;
+	private int idleUDPMillis = 3 * 1000;
+	private int connectTimeouMillis = 3 * 1000;
+	// doing tests on localhost, we open 2 * maxOpenConnection
+	private int maxOpenConnection = 400;
+	private int maxCreating = 200;
+	// max, message size to transmit
+	private int maxMessageSize = 2 * 1024 * 1024;
+	// force TCP or UDP
+	private boolean forceTrackerTCP = false;
+	private boolean forceStorageUDP = false;
 	
 	public int[] getWaitingTimeBetweenNodeMaintenenceSeconds()
 	{
 		return waitingTimeBetweenNodeMaintenenceSeconds;
-	}
-
-	public int getMaintenanceThreads()
-	{
-		return maintenanceThreads;
-	}
-
-	public void setStartMaintenance(boolean startMaintenance)
-	{
-		this.startMaintenance = startMaintenance;
-	}
-
-	public boolean isStartMaintenance()
-	{
-		return startMaintenance;
 	}
 
 	public void setBagSize(int bagSize)
@@ -83,21 +65,6 @@ public class P2PConfiguration
 	public int getCacheTimeoutMillis()
 	{
 		return cacheTimeoutMillis;
-	}
-
-	public int getReplicationThreads()
-	{
-		return replicationThreads;
-	}
-
-	public void setReplicationRefreshMillis(int replicationRefreshMillis)
-	{
-		this.replicationRefreshMillis = replicationRefreshMillis;
-	}
-
-	public int getReplicationRefreshMillis()
-	{
-		return replicationRefreshMillis;
 	}
 	
 	public void setDiscoverTimeoutSec(int discoverTimeoutSec)
@@ -169,5 +136,85 @@ public class P2PConfiguration
 	public void setLimitTracker(boolean limitTracker)
 	{
 		this.limitTracker = limitTracker;
+	}
+	
+	public int getIdleTCPMillis()
+	{
+		return idleTCPMillis;
+	}
+
+	public void setIdleTCPMillis(int idleTCPMillis)
+	{
+		this.idleTCPMillis = idleTCPMillis;
+	}
+
+	public int getIdleUDPMillis()
+	{
+		return idleUDPMillis;
+	}
+
+	public void setIdleUDPMillis(int idleUDPMillis)
+	{
+		this.idleUDPMillis = idleUDPMillis;
+	}
+
+	public int getConnectTimeoutMillis()
+	{
+		return connectTimeouMillis;
+	}
+
+	public void setConnectTimeoutMillis(int connectTimeouMillist)
+	{
+		this.connectTimeouMillis = connectTimeouMillist;
+	}
+
+	public void setMaxOpenConnection(int maxOpenConnection)
+	{
+		this.maxOpenConnection = maxOpenConnection;
+	}
+
+	public int getMaxOpenConnection()
+	{
+		return maxOpenConnection;
+	}
+
+	public void setMaxMessageSize(int maxMessageSize)
+	{
+		this.maxMessageSize = maxMessageSize;
+	}
+
+	public int getMaxMessageSize()
+	{
+		return maxMessageSize;
+	}
+
+	public int getMaxCreating()
+	{
+		return maxCreating;
+	}
+
+	public void setMaxCreating(int maxCreating)
+	{
+		this.maxCreating = maxCreating;
+	}
+
+	public boolean isForceTrackerTCP()
+	{
+		return forceTrackerTCP;
+	}
+
+	public void setForceTrackerTCP(boolean forceTrackerTCP)
+	{
+		this.forceTrackerTCP = forceTrackerTCP;
+	}
+
+	public boolean isForceStorageUDP()
+	{
+		return forceStorageUDP;
+	}
+
+	public void setForceStorageUDP(boolean forceStorageUDP)
+	{
+		this.forceStorageUDP = forceStorageUDP;
 	}
 }

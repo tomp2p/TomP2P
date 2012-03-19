@@ -9,12 +9,6 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureLaterJoin;
-import net.tomp2p.mapreduce.FutureMap;
-import net.tomp2p.mapreduce.FutureMapReduce;
-import net.tomp2p.mapreduce.FutureReduce;
-import net.tomp2p.mapreduce.MapReducePeer;
-import net.tomp2p.mapreduce.Worker;
-import net.tomp2p.mapreduce.Reducer;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
@@ -22,6 +16,12 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.task.FutureMap;
+import net.tomp2p.task.FutureMapReduce;
+import net.tomp2p.task.FutureReduce;
+import net.tomp2p.task.MapReducePeer;
+import net.tomp2p.task.Reducer;
+import net.tomp2p.task.Worker;
 
 public class ExampleMapReduce
 {

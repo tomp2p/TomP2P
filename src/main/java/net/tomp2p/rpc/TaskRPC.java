@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.mapreduce;
+package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.security.KeyPair;
@@ -30,10 +30,10 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.ReplyHandler;
-import net.tomp2p.rpc.RequestHandlerTCP;
-import net.tomp2p.rpc.RequestHandlerUDP;
 import net.tomp2p.storage.Data;
+import net.tomp2p.task.TaskManager;
+import net.tomp2p.task.TaskStatus;
+import net.tomp2p.task.Worker;
 import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;

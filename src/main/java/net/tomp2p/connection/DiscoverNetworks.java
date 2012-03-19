@@ -15,6 +15,7 @@
  */
 
 package net.tomp2p.connection;
+import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -42,7 +43,7 @@ public class DiscoverNetworks
 	 * @return The status of the search
 	 * @throws Exception If anything goes wrong, such as reflecetion.
 	 */
-	public static String discoverInterfaces(Bindings bindings) throws Exception
+	public static String discoverInterfaces(Bindings bindings) throws IOException
 	{
 		StringBuilder sb = new StringBuilder("Discover status: ");
 		Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();

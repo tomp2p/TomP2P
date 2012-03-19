@@ -1,4 +1,4 @@
-package net.tomp2p.mapreduce;
+package net.tomp2p.task;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -8,11 +8,15 @@ import java.util.Random;
 
 import junit.framework.Assert;
 
+import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
+import net.tomp2p.task.TaskStatus;
+import net.tomp2p.task.Worker;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
@@ -24,13 +28,13 @@ public class TestTaskRPC
 	@Test
 	public void testRPC1() throws Exception
 	{
-		MapReducePeer peer1 = null;
-		MapReducePeer peer2 = null;
+		Peer peer1 = null;
+		Peer peer2 = null;
 		try
 		{
-			peer1 = new MapReducePeer(new Number160(rnd), 1);
+			peer1 = new Peer(new Number160(rnd), 1);
 			peer1.listen(4001, 4001);
-			peer2 = new MapReducePeer(new Number160(rnd), 1);
+			peer2 = new Peer(new Number160(rnd), 1);
 			peer2.listen(4002, 4002);
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();

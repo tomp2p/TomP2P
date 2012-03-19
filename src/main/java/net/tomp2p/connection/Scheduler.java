@@ -33,18 +33,18 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreation;
+import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRunnable;
-import net.tomp2p.mapreduce.TaskRPC;
-import net.tomp2p.mapreduce.TaskResultListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.HandshakeRPC;
+import net.tomp2p.rpc.TaskRPC;
+import net.tomp2p.task.TaskResultListener;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -530,18 +530,18 @@ public class Scheduler
 	
 	private class DelayedChannelCreatorItem
 	{
-		private final FutureChannelCreation futureChannelCreation;
+		private final FutureChannel futureChannelCreation;
 		private final Semaphore semaphore;
 		private final Runnable runnable;
 		
-		public DelayedChannelCreatorItem(FutureChannelCreation futureChannelCreation, Semaphore semaphore, Runnable runnable)
+		public DelayedChannelCreatorItem(FutureChannel futureChannelCreation, Semaphore semaphore, Runnable runnable)
 		{
 			this.futureChannelCreation = futureChannelCreation;
 			this.semaphore = semaphore;
 			this.runnable = runnable;
 		}
 
-		public FutureChannelCreation getFutureChannelCreation()
+		public FutureChannel getFutureChannelCreation()
 		{
 			return futureChannelCreation;
 		}
@@ -557,7 +557,7 @@ public class Scheduler
 		}
 	}
 
-	public void addConnectionQueue(FutureChannelCreation futureChannelCreation,
+	public void addConnectionQueue(FutureChannel futureChannelCreation,
 			Semaphore semaphore, Runnable runnable)
 	{
 		DelayedChannelCreatorItem item = new DelayedChannelCreatorItem(futureChannelCreation, semaphore, runnable);

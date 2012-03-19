@@ -29,7 +29,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.p2p.P2PConfiguration;
+import net.tomp2p.p2p.Configuration;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerStatusListener.Reason;
 import net.tomp2p.utils.CacheMap;
@@ -113,7 +113,7 @@ public class PeerMapKadImpl implements PeerMap
 	 * @param self The peer ID of this peer
 	 * @param configuration Configuration settings for this map
 	 */
-	public PeerMapKadImpl(final Number160 self, final P2PConfiguration configuration)
+	public PeerMapKadImpl(final Number160 self, final Configuration configuration)
 	{
 		if (self == null || self.isZero())
 			throw new IllegalArgumentException("Zero or null are not a valid IDs");

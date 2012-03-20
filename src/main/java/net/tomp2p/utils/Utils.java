@@ -51,9 +51,7 @@ import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Digest;
 import net.tomp2p.storage.TrackerData;
 
 public class Utils

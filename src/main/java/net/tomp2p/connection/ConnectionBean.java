@@ -14,7 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
-import net.tomp2p.p2p.Configuration;
+import net.tomp2p.p2p.ConnectionConfiguration;
 
 import org.jboss.netty.channel.group.ChannelGroup;
 
@@ -32,12 +32,12 @@ public class ConnectionBean
 	final private DispatcherReply dispatcherRequest;
 	private volatile Sender sender;
 	final private ConnectionReservation connectionReservation;
-	final private Configuration configuration;
+	final private ConnectionConfiguration configuration;
 	final private Scheduler scheduler;
 
 	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender,
 			ChannelGroup channelGroup, ConnectionReservation connectionReservation,
-			Configuration configuration, Scheduler scheduler)
+			ConnectionConfiguration configuration, Scheduler scheduler)
 	{
 		this.p2pID = p2pID;
 		this.channelGroup = channelGroup;
@@ -78,7 +78,7 @@ public class ConnectionBean
 		return connectionReservation;
 	}
 
-	public Configuration getConfiguration()
+	public ConnectionConfiguration getConfiguration()
 	{
 		return configuration;
 	}

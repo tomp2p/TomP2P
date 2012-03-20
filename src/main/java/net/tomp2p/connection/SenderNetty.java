@@ -21,7 +21,7 @@ import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.Configuration;
+import net.tomp2p.p2p.ConnectionConfiguration;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
@@ -45,7 +45,7 @@ public class SenderNetty implements Sender
 	final private static Logger logger = LoggerFactory.getLogger(SenderNetty.class);
 	// Timer used for ReplyTimeout
 	final private Timer timer;
-	final private Configuration configuration;
+	final private ConnectionConfiguration configuration;
 	private volatile boolean shutdown = false;
 	/**
 	 * The sender is shared for all master and child peers
@@ -53,7 +53,7 @@ public class SenderNetty implements Sender
 	 * @param configuration ConnectionConfigurationBean
 	 * @param timer Timer
 	 */
-	public SenderNetty(final Configuration configuration, Timer timer)
+	public SenderNetty(final ConnectionConfiguration configuration, Timer timer)
 	{
 		this.configuration = configuration;
 		this.timer = timer;

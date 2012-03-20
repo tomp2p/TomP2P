@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.config.ConfigurationTrackerGet;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
@@ -20,7 +19,7 @@ import org.junit.Test;
 public class TestTracker
 {
 
-	final private static ConnectionConfigurationBean CONFIGURATION = new ConnectionConfigurationBean();
+	final private static ConnectionConfiguration CONFIGURATION = new ConnectionConfiguration();
 	static
 	{
 		CONFIGURATION.setIdleTCPMillis(3000000);
@@ -34,8 +33,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -81,8 +79,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -129,8 +126,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -177,8 +173,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -233,8 +228,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 1000, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -342,8 +336,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -397,8 +390,7 @@ public class TestTracker
 		Peer master = null;
 		try
 		{
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			Number160 key = new Number160(44);
 			ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
 			cts.setDomain(new ShortString("pub").toNumber160());
@@ -428,8 +420,7 @@ public class TestTracker
 		try
 		{
 			Number160 trackerID = new Number160(rnd);
-			master = new Peer(1, new Number160(rnd), CONFIGURATION);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setPorts(4001).buildAndListen();
 			
 			Peer[] nodes = createNodes(master, 500, rnd);
 			
@@ -460,9 +451,8 @@ public class TestTracker
 		Peer[] nodes = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
-			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
+			nodes[i] = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setMasterPeer(master).buildAndListen();
 			nodes[i].listen(master);
-
 		}
 		return nodes;
 	}

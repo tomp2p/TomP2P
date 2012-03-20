@@ -3,6 +3,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Timings;
@@ -19,10 +20,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -50,10 +49,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -85,10 +82,8 @@ public class TestDirect
 		try
 		{
 			
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -129,10 +124,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -172,10 +165,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x9876"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x1234"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply()
 			{
 				@Override

@@ -1,15 +1,10 @@
 package net.tomp2p.p2p;
 
-public class Configuration
+public class ConnectionConfiguration
 {
-	private final int[] waitingTimeBetweenNodeMaintenenceSeconds = { 5, 10, 20, 40, 80, 160 };
-	// peermap configuration
-	private int bagSize = 2;
-	private int cacheSize = 100;
-	private int cacheTimeoutMillis = 60 * 1000;
 	// discover timeout
 	private int discoverTimeoutSec=5;
-	private int maxNrBeforeExclude = 2;
+	//private int maxNrBeforeExclude = 2;
 	// The default is not to assume that you are behind firewall
 	private boolean behindFirewall=false;
 	private int trackerTimoutSeconds=60;
@@ -32,41 +27,6 @@ public class Configuration
 	private boolean forceTrackerTCP = false;
 	private boolean forceStorageUDP = false;
 	
-	public int[] getWaitingTimeBetweenNodeMaintenenceSeconds()
-	{
-		return waitingTimeBetweenNodeMaintenenceSeconds;
-	}
-
-	public void setBagSize(int bagSize)
-	{
-		this.bagSize = bagSize;
-	}
-
-	public int getBagSize()
-	{
-		return bagSize;
-	}
-
-	public void setCacheSize(int cacheSize)
-	{
-		this.cacheSize = cacheSize;
-	}
-
-	public int getCacheSize()
-	{
-		return cacheSize;
-	}
-
-	public void setCacheTimeoutMillis(int cacheTimeoutMillis)
-	{
-		this.cacheTimeoutMillis = cacheTimeoutMillis;
-	}
-
-	public int getCacheTimeoutMillis()
-	{
-		return cacheTimeoutMillis;
-	}
-	
 	public void setDiscoverTimeoutSec(int discoverTimeoutSec)
 	{
 		this.discoverTimeoutSec=discoverTimeoutSec;
@@ -75,16 +35,6 @@ public class Configuration
 	public int getDiscoverTimeoutSec()
 	{
 		return discoverTimeoutSec;
-	}
-	
-	public void setMaxNrBeforeExclude(int maxNrBeforeExclude)
-	{
-		this.maxNrBeforeExclude = maxNrBeforeExclude;
-	}
-
-	public int getMaxNrBeforeExclude()
-	{
-		return maxNrBeforeExclude;
 	}
 	
 	/**

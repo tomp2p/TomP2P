@@ -27,9 +27,8 @@ public class TestIPv6
 	public void startServer() throws Exception
 	{
 		Random r = new Random(42L);
-		Peer peer = new Peer(new Number160(r));
 		Bindings b=new Bindings(Protocol.IPv6);
-		peer.listen(4000, 4000, b);
+		Peer peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(4000).buildAndListen();
 		for (int i = 0; i < Integer.MAX_VALUE; i++) {
 			for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
 				FutureChannelCreator fcc=peer.getConnectionBean().getConnectionReservation().reserve(1);
@@ -59,9 +58,8 @@ public class TestIPv6
 	public void startClient() throws Exception 
 	{
 		Random r = new Random(43L);
-		Peer peer = new Peer(new Number160(r));
 		Bindings b=new Bindings(Protocol.IPv6);
-		peer.listen(4000, 4000, b);
+		Peer peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(4000).buildAndListen();
 		FutureBootstrap fb=peer.bootstrap(new InetSocketAddress("2001:620:10:10c1:201:6cff:feca:426d", 4000));
 		fb.awaitUninterruptibly();
 		System.out.println("Got it: "+fb.isSuccess());

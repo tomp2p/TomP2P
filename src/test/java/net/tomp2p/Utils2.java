@@ -6,8 +6,8 @@ import java.util.Random;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.Configuration;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -72,6 +72,11 @@ public class Utils2
 		message.setCommand(command);
 		return message;
 	}
+	
+	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception 
+	{
+		return createNodes(nrOfPeers, rnd, port, 0);
+	}
 
 	/**
 	 * Creates peers for testing. The first peer (peer[0]) will be used as the
@@ -88,18 +93,24 @@ public class Utils2
 	 * @throws Exception
 	 *             If the creation of nodes fail.
 	 */
-	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port)
-			throws Exception {
-		if (nrOfPeers < 1) {
+	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, int refresh) throws Exception 
+	{
+		if (nrOfPeers < 1) 
+		{
 			throw new IllegalArgumentException("Cannot create less than 1 peer");
 		}
-
 		Peer[] peers = new Peer[nrOfPeers];
-		peers[0] = new Peer(new Number160(rnd));
-		peers[0].listen(port, port);
-		for (int i = 1; i < nrOfPeers; i++) {
-			peers[i] = new Peer(new Number160(rnd));
-			peers[i].listen(peers[0]);
+		if(refresh > 0)
+		{
+			peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+		}
+		else
+		{
+			peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).buildAndListen();
+		}
+		for (int i = 1; i < nrOfPeers; i++) 
+		{
+			peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen(); 
 		}
 		System.err.println("peers created.");
 		return peers;
@@ -111,10 +122,9 @@ public class Utils2
 			throw new IllegalArgumentException("Cannot create less than 1 peer");
 		}
 		Peer[] peers = new Peer[nrOfPeers];
-		for (int i = 0; i < nrOfPeers; i++) {
-			peers[i] = new Peer(new Number160(rnd));
-			peers[i].getP2PConfiguration().setStartMaintenance(false);
-			peers[i].listen(startPort + i, startPort + i);
+		for (int i = 0; i < nrOfPeers; i++) 
+		{
+			peers[i] = new PeerMaker(new Number160(rnd)).setStartMaintenance(false).setPorts(startPort + i).buildAndListen();
 		}
 		System.err.println("real peers created.");
 		return peers;
@@ -136,7 +146,7 @@ public class Utils2
 		System.err.println("perfect routing done.");
 	}
 	
-	public static Configuration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
+	/*public static Configuration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
 			int maxFail, int[] maintenanceTimeoutsSeconds)
 	{
 		Configuration p2pConfiguration = new Configuration();
@@ -145,6 +155,6 @@ public class Utils2
 		p2pConfiguration.setCacheTimeoutMillis(cacheTimeout);
 		p2pConfiguration.setMaxNrBeforeExclude(maxFail);
 		return p2pConfiguration;
-	}
+	}*/
 	
 }

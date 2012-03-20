@@ -29,7 +29,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.p2p.Configuration;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerStatusListener.Reason;
 import net.tomp2p.utils.CacheMap;
@@ -113,7 +112,8 @@ public class PeerMapKadImpl implements PeerMap
 	 * @param self The peer ID of this peer
 	 * @param configuration Configuration settings for this map
 	 */
-	public PeerMapKadImpl(final Number160 self, final Configuration configuration)
+	public PeerMapKadImpl(final Number160 self, int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude, 
+			int []waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, boolean isBehindFirewall)
 	{
 		if (self == null || self.isZero())
 			throw new IllegalArgumentException("Zero or null are not a valid IDs");
@@ -123,17 +123,16 @@ public class PeerMapKadImpl implements PeerMap
 		// dont have a fixed limit for a bag. The bagSize is a suggestion and if
 		// maxpeers has not been reached, the peer is added even though it
 		// exceeds the bag limit.
-		this.bagSize = configuration.getBagSize();
+		this.bagSize = bagSize;
 		this.maxPeers = bagSize * Number160.BITS;
 		// The time that a removed peer will be in the cache in milliseconds.
-		this.cacheTimeout = configuration.getCacheTimeoutMillis();
-		this.maxFail = configuration.getMaxNrBeforeExclude();
-		this.maintenanceTimeoutsSeconds = configuration
-				.getWaitingTimeBetweenNodeMaintenenceSeconds();
+		this.cacheTimeout = cacheTimeoutMillis;
+		this.maxFail = maxNrBeforeExclude;
+		this.maintenanceTimeoutsSeconds = waitingTimeBetweenNodeMaintenenceSeconds;
 		// The size of the cache of removed peers
-		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(configuration.getCacheSize());
+		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cachSize);
 		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
-		this.assumeBehindFirewall = configuration.isBehindFirewall();
+		this.assumeBehindFirewall = isBehindFirewall;
 		for (int i = 0; i < Number160.BITS; i++)
 		{
 			// I made some experiments here and concurrent sets are not

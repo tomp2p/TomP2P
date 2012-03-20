@@ -23,6 +23,7 @@ import java.util.Set;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.ConnectionConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -72,8 +73,7 @@ public class DispatcherReply extends SimpleChannelHandler
 	 * like the first receiver you register).
 	 */
 	final private PeerBean peerBean;
-	final private int timeoutUPDMillis;
-	final private int timeoutTCPMillis;
+	final private ConnectionConfiguration configuration;
 	final private ChannelGroup channelGroup;
 	final private PeerMap peerMap;
 
@@ -83,15 +83,13 @@ public class DispatcherReply extends SimpleChannelHandler
 	 * @param p2pID the p2p ID the dispatcher is looking for in messages
 	 * @param routing
 	 */
-	public DispatcherReply(int p2pID, PeerBean peerBean, int timeoutUPDMillis,
-			int timeoutTCPMillis, ChannelGroup channelGroup, PeerMap peerMap)
+	public DispatcherReply(int p2pID, PeerBean peerBean, ConnectionConfiguration configuration, ChannelGroup channelGroup, PeerMap peerMap)
 	{
 		this.p2pID = p2pID;
 		// its ok not to have the right IP and port, since the dispatcher only
 		// replies to requests, and the sender IP will be handled by layer 4.
 		this.peerBean = peerBean;
-		this.timeoutUPDMillis = timeoutUPDMillis;
-		this.timeoutTCPMillis = timeoutTCPMillis;
+		this.configuration = configuration;
 		this.channelGroup = channelGroup;
 		this.peerMap = peerMap;
 	}
@@ -222,8 +220,8 @@ public class DispatcherReply extends SimpleChannelHandler
 			peerMap.peerOffline(message.getSender(), true);
 			return;
 		}
-		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? timeoutUPDMillis
-				: timeoutTCPMillis;
+		int timeout = (ctx.getChannel() instanceof DatagramChannel) ? configuration.getIdleUDPMillis()
+				: configuration.getIdleTCPMillis();
 		// no need to reply, we are late anyway
 		if (Timings.currentTimeMillis() > message.getFinished() + timeout)
 		{

@@ -7,6 +7,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -24,10 +25,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
@@ -65,15 +64,14 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			sender.getConnectionConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
-			sender.listen(2424, 2424);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
+			sender.getConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
 			
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.getConnectionConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1.getConnectionConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
-			recv1.listen(8088, 8088);
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen(); 
+			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
+			recv1.getConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
+
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
@@ -109,10 +107,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
@@ -150,10 +146,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found

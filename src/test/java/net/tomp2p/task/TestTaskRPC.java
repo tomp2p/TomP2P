@@ -12,6 +12,7 @@ import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.Storage;
@@ -32,10 +33,8 @@ public class TestTaskRPC
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new Peer(new Number160(rnd), 1);
-			peer1.listen(4001, 4001);
-			peer2 = new Peer(new Number160(rnd), 1);
-			peer2.listen(4002, 4002);
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).buildAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).buildAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);
@@ -64,14 +63,12 @@ public class TestTaskRPC
 	@Test
 	public void testRPC2() throws Exception
 	{
-		MapReducePeer peer1 = null;
-		MapReducePeer peer2 = null;
+		Peer peer1 = null;
+		Peer peer2 = null;
 		try
 		{
-			peer1 = new MapReducePeer(new Number160(rnd), 1);
-			peer1.listen(4001, 4001);
-			peer2 = new MapReducePeer(new Number160(rnd), 1);
-			peer2.listen(4002, 4002);
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).buildAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).buildAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(5);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId1 = new Number160(11);
@@ -138,14 +135,12 @@ public class TestTaskRPC
 	@Test
 	public void testRPCAsync() throws Exception
 	{
-		MapReducePeer peer1 = null;
-		MapReducePeer peer2 = null;
+		Peer peer1 = null;
+		Peer peer2 = null;
 		try
 		{
-			peer1 = new MapReducePeer(new Number160(rnd), 1);
-			peer1.listen(4001, 4001);
-			peer2 = new MapReducePeer(new Number160(rnd), 1);
-			peer2.listen(4002, 4002);
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).buildAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).buildAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);
@@ -174,14 +169,12 @@ public class TestTaskRPC
 	@Test
 	public void testRPCAsyncFailed() throws Exception
 	{
-		MapReducePeer peer1 = null;
-		MapReducePeer peer2 = null;
+		Peer peer1 = null;
+		Peer peer2 = null;
 		try
 		{
-			peer1 = new MapReducePeer(new Number160(rnd), 1);
-			peer1.listen(4001, 4001);
-			peer2 = new MapReducePeer(new Number160(rnd), 1);
-			peer2.listen(4002, 4002);
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).buildAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).buildAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);

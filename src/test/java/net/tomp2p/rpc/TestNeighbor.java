@@ -8,6 +8,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -26,14 +27,12 @@ public class TestNeighbor
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
 			PeerAddress[] pa = createDummyAddress(100);
 			for (int i = 0; i < pa.length; i++)
 				sender.getPeerBean().getPeerMap().peerFound(pa[i], null);
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -67,10 +66,8 @@ public class TestNeighbor
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);
@@ -103,10 +100,8 @@ public class TestNeighbor
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x50"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x20"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
 			new NeighborRPC(sender.getPeerBean(), sender.getConnectionBean());
 			NeighborRPC neighbors2 = new NeighborRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			FutureChannelCreator fcc = recv1.getConnectionBean().getConnectionReservation().reserve(1);

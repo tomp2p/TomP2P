@@ -38,13 +38,13 @@ public class PeerBean
 	private final KeyPair keyPair;
 	// we need to make all volatile, as this can be called by the user from any
 	// thread.
-	private volatile PeerAddress serverPeerAddress;
-	private volatile PeerMap peerMap;
-	private volatile StorageGeneric storage;
-	private volatile TrackerStorage trackerStorage;
-	private volatile Replication replicationStorage;
-	private volatile Statistics statistics;
-	private volatile TaskManager taskManager;
+	private PeerAddress serverPeerAddress;
+	private PeerMap peerMap;
+	private StorageGeneric storage;
+	private TrackerStorage trackerStorage;
+	private Replication replicationStorage;
+	private Statistics statistics;
+	private TaskManager taskManager;
 
 	public PeerBean(KeyPair keyPair)
 	{

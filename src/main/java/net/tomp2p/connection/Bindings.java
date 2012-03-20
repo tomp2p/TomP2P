@@ -38,6 +38,7 @@ import java.util.Random;
  */
 public class Bindings
 {
+	final public static int DEFAULT_PORT = 7700;
 	final private static Random RND = new Random();
 	// IANA recommends to use ports higher than 49152
 	final private static int RANGE = 65535 - 49152;

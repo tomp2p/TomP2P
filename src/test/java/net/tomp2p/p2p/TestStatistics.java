@@ -32,7 +32,7 @@ public class TestStatistics
 	{
 		Random rnd = new Random(42L);
 		Number160 n = new Number160(rnd);
-		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n,Utils2.getP2PConfiguration(n, 20, 100, 50, 10, new int[0]));
+		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 50, 10, new int[0], 100, false);
 		Statistics statistics = peerMapKadImpl.getStatistics();
 		for (int i = 0; i < 100; i++)
 		{
@@ -47,7 +47,7 @@ public class TestStatistics
 	{
 		Random rnd = new Random(42L);
 		Number160 n = new Number160(rnd);
-		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n,Utils2.getP2PConfiguration(n, 20, 100, 50, 10, new int[0]));
+		PeerMapKadImpl peerMapKadImpl = new PeerMapKadImpl(n, 20, 50, 10, new int[0], 100, false);
 		Statistics statistics = peerMapKadImpl.getStatistics();
 		for (int i = 0; i < 100; i++)
 		{
@@ -65,7 +65,7 @@ public class TestStatistics
 			int maxNr = 10000 * j;
 			Random rnd = new Random(42L);
 			Number160 id = new Number160(rnd);
-			PeerMapKadImpl kadRouting = new PeerMapKadImpl(id,Utils2.getP2PConfiguration(id, 20, 0, 0, 0, new int[0]));
+			PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 20, 0, 0, new int[0], 0, false);
 			Statistics statistics = kadRouting.getStatistics();
 			for (int i = 0; i < maxNr; i++)
 			{

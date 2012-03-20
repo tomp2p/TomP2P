@@ -32,17 +32,8 @@ public class TestNestedCall
 	public void setUp() throws Exception
 	{
 		final int seedPort = 5001;
-		seed = new Peer(new Number160(rnd));
-		try
-		{
-			seed.listen(seedPort, seedPort);
-		}
-		catch (Exception e)
-		{
-			e.printStackTrace();
-		}
-		peer = new Peer(new Number160(rnd));
-		peer.listen(seed);
+		seed = new PeerMaker(new Number160(rnd)).setPorts(seedPort).buildAndListen(); 
+		peer = new PeerMaker(new Number160(rnd)).setMasterPeer(seed).buildAndListen(); 
 		final int maxSuccess = 10;
 		final int parallel = 1;
 		final int maxFailure = 3;

@@ -56,8 +56,7 @@ public class TestAddUpdateTTL
 				"foo3".getBytes(),
 				Arrays.asList("bla3a".getBytes(), "bla3b".getBytes(),
 						"bla3c".getBytes()));
-		seed = new Peer(new Number160(rnd));
-		seed.listen(5002, 5002);
+		seed = new PeerMaker(new Number160(rnd)).setPorts(5002).buildAndListen();
 	}
 
 	@Test
@@ -96,15 +95,16 @@ public class TestAddUpdateTTL
 
 	public Peer createAndAttachRemotePeer()
 	{
-		final Peer peer = new Peer(new Number160(rnd));
-		int port = 5003;
+		final Peer peer;
 		try
 		{
-			peer.listen(port, port);
+			peer = new PeerMaker(new Number160(rnd)).setPorts(5003).buildAndListen();
 		}
 		catch (Exception e)
 		{
 			e.printStackTrace();
+			Assert.fail();
+			return null;
 		}
 		final FutureBootstrap fb = peer.bootstrapBroadcast(seed
 				.getPeerAddress().portTCP());

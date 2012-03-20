@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ConnectionConfigurationBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -67,12 +66,7 @@ import org.junit.Test;
 public class TestDHT
 {
 	final private static Random rnd = new Random(42L);
-	final private static ConnectionConfigurationBean CONFIGURATION = new ConnectionConfigurationBean();
-	static
-	{
-		//CONFIGURATION.setIdleTCPMillis(3000000);
-		//CONFIGURATION.setIdleUDPMillis(3000000);
-	}
+	
 	
 	@Test
 	public void testTooManyOpenFilesInSystem() throws Exception
@@ -80,12 +74,9 @@ public class TestDHT
 		Peer master = null;
 		Peer slave = null;
 		try
-		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			slave = new Peer(new Number160(rnd));
-			slave.listen(4002, 4002);
-			
+		{	
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			
 			slave.setRawDataReply(new RawDataReply() 
 			{	
@@ -147,10 +138,8 @@ public class TestDHT
 		Peer slave = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			slave = new Peer(new Number160(rnd));
-			slave.listen(4002, 4002);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			FutureDiscover fd=master.discover(slave.getPeerAddress());
 			fd.awaitUninterruptibly();
 			System.err.println(fd.getFailedReason());
@@ -170,10 +159,8 @@ public class TestDHT
 		Peer slave = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			slave = new Peer(new Number160(rnd));
-			slave.listen(4002, 4002);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			FutureBootstrap fb=master.bootstrap(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), 3000));
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(false, fb.isSuccess());
@@ -301,10 +288,8 @@ public class TestDHT
 		Peer slave = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			slave = new Peer(new Number160(rnd));
-			slave.listen(4002, 4002);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			FutureLateJoin<FutureResponse> res = slave.pingBroadcast(4001);
 			res.awaitUninterruptibly();
 			Assert.assertEquals(true, res.isSuccess());
@@ -322,8 +307,7 @@ public class TestDHT
 		Peer peer = null;
 		try 
 		{
-			peer = new Peer(new Number160(rnd));
-			peer.listen(4000, 4000);
+			peer = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen();
 			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
 			FutureBootstrap tmp = peer.bootstrap(pa);
 			tmp.awaitUninterruptibly();
@@ -347,8 +331,7 @@ public class TestDHT
 		Peer peer = null;
 		try 
 		{
-			peer = new Peer(new Number160(rnd));
-			peer.listen(4000, 4000);
+			peer = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen();
 			FutureBootstrap tmp = peer.bootstrap(peer.getPeerAddress());
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
@@ -372,8 +355,7 @@ public class TestDHT
 		Peer peer = null;
 		try 
 		{
-			peer = new Peer(new Number160(rnd));
-			peer.listen(4000, 4000);
+			peer = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen();
 			
 			Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(2);
 			PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000,4000);
@@ -451,8 +433,7 @@ public class TestDHT
 		Peer master = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
 			FutureDHT fdht = master.put(Number160.ONE, new Data("hallo"));
 			fdht.awaitUninterruptibly();
 			fdht.getFutureRequests().awaitUninterruptibly();
@@ -1051,15 +1032,12 @@ public class TestDHT
 		Peer master3 = null;
 		try
 		{
-			ConnectionConfigurationBean c = new ConnectionConfigurationBean();
+			ConnectionConfiguration c = new ConnectionConfiguration();
 			c.setIdleTCPMillis(Integer.MAX_VALUE);
 			c.setIdleUDPMillis(Integer.MAX_VALUE);
-			master1 = new Peer(1, new Number160(rnd), c);
-			master1.listen(4001, 4001);
-			master2 = new Peer(1, new Number160(rnd), c);
-			master2.listen(4002, 4002);
-			master3 = new Peer(1, new Number160(rnd), c);
-			master3.listen(4003, 4003);
+			master1 = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(c).setPorts(4001).buildAndListen();
+			master2 = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(c).setPorts(4002).buildAndListen();
+			master3 = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(c).setPorts(4003).buildAndListen();
 			// perfect routing
 			master1.getPeerBean().getPeerMap().peerFound(master2.getPeerAddress(), null);
 			master1.getPeerBean().getPeerMap().peerFound(master3.getPeerAddress(), null);
@@ -1101,8 +1079,7 @@ public class TestDHT
 			Assert.assertEquals(true, fdht.isSuccess());
 			// search top 3
 			master2.shutdown();
-			master2 = new Peer(new Number160(rnd));
-			master2.listen(4002, 4002);
+			master2 = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(c).setPorts(4002).buildAndListen();
 			//
 			fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
 					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
@@ -1140,8 +1117,7 @@ public class TestDHT
 		Peer master = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(new File("/tmp/p2plog.txt.gz"));
+			master = new PeerMaker(new Number160(rnd)).setFileMessageLogger(new File("/tmp/p2plog.txt.gz")).buildAndListen();
 			Peer[] peers = createNodes(master, 100);
 			List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();
 			for (int i = 0; i < peers.length; i++)
@@ -1181,18 +1157,17 @@ public class TestDHT
 		System.err.println("PPK3 " + pair3.getPublic());
 		try
 		{
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			
+			// make slave
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			master.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY);
-			slave1 = new Peer(new Number160(rnd), pair2);
-			slave1.listen(master);
+			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			slave1.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY);
-			slave2 = new Peer(new Number160(rnd), pair3);
-			slave2.listen(master);
+			slave2 = new PeerMaker(new Number160(rnd)).setKeyPair(pair3).setMasterPeer(master).buildAndListen();
 			slave2.getPeerBean().getStorage().setProtection(ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
 					ProtectionMode.MASTER_PUBLIC_KEY);
@@ -1288,10 +1263,8 @@ public class TestDHT
 		Peer p2 = null;
 		try
 		{
-			p1 = new Peer(new Number160(rnd));
-			p1.listen(4001, 4001);
-			p2 = new Peer(new Number160(rnd));
-			p2.listen(4002, 4002);
+			p1 = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			p2 = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			//attach reply handler
 			p2.setObjectDataReply(new ObjectDataReply()
 			{
@@ -1543,9 +1516,8 @@ public class TestDHT
 		try
 		{
 			// setup
-			Peer[] peers = Utils2.createNodes(100, rnd, 4001);
+			Peer[] peers = Utils2.createNodes(100, rnd, 4001, 5 * 1000);
 			master = peers[0];
-			master.getP2PConfiguration().setReplicationRefreshMillis(5 * 1000);
 			master.setDefaultStorageReplication();
 			for (int i = 0; i < peers.length; i++)
 				peers[i].setDefaultStorageReplication();
@@ -1618,13 +1590,11 @@ public class TestDHT
 			Data d1=new Data("hello");
 			Data d2=new Data("world!");
 			// setup (step 1)
-			p1 = new Peer(new Number160(rnd));
-			p1.listen(4001, 4001);
+			p1 = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
 			FutureDHT futureDHT = p1.add(n1, d1);
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
-			p2 = new Peer(new Number160(rnd));
-			p2.listen(4002, 4002);
+			p2 = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			p2.bootstrap(p1.getPeerAddress()).awaitUninterruptibly();
 			// test (step 2)
 			futureDHT = p1.add(n1, d2);
@@ -1676,13 +1646,11 @@ public class TestDHT
 			Data d1=new Data("hello");
 			Data d2=new Data("world!");
 			// setup (step 1)
-			p1 = new Peer(new Number160(rnd));
-			p1.listen(4001, 4001);
+			p1 = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
 			FutureDHT futureDHT = p1.put(n1, d1);
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
-			p2 = new Peer(new Number160(rnd));
-			p2.listen(4002, 4002);
+			p2 = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			p2.bootstrap(p1.getPeerAddress()).awaitUninterruptibly();
 			// test (step 2)
 			futureDHT = p1.put(n2, d2);
@@ -1776,13 +1744,10 @@ public class TestDHT
 			try
 			{
 				// setup (step 1)
-				p1 = new Peer(new Number160(rnd));
 				Bindings b = new Bindings();
 				b.addInterface("eth0");
-				p1.listen(4001, 4001, b);
-				
-				p2 = new Peer(new Number160(rnd));
-				p2.listen(4002, 4002, b);
+				p1 = new PeerMaker(new Number160(rnd)).setPorts(4001).setBindings(b).buildAndListen();
+				p2 = new PeerMaker(new Number160(rnd)).setPorts(4002).setBindings(b).buildAndListen();
 				FutureBootstrap fb=p2.bootstrap(p1.getPeerAddress());
 				fb.awaitUninterruptibly();
 				Assert.assertEquals(true, fb.isSuccess());
@@ -1940,14 +1905,12 @@ public class TestDHT
 
 	private Peer[] createNodes(Peer master, int nr, Random rnd) throws Exception
 	{
-		Peer[] nodes = new Peer[nr];
+		Peer[] peers = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
-			nodes[i] = new Peer(1, new Number160(rnd), CONFIGURATION);
-			nodes[i].listen(master);
-			//System.err.println("go for2 "+i);
+			peers[i] = new PeerMaker(new Number160(rnd)).setP2PId(1).setMasterPeer(master).buildAndListen();
 		}
-		return nodes;
+		return peers;
 	}
 
 	private Peer[] createNodes(Peer master, int nr) throws Exception

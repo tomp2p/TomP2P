@@ -34,11 +34,9 @@ public class TestSecurity
 		// make master
 		try
 		{
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			// make slave
-			slave1 = new Peer(new Number160(rnd), pair2);
-			slave1.listen(master);
+			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			final AtomicBoolean gotPK = new AtomicBoolean(false);
 			// set storage to test PK
 			slave1.getPeerBean().setStorage(new StorageMemory()
@@ -93,8 +91,7 @@ public class TestSecurity
 			KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 			KeyPair pair1 = gen.generateKeyPair();
 			// make master
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			// make slave
 			final AtomicBoolean gotPK = new AtomicBoolean(false);
 			// set storage to test PK
@@ -145,20 +142,17 @@ public class TestSecurity
 		System.err.println("PPK3 " + pair3.getPublic());
 		try
 		{
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			master.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
-			slave1 = new Peer(new Number160(rnd), pair2);
-			slave1.listen(master);
+			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			slave1.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
-			slave2 = new Peer(new Number160(rnd), pair3);
-			slave2.listen(master);
+			slave2 = new PeerMaker(new Number160(rnd)).setKeyPair(pair3).setMasterPeer(master).buildAndListen();
 			slave2.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
@@ -225,20 +219,17 @@ public class TestSecurity
 		System.err.println("PPK3 " + pair3.getPublic());
 		try
 		{
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			master.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
-			slave1 = new Peer(new Number160(rnd), pair2);
-			slave1.listen(master);
+			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			slave1.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
 							ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
-			slave2 = new Peer(new Number160(rnd), pair3);
-			slave2.listen(master);
+			slave2 = new PeerMaker(new Number160(rnd)).setKeyPair(pair3).setMasterPeer(master).buildAndListen();
 			slave2.getPeerBean()
 					.getStorage()
 					.setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY,
@@ -290,11 +281,9 @@ public class TestSecurity
 		// make master
 		try
 		{
-			master = new Peer(new Number160(rnd), pair1);
-			master.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).buildAndListen();
 			// make slave
-			slave1 = new Peer(new Number160(rnd), pair2);
-			slave1.listen(master);
+			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			master.getPeerBean().setStorage(new StorageMemory()
 			{
 				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 

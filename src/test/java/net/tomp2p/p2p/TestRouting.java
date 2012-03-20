@@ -36,13 +36,7 @@ public class TestRouting
 	public void testDifference() throws UnknownHostException
 	{
 		// setup
-		Configuration p2pConfiguration = new Configuration(0, 0, false);
-		p2pConfiguration.setBagSize(2);
-		p2pConfiguration.setCacheSize(100);
-		p2pConfiguration.setCacheTimeoutMillis(60*1000);
-		p2pConfiguration.setMaxNrBeforeExclude(3);
-		
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), p2pConfiguration);
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0], 100, false);
 		
 		Collection<PeerAddress> newC = new ArrayList<PeerAddress>();
 		newC.add(Utils2.createAddress(12));
@@ -67,13 +61,7 @@ public class TestRouting
 	public void testMerge() throws UnknownHostException
 	{
 		// setup
-		Configuration p2pConfiguration = new Configuration(0, 0, false);
-		p2pConfiguration.setBagSize(2);
-		p2pConfiguration.setCacheSize(100);
-		p2pConfiguration.setCacheTimeoutMillis(60*1000);
-		p2pConfiguration.setMaxNrBeforeExclude(3);
-				
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), p2pConfiguration);
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0], 100, false);
 		
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
@@ -106,13 +94,7 @@ public class TestRouting
 	public void testEvaluate() throws UnknownHostException
 	{
 		// setup
-		Configuration p2pConfiguration = new Configuration(0, 0, false);
-		p2pConfiguration.setBagSize(2);
-		p2pConfiguration.setCacheSize(100);
-		p2pConfiguration.setCacheTimeoutMillis(60*1000);
-		p2pConfiguration.setMaxNrBeforeExclude(3);
-					
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), p2pConfiguration);
+		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0], 100, false);
 		
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(test
 				.createPeerComparator(new Number160(88)));
@@ -608,8 +590,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 		for (int i = 0; i < nr; i++)
 		{
 			sb.append("f");
-			peers[i] = new Peer(new Number160(sb.toString()));
-			peers[i].listen(4001 + i, 4001 + i);
+			peers[i] = new PeerMaker(new Number160(sb.toString())).setPorts(4001+i).buildAndListen();
 		}
 		return peers;
 	}
@@ -866,7 +847,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 	@Test
 	public void testRoutingBootstrap1() throws Exception
 	{
-		Peer master = new Peer(new Number160(rnd));
+		Peer master = null;
 		try
 		{
 			// setup
@@ -898,7 +879,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 	@Test
 	public void testRoutingBootstrap2() throws Exception
 	{
-		Peer master = new Peer(new Number160(rnd));
+		Peer master = null;
 		try
 		{
 			// setup
@@ -930,12 +911,12 @@ final ChannelCreator cc = fcc.getChannelCreator();
 	@Test
 	public void testBootstrap() throws Exception
 	{
-		Peer master = new Peer(new Number160(rnd));
-		Peer client = new Peer(new Number160(rnd));
+		Peer master = null; 
+		Peer client = null;
 		try
 		{
-			master.listen(4000, 4000);
-			client.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen(); 
+			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen(); 
 			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4000);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
@@ -951,12 +932,12 @@ final ChannelCreator cc = fcc.getChannelCreator();
 	@Test
 	public void testBootstrap2() throws Exception
 	{
-		Peer master = new Peer(new Number160(rnd));
-		Peer client = new Peer(new Number160(rnd));
+		Peer master = null;
+		Peer client = null;
 		try
 		{
-			master.listen(4002, 4002);
-			client.listen(4001, 4001);
+			master = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen(); 
+			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen(); 
 			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4001);
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());

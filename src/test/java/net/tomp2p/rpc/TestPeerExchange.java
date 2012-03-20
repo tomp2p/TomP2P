@@ -5,6 +5,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Timings;
 
@@ -20,10 +21,8 @@ public class TestPeerExchange
 		Peer recv1 = null;
 		try
 		{
-			sender = new Peer(55, new Number160("0x9876"));
-			sender.listen(2424, 2424);
-			recv1 = new Peer(55, new Number160("0x1234"));
-			recv1.listen(8088, 8088);
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);

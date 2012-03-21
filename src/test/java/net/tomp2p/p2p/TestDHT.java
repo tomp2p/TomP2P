@@ -441,7 +441,7 @@ public class TestDHT
 			fdht = master.get(Number160.ONE);
 			fdht.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht.isSuccess());
-			Data tmp = fdht.getData().get(Number160.ZERO);
+			Data tmp = fdht.getDataMap().get(Number160.ZERO);
 			Assert.assertEquals("hallo", tmp.getObject().toString());
 		}
 		finally
@@ -973,9 +973,9 @@ public class TestDHT
 				System.err.println(futureDHT.getFailedReason());
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			
-			Iterator<Data> iterator = futureDHT.getData().values().iterator();
+			Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
 			//futureDHT.get
-			Assert.assertEquals(2, futureDHT.getData().size());
+			Assert.assertEquals(2, futureDHT.getDataMap().size());
 			System.err.println("got: " + iterator.next().getObject() + " ("
 					+ futureDHT.isSuccess() + ")");
 			System.err.println("got: " + iterator.next().getObject() + " ("
@@ -1214,7 +1214,7 @@ public class TestDHT
 			// get it
 			FutureDHT fdht7 = slave2.getAll(locationKey);
 			fdht7.awaitUninterruptibly();
-			Assert.assertEquals(2, fdht7.getData().size());
+			Assert.assertEquals(2, fdht7.getDataMap().size());
 			Assert.assertEquals(true, fdht7.isSuccess());
 			//if(true)
 			//	System.exit(0);
@@ -1228,7 +1228,7 @@ public class TestDHT
 			// get all, they should be removed now
 			FutureDHT fdht6 = slave2.getAll(locationKey);
 			fdht6.awaitUninterruptibly();
-			Assert.assertEquals(0, fdht6.getData().size());
+			Assert.assertEquals(0, fdht6.getDataMap().size());
 			Assert.assertEquals(false, fdht6.isSuccess());
 			// put there the data again...
 			cs1.setContentKey(Utils.makeSHAHash(pair1.getPublic().getEncoded()));
@@ -1602,21 +1602,21 @@ public class TestDHT
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.getAll(n1);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(2, futureDHT.getData().size());
+			Assert.assertEquals(2, futureDHT.getDataMap().size());
 			// test (step 3)
 			futureDHT = p1.remove(n1, d2.getHash());
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.getAll(n1);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(1, futureDHT.getData().size());
+			Assert.assertEquals(1, futureDHT.getDataMap().size());
 			// test (step 4)
 			futureDHT = p1.add(n1, d2);
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.getAll(n1);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(2, futureDHT.getData().size());
+			Assert.assertEquals(2, futureDHT.getDataMap().size());
 			// test (remove all)
 			futureDHT = p1.remove(n1, d1.getHash());
 			futureDHT.awaitUninterruptibly();
@@ -1624,7 +1624,7 @@ public class TestDHT
 			futureDHT.awaitUninterruptibly();
 			futureDHT = p2.getAll(n1);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(0, futureDHT.getData().size());
+			Assert.assertEquals(0, futureDHT.getDataMap().size());
 		}
 		finally
 		{
@@ -1658,21 +1658,21 @@ public class TestDHT
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.get(n2);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(1, futureDHT.getData().size());
+			Assert.assertEquals(1, futureDHT.getDataMap().size());
 			// test (step 3)
 			futureDHT = p1.remove(n2);
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.get(n2);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(0, futureDHT.getData().size());
+			Assert.assertEquals(0, futureDHT.getDataMap().size());
 			// test (step 4)
 			futureDHT = p1.put(n2, d2);
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
 			futureDHT = p2.get(n2);
 			futureDHT.awaitUninterruptibly();
-			Assert.assertEquals(1, futureDHT.getData().size());
+			Assert.assertEquals(1, futureDHT.getDataMap().size());
 		}
 		finally
 		{
@@ -1719,7 +1719,7 @@ public class TestDHT
 			{
 				FutureDHT futureDHT = peers[20+i].getAll(key);
 				futureDHT.awaitUninterruptibly();
-				Assert.assertEquals(2, futureDHT.getData().size());
+				Assert.assertEquals(2, futureDHT.getDataMap().size());
 				Timings.sleep(1000);
 			}
 		}

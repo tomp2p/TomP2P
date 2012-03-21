@@ -17,7 +17,6 @@ package net.tomp2p.examples;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
-import java.util.Random;
 
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
@@ -38,24 +37,22 @@ import net.tomp2p.storage.Data;
  */
 public class ExampleHashMap
 {
-	final private static Random rnd = new Random(42L);
-
 	public static void main(String[] args) throws Exception
 	{
-		MyPeer master = null;
+		Peer master = null;
 		try
 		{
-			master = new MyPeer(new Number160(rnd));
-			master.listen(4001, 4001);
-			Peer[] nodes = Examples.createAndAttachNodes(master, 100);
-			Examples.bootstrap(master, nodes);
-			master.put("This is my location key", "This is my domain", "This is my content key",
+			Peer[] peers = Examples.createAndAttachNodes(100, 4001);
+			master = peers[0];
+			MyPeer myPeer = new MyPeer(master);
+			Examples.bootstrap(peers);
+			myPeer.put("This is my location key", "This is my domain", "This is my content key",
 					"And here comes the data").awaitUninterruptibly();
-			FutureDHT futureDHT = master.get("This is my location key", "This is my domain",
+			FutureDHT futureDHT = myPeer.get("This is my location key", "This is my domain",
 					"This is my content key");
 			futureDHT.awaitUninterruptibly();
 			System.err.println(futureDHT.getFailedReason());
-			Map<Number160, Data> map = futureDHT.getData();
+			Map<Number160, Data> map = futureDHT.getDataMap();
 			for (Data data : map.values())
 			{
 				MyData myData = (MyData) data.getObject();
@@ -68,11 +65,12 @@ public class ExampleHashMap
 			master.shutdown();
 		}
 	}
-	private static class MyPeer extends Peer
+	private static class MyPeer
 	{
-		private MyPeer(Number160 nodeId)
+		final private Peer peer;
+		private MyPeer(Peer peer)
 		{
-			super(nodeId);
+			this.peer = peer;
 		}
 
 		private FutureDHT get(String key, String domain, String content)
@@ -83,7 +81,7 @@ public class ExampleHashMap
 			ConfigurationGet cg = Configurations.defaultGetConfiguration();
 			cg.setDomain(domainKey);
 			cg.setContentKey(contentKey);
-			return get(locationKey, cg);
+			return peer.get(locationKey, cg);
 		}
 
 		private FutureDHT put(String key, String domain, String content, String data)
@@ -100,7 +98,7 @@ public class ExampleHashMap
 			ConfigurationStore cs = Configurations.defaultStoreConfiguration();
 			cs.setDomain(domainKey);
 			cs.setContentKey(contentKey);
-			return put(locationKey, new Data(myData), cs);
+			return peer.put(locationKey, new Data(myData), cs);
 		}
 	}
 	private static class MyData implements Serializable

@@ -360,12 +360,25 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	 * 
 	 * @return The evaluated data that have been received.
 	 */
-	public Map<Number160, Data> getData()
+	public Map<Number160, Data> getDataMap()
 	{
 		synchronized (lock)
 		{
 			return evaluationScheme.evaluate2(rawData);
 		}
+	}
+	
+	/**
+	 * @return The first data object from get() after evaluation.
+	 */
+	public Data getData()
+	{
+		Map<Number160, Data> dataMap = getDataMap();
+		if(dataMap.size()==0)
+		{
+			return null;
+		}
+		return dataMap.values().iterator().next();
 	}
 	
 	/**

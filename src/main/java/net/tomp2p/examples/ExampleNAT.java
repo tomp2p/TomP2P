@@ -24,6 +24,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -34,12 +35,11 @@ public class ExampleNAT
 		Peer peer = null;
 		try 
 		{
-			Random r = new Random(42L);
-			peer = new Peer(new Number160(r));
+			Random r = new Random(42L);			
 			//peer.getP2PConfiguration().setBehindFirewall(true);
 			Bindings b = new Bindings();
 			b.addInterface("eth0");
-			peer.listen(4000, 4000, b);
+			peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(4000).buildAndListen();
 			System.out.println("peer started.");
 			for (;;) 
 			{
@@ -87,9 +87,8 @@ public class ExampleNAT
 	public static void startClientNAT(String ip) throws Exception 
 	{
 		Random r = new Random(43L);
-		Peer peer = new Peer(new Number160(r));
-		peer.getP2PConfiguration().setBehindFirewall(true);
-		peer.listen(4000, 4000);
+		Peer peer = new PeerMaker(new Number160(r)).setPorts(4000).buildAndListen();
+		peer.getConfiguration().setBehindFirewall(true);
 		PeerAddress pa = new PeerAddress(Number160.ZERO,
 				InetAddress.getByName(ip), 4000, 4000);
 		FutureDiscover fd = peer.discover(pa);

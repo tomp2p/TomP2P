@@ -29,6 +29,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -47,7 +48,7 @@ public class Examples
 	public static void main(String[] args) throws Exception
 	{
 		exampleDHT();
-		exampleNAT();
+		//exampleNAT();
 	}
 
 	public static void exampleDHT() throws Exception
@@ -55,12 +56,11 @@ public class Examples
 		Peer master = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			Peer[] nodes = createAndAttachNodes(master, 100);
-			bootstrap(master, nodes);
-			examplePutGet(nodes);
-			exampleAddGet(nodes);
+			Peer[] peers = createAndAttachNodes(100, 4001);
+			master = peers[0];
+			bootstrap(peers);
+			examplePutGet(peers);
+			//exampleAddGet(peers);
 		}
 		finally
 		{
@@ -70,53 +70,53 @@ public class Examples
 
 	public static void exampleNAT() throws Exception
 	{
-		Peer master = new Peer(new Number160(rnd));
 		Bindings b = new Bindings(Protocol.IPv4, Inet4Address.getByName("127.0.0.1"), 4001, 4001);
 		b.addInterface("eth0");
+		Peer master = new PeerMaker(new Number160(rnd)).setPorts(4001).setBindings(b).buildAndListen();
 		System.out.println("Listening to: " + DiscoverNetworks.discoverInterfaces(b));
-		master.listen(4001, 4001, b);
 		System.out.println("address visible to outside is " + master.getPeerAddress());
 		master.shutdown();
 	}
 
-	public static void bootstrap(Peer master, Peer[] nodes)
+	public static void bootstrap(Peer[] peers)
 	{
 		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
 		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
-		for (int i = 1; i < nodes.length; i++)
+		for (int i = 1; i < peers.length; i++)
 		{
-			FutureDiscover tmp=nodes[i].discover(master.getPeerAddress());
+			FutureDiscover tmp=peers[i].discover(peers[0].getPeerAddress());
 			futures2.add(tmp);
 		}
 		for (FutureDiscover future : futures2)
-			future.awaitUninterruptibly();
-		for (int i = 1; i < nodes.length; i++)
 		{
-			FutureBootstrap tmp = nodes[i].bootstrap(master.getPeerAddress());
+			future.awaitUninterruptibly();
+		}
+		for (int i = 1; i < peers.length; i++)
+		{
+			FutureBootstrap tmp = peers[i].bootstrap(peers[0].getPeerAddress());
 			futures1.add(tmp);
 		}
-		for (int i = 1; i < nodes.length; i++)
+		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = master.bootstrap(nodes[i].getPeerAddress());
+			FutureBootstrap tmp = peers[0].bootstrap(peers[i].getPeerAddress());
 			futures1.add(tmp);
 		}
 		for (FutureBootstrap future : futures1)
 			future.awaitUninterruptibly();
 	}
 
-	public static void examplePutGet(Peer[] nodes) throws IOException
+	public static void examplePutGet(Peer[] peers) throws IOException, ClassNotFoundException
 	{
 		Number160 nr = new Number160(rnd);
-		String toStore = "hallo";
-		Data data = new Data(toStore.getBytes());
-		FutureDHT futureDHT = nodes[30].put(nr, data);
+		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"));
 		futureDHT.awaitUninterruptibly();
-		System.out.println("stored: " + toStore + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = nodes[77].get(nr);
+		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
+		futureDHT = peers[77].get(nr);
 		futureDHT.awaitUninterruptibly();
-		System.out.println("got from put get: "
-				+ new String(futureDHT.getRawData().values().iterator().next().values().iterator()
-						.next().getData()) + " (" + futureDHT.isSuccess() + ")");
+		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
+		// the output should look like this:
+		// peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
+		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
 	}
 
 	private static void exampleAddGet(Peer[] nodes) throws IOException, ClassNotFoundException
@@ -134,8 +134,8 @@ public class Examples
 		System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
 		futureDHT = nodes[77].getAll(nr);
 		futureDHT.awaitUninterruptibly();
-		System.out.println("size" + futureDHT.getData().size());
-		Iterator<Data> iterator = futureDHT.getData().values().iterator();
+		System.out.println("size" + futureDHT.getDataMap().size());
+		Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
 		System.out.println("got: " + iterator.next().getObject() + " ("
 				+ futureDHT.isSuccess() + ")");
 		System.out.println("got: " + iterator.next().getObject() + " ("
@@ -164,15 +164,20 @@ public class Examples
           System.out.println("this may happen before printing the result");
         }
 
-	public static Peer[] createAndAttachNodes(Peer master, int nr) throws Exception
+	public static Peer[] createAndAttachNodes(int nr, int port) throws Exception
 	{
-		Peer[] nodes = new Peer[nr];
-		nodes[0] = master;
-		for (int i = 1; i < nr; i++)
+		Peer[] peers = new Peer[nr];
+		for (int i = 0; i < nr; i++)
 		{
-			nodes[i] = new Peer(new Number160(rnd));
-			nodes[i].listen(master);
+			if(i == 0)
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).buildAndListen();
+			}
+			else
+			{
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+			}
 		}
-		return nodes;
+		return peers;
 	}
 }

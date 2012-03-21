@@ -221,7 +221,7 @@ public class TestAddUpdateTTL
 								else
 								{
 									System.out.println("getAll result: "
-											+ future.getData().size());
+											+ future.getDataMap().size());
 								}
 								latch.countDown();
 							}

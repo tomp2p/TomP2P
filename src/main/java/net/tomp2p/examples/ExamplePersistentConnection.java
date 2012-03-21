@@ -20,6 +20,7 @@ import java.util.Random;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -39,11 +40,8 @@ public class ExamplePersistentConnection
 		Peer slave = null;
 		try
 		{
-			master = new Peer(new Number160(rnd));
-			master.listen(4001, 4001);
-			//
-			slave = new Peer(new Number160(rnd));
-			slave.listen(4002, 4002);
+			master = new PeerMaker(new Number160(rnd)).setPorts(40001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			//
 			slave.setObjectDataReply(new ObjectDataReply() 
 			{

@@ -123,6 +123,7 @@ public class Bindings
 	public Bindings(Protocol protocol, String iface, InetAddress bind)
 	{
 		this(protocol, null, 0, 0);
+		addInterface(iface);
 	}
 
 	/**
@@ -256,12 +257,14 @@ public class Bindings
 	 * found, it will be ignored
 	 * 
 	 * @param interfaceHint The interface, e.g. eth0
+	 * @return The same instance
 	 */
-	public void addInterface(String interfaceHint)
+	public Bindings addInterface(String interfaceHint)
 	{
 		if (interfaceHint == null)
 			throw new IllegalArgumentException("Cannot add null");
 		listenInterfaceHints.add(interfaceHint);
+		return this;
 	}
 
 	/**

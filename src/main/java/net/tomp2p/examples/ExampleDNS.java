@@ -20,6 +20,7 @@ import java.io.IOException;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -30,8 +31,7 @@ public class ExampleDNS
 {
 	final private Peer peer;
 	public ExampleDNS(int nodeId) throws Exception {
-		peer=new Peer(Number160.createHash(nodeId));
-		peer.listen(4000+nodeId, 4000+nodeId);
+		peer=new PeerMaker(Number160.createHash(nodeId)).setPorts(4000+nodeId).buildAndListen();
 		FutureBootstrap fb=this.peer.bootstrapBroadcast(4001);
 		fb.awaitUninterruptibly();
 		peer.discover(fb.getBootstrapTo().iterator().next()).awaitUninterruptibly();
@@ -51,7 +51,7 @@ public class ExampleDNS
 		FutureDHT futureDHT=peer.get(Number160.createHash(name));
 		futureDHT.awaitUninterruptibly();
 		if(futureDHT.isSuccess()) {
-			return futureDHT.getData().values().iterator().next().getObject().toString();
+			return futureDHT.getDataMap().values().iterator().next().getObject().toString();
 		}
 		return "not found";
 	}

@@ -113,7 +113,7 @@ public class ConnectionHandler
 	 */
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair,
-			PeerMap peerMap, Timer timer) throws IOException
+			PeerMap peerMap, Timer timer, int maxMessageSize) throws IOException
 	{
 		this.timer = timer;
 		if(configuration.isDisableBind())
@@ -177,8 +177,7 @@ public class ConnectionHandler
 			if (listenAll)
 			{
 				logger.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
-				if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest,
-						configuration.getMaxMessageSize())
+				if (!startupTCP(new InetSocketAddress(tcpPort), dispatcherRequest, maxMessageSize)
 						|| !startupUDP(new InetSocketAddress(udpPort), dispatcherRequest))
 					throw new IOException("cannot bind TCP or UDP");
 			}
@@ -188,8 +187,7 @@ public class ConnectionHandler
 				{
 					logger.info("Listening on address: " + addr + " on port udp: " + udpPort
 							+ " and tcp:" + tcpPort);
-					if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest,
-							configuration.getMaxMessageSize())
+					if (!startupTCP(new InetSocketAddress(addr, tcpPort), dispatcherRequest, maxMessageSize)
 							|| !startupUDP(new InetSocketAddress(addr, udpPort), dispatcherRequest))
 						throw new IOException("cannot bind TCP or UDP");
 				}

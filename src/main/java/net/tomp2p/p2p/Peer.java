@@ -134,9 +134,10 @@ public class Peer
 	private final int p2pID;
 	private final KeyPair keyPair;
 	// Distributed 
-	private DistributedHashMap dht;
-	private DistributedTracker tracker;
-	private DistributedRouting routing;
+	private DistributedHashMap distributedHashMap;
+	private DistributedTracker distributedTracker;
+	private DistributedRouting distributedRouting;
+	private DistributedTask distributedTask;
 	private AsyncTask asyncTask;
 	// RPC
 	private HandshakeRPC handshakeRCP;
@@ -168,11 +169,12 @@ public class Peer
 	final private int replicationRefreshMillis;
 	
 	final private PeerMapKadImpl peerMap;
+	final private int maxMessageSize;
 
 
 	Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair,
 			int maintenanceThreads, int replicationThreads, int replicationRefreshMillis,
-			ConnectionConfiguration configuration, PeerMapKadImpl peerMap)
+			ConnectionConfiguration configuration, PeerMapKadImpl peerMap, int maxMessageSize)
 	{
 		this.p2pID = p2pID;
 		this.peerId = nodeId;
@@ -182,6 +184,7 @@ public class Peer
 		this.replicationThreads = replicationThreads;
 		this.replicationRefreshMillis = replicationRefreshMillis;
 		this.peerMap = peerMap;
+		this.maxMessageSize = maxMessageSize;
 	}
 
 	/**
@@ -279,7 +282,7 @@ public class Peer
 		this.scheduledExecutorServiceReplication = Executors
 				.newScheduledThreadPool(replicationThreads);
 		ConnectionHandler connectionHandler = new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				configuration, fileMessageLogger, keyPair, peerMap, timer);
+				configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize);
 		logger.debug("listen done");
 		this.connectionHandler = connectionHandler;
 		return connectionHandler;
@@ -450,46 +453,46 @@ public class Peer
 		this.taskRPC = taskRPC;
 	}
 
-	public DistributedRouting getRouting()
+	public DistributedRouting getDistributedRouting()
 	{
-		if (routing == null)
+		if (distributedRouting == null)
 		{
 			throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
 		}
-		return routing;
+		return distributedRouting;
 	}
 	
-	public void setDistributedRouting(DistributedRouting routing)
+	public void setDistributedRouting(DistributedRouting distributedRouting)
 	{
-		this.routing = routing;
+		this.distributedRouting = distributedRouting;
 	}
 	
-	public DistributedHashMap getDHT()
+	public DistributedHashMap getDistributedHashMap()
 	{
-		if (dht == null)
+		if (distributedHashMap == null)
 		{
 			throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
 		}
-		return dht;
+		return distributedHashMap;
 	}
 	
-	public void setDistributedHashMap(DistributedHashMap dht)
+	public void setDistributedHashMap(DistributedHashMap distributedHashMap)
 	{
-		this.dht = dht;
+		this.distributedHashMap = distributedHashMap;
 	}
 	
-	public DistributedTracker getTracker()
+	public DistributedTracker getDistributedTracker()
 	{
-		if (tracker == null)
+		if (distributedTracker == null)
 		{
 			throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
 		}
-		return tracker;
+		return distributedTracker;
 	}
 	
-	public void setDistributedTracker(DistributedTracker tracker)
+	public void setDistributedTracker(DistributedTracker distributedTracker)
 	{
-		this.tracker = tracker;
+		this.distributedTracker = distributedTracker;
 	}
 	
 	public AsyncTask getAsyncTask()
@@ -504,6 +507,20 @@ public class Peer
 	public void setAsyncTask(AsyncTask asyncTask)
 	{
 		this.asyncTask = asyncTask;
+	}
+	
+	public DistributedTask getDistributedTask()
+	{
+		if(distributedTask == null)
+		{
+			throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+		}
+		return distributedTask;
+	}
+	
+	public void setDistributedTask(DistributedTask task)
+	{
+		this.distributedTask = task;
 	}
 
 	public ScheduledFuture<?> addIndirectReplicaiton(Runnable runnable)
@@ -904,7 +921,7 @@ public class Peer
 			{
 				if(futureChannelCreator.isSuccess())
 				{
-					FutureRouting futureBootstrap = routing.bootstrap(bootstrapTo, config
+					FutureRouting futureBootstrap = distributedRouting.bootstrap(bootstrapTo, config
 							.getRoutingConfiguration().getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()),
 							config.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
 							config.getRoutingConfiguration().getParallel(), false, 
@@ -1177,7 +1194,7 @@ public class Peer
 	{
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
 				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDHT().put(locationKey, config.getDomain(), dataMap,
+		final FutureDHT futureDHT = getDistributedHashMap().put(locationKey, config.getDomain(), dataMap,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(), 
 				config.isAutomaticCleanup(), config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
@@ -1200,7 +1217,7 @@ public class Peer
 			public void run()
 			{
 				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDHT().put(locationKey, config.getDomain(), dataMap,
+				FutureDHT futureDHT2 = getDistributedHashMap().put(locationKey, config.getDomain(), dataMap,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(), true,
 						config.getFutureCreate(), futureChannelCreator, getConnectionBean().getConnectionReservation());
@@ -1263,7 +1280,7 @@ public class Peer
 		}
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
 				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDHT().add(locationKey, config.getDomain(), dataCollection,
+		final FutureDHT futureDHT = getDistributedHashMap().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.isProtectDomain(), config.isSignMessage(), config.isAutomaticCleanup(), 
 				config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
@@ -1286,7 +1303,7 @@ public class Peer
 			public void run()
 			{
 				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDHT().add(locationKey, config.getDomain(),
+				FutureDHT futureDHT2 = getDistributedHashMap().add(locationKey, config.getDomain(),
 						dataCollection, config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isProtectDomain(), config.isSignMessage(), true, config.getFutureCreate(),
 						futureChannelCreator, getConnectionBean().getConnectionReservation());
@@ -1347,7 +1364,7 @@ public class Peer
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final FutureDHT futureDHT = getDHT().get(locationKey, config.getDomain(), keyCollection,
+		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
 				config.getPublicKey(),
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.getEvaluationScheme(),
@@ -1370,7 +1387,7 @@ public class Peer
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		
-		final FutureDHT futureDHT = getDHT().parallelRequests(config.getRequestP2PConfiguration(), 
+		final FutureDHT futureDHT = getDistributedHashMap().parallelRequests(config.getRequestP2PConfiguration(), 
 				queue, cancleOnFinish, channelCreator, getConnectionBean().getConnectionReservation(), 
 				config.isAutomaticCleanup(), operation);
 		return futureDHT;
@@ -1425,7 +1442,7 @@ public class Peer
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final FutureDHT futureDHT = getDHT().get(locationKey, config.getDomain(), keyCollection,
+		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
 				config.getPublicKey(),
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.getEvaluationScheme(),
@@ -1498,7 +1515,7 @@ public class Peer
 		}
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
 				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDHT().remove(locationKey, config.getDomain(), keyCollection,
+		final FutureDHT futureDHT = getDistributedHashMap().remove(locationKey, config.getDomain(), keyCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 				config.isReturnResults(),
 				config.isSignMessage(), config.isAutomaticCleanup(), config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
@@ -1526,7 +1543,7 @@ public class Peer
 			public void run()
 			{
 				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDHT().remove(locationKey, config.getDomain(),
+				FutureDHT futureDHT2 = getDistributedHashMap().remove(locationKey, config.getDomain(),
 						keyCollection,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.isReturnResults(), config.isSignMessage(), true, config.getFutureCreate(),
@@ -1584,7 +1601,7 @@ public class Peer
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
 				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, true,
+		final FutureDHT futureDHT = getDistributedHashMap().direct(locationKey, buffer, true,
 				config.getRoutingConfiguration(),
 				config.getRequestP2PConfiguration(), config.getFutureCreate(),
 				config.isCancelOnFinish(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
@@ -1620,7 +1637,7 @@ public class Peer
 		ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(me);
 		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
 				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDHT().direct(locationKey, buffer, false,
+		final FutureDHT futureDHT = getDistributedHashMap().direct(locationKey, buffer, false,
 				config.getRoutingConfiguration(),
 				config.getRequestP2PConfiguration(), config.getFutureCreate(),
 				config.isCancelOnFinish(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
@@ -1649,7 +1666,7 @@ public class Peer
 				final FutureChannelCreator futureChannelCreator = reserve(config);
 				config.setRequestP2PConfiguration(adjustConfiguration(
 						config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
-				final FutureDHT futureDHT2 = getDHT().direct(locationKey, buffer, false,
+				final FutureDHT futureDHT2 = getDistributedHashMap().direct(locationKey, buffer, false,
 						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
 						config.getFutureCreate(), config.isCancelOnFinish(), true, 
 						futureChannelCreator, getConnectionBean().getConnectionReservation());
@@ -1736,7 +1753,7 @@ public class Peer
 				.getTrackerConfiguration().getParallel());
 		final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
 
-		FutureTracker futureTracker = getTracker().getFromTracker(locationKey, config.getDomain(),
+		FutureTracker futureTracker = getDistributedTracker().getFromTracker(locationKey, config.getDomain(),
 				config.getRoutingConfiguration(), config.getTrackerConfiguration(),
 				config.isExpectAttachement(), config.getEvaluationScheme(), config.isSignMessage(),
 				config.isUseSecondaryTrackers(), knownPeers, futureChannelCreator,
@@ -1759,7 +1776,7 @@ public class Peer
 				.getTrackerConfiguration().getParallel());
 		final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
 
-		final FutureTracker futureTracker = getTracker().addToTracker(locationKey,
+		final FutureTracker futureTracker = getDistributedTracker().addToTracker(locationKey,
 				config.getDomain(),
 				config.getAttachement(), config.getRoutingConfiguration(),
 				config.getTrackerConfiguration(),
@@ -1809,7 +1826,7 @@ public class Peer
 						.getTrackerConfiguration().getParallel());
 				final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
 
-				FutureTracker futureTracker2 = getTracker().addToTracker(locationKey,
+				FutureTracker futureTracker2 = getDistributedTracker().addToTracker(locationKey,
 						config.getDomain(), config.getAttachement(),
 						config.getRoutingConfiguration(), config.getTrackerConfiguration(),
 						config.isSignMessage(), config.getFutureCreate(), bloomFilter,
@@ -1835,7 +1852,7 @@ public class Peer
 			{
 				final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(
 						TrackerStorage.TRACKER_SIZE);
-				FutureLateJoin<FutureResponse> futureLateJoin = getTracker().startPeerExchange(
+				FutureLateJoin<FutureResponse> futureLateJoin = getDistributedTracker().startPeerExchange(
 						locationKey, config.getDomain(), futureChannelCreator, 
 						getConnectionBean().getConnectionReservation(), config.getTrackerConfiguration().isForceTCP());
 				futureTracker.repeated(futureLateJoin);

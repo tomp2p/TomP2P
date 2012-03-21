@@ -177,8 +177,10 @@ public class StorageMemory extends StorageGeneric
 	{
 		PublicKey other = protectedMap.get(new Number320(locationKey, domainKey));
 		if (other == null)
+		{
 			return false;
-		return !publicKey.equals(other);
+		}
+		return !other.equals(publicKey);
 	}
 	
 	//Misc

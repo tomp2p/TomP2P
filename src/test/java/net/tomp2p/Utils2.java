@@ -1,4 +1,6 @@
 package net.tomp2p;
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
@@ -146,15 +148,17 @@ public class Utils2
 		System.err.println("perfect routing done.");
 	}
 	
-	/*public static Configuration getP2PConfiguration(Number160 self, int bagSize, int cacheSize, int cacheTimeout,
-			int maxFail, int[] maintenanceTimeoutsSeconds)
+	public static File createTempDirectory() throws IOException
 	{
-		Configuration p2pConfiguration = new Configuration();
-		p2pConfiguration.setBagSize(bagSize);
-		p2pConfiguration.setCacheSize(cacheSize);
-		p2pConfiguration.setCacheTimeoutMillis(cacheTimeout);
-		p2pConfiguration.setMaxNrBeforeExclude(maxFail);
-		return p2pConfiguration;
-	}*/
-	
+	    final File temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
+	    if(!(temp.delete()))
+	    {
+	    	throw new IOException("Could not delete temp file: " + temp.getAbsolutePath());
+	    }
+	    if(!(temp.mkdir()))
+	    {
+	    	throw new IOException("Could not create temp directory: " + temp.getAbsolutePath());
+	    }
+	    return (temp);
+	}
 }

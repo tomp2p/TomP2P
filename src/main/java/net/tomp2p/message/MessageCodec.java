@@ -543,7 +543,7 @@ public class MessageCodec
 		Data data;
 		// length may be 0 if data is only used for expiration
 		if (length == 0)
-			data = new Data(EMPTY_BYTE_ARRAY, originator);
+			data = new Data(EMPTY_BYTE_ARRAY, originator.getID());
 		else
 		{
 			// check if its worth coping the buffer, or just take the one backed
@@ -559,10 +559,10 @@ public class MessageCodec
 			{
 				final byte[] me2 = new byte[length];
 				System.arraycopy(me, offset, me2, 0, length);
-				data = new Data(me2, 0, length, originator);
+				data = new Data(me2, 0, length, originator.getID());
 			}
 			else
-				data = new Data(me, offset, length, originator);
+				data = new Data(me, offset, length, originator.getID());
 		}
 		data.setTTLSeconds(ttl);
 		data.setProtectedEntry(protectedEntry);

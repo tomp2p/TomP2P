@@ -45,8 +45,10 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 	public void otherResponsible(final Number160 locationKey, final PeerAddress other)
 	{
 		if (logger.isDebugEnabled())
+		{
 			logger.debug("[storage] Other peer " + other + " is responsible for " + locationKey
 					+ " I'm " + storageRPC.getPeerAddress());
+		}
 		final Map<Number480, Data> dataMap = storage.subMap(locationKey);
 		Number160 domainKeyOld = null;
 		Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
@@ -68,15 +70,27 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 			else
 			{
 				final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
+				send(other, locationKey, domainKey, dataMapConverted1);
 				dataMapConverted.clear();
-				peer.getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
+			}
+			domainKeyOld = domainKey;
+		}
+		if(!dataMapConverted.isEmpty())
+		{
+			send(other, locationKey, domainKeyOld, dataMapConverted);
+		}
+	}
+	
+	private void send(final PeerAddress other, final Number160 locationKey, final Number160 domainKey, final Map<Number160, Data> dataMapConverted)
+	{
+		peer.getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
 				{
 					@Override
 					public void operationComplete(FutureChannelCreator future) throws Exception
 					{
 						if(future.isSuccess())
 						{
-							FutureResponse futureResponse=storageRPC.put(other, locationKey, domainKey, dataMapConverted1, 
+							FutureResponse futureResponse=storageRPC.put(other, locationKey, domainKey, dataMapConverted, 
 									false, false, false, future.getChannelCreator(), forceUDP);
 							Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
 							pendingFutures.put(futureResponse, Timings.currentTimeMillis());
@@ -90,9 +104,6 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 						}
 					}
 				});
-			}
-			domainKeyOld = domainKey;
-		}
 	}
 
 	@Override

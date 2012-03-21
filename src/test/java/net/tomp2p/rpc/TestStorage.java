@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -46,7 +47,8 @@ import org.junit.Test;
 public class TestStorage
 {
 	final private static Number160 domainKey = new Number160(20);
-	final private static String DIR = "/tmp/blub2";
+	private static String DIR1;
+	private static String DIR2;
 	static
 	{
 		Handler fh;
@@ -68,15 +70,22 @@ public class TestStorage
 	}
 	
 	@Before
-	public void before()
+	public void before() throws IOException
 	{
-		new File(DIR).mkdirs();
+		DIR1 = Utils2.createTempDirectory().getCanonicalPath();
+		DIR2 = Utils2.createTempDirectory().getCanonicalPath();
 	}
 
 	@After
 	public void after()
 	{
-		File f = new File(DIR);
+		cleanUp(DIR1);
+		cleanUp(DIR2);
+	}
+	
+	private void cleanUp(String dir)
+	{
+		File f = new File(dir);
 		f.listFiles(new FileFilter()
 		{
 			@Override
@@ -94,7 +103,7 @@ public class TestStorage
 	public void testStorePut() throws Exception
 	{
 		testStorePut(new StorageMemory(), new StorageMemory());
-		testStorePut(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePut(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 	private void testStorePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
@@ -148,7 +157,7 @@ public class TestStorage
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
 			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
-		catch (Exception e)
+		catch (Throwable e)
 		{
 			e.printStackTrace();
 			Assert.fail();
@@ -166,7 +175,7 @@ public class TestStorage
 	public void testComparePut() throws Exception
 	{
 		testComparePut(new StorageMemory(), new StorageMemory());
-		testComparePut(new StorageDisk(DIR), new StorageDisk(DIR));
+		testComparePut(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 	private void testComparePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
 	{
@@ -255,7 +264,7 @@ public class TestStorage
 	public void testStorePutIfAbsent() throws Exception
 	{
 		testStorePutIfAbsent(new StorageMemory(), new StorageMemory());
-		testStorePutIfAbsent(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePutIfAbsent(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testStorePutIfAbsent(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -317,7 +326,7 @@ public class TestStorage
 	public void testStorePutGet() throws Exception
 	{
 		testStorePutGet(new StorageMemory(), new StorageMemory());
-		testStorePutGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePutGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testStorePutGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -366,7 +375,7 @@ public class TestStorage
 	public void testStorePutGet2() throws Exception
 	{
 		testStorePutGet2(new StorageMemory(), new StorageMemory());
-		testStorePutGet2(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePutGet2(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	
@@ -438,7 +447,7 @@ public class TestStorage
 	public void testStorePutRemoveGet() throws Exception
 	{
 		testStorePutRemoveGet(new StorageMemory(), new StorageMemory());
-		testStorePutRemoveGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePutRemoveGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testStorePutRemoveGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -495,7 +504,7 @@ public class TestStorage
 	public void testStorePutRemoveGet2() throws Exception
 	{
 		testStorePutRemoveGet2(new StorageMemory(), new StorageMemory());
-		testStorePutRemoveGet2(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStorePutRemoveGet2(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testStorePutRemoveGet2(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -552,7 +561,7 @@ public class TestStorage
 	public void testStoreGet() throws Exception
 	{
 		testStoreGet(new StorageMemory(), new StorageMemory());
-		testStoreGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		testStoreGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testStoreGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -601,7 +610,7 @@ public class TestStorage
 	public void testBigStorePut() throws Exception
 	{
 		testBigStorePut(new StorageMemory(), new StorageMemory());
-		testBigStorePut(new StorageDisk(DIR), new StorageDisk(DIR));
+		testBigStorePut(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testBigStorePut(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -643,7 +652,7 @@ public class TestStorage
 	public void testBigStore2() throws Exception
 	{
 		testBigStore2(new StorageMemory(), new StorageMemory());
-		testBigStore2(new StorageDisk(DIR), new StorageDisk(DIR));
+		testBigStore2(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	
@@ -653,11 +662,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			sender.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
-			recv1.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -671,9 +678,9 @@ public class TestStorage
 			final ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
-			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -688,7 +695,7 @@ public class TestStorage
 	public void testBigStoreGet() throws Exception
 	{
 		testBigStoreGet(new StorageMemory(), new StorageMemory());
-		testBigStoreGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		testBigStoreGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testBigStoreGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -697,11 +704,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			sender.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
-			recv1.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -712,17 +717,21 @@ public class TestStorage
 			tmp.put(new Number160(77), new Data(me1));
 			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
-			final ChannelCreator cc = fcc.getChannelCreator();
+			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			//
+			fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			cc = fcc.getChannelCreator();
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
 					.toNumber160(), null, null, false, false, cc, false);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
-			sender.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{
@@ -737,7 +746,7 @@ public class TestStorage
 	public void testBigStoreCancel() throws Exception
 	{
 		testBigStoreCancel(new StorageMemory(), new StorageMemory());
-		testBigStoreCancel(new StorageDisk(DIR), new StorageDisk(DIR));
+		testBigStoreCancel(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	
@@ -780,7 +789,7 @@ public class TestStorage
 	public void testBigStoreGetCancel() throws Exception
 	{
 		testBigStoreGetCancel(new StorageMemory(), new StorageMemory());
-		testBigStoreGetCancel(new StorageDisk(DIR), new StorageDisk(DIR));
+		testBigStoreGetCancel(new StorageDisk(DIR1), new StorageDisk(DIR2));
 	}
 
 	private void testBigStoreGetCancel(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception
@@ -789,11 +798,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			sender.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
-			recv1.getConfiguration().setMaxMessageSize(Integer.MAX_VALUE);
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -802,9 +809,9 @@ public class TestStorage
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
 			byte[] me1 = new byte[50 * 1014 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
-			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(2);
+			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
-			final ChannelCreator cc = fcc.getChannelCreator();
+			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse fr = smmSender.put(recv1.getPeerAddress(), new Number160(33),
 					new ShortString("test").toNumber160(), tmp, false, false, false, cc, false);
 			Utils.addReleaseListener(fr, sender.getConnectionBean().getConnectionReservation(), cc, 1);
@@ -812,6 +819,9 @@ public class TestStorage
 			System.err.println("XX:"+fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			//
+			fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			cc = fcc.getChannelCreator();
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
 					.toNumber160(), null, null, false, false, cc, false);
 			Utils.addReleaseListener(fr, sender.getConnectionBean().getConnectionReservation(), cc, 1);
@@ -834,7 +844,7 @@ public class TestStorage
 		//for(int i=0;i<1000;i++)
 		//{
 		testConcurrentStoreAddGet(new StorageMemory(), new StorageMemory());
-		testConcurrentStoreAddGet(new StorageDisk(DIR), new StorageDisk(DIR));
+		testConcurrentStoreAddGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
 		//}
 	}
 
@@ -935,11 +945,15 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			Utils.addReleaseListenerAll(fr, master.getConnectionBean().getConnectionReservation(), cc);
 			//s1.put(location, Number160.ZERO, null, dataMap, false, false);
-			slave = new PeerMaker(new Number160("0xfe")).buildAndListen();
+			slave = new PeerMaker(new Number160("0xfe")).setPorts(7701).buildAndListen();
 			master.getPeerBean().getPeerMap().peerFound(slave.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
 			Assert.assertEquals(1, test1.get());
 			Assert.assertEquals(2, test2.get());
+		}
+		catch(Throwable t)
+		{
+			t.printStackTrace();
 		}
 		finally
 		{

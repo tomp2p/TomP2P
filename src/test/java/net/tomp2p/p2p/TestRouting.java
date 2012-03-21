@@ -163,7 +163,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -201,7 +201,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -239,7 +239,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -277,7 +277,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -315,7 +315,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -355,7 +355,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -394,7 +394,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 1, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -433,7 +433,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 1, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -472,7 +472,7 @@ public class TestRouting
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 fcc.awaitUninterruptibly();
 final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 2, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -514,7 +514,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(3);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 3, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -553,7 +553,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 			FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(3);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[0].getRouting().route(peers[6].getPeerID(), null, null,
+			FutureRouting fr = peers[0].getDistributedRouting().route(peers[6].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 3, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[0].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -633,7 +633,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 			FutureChannelCreator fcc=peers[500].getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
+			FutureRouting fr = peers[500].getDistributedRouting().route(peers[20].getPeerID(), null, null,
 					Type.REQUEST_2, 0, 0, 0, 100, 1, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -662,7 +662,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 			FutureChannelCreator fcc=peers[500].getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
-			FutureRouting fr = peers[500].getRouting().route(peers[20].getPeerID(), null, null,
+			FutureRouting fr = peers[500].getDistributedRouting().route(peers[20].getPeerID(), null, null,
 					Type.REQUEST_1, 0, 0, 0, 100, 1, false, cc);
 			Utils.addReleaseListenerAll(fr, peers[500].getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
@@ -696,7 +696,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
+				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getDistributedRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Type.REQUEST_2, 0, 0, 0, 100, 1, false, cc);
 				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getConnectionReservation(), cc, 1);
@@ -737,7 +737,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(2);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
+				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getDistributedRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Type.REQUEST_2, 0, 5, 0, 100, 2, false, cc);
 				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getConnectionReservation(), cc, 2);
@@ -779,7 +779,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[0].getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getRouting().route(
+				FutureRouting frr = peers[((i * 7777) + 1) % peers.length].getDistributedRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Type.REQUEST_1, 0, 0, 0, 100, 1, false, cc);
 				Utils.addReleaseListener(frr, peers[0].getConnectionBean().getConnectionReservation(), cc, 1);
@@ -821,7 +821,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[peerNr].getConnectionBean().getConnectionReservation().reserve(2);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting frr = peers[peerNr].getRouting().route(
+				FutureRouting frr = peers[peerNr].getDistributedRouting().route(
 						peers[((i * 3333) + 1) % peers.length].getPeerID(), null, null,
 						Type.REQUEST_1, 0, 1, 0, 100, 2, false, cc);
 				Utils.addReleaseListener(frr, peers[peerNr].getConnectionBean().getConnectionReservation(), cc, 2);
@@ -862,7 +862,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[i].getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting fm = peers[i].getRouting()
+				FutureRouting fm = peers[i].getDistributedRouting()
 						.bootstrap(peerAddresses, 5, 100, 100, 1, true, false, cc);
 				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getConnectionReservation(), cc);
 				fm.awaitUninterruptibly();
@@ -894,7 +894,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				FutureChannelCreator fcc=peers[i].getConnectionBean().getConnectionReservation().reserve(1);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				FutureRouting fm = peers[i].getRouting().bootstrap(peerAddresses, 5, 100, 100, 1,
+				FutureRouting fm = peers[i].getDistributedRouting().bootstrap(peerAddresses, 5, 100, 100, 1,
 						false, false, cc);
 				Utils.addReleaseListenerAll(fm, peers[i].getConnectionBean().getConnectionReservation(), cc);
 				fm.awaitUninterruptibly();
@@ -977,7 +977,7 @@ final ChannelCreator cc = fcc.getChannelCreator();
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
 				Configurations.defaultConfigurationDirect();
-				FutureRouting frr = peers[50].getRouting().route(find, null, null,
+				FutureRouting frr = peers[50].getDistributedRouting().route(find, null, null,
 						Type.REQUEST_1, Integer.MAX_VALUE, 5, 10, 20, 2, false, cc);
 				frr.awaitUninterruptibly();
 				Utils.addReleaseListenerAll(frr, peers[0].getConnectionBean().getConnectionReservation(), cc);

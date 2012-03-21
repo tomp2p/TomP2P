@@ -51,6 +51,8 @@ public class PeerMaker
 	private Bindings bindings = new Bindings();
 	private ConnectionConfiguration configuration = new ConnectionConfiguration();
 	private StorageGeneric storage = new StorageMemory();
+	// max, message size to transmit
+	private int maxMessageSize = 2 * 1024 * 1024;
 	// PeerMap
 	private int bagSize = 2;
 	private int cacheTimeoutMillis = 60 * 1000;
@@ -66,7 +68,7 @@ public class PeerMaker
 	private boolean enablePeerExchangeRPC = true;
 	private boolean enableDirectDataRPC = true;
 	private boolean enableTrackerRPC = true;
-	private boolean enableTaskRPC = false; //disabled for the moment, work still in progress
+	private boolean enableTaskRPC = true;
 	// P2P
 	private boolean enableRouting = true;
 	private boolean enableDHT = true;
@@ -90,7 +92,7 @@ public class PeerMaker
 		final PeerMapKadImpl peerMap = new PeerMapKadImpl(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
 				getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap());
 		final Peer peer = new Peer(getP2PId(), peerId, keyPair, getMaintenanceThreads(), 
-				getReplicationThreads(), getReplicationRefreshMillis(), getConfiguration(), peerMap);
+				getReplicationThreads(), getReplicationRefreshMillis(), getConfiguration(), peerMap, getMaxMessageSize());
 		final ConnectionHandler connectionHandler;
 		if(getMasterPeer() != null)
 		{
@@ -160,6 +162,8 @@ public class PeerMaker
 		}
 		if(isEnableTaskRPC())
 		{
+			// create task manager, which is needed by the task RPC
+			peerBean.setTaskManager(new TaskManager(peerBean, connectionBean, workerThreads));
 			TaskRPC taskRPC = new TaskRPC(peerBean, connectionBean);
 			peer.setTaskRPC(taskRPC);
 		}
@@ -178,22 +182,24 @@ public class PeerMaker
 		}
 		if(isEnableRouting() && isEnableStorageRPC() && isEnableDirectDataRPC())
 		{
-			DistributedHashMap dht = new DistributedHashMap(peer.getRouting(), peer.getStoreRPC(), peer.getDirectDataRPC());
+			DistributedHashMap dht = new DistributedHashMap(peer.getDistributedRouting(), peer.getStoreRPC(), peer.getDirectDataRPC());
 			peer.setDistributedHashMap(dht);
 		}
 		if(isEnableRouting() && isEnableTrackerRPC() && isEnablePeerExchangeRPC())
 		{
-			DistributedTracker tracker = new DistributedTracker(peerBean, peer.getRouting(), peer.getTrackerRPC(), peer.getPeerExchangeRPC());
+			DistributedTracker tracker = new DistributedTracker(peerBean, peer.getDistributedRouting(), peer.getTrackerRPC(), peer.getPeerExchangeRPC());
 			peer.setDistributedTracker(tracker);
 		}
-		if(isEnableTaskRPC() && isEnableTask())
+		if(isEnableTaskRPC() && isEnableTask() && isEnableRouting())
 		{
-			// create task manager
-			peerBean.setTaskManager(new TaskManager(peerBean, connectionBean, workerThreads));
+			//the task manager needs to use the rpc to send the result back.
 			peerBean.getTaskManager().init(peer.getTaskRPC());
 			AsyncTask asyncTask = new AsyncTask(peer.getTaskRPC(), connectionBean.getScheduler(), peerBean);
+			peer.setAsyncTask(asyncTask);
 			peerBean.getTaskManager().addListener(asyncTask);
 			connectionBean.getScheduler().startTracking(peer.getTaskRPC(), connectionBean.getConnectionReservation());
+			DistributedTask distributedTask = new DistributedTask(peer.getDistributedRouting(), peer.getAsyncTask());
+			peer.setDistributedTask(distributedTask);
 		}
 		// maintenance
 		if (isStartMaintenance())
@@ -583,6 +589,17 @@ public class PeerMaker
 	public PeerMaker setMasterPeer(Peer masterPeer)
 	{
 		this.masterPeer = masterPeer;
+		return this;
+	}
+	
+	public int getMaxMessageSize()
+	{
+		return maxMessageSize;
+	}
+	
+	public PeerMaker setMaxMessageSize(int maxMessageSize)
+	{
+		this.maxMessageSize = maxMessageSize;
 		return this;
 	}
 }

@@ -62,6 +62,7 @@ public class StorageDisk extends StorageGeneric
 	public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data value)
 	{
 		dataMap.put(new Number480(locationKey, domainKey, contentKey), value);
+		db.commit();
 		return true;
 	}
 	
@@ -80,7 +81,9 @@ public class StorageDisk extends StorageGeneric
 	@Override
 	public Data remove(Number160 locationKey, Number160 domainKey, Number160 contentKey)
 	{
-		return dataMap.remove(new Number480(locationKey, domainKey, contentKey));
+		Data retVal = dataMap.remove(new Number480(locationKey, domainKey, contentKey));
+		db.commit();
+		return retVal;
 	}
 	
 	@Override
@@ -128,6 +131,7 @@ public class StorageDisk extends StorageGeneric
 		{
 			timeoutLock.unlock(oldExpiration, lock2);
 		}
+		db.commit();
 	}
 
 	@Override
@@ -148,6 +152,7 @@ public class StorageDisk extends StorageGeneric
 		{
 			timeoutLock.unlock(expiration, lock);
 		}
+		db.commit();
 	}
 	
 	private void removeRevTimeout(Number480 key, Long expiration)
@@ -192,6 +197,7 @@ public class StorageDisk extends StorageGeneric
 	{
 		byte[] encodedPublicKey = publicKey.getEncoded();
 		protectedMap.put(new Number320(locationKey, domainKey), encodedPublicKey);
+		db.commit();
 		return true;
 	}
 
@@ -200,13 +206,20 @@ public class StorageDisk extends StorageGeneric
 			PublicKey publicKey)
 	{
 		byte[] encodedOther = protectedMap.get(new Number320(locationKey, domainKey));
-		String alg = publicKey.getAlgorithm();
 		if (encodedOther == null)
+		{
 			return false;
+		}
+		//the domain is protected by a public key, but we provided no public key to check, so domain is protected
+		if(publicKey == null)
+		{
+			return true;
+		}
 		X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(encodedOther);
 		KeyFactory keyFactory;
 		try
 		{
+			String alg = publicKey.getAlgorithm();
 			keyFactory = KeyFactory.getInstance(alg);
 			PublicKey other = keyFactory.generatePublic(pubKeySpec);
 			return !publicKey.equals(other);
@@ -278,6 +291,7 @@ public class StorageDisk extends StorageGeneric
 				responsibilityLock.unlock(oldPeerId, lock2);
 			}
 		}
+		db.commit();
 		return isNew;
 	}
 
@@ -310,6 +324,7 @@ public class StorageDisk extends StorageGeneric
 		{
 			responsibilityLock.unlock(peerId, lock);
 		}
+		db.commit();
 	}
 	
 	private void removeRevResponsibility(Number160 peerId, Number160 locationKey)

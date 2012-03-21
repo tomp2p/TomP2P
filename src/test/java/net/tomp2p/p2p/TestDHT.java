@@ -1437,7 +1437,6 @@ public class TestDHT
 			// setup
 			Peer[] peers = Utils2.createNodes(100, rnd, 4001);
 			master = peers[0];
-			master.setDefaultStorageReplication();
 			for (int i = 0; i < peers.length; i++)
 				peers[i].setDefaultStorageReplication();
 			Number160 locationKey = new Number160(rnd);
@@ -1488,10 +1487,11 @@ public class TestDHT
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
 					Configurations.DEFAULT_DOMAIN, null, null, false, false, cc, false);
+			Utils.addReleaseListenerAll(futureResponse, master.getConnectionBean().getConnectionReservation(), cc);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
 			Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
-			master.getConnectionBean().getConnectionReservation().release(cc);
+			//master.getConnectionBean().getConnectionReservation().release(cc);
 		}
 		finally
 		{

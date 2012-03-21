@@ -45,7 +45,7 @@ public class PeerBean
 	private Replication replicationStorage;
 	private Statistics statistics;
 	private TaskManager taskManager;
-
+	
 	public PeerBean(KeyPair keyPair)
 	{
 		this.keyPair = keyPair;

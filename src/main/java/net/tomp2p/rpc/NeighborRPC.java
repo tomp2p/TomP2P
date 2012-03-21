@@ -75,6 +75,10 @@ public class NeighborRPC extends ReplyHandler
 	{
 		nullCheck(remotePeer, locationKey);
 		Message message = createMessage(remotePeer, Command.NEIGHBORS, type);
+		if(!message.isRequest())
+		{
+			throw new IllegalArgumentException("The type must be a request");
+		}
 		message.setKeyKey(locationKey, domainKey == null ? Number160.ZERO : domainKey);
 		if (contentKeys != null)
 			message.setKeys(contentKeys);

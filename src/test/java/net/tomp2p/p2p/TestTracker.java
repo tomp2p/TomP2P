@@ -432,7 +432,11 @@ public class TestTracker
 			for (int i = 0; i < nodes.length; i++)
 			{
 				for (int j = 0; j < nodes.length; j++)
+				{
+					if(i==50)
+						System.err.println("halt");
 					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
+				}
 			}
 			ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();
 			FutureTracker ft = nodes[30].getFromTracker(trackerID, ctg);
@@ -452,7 +456,6 @@ public class TestTracker
 		for (int i = 0; i < nr; i++)
 		{
 			nodes[i] = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(CONFIGURATION).setMasterPeer(master).buildAndListen();
-			nodes[i].listen(master);
 		}
 		return nodes;
 	}

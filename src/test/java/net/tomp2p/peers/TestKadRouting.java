@@ -15,13 +15,11 @@ import org.junit.Test;
 
 public class TestKadRouting
 {
-	
-	
 	@Test
 	public void testAdd()
 	{
 		Number160 id = new Number160("0x1");
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(id, 2, 60 * 1000, 3, new int[] {}, 100, false);
 		Number160 id1 = new Number160("0x2");
 		Number160 id2 = new Number160("0x3");
 		Number160 id3 = new Number160("0x4");
@@ -84,7 +82,7 @@ public class TestKadRouting
 		PeerAddress rn1 = new PeerAddress(new Number160("0x7f"));
 		PeerAddress rn2 = new PeerAddress(new Number160("0x40"));
 		Number160 key = new Number160("0xff");
-		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		Assert.assertEquals(-1, routing.isCloser(key, rn1, rn2));
 		//
 		rn1 = new PeerAddress(new Number160("0x10"));
@@ -101,7 +99,7 @@ public class TestKadRouting
 		PeerAddress rn1 = new PeerAddress(new Number160(98));
 		PeerAddress rn2 = new PeerAddress(new Number160(66));
 		PeerAddress rn3 = new PeerAddress(new Number160(67));
-		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160(999), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl routing = new PeerMapKadImpl(new Number160(999), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		SortedSet<PeerAddress> rc = routing.closePeers(new Number160(98), 3);
 		rc.add(rn2);
 		rc.add(rn1);
@@ -112,7 +110,7 @@ public class TestKadRouting
 	@Test
 	public void testAddNode() throws UnknownHostException
 	{
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i));
@@ -127,7 +125,7 @@ public class TestKadRouting
 	@Test
 	public void testAddNode2() throws UnknownHostException
 	{
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		for (int i = 1; i < 12; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160((i % 6) + 1));
@@ -142,7 +140,7 @@ public class TestKadRouting
 	@Test
 	public void testRemove() throws UnknownHostException
 	{
-		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -157,7 +155,7 @@ public class TestKadRouting
 	@Test
 	public void testRemoveConcurrent() throws UnknownHostException, InterruptedException
 	{
-		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		for (int i = 1; i <= 200; i++)
 		{
 			PeerAddress r1 = new PeerAddress(new Number160(i + 1));
@@ -194,7 +192,7 @@ public class TestKadRouting
 	@Test
 	public void testAddConcurrent() throws UnknownHostException, InterruptedException
 	{
-		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		new Thread(new Runnable()
 		{
 			@Override
@@ -224,7 +222,7 @@ public class TestKadRouting
 	@Test
 	public void testRandomAddRemove() throws InterruptedException
 	{
-		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		new Thread(new Runnable()
 		{
 			@Override
@@ -258,7 +256,7 @@ public class TestKadRouting
 	@Test
 	public void testPerformance() throws IOException
 	{
-		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 100, 60 * 1000, 3, new int[] {}, 2, false);
+		final PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100, false);
 		final Random random = new Random();
 		final List<PeerAddress> listAdded = new ArrayList<PeerAddress>();
 		final List<PeerAddress> listRemoved = new ArrayList<PeerAddress>();
@@ -304,7 +302,7 @@ public class TestKadRouting
 		Random rnd = new Random(43L);
 		for (int j = 0; j < 10000; j++)
 		{
-			PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160(rnd), 100, 60 * 1000, 3, new int[] {}, 5, false);
+			PeerMapKadImpl kadRouting = new PeerMapKadImpl(new Number160(rnd), 5, 60 * 1000, 3, new int[] {}, 100, false);
 			List<PeerAddress> peers = new ArrayList<PeerAddress>();
 			for (int i = 1; i < 160 * 5; i++)
 			{

@@ -19,7 +19,6 @@ import java.io.Serializable;
 import java.security.PublicKey;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -41,11 +40,11 @@ public class Data implements Serializable
 	// never serialied over the network
 	final private long validFromMillis;
 	//
+	final private Number160 peerId;
 	private int ttlSeconds;
 	private Number160 hash;
 	private boolean protectedEntry;
 	private boolean directReplication;
-	private PeerAddress originator;
 	// never serialized in this object over the network
 	private PublicKey publicKey;
 	
@@ -54,9 +53,9 @@ public class Data implements Serializable
 		this(object, null);
 	}
 
-	public Data(Object object, PeerAddress originator) throws IOException
+	public Data(Object object, Number160 peerId) throws IOException
 	{
-		this(Utils.encodeJavaObject(object), originator);
+		this(Utils.encodeJavaObject(object), peerId);
 	}
 	
 	public Data(byte[] data)
@@ -64,18 +63,18 @@ public class Data implements Serializable
 		this(data, null);
 	}
 
-	public Data(byte[] data, PeerAddress originator)
+	public Data(byte[] data, Number160 peerId)
 	{
-		this(data, 0, data.length, originator);
+		this(data, 0, data.length, peerId);
 	}
 
-	public Data(byte[] data, int offset, int length, PeerAddress originator)
+	public Data(byte[] data, int offset, int length, Number160 peerId)
 	{
 		this.data = data;
 		this.offset = offset;
 		this.length = length;
 		this.validFromMillis = Timings.currentTimeMillis();
-		this.originator = originator;
+		this.peerId = peerId;
 	}
 
 	public byte[] getData()
@@ -161,14 +160,9 @@ public class Data implements Serializable
 		return sb.toString();
 	}
 
-	public PeerAddress getPeerAddress()
+	public Number160 getPeerId()
 	{
-		return originator;
-	}
-
-	public void setPeerAddress(PeerAddress originator)
-	{
-		this.originator = originator;
+		return peerId;
 	}
 
 	public void setPublicKey(PublicKey publicKey)

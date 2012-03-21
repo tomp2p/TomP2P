@@ -21,8 +21,6 @@ public class ConnectionConfiguration
 	// doing tests on localhost, we open 2 * maxOpenConnection
 	private int maxOpenConnection = 400;
 	private int maxCreating = 200;
-	// max, message size to transmit
-	private int maxMessageSize = 2 * 1024 * 1024;
 	// force TCP or UDP
 	private boolean forceTrackerTCP = false;
 	private boolean forceStorageUDP = false;
@@ -126,16 +124,6 @@ public class ConnectionConfiguration
 	public int getMaxOpenConnection()
 	{
 		return maxOpenConnection;
-	}
-
-	public void setMaxMessageSize(int maxMessageSize)
-	{
-		this.maxMessageSize = maxMessageSize;
-	}
-
-	public int getMaxMessageSize()
-	{
-		return maxMessageSize;
 	}
 
 	public int getMaxCreating()

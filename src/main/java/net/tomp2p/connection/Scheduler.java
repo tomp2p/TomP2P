@@ -36,6 +36,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
+import net.tomp2p.futures.FutureLaterJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.peers.Number160;
@@ -159,7 +160,7 @@ public class Scheduler
 				}
 				int i=0;
 				final int max2 = Math.min(max, checkPeers.size());
-				final FutureLateJoin<FutureResponse> lateJoin = new FutureLateJoin<FutureResponse>(max2);
+				final FutureLaterJoin<FutureResponse> lateJoin = new FutureLaterJoin<FutureResponse>();
 				for(Iterator<PeerAddress> iterator = checkPeers.iterator(); i<max2 && running;i++)
 				{
 					final PeerAddress peerAddress = iterator.next();
@@ -180,13 +181,18 @@ public class Scheduler
 					});
 					iterator.remove();
 				}
+				
 				if(!running)
 				{
 					return;
 				}
 				try
 				{	
-					lateJoin.await();
+					if(i>0)
+					{
+						lateJoin.done();
+						lateJoin.await();
+					}
 					Timings.sleep(1000);
 				}
 				catch (InterruptedException e)

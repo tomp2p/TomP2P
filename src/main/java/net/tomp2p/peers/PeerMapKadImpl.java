@@ -458,7 +458,12 @@ public class PeerMapKadImpl implements PeerMap
 					iterator.remove();
 					result.add(entry.getKey());
 				}
-			}
+			}	
+		}
+		//add to maintenance queue with new timings
+		for(PeerAddress peerAddress: result)
+		{
+			addToMaintenanceQueue(peerAddress);
 		}
 		return result;
 	}

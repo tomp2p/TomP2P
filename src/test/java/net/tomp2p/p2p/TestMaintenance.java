@@ -50,8 +50,8 @@ public class TestMaintenance
 		try
 		{
 			PeerMaker peerMaker = new PeerMaker(new Number160(rnd)).setPorts(4001);
-			master = setTime(peerMaker, 0, 3).buildAndListen();
-			Peer[] nodes = createNodes(master, 500, rnd, 0, 3);
+			master = setTime(peerMaker, false, 0, 3).buildAndListen();
+			Peer[] nodes = createNodes(master, 500, rnd, false, 0, 3);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
 			{
@@ -83,8 +83,8 @@ public class TestMaintenance
 		Peer master = null;
 		try
 		{
-			master = setTime(new PeerMaker(new Number160(rnd)).setPorts(4001)).buildAndListen();
-			Peer[] nodes = createNodes(master, 4, rnd, 1, 1, 1, 1, 1, 1);
+			master = setTime(new PeerMaker(new Number160(rnd)).setPorts(4001), true, 1, 1, 1, 1, 1, 1).buildAndListen();
+			Peer[] nodes = createNodes(master, 4, rnd, true, 1, 1, 1, 1, 1, 1);
 			
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -97,13 +97,7 @@ public class TestMaintenance
 				}
 			}
 			//
-			Timings.sleep(3000);
-			master.startMaintainance();
-			nodes[0].startMaintainance();
-			nodes[1].startMaintainance();
-			nodes[2].startMaintainance();
-			nodes[3].startMaintainance();
-			Timings.sleep(10000);
+			Timings.sleep(1000);
 			PeerAddress node3 = nodes[3].getPeerAddress();
 			nodes[3].shutdown();
 			System.err.println("node 3 shutdown");
@@ -120,19 +114,10 @@ public class TestMaintenance
 			master.shutdown();
 		}
 	}
-
-	/*private void setTime(Peer peer, int... times)
-	{
-		peer.getConfiguration().setStartMaintenance(false);
-		for(int i=0;i<times.length;i++)
-		{
-			peer.getConfiguration().getWaitingTimeBetweenNodeMaintenenceSeconds()[i] = times[i];
-		}
-	}*/
 	
-	private PeerMaker setTime(PeerMaker maker, int... times)
+	private PeerMaker setTime(PeerMaker maker, boolean startMaintenance, int... times)
 	{
-		maker.setStartMaintenance(false);
+		maker.setStartMaintenance(startMaintenance);
 		maker.setWaitingTimeBetweenNodeMaintenenceSeconds(new int[times.length]);
 		for(int i=0;i<times.length;i++)
 		{
@@ -146,12 +131,12 @@ public class TestMaintenance
 		return createNodes(master, nr, rnd);
 	}
 	
-	private Peer[] createNodes(Peer master, int nr, Random rnd, int... times) throws Exception
+	private Peer[] createNodes(Peer master, int nr, Random rnd, boolean startMaintenance, int... times) throws Exception
 	{
 		Peer[] peers = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
-			peers[i] = setTime(new PeerMaker(new Number160(rnd)).setStartMaintenance(false).setMasterPeer(master), times).buildAndListen();
+			peers[i] = setTime(new PeerMaker(new Number160(rnd)).setStartMaintenance(startMaintenance).setMasterPeer(master), startMaintenance, times).buildAndListen();
 		}
 		return peers;
 	}

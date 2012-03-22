@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * FutureLaterJoin is similar to FutureLateJoin. The main difference is that
  * with this class you don't need to specify all the futures in advance and you
- * don't need to specify how many futures you excpect. Once you are done, just
+ * don't need to specify how many futures you expect. Once you are done, just
  * call done().
  * 
  * @author Thomas Bocek
@@ -42,7 +42,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl implem
 	 */
 	public FutureLaterJoin()
 	{
-		this.futuresDone = new ArrayList<K>(nrMaxFutures);
+		this.futuresDone = new ArrayList<K>();
 	}
 
 	/**

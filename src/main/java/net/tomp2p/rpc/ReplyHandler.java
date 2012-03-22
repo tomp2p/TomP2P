@@ -72,7 +72,7 @@ public abstract class ReplyHandler extends SimpleChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
-		logger.equals("error in reply " + e.toString());
+		logger.error("error in reply " + e.toString());
 		if (logger.isDebugEnabled())
 		{
 			e.getCause().printStackTrace();

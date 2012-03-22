@@ -204,7 +204,8 @@ public class PeerMaker
 		// maintenance
 		if (isStartMaintenance())
 		{
-			peer.startMaintainance();
+			connectionHandler.getConnectionBean().getScheduler().startMaintainance(
+					peerBean.getPeerMap(), peer.getHandshakeRPC(), connectionBean.getConnectionReservation(), 5);
 		}
 		connectionBean.getScheduler().startDelayedChannelCreator();
 	}

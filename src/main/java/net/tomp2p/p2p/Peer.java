@@ -329,12 +329,6 @@ public class Peer
 		return connectionHandler.isListening();
 	}
 
-	void startMaintainance()
-	{
-		connectionHandler.getConnectionBean().getScheduler().startMaintainance(
-				getPeerBean().getPeerMap(), getHandshakeRPC(), getConnectionBean().getConnectionReservation(), 5);
-	}
-
 	public void customLoggerMessage(String customMessage)
 	{
 		getConnectionHandler().customLoggerMessage(customMessage);
@@ -561,6 +555,13 @@ public class Peer
 	{
 		return getPeerBean().getServerPeerAddress();
 	}
+	
+	public ConnectionConfiguration getConfiguration()
+	{
+		return configuration;
+	}
+	
+	// *********************************** DHT / Tracker operations start here
 
 	public void setRawDataReply(final RawDataReply rawDataReply)
 	{
@@ -1866,12 +1867,18 @@ public class Peer
 		return tmp;
 	}
 
-	public ConnectionConfiguration getConfiguration()
-	{
-		return configuration;
-	}
-
-	public static RequestP2PConfiguration adjustConfiguration(
+	
+	/**
+	 * For a low number of peers, we need to adjust the number of results.
+	 * Otherwise a future may report that its operation was not successful. We
+	 * assume that a peer bootstraps and peers are well distributed
+	 * 
+	 * @param p2pConfiguration The configuration to adjust
+	 * @param peerMap The peerMap
+	 * @return An adjusted RequestP2PConfiguration if necessary or returns the
+	 *         same object otherwise
+	 */
+	private static RequestP2PConfiguration adjustConfiguration(
 			RequestP2PConfiguration p2pConfiguration, PeerMap peerMap)
 	{
 		int size = peerMap.size() + 1;
@@ -1886,6 +1893,8 @@ public class Peer
 					p2pConfiguration.getParallelDiff());
 		}
 	}
+	
+	// *************************** Connection Reservation ************************
 		
 	/**
 	 * Reserves a connection for a routing and DHT operation. This call blocks

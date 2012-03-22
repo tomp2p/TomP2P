@@ -182,7 +182,7 @@ public class PeerMaker
 		}
 		if(isEnableRouting() && isEnableStorageRPC() && isEnableDirectDataRPC())
 		{
-			DistributedHashMap dht = new DistributedHashMap(peer.getDistributedRouting(), peer.getStoreRPC(), peer.getDirectDataRPC());
+			DistributedHashTable dht = new DistributedHashTable(peer.getDistributedRouting(), peer.getStoreRPC(), peer.getDirectDataRPC());
 			peer.setDistributedHashMap(dht);
 		}
 		if(isEnableRouting() && isEnableTrackerRPC() && isEnablePeerExchangeRPC())

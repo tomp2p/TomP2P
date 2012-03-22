@@ -47,14 +47,14 @@ import org.jboss.netty.buffer.ChannelBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DistributedHashMap
+public class DistributedHashTable
 {
-	final private static Logger logger = LoggerFactory.getLogger(DistributedHashMap.class);
+	final private static Logger logger = LoggerFactory.getLogger(DistributedHashTable.class);
 	final private DistributedRouting routing;
 	final private StorageRPC storeRCP;
 	final private DirectDataRPC directDataRPC;
 
-	public DistributedHashMap(DistributedRouting routing, StorageRPC storeRCP,
+	public DistributedHashTable(DistributedRouting routing, StorageRPC storeRCP,
 			DirectDataRPC directDataRPC)
 	{
 		this.routing = routing;

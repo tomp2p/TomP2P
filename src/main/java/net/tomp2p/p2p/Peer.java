@@ -56,7 +56,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.natpmp.NatPmpException;
-import net.tomp2p.p2p.DistributedHashMap.Operation;
+import net.tomp2p.p2p.DistributedHashTable.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationBootstrap;
 import net.tomp2p.p2p.config.ConfigurationDirect;
@@ -134,7 +134,7 @@ public class Peer
 	private final int p2pID;
 	private final KeyPair keyPair;
 	// Distributed 
-	private DistributedHashMap distributedHashMap;
+	private DistributedHashTable distributedHashMap;
 	private DistributedTracker distributedTracker;
 	private DistributedRouting distributedRouting;
 	private DistributedTask distributedTask;
@@ -461,7 +461,7 @@ public class Peer
 		this.distributedRouting = distributedRouting;
 	}
 	
-	public DistributedHashMap getDistributedHashMap()
+	public DistributedHashTable getDistributedHashMap()
 	{
 		if (distributedHashMap == null)
 		{
@@ -470,7 +470,7 @@ public class Peer
 		return distributedHashMap;
 	}
 	
-	public void setDistributedHashMap(DistributedHashMap distributedHashMap)
+	public void setDistributedHashMap(DistributedHashTable distributedHashMap)
 	{
 		this.distributedHashMap = distributedHashMap;
 	}

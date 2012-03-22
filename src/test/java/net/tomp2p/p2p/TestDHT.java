@@ -36,7 +36,7 @@ import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.DistributedHashMap.Operation;
+import net.tomp2p.p2p.DistributedHashTable.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationRemove;

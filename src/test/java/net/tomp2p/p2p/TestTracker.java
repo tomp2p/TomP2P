@@ -433,8 +433,6 @@ public class TestTracker
 			{
 				for (int j = 0; j < nodes.length; j++)
 				{
-					if(i==50)
-						System.err.println("halt");
 					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}

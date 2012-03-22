@@ -71,8 +71,17 @@ public class TrackerData implements Comparable<TrackerData>
 	public boolean equals(Object obj)
 	{
 		if (!(obj instanceof TrackerData))
+		{
 			return false;
-		return ((TrackerData) obj).getPeerAddress().getID().equals(getPeerAddress().getID());
+		}
+		TrackerData trackerData = (TrackerData) obj;
+		return trackerData.getPeerAddress().getID().equals(getPeerAddress().getID());
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return getPeerAddress().getID().hashCode();
 	}
 
 	@Override

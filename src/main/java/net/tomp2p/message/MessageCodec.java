@@ -486,10 +486,15 @@ public class MessageCodec
 			case CHANNEL_BUFFER:
 				if(buffer.readableBytes() < 4) return false;
 				len = buffer.readInt();
+				if(len == 0)
+				{
+					return true;
+				}
 				if(buffer.readableBytes() < len) return false;
 				// you can only use slice if no execution handler is in place,
 				// otherwise, you will overwrite stuff
-				final ChannelBuffer tmpBuffer = buffer.slice(buffer.readerIndex(), len);
+				//TODO find out why we need to copy!
+				final ChannelBuffer tmpBuffer = buffer.copy(buffer.readerIndex(), len);
 				buffer.skipBytes(len);
 				message.setPayload0(tmpBuffer);
 				return true;
@@ -551,6 +556,7 @@ public class MessageCodec
 			// waste of space and we should copy, otherwise, take the backing
 			// array.
 			// TODO: find good values for this. This is just a guess
+			//TODO find out why we need to copy!
 			final boolean copy = true;
 			// final boolean copy = me.length / length > 1;
 			// we have to use copy if we use an exectution handler, otherwise

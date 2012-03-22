@@ -182,12 +182,14 @@ public class TrackerRPC extends ReplyHandler
 		Number160 domainKey = message.getKeyKey2();
 		SimpleBloomFilter<Number160> knownPeers = null;
 		if (message.getPayload1() == null)
+		{
 			throw new RuntimeException("BF data may be empty but it has to be there.");
+		}
 		ChannelBuffer buffer = message.getPayload1();
 		int length = buffer.writerIndex();
 		if (length > 0)
 		{
-			knownPeers = new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset(), length);
+			knownPeers = new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(), length);
 		}
 		byte[] attachement = null;
 		if (message.getPayload2() != null)

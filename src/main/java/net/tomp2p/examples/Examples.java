@@ -30,6 +30,8 @@ import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.config.ConfigurationStore;
+import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -109,6 +111,23 @@ public class Examples
 	{
 		Number160 nr = new Number160(rnd);
 		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"));
+		futureDHT.awaitUninterruptibly();
+		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
+		futureDHT = peers[77].get(nr);
+		futureDHT.awaitUninterruptibly();
+		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
+		// the output should look like this:
+		// peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
+		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
+	}
+	
+	public static void examplePutGetConfig(Peer[] peers) throws IOException, ClassNotFoundException
+	{
+		Number160 nr = new Number160(rnd);
+		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
+		cs.setDomain(Number160.createHash("my_domain"));
+		cs.setContentKey(new Number160(11));
+		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"), cs);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
 		futureDHT = peers[77].get(nr);

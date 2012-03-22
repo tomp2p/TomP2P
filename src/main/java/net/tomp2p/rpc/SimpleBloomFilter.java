@@ -121,7 +121,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	public SimpleBloomFilter(int bitArraySize, int expectedElements, BitSet bitSet)
 	{
 		if (bitArraySize % 8 != 0)
-			throw new RuntimeException("BitArraySize must be a multiple of 8");
+			throw new RuntimeException("BitArraySize must be a multiple of 8, it is "+bitArraySize);
 		this.bitArraySize = bitArraySize;
 		this.expectedElements = expectedElements;
 		this.k = (int) Math.ceil((bitArraySize / expectedElements) * Math.log(2.0));

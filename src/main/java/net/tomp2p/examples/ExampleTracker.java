@@ -31,7 +31,6 @@ public class ExampleTracker
 		}
 		finally
 		{
-			Thread.sleep(250);
 			//0 is the master
 			peers[0].shutdown();
 		}

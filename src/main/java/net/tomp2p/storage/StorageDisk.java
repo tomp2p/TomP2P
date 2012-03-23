@@ -1,5 +1,6 @@
 package net.tomp2p.storage;
 
+import java.io.File;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -43,7 +44,7 @@ public class StorageDisk extends StorageGeneric
 	
 	public StorageDisk(String fileName)
 	{
-		db = new DBMaker(fileName).build();
+		db = new DBMaker(fileName+File.separator+"tomp2p").build();
 		dataMap = db.<Number480, Data>createTreeMap("dataMap");
 		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
 		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");

@@ -59,6 +59,7 @@ public class Bindings
 	final private InetAddress externalAddress;
 	final private int externalTCPPort;
 	final private int externalUDPPort;
+	final private boolean setExternalPortsManually;
 
 	/**
 	 * Creates a Binding class that binds to everything
@@ -161,6 +162,10 @@ public class Bindings
 				: externalTCPPort;
 		this.externalUDPPort = externalUDPPort == 0 ? (RND.nextInt(RANGE) + 49152)
 				: externalUDPPort;
+		// set setExternalPortsManually to true if the user specified both ports
+		// in advance. This tells us that the user knows about the ports and did
+		// a manual port-forwarding.
+		this.setExternalPortsManually = externalUDPPort!=0 && externalTCPPort!=0; 
 		this.listenProtocolHint = protocol;
 	}
 
@@ -405,5 +410,15 @@ public class Bindings
 		this.listenAddresses6.addAll(other.listenAddresses6);
 		this.broadcastAddresses.addAll(other.broadcastAddresses);
 		return this;
+	}
+
+	/**
+	 * @return True if the user specified both ports in advance. This tells us
+	 *         that the user knows about the ports and did a manual
+	 *         port-forwarding.
+	 */
+	public boolean isSetExternalPortsManually()
+	{
+		return setExternalPortsManually;
 	}
 }

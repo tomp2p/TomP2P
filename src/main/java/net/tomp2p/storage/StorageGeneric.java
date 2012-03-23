@@ -410,9 +410,16 @@ public abstract class StorageGeneric implements Storage
 		}
 		else
 		{			
-			if (canClaimDomain(locationKey, domainKey, publicKey) && canProtectDomain(locationKey, domainKey, publicKey))
+			if (canClaimDomain(locationKey, domainKey, publicKey))
 			{
-				return protectDomain(locationKey, domainKey, publicKey);
+				if(canProtectDomain(locationKey, domainKey, publicKey))
+				{
+					return protectDomain(locationKey, domainKey, publicKey);
+				}
+				else
+				{
+					return true;
+				}
 			}
 		}
 		return false;

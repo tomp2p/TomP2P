@@ -40,7 +40,7 @@ public class ExamplePersistentConnection
 		Peer slave = null;
 		try
 		{
-			master = new PeerMaker(new Number160(rnd)).setPorts(40001).buildAndListen();
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
 			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			//
 			slave.setObjectDataReply(new ObjectDataReply() 

@@ -77,7 +77,7 @@ public class Utils2
 	
 	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception 
 	{
-		return createNodes(nrOfPeers, rnd, port, 0);
+		return createNodes(nrOfPeers, rnd, port, 0, false);
 	}
 
 	/**
@@ -95,7 +95,7 @@ public class Utils2
 	 * @throws Exception
 	 *             If the creation of nodes fail.
 	 */
-	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, int refresh) throws Exception 
+	public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, int refresh, boolean enableIndirectReplication) throws Exception 
 	{
 		if (nrOfPeers < 1) 
 		{
@@ -104,15 +104,36 @@ public class Utils2
 		Peer[] peers = new Peer[nrOfPeers];
 		if(refresh > 0)
 		{
-			peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+			if(enableIndirectReplication)
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+			}
+			else
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+			}
 		}
 		else
 		{
-			peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).buildAndListen();
+			if(enableIndirectReplication)
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).buildAndListen();
+			}
+			else
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).buildAndListen();
+			}
 		}
 		for (int i = 1; i < nrOfPeers; i++) 
 		{
-			peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen(); 
+			if(enableIndirectReplication)
+			{
+				peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setMasterPeer(peers[0]).buildAndListen();
+			}
+			else
+			{
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+			}
 		}
 		System.err.println("peers created.");
 		return peers;
@@ -126,7 +147,7 @@ public class Utils2
 		Peer[] peers = new Peer[nrOfPeers];
 		for (int i = 0; i < nrOfPeers; i++) 
 		{
-			peers[i] = new PeerMaker(new Number160(rnd)).setStartMaintenance(false).setPorts(startPort + i).buildAndListen();
+			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(startPort + i).buildAndListen();
 		}
 		System.err.println("real peers created.");
 		return peers;

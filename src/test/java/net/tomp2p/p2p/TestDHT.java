@@ -1435,10 +1435,8 @@ public class TestDHT
 		try
 		{
 			// setup
-			Peer[] peers = Utils2.createNodes(100, rnd, 4001);
+			Peer[] peers = Utils2.createNodes(100, rnd, 4001, 0, true);
 			master = peers[0];
-			for (int i = 0; i < peers.length; i++)
-				peers[i].setDefaultStorageReplication();
 			Number160 locationKey = new Number160(rnd);
 			// closest
 			TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(master.getPeerBean().getPeerMap()
@@ -1516,11 +1514,8 @@ public class TestDHT
 		try
 		{
 			// setup
-			Peer[] peers = Utils2.createNodes(100, rnd, 4001, 5 * 1000);
+			Peer[] peers = Utils2.createNodes(100, rnd, 4001, 5 * 1000, true);
 			master = peers[0];
-			master.setDefaultStorageReplication();
-			for (int i = 0; i < peers.length; i++)
-				peers[i].setDefaultStorageReplication();
 			Number160 locationKey = master.getPeerID().xor(new Number160(77));
 			// store
 			Data data = new Data("Test");

@@ -42,6 +42,7 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
 
 public class MessageCodec
 {
@@ -488,6 +489,7 @@ public class MessageCodec
 				len = buffer.readInt();
 				if(len == 0)
 				{
+					message.setPayload0(ChannelBuffers.EMPTY_BUFFER);
 					return true;
 				}
 				if(buffer.readableBytes() < len) return false;

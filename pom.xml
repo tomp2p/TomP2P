@@ -108,7 +108,11 @@
   </dependencies>
 
   <build>
-    <!-- testSourceDirectory>src/test/java/unit</testSourceDirectory -->
+    <testResources>
+      <testResource>
+        <directory>src/main/config</directory>
+      </testResource>
+    </testResources>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>

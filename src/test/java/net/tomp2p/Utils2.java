@@ -169,17 +169,28 @@ public class Utils2
 		System.err.println("perfect routing done.");
 	}
 	
+	public static void main(String[] args) throws IOException
+	{
+		createTempDirectory();
+	}
+	
+	private static final int TEMP_DIR_ATTEMPTS = 10000;
+
+	
 	public static File createTempDirectory() throws IOException
 	{
-	    final File temp = File.createTempFile("temp", Long.toString(System.nanoTime()));
-	    if(!(temp.delete()))
-	    {
-	    	throw new IOException("Could not delete temp file: " + temp.getAbsolutePath());
-	    }
-	    if(!(temp.mkdir()))
-	    {
-	    	throw new IOException("Could not create temp directory: " + temp.getAbsolutePath());
-	    }
-	    return (temp);
-	}
+		File baseDir = new File(System.getProperty("java.io.tmpdir"));
+		  String baseName = System.currentTimeMillis() + "-";
+
+		  for (int counter = 0; counter < TEMP_DIR_ATTEMPTS; counter++) {
+		    File tempDir = new File(baseDir, baseName + counter);
+		    if (tempDir.mkdir()) {
+		      return tempDir;
+		    }
+		  }
+		  throw new IllegalStateException("Failed to create directory within "
+		      + TEMP_DIR_ATTEMPTS + " attempts (tried "
+		      + baseName + "0 to " + baseName + (TEMP_DIR_ATTEMPTS - 1) + ')');
+		}
+
 }

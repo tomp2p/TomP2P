@@ -540,6 +540,4 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 			}
 		}
 	}
-
-	
 }

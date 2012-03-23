@@ -85,7 +85,7 @@
     <dependency>
       <groupId>JDBM</groupId>
       <artifactId>JDBM</artifactId>
-      <version>3.0-SNAPSHOT</version>
+      <version>3.0-20120323.220008-1</version>
     </dependency>
 
     <dependency>

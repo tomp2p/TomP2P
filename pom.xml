@@ -206,7 +206,7 @@
           <systemProperties>
             <property>
               <name>java.util.logging.config.file</name>
-              <value>${project.build.directory}/test-classes/tomp2plog.properties</value>
+              <value>${basedir}/target/test-classes/tomp2plog.properties</value>
             </property>
           </systemProperties>
         </configuration>

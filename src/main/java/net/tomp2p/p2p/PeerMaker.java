@@ -3,6 +3,7 @@ package net.tomp2p.p2p;
 import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ConnectionBean;
@@ -12,6 +13,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.replication.DefaultStorageReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.TrackerStorageReplication;
 import net.tomp2p.rpc.DirectDataRPC;
@@ -41,7 +43,6 @@ public class PeerMaker
 	private int workerThreads = Runtime.getRuntime().availableProcessors() + 1;
 	private int maintenanceThreads = 5;
 	private int replicationThreads = 5;
-	private boolean startMaintenance = true;
 	// indirect replication
 	private int replicationRefreshMillis=60 * 1000;
 	private int tcpPort = Bindings.DEFAULT_PORT;
@@ -75,6 +76,7 @@ public class PeerMaker
 	private boolean enableTracker = true;
 	private boolean enableTask = false; //disabled for the moment, work still in progress
 	private boolean enableMaintenance = true;
+	private boolean enableIndirectReplication = false;
 	
 	public PeerMaker(final Number160 peerId)
 	{
@@ -92,7 +94,7 @@ public class PeerMaker
 		final PeerMapKadImpl peerMap = new PeerMapKadImpl(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
 				getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap());
 		final Peer peer = new Peer(getP2PId(), peerId, keyPair, getMaintenanceThreads(), 
-				getReplicationThreads(), getReplicationRefreshMillis(), getConfiguration(), peerMap, getMaxMessageSize());
+				getReplicationThreads(), getConfiguration(), peerMap, getMaxMessageSize());
 		final ConnectionHandler connectionHandler;
 		if(getMasterPeer() != null)
 		{
@@ -202,10 +204,20 @@ public class PeerMaker
 			peer.setDistributedTask(distributedTask);
 		}
 		// maintenance
-		if (isStartMaintenance())
+		if (isEnableMaintenance())
 		{
 			connectionHandler.getConnectionBean().getScheduler().startMaintainance(
 					peerBean.getPeerMap(), peer.getHandshakeRPC(), connectionBean.getConnectionReservation(), 5);
+		}
+		// indirect replication
+		if (isEnableIndirectReplication() && isEnableStorageRPC())
+		{
+			DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(peer,
+					peerBean.getStorage(), peer.getStoreRPC(), peer.getPendingFutures(), configuration.isForceStorageUDP());
+			peer.getScheduledFutures().add(connectionBean.getScheduler().getScheduledExecutorServiceReplication().
+					scheduleWithFixedDelay(defaultStorageReplication,
+							replicationRefreshMillis, replicationRefreshMillis, TimeUnit.MILLISECONDS));
+			replicationStorage.addResponsibilityListener(defaultStorageReplication);
 		}
 		connectionBean.getScheduler().startDelayedChannelCreator();
 	}
@@ -274,17 +286,6 @@ public class PeerMaker
 	public PeerMaker setReplicationThreads(int replicationThreads)
 	{
 		this.replicationThreads = replicationThreads;
-		return this;
-	}
-
-	public boolean isStartMaintenance()
-	{
-		return startMaintenance;
-	}
-
-	public PeerMaker setStartMaintenance(boolean startMaintenance)
-	{
-		this.startMaintenance = startMaintenance;
 		return this;
 	}
 
@@ -601,6 +602,17 @@ public class PeerMaker
 	public PeerMaker setMaxMessageSize(int maxMessageSize)
 	{
 		this.maxMessageSize = maxMessageSize;
+		return this;
+	}
+
+	public boolean isEnableIndirectReplication()
+	{
+		return enableIndirectReplication;
+	}
+
+	public PeerMaker setEnableIndirectReplication(boolean enableIndirectReplication)
+	{
+		this.enableIndirectReplication = enableIndirectReplication;
 		return this;
 	}
 }

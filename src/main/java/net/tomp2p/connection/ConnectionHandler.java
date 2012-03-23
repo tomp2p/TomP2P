@@ -113,7 +113,8 @@ public class ConnectionHandler
 	 */
 	public ConnectionHandler(int udpPort, int tcpPort, Number160 id, Bindings bindings, int p2pID,
 			ConnectionConfiguration configuration, File messageLogger, KeyPair keyPair,
-			PeerMap peerMap, Timer timer, int maxMessageSize) throws IOException
+			PeerMap peerMap, Timer timer, int maxMessageSize, int maintenanceThreads, 
+			int replicationThreads) throws IOException
 	{
 		this.timer = timer;
 		if(configuration.isDisableBind())
@@ -158,7 +159,7 @@ public class ConnectionHandler
 		peerBean.setPeerMap(peerMap);
 		logger.info("Visible address to other peers: " + self);
 		messageLoggerFilter = messageLogger == null ? null : new MessageLogger(messageLogger);
-		Scheduler scheduler = new Scheduler();
+		Scheduler scheduler = new Scheduler(maintenanceThreads, replicationThreads);
 		//start the timeout thread.
 		scheduler.startTimeout();
 		ConnectionReservation reservation = new ConnectionReservation(tcpClientChannelFactory,

@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -66,6 +67,17 @@ public class Scheduler
 	private volatile Tracking tracking;
 	private volatile DelayedChannelCreator delayedChannelCreator;
 	private volatile boolean running = true;
+	// for maintenannce
+	private final ScheduledExecutorService scheduledExecutorServiceMaintenance;
+	private final ScheduledExecutorService scheduledExecutorServiceReplication;
+	
+	public Scheduler(int maintenanceThreads, int replicationThreads)
+	{
+		this.scheduledExecutorServiceMaintenance = Executors
+				.newScheduledThreadPool(maintenanceThreads);
+		this.scheduledExecutorServiceReplication = Executors
+				.newScheduledThreadPool(replicationThreads);
+	}
 
 	public void addQueue(FutureRunnable futureRunnable)
 	{
@@ -111,6 +123,14 @@ public class Scheduler
 			delayedChannelCreator.shutdown();
 		}
 		timeoutExecutor.shutdownNow();
+		if (getScheduledExecutorServiceMaintenance() != null)
+		{
+			getScheduledExecutorServiceMaintenance().shutdown();
+		}
+		if (getScheduledExecutorServiceReplication() != null)
+		{
+			getScheduledExecutorServiceReplication().shutdown();
+		}
 	}
 	
 	private class MyThreadFactory implements ThreadFactory 
@@ -568,5 +588,15 @@ public class Scheduler
 	{
 		DelayedChannelCreatorItem item = new DelayedChannelCreatorItem(futureChannelCreation, semaphore, runnable);
 		delayedChannelCreator.addItem(item);
+	}
+
+	public ScheduledExecutorService getScheduledExecutorServiceMaintenance()
+	{
+		return scheduledExecutorServiceMaintenance;
+	}
+
+	public ScheduledExecutorService getScheduledExecutorServiceReplication()
+	{
+		return scheduledExecutorServiceReplication;
 	}
 }

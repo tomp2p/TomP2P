@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -70,8 +68,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
-import net.tomp2p.replication.DefaultStorageReplication;
-import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -152,9 +148,7 @@ public class Peer
 	private Bindings bindings;
 	//
 	final private ConnectionConfiguration configuration;
-	// for maintenannce
-	private ScheduledExecutorService scheduledExecutorServiceMaintenance;
-	private ScheduledExecutorService scheduledExecutorServiceReplication;
+	
 	final private Map<BaseFuture, Long> pendingFutures = Collections
 			.synchronizedMap(new CacheMap<BaseFuture, Long>(1000));
 	private boolean masterFlag = true;
@@ -166,14 +160,14 @@ public class Peer
 	//
 	final private int maintenanceThreads;
 	final private int replicationThreads;
-	final private int replicationRefreshMillis;
+	//final private int replicationRefreshMillis;
 	
 	final private PeerMapKadImpl peerMap;
 	final private int maxMessageSize;
 
 
 	Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair,
-			int maintenanceThreads, int replicationThreads, int replicationRefreshMillis,
+			int maintenanceThreads, int replicationThreads,
 			ConnectionConfiguration configuration, PeerMapKadImpl peerMap, int maxMessageSize)
 	{
 		this.p2pID = p2pID;
@@ -182,7 +176,6 @@ public class Peer
 		this.keyPair = keyPair;
 		this.maintenanceThreads = maintenanceThreads;
 		this.replicationThreads = replicationThreads;
-		this.replicationRefreshMillis = replicationRefreshMillis;
 		this.peerMap = peerMap;
 		this.maxMessageSize = maxMessageSize;
 	}
@@ -245,10 +238,6 @@ public class Peer
 		}
 		if (masterFlag && timer != null)
 			timer.stop();
-		if (masterFlag && scheduledExecutorServiceMaintenance != null)
-			scheduledExecutorServiceMaintenance.shutdownNow();
-		if (masterFlag && scheduledExecutorServiceReplication != null)
-			scheduledExecutorServiceReplication.shutdownNow();
 		getConnectionHandler().shutdown();
 		//listeners may be called from other threads
 		synchronized (listeners)
@@ -277,12 +266,9 @@ public class Peer
 		masterFlag = true;
 		this.timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
 		this.bindings = bindings;
-		this.scheduledExecutorServiceMaintenance = Executors
-				.newScheduledThreadPool(maintenanceThreads);
-		this.scheduledExecutorServiceReplication = Executors
-				.newScheduledThreadPool(replicationThreads);
+		
 		ConnectionHandler connectionHandler = new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize);
+				configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize, maintenanceThreads, replicationThreads);
 		logger.debug("listen done");
 		this.connectionHandler = connectionHandler;
 		return connectionHandler;
@@ -294,22 +280,11 @@ public class Peer
 		masterFlag = false;
 		this.timer = master.timer;
 		this.bindings = master.bindings;
-		this.scheduledExecutorServiceMaintenance = master.scheduledExecutorServiceMaintenance;
-		this.scheduledExecutorServiceReplication = master.scheduledExecutorServiceReplication;
 		//listen to the masters peermap
 		ConnectionHandler connectionHandler = new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair, peerMap);
 		logger.debug("listen done");
 		this.connectionHandler = connectionHandler;
 		return connectionHandler;
-	}
-
-	public void setDefaultStorageReplication()
-	{
-		Replication replicationStorage = getPeerBean().getReplicationStorage();
-		DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(this,
-				getPeerBean().getStorage(), storageRPC, pendingFutures, configuration.isForceStorageUDP());
-		scheduledFutures.add(addIndirectReplicaiton(defaultStorageReplication));
-		replicationStorage.addResponsibilityListener(defaultStorageReplication);
 	}
 
 	public Map<BaseFuture, Long> getPendingFutures()
@@ -517,10 +492,9 @@ public class Peer
 		this.distributedTask = task;
 	}
 
-	public ScheduledFuture<?> addIndirectReplicaiton(Runnable runnable)
+	public List<ScheduledFuture<?>> getScheduledFutures()
 	{
-		return scheduledExecutorServiceReplication.scheduleWithFixedDelay(runnable,
-				replicationRefreshMillis, replicationRefreshMillis, TimeUnit.MILLISECONDS);
+		return scheduledFutures;
 	}
 
 	public ConnectionHandler getConnectionHandler()
@@ -1106,8 +1080,8 @@ public class Peer
 							else
 							{
 								// now we know our internal IP, where we receive packets
-								if (setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
-									.getInetAddress().getHostAddress()))
+								if (bindings.isSetExternalPortsManually() || 
+										setupPortForwanding(futureResponseTCP.getResponse().getRecipient().getInetAddress().getHostAddress()))
 								{
 									serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
 											bindings.getOutsideTCPPort());
@@ -1225,7 +1199,7 @@ public class Peer
 				futureDHT.repeated(futureDHT2);
 			}
 		};
-		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
+		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
@@ -1311,7 +1285,7 @@ public class Peer
 				futureDHT.repeated(futureDHT2);
 			}
 		};
-		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
+		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
 		return tmp;
@@ -1573,7 +1547,7 @@ public class Peer
 			}
 		}
 		MyRunnable myRunnable = new MyRunnable();
-		final ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(
+		final ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(
 				myRunnable,
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		myRunnable.setFuture(tmp);
@@ -1695,7 +1669,7 @@ public class Peer
 			}
 		}
 		MyRunnable myRunnable = new MyRunnable();
-		final ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(
+		final ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(
 				myRunnable,
 				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
 		myRunnable.setFuture(tmp);
@@ -1836,7 +1810,7 @@ public class Peer
 			}
 		};
 		int refresh = getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() * 3 / 4;
-		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
+		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
 				refresh, refresh,
 				TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);
@@ -1860,7 +1834,7 @@ public class Peer
 			}
 		};
 		int refresh = config.getWaitBeforeNextSendSeconds();
-		ScheduledFuture<?> tmp = scheduledExecutorServiceReplication.scheduleAtFixedRate(runner,
+		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
 				refresh, refresh,
 				TimeUnit.SECONDS);
 		scheduledFutures.add(tmp);

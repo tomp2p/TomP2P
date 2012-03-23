@@ -348,9 +348,9 @@ public class DistributedHashTable
 									logger.debug("found direct hits for get: " + futureRouting.getDirectHits());
 								}
 								// this adjust is based on results from the routing process,
-								// so we cannot do this earlier
-								parallelRequests(adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest()),
-										futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
+								// if we find the same data on 2 peers, we want to get it from one only. Unless its digest, then we want to know exactly what is going on
+								RequestP2PConfiguration p2pConfiguration2 = digest ? p2pConfiguration : adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest());
+								parallelRequests(p2pConfiguration2,	futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
 										new Operation()
 										{
 											Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
@@ -413,8 +413,6 @@ public class DistributedHashTable
 				}
 			}
 		});
-		
-		
 		return futureDHT;
 	}
 

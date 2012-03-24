@@ -19,7 +19,7 @@
   <groupId>net.tomp2p</groupId>
   <artifactId>TomP2P</artifactId>
   <name>TomP2P</name>
-  <version>4.1.0-preview</version>
+  <version>4.0.8-SNAPSHOT</version>
   <description>TomP2P, a high speed P2P key-value pair storage library</description>
   <url>http://tomp2p.net</url>
   <packaging>bundle</packaging>

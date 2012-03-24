@@ -10,11 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.FileHandler;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
@@ -49,26 +44,7 @@ public class TestStorage
 	final private static Number160 domainKey = new Number160(20);
 	private static String DIR1;
 	private static String DIR2;
-	/*static
-	{
-		Handler fh;
-		try
-		{
-			fh = new FileHandler("%t/test.log");
-			fh.setFormatter(new SimpleFormatter());
-			Logger.getLogger("").addHandler(fh);
-			Logger.getLogger("").setLevel(Level.FINEST);
-		}
-		catch (SecurityException e)
-		{
-			e.printStackTrace();
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}*/
-	
+		
 	@Before
 	public void before() throws IOException
 	{

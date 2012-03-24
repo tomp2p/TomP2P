@@ -49,7 +49,7 @@ public class TestStorage
 	final private static Number160 domainKey = new Number160(20);
 	private static String DIR1;
 	private static String DIR2;
-	static
+	/*static
 	{
 		Handler fh;
 		try
@@ -67,7 +67,7 @@ public class TestStorage
 		{
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	@Before
 	public void before() throws IOException

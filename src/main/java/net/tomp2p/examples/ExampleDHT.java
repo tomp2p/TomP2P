@@ -6,18 +6,20 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.config.ConfigurationStore;
 import net.tomp2p.p2p.config.ConfigurationTrackerStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
-import net.tomp2p.utils.Utils;
 
-public class ExampleTracker
+public class ExampleDHT
 {
 	public static void main(String[] args) throws Exception
 	{
@@ -86,10 +88,17 @@ public class ExampleTracker
 			for(Map.Entry<Number160, String> entry:downloaded.entrySet())
 			{
 				ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
+				peer.addToTracker(entry.getKey(), cts).awaitUninterruptibly();
+				//announce it on DHT
 				Collection<String> tmp = new ArrayList<String>(downloaded.values());
 				tmp.remove(entry.getValue());
-				cts.setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0])));
-				peer.addToTracker(entry.getKey(), cts).awaitUninterruptibly();
+				ConfigurationStore cs = Configurations.defaultStoreConfiguration();
+				Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+				for(String song:tmp) 
+				{
+					dataMap.put(peer.getPeerID().xor(Number160.createHash(song)),new Data(song));
+				}
+				peer.put(entry.getKey(), dataMap, cs).awaitUninterruptibly();
 			}
 		}
 		public String download(Number160 key) throws IOException, ClassNotFoundException
@@ -101,17 +110,19 @@ public class ExampleTracker
 			for(TrackerData trackerData:trackerDatas)
 			{
 				System.out.println("Peer "+trackerData+" claims to have the content");
-				String[] attachement = (String[]) Utils.decodeJavaObject(trackerData.getAttachement(), 0, trackerData.getAttachement().length);
-				for(String s1:attachement)
-				{
-						System.out.println("peers that downloaded this song also downloaded "+s1);
-				}
 			}
 			System.out.println("Tracker reports that "+trackerDatas.size()+" peer(s) have this song");
 			//here we download
 			FutureData futureData = peer.send(trackerDatas.iterator().next().getPeerAddress(), key);
 			futureData.awaitUninterruptibly();
 			String downloaded = (String)futureData.getObject();
+			// get the recommondation
+			FutureDHT futureDHT = peer.getAll(key);
+			futureDHT.awaitUninterruptibly();
+			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
+			{
+				System.out.println("peers that downloaded this song also downloaded "+entry.getValue().getObject());
+			}
 			// we need to announce that we have this piece now
 			announce(downloaded);
 			return downloaded;

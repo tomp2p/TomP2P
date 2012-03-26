@@ -61,8 +61,13 @@ public class Examples
 			Peer[] peers = createAndAttachNodes(100, 4001);
 			master = peers[0];
 			bootstrap(peers);
-			examplePutGet(peers);
+			Number160 nr = new Number160(rnd);
+			examplePutGet(peers, nr);
 			//exampleAddGet(peers);
+			
+			//exampleGetBlocking(peers, nr);
+			//exampleGetNonBlocking(peers, nr);
+			//Thread.sleep(250);
 		}
 		finally
 		{
@@ -107,9 +112,9 @@ public class Examples
 			future.awaitUninterruptibly();
 	}
 
-	public static void examplePutGet(Peer[] peers) throws IOException, ClassNotFoundException
+	public static void examplePutGet(Peer[] peers, Number160 nr) throws IOException, ClassNotFoundException
 	{
-		Number160 nr = new Number160(rnd);
+		
 		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"));
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
@@ -161,27 +166,29 @@ public class Examples
 				+ futureDHT.isSuccess() + ")");
 	}
 	
-	public static void exampleGetBlocking(Peer[] nodes,  Number160 nr)
-        {
-	  FutureDHT futureDHT = nodes[77].get(nr);
-	  //blocking operation
-          futureDHT.awaitUninterruptibly();
-          System.out.println("result: "+futureDHT.getObject());
-          System.out.println("this may *not* happen before printing the result");
-        }
+	public static void exampleGetBlocking(Peer[] peers,  Number160 nr) throws ClassNotFoundException, IOException
+    {
+		FutureDHT futureDHT = peers[77].get(nr);
+		//blocking operation
+        futureDHT.awaitUninterruptibly();
+        System.out.println("result: "+futureDHT.getData().getObject());
+        System.out.println("this may *not* happen before printing the result");
+    }
 	
-	public static void exampleGetNonBlocking(Peer[] nodes,  Number160 nr)
+	public static void exampleGetNonBlocking(Peer[] peers,  Number160 nr)
+	{
+		FutureDHT futureDHT = peers[77].get(nr);
+        //non-blocking operation
+        futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() 
         {
-          FutureDHT futureDHT = nodes[77].get(nr);
-          //non-blocking operation
-          futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() {
-            @Override
-            public void operationComplete(FutureDHT future) throws Exception {
-              System.out.println("result: "+future.getObject());
+        	@Override
+            public void operationComplete(FutureDHT future) throws Exception 
+            {
+        		System.out.println("result: "+future.getData().getObject());
             }
-          });
-          System.out.println("this may happen before printing the result");
-        }
+        });
+        System.out.println("this may happen before printing the result");
+    }
 
 	public static Peer[] createAndAttachNodes(int nr, int port) throws Exception
 	{

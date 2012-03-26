@@ -36,14 +36,14 @@ public class ExamplePersistentConnection
 	
 	private static void examplePersistentConnection() throws Exception
 	{
-		Peer master = null;
-		Peer slave = null;
+		Peer peer1 = null;
+		Peer peer2 = null;
 		try
 		{
-			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			//
-			slave.setObjectDataReply(new ObjectDataReply() 
+			peer2.setObjectDataReply(new ObjectDataReply() 
 			{
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception
@@ -52,24 +52,24 @@ public class ExamplePersistentConnection
 				}
 			});
 			//keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
-			PeerConnection peerConnection = master.createPeerConnection(slave.getPeerAddress(), 20);
+			PeerConnection peerConnection = peer1.createPeerConnection(peer2.getPeerAddress(), 20);
 			String sentObject = "Hello";
-			FutureData fd=master.send(peerConnection, sentObject);
+			FutureData fd=peer1.send(peerConnection, sentObject);
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
-			System.out.println("received "+fd.getObject() + " connections: "+master.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			System.out.println("received "+fd.getObject() + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			//we reuse the connection
-			fd=master.send(peerConnection, sentObject);
+			fd=peer1.send(peerConnection, sentObject);
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
-			System.out.println("received "+fd.getObject()  + " connections: "+master.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			System.out.println("received "+fd.getObject()  + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			// now we don't want to keep the connection open anymore:
 			peerConnection.close();
 		}
 		finally
 		{
-			master.shutdown();
-			slave.shutdown();
+			peer1.shutdown();
+			peer2.shutdown();
 		}
 	}
 	

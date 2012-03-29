@@ -188,6 +188,11 @@ public class DispatcherReply extends SimpleChannelHandler
 			ctx.sendUpstream(e);
 			return;
 		}
+		else if (e.getCause().toString().equals("java.io.IOException: An existing connection was forcibly closed by the remote host"))
+		{
+			ctx.sendUpstream(e);
+			return;
+		}
 		logger.warn("error in dispatcher request" + e.toString());
 		e.getCause().printStackTrace();
 		ctx.sendUpstream(e);

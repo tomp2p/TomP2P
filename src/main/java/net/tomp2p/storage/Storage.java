@@ -2,6 +2,7 @@ package net.tomp2p.storage;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 
 import net.tomp2p.peers.Number160;
@@ -22,6 +23,23 @@ public interface Storage extends Digest
 			Number160 fromContentKey, Number160 toContentKey);
 	
 	public abstract Map<Number480, Data> subMap(Number160 locationKey);
+	
+	/**
+	 * The storage is typically backed by multiple Java collections (HashMap,
+	 * TreeMap, etc.). This map returns the map that stores the values which are
+	 * present in the DHT. If you plan to do transactions (put/get), make sure
+	 * you do the locking in order to not interfere with other threads that use
+	 * this map. Although the storage is threadsafe, there may be concurrency
+	 * issues with respect to transactions (e.g., do a get before a put).
+	 * 
+	 * Please use {@link StorageGeneric#getLockStorage()} for full locking, and
+	 * {@link StorageGeneric#getLockNumber160()},
+	 * {@link StorageGeneric#getLockNumber320()},
+	 * {@link StorageGeneric#getLockNumber480()} for fine grained locking.
+	 * 
+	 * @return The backing dataMap
+	 */
+	public abstract NavigableMap<Number480, Data> map();
 	
 	public abstract void close();
 

@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
@@ -27,7 +28,7 @@ public class StorageDisk extends StorageGeneric
 {
 	final private DB db;
 	// Core
-	final private SortedMap<Number480, Data> dataMap;
+	final private NavigableMap<Number480, Data> dataMap;
 	// Maintenance
 	final private Map<Number480, Long> timeoutMap;
 	final private SortedMap<Long, Set<Number480>> timeoutMapRev;
@@ -100,6 +101,12 @@ public class StorageDisk extends StorageGeneric
 	{
 		return dataMap.subMap(new Number480(locationKey, Number160.ZERO, Number160.ZERO), 
 				new Number480(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	@Override
+	public NavigableMap<Number480, Data> map()
+	{
+		return dataMap;
 	}
 	
 	// Maintenance

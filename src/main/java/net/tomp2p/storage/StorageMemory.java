@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,7 @@ import net.tomp2p.peers.Number480;
 public class StorageMemory extends StorageGeneric
 {
 	// Core
-	final private SortedMap<Number480, Data> dataMap = new ConcurrentSkipListMap<Number480, Data>();
+	final private NavigableMap<Number480, Data> dataMap = new ConcurrentSkipListMap<Number480, Data>();
 	// Maintenance
 	final private Map<Number480, Long> timeoutMap = new ConcurrentHashMap<Number480, Long>();
 	final private SortedMap<Long, Set<Number480>> timeoutMapRev = new ConcurrentSkipListMap<Long, Set<Number480>>();
@@ -73,6 +74,12 @@ public class StorageMemory extends StorageGeneric
 	{
 		return dataMap.subMap(new Number480(locationKey, Number160.ZERO, Number160.ZERO), 
 				new Number480(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE));
+	}
+	
+	@Override
+	public NavigableMap<Number480, Data> map()
+	{
+		return dataMap;
 	}
 	
 	// Maintenance

@@ -53,6 +53,8 @@ public abstract class StorageGeneric implements Storage
 	// anyone
 	final private Collection<Number160> removedDomains = new HashSet<Number160>();
 	
+	final private KeyLock<Storage> dataLock = new KeyLock<Storage>();
+	final private KeyLock<Number160> dataLock160 = new KeyLock<Number160>();
 	final private KeyLock<Number320> dataLock320 = new KeyLock<Number320>();
 	final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
 
@@ -479,5 +481,25 @@ public abstract class StorageGeneric implements Storage
 	static boolean isMine(Number160 key, PublicKey publicKey)
 	{
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
+	}
+	
+	public KeyLock<Storage> getLockStorage()
+	{
+		return dataLock;
+	}
+	
+	public KeyLock<Number160> getLockNumber160()
+	{
+		return dataLock160;
+	}
+	
+	public KeyLock<Number320> getLockNumber320()
+	{
+		return dataLock320;
+	}
+	
+	public KeyLock<Number480> getLockNumber480()
+	{
+		return dataLock480;
 	}
 }

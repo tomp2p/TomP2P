@@ -5,7 +5,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.Random;
+import java.util.TreeSet;
 
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
@@ -16,6 +18,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMapKadImpl;
 
 
 public class Utils2
@@ -239,6 +242,71 @@ public class Utils2
 		}
 		for (FutureBootstrap future : futures1)
 			future.awaitUninterruptibly();
+	}
+	
+	public static void routing(Number160 key, Peer[] peers, int start)
+	{
+		System.out.println("routing: searching for key " + key);
+		NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(
+				PeerMapKadImpl.createComparator(key));
+		NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(
+				PeerMapKadImpl.createComparator(key));
+		Number160 result = Number160.ZERO;
+		Number160 resultPeer = new Number160("0xd75d1a3d57841fbc9e2a3d175d6a35dc2e15b9f");
+		int round = 0;
+		while (!resultPeer.equals(result))
+		{
+			System.out.println("round " + round);
+			round++;
+			pa1.addAll(peers[start].getPeerBean().getPeerMap().getAll());
+			queried.add(peers[start].getPeerAddress());
+			System.out.println("closest so far: " + queried.first());
+			PeerAddress next = pa1.pollFirst();
+			while (queried.contains(next))
+			{
+				next = pa1.pollFirst();
+			}
+			result = next.getID();
+			start = findNr(next.getID().toString(), peers);
+		}
+	}
+
+	public static void findInMap(PeerAddress key, Peer[] peers)
+	{
+		for (int i = 0; i < peers.length; i++)
+		{
+			if (peers[i].getPeerBean().getPeerMap().contains(key))
+			{
+				System.out.println("Peer " + i + " with the id " + peers[i].getPeerID()
+						+ " knows the peer " + key);
+			}
+		}
+	}
+
+	public static int findNr(String string, Peer[] peers)
+	{
+		for (int i = 0; i < peers.length; i++)
+		{
+			if (peers[i].getPeerID().equals(new Number160(string)))
+			{
+				System.out.println("we found the number " + i + " for peer with id " + string);
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	public static Peer find(String string, Peer[] peers)
+	{
+		for (int i = 0; i < peers.length; i++)
+		{
+			if (peers[i].getPeerID().equals(new Number160(string)))
+			{
+				System.out.println("!!we found the number " + i + " for peer with id " + string);
+				return peers[i];
+			}
+		}
+		return null;
 	}
 
 }

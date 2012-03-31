@@ -1064,18 +1064,6 @@ public class TestRouting
 			FutureTracker ft1 = peers[42].addToTracker(key,
 					Configurations.defaultTrackerStoreConfiguration());
 			ft1.awaitUninterruptibly();
-			routing(key, peers, 55);
-			findInMap(peers[80].getPeerAddress(), peers);
-			SortedSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(
-					PeerMapKadImpl.createComparator(key));
-			pa1.addAll(peers[42].getPeerBean().getPeerMap().getAll());
-			Peer p1 = find("0xffec08f00554aefd96e7cd00a207860bc779d3fe", peers);
-			// SortedSet<PeerAddress> pa3 = new
-			// TreeSet<PeerAddress>(PeerMapKadImpl.createComparator(key));
-			pa1.addAll(p1.getPeerBean().getPeerMap().getAll());
-			//
-			Peer p2 = find("0xf6658a2edd9da64b7b384f917c9134898c547aa0", peers);
-			pa1.addAll(p2.getPeerBean().getPeerMap().getAll());
 			Thread.sleep(1000);
 			System.out.println("searching for key " + key);
 			FutureTracker ft = peers[55].getFromTracker(key,
@@ -1094,68 +1082,5 @@ public class TestRouting
 		}
 	}
 
-	private void routing(Number160 key, Peer[] peers, int start)
-	{
-		System.out.println("routing: searching for key " + key);
-		NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(
-				PeerMapKadImpl.createComparator(key));
-		NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(
-				PeerMapKadImpl.createComparator(key));
-		Number160 result = Number160.ZERO;
-		Number160 resultPeer = new Number160("0xd75d1a3d57841fbc9e2a3d175d6a35dc2e15b9f");
-		int round = 0;
-		while (!resultPeer.equals(result))
-		{
-			System.out.println("round " + round);
-			round++;
-			pa1.addAll(peers[start].getPeerBean().getPeerMap().getAll());
-			queried.add(peers[start].getPeerAddress());
-			System.out.println("closest so far: " + queried.first());
-			PeerAddress next = pa1.pollFirst();
-			while (queried.contains(next))
-			{
-				next = pa1.pollFirst();
-			}
-			result = next.getID();
-			start = findNr(next.getID().toString(), peers);
-		}
-	}
-
-	private void findInMap(PeerAddress key, Peer[] peers)
-	{
-		for (int i = 0; i < peers.length; i++)
-		{
-			if (peers[i].getPeerBean().getPeerMap().contains(key))
-			{
-				System.out.println("Peer " + i + " with the id " + peers[i].getPeerID()
-						+ " knows the peer " + key);
-			}
-		}
-	}
-
-	private int findNr(String string, Peer[] peers)
-	{
-		for (int i = 0; i < peers.length; i++)
-		{
-			if (peers[i].getPeerID().equals(new Number160(string)))
-			{
-				System.out.println("we found the number " + i + " for peer with id " + string);
-				return i;
-			}
-		}
-		return -1;
-	}
-
-	private Peer find(String string, Peer[] peers)
-	{
-		for (int i = 0; i < peers.length; i++)
-		{
-			if (peers[i].getPeerID().equals(new Number160(string)))
-			{
-				System.out.println("!!we found the number " + i + " for peer with id " + string);
-				return peers[i];
-			}
-		}
-		return null;
-	}
+	
 }

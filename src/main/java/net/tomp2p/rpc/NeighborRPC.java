@@ -135,6 +135,10 @@ public class NeighborRPC extends ReplyHandler
 			else if(message.getType() == Type.REQUEST_3)
 			{
 				DigestInfo digestInfo = getPeerBean().getTrackerStorage().digest(locationKey, domainKey, null);
+				if(logger.isDebugEnabled() && digestInfo.getSize() == 0)
+				{
+					logger.debug("No entry found on peer "+message.getRecipient());
+				}
 				responseMessage.setInteger(digestInfo.getSize());
 			}
 			else if(message.getType() == Type.REQUEST_4)

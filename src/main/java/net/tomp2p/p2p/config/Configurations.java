@@ -119,6 +119,7 @@ public class Configurations
 		config.setDomain(DEFAULT_TRACKER_DOMAIN);
 		config.setAttachement(null);
 		config.setSignMessage(false);
+		config.setWaitBeforeNextSendSeconds(0);
 		return config;
 	}
 }

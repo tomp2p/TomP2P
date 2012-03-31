@@ -149,15 +149,23 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 				else
 				{
 					final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
-					dataMapConverted.clear();
 					ConfigurationStore config = Configurations.defaultStoreConfiguration();
 					config.setDomain(domainKey);
-					config.setContentKey(contentKey);
 					config.setStoreIfAbsent(true);
 					pendingFutures.put(peer.put(locationKey, dataMapConverted1, config), System
 						.currentTimeMillis());
+					dataMapConverted.clear();
+					dataMapConverted.put(contentKey, data);
 				}
 				domainKeyOld = domainKey;
+			}
+			if(!dataMapConverted.isEmpty() && domainKeyOld != null)
+			{
+				ConfigurationStore config = Configurations.defaultStoreConfiguration();
+				config.setDomain(domainKeyOld);
+				config.setStoreIfAbsent(true);
+				pendingFutures.put(peer.put(locationKey, dataMapConverted, config), System
+					.currentTimeMillis());
 			}
 		}
 	}

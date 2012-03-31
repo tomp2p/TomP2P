@@ -53,6 +53,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrappedBootstrap;
+import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.DistributedHashTable.Operation;
 import net.tomp2p.p2p.config.ConfigurationBaseDHT;
@@ -885,7 +886,7 @@ public class Peer
 	public FutureBootstrap bootstrap(final PeerAddress discoveryPeerAddress,
 			final Collection<PeerAddress> bootstrapTo, final ConfigurationBootstrap config)
 	{
-		final FutureWrappedBootstrap<FutureRouting> result = new FutureWrappedBootstrap<FutureRouting>();
+		final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result = new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
 		result.setBootstrapTo(bootstrapTo);
 		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
 				.getRequestP2PConfiguration().getParallel());
@@ -896,7 +897,7 @@ public class Peer
 			{
 				if(futureChannelCreator.isSuccess())
 				{
-					FutureRouting futureBootstrap = distributedRouting.bootstrap(bootstrapTo, config
+					FutureWrapper<FutureRouting> futureBootstrap = distributedRouting.bootstrap(bootstrapTo, config
 							.getRoutingConfiguration().getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()),
 							config.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
 							config.getRoutingConfiguration().getParallel(), false, 

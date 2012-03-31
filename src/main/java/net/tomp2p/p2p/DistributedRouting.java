@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.NavigableSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -33,6 +34,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -55,11 +57,13 @@ public class DistributedRouting
 	final private static Logger logger = LoggerFactory.getLogger(DistributedRouting.class);
 	final private NeighborRPC neighbors;
 	final private PeerBean peerBean;
+	final private Random rnd;
 
 	public DistributedRouting(PeerBean peerBean, NeighborRPC neighbors)
 	{
 		this.neighbors = neighbors;
 		this.peerBean = peerBean;
+		rnd = new Random(peerBean.getServerPeerAddress().getID().hashCode());
 	}
 
 	/**
@@ -76,17 +80,31 @@ public class DistributedRouting
 	  * @return a FutureRouting object, is set to complete if the route has been
 	 *         found
 	 */
-	public FutureRouting bootstrap(final Collection<PeerAddress> peerAddresses, int maxNoNewInfo, int maxFailures,
-			int maxSuccess, int parallel, boolean forceTCP, final boolean isForceRoutingOnlyToSelf, final ChannelCreator cc)
+	public FutureWrapper<FutureRouting> bootstrap(final Collection<PeerAddress> peerAddresses, final int maxNoNewInfo, final int maxFailures,
+			final int maxSuccess, final int parallel, final boolean forceTCP, final boolean isForceRoutingOnlyToSelf, final ChannelCreator cc)
 	{
 		// search close peers
 		if(logger.isDebugEnabled()) 
 		{
 			logger.debug("broadcast to " + peerAddresses);
 		}
+		final FutureWrapper<FutureRouting> futureWrapper = new FutureWrapper<FutureRouting>();
+		// first we find close peers to us
 		FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
 				maxNoNewInfo, maxFailures, maxSuccess, parallel, Type.REQUEST_1, forceTCP, cc, true, isForceRoutingOnlyToSelf);
-		return futureRouting;
+		// to not become a Fachidiot (expert idiot), we need to know other peers as well
+		futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
+		{
+			@Override
+			public void operationComplete(FutureRouting future) throws Exception
+			{
+				//don't care if suceeded or not, contact other peers
+				FutureRouting futureRouting = routing(peerAddresses, null, null, null, 0,
+						maxNoNewInfo, maxFailures, maxSuccess, parallel, Type.REQUEST_1, forceTCP, cc, true, isForceRoutingOnlyToSelf);
+				futureWrapper.waitFor(futureRouting);
+			}
+		});
+		return futureWrapper;
 	}
 
 	/**
@@ -149,12 +167,19 @@ public class DistributedRouting
 	{
 		if (peerAddresses == null)
 			throw new IllegalArgumentException("you need to specify some nodes");
-		if (locationKey == null)
-			throw new IllegalArgumentException("location key cannot be null");
+		boolean randomSearch = locationKey == null;
 		final FutureResponse[] futureResponses = new FutureResponse[parallel];
 		final FutureRouting futureRouting = new FutureRouting();
 		//
-		final Comparator<PeerAddress> comparator = peerBean.getPeerMap().createPeerComparator(locationKey);
+		final Comparator<PeerAddress> comparator;
+		if(randomSearch)
+		{
+			comparator = peerBean.getPeerMap().createPeerComparator();
+		}
+		else
+		{
+			comparator = peerBean.getPeerMap().createPeerComparator(locationKey);
+		}
 		final NavigableSet<PeerAddress> queueToAsk = new TreeSet<PeerAddress>(comparator);
 		// we can reuse the comparator
 		final SortedSet<PeerAddress> alreadyAsked = new TreeSet<PeerAddress>(comparator);
@@ -168,7 +193,7 @@ public class DistributedRouting
 		alreadyAsked.add(peerBean.getServerPeerAddress());
 		potentialHits.add(peerBean.getServerPeerAddress());
 		// domainkey can be null if we bootstrap
-		if (type == Type.REQUEST_2 && domainKey != null)
+		if (type == Type.REQUEST_2 && domainKey != null && !randomSearch)
 		{
 			DigestInfo digestBean = peerBean.getStorage().digest(locationKey, domainKey, contentKeys);
 			if (digestBean.getSize() > 0)
@@ -176,7 +201,7 @@ public class DistributedRouting
 				directHits.put(peerBean.getServerPeerAddress(), digestBean);
 			}
 		}
-		else if (type == Type.REQUEST_3)
+		else if (type == Type.REQUEST_3 && !randomSearch)
 		{
 			DigestInfo digestInfo = peerBean.getTrackerStorage().digest(locationKey, domainKey, contentKeys);
 			// we always put ourselfs to the tracker list, so we need to check
@@ -186,7 +211,8 @@ public class DistributedRouting
 				directHits.put(peerBean.getServerPeerAddress(), digestInfo);
 			}
 		}
-		else if (type == Type.REQUEST_4)
+		//with request4 we should never see random search, but just to be very specific here add the flag
+		else if (type == Type.REQUEST_4  && !randomSearch)
 		{
 			DigestInfo digestInfo = peerBean.getTaskManager().digest();
 			if (digestInfo.getSize() > 0)
@@ -265,17 +291,28 @@ public class DistributedRouting
 			final boolean forceTCP, final boolean stopCreatingNewFutures, 
 			final ChannelCreator channelCreator, final boolean isBootstrap, final boolean isRoutingToOthers)
 	{
+		boolean randomSearch = locationKey == null; 
 		int active = 0;
 		for (int i = 0; i < parallel; i++)
 		{
 			if (futureResponses[i] == null && !stopCreatingNewFutures)
 			{
-				PeerAddress next = queueToAsk.pollFirst();
+				final PeerAddress next;
+				if(randomSearch)
+				{
+					next = Utils.pollRandom(queueToAsk, rnd);
+				}
+				else
+				{
+					next = queueToAsk.pollFirst();
+				}
 				if (next != null)
 				{
 					alreadyAsked.add(next);
 					active++;
-					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey, contentKeys, type, channelCreator, forceTCP);
+					//if we search for a random peer, then the peer should return the address farest away.
+					final Number160 locationKey2 = randomSearch? next.getID().xor(Number160.MAX_VALUE) : locationKey;
+					futureResponses[i] = neighbors.closeNeighbors(next, locationKey2, domainKey, contentKeys, type, channelCreator, forceTCP);
 					if (logger.isDebugEnabled()) 
 					{
 						logger.debug("get close neighbors: " + next);
@@ -307,11 +344,11 @@ public class DistributedRouting
 					PeerAddress remotePeer = lastResponse.getSender();
 					potentialHits.add(remotePeer);
 					Collection<PeerAddress> newNeighbors = lastResponse.getNeighbors();
+					int resultSize = lastResponse.getInteger();
 					if (logger.isDebugEnabled()) 
 					{
-						logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
+						logger.debug("Peer ("+(resultSize>0?"direct":"none")+") " + remotePeer + " reported " + newNeighbors);
 					}
-					int resultSize = lastResponse.getInteger();
 					Number160 resultHash = lastResponse.getKey();
 					Map<Number160, Number160> keyMap = lastResponse.getKeyMap();
 					DigestInfo digestBean = new DigestInfo(resultHash, resultSize);
@@ -339,8 +376,9 @@ public class DistributedRouting
 						finished = false;
 						stopCreatingNewFutures = false;
 					}
-					if (logger.isDebugEnabled()) {
-						logger.debug("Routing finished " + finished);
+					if (logger.isDebugEnabled()) 
+					{
+						logger.debug("Routing finished " + finished +"/"+stopCreatingNewFutures);
 					}
 				}
 				else
@@ -350,7 +388,8 @@ public class DistributedRouting
 				}
 				if (finished)
 				{
-					if (logger.isDebugEnabled()) {
+					if (logger.isDebugEnabled()) 
+					{
 						logger.debug("finished routing, direct hits: " + directHits + ", potential: " + potentialHits);
 					}
 					futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, isBootstrap, isRoutingToOthers);

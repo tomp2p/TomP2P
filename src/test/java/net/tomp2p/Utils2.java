@@ -3,8 +3,12 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
+import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
@@ -192,5 +196,49 @@ public class Utils2
 		      + TEMP_DIR_ATTEMPTS + " attempts (tried "
 		      + baseName + "0 to " + baseName + (TEMP_DIR_ATTEMPTS - 1) + ')');
 		}
+	
+	public static Peer[] createAndAttachNodes(int nr, int port, Random rnd) throws Exception
+	{
+		Peer[] peers = new Peer[nr];
+		for (int i = 0; i < nr; i++)
+		{
+			if(i == 0)
+			{
+				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).buildAndListen();
+			}
+			else
+			{
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+			}
+		}
+		return peers;
+	}
+	
+	public static void bootstrap(Peer[] peers)
+	{
+		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
+		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
+		for (int i = 1; i < peers.length; i++)
+		{
+			FutureDiscover tmp=peers[i].discover(peers[0].getPeerAddress());
+			futures2.add(tmp);
+		}
+		for (FutureDiscover future : futures2)
+		{
+			future.awaitUninterruptibly();
+		}
+		for (int i = 1; i < peers.length; i++)
+		{
+			FutureBootstrap tmp = peers[i].bootstrap(peers[0].getPeerAddress());
+			futures1.add(tmp);
+		}
+		for (int i = 1; i < peers.length; i++)
+		{
+			FutureBootstrap tmp = peers[0].bootstrap(peers[i].getPeerAddress());
+			futures1.add(tmp);
+		}
+		for (FutureBootstrap future : futures1)
+			future.awaitUninterruptibly();
+	}
 
 }

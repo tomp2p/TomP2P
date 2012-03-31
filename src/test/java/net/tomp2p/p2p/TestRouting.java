@@ -15,7 +15,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.examples.Examples;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
@@ -1055,8 +1054,8 @@ public class TestRouting
 		Peer[] peers = null;
 		try
 		{
-			peers = Examples.createAndAttachNodes(100, 4001);
-			Examples.bootstrap(peers);
+			peers = Utils2.createAndAttachNodes(100, 4001, rnd);
+			Utils2.bootstrap(peers);
 			Random rnd = new Random(13414144);
 			// Random rnd = new Random(12112);
 			Number160 key = new Number160(rnd);

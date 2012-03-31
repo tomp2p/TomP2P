@@ -570,7 +570,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 				return false;
 			}
 			@SuppressWarnings("unchecked")
-			ConcurrentCacheMap<K,V>.ExpiringObject exp = (ConcurrentCacheMap<K,V>.ExpiringObject) obj;
+			ExpiringObject exp = (ExpiringObject) obj;
 			return value.equals(exp.value);
 		}
 

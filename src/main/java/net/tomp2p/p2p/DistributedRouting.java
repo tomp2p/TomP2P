@@ -276,7 +276,8 @@ public class DistributedRouting
 					alreadyAsked.add(next);
 					active++;
 					futureResponses[i] = neighbors.closeNeighbors(next, locationKey, domainKey, contentKeys, type, channelCreator, forceTCP);
-					if (logger.isDebugEnabled()) {
+					if (logger.isDebugEnabled()) 
+					{
 						logger.debug("get close neighbors: " + next);
 					}
 				}
@@ -306,7 +307,8 @@ public class DistributedRouting
 					PeerAddress remotePeer = lastResponse.getSender();
 					potentialHits.add(remotePeer);
 					Collection<PeerAddress> newNeighbors = lastResponse.getNeighbors();
-					if (logger.isDebugEnabled()) {
+					if (logger.isDebugEnabled()) 
+					{
 						logger.debug("Peer " + remotePeer + " reported " + newNeighbors);
 					}
 					int resultSize = lastResponse.getInteger();

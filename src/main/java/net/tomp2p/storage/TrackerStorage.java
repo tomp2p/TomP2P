@@ -58,6 +58,7 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	// packet. This means that the attached data must be 0, otherwise you have
 	// to used tcp. don't forget to add the header as well
 	final public static int TRACKER_SIZE = 35;
+	final public static int TRACKER_CACHE_SIZE = 1000;
 	// K=location and domain, V=peerId and attachment
 	final private ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerDataActive;
 	final private ConcurrentCacheMap<Number320, Map<Number160, TrackerData>> trackerDataMesh;
@@ -91,15 +92,15 @@ public class TrackerStorage implements PeerStatusListener, Digest
 		this.replication = replication;
 		this.maintenance = maintenance;
 		trackerDataActive = new ConcurrentHashMap<Number320, Map<Number160,TrackerData>>();
-		trackerDataMesh = new ConcurrentCacheMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds);
-		trackerDataSecondary = new ConcurrentCacheMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds);
+		trackerDataMesh = new ConcurrentCacheMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
+		trackerDataSecondary = new ConcurrentCacheMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
 		//
-		reverseTrackerDataMesh = new ConcurrentCacheMap<Number160, Collection<Number320>>(trackerTimoutSeconds);
-		reverseTrackerDataSecondary = new ConcurrentCacheMap<Number160, Collection<Number320>>(trackerTimoutSeconds);
+		reverseTrackerDataMesh = new ConcurrentCacheMap<Number160, Collection<Number320>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
+		reverseTrackerDataSecondary = new ConcurrentCacheMap<Number160, Collection<Number320>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
 				
 		// if everything is perfect, a factor of 2 is enough, to be on the safe
 		// side factor 5 is used.
-		peerOffline = new ConcurrentCacheMap<Number160, Collection<Number160>>(trackerTimoutSeconds * 5);
+		peerOffline = new ConcurrentCacheMap<Number160, Collection<Number160>>(trackerTimoutSeconds * 5, TRACKER_CACHE_SIZE, false);
 	}
 
 	public Map<Number160, TrackerData> activePeers(Number160 locationKey, Number160 domainKey)

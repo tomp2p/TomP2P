@@ -130,7 +130,7 @@ public class PeerMapKadImpl implements PeerMap
 		this.maxFail = maxNrBeforeExclude;
 		this.maintenanceTimeoutsSeconds = waitingTimeBetweenNodeMaintenenceSeconds;
 		// The size of the cache of removed peers
-		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cachSize);
+		this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cachSize, false);
 		this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
 		this.assumeBehindFirewall = isBehindFirewall;
 		for (int i = 0; i < Number160.BITS; i++)

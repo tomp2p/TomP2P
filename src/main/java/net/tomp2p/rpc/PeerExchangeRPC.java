@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 public class PeerExchangeRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(PeerExchangeRPC.class);
+	final public static int SENT_PEERS_CACHE_SIZE = 1000;
 	// since PEX is push based, each peer needs to keep track what was sent to
 	// whom.
 	final private Map<Number160, Set<Number160>> sentPeers;
@@ -48,7 +49,7 @@ public class PeerExchangeRPC extends ReplyHandler
 	{
 		super(peerBean, connectionBean);
 		registerIoHandler(Command.PEX);
-		sentPeers = new CacheMap<Number160, Set<Number160>>(1000);
+		sentPeers = new CacheMap<Number160, Set<Number160>>(SENT_PEERS_CACHE_SIZE, true);
 	}
 
 	/**

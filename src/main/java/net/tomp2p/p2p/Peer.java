@@ -150,7 +150,7 @@ public class Peer
 	final private ConnectionConfiguration configuration;
 	
 	final private Map<BaseFuture, Long> pendingFutures = Collections
-			.synchronizedMap(new CacheMap<BaseFuture, Long>(1000));
+			.synchronizedMap(new CacheMap<BaseFuture, Long>(1000, true));
 	private boolean masterFlag = true;
 	private List<ScheduledFuture<?>> scheduledFutures = Collections
 			.synchronizedList(new ArrayList<ScheduledFuture<?>>());

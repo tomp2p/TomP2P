@@ -743,9 +743,8 @@ public class PeerMapKadImpl implements PeerMap
 		}
 		return sb.toString();
 	}
-
-	@Override
-	public Comparator<PeerAddress> createPeerComparator(final Number160 id)
+	
+	public static Comparator<PeerAddress> createComparator(final Number160 id)
 	{
 		return new Comparator<PeerAddress>()
 		{
@@ -754,6 +753,12 @@ public class PeerMapKadImpl implements PeerMap
 				return isKadCloser(id, remotePeer, remotePeer2);
 			}
 		};
+	}
+
+	@Override
+	public Comparator<PeerAddress> createPeerComparator(final Number160 id)
+	{
+		return createComparator(id);
 	}
 
 	@Override

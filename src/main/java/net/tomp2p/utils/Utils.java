@@ -41,7 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.SortedSet;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -333,16 +332,29 @@ public class Utils
 		return (b[0] << 24) + ((b[1] & 0xFF) << 16) + ((b[2] & 0xFF) << 8) + (b[3] & 0xFF);
 	}
 
-	public static <K> K pollRandom(SortedSet<K> queueToAsk, Random rnd)
+	/**
+	 * Returns a random element from a collection. This method is pretty slow
+	 * O(n), but the Java collection framework does not offer a better solution.
+	 * This method puts the collection into a {@link List} and fetches a random
+	 * element using {@link List#get(int)}.
+	 * 
+	 * @param collection The collection from which we want to pick a random
+	 *        element
+	 * @param rnd The random object
+	 * @return A random element
+	 */
+	public static <K> K pollRandom(Collection<K> collection, Random rnd)
 	{
-		int size = queueToAsk.size();
+		int size = collection.size();
 		if (size == 0)
+		{
 			return null;
+		}
 		int index = rnd.nextInt(size);
-		List<K> values = new ArrayList<K>(queueToAsk);
+		List<K> values = new ArrayList<K>(collection);
 		K retVal = values.get(index);
 		//now we need to remove this element
-		queueToAsk.remove(retVal);
+		collection.remove(retVal);
 		return retVal;
 	}
 

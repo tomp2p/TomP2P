@@ -72,4 +72,30 @@ public class TestCache
 		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}
+	
+	@Test
+	public void testCache4()
+	{
+		String key = "hallo0";
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		test.put(key, "test0");
+		Timings.sleepUninterruptibly(1100);
+		test.put(key, "test1");
+		Timings.sleepUninterruptibly(200);
+		String val = test.get(key);
+		Assert.assertEquals("test1", val);
+	}
+	
+	@Test
+	public void testCache5()
+	{
+		String key = "hallo0";
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		test.put(key, "test0");
+		Timings.sleepUninterruptibly(1100);
+		test.put(key, "test1");
+		Timings.sleepUninterruptibly(1100);
+		String val = test.get(key);
+		Assert.assertEquals(null, val);
+	}
 }

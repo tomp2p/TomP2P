@@ -87,11 +87,11 @@ public class CacheMap<K, V> extends LinkedHashMap<K, V>
 	{
 		if (!containsKey(key))
 		{
-			return put(key, value);
+			return super.put(key, value);
 		}
 		else
 		{
-			return get(key);
+			return super.get(key);
 		}
 	};
 

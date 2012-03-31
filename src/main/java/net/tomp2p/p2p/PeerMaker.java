@@ -121,10 +121,14 @@ public class PeerMaker
 		// create tracker and add replication feature
 		IdentityManagement identityManagement = new IdentityManagement(selfAddress);
 		Maintenance maintenance = new Maintenance();
-		Replication replicationTracker = new Replication(getStorage(), selfAddress, peerMap);
+		//use the memory for tracker storage, no need to store the reference on disk
+		
 		TrackerStorage storageTracker = new TrackerStorage(identityManagement,
-				configuration.getTrackerTimoutSeconds(), replicationTracker, maintenance);
+				configuration.getTrackerTimoutSeconds(), peerBean, maintenance);
 		peerBean.setTrackerStorage(storageTracker);
+		Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
+		peerBean.setReplicationTracker(replicationTracker);
+		
 		peerMap.addPeerOfflineListener(storageTracker);
 		// RPC communication
 		if(isEnableHandShakeRPC())

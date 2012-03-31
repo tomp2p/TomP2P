@@ -355,22 +355,7 @@ public abstract class StorageGeneric implements Storage
 		return digestInfo;
 	}
 	
-	public Number160 findResponsiblePeers(Number160 locationKey)
-	{
-		return findPeerIDForResponsibleContent(locationKey);	
-	}
-	
-	public Collection<Number160> findContentResponsibility(Number160 peerID)
-	{
-		return findContentForResponsiblePeerID(peerID);
-	}
-	
-	public boolean updateContentResponsibilities(Number160 locationKey, Number160 peerId)
-	{
-		return updateResponsibilities(locationKey, peerId);
-	}
-	
-	public void removeContentResponsibility(Number160 locationKey)
+	private void removeContentResponsibility(Number160 locationKey)
 	{
 		removeResponsibility(locationKey);
 	}
@@ -382,7 +367,7 @@ public abstract class StorageGeneric implements Storage
 		return !domainProtectedByOthers || domainOverridableByMe;
 	}
 	
-	boolean canProtectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey)
+	private boolean canProtectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey)
 	{
 		if (isDomainRemoved(domainKey))
 		{
@@ -427,7 +412,7 @@ public abstract class StorageGeneric implements Storage
 		return false;
 	}
 	
-	boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey)
+	private boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey)
 	{
 		// we are in public key mode
 		if (getProtectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null)
@@ -439,7 +424,7 @@ public abstract class StorageGeneric implements Storage
 		return false;
 	}
 
-	boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey)
+	private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey)
 	{
 		// we are in public key mode
 		if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null)
@@ -451,7 +436,7 @@ public abstract class StorageGeneric implements Storage
 		return false;
 	}
 
-	boolean canUpdateEntry(Number160 contentKey, Data oldData, Data newData, boolean protectEntry)
+	private boolean canUpdateEntry(Number160 contentKey, Data oldData, Data newData, boolean protectEntry)
 	{
 		if (protectEntry)
 		{
@@ -478,7 +463,7 @@ public abstract class StorageGeneric implements Storage
 		return foreceOverrideEntry(contentKey, newData.getPublicKey());
 	}
 	
-	static boolean isMine(Number160 key, PublicKey publicKey)
+	private static boolean isMine(Number160 key, PublicKey publicKey)
 	{
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
 	}

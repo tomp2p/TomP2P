@@ -43,6 +43,7 @@ public class PeerBean
 	private StorageGeneric storage;
 	private TrackerStorage trackerStorage;
 	private Replication replicationStorage;
+	private Replication replicationTracker;
 	private Statistics statistics;
 	private TaskManager taskManager;
 	
@@ -124,5 +125,15 @@ public class PeerBean
 	public void setTaskManager(TaskManager taskManager)
 	{
 		this.taskManager = taskManager;
+	}
+
+	public Replication getReplicationTracker()
+	{
+		return replicationTracker;
+	}
+
+	public void setReplicationTracker(Replication replicationTracker)
+	{
+		this.replicationTracker = replicationTracker;
 	}
 }

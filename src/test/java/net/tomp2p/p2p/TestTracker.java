@@ -425,7 +425,7 @@ public class TestTracker
 			Peer[] nodes = createNodes(master, 500, rnd);
 			
 			ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
-			FutureTracker futureTracker = nodes[50].addToTracker(trackerID, cts);
+			FutureTracker futureTracker = nodes[0].addToTracker(trackerID, cts);
 			futureTracker.awaitUninterruptibly();
 			
 			// perfect routing
@@ -433,7 +433,7 @@ public class TestTracker
 			{
 				for (int j = 0; j < nodes.length; j++)
 				{
-					nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
+					if(i!=j) nodes[i].getPeerBean().getPeerMap().peerFound(nodes[j].getPeerAddress(), null);
 				}
 			}
 			ConfigurationTrackerGet ctg = Configurations.defaultTrackerGetConfiguration();

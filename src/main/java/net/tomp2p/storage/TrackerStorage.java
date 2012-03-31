@@ -24,13 +24,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import net.tomp2p.connection.PeerBean;
 import net.tomp2p.p2p.IdentityManagement;
 import net.tomp2p.p2p.Maintenance;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.ConcurrentCacheMap;
 
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * @author draft
  * 
  */
-public class TrackerStorage implements PeerStatusListener, Digest
+public class TrackerStorage implements PeerStatusListener, Digest, ReplicationStorage
 {
 	final private static Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
 	final private static Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
@@ -72,24 +72,26 @@ public class TrackerStorage implements PeerStatusListener, Digest
 	final private ConcurrentCacheMap<Number160, Collection<Number160>> peerOffline;
 	final private IdentityManagement identityManagement;
 	final private int trackerTimoutSeconds;
-	final private Replication replication;
+	final private PeerBean peerBean;
 	final private Maintenance maintenance;
 	// variable parameters
 	private boolean fillPrimaryStorageFast = false;
 	private int secondaryFactor = 5;
 	private int primanyFactor = 1;
+	
+	final private StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
 
 	public enum ReferrerType
 	{
 		ACTIVE, MESH
 	};
 
-	public TrackerStorage(IdentityManagement identityManagement, int trackerTimoutSeconds, Replication replication,
+	public TrackerStorage(IdentityManagement identityManagement, int trackerTimoutSeconds, PeerBean peerBean,
 			Maintenance maintenance)
 	{
 		this.trackerTimoutSeconds = trackerTimoutSeconds;
 		this.identityManagement = identityManagement;
-		this.replication = replication;
+		this.peerBean = peerBean;
 		this.maintenance = maintenance;
 		trackerDataActive = new ConcurrentHashMap<Number320, Map<Number160,TrackerData>>();
 		trackerDataMesh = new ConcurrentCacheMap<Number320, Map<Number160,TrackerData>>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
@@ -214,7 +216,10 @@ public class TrackerStorage implements PeerStatusListener, Digest
 			if (storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataMesh,
 					reverseTrackerDataMesh, getPrimanyFactor()))
 			{
-				replication.checkResponsibility(locationKey);
+				if (peerBean.getReplicationTracker() != null)
+				{
+					peerBean.getReplicationTracker().checkResponsibility(locationKey);
+				}
 				return true;
 			}
 		}
@@ -522,5 +527,29 @@ public class TrackerStorage implements PeerStatusListener, Digest
 			}
 		}
 		return retVal;
+	}
+
+	@Override
+	public Number160 findPeerIDForResponsibleContent(Number160 locationKey)
+	{
+		return storageMemoryReplication.findPeerIDForResponsibleContent(locationKey);
+	}
+
+	@Override
+	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID)
+	{
+		return storageMemoryReplication.findContentForResponsiblePeerID(peerID);
+	}
+
+	@Override
+	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId)
+	{
+		return storageMemoryReplication.updateResponsibilities(locationKey, peerId);
+	}
+
+	@Override
+	public void removeResponsibility(Number160 locationKey)
+	{
+		storageMemoryReplication.removeResponsibility(locationKey);
 	}
 }

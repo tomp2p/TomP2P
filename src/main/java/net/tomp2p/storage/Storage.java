@@ -8,7 +8,7 @@ import java.util.SortedMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 
-public interface Storage extends Digest
+public interface Storage extends Digest, ReplicationStorage
 {
 	// Core
 	public abstract boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data value);
@@ -53,15 +53,5 @@ public interface Storage extends Digest
 	// Domain / entry protection
 	public abstract boolean protectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey);
 		
-	public abstract boolean isDomainProtectedByOthers(Number160 locationKey, Number160 domainKey, PublicKey publicKey);
-	
-	// Replication
-	
-	public abstract Number160 findPeerIDForResponsibleContent(Number160 locationKey);
-	
-	public abstract Collection<Number160> findContentForResponsiblePeerID(Number160 peerID);
-	
-	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId);
-	
-	public void removeResponsibility(Number160 locationKey);
+	public abstract boolean isDomainProtectedByOthers(Number160 locationKey, Number160 domainKey, PublicKey publicKey);	
 }

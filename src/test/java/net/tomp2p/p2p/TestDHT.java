@@ -92,7 +92,7 @@ public class TestDHT
 				}
 			});
 			List<BaseFuture> list= new ArrayList<BaseFuture>();
-			for(int i=0;i<100;i++)
+			for(int i=0;i<200;i++)
 			{
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
@@ -106,6 +106,7 @@ public class TestDHT
 				byte[] me=Utils.intToByteArray(i);
 				System.arraycopy(me, 0, b, 0, 4);
 				list.add(master.send(slave.getPeerAddress(), ChannelBuffers.wrappedBuffer(b)));
+				//Utils2.execute("netstat -tn | wc");
 				//System.out.println(".");
 			}
 			for(BaseFuture bf:list)

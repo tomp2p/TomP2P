@@ -49,6 +49,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	public static final int DEFAULT_TIME_TO_LIVE = 60;
 	private final CacheMap<K, ExpiringObject>[] segments;
 	private final int timeToLive;
+	private final boolean refreshTimeout;
 
 	/**
 	 * Creates a new instance of ConcurrentCacheMap using the supplied values
@@ -76,17 +77,21 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	 * 
 	 * @param timeToLive The time-to-live value (seconds)
 	 * @param maxEntries The maximum entries to keep in cache, default is 1024
+	 * @param refreshTimeout If set to true, timeout will be reset in case of
+	 *        {@link #putIfAbsent(Object, Object)}
 	 */
 	@SuppressWarnings("unchecked")
-	public ConcurrentCacheMap(int timeToLive, int maxEntries, boolean updateEntryOnInsert)
+	public ConcurrentCacheMap(int timeToLive, int maxEntries, boolean refreshTimeout)
 	{
 		this.segments = new CacheMap[SEGMENT_NR];
 		int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
 		for (int i = 0; i < SEGMENT_NR; i++)
 		{
-			segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, updateEntryOnInsert);
+			//set the cachemap to true, since it should behave as a regular map
+			segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, true);
 		}
 		this.timeToLive = timeToLive;
+		this.refreshTimeout = refreshTimeout;
 	}
 
 	private CacheMap<K, ExpiringObject> segment(Object key)
@@ -111,11 +116,14 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 		return oldValue.getValue();
 	}
 
+	/**
+	 * This does not reset the timer!
+	 */
 	@Override
 	public V putIfAbsent(K key, V value)
 	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
+		final CacheMap<K, ExpiringObject> segment = segment(key);
+		final ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
 		ExpiringObject oldValue = null;
 		synchronized (segment)
 		{
@@ -126,6 +134,15 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 			else
 			{
 				oldValue = segment.get(key);
+				if(oldValue.isExpired())
+				{
+					segment.put(key, newValue);
+				}
+				else if (refreshTimeout)
+				{
+					oldValue = new ExpiringObject(oldValue.getValue(), System.currentTimeMillis());
+					segment.put(key, oldValue);
+				}
 			}
 		}
 		if (oldValue == null || oldValue.isExpired())

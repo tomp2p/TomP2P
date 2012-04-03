@@ -98,4 +98,31 @@ public class TestCache
 		String val = test.get(key);
 		Assert.assertEquals(null, val);
 	}
+	
+	@Test
+	public void testCache6()
+	{
+		String key = "hallo0";
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, false);
+		test.put(key, "test0");
+		Timings.sleepUninterruptibly(500);
+		test.putIfAbsent(key, "test1");
+		Timings.sleepUninterruptibly(800);
+		String val = test.get(key);
+		Assert.assertEquals(null, val);
+	}
+	
+	@Test
+	public void testCache7()
+	{
+		String key = "hallo0";
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, true);
+		test.put(key, "test0");
+		Timings.sleepUninterruptibly(500);
+		test.putIfAbsent(key, "test1");
+		Timings.sleepUninterruptibly(800);
+		String val = test.get(key);
+		//putIfAbsent will refresh test0
+		Assert.assertEquals("test0", val);
+	}
 }

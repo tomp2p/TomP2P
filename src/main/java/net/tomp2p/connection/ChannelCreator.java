@@ -40,6 +40,7 @@ import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelDownstreamHandler;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -396,15 +397,29 @@ public class ChannelCreator
 			SocketAddress localAddress, int connectionTimoutMillis)
 	{
 		ClientBootstrap bootstrap = new ClientBootstrap(tcpClientChannelFactory);
+		//this option is used in Netty
 		bootstrap.setOption("connectTimeoutMillis", connectionTimoutMillis);
-		bootstrap.setOption("tcpNoDelay", true);
-		bootstrap.setOption("soLinger", 0);
-		//bootstrap.setOption("reuseAddress", true);
-		bootstrap.setOption("keepAlive", true);
 		setupBootstrapTCP(bootstrap, timeoutHandler, requestHandler, new TomP2PDecoderTCP(),
 				new TomP2PEncoderTCP(), new ChunkedWriteHandler(), messageLoggerFilter);
 		ChannelFuture channelFuture = bootstrap.connect(remoteAddress);
+		//try to set, otherwise give up if not supported
+		trySetOption(channelFuture.getChannel(),"tcpNoDelay", true);
+		trySetOption(channelFuture.getChannel(),"soLinger", 0);
+		trySetOption(channelFuture.getChannel(),"reuseAddress", true);
+		trySetOption(channelFuture.getChannel(),"keepAlive", true);
 		return channelFuture;
+	}
+	
+	private void trySetOption(Channel channel, String name, Object value)
+	{
+		try
+		{
+			channel.getConfig().setOption(name, value);
+		}
+		catch (ChannelException e)
+		{
+			// try hard
+		}
 	}
 
 	/**

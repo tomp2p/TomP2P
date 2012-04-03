@@ -150,15 +150,12 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 			int offset, int length)
 	{
 		Number320 key = new Number320(locationKey, domainKey);
-		Map<Number160, TrackerData> data = new HashMap<Number160, TrackerData>();
+		Map<Number160, TrackerData> data = new ConcurrentCacheMap<Number160, TrackerData>(60,1000,true);
 		Map<Number160, TrackerData> data2 = trackerDataActive.putIfAbsent(key, data);
 		data = data2 == null ? data : data2;
-		// we don't expect many concurrent access for data
-		synchronized (data)
-		{
-			data.put(remotePeer.getID(), new TrackerData(remotePeer, identityManagement.getPeerAddress(), attachement,
-					offset, length));
-		}
+		
+		data.put(remotePeer.getID(), new TrackerData(remotePeer, identityManagement.getPeerAddress(), attachement,
+				offset, length));
 	}
 
 	public boolean removeActive(Number160 locationKey, Number160 domainKey, Number160 remotePeerId)
@@ -286,17 +283,14 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 			Number320 key, ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerData,
 			ConcurrentMap<Number160, Collection<Number320>> reverseTrackerData, int factor)
 	{
-		Map<Number160, TrackerData> data = new HashMap<Number160, TrackerData>();
+		Map<Number160, TrackerData> data = new ConcurrentCacheMap<Number160, TrackerData>(60, 1000, true);
 		Map<Number160, TrackerData> data2 = trackerData.putIfAbsent(key, data);
 		data = data2 == null ? data : data2;
-		// we don't expect much concurrency with data and data2 so we use
-		// locking
-		synchronized (data)
-		{
-			if (data.size() > TRACKER_SIZE * factor)
-				return false;
-			data.put(peerId, new TrackerData(peerAddress, null, attachement, offset, length));
-		}
+		
+		if (data.size() > TRACKER_SIZE * factor)
+			return false;
+		data.put(peerId, new TrackerData(peerAddress, null, attachement, offset, length));
+		
 		// now store the reverse data to find all the data one peer stored
 		Collection<Number320> collection = new HashSet<Number320>();
 		Collection<Number320> collection2 = reverseTrackerData.putIfAbsent(peerId, collection);

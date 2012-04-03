@@ -9,6 +9,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureLaterJoin;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
@@ -29,8 +30,26 @@ public class ExampleMapReduce
 	
 	public static void main(String[] args) throws Exception
 	{
+		Peer master = null;
+		try
+		{
+			Peer[] peers = Examples.createAndAttachNodes(100, 4001);
+			master = peers[0];
+			Examples.bootstrap(peers);
+			Number160 nr = new Number160(rnd);
+			exampleMapReduce(peers, nr);
+		}
+		finally
+		{
+			master.shutdown();
+		}
 	}
 	
+	private static void exampleMapReduce(Peer[] peers, Number160 nr)
+	{
+		// TODO Auto-generated method stub
+	}
+
 	private static class Pair
 	{
 		private final String string;

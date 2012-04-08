@@ -106,7 +106,7 @@ public class DistributedHashTable
 											@Override
 											public void response(FutureDHT futureDHT)
 											{
-												futureDHT.setStoredKeys(rawData, false);
+												futureDHT.setStoredKeys(rawData);
 											}
 
 											@Override
@@ -282,7 +282,7 @@ public class DistributedHashTable
 											@Override
 											public void response(FutureDHT futureDHT)
 											{
-												futureDHT.setStoredKeys(rawData, putIfAbsent);
+												futureDHT.setStoredKeys(rawData);
 											}
 
 											@Override

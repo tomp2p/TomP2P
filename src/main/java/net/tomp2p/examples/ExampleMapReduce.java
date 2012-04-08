@@ -33,9 +33,9 @@ public class ExampleMapReduce
 		Peer master = null;
 		try
 		{
-			Peer[] peers = Examples.createAndAttachNodes(100, 4001);
+			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
 			master = peers[0];
-			Examples.bootstrap(peers);
+			ExampleUtils.bootstrap(peers);
 			Number160 nr = new Number160(rnd);
 			exampleMapReduce(peers, nr);
 		}

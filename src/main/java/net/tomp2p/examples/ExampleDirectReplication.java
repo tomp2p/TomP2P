@@ -19,8 +19,8 @@ public class ExampleDirectReplication
 		Peer[] peers = null;
 		try
 		{
-			peers = Examples.createAndAttachNodes(100, 4001);
-			Examples.bootstrap(peers);
+			peers = ExampleUtils.createAndAttachNodes(100, 4001);
+			ExampleUtils.bootstrap(peers);
 			exmpleDirectReplication(peers);
 		}
 		finally

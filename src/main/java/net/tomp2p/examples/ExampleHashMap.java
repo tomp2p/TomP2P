@@ -42,10 +42,10 @@ public class ExampleHashMap
 		Peer master = null;
 		try
 		{
-			Peer[] peers = Examples.createAndAttachNodes(100, 4001);
+			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
 			master = peers[0];
 			MyPeer myPeer = new MyPeer(master);
-			Examples.bootstrap(peers);
+			ExampleUtils.bootstrap(peers);
 			myPeer.put("This is my location key", "This is my domain", "This is my content key",
 					"And here comes the data").awaitUninterruptibly();
 			FutureDHT futureDHT = myPeer.get("This is my location key", "This is my domain",

@@ -38,7 +38,7 @@ public class ExampleSecurity
 		Peer peer2 = new PeerMaker(pair2).setPorts(4002).buildAndListen();
 		Peer peer3 = new PeerMaker(pair3).setPorts(4003).buildAndListen();
 		Peer[] peers = new Peer[]{peer1, peer2, peer3};
-		Examples.bootstrap(peers);
+		ExampleUtils.bootstrap(peers);
 		setProtection(peers, ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY);
 		//peer 1 stores "test" in the domain key of owner peer 2 
 		ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();
@@ -76,7 +76,7 @@ public class ExampleSecurity
 		Peer peer2 = new PeerMaker(pair2).setPorts(4002).buildAndListen();
 		Peer peer3 = new PeerMaker(pair3).setPorts(4003).buildAndListen();
 		Peer[] peers = new Peer[]{peer1, peer2, peer3};
-		Examples.bootstrap(peers);
+		ExampleUtils.bootstrap(peers);
 		setProtection(peers, ProtectionEnable.NONE, ProtectionMode.MASTER_PUBLIC_KEY);
 		//peer 1 stores "test" in the domain key of owner peer 2 
 		ConfigurationStore cs1 = Configurations.defaultStoreConfiguration();

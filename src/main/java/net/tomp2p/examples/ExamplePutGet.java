@@ -1,3 +1,5 @@
+package net.tomp2p.examples;
+
 /*
  * Copyright 2009 Thomas Bocek
  * 
@@ -13,23 +15,14 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.examples;
 import java.io.IOException;
-import java.net.Inet4Address;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Random;
 
-import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.Bindings.Protocol;
-import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.config.ConfigurationGet;
 import net.tomp2p.p2p.config.ConfigurationStore;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
@@ -43,31 +36,25 @@ import net.tomp2p.storage.Data;
  * @author draft
  * 
  */
-public class Examples
+public class ExamplePutGet
 {
 	final private static Random rnd = new Random(42L);
 
 	public static void main(String[] args) throws Exception
 	{
-		exampleDHT();
-		//exampleNAT();
-	}
-
-	public static void exampleDHT() throws Exception
-	{
 		Peer master = null;
 		try
 		{
-			Peer[] peers = createAndAttachNodes(100, 4001);
+			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
+			ExampleUtils.bootstrap(peers);
 			master = peers[0];
-			bootstrap(peers);
 			Number160 nr = new Number160(rnd);
 			examplePutGet(peers, nr);
-			//exampleAddGet(peers);
-			
-			//exampleGetBlocking(peers, nr);
-			//exampleGetNonBlocking(peers, nr);
-			//Thread.sleep(250);
+			examplePutGetConfig(peers, nr);
+			exampleGetBlocking(peers, nr);
+			exampleGetNonBlocking(peers, nr);
+			Thread.sleep(250);
+			exampleAddGet(peers);
 		}
 		finally
 		{
@@ -75,46 +62,8 @@ public class Examples
 		}
 	}
 
-	public static void exampleNAT() throws Exception
-	{
-		Bindings b = new Bindings(Protocol.IPv4, Inet4Address.getByName("127.0.0.1"), 4001, 4001);
-		b.addInterface("eth0");
-		Peer master = new PeerMaker(new Number160(rnd)).setPorts(4001).setBindings(b).buildAndListen();
-		System.out.println("Listening to: " + DiscoverNetworks.discoverInterfaces(b));
-		System.out.println("address visible to outside is " + master.getPeerAddress());
-		master.shutdown();
-	}
-
-	public static void bootstrap(Peer[] peers)
-	{
-		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
-		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureDiscover tmp=peers[i].discover(peers[0].getPeerAddress());
-			futures2.add(tmp);
-		}
-		for (FutureDiscover future : futures2)
-		{
-			future.awaitUninterruptibly();
-		}
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureBootstrap tmp = peers[i].bootstrap(peers[0].getPeerAddress());
-			futures1.add(tmp);
-		}
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureBootstrap tmp = peers[0].bootstrap(peers[i].getPeerAddress());
-			futures1.add(tmp);
-		}
-		for (FutureBootstrap future : futures1)
-			future.awaitUninterruptibly();
-	}
-
 	public static void examplePutGet(Peer[] peers, Number160 nr) throws IOException, ClassNotFoundException
 	{
-		
 		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"));
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
@@ -126,7 +75,7 @@ public class Examples
 		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
 	}
 	
-	public static void examplePutGetConfig(Peer[] peers) throws IOException, ClassNotFoundException
+	public static void examplePutGetConfig(Peer[] peers, Number160 nr2) throws IOException, ClassNotFoundException
 	{
 		Number160 nr = new Number160(rnd);
 		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
@@ -135,7 +84,14 @@ public class Examples
 		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"), cs);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
-		futureDHT = peers[77].get(nr);
+		//this will fail, since we did not specify the domain
+		futureDHT = peers[77].getAll(nr);
+		futureDHT.awaitUninterruptibly();
+		System.out.println("peer 77 got: \"" + futureDHT.getData() + "\" for the key "+nr);
+		//this will succeed, since we specify the domain
+		ConfigurationGet cg = Configurations.defaultGetConfiguration();
+		cg.setDomain(Number160.createHash("my_domain"));
+		futureDHT = peers[77].getAll(nr, cg);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
 		// the output should look like this:
@@ -143,20 +99,20 @@ public class Examples
 		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
 	}
 
-	private static void exampleAddGet(Peer[] nodes) throws IOException, ClassNotFoundException
+	private static void exampleAddGet(Peer[] peers) throws IOException, ClassNotFoundException
 	{
 		Number160 nr = new Number160(rnd);
 		String toStore1 = "hallo1";
 		String toStore2 = "hallo2";
 		Data data1 = new Data(toStore1);
 		Data data2 = new Data(toStore2);
-		FutureDHT futureDHT = nodes[30].add(nr, data1);
+		FutureDHT futureDHT = peers[30].add(nr, data1);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = nodes[50].add(nr, data2);
+		futureDHT = peers[50].add(nr, data2);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = nodes[77].getAll(nr);
+		futureDHT = peers[77].getAll(nr);
 		futureDHT.awaitUninterruptibly();
 		System.out.println("size" + futureDHT.getDataMap().size());
 		Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
@@ -189,21 +145,5 @@ public class Examples
         });
         System.out.println("this may happen before printing the result");
     }
-
-	public static Peer[] createAndAttachNodes(int nr, int port) throws Exception
-	{
-		Peer[] peers = new Peer[nr];
-		for (int i = 0; i < nr; i++)
-		{
-			if(i == 0)
-			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).buildAndListen();
-			}
-			else
-			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
-			}
-		}
-		return peers;
-	}
 }
+

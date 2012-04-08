@@ -412,15 +412,30 @@ public class Message
 
 	public boolean isOk()
 	{
+		return isOk(type);
+	}
+	
+	public static boolean isOk(Type type)
+	{
 		return type == Type.OK || type == Type.PARTIALLY_OK;
 	}
 
 	public boolean isNotOk()
 	{
+		return isNotOk(type);
+	}
+	
+	public static boolean isNotOk(Type type)
+	{
 		return type == Type.NOT_FOUND || type == Type.DENIED;
 	}
 
 	public boolean isError()
+	{
+		return isError(type);
+	}
+	
+	public static boolean isError(Type type)
 	{
 		return type == Type.UNKNOWN_ID || type == Type.EXCEPTION || type == Type.CANCEL;
 	}

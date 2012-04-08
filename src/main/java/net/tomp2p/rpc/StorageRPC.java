@@ -465,16 +465,18 @@ public class StorageRPC extends ReplyHandler
 				if(logger.isDebugEnabled()) {
 					logger.debug("could not add "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
-				getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
-						entry.getValue(), publicKey, putIfAbsent, protectDomain);
 			}
 		}
 		// check the responsibility of the newly added data, do something
 		// (notify) if we are responsible
 		if (result.size() > 0 && getPeerBean().getReplicationStorage() != null)
+		{
 			getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
+		}
 		if (result.size() == 0 && !putIfAbsent)
+		{
 			responseMessage.setType(Type.DENIED);
+		}
 		else if(result.size() == 0 && putIfAbsent)
 		{
 			// put if absent does not return an error if it did not work!

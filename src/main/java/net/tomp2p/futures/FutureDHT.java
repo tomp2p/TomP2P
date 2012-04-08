@@ -135,15 +135,18 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	}
 
 	/**
-	 * Finish the future and set the keys that have been stored. The flag
-	 * isAbsent influences minreached.
+	 * Finish the future and set the keys that have been stored. Success or
+	 * failure is determined if the communication was successful. This means
+	 * that we need to further check if the other peers have denied the storage
+	 * (e.g., due to no storage space, no security permissions). Further
+	 * evaluation can be retrieved with {@link #getAvgStoredKeys()} or if the
+	 * evaluation should be done by the user, use {@link #getRawKeys()}.
 	 * 
 	 * @param rawKeys The keys that have been stored with information on which
 	 *        peer it has been stored
 	 * @param ifAbsent Flag if the user requested putIfAbsent
 	 */
-	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys,
-			boolean ifAbsent)
+	public void setStoredKeys(final Map<PeerAddress, Collection<Number160>> rawKeys)
 	{
 		synchronized (lock)
 		{
@@ -159,6 +162,23 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 					+ " result, but got " + size;
 		}
 		notifyListerenrs();
+	}
+	
+	public double getAvgStoredKeys()
+	{
+		synchronized (lock)
+		{
+			final int size = rawKeys.size();
+			int total = 0;
+			for(Collection<Number160> collection:rawKeys.values())
+			{
+				if(collection != null)
+				{
+					total +=collection.size();
+				}
+			}
+			return total / (double)size;
+		}
 	}
 
 	/**

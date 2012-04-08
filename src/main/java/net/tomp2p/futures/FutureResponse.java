@@ -70,8 +70,8 @@ public class FutureResponse extends BaseFutureImpl
 			if (responseMessage != null)
 			{
 				this.responseMessage = responseMessage;
-				type = (responseMessage.getType() == Message.Type.OK)
-						|| (responseMessage.getType() == Message.Type.PARTIALLY_OK) ? FutureType.OK
+				//if its ok or nok, the communication was successful. Everything else is a failure in communication
+				type = (responseMessage.isOk() || responseMessage.isNotOk()) ? FutureType.OK
 						: FutureType.FAILED;
 				reason = responseMessage.getType().toString();
 			}

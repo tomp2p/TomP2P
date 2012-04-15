@@ -349,9 +349,10 @@ public class DistributedRouting
 					{
 						logger.debug("Peer ("+(resultSize>0?"direct":"none")+") " + remotePeer + " reported " + newNeighbors);
 					}
-					Number160 resultHash = lastResponse.getKey();
+					Number160 keyDigest = lastResponse.getKeyKey1();
+					Number160 contentDigest = lastResponse.getKeyKey2();
 					Map<Number160, Number160> keyMap = lastResponse.getKeyMap();
-					DigestInfo digestBean = new DigestInfo(resultHash, resultSize);
+					DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize);
 					if (evaluateDirectHits(keyMap, remotePeer, directHits, digestBean, maxDirectHits))
 					{
 						// stop immediately

@@ -130,7 +130,7 @@ public class NeighborRPC extends ReplyHandler
 			{
 				DigestInfo digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, contentKeys);
 				responseMessage.setInteger(digestInfo.getSize());
-				responseMessage.setKey(digestInfo.getKeyDigest());
+				responseMessage.setKeyKey(digestInfo.getKeyDigest(), digestInfo.getContentDigest());
 			}
 			else if(message.getType() == Type.REQUEST_3)
 			{

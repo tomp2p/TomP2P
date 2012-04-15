@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -29,6 +31,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -39,6 +42,9 @@ import org.slf4j.LoggerFactory;
 public class StorageRPC extends ReplyHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageRPC.class);
+	//TODO: find good values
+	final static int bitArraySize = 9000;
+	final static int expectedElements = 1000;
 
 	public StorageRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
@@ -307,19 +313,39 @@ public class StorageRPC extends ReplyHandler
 	 */
 	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
-			PublicKey protectedDomains, boolean signMessage, boolean digest, 
-			ChannelCreator channelCreator, boolean forceUDP)
+			final SimpleBloomFilter<Number160> keyBloomFilter, final SimpleBloomFilter<Number160> contentBloomFilter,
+			final PublicKey protectedDomains, final boolean signMessage, final boolean digest, 
+			final boolean returnBloomFilter, final ChannelCreator channelCreator, final boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
-		final Message message = createMessage(remotePeer, Command.GET, digest ? Type.REQUEST_2 : Type.REQUEST_1);
-		if (signMessage) {
+		Type type = Type.REQUEST_1;
+		if(digest)
+		{
+			type = Type.REQUEST_2;
+			if(returnBloomFilter)
+			{
+				//TODO: sent arguments bitArraySize and expectedElement
+				type = Type.REQUEST_3;
+			}
+		}
+		final Message message = createMessage(remotePeer, Command.GET, type);
+		if (signMessage) 
+		{
 			message.setPublicKeyAndSign(getPeerBean().getKeyPair());
 		}
 		message.setKeyKey(locationKey, domainKey);
 		if (contentKeys != null)
+		{
 			message.setKeys(contentKeys);
+		}
+		else if(keyBloomFilter !=null || contentBloomFilter!=null)
+		{
+			message.setTwoBloomFilter(keyBloomFilter, contentBloomFilter);
+		}
 		if (protectedDomains != null)
+		{
 			message.setPublicKey(protectedDomains);
+		}
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)
 		{
@@ -529,12 +555,31 @@ public class StorageRPC extends ReplyHandler
 		final Number160 locationKey = message.getKeyKey1();
 		final Number160 domainKey = message.getKeyKey2();
 		final Collection<Number160> contentKeys = message.getKeys();
+		final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter1();
+		final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter2();
 		
-		final boolean digest = message.getType() == Type.REQUEST_2;
+		final boolean digest = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3;
 		if(digest)
 		{
-			final DigestInfo digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, contentKeys);	
-			responseMessage.setKeys(digestInfo.getKeyDigests());
+			final DigestInfo digestInfo;
+			if(keyBloomFilter !=null || contentBloomFilter!=null)
+			{
+				digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, keyBloomFilter, contentBloomFilter);
+			}
+			else
+			{
+				digestInfo = getPeerBean().getStorage().digest(locationKey, domainKey, contentKeys);
+			}
+			if(message.getType() == Type.REQUEST_2)
+			{
+				responseMessage.setKeyMap(digestInfo.getDigests());
+			}
+			else if(message.getType() == Type.REQUEST_3)
+			{
+				//TODO: make size good enough
+				responseMessage.setTwoBloomFilter(digestInfo.getKeyBloomFilter(bitArraySize, expectedElements), 
+						digestInfo.getContentBloomFilter(bitArraySize, expectedElements));
+			}
 			return responseMessage;
 		}
 		else
@@ -545,12 +590,37 @@ public class StorageRPC extends ReplyHandler
 				result = new HashMap<Number480, Data>();
 				for (Number160 contentKey : contentKeys)
 				{
-					Number480 key = new Number480(locationKey, domainKey, contentKey);
 					Data data = getPeerBean().getStorage().get(locationKey, domainKey, contentKey);
 					if (data != null)
 					{
+						Number480 key = new Number480(locationKey, domainKey, contentKey);
 						result.put(key, data);
 					}
+				}
+			}
+			else if(keyBloomFilter !=null || contentBloomFilter!=null)
+			{
+				result = new HashMap<Number480, Data>();
+				//TODO: idea, make the get with filters and push this to the storage
+				SortedMap<Number480, Data> tmp = getPeerBean().getStorage().get(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
+				Number320 lockKey = new Number320(locationKey, domainKey);
+				Lock lock = getPeerBean().getStorage().getLockNumber320().lock(lockKey);
+				try
+				{
+					for(Map.Entry<Number480, Data> entry:tmp.entrySet())
+					{
+						if(keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey()))
+						{
+							if(contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().getHash()))
+							{
+								result.put(entry.getKey(), entry.getValue());
+							}
+						}
+					}
+				}
+				finally
+				{
+					getPeerBean().getStorage().getLockNumber320().unlock(lockKey, lock);
 				}
 			}
 			else	

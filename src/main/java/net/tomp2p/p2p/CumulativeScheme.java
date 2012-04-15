@@ -22,6 +22,7 @@ import java.util.Set;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -55,6 +56,12 @@ public class CumulativeScheme implements EvaluatingSchemeDHT
 
 	@Override
 	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawKeys)
+	{
+		throw new UnsupportedOperationException("cannot cumulate");
+	}
+
+	@Override
+	public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest)
 	{
 		throw new UnsupportedOperationException("cannot cumulate");
 	}

@@ -19,6 +19,7 @@ import java.util.Map;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -33,4 +34,6 @@ public interface EvaluatingSchemeDHT
 	public Object evaluate3(Map<PeerAddress, Object> rawObjects);
 
 	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawChannels);
+	
+	public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest);
 }

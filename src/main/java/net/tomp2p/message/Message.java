@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.HashData;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 import net.tomp2p.utils.Timings;
@@ -49,20 +50,21 @@ public class Message
 	// 2 x 4 bit -> 8 bit
 	public enum Content
 	{
-		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_COMPARE_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, SET_TRACKER_DATA, RESERVED1, RESERVED2
+		EMPTY, KEY, KEY_KEY, MAP_KEY_DATA, MAP_KEY_COMPARE_DATA, MAP_KEY_KEY, SET_KEYS, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, PUBLIC_KEY, SET_TRACKER_DATA, TWO_BLOOM_FILTER, RESERVED1
 	};
 	// 1 x 4 bit
 	public enum Type
 	{
 		// REQUEST_1 is the normal request
 		// REQUEST_2 for GET returns the extended digest (hashes of all stored data)
+		// REQUEST_3 for GET returns a Bloom filter
 		// REQUEST_2 for PUT/ADD/COMPARE_PUT means protect domain
 		// REQUEST_3 for PUT means put if absent
 		// REQUEST_3 for COMPARE_PUT means partial (partial means that put those data that match compare, ignore others)
 		// REQUEST_4 for PUT means protect domain and put if absent
 		// REQUEST_4 for COMPARE_PUT means partial and protect domain
 		// REQUEST_2 for REMOVE means send back results
-		// REQUEST_2 for RAW_DATA means serilazie object
+		// REQUEST_2 for RAW_DATA means serialize object
 		// *** NEIGHBORS has four different cases
 		// REQUEST_1 for NEIGHBORS means check for put (no digest) for tracker and storage
 		// REQUEST_2 for NEIGHBORS means check for get (with digest) for storage
@@ -112,6 +114,8 @@ public class Message
 	private volatile Content contentType3 = Content.EMPTY;
 	private volatile Content contentType4 = Content.EMPTY;
 	private volatile PublicKey publicKey = null;
+	private volatile SimpleBloomFilter<Number160> bloomFilter1;
+	private volatile SimpleBloomFilter<Number160> bloomFilter2;
 	//
 	private volatile transient long finished = 0;
 	private volatile transient boolean isUDP=true;
@@ -412,20 +416,10 @@ public class Message
 
 	public boolean isOk()
 	{
-		return isOk(type);
-	}
-	
-	public static boolean isOk(Type type)
-	{
 		return type == Type.OK || type == Type.PARTIALLY_OK;
 	}
 
 	public boolean isNotOk()
-	{
-		return isNotOk(type);
-	}
-	
-	public static boolean isNotOk(Type type)
 	{
 		return type == Type.NOT_FOUND || type == Type.DENIED;
 	}
@@ -844,5 +838,33 @@ public class Message
 	public Map<Number160, HashData> getHashDataMap()
 	{
 		return hashDataMap;
+	}
+
+	public Message setTwoBloomFilter(SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2)
+	{
+		if (bloomFilter1 == null && bloomFilter2 == null)
+		{
+			throw new IllegalArgumentException("databloomFilterDataMap cannot add null");
+		}
+		this.bloomFilter1 = bloomFilter1;
+		this.bloomFilter2 = bloomFilter2;
+		setContentType(Content.TWO_BLOOM_FILTER);
+		return this;
+	}
+	
+	void setTwoBloomFilter0(SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2)
+	{
+		this.bloomFilter1 = bloomFilter1;
+		this.bloomFilter2 = bloomFilter2;
+	}
+	
+	public SimpleBloomFilter<Number160> getBloomFilter1()
+	{
+		return bloomFilter1;
+	}
+	
+	public SimpleBloomFilter<Number160> getBloomFilter2()
+	{
+		return bloomFilter2;
 	}
 }

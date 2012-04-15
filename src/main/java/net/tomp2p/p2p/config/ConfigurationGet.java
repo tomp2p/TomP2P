@@ -18,12 +18,17 @@ package net.tomp2p.p2p.config;
 import java.security.PublicKey;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.rpc.SimpleBloomFilter;
 
 
 public class ConfigurationGet extends ConfigurationBaseDHT
 {
 	private EvaluatingSchemeDHT evaluationScheme;
 	private PublicKey publicKey;
+	private SimpleBloomFilter<Number160> keyBloomFilter;
+	private SimpleBloomFilter<Number160> contentBloomFilter;
+	private boolean returnBloomFliter;
 
 	public ConfigurationGet setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme)
 	{
@@ -45,5 +50,38 @@ public class ConfigurationGet extends ConfigurationBaseDHT
 	public PublicKey getPublicKey()
 	{
 		return publicKey;
+	}
+	
+	public ConfigurationGet setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter)
+	{
+		this.keyBloomFilter = keyBloomFilter;
+		return this;
+	}
+	
+	public SimpleBloomFilter<Number160> getKeyBloomFilter()
+	{
+		return keyBloomFilter;
+	}
+	
+	public ConfigurationGet setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter)
+	{
+		this.contentBloomFilter = contentBloomFilter;
+		return this;
+	}
+	
+	public SimpleBloomFilter<Number160> getContentBloomFilter()
+	{
+		return contentBloomFilter;
+	}
+	
+	public ConfigurationGet setReturnBloomFliter(boolean returnBloomFliter)
+	{
+		this.returnBloomFliter = returnBloomFliter;
+		return this;
+	}
+
+	public boolean isReturnBloomFliter()
+	{
+		return returnBloomFliter;
 	}
 }

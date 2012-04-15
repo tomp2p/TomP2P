@@ -28,6 +28,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.HashData;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -316,9 +317,37 @@ public abstract class StorageGeneric implements Storage
 		try
 		{
 			SortedMap<Number480, Data> tmp = get(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
-			for (Number480 key2 : tmp.keySet())
+			for (Map.Entry<Number480, Data> entry : tmp.entrySet())
 			{
-				digestInfo.getKeyDigests().add(key2.getContentKey());
+				digestInfo.put(entry.getKey().getContentKey(), entry.getValue().getHash());
+			}
+		}
+		finally
+		{
+			dataLock320.unlock(lockKey, lock);
+		}
+		return digestInfo;
+	}
+	
+	@Override
+	public DigestInfo digest(Number160 locationKey, Number160 domainKey, SimpleBloomFilter<Number160> keyBloomFilter, 
+			SimpleBloomFilter<Number160> contentBloomFilter)
+	{
+		DigestInfo digestInfo = new DigestInfo();
+		Number320 lockKey = new Number320(locationKey, domainKey);
+		SortedMap<Number480, Data> tmp = get(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
+		Lock lock = dataLock320.lock(lockKey);
+		try
+		{
+			for(Map.Entry<Number480, Data> entry:tmp.entrySet())
+			{
+				if(keyBloomFilter==null || keyBloomFilter.contains(entry.getKey().getContentKey()))
+				{
+					if(contentBloomFilter==null || contentBloomFilter.contains(entry.getValue().getHash()))
+					{
+						digestInfo.put(entry.getKey().getContentKey(), entry.getValue().getHash());
+					}
+				}
 			}
 		}
 		finally
@@ -338,18 +367,19 @@ public abstract class StorageGeneric implements Storage
 		DigestInfo digestInfo = new DigestInfo();
 		for(Number160 contentKey:contentKeys)
 		{
-			Number320 lockKey = new Number320(locationKey, domainKey);
-			Lock lock = dataLock320.lock(lockKey);
+			Number480 lockKey = new Number480(locationKey, domainKey, contentKey);
+			Lock lock = dataLock480.lock(lockKey);
 			try
 			{
 				if (contains(locationKey, domainKey, contentKey))
 				{
-					digestInfo.getKeyDigests().add(contentKey);
+					Data data = get(locationKey, domainKey, contentKey);
+					digestInfo.put(contentKey, data.getHash());
 				}
 			}
 			finally
 			{
-				dataLock320.unlock(lockKey, lock);
+				dataLock480.unlock(lockKey, lock);
 			}
 		}
 		return digestInfo;

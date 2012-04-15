@@ -23,6 +23,7 @@ import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -52,7 +53,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	// Storage of results
 	private Map<PeerAddress, Collection<Number160>> rawKeys;
 	private Map<PeerAddress, Map<Number160, Data>> rawData;
-	private Map<PeerAddress, Collection<Number160>> rawDigest;
+	private Map<PeerAddress, DigestResult> rawDigest;
 	private Map<PeerAddress, Object> rawObjects;
 	private Map<PeerAddress, ChannelBuffer> rawChannels;
 	// Flag indicating if the minimum operations for put have been reached.
@@ -211,7 +212,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	 * @param rawDigest The hashes of the content stored with information
 	 *        from which peer it has been received.
 	 */
-	public void setReceivedDigest(final Map<PeerAddress, Collection<Number160>> rawDigest)
+	public void setReceivedDigest(final Map<PeerAddress, DigestResult> rawDigest)
 	{
 		synchronized (lock)
 		{
@@ -308,7 +309,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	/**
 	 * @return The raw digest information with hashes of the content and the information which peer has been contacted
 	 */
-	public Map<PeerAddress, Collection<Number160>> getRawDigest()
+	public Map<PeerAddress, DigestResult> getRawDigest()
 	{
 		synchronized (lock)
 		{
@@ -407,11 +408,11 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 	 * 
 	 * @return The evaluated digest information that have been received.
 	 */
-	public Collection<Number160> getDigest()
+	public DigestResult getDigest()
 	{
 		synchronized (lock)
 		{
-			return evaluationScheme.evaluate1(rawDigest);
+			return evaluationScheme.evaluate5(rawDigest);
 		}
 	}
 

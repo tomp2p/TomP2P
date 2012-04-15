@@ -15,8 +15,8 @@
  */
 package net.tomp2p.rpc;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import net.tomp2p.peers.Number160;
 
@@ -32,8 +32,10 @@ import net.tomp2p.peers.Number160;
 public class DigestInfo
 {
 	private volatile Number160 keyDigest = null;
+	private volatile Number160 contentDigest = null;
+	
 	private volatile int size = -1;
-	private final List<Number160> keyDigests = new ArrayList<Number160>();
+	private final Map<Number160, Number160> mapDigests = new HashMap<Number160, Number160>();
 
 	/**
 	 * Empty constructor is used to add the hashes to the list.
@@ -56,38 +58,93 @@ public class DigestInfo
 	 * unset.
 	 * 
 	 * @param keyDigest
+	 * @param contentDigest
 	 * @param size
 	 */
-	public DigestInfo(Number160 keyDigest, int size)
+	public DigestInfo(Number160 keyDigest, Number160 contentDigest, int size)
 	{
 		this.keyDigest = keyDigest;
+		this.contentDigest = contentDigest;
 		this.size = size;
 	}
 
 	/**
-	 * @return Returns or calculates the global hash. The global hash will be
+	 * @return Returns or calculates the global key hash. The global key hash will be
 	 *         calculated if the empty constructor is used.
 	 */
 	public Number160 getKeyDigest()
 	{
 		if (keyDigest == null)
 		{
-			Number160 hash = Number160.ZERO;
-			for (Number160 key2 : keyDigests)
-			{
-				hash = hash.xor(key2);
-			}
-			keyDigest = hash;
+			process();
 		}
 		return keyDigest;
+	}
+	
+	/**
+	 * @return Returns or calculates the global content hash. The global content hash will be
+	 *         calculated if the empty constructor is used.
+	 */
+	public Number160 getContentDigest()
+	{
+		if (contentDigest == null)
+		{
+			process();
+		}
+		return contentDigest;
+	}
+	
+	private void process()
+	{
+		Number160 hashKey= Number160.ZERO;
+		Number160 hashContent= Number160.ZERO;
+		for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet())
+		{
+			hashKey = hashKey.xor(entry.getKey());
+			hashContent = hashContent.xor(entry.getValue());
+		}
+		keyDigest = hashKey;
+		contentDigest = hashContent;
+	}
+	
+	public SimpleBloomFilter<Number160> getKeyBloomFilter(int bitArraySize, int expectedElements)
+	{
+		
+		SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(bitArraySize, expectedElements);
+		for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet())
+		{
+			sbf.add(entry.getKey());
+		}
+		return sbf;
+	}
+	
+	public SimpleBloomFilter<Number160> getContentBloomFilter(int bitArraySize, int expectedElements)
+	{
+		SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(bitArraySize, expectedElements);
+		for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet())
+		{
+			sbf.add(entry.getValue());
+		}
+		return sbf;
+	}
+	
+	/**
+	 * Stores a key and the hash of the content for further processing
+	 * 
+	 * @param key The key of the content
+	 * @param content The hash of the content
+	 */
+	public void put(Number160 key, Number160 content)
+	{
+		mapDigests.put(key, content);
 	}
 
 	/**
 	 * @return The list of hashes
 	 */
-	public List<Number160> getKeyDigests()
+	public Map<Number160, Number160> getDigests()
 	{
-		return keyDigests;
+		return mapDigests;
 	}
 
 	/**
@@ -97,7 +154,7 @@ public class DigestInfo
 	{
 		if (size == -1)
 		{
-			size = keyDigests.size();
+			size = mapDigests.size();
 		}
 		return size;
 	}
@@ -114,14 +171,18 @@ public class DigestInfo
 	public boolean equals(Object obj)
 	{
 		if (!(obj instanceof DigestInfo))
+		{
 			return false;
+		}
 		DigestInfo other = (DigestInfo) obj;
-		return getKeyDigest().equals(other.getKeyDigest()) && getSize() == other.getSize();
+		return getKeyDigest().equals(other.getKeyDigest()) 
+				&& getSize() == other.getSize()
+				&& getContentDigest().equals(other.getContentDigest());
 	}
 
 	@Override
 	public int hashCode()
 	{
-		return getKeyDigest().hashCode() ^ getSize();
+		return getKeyDigest().hashCode() ^ getSize() ^ getContentDigest().hashCode();
 	}
 }

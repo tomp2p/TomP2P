@@ -841,14 +841,14 @@ public class TestDHT
 			futureDHT.awaitUninterruptibly();
 			System.err.println(futureDHT.getFailedReason());
 			Assert.assertEquals(true, futureDHT.isSuccess());
-			Assert.assertEquals(3, futureDHT.getDigest().size());
+			Assert.assertEquals(3, futureDHT.getDigest().getKeyDigest().size());
 			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
 			Set<Number160> test2 = new HashSet<Number160>();
 			test2.add(test);
 			futureDHT = peers[67].digest(nr, test2, Configurations.defaultGetConfiguration());
 			futureDHT.awaitUninterruptibly();
 			Assert.assertEquals(true, futureDHT.isSuccess());
-			Assert.assertEquals(1, futureDHT.getDigest().size());
+			Assert.assertEquals(1, futureDHT.getDigest().getKeyDigest().size());
 		}
 		finally
 		{
@@ -1065,15 +1065,15 @@ public class TestDHT
 			ChannelCreator cc = fcc.getChannelCreator();
 			
 			FutureResponse fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
+					new ShortString("test").toNumber160(), tmp, null, null, null, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master3.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
+					new ShortString("test").toNumber160(), tmp, null, null, null, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			fr = master1.getStoreRPC().get(master1.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
+					new ShortString("test").toNumber160(), tmp, null, null, null, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(1, fr.getResponse().getDataMap().size());
 			//
@@ -1083,7 +1083,7 @@ public class TestDHT
 			master2 = new PeerMaker(new Number160(rnd)).setP2PId(1).setConfiguration(c).setPorts(4002).buildAndListen();
 			//
 			fr = master1.getStoreRPC().get(master2.getPeerAddress(), id,
-					new ShortString("test").toNumber160(), tmp, null, false, false, cc, false);
+					new ShortString("test").toNumber160(), tmp, null, null, null, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(0, fr.getResponse().getDataMap().size());
 			//
@@ -1485,7 +1485,7 @@ public class TestDHT
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
 			FutureResponse futureResponse = peers[76].getStoreRPC().get(closest, locationKey,
-					Configurations.DEFAULT_DOMAIN, null, null, false, false, cc, false);
+					Configurations.DEFAULT_DOMAIN, null, null, null, null, false, false, false, cc, false);
 			Utils.addReleaseListenerAll(futureResponse, master.getConnectionBean().getConnectionReservation(), cc);
 			futureResponse.awaitUninterruptibly();
 			Assert.assertEquals(true, futureResponse.isSuccess());
@@ -1558,7 +1558,7 @@ public class TestDHT
 				fcc.awaitUninterruptibly();
 				ChannelCreator cc = fcc.getChannelCreator();
 				FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-						Configurations.DEFAULT_DOMAIN, null, null, false, false, cc, false);
+						Configurations.DEFAULT_DOMAIN, null, null, null, null, false, false, false, cc, false);
 				futureResponse.awaitUninterruptibly();
 				master.getConnectionBean().getConnectionReservation().release(cc);
 				Assert.assertEquals(true, futureResponse.isSuccess());

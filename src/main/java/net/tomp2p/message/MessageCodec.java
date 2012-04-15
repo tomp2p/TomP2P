@@ -38,6 +38,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.HashData;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
@@ -285,9 +286,41 @@ public class MessageCodec
 				message.setHintSign(true);
 				// count 40 for the signature, which comes later in ProtocolChunkedInput
 				return 40 + 2 + size;
+			case TWO_BLOOM_FILTER:
+				SimpleBloomFilter<Number160> bloomFilter1 = message.getBloomFilter1();
+				//TODO: idea, pass the buffer to toByteArray for direct writing
+				final int size1;
+				if(bloomFilter1 !=null)
+				{
+					byte[] raw = bloomFilter1.toByteArray();
+					size1 = raw.length;
+					input.copyToCurrent(size1);
+					input.copyToCurrent(raw);
+				}
+				else
+				{
+					size1 = 0;
+					input.copyToCurrent(size1);
+				}
+				//second bloomfilter
+				SimpleBloomFilter<Number160> bloomFilter2 = message.getBloomFilter2();
+				//TODO: idea, pass the buffer to toByteArray for direct writing
+				final int size2;
+				if(bloomFilter2 != null)
+				{
+					byte[] raw = bloomFilter2.toByteArray();
+					size2 = raw.length;
+					input.copyToCurrent(size2);
+					input.copyToCurrent(raw);
+				}
+				else
+				{
+					size2 = 0;
+					input.copyToCurrent(size2);
+				}
+				return 8 + size1 + size2;
 			case EMPTY:
 			case RESERVED1:
-			case RESERVED2:
 			default:
 				return 0;
 		}
@@ -519,9 +552,34 @@ public class MessageCodec
 					message.setHintSign(true);
 				}
 				return true;
+			case TWO_BLOOM_FILTER:
+				if(buffer.readableBytes() < 4) return false;
+				len = buffer.readInt();
+				SimpleBloomFilter<Number160> sbf1 = null;
+				if(len > 0)
+				{
+					me = new byte[len];
+					if(buffer.readableBytes() < len) return false;
+					//TODO: copy directly from buffer
+					buffer.readBytes(me);
+					sbf1 = new SimpleBloomFilter<Number160>(me);
+				}
+				// second bloom filter
+				if(buffer.readableBytes() < 4) return false;
+				int len2 = buffer.readInt();
+				SimpleBloomFilter<Number160> sbf2 = null;
+				if(len2 > 0)
+				{
+					me = new byte[len2];
+					if(buffer.readableBytes() < len2) return false;
+					//TODO: copy directly from buffer
+					buffer.readBytes(me);
+					sbf2 = new SimpleBloomFilter<Number160>(me);
+				}
+				message.setTwoBloomFilter0(sbf1, sbf2);
+				return true;
 			case EMPTY:
 			case RESERVED1:
-			case RESERVED2:
 			default:
 				return true;
 		}

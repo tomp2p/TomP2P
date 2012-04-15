@@ -19,6 +19,7 @@ import java.util.Collection;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
  * The storage stores Number480, which is separated in 3 Number160. The first
@@ -40,10 +41,31 @@ public interface Digest
 	 * @param locationKey The location key
 	 * @param domainKey The domain key
 	 * @param contentKeys The content keys to look for. Those keys that are not
-	 *        found are ignored. Can be set to null -> gets the information for all content keys
+	 *        found are ignored. Can be set to null -> gets the information for
+	 *        all content keys
 	 * @return A list of all hashes for the content keys. To return a
 	 *         predictable amount (important for routing), the hashes can be
 	 *         xored.
 	 */
 	public abstract DigestInfo digest(Number160 locationKey, Number160 domainKey, Collection<Number160> contentKeys);
+
+	/**
+	 * Calculates a digest over a specific location and domain. It will return
+	 * those content keys that match the Bloom filter. Those keys that are not
+	 * stored are ignored
+	 * 
+	 * @param locationKey The location key
+	 * @param domainKey The domain key
+	 * @param keyBloomFilter The bloomFilter of those key elements we want the digest.
+	 *        Please not that there might be false positive, e.g., a Number160
+	 *        that is included in the digest but not stored on disk/memory.
+	 * @param contentBloomFilter The bloomFilter of those data elements we want the digest.
+	 *        Please not that there might be false positive, e.g., a Number160
+	 *        that is included in the digest but not stored on disk/memory.
+	 * @return A list of all hashes for the content keys. To return a
+	 *         predictable amount (important for routing), the hashes can be
+	 *         xored.
+	 */
+	public abstract DigestInfo digest(Number160 locationKey, Number160 domainKey, SimpleBloomFilter<Number160> keyBloomFilter, 
+			SimpleBloomFilter<Number160> contentBloomFilter);
 }

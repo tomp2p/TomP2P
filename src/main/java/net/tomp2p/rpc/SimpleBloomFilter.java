@@ -310,7 +310,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	}
 
 	/**
-	 * Returns a byte array of at least length 5. The most significant bit in
+	 * Returns a byte array of at least length 8. The most significant bit in
 	 * the result is guaranteed not to be a 1 (since BitSet does not support
 	 * sign extension). The byte-ordering of the result is big-endian which
 	 * means the most significant bit is in element 0. The bit at index 0 of the
@@ -363,5 +363,43 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 		BitSet mergedBitSet = (BitSet) bitSet.clone();
 		mergedBitSet.or(toMerge.bitSet);
 		return new SimpleBloomFilter<E>(bitArraySize, expectedElements, mergedBitSet);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(!(obj instanceof SimpleBloomFilter))
+		{
+			return false;
+		}
+		@SuppressWarnings("unchecked")
+		SimpleBloomFilter<E> o = (SimpleBloomFilter<E>)obj;
+		return o.k == k 
+				&& o.bitArraySize == bitArraySize 
+				&& expectedElements == o.expectedElements 
+				&& bitSet.equals(o.bitSet);
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 7;
+		hash = 31 * hash + bitSet.hashCode();
+		hash = 31 * hash + k;
+		hash = 31 * hash + expectedElements;
+		hash = 31 * hash + bitArraySize;
+		return hash;
+	}
+	
+	@Override
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		int length = bitSet.length();
+		for(int i=0;i<length;i++)
+		{
+			sb.append(bitSet.get(i)?"1":"0");
+		}
+		return sb.toString();
 	}
 }

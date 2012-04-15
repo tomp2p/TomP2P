@@ -1341,10 +1341,9 @@ public class Peer
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
-				config.getPublicKey(),
-				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.getEvaluationScheme(),
-				config.isSignMessage(), false, config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
+				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
+				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
+				false, false, config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
 		return futureDHT;
 	}
 	
@@ -1413,16 +1412,26 @@ public class Peer
 		return digest(locationKey, keyCollection, config, reserve(config));
 	}
 	
+	/**
+	 * Returns a digest of data on other peers. This command does the same as
+	 * get() expect that instead of returning the data, the keys are returned. 
+	 * 
+	 * @param locationKey The location in the DHT
+	 * @param keyCollection Setting this to null results in getting all the contents
+	 * @param config The configuration, which be used to configure the
+	 *        the Bloom filters
+	 * @param channelCreator The future channel creator
+	 * @return The future state of this operation
+	 */
 	public FutureDHT digest(final Number160 locationKey, Set<Number160> keyCollection,
 			final ConfigurationGet config, final FutureChannelCreator channelCreator)
 	{
 		if (locationKey == null)
 			throw new IllegalArgumentException("null in get not allowed in locationKey");
 		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
-				config.getPublicKey(),
-				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.getEvaluationScheme(),
-				config.isSignMessage(), true, config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
+				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
+				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
+				true, config.isReturnBloomFliter(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
 		return futureDHT;
 	}
 

@@ -55,6 +55,7 @@ public class Configurations
 		config.setPublicKey(null);
 		config.setSignMessage(false);
 		config.setAutomaticCleanup(true);
+		config.setReturnBloomFliter(false);
 		return config;
 	}
 

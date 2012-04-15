@@ -32,6 +32,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.utils.ConcurrentCacheMap;
 
 import org.slf4j.Logger;
@@ -440,6 +441,12 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 		{
 			return new DigestInfo(data.size());
 		}
+	}
+	
+	@Override
+	public DigestInfo digest(Number160 locationKey, Number160 domainKey, SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2)
+	{
+		throw new UnsupportedOperationException("Bloom filters and trackers are not supported");
 	}
 
 	@Override

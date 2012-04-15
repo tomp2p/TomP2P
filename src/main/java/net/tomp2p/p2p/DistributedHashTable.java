@@ -38,7 +38,9 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.DirectDataRPC;
+import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
@@ -112,7 +114,8 @@ public class DistributedHashTable
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if(future.isSuccess())
+												//the future tells us that the communication was successful, but we need to check the result if we could store it.
+												if(future.isSuccess() && future.getResponse().isOk())
 												{
 													rawData.put(future.getRequest().getRecipient(), future
 														.getResponse().getKeys());
@@ -195,7 +198,8 @@ public class DistributedHashTable
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if(future.isSuccess())
+												//the future tells us that the communication was successful, but we need to check the result if we could store it.
+												if(future.isSuccess() && future.getResponse().isOk())
 												{
 													FutureData futureData = (FutureData) future;
 													if (raw)
@@ -288,7 +292,8 @@ public class DistributedHashTable
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if(future.isSuccess())
+												//the future tells us that the communication was successful, but we need to check the result if we could store it.
+												if(future.isSuccess() && future.getResponse().isOk())
 												{
 													rawData.put(future.getRequest().getRecipient(), future
 														.getResponse().getKeys());
@@ -317,12 +322,12 @@ public class DistributedHashTable
 	}
 
 	public FutureDHT get(final Number160 locationKey, final Number160 domainKey,
-			final Set<Number160> contentKeys, final PublicKey publicKey,
-			final RoutingConfiguration routingConfiguration,
-			final RequestP2PConfiguration p2pConfiguration,
-			final EvaluatingSchemeDHT evaluationScheme, final boolean signMessage, final boolean digest, 
-			final boolean isAutomaticCleanup, final FutureChannelCreator futureChannelCreator, 
-			final ConnectionReservation connectionReservation)
+			final Set<Number160> contentKeys, final SimpleBloomFilter<Number160> keyBloomFilter,
+			final SimpleBloomFilter<Number160> contentBloomFilter, final PublicKey publicKey, 
+			final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration p2pConfiguration, 
+			final EvaluatingSchemeDHT evaluationScheme,  final boolean signMessage, final boolean digest, 
+			final boolean returnBloomFilter, final boolean isAutomaticCleanup, 
+			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
 				evaluationScheme, null);
@@ -354,13 +359,13 @@ public class DistributedHashTable
 										new Operation()
 										{
 											Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
-											Map<PeerAddress, Collection<Number160>> rawDigest = new HashMap<PeerAddress, Collection<Number160>>();
+											Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
 
 											@Override
 											public FutureResponse create(ChannelCreator channelCreator, PeerAddress address)
 											{
-												return storeRCP.get(address, locationKey, domainKey, contentKeys, publicKey, 
-														signMessage, digest, channelCreator, p2pConfiguration.isForceUPD());
+												return storeRCP.get(address, locationKey, domainKey, contentKeys, keyBloomFilter, contentBloomFilter, publicKey, 
+														signMessage, digest, returnBloomFilter, channelCreator, p2pConfiguration.isForceUPD());
 											}
 
 											@Override
@@ -379,12 +384,25 @@ public class DistributedHashTable
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
+												//the future tells us that the communication was successful, which is ok for digest
 												if(future.isSuccess())
 												{
 													if(digest)
 													{
-														rawDigest.put(future.getRequest().getRecipient(), future
-																.getResponse().getKeys());	
+														SimpleBloomFilter<Number160> sbf1 = future.getResponse().getBloomFilter1();
+														SimpleBloomFilter<Number160> sbf2 = future.getResponse().getBloomFilter1();
+														final DigestResult digest;
+														if(sbf1 == null && sbf2 == null)
+														{
+															Map<Number160,Number160> keyDigest = future.getResponse().getKeyMap();
+															digest = new DigestResult(keyDigest);
+														}
+														else
+														{
+															digest = new DigestResult(sbf1, sbf2);
+														}
+														
+														rawDigest.put(future.getRequest().getRecipient(), digest);	
 													}
 													else
 													{
@@ -470,7 +488,8 @@ public class DistributedHashTable
 											@Override
 											public void interMediateResponse(FutureResponse future)
 											{
-												if(future.isSuccess())
+												//the future tells us that the communication was successful, but we need to check the result if we could store it.
+												if(future.isSuccess() && future.getResponse().isOk())
 												{
 													if (returnResults)
 													{

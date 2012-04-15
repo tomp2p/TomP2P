@@ -201,7 +201,7 @@ public class TestStorage
 					hashDataMap, false, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			//we fail because we provided a false hash
-			Assert.assertEquals(false, fr.isSuccess());
+			Assert.assertEquals(false, fr.isSuccess() && fr.getResponse().isOk());
 			System.err.println(fr.getFailedReason());
 			
 			//set the correct hash
@@ -210,17 +210,16 @@ public class TestStorage
 					hashDataMap, false, false, false, false, cc, false);
 			
 			fr.awaitUninterruptibly();
+			sender.getConnectionBean().getConnectionReservation().release(cc);
 			System.err.println(fr.getFailedReason());
-			Assert.assertEquals(true, fr.isSuccess());
-			
-			Assert.assertEquals(true, fr.isSuccess());
+			Assert.assertEquals(true, fr.isSuccess() && fr.getResponse().isOk());
 			Map<Number480, Data>  result2 = storeRecv.subMap(key.getLocationKey(), key.getDomainKey(), Number160.ZERO, Number160.MAX_VALUE);
 			Assert.assertEquals(result2.size(), 2);
 			Number480 search=new Number480(key, new Number160(88));
 			c = result2.get(search);
 			for (int i = 0; i < me2.length; i++)
 				Assert.assertEquals(me2[i], c.getData()[i + c.getOffset()]);
-			sender.getConnectionBean().getConnectionReservation().release(cc);
+			
 		}
 		catch (Exception e)
 		{

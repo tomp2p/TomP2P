@@ -16,6 +16,7 @@
 package net.tomp2p.futures;
 import java.io.IOException;
 
+import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 import net.tomp2p.utils.Utils;
 
@@ -37,6 +38,7 @@ public class FutureData extends FutureResponse
 	// we get either a buffer or an object
 	private ChannelBuffer buffer;
 	private Object object;
+	private Message responseMessage;
 
 	/**
 	 * Creates the request message for raw data. Note that the response might
@@ -60,29 +62,30 @@ public class FutureData extends FutureResponse
 			{
 				return;
 			}
-			this.buffer = responseMessage.getPayload1();
+			this.responseMessage = responseMessage;
+			buffer = responseMessage.getPayload1();
 			// even though the buffer is null, the type can be OK. In that case
 			// an empty message was sent.
-			this.type = responseMessage.getType() == Message.Type.OK ? FutureType.OK
+			type = (responseMessage.isOk() || responseMessage.isNotOk()) ? FutureType.OK
 					: FutureType.FAILED;
-			this.reason = responseMessage.getType().toString();
+			reason = responseMessage.getType().toString();
 			// check if the user is waiting for an object
-			if (!raw && this.type == FutureType.OK && this.buffer != null)
+			if (!raw && type == FutureType.OK && buffer != null)
 			{
 				try
 				{
-					this.object = Utils.decodeJavaObject(this.buffer.array(), this.buffer
-							.arrayOffset(), this.buffer.capacity());
+					object = Utils.decodeJavaObject(buffer.array(), buffer
+							.arrayOffset(), buffer.capacity());
 				}
 				catch (ClassNotFoundException e)
 				{
-					this.reason = e.toString();
-					this.type = FutureType.FAILED;
+					reason = e.toString();
+					type = FutureType.FAILED;
 				}
 				catch (IOException e)
 				{
-					this.reason = e.toString();
-					this.type = FutureType.FAILED;
+					reason = e.toString();
+					type = FutureType.FAILED;
 				}
 			}
 		}
@@ -113,6 +116,21 @@ public class FutureData extends FutureResponse
 		synchronized (lock)
 		{
 			return object;
+		}
+	}
+	
+	/**
+	 * Returns the response message. This is the same message as in
+	 * response(Message message). If no response where send, then this will
+	 * return null.
+	 * 
+	 * @return The successful response message or null if failed
+	 */
+	public Message getResponse()
+	{
+		synchronized (lock)
+		{
+			return responseMessage;
 		}
 	}
 }

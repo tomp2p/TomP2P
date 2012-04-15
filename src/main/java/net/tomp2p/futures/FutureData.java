@@ -16,7 +16,6 @@
 package net.tomp2p.futures;
 import java.io.IOException;
 
-import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 import net.tomp2p.utils.Utils;
 

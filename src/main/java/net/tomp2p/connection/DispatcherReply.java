@@ -178,23 +178,11 @@ public class DispatcherReply extends SimpleChannelHandler
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 	{
-		if (e.getCause().toString().equals("java.io.IOException: Connection reset by peer"))
+		if(logger.isWarnEnabled() && e.getCause()!=null && !e.getCause().toString().startsWith("java.io.IOException"))
 		{
-			ctx.sendUpstream(e);
-			return;
+			logger.warn("error in dispatcher request" + e.toString());
+			//e.getCause().printStackTrace();
 		}
-		else if (e.getCause().toString().equals("java.io.IOException: Broken pipe"))
-		{
-			ctx.sendUpstream(e);
-			return;
-		}
-		else if (e.getCause().toString().equals("java.io.IOException: An existing connection was forcibly closed by the remote host"))
-		{
-			ctx.sendUpstream(e);
-			return;
-		}
-		logger.warn("error in dispatcher request" + e.toString());
-		e.getCause().printStackTrace();
 		ctx.sendUpstream(e);
 	}
 

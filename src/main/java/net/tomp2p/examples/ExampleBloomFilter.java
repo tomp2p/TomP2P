@@ -44,7 +44,7 @@ public class ExampleBloomFilter
 		for (int i = 0; i < 20; i++)
 		{
 			sbf.add(new Number160(i));
-			System.out.printf("after %2d insert %s\n", i, sbf);
+			System.out.printf("after %2d insert %s\n", (i+1), sbf);
 		}
 	}
 

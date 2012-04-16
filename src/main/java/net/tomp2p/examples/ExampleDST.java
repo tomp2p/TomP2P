@@ -103,7 +103,7 @@ public class ExampleDST
 
 	private static void exampleDST(Peer[] peers) throws IOException, ClassNotFoundException
 	{
-		int n=2, m=8; // 2 items per peer
+		int n=2, m=8; //1024*1024; // 2 items per peer
 		setupStorage(peers, n);
 		int width = m/n;
 		int height = (int)log2(width);
@@ -138,6 +138,7 @@ public class ExampleDST
 			Number160 key = Number160.createHash(inter2.toString());
 			already.add(inter2.toString());
 			//get the interval
+			System.out.println("get for "+inter2);
 			FutureDHT futureDHT = peer.getAll(key);
 			futureDHT.awaitUninterruptibly();
 			dhtCounter.incrementAndGet();
@@ -149,7 +150,6 @@ public class ExampleDST
 				if(!stringBoolean.bool && inter2.size() > bagSize)
 				{
 					//we need to query our children
-					System.out.println("going deepr as "+inter2);
 					getDSTRec(peer, inter2.split(), result, already, dhtCounter, bagSize);
 				}
 			}

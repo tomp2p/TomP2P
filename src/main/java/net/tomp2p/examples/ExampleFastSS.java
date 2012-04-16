@@ -36,7 +36,7 @@ public class ExampleFastSS
 
 	private static void exampleFastSS(Peer[] peers) throws IOException, ClassNotFoundException
 	{
-		String title ="another great song";
+		final String title ="another great song";
 		//key of the file
 		final Number160 key = Number160.createHash(title);
 		//peer 15 has this song
@@ -49,7 +49,7 @@ public class ExampleFastSS
 			{
 				if(request instanceof Number160 && ((Number160)request).equals(key))
 				{
-					return "and here comes the mp3 file";
+					return title+": and here comes the mp3 file";
 				}
 				else
 				{

@@ -39,6 +39,7 @@ public class ExampleBloomFilter
 	{
 		System.out.println("bloomfilter basics:");
 		SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(128, 20);
+		System.out.println("false-prob. rate: "+sbf.expectedFalsePositiveProbability());
 		System.out.println("init: " + sbf);
 		for (int i = 0; i < 20; i++)
 		{

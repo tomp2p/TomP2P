@@ -141,7 +141,11 @@ public class SenderNetty implements Sender
 			if (requestHandler != null)
 			{
 				replyTimeoutHandler = new ReplyTimeoutHandler(timer, idleTCPMillis, remotePeer);
-				futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
+				//only set the reply handler if we do not have a keepalive connection. There we want the timer to be independent of a future
+				if(!channelCreator.isKeepAliveAndReuse())
+				{
+					futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
+				}
 			}
 			else if (message.getType() != Type.REQUEST_FF_1)
 			{
@@ -219,8 +223,8 @@ public class SenderNetty implements Sender
 		ReplyTimeoutHandler replyTimeoutHandler = null;
 		if (requestHandler != null)
 		{
-			replyTimeoutHandler = new ReplyTimeoutHandler(timer, configuration.getIdleUDPMillis(),
-					remotePeer);
+			replyTimeoutHandler = new ReplyTimeoutHandler(timer, configuration.getIdleUDPMillis(), remotePeer);
+			//UDP does not have a keep alive, so always set the timer to be able to reset it.
 			futureResponse.setReplyTimeoutHandler(replyTimeoutHandler);
 		}
 		else if (message.getType() != Type.REQUEST_FF_1 && message.getType() != Type.REQUEST_FF_2)

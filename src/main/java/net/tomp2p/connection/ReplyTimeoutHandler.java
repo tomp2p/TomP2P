@@ -121,7 +121,7 @@ public class ReplyTimeoutHandler extends SimpleChannelHandler implements Cancell
 	{
 		private final ChannelHandlerContext ctx;
 
-		AllIdleTimeoutTask(ChannelHandlerContext ctx)
+		private AllIdleTimeoutTask(ChannelHandlerContext ctx)
 		{
 			this.ctx = ctx;
 		}

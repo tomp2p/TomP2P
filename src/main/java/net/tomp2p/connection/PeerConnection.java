@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.peers.PeerAddress;
 
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
@@ -65,6 +66,12 @@ public class PeerConnection
 			ChannelFuture cf = channelCreator.close(getDestination());
 			if (cf != null)
 			{
+				//since we did not reset the timeout counter if we receive the data, we need to cancel the timeout here
+				Channel channel = cf.getChannel();
+				ReplyTimeoutHandler timoutHandler = (ReplyTimeoutHandler) channel.getPipeline().get("timeout");
+				// abort the old timeouthandler. If we have not dealt with it
+				// (should not happen), then abort and throw exception
+				timoutHandler.cancel();
 				cf.addListener(new ChannelFutureListener()
 				{
 					@Override

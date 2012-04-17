@@ -1,6 +1,8 @@
 package net.tomp2p;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -307,6 +309,20 @@ public class Utils2
 			}
 		}
 		return null;
+	}
+	
+	public static void exec(String cmd) throws Exception
+	{
+		Process p = Runtime.getRuntime().exec(cmd);
+		p.waitFor();
+
+		BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		String line = null;
+		while ((line = br.readLine()) != null)
+		{
+			System.out.println(line);
+		}
+		br.close();
 	}
 
 }

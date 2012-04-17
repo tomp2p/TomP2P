@@ -267,10 +267,7 @@ public class ChannelCreator
 			{
 				newConnection = false;
 				Channel channel = channelFuture.getChannel();
-				ReplyTimeoutHandler oldTimoutHandler = (ReplyTimeoutHandler) channel.getPipeline().replace("timeout", "timeout", timeoutHandler);
-				// abort the old timeouthandler. If we have not dealt with it
-				// (should not happen), then abort and throw exception
-				oldTimoutHandler.cancel();
+				// we can keep our old timeouthandler since for keep-alive connections, this is still valid.
 				// we need a new RequestHandlerTCP in order for the new message
 				channel.getPipeline().replace("request", "request", requestHandler);
 				futureChannelCreation.setChannel(channel);
@@ -588,5 +585,13 @@ public class ChannelCreator
 	public long getCreatorThread()
 	{
 		return creatorThread;
+	}
+	
+	/**
+	 * @return True if we created a keep-alive connection with this creator 
+	 */
+	public boolean isKeepAliveAndReuse()
+	{
+		return keepAliveAndReuse;
 	}
 }

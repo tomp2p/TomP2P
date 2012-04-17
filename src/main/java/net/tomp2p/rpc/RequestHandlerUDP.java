@@ -244,6 +244,8 @@ public class RequestHandlerUDP<K extends FutureResponse> extends SimpleChannelHa
 	{
 		if(!reported.compareAndSet(false, true))
 		{
+			//close channel in case of an exception
+			channel.close();
 			return;
 		}
 		channel.close().addListener(new ChannelFutureListener()

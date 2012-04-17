@@ -117,6 +117,22 @@ public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHa
 		}
 		if (futureResponse.isCompleted())
 		{
+			if (e.getCause() instanceof PeerException)
+			{
+				PeerException pe = (PeerException) e.getCause();
+				//if we have a timeout, close connection. 
+				if(pe.getAbortCause() == PeerException.AbortCause.TIMEOUT)
+				{
+					// close connection because this may be a timeout from a
+					// keep-alive connection. After a request, the
+					// requesthandler stays in the pipeline of a connection
+					// until a connection is requested for sending. In that
+					// time, we most likely set the future, but we still can get
+					// a timeout. So, the future is completed, but we should
+					// close the connection.
+					ctx.getChannel().close();
+				}
+			}
 			logger.warn("Got exception, but ignored " + "(future response completed): "
 					+ futureResponse.getFailedReason());
 			if (logger.isDebugEnabled())
@@ -254,6 +270,8 @@ public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHa
 	{
 		if (!reported.compareAndSet(false, true))
 		{
+			//close channel in case of an exception
+			channel.close();
 			return;
 		}
 		// this needs to be the last listener added

@@ -522,7 +522,7 @@ public class ChannelCreator
 	 */
 	public ChannelFuture close(PeerAddress destination)
 	{
-		ChannelFuture channelFuture = cacheMap.get(destination);
+		ChannelFuture channelFuture = cacheMap.get(destination.createSocketTCP());
 		if (channelFuture != null)
 		{
 			return channelFuture.getChannel().close();

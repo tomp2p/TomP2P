@@ -150,7 +150,7 @@ public class TestDirect
 			System.out.println("done");
 			Thread.sleep(4000);
 			System.out.println("#TCP=" +  sender.getPeerBean().getStatistics().getTCPChannelCount()+"/"+sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
-			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
+			Assert.assertEquals(0.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
 			Assert.assertEquals(2.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(),0.0d);
 		}
 		finally

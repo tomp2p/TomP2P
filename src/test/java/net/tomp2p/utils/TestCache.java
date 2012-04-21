@@ -37,11 +37,11 @@ public class TestCache
 	@Test
 	public void testCache3()
 	{
-		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(3);
 		test.put("hallo0", "test0");
-		Timings.sleepUninterruptibly(500);
+		Timings.sleepUninterruptibly(1500);
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		for(int i=1;i<500;i++)
+		for(int i=1;i<800;i++)
 		{
 			final int ii=i;
 			new Thread(new Runnable()
@@ -65,8 +65,8 @@ public class TestCache
 				}
 			}).start();
 		}
-		Timings.sleepUninterruptibly(500);
-		Assert.assertEquals(500-1, test.size());
+		Timings.sleepUninterruptibly(1500);
+		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}
 	

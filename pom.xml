@@ -85,16 +85,6 @@
       <artifactId>org.osgi.core</artifactId>
       <version>1.4.0</version>
       <optional>true</optional>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>javax.servlet</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>org.osgi.foundation</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     
     <!-- For testing -->
@@ -179,7 +169,7 @@
       </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
-        <version>2.1.0</version>
+        <version>2.3.7</version>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
         <configuration>
@@ -197,18 +187,6 @@
             <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
             <Include-Resource>META-INF/license/ = ${basedir}/LICENSE.txt</Include-Resource>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemProperties>
-            <property>
-              <name>java.util.logging.config.file</name>
-              <value>${basedir}/target/test-classes/tomp2plog.properties</value>
-            </property>
-          </systemProperties>
         </configuration>
       </plugin>
     </plugins>

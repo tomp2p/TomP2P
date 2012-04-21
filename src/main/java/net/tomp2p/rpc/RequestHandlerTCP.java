@@ -133,11 +133,14 @@ public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHa
 					ctx.getChannel().close();
 				}
 			}
-			logger.warn("Got exception, but ignored " + "(future response completed): "
-					+ futureResponse.getFailedReason());
-			if (logger.isDebugEnabled())
+			else
 			{
-				e.getCause().printStackTrace();
+				logger.warn("Got exception, but ignored " + "(future response completed): "
+						+ futureResponse.getFailedReason());
+				if (logger.isDebugEnabled())
+				{
+					e.getCause().printStackTrace();
+				}
 			}
 		}
 		else

@@ -203,6 +203,7 @@ public class ExampleDST
 	
 	private static class StringBoolean implements Serializable
 	{
+		private static final long serialVersionUID = -3947493823227587011L;
 		final private Boolean bool;
 		final private String string;
 		private StringBoolean(boolean bool, String string)

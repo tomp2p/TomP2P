@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+ 
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <Pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</Pattern>
+    </layout>
+  </appender>
+  
+  <!--  <logger name="net" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.connection.ConnectionHandler" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.ConnectionReservation" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.DispatcherReply" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.IdleStateHandler" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.PerformanceFilter" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.ReplyTimeoutHandler" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.Scheduler" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.Sender" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.TCPChannelCache" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.mapreduce" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
+
+  <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.peers.PeerMapKadImpl" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.replication.DefaultStorageReplication" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.replication.DefaultTrackerReplication" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.replication.TrackerStorageReplication" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.replication.TrackerStorageReplication" level="TRACE"/> -->
+ 
+  <!--  <logger name="net.tomp2p.rpc.RequestHandlerTCP" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.RequestHandlerUDP" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.TrackerRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.NeighborRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.PeerExchangeRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.StorageRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.HandshakeRPC" level="TRACE"/> -->
+  
+  <!--  <logger name="net.tomp2p.storage.TrackerStorage" level="TRACE"/> --> 
+  
+  <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
+ 
+  <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
+       See http://logback.qos.ch/manual/architecture.html for more information-->
+  <root level="OFF">
+    <appender-ref ref="STDOUT" />
+  </root>
+</configuration>

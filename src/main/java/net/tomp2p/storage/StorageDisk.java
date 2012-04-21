@@ -45,7 +45,7 @@ public class StorageDisk extends StorageGeneric
 	
 	public StorageDisk(String fileName)
 	{
-		db = new DBMaker(fileName+File.separator+"tomp2p").build();
+		db = DBMaker.openFile(fileName+File.separator+"tomp2p").make();
 		dataMap = db.<Number480, Data>createTreeMap("dataMap");
 		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
 		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");

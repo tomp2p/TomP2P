@@ -36,9 +36,8 @@ mvn deploy:deploy-file \
 Netty Patches
 =============
 
-These are the patches against 3.3.0.
-
-In src/main/java/org/jboss/netty/channel/socket/nio/NioWorker.java:
+These are the patches against 3.3.0 - In src/main/java/org/jboss/netty/channel/socket/nio/NioWorker.java:
+These are the patches against 3.4.1 - In src/main/java/org/jboss/netty/channel/socket/nio/AbstractNioWorker.java:
  
 if (selector.keys().isEmpty()) { ->
 if (selector.keys().isEmpty() || thread.isInterrupted()) {

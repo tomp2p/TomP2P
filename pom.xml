@@ -60,12 +60,12 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.4.1.Final</version>
+      <version>3.4.1.Patched</version>
     </dependency>
     <dependency>
-      <groupId>JDBM</groupId>
-      <artifactId>JDBM</artifactId>
-      <version>3.0-20120323.220008-1</version>
+      <groupId>jdbm</groupId>
+      <artifactId>jdbm</artifactId>
+      <version>3.0-20120421.203941-1</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

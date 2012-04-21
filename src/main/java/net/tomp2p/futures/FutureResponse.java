@@ -28,6 +28,7 @@ public class FutureResponse extends BaseFutureImpl
 {
 	// the message that was requested
 	final private Message requestMessage;
+	final private FutureSuccessEvaluator futureSuccessEvaluator;
 	// the reply to this request
 	private Message responseMessage;
 
@@ -39,7 +40,20 @@ public class FutureResponse extends BaseFutureImpl
 	 */
 	public FutureResponse(final Message requestMessage)
 	{
+		this(requestMessage, new FutureSuccessEvaluatorCommunication());
+	}
+	
+	/**
+	 * Create the future and set the request message
+	 * 
+	 * @param requestMessage The request message that will be send over the
+	 *        wire.
+	 * @param futureSuccessEvaluator Evaluates if the future was a success or failure
+	 */
+	public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator)
+	{
 		this.requestMessage = requestMessage;
+		this.futureSuccessEvaluator = futureSuccessEvaluator;
 	}
 
 	/**
@@ -71,8 +85,7 @@ public class FutureResponse extends BaseFutureImpl
 			{
 				this.responseMessage = responseMessage;
 				//if its ok or nok, the communication was successful. Everything else is a failure in communication
-				type = (responseMessage.isOk() || responseMessage.isNotOk()) ? FutureType.OK
-						: FutureType.FAILED;
+				type = futureSuccessEvaluator.evaluate(requestMessage, responseMessage);
 				reason = responseMessage.getType().toString();
 			}
 			else

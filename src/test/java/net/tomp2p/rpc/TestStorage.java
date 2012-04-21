@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.FutureSuccessEvaluatorCommunication;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -198,7 +199,7 @@ public class TestStorage
 			hashDataMap.put(new Number160(88), new HashData(new Number160(33), new Data(me2)));
 			
 			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
-					hashDataMap, false, false, false, false, cc, false);
+					hashDataMap, new FutureSuccessEvaluatorCommunication(), false, false, false, false, cc, false);
 			fr.awaitUninterruptibly();
 			//we fail because we provided a false hash
 			Assert.assertEquals(false, fr.isSuccess() && fr.getResponse().isOk());
@@ -207,7 +208,7 @@ public class TestStorage
 			//set the correct hash
 			hashDataMap.put(new Number160(88), new HashData(d2.getHash(), new Data(me2)));
 			fr = smmSender.compareAndPut(recv1.getPeerAddress(), new Number160(33), new ShortString("test").toNumber160(), 
-					hashDataMap, false, false, false, false, cc, false);
+					hashDataMap, new FutureSuccessEvaluatorCommunication(), false, false, false, false, cc, false);
 			
 			fr.awaitUninterruptibly();
 			sender.getConnectionBean().getConnectionReservation().release(cc);

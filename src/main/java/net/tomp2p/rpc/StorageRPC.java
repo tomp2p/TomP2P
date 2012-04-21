@@ -27,6 +27,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureSuccessEvaluator;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
@@ -145,6 +146,7 @@ public class StorageRPC extends ReplyHandler
 	 * @param locationKey The location key
 	 * @param domainKey The domain key
 	 * @param hashDataMap The map with the data and the hashes to compare to
+	 * @param futureSuccessEvaluator The evaluator that determines if a future was a success.
 	 * @param protectDomain Protect the domain
 	 * @param protectEntry Protect the entry
 	 * @param signMessage Set to true if the message should be signed. For
@@ -157,9 +159,9 @@ public class StorageRPC extends ReplyHandler
 	 * @return FutureResponse that stores which content keys have been stored.
 	 */
 	public FutureResponse compareAndPut(final PeerAddress remotePeer, final Number160 locationKey,
-			final Number160 domainKey, final Map<Number160, HashData> hashDataMap,
-			boolean protectDomain, boolean protectEntry, boolean signMessage, boolean partialPut,
-			ChannelCreator channelCreator, boolean forceUDP)
+			final Number160 domainKey, final Map<Number160, HashData> hashDataMap, 
+			final FutureSuccessEvaluator futureSuccessEvaluator, boolean protectDomain, boolean protectEntry, 
+			boolean signMessage, boolean partialPut, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey, hashDataMap);
 		final Message message;
@@ -179,7 +181,7 @@ public class StorageRPC extends ReplyHandler
 		}
 		message.setKeyKey(locationKey, domainKey);
 		message.setHashDataMap(hashDataMap);
-		FutureResponse futureResponse = new FutureResponse(message);
+		FutureResponse futureResponse = new FutureResponse(message, futureSuccessEvaluator);
 		if(!forceUDP)
 		{
 			final RequestHandlerTCP<FutureResponse> request = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(),

@@ -118,6 +118,51 @@ public class TestDirect
 	}
 	
 	@Test
+	public void testDirect2() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setEnableMaintenance(false).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setEnableMaintenance(false).buildAndListen();
+			recv1.setObjectDataReply(new ObjectDataReply() {
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					return "yes";
+				}
+			});
+			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 5*1000);
+			FutureData fd1=sender.send(peerConnection, "test");
+			fd1.awaitUninterruptibly();
+
+			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
+			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(),0.0d);
+			System.out.println("#TCP=" +  sender.getPeerBean().getStatistics().getTCPChannelCount()+"/"+sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Timings.sleep(7000);
+			Assert.assertEquals(0.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
+			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(),0.0d);
+			System.out.println("#TCP=" +  sender.getPeerBean().getStatistics().getTCPChannelCount()+"/"+sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			FutureData fd2=sender.send(peerConnection, "test");
+			fd2.awaitUninterruptibly();
+			peerConnection.close();
+			System.out.println("done");
+			Thread.sleep(4000);
+			System.out.println("#TCP=" +  sender.getPeerBean().getStatistics().getTCPChannelCount()+"/"+sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
+			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
+			Assert.assertEquals(2.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(),0.0d);
+		}
+		finally
+		{
+			if (sender != null)
+				sender.shutdown();
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
+	@Test
 	public void testDirectReconnectParallel() throws Exception
 	{
 		Peer sender = null;

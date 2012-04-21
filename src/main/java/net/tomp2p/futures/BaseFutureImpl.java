@@ -194,6 +194,13 @@ public abstract class BaseFutureImpl implements BaseFuture
 	{
 		setFailed(origin.getFailedReason());
 	}
+	
+	@Override
+	public void setFailed(final String reason, final BaseFuture origin)
+	{
+		StringBuilder sb = new StringBuilder(reason);
+		setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
+	}
 
 	@Override
 	public void setFailed(final String reason)

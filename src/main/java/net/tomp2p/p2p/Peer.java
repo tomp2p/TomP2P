@@ -676,7 +676,7 @@ public class Peer
 					FutureResponse futureResponse = future.getLastSuceessFuture();
 					if(futureResponse==null)
 					{
-						result.setFailed("no futures found");
+						result.setFailed("no futures found", future);
 						return;
 					}
 					final PeerAddress sender = futureResponse.getResponse().getSender();
@@ -687,7 +687,7 @@ public class Peer
 				}
 				else
 				{
-					result.setFailed("could not reach anyone with the broadcast (1)");
+					result.setFailed("could not reach anyone with the broadcast", future);
 				}
 			}
 		});
@@ -832,7 +832,7 @@ public class Peer
 				}
 				else
 				{
-					result.setFailed("could not reach anyone with the broadcast (2)");
+					result.setFailed("could not reach anyone with bootstrap");
 				}
 			}
 		});

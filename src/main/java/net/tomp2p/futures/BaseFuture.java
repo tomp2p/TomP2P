@@ -100,6 +100,12 @@ public interface BaseFuture extends Cancellable
 	 * notify listeners and set the reason based on the origin BaseFuture.
 	 */
 	public abstract void setFailed(BaseFuture origin);
+	
+	/**
+	 * Sets the failed flat to true and the completed flag to true. This will
+	 * notify listeners and append the reason based on the origin BaseFuture.
+	 */
+	public abstract void setFailed(String reason, BaseFuture origin);
 
 	/**
 	 * The default failed reason is Unknown.

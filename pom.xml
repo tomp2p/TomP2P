@@ -58,9 +58,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.netty</groupId>
+      <groupId>org.jboss.netty</groupId>
       <artifactId>netty</artifactId>
-      <version>3.4.1.Patched</version>
+      <version>3.3.0.Patched-1</version>
     </dependency>
     <dependency>
       <groupId>jdbm</groupId>

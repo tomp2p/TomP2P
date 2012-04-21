@@ -41,7 +41,7 @@ public class TestCache
 		test.put("hallo0", "test0");
 		Timings.sleepUninterruptibly(500);
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		for(int i=1;i<800;i++)
+		for(int i=1;i<500;i++)
 		{
 			final int ii=i;
 			new Thread(new Runnable()
@@ -50,7 +50,6 @@ public class TestCache
 				public void run()
 				{
 					test.put("hallo"+ii, "test"+ii);
-					
 					new Thread(new Runnable()
 					{
 						@Override
@@ -61,15 +60,13 @@ public class TestCache
 							{
 								failed.set(true);
 							}
-							
 						}
 					}).start();
-					
 				}
 			}).start();
 		}
 		Timings.sleepUninterruptibly(500);
-		Assert.assertEquals(800-1, test.size());
+		Assert.assertEquals(500-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}
 	

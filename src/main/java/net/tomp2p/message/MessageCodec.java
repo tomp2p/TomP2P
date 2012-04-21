@@ -138,7 +138,7 @@ public class MessageCodec
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	private static int encodePayloadType(final Content content, final ProtocolChunkedInput input,
+	private static int encodePayloadType(final Content content, final ProtocolChunked input,
 			final Message message)
 	{
 		final int size;
@@ -163,7 +163,7 @@ public class MessageCodec
 					{
 						input.copyToCurrent(entry.getKey().getContentKey().toByteArray());
 						count += 20;
-						count += encodeData(input, message, entry.getValue());
+						count += encodeData(input, entry.getValue());
 					}
 					return count;
 				}
@@ -174,7 +174,7 @@ public class MessageCodec
 					{
 						input.copyToCurrent(entry.getKey().toByteArray());
 						count += 20;
-						count += encodeData(input, message, entry.getValue());
+						count += encodeData(input, entry.getValue());
 					}
 					return count;
 				}
@@ -187,7 +187,7 @@ public class MessageCodec
 					count += 20;
 					input.copyToCurrent(entry.getValue().getHash().toByteArray());
 					count += 20;
-					count += encodeData(input, message, entry.getValue().getData());
+					count += encodeData(input, entry.getValue().getData());
 				}
 				return count;
 			case MAP_KEY_KEY:
@@ -326,7 +326,7 @@ public class MessageCodec
 		}
 	}
 
-	public static int encodeData(ProtocolChunkedInput input, final Message message, Data data)
+	public static int encodeData(ProtocolChunked input, Data data)
 	{
 		int count = 4 + 4;
 		// encode entry protection in millis as the sign bit. Thus the max value

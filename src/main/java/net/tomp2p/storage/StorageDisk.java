@@ -1,6 +1,14 @@
 package net.tomp2p.storage;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -19,13 +27,21 @@ import java.util.concurrent.locks.Lock;
 
 import net.kotek.jdbm.DB;
 import net.kotek.jdbm.DBMaker;
+import net.tomp2p.message.DataInput;
+import net.tomp2p.message.MessageCodec;
+import net.tomp2p.message.ProtocolChunked;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class StorageDisk extends StorageGeneric
 {
+	final private static Logger logger = LoggerFactory.getLogger(StorageDisk.class);
 	final private DB db;
 	// Core
 	final private NavigableMap<Number480, Data> dataMap;
@@ -43,9 +59,12 @@ public class StorageDisk extends StorageGeneric
 	final private KeyLock<Number160> responsibilityLock = new KeyLock<Number160>();
 	final private KeyLock<Long> timeoutLock = new KeyLock<Long>();
 	
+	final private String dirName;
+	
 	public StorageDisk(String fileName)
 	{
-		db = DBMaker.openFile(fileName+File.separator+"tomp2p").make();
+		dirName = fileName+File.separator+"tomp2p";
+		db = DBMaker.openFile(dirName).make();
 		dataMap = db.<Number480, Data>createTreeMap("dataMap");
 		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
 		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");
@@ -66,6 +85,40 @@ public class StorageDisk extends StorageGeneric
 		dataMap.put(new Number480(locationKey, domainKey, contentKey), value);
 		db.commit();
 		return true;
+	}
+	
+	//TODO: store big data directly
+	private void store(Number480 key, Data value) throws IOException
+	{
+		File dir = new File(dirName, key.toString());
+		OutputStream output = null;
+		try
+		{
+			output = new BufferedOutputStream(new FileOutputStream(dir));
+			MyProtocolInput myProtocolInput = new MyProtocolInput(output);
+			MessageCodec.encodeData(myProtocolInput, value);
+		}
+		finally
+		{
+			output.close();
+		}
+	}
+	
+	//TODO: store big data directly
+	private Data read(Number480 key) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IOException
+	{
+		File dir = new File(dirName, key.toString());
+		InputStream input = null;
+		try
+		{
+			input = new BufferedInputStream(new FileInputStream(dir));
+			MyDataInput myDataInput = new MyDataInput(dir, input);
+			return MessageCodec.decodeData(myDataInput, null);
+		}
+		finally
+		{
+			input.close();
+		}
 	}
 	
 	@Override
@@ -350,5 +403,171 @@ public class StorageDisk extends StorageGeneric
 				responsibilityMapRev.remove(peerId);
 			}
 		}		
+	}
+	
+	private static class MyDataInput implements DataInput
+	{
+		final private InputStream input;
+		private int counter;
+		public MyDataInput(File file, InputStream input)
+		{
+			this.input = input;
+			counter = (int)file.length();
+		}
+
+		@Override
+		public int readInt()
+		{
+			try
+			{
+				counter -=4;
+				return input.read();
+			}
+			catch (IOException e)
+			{
+				logger.error(e.toString());
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public void readBytes(byte[] buf)
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int readUnsignedShort()
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int readUnsignedByte()
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public int getUnsignedByte()
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public byte[] array()
+		{
+			try
+			{
+				byte[] all = new byte[counter];
+				input.read(all);
+				counter = 0;
+				return all;
+			}
+			catch (IOException e)
+			{
+				logger.error(e.toString());
+				throw new RuntimeException(e);
+			}
+		}
+
+		@Override
+		public int arrayOffset()
+		{
+			return 0;
+		}
+
+		@Override
+		public int readerIndex()
+		{
+			return 0;
+		}
+
+		@Override
+		public void skipBytes(int size)
+		{
+			counter -= size;
+		}
+
+		@Override
+		public int readableBytes()
+		{
+			return counter;
+		}
+	}
+	
+	private static class MyProtocolInput implements ProtocolChunked
+	{
+		private final OutputStream output;
+		public MyProtocolInput(OutputStream output)
+		{
+			this.output = output;
+		}
+
+		@Override
+		public void copyToCurrent(byte[] byteArray)
+		{
+			try
+			{
+				output.write(byteArray);
+			}
+			catch (IOException e)
+			{
+				logger.error(e.toString());
+			}
+		}
+
+		@Override
+		public void copyToCurrent(int size)
+		{
+			try
+			{
+				output.write(size);
+			}
+			catch (IOException e)
+			{
+				logger.error(e.toString());
+			}	
+		}
+		
+		@Override
+		public void copyToCurrent(byte[] array, int offset, int length)
+		{
+			try
+			{
+				output.write(array, offset, length);
+			}
+			catch (IOException e)
+			{
+				logger.error(e.toString());
+			}
+		}		
+
+		@Override
+		public void copyToCurrent(byte size)
+		{
+			throw new UnsupportedOperationException();
+		}
+
+		@Override
+		public void copyToCurrent(long long1)
+		{
+			throw new UnsupportedOperationException();
+			
+		}
+
+		@Override
+		public void copyToCurrent(short short1)
+		{
+			throw new UnsupportedOperationException();
+			
+		}
+
+		@Override
+		public void copyToCurrent(ChannelBuffer slice)
+		{
+			throw new UnsupportedOperationException();
+			
+		}
 	}
 }

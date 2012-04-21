@@ -28,7 +28,7 @@ import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.stream.ChunkedInput;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 
-public class ProtocolChunkedInput implements ChunkedInput
+public class ProtocolChunkedInput implements ChunkedInput, ProtocolChunked
 {
 	private final ChannelHandlerContext ctx;
 	private final Queue<ChannelBuffer> queue = new ConcurrentLinkedQueue<ChannelBuffer>();
@@ -111,6 +111,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		chunkedWriteHandler.resumeTransfer();
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(byte[])
+	 */
+	@Override
 	public void copyToCurrent(byte[] byteArray)
 	{
 		if (done)
@@ -118,6 +122,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		channelBuffer.writeBytes(byteArray);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(int)
+	 */
+	@Override
 	public void copyToCurrent(int size)
 	{
 		if (done)
@@ -125,6 +133,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		channelBuffer.writeInt(size);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(byte)
+	 */
+	@Override
 	public void copyToCurrent(byte size)
 	{
 		if (done)
@@ -132,6 +144,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		channelBuffer.writeByte(size);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(long)
+	 */
+	@Override
 	public void copyToCurrent(long long1)
 	{
 		if (done)
@@ -139,6 +155,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		channelBuffer.writeLong(long1);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(short)
+	 */
+	@Override
 	public void copyToCurrent(short short1)
 	{
 		if (done)
@@ -146,6 +166,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		channelBuffer.writeShort(short1);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(org.jboss.netty.buffer.ChannelBuffer)
+	 */
+	@Override
 	public void copyToCurrent(ChannelBuffer slice)
 	{
 		if (done)
@@ -156,6 +180,10 @@ public class ProtocolChunkedInput implements ChunkedInput
 		queue.add(slice);
 	}
 
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.ProtocolChunked#copyToCurrent(byte[], int, int)
+	 */
+	@Override
 	public void copyToCurrent(byte[] array, int offset, int length)
 	{
 		if (done)

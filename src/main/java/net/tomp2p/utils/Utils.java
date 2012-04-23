@@ -292,12 +292,18 @@ public class Utils
 		{
 			K item = iterator.next();
 			int size = collections2.length;
+			boolean found = false; 
 			for(int i=0;i<size;i++)
 			{
-				if (!collections2[i].contains(item))
+				if(collections2[i].contains(item))
 				{
-					result.add(item);
-				}
+					found = true;
+					break; 
+				} 
+			}
+			if (!found)
+			{
+				result.add(item);
 			}
 		}
 		return result;

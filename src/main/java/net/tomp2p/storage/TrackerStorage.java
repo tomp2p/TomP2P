@@ -284,7 +284,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 			Number320 key, ConcurrentMap<Number320, Map<Number160, TrackerData>> trackerData,
 			ConcurrentMap<Number160, Collection<Number320>> reverseTrackerData, int factor)
 	{
-		Map<Number160, TrackerData> data = new ConcurrentCacheMap<Number160, TrackerData>(60, 1000, true);
+		Map<Number160, TrackerData> data = new ConcurrentCacheMap<Number160, TrackerData>(trackerTimoutSeconds, 1000, true);
 		Map<Number160, TrackerData> data2 = trackerData.putIfAbsent(key, data);
 		data = data2 == null ? data : data2;
 		

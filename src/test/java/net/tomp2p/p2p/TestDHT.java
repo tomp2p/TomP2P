@@ -256,7 +256,7 @@ public class TestDHT
 		try
 		{
 			// setup
-			Peer[] peers = Utils2.createNodes(100, rnd, 4001);
+			Peer[] peers = Utils2.createNonMaintenanceNodes(100, rnd, 4001);
 			master = peers[0];
 			// do testing
 			List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();

@@ -7,8 +7,12 @@ import java.util.Map;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class Statistics
 {
+	final private static Logger logger = LoggerFactory.getLogger(Statistics.class);
 	private final static double MAX = Math.pow(2, Number160.BITS);
 	private double estimatedNumberOfPeers = 1;
 	private double avgGap = MAX / 2;
@@ -111,6 +115,10 @@ public class Statistics
 		synchronized (this)
 		{
 			tcpCount--;
+			if(logger.isDebugEnabled())
+			{
+				logger.debug("TCP channel count is " + tcpCount);
+			}
 		}
 	}
 
@@ -119,6 +127,10 @@ public class Statistics
 		synchronized (this)
 		{
 			udpCount--;
+			if(logger.isDebugEnabled())
+			{
+				logger.debug("UDP channel count is " + udpCount);
+			}
 		}
 	}
 

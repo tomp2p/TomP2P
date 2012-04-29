@@ -161,6 +161,22 @@ public class Utils2
 		System.err.println("real peers created.");
 		return peers;
 	}
+	
+	public static Peer[] createNonMaintenanceNodes(int nrOfPeers, Random rnd, int port) throws IOException
+	{
+		if (nrOfPeers < 1) 
+		{
+			throw new IllegalArgumentException("Cannot create less than 1 peer");
+		}
+		Peer[] peers = new Peer[nrOfPeers];
+		peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(port).buildAndListen();
+		for (int i = 1; i < nrOfPeers; i++) 
+		{
+			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setMasterPeer(peers[0]).buildAndListen();
+		}
+		System.err.println("non-maintenance peers created.");
+		return peers;
+	}
 
 	/**
 	 * Perfect routing, where each neighbor has contacted each other. This means

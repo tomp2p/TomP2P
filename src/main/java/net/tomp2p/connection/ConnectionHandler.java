@@ -80,6 +80,7 @@ public class ConnectionHandler
 	}
 
 	final private static Logger logger = LoggerFactory.getLogger(ConnectionHandler.class);
+	final private static PerformanceFilter PERFORMANCE_FILTER = new PerformanceFilter();
 	// Stores the node information about this node
 	final private ConnectionBean connectionBean;
 	final private PeerBean peerBean;
@@ -265,6 +266,7 @@ public class ConnectionHandler
 			public ChannelPipeline getPipeline() throws Exception
 			{
 				ChannelPipeline pipe = Channels.pipeline();
+				pipe.addLast("performance", PERFORMANCE_FILTER);
 				pipe.addLast("encoder", new TomP2PEncoderUDP());
 				pipe.addLast("decoder", new TomP2PDecoderUDP());
 				if (messageLoggerFilter != null)
@@ -309,6 +311,7 @@ public class ConnectionHandler
 				// connectionBean.getConfiguration().getIdleTCPMillis(),
 				// getPeerBean().getServerPeerAddress());
 				// pipe.addLast("timeout", timeoutHandler);
+				pipe.addLast("performance", PERFORMANCE_FILTER);
 				pipe.addLast("streamer", new ChunkedWriteHandler());
 				pipe.addLast("encoder", new TomP2PEncoderTCP());
 				pipe.addLast("decoder", new TomP2PDecoderTCP());

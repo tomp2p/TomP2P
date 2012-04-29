@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 public class PerformanceFilter extends SimpleChannelHandler
 {
 	final private static Logger logger = LoggerFactory.getLogger(PerformanceFilter.class);
+	final private static int DISPLAY_EVERY_MS = 250;
 	private static AtomicLong startSend = new AtomicLong(Timings.currentTimeMillis());
 	private static AtomicLong startReceive = new AtomicLong(Timings.currentTimeMillis());
 	private static AtomicLong messagesCountReceive = new AtomicLong(0);
@@ -47,7 +48,7 @@ public class PerformanceFilter extends SimpleChannelHandler
 	{
 		messagesCountReceive.incrementAndGet();
 		final long time = Timings.currentTimeMillis() - startReceive.get();
-		if (time > 1000)
+		if (time > DISPLAY_EVERY_MS)
 		{
 			double throughput = messagesCountReceive.doubleValue() / (time / 1000d);
 			if (throughput > 1 && logger.isDebugEnabled())
@@ -66,12 +67,12 @@ public class PerformanceFilter extends SimpleChannelHandler
 	{
 		messagesCountSend.incrementAndGet();
 		long time = Timings.currentTimeMillis() - startSend.get();
-		if (time > 1000)
+		if (time > DISPLAY_EVERY_MS)
 		{
 			double throughput = messagesCountSend.doubleValue() / (time / 1000d);
 			if (throughput > 1 && logger.isDebugEnabled())
 			{
-				logger.debug("[Outgoing throughput="
+				logger.debug("Outgoing throughput="
 						+ throughput + "msg/s");
 			}
 			startSend.set(Timings.currentTimeMillis());

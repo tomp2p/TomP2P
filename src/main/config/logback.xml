@@ -7,6 +7,14 @@
     </layout>
   </appender>
   
+  <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+    <file>p2p.log</file>
+    <append>false</append>
+    <encoder>
+      <pattern>%-4relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+    </encoder>
+  </appender>
+  
   <!--  <logger name="net" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.connection.ConnectionHandler" level="TRACE"/> -->
@@ -16,17 +24,19 @@
   <!--  <logger name="net.tomp2p.connection.PerformanceFilter" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.ReplyTimeoutHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.Scheduler" level="TRACE"/> -->
-  <!--  <logger name="net.tomp2p.connection.Sender" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.SenderNetty" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.TCPChannelCache" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.mapreduce" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
-
+  <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->
+  
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.p2p.Statistics" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.peers.PeerMapKadImpl" level="TRACE"/> -->
   

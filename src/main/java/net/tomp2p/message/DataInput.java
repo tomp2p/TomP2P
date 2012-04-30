@@ -1,7 +1,10 @@
 package net.tomp2p.message;
 
+import java.nio.ByteBuffer;
+
 public interface DataInput
 {
+	public ByteBuffer[] toByteBuffers(int index, int length);
 	public abstract int readInt();
 	public abstract void readBytes(byte[] buf);
 	public abstract int readUnsignedShort();

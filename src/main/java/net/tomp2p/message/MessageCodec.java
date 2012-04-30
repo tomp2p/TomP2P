@@ -17,6 +17,7 @@ package net.tomp2p.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -596,9 +597,31 @@ public class MessageCodec
 		int dateLength = buffer.readInt();
 		//
 		if (buffer.readableBytes() < dateLength) return null;
-		final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-				dateLength, ttl, protectedEntry, originator);
+		ByteBuffer[] byteBuffers = buffer.toByteBuffers(buffer.readerIndex(), dateLength);
+		
+		final Data data = createData(byteBuffers, dateLength, ttl, protectedEntry, originator);
+		
+		//final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
+		//		dateLength, ttl, protectedEntry, originator);
 		buffer.skipBytes(dateLength);
+		return data;
+	}
+
+	public static Data createData(ByteBuffer[] byteBuffers, final int length, int ttl, boolean protectedEntry,
+			PeerAddress originator)
+	{
+		Data data;
+		// length may be 0 if data is only used for expiration
+		if (length == 0)
+		{
+			data = new Data(EMPTY_BYTE_ARRAY, originator.getID());
+		}
+		else
+		{
+			data = new Data(byteBuffers, length, originator.getID());
+		}
+		data.setTTLSeconds(ttl);
+		data.setProtectedEntry(protectedEntry);
 		return data;
 	}
 
@@ -708,6 +731,12 @@ public class MessageCodec
 		private ChannelDecoder(ChannelBuffer buffer)
 		{
 			this.buffer = buffer;
+		}
+		
+		public ByteBuffer[] toByteBuffers(int index,
+                int length)
+		{
+			return buffer.toByteBuffers(index, length);
 		}
 
 		@Override

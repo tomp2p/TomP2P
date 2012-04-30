@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -493,6 +494,12 @@ public class StorageDisk extends StorageGeneric
 		public int readableBytes()
 		{
 			return counter;
+		}
+
+		@Override
+		public ByteBuffer[] toByteBuffers(int index, int length)
+		{
+			return new ByteBuffer[]{ByteBuffer.wrap(array())};
 		}
 	}
 	

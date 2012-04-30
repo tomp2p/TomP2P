@@ -16,6 +16,7 @@
 package net.tomp2p.storage;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.security.PublicKey;
 
 import net.tomp2p.peers.Number160;
@@ -66,6 +67,23 @@ public class Data implements Serializable
 	public Data(byte[] data, Number160 peerId)
 	{
 		this(data, 0, data.length, peerId);
+	}
+	
+	public Data(ByteBuffer[] buffer, int length, Number160 peerId)
+	{
+		this.data = new byte[length];
+		int offset = 0;
+		for(int i=0;i<buffer.length;i++)
+		{
+			int rem = buffer[i].remaining();
+			//TODO: do not array copy, but store as is
+			buffer[i].get(this.data, offset, rem);
+			offset += rem;
+		}
+		this.offset = 0;
+		this.length = length;
+		this.validFromMillis = Timings.currentTimeMillis();
+		this.peerId = peerId;
 	}
 
 	public Data(byte[] data, int offset, int length, Number160 peerId)

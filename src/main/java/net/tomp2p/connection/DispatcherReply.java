@@ -286,7 +286,9 @@ public class DispatcherReply extends SimpleChannelHandler
 			if (!ctx.getChannel().isOpen())
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("channel is not open, do not reply");
+				{
+					logger.debug("channel is not open, do not reply "+response);
+				}
 				return;
 			}
 			if (logger.isDebugEnabled())
@@ -305,7 +307,9 @@ public class DispatcherReply extends SimpleChannelHandler
 			if (!ctx.getChannel().isConnected())
 			{
 				if (logger.isDebugEnabled())
-					logger.debug("channel is not open, do not reply");
+				{
+					logger.debug("channel is not open, do not reply "+response);
+				}
 				return;
 			}
 			if (logger.isDebugEnabled())

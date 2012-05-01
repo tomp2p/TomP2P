@@ -40,10 +40,12 @@ public class TestCache
 	{
 		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(6);
 		test.put("hallo0", "test0");
-		Timings.sleepUninterruptibly(3000);
+		final long start = System.currentTimeMillis();
+		Timings.sleepUninterruptibly(1000);
 		final AtomicBoolean failed = new AtomicBoolean(false);
 		final AtomicInteger integer1 = new AtomicInteger(0);
 		final AtomicInteger integer2 = new AtomicInteger(0);
+		
 		for(int i=1;i<800;i++)
 		{
 			final int ii=i;
@@ -66,12 +68,14 @@ public class TestCache
 								failed.set(true);
 							}
 						}
-					}).start();
+					}).start();	
 				}
 			}).start();
 		}
-		Timings.sleepUninterruptibly(3000);
-		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer1+"/"+integer2);
+		long waitfor = 6000-(System.currentTimeMillis()-start);
+		System.out.println("waitfor: "+waitfor);
+		Timings.sleepUninterruptibly((int)waitfor);
+		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer1+"/"+integer2+", threads: "+Thread.activeCount());
 		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}

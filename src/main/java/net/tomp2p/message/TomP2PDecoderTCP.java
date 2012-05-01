@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.security.Signature;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -100,7 +101,15 @@ public class TomP2PDecoderTCP extends FrameDecoder
 					signature.initVerify(message.getPublicKey());
 					signature.update(rawHeader);
 					int read = buffer.readerIndex() - readerIndex;
-					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					if(read > 0)
+					{
+						ByteBuffer[] tmp = buffer.toByteBuffers(readerIndex, read);
+						for(int i=0;i<tmp.length;i++)
+						{
+							signature.update(tmp[i]);
+						}
+						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					}
 				}
 				readerIndex = buffer.readerIndex();
 			}
@@ -116,7 +125,15 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
-					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					if(read > 0)
+					{
+						ByteBuffer[] tmp = buffer.toByteBuffers(readerIndex, read);
+						for(int i=0;i<tmp.length;i++)
+						{
+							signature.update(tmp[i]);
+						}
+						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					}
 				}
 				readerIndex = buffer.readerIndex();
 			}
@@ -132,7 +149,15 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
-					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					if(read > 0)
+					{
+						ByteBuffer[] tmp = buffer.toByteBuffers(readerIndex, read);
+						for(int i=0;i<tmp.length;i++)
+						{
+							signature.update(tmp[i]);
+						}
+						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					}
 				}
 				readerIndex = buffer.readerIndex();
 			}
@@ -148,7 +173,15 @@ public class TomP2PDecoderTCP extends FrameDecoder
 				if (signature != null)
 				{
 					int read = buffer.readerIndex() - readerIndex;
-					signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					if(read > 0)
+					{
+						ByteBuffer[] tmp = buffer.toByteBuffers(readerIndex, read);
+						for(int i=0;i<tmp.length;i++)
+						{
+							signature.update(tmp[i]);
+						}
+						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+					}
 				}
 				readerIndex = buffer.readerIndex();
 			}

@@ -10,7 +10,8 @@ import net.tomp2p.peers.Number160;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestReservation {
+public class TestReservation 
+{
 	@Test
 	public void testReservationTCP() throws Exception
 	{

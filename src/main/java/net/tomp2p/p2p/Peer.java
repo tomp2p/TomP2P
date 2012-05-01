@@ -237,9 +237,10 @@ public class Peer
 		{
 			getConnectionBean().getSender().shutdown();
 		}
+		getConnectionHandler().shutdown();
 		if (masterFlag && timer != null)
 			timer.stop();
-		getConnectionHandler().shutdown();
+		
 		//listeners may be called from other threads
 		synchronized (listeners)
 		{

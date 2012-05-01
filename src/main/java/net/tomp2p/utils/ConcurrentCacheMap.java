@@ -104,8 +104,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	@Override
 	public V put(K key, V value)
 	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
 		ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
+		CacheMap<K, ExpiringObject> segment = segment(key);
 		ExpiringObject oldValue;
 		synchronized (segment)
 		{

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	private final CacheMap<K, ExpiringObject>[] segments;
 	private final int timeToLive;
 	private final boolean refreshTimeout;
+	private final AtomicInteger removed = new AtomicInteger();
 
 	/**
 	 * Creates a new instance of ConcurrentCacheMap using the supplied values
@@ -394,6 +396,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 						{
 							logger.debug("remove in entrySet "+expiringObject.getValue());
 						}
+						removed.incrementAndGet();
 					}
 					else
 					{
@@ -423,6 +426,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 						{
 							logger.debug("remove in entrySet "+entry.getValue().getValue());
 						}
+						removed.incrementAndGet();
 					}
 					else
 					{
@@ -517,6 +521,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 					{
 						logger.debug("remove in expire "+value.getValue());
 					}
+					removed.incrementAndGet();
 					return true;
 				}
 			}
@@ -545,6 +550,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 						{
 							logger.debug("remove in expireAll "+expiringObject.getValue());
 						}
+						removed.incrementAndGet();
 					}
 					else
 					{
@@ -554,6 +560,15 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 			}
 		}
 	}
+	
+	/**
+	 * @return The number of expired objects 
+	 */
+	public int expiredCounter()
+	{
+		return removed.get();
+	}
+	
 	private class ExpiringObject
 	{
 		private final V value;

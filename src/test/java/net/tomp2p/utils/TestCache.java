@@ -66,6 +66,7 @@ public class TestCache
 			}).start();
 		}
 		Timings.sleepUninterruptibly(3000);
+		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter());
 		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}

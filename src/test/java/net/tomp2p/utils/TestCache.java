@@ -42,7 +42,8 @@ public class TestCache
 		test.put("hallo0", "test0");
 		Timings.sleepUninterruptibly(3000);
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		final AtomicInteger integer = new AtomicInteger(0);
+		final AtomicInteger integer1 = new AtomicInteger(0);
+		final AtomicInteger integer2 = new AtomicInteger(0);
 		for(int i=1;i<800;i++)
 		{
 			final int ii=i;
@@ -51,8 +52,9 @@ public class TestCache
 				@Override
 				public void run()
 				{
+					integer1.incrementAndGet();
 					test.put("hallo"+ii, "test"+ii);
-					integer.incrementAndGet();
+					integer2.incrementAndGet();
 					new Thread(new Runnable()
 					{
 						@Override
@@ -69,7 +71,7 @@ public class TestCache
 			}).start();
 		}
 		Timings.sleepUninterruptibly(3000);
-		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer);
+		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer1+"/"+integer2);
 		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}

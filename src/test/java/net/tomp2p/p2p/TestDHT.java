@@ -79,6 +79,8 @@ public class TestDHT
 			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
 			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			
+			System.err.println("peers up and running");
+			
 			slave.setRawDataReply(new RawDataReply() 
 			{	
 				@Override
@@ -92,30 +94,54 @@ public class TestDHT
 					return ret;
 				}
 			});
-			List<BaseFuture> list= new ArrayList<BaseFuture>();
+			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
+			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
+			List<PeerConnection> list3 = new ArrayList<PeerConnection>();
 			for(int i=0;i<200;i++)
 			{
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
-				list.add(master.send(pc, ChannelBuffers.wrappedBuffer(b)));
-				pc.close();
+				list1.add(master.send(pc, ChannelBuffers.wrappedBuffer(b)));
+				list3.add(pc);
+				//pc.close();
 			}
 			for(int i=0;i<20000;i++)
 			{
-				list.add(master.discover(slave.getPeerAddress()));
+				list2.add(master.discover(slave.getPeerAddress()));
 				final byte[] b=new byte[10000];
 				byte[] me=Utils.intToByteArray(i);
 				System.arraycopy(me, 0, b, 0, 4);
-				list.add(master.send(slave.getPeerAddress(), ChannelBuffers.wrappedBuffer(b)));
+				list2.add(master.send(slave.getPeerAddress(), ChannelBuffers.wrappedBuffer(b)));
 				//Utils2.execute("netstat -tn | wc");
-				//System.out.println(".");
+				//System.out.print(".");
 			}
-			for(BaseFuture bf:list)
+			for(BaseFuture bf:list1)
 			{
 				bf.awaitUninterruptibly();
 				if(bf.isFailed())
 				{
 					System.err.println("WTF "+bf.getFailedReason());
+				}
+				else
+				{
+					System.err.print(".");
+				}
+				Assert.assertEquals(true, bf.isSuccess());
+			}
+			for(PeerConnection pc:list3)
+			{
+				pc.close();
+			}
+			for(BaseFuture bf:list2)
+			{
+				bf.awaitUninterruptibly();
+				if(bf.isFailed())
+				{
+					System.err.println("WTF "+bf.getFailedReason());
+				}
+				else
+				{
+					System.err.print(".");
 				}
 				Assert.assertEquals(true, bf.isSuccess());
 			}

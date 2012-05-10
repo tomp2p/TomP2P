@@ -35,6 +35,7 @@ public class FutureTask extends BaseFutureImpl
 	final private List<FutureAsyncTask> requests = new ArrayList<FutureAsyncTask>();
 	final private Map<PeerAddress, Map<Number160, Data>> dataMap = new HashMap<PeerAddress, Map<Number160,Data>>();
 	private int resultSuccess = 0;
+	private int resultFailed = 0;
 	
 	/**
 	 * Adds all requests that have been created for the DHT operations. Those
@@ -80,15 +81,43 @@ public class FutureTask extends BaseFutureImpl
 			if(futureAsyncTask.isSuccess())
 			{
 				resultSuccess++;
+				PeerAddress peerAddress = futureAsyncTask.getRemotePeer();
+				Map<Number160, Data> tmp = dataMap.get(peerAddress);
+				if(tmp == null)
+				{
+					tmp = new HashMap<Number160, Data>();
+					dataMap.put(peerAddress, tmp);
+				}
+				tmp.putAll(futureAsyncTask.getDataMap());
 			}
-			PeerAddress peerAddress = futureAsyncTask.getRemotePeer();
-			Map<Number160, Data> tmp = dataMap.get(peerAddress);
-			if(tmp == null)
+			else
 			{
-				tmp = new HashMap<Number160, Data>();
-				dataMap.put(peerAddress, tmp);
+				resultFailed++;
 			}
-			tmp.putAll(futureAsyncTask.getDataMap());
+		}
+	}
+	
+	public Map<PeerAddress, Map<Number160, Data>> getRawDataMap()
+	{
+		synchronized (lock)
+		{
+			return dataMap;
+		}
+	}
+	
+	public int getSuccessCount()
+	{
+		synchronized (lock)
+		{
+			return resultSuccess;
+		}
+	}
+	
+	public int getFailureCount()
+	{
+		synchronized (lock)
+		{
+			return resultFailed;
 		}
 	}
 }

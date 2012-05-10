@@ -51,6 +51,8 @@ import org.jboss.netty.channel.FixedReceiveBufferSizePredictor;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Creates the channels. This class is created by {@link ConnectionReservation}
@@ -61,6 +63,8 @@ import org.jboss.netty.handler.stream.ChunkedWriteHandler;
  */
 public class ChannelCreator
 {
+	final private static Logger logger = LoggerFactory.getLogger(ChannelCreator.class);
+	final private static FutureChannel FAILED_FUTURE = new FutureChannel();
 	final private Semaphore connectionSemaphore;
 	final private ChannelGroup channelsTCP = new DefaultChannelGroup("TomP2P ConnectionPool TCP");
 	final private ChannelGroup channelsUDP = new DefaultChannelGroup("TomP2P ConnectionPool UDP");
@@ -76,8 +80,14 @@ public class ChannelCreator
 	final private Statistics statistics;
 	final private int permits;
 	final private Scheduler scheduler;
-	private volatile boolean shutdown;
-	private volatile AtomicInteger permitsCount;
+	private boolean shutdownUDP;
+	private boolean shutdownTCP;
+	private AtomicInteger permitsCount;
+	
+	static
+	{
+		FAILED_FUTURE.setFailed("shutting down!");
+	}
 	
 	/**
 	 * Package private constructor, since this is created by
@@ -121,19 +131,21 @@ public class ChannelCreator
 	public FutureChannel createUDPChannel(ReplyTimeoutHandler timeoutHandler,
 			RequestHandlerUDP<? extends BaseFuture> requestHandler, boolean broadcast)
 	{
-		final FutureChannel futureChannelCreation = new FutureChannel();
-		createUDPChannel(futureChannelCreation, timeoutHandler, requestHandler, broadcast);
-		return futureChannelCreation;
+		synchronized (channelsUDP)
+		{
+			if (shutdownUDP)
+			{
+				return FAILED_FUTURE;
+			}
+			final FutureChannel futureChannelCreation = new FutureChannel();
+			createUDPChannel(futureChannelCreation, timeoutHandler, requestHandler, broadcast);
+			return futureChannelCreation;
+		}
 	}
 	private void createUDPChannel(FutureChannel futureChannelCreation, 
 			ReplyTimeoutHandler timeoutHandler, RequestHandlerUDP<? extends BaseFuture> requestHandler, 
 			boolean broadcast)
 	{
-		if (shutdown)
-		{
-			futureChannelCreation.setFailed("shutting down");
-			return;
-		}
 		// If we are out of semaphores, we cannot create any channels. Since we
 		// know how many channels max. in parallel are created, we can reserve
 		// it.
@@ -168,16 +180,7 @@ public class ChannelCreator
 				statistics.decrementUDPChannelCreation();
 			}
 		});
-		synchronized (this)
-		{
-			if (shutdown)
-			{
-				channel.close();
-				futureChannelCreation.setFailed("shutdown in progres (ChannelCreator/UDP)");
-				return;
-			}
-			channelsUDP.add(channel);
-		}
+		channelsUDP.add(channel);
 	}
 
 	/**
@@ -197,20 +200,23 @@ public class ChannelCreator
 			RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			int connectTimeoutMillis, final InetSocketAddress recipient)
 	{
-		final FutureChannel futureChannelCreation = new FutureChannel();
-		createTCPChannel(futureChannelCreation, timeoutHandler, requestHandler, connectTimeoutMillis, recipient);
-		return futureChannelCreation;
+		synchronized (channelsTCP)
+		{
+			if (shutdownTCP)
+			{
+				return FAILED_FUTURE;
+			}
+			final FutureChannel futureChannelCreation = new FutureChannel();
+			createTCPChannel(futureChannelCreation, timeoutHandler, requestHandler, connectTimeoutMillis, recipient);
+			return futureChannelCreation;
+		}
 	}
 	
 	private void createTCPChannel(final FutureChannel futureChannelCreation, 
 			ReplyTimeoutHandler timeoutHandler, RequestHandlerTCP<? extends BaseFuture> requestHandler,
 			int connectTimeoutMillis, final InetSocketAddress recipient)
 	{
-		if (shutdown)
-		{
-			futureChannelCreation.setFailed("shutting down");
-			return;
-		}
+		
 		ChannelFuture channelFuture;
 		boolean newConnection = true;
 		if (keepAliveAndReuse)
@@ -247,7 +253,7 @@ public class ChannelCreator
 							}
 							else
 							{
-								futureChannelCreation.setFailed("ChannelFuture failed");
+								futureChannelCreation.setFailed("ChannelFuture failed (TCP)");
 								connectionSemaphore.release();
 								statistics.decrementTCPChannelCreation();
 							}
@@ -300,7 +306,7 @@ public class ChannelCreator
 						}
 						else
 						{
-							futureChannelCreation.setFailed("ChannelFuture failed");
+							futureChannelCreation.setFailed("ChannelFuture failed (UDP)");
 							connectionSemaphore.release();
 							statistics.decrementTCPChannelCreation();
 						}
@@ -332,16 +338,7 @@ public class ChannelCreator
 				}
 			});
 		}
-		synchronized (this)
-		{
-			if (shutdown)
-			{
-				channel.close();
-				futureChannelCreation.setFailed("shutdown in progres (ChannelCreator/TCP)");
-				return;
-			}
-			channelsTCP.add(channel);
-		}
+		channelsTCP.add(channel);
 	}
 
 	private void connectionNotReadyYetTCP(final FutureChannel futureChannelCreation,
@@ -554,10 +551,17 @@ public class ChannelCreator
 		}
 		if(result == 0)
 		{
-			shutdown = true;
+			synchronized (channelsTCP)
+			{
+				shutdownTCP = true;
+			}
+			synchronized (channelsUDP)
+			{
+				shutdownUDP = true;
+			}
+			return true;
 		}
-		//return connectionSemaphore.tryAcquire(permits);
-		return result == 0;
+		return false;
 	}
 
 	/**
@@ -566,12 +570,20 @@ public class ChannelCreator
 	 */
 	public void shutdown()
 	{
-		synchronized (this)
+		if(logger.isDebugEnabled())
 		{
-			shutdown = true;
-			channelsTCP.close().awaitUninterruptibly();
-			channelsUDP.close().awaitUninterruptibly();
+			logger.debug("shutting down in ChannelCreator");
 		}
+		synchronized (channelsTCP)
+		{
+			shutdownTCP = true;
+		}
+		channelsTCP.close().awaitUninterruptibly();
+		synchronized (channelsUDP)
+		{
+			shutdownUDP = true;
+		}
+		channelsUDP.close().awaitUninterruptibly();
 	}
 	
 	/**

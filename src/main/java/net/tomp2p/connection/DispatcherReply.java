@@ -341,7 +341,9 @@ public class DispatcherReply extends SimpleChannelHandler
 	private static void close(ChannelHandlerContext ctx)
 	{
 		if (!(ctx.getChannel() instanceof DatagramChannel))
+		{
 			ctx.getChannel().close();
+		}
 		// TODO: if we set a timeout in ConnectionHandler, we need to cancel the
 		// timeout here.
 	}

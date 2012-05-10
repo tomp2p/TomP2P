@@ -14,13 +14,15 @@ public class ConnectionConfiguration
 	
 	//connection configuration
 	// idle needs to be larger than timeout for TCP
-	private int idleTCPMillis = 6 * 1000;
-	// private int timeoutTCPMillis = 3 * 1000;
-	private int idleUDPMillis = 3 * 1000;
-	private int connectTimeouMillis = 3 * 1000;
+	
 	// doing tests on localhost, we open 2 * maxOpenConnection
 	private int maxOpenConnection = 400;
 	private int maxCreating = 200;
+	// these values depend on how many connections we create
+	private int idleTCPMillis = (maxOpenConnection + maxCreating) / 2 * 20;
+	private int idleUDPMillis = (maxOpenConnection + maxCreating) / 2 * 10;
+	private int connectTimeouMillis = (maxOpenConnection + maxCreating) / 2 * 10;
+	
 	// force TCP or UDP
 	private boolean forceTrackerTCP = false;
 	private boolean forceStorageUDP = false;

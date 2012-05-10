@@ -413,6 +413,11 @@ public class Message
 		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3
 				|| type == Type.REQUEST_4 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
 	}
+	
+	public boolean isFireAndForget()
+	{
+		return type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+	}
 
 	public boolean isOk()
 	{

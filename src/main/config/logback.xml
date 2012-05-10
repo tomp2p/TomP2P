@@ -17,6 +17,7 @@
   
   <!--  <logger name="net" level="TRACE"/> -->
   
+  <!--  <logger name="net.tomp2p.connection.ChannelCreator" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.ConnectionHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.ConnectionReservation" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.DispatcherReply" level="TRACE"/> -->

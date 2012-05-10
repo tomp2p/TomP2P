@@ -85,6 +85,7 @@ import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.task.AsyncTask;
+import net.tomp2p.task.Worker;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.Utils;
 
@@ -1259,7 +1260,7 @@ public class Peer
 				getPeerBean().getPeerMap()));
 		final FutureDHT futureDHT = getDistributedHashMap().add(locationKey, config.getDomain(), dataCollection,
 				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.isProtectDomain(), config.isSignMessage(), config.isAutomaticCleanup(), 
+				config.isProtectDomain(), config.isSignMessage(), config.isAutomaticCleanup(), false,
 				config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
 		if (config.getRefreshSeconds() > 0)
 		{
@@ -1282,7 +1283,7 @@ public class Peer
 				final FutureChannelCreator futureChannelCreator = reserve(config);
 				FutureDHT futureDHT2 = getDistributedHashMap().add(locationKey, config.getDomain(),
 						dataCollection, config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isProtectDomain(), config.isSignMessage(), true, config.getFutureCreate(),
+						config.isProtectDomain(), config.isSignMessage(), true, false, config.getFutureCreate(),
 						futureChannelCreator, getConnectionBean().getConnectionReservation());
 				futureDHT.repeated(futureDHT2);
 			}
@@ -1877,6 +1878,19 @@ public class Peer
 			return new RequestP2PConfiguration(size, p2pConfiguration.getMaxFailure(),
 					p2pConfiguration.getParallelDiff());
 		}
+	}
+	
+	// New API - using builder pattern
+	// *************************** Map Reduce ************************************
+	
+	public SubmitBuilder submit(Number160 locationKey, Worker worker)
+	{
+		return new SubmitBuilder(this, getDistributedTask(), locationKey, worker);
+	}
+	
+	public AddBuilder add(Number160 locationKey)
+	{
+		return new AddBuilder(this, getDistributedHashMap(), locationKey);
 	}
 	
 	// *************************** Connection Reservation ************************

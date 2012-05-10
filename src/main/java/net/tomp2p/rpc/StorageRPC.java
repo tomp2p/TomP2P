@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.concurrent.locks.Lock;
 
@@ -36,6 +37,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.StorageGeneric.PutStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +48,8 @@ public class StorageRPC extends ReplyHandler
 	//TODO: find good values
 	final static int bitArraySize = 9000;
 	final static int expectedElements = 1000;
-
+	final static private Random rnd = new Random();
+	
 	public StorageRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
@@ -262,16 +265,30 @@ public class StorageRPC extends ReplyHandler
 	 */
 	public FutureResponse add(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Data> dataSet, boolean protectDomain,
-			boolean signMessage, ChannelCreator channelCreator, boolean forceUDP)
+			boolean signMessage, boolean list, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		final Type type;
 		if (protectDomain)
 		{
-			type = Type.REQUEST_2;
+			if(list)
+			{
+				type = Type.REQUEST_4;
+			}
+			else
+			{
+				type = Type.REQUEST_2;
+			}
 		}
 		else
 		{
-			type = Type.REQUEST_1;
+			if(list)
+			{
+				type = Type.REQUEST_3;
+			}
+			else
+			{
+				type = Type.REQUEST_1;
+			}
 		}
 		nullCheck(remotePeer, locationKey, domainKey, dataSet);
 		Map<Number160, Data> dataMap = new HashMap<Number160, Data>(dataSet.size());
@@ -465,6 +482,12 @@ public class StorageRPC extends ReplyHandler
 		boolean partial = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
 		return partial;
 	}
+	
+	private boolean isList(final Message message)
+	{
+		boolean partial = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
+		return partial;
+	}
 
 	private Message handlePut(final Message message, final Message responseMessage,
 			final boolean putIfAbsent, final boolean protectDomain) throws IOException
@@ -483,14 +506,18 @@ public class StorageRPC extends ReplyHandler
 		for (Map.Entry<Number160, Data> entry : toStore.entrySet())
 		{
 			if (getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
-					entry.getValue(), publicKey, putIfAbsent, protectDomain)) {
-				if(logger.isDebugEnabled()) {
+					entry.getValue(), publicKey, putIfAbsent, protectDomain) == PutStatus.OK) 
+			{
+				if(logger.isDebugEnabled()) 
+				{
 					logger.debug("put data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
 				result.add(entry.getKey());
 			}
-			else {
-				if(logger.isDebugEnabled()) {
+			else
+			{
+				if(logger.isDebugEnabled()) 
+				{
 					logger.debug("could not add "+locationKey+" on "+getPeerBean().getServerPeerAddress());
 				}
 			}
@@ -527,6 +554,7 @@ public class StorageRPC extends ReplyHandler
 		final Number160 domainKey = message.getKeyKey2();
 		final Map<Number160, Data> data = message.getDataMap();
 		final PublicKey publicKey = message.getPublicKey();
+		final boolean list = isList(message);
 		// here we set the map with the close peers. If we get data by a sender
 		// and the sender is closer than us, we assume that the sender has the
 		// data and we don't need to transfer data to the closest (sender) peer.
@@ -536,12 +564,35 @@ public class StorageRPC extends ReplyHandler
 		Collection<Number160> result = new HashSet<Number160>();
 		for (Map.Entry<Number160, Data> entry : data.entrySet())
 		{
-			if (getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
-					entry.getValue(), publicKey, false, protectDomain)) {
-				if(logger.isDebugEnabled()) {
-					logger.debug("add data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
+			if(list)
+			{
+				Number160 contentKey = new Number160(rnd);
+				PutStatus status;
+				while((status = getPeerBean().getStorage().put(locationKey, domainKey, contentKey,
+						entry.getValue(), publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT)
+				{
+					contentKey = new Number160(rnd);
 				}
-				result.add(entry.getKey());
+				if(status == PutStatus.OK)
+				{
+					if(logger.isDebugEnabled()) 
+					{
+						logger.debug("add list data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
+					}
+					result.add(contentKey);
+				}
+			}
+			else
+			{
+				if (getPeerBean().getStorage().put(locationKey, domainKey, entry.getKey(),
+					entry.getValue(), publicKey, false, protectDomain) == PutStatus.OK) 
+				{
+					if(logger.isDebugEnabled()) 
+					{
+						logger.debug("add data with key "+locationKey+" on "+getPeerBean().getServerPeerAddress());
+					}
+					result.add(entry.getKey());
+				}
 			}
 		}
 		// check the responsibility of the newly added data, do something

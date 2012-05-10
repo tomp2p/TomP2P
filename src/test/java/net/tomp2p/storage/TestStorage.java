@@ -13,6 +13,7 @@ import junit.framework.Assert;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.storage.StorageGeneric.PutStatus;
 import net.tomp2p.utils.Utils;
 
 import org.junit.After;
@@ -71,19 +72,19 @@ public class TestStorage
 	
 	private void store(StorageGeneric storage, int nr) throws IOException
 	{
-		boolean store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test1"), null, false, false);
-		Assert.assertEquals(true, store);
+		PutStatus store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test1"), null, false, false);
+		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test2"), null, false, false);
-		Assert.assertEquals(true, store);
+		Assert.assertEquals(PutStatus.OK, store);
 	}
 
 	private void store(StorageGeneric storage, PublicKey publicKey, boolean protectDomain)
 			throws IOException
 	{
-		boolean store = storage.put(locationKey, domainKey, content1, new Data("test1"), publicKey, false, protectDomain);
-		Assert.assertEquals(true, store);
+		PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test1"), publicKey, false, protectDomain);
+		Assert.assertEquals(PutStatus.OK, store);
 		store = storage.put(locationKey, domainKey, content2, new Data("test2"), publicKey, false, protectDomain);
-		Assert.assertEquals(true, store);
+		Assert.assertEquals(PutStatus.OK, store);
 	}
 
 	@Test
@@ -122,8 +123,8 @@ public class TestStorage
 	private void testPut(StorageGeneric storage) throws IOException
 	{
 		store(storage);
-		boolean store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, false, false);
-		Assert.assertEquals(true, store);
+		PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, false, false);
+		Assert.assertEquals(PutStatus.OK, store);
 		storage.put(locationKey, domainKey, content3, new Data("test4"), null, false, false);
 		SortedMap<Number480, Data> result = storage.subMap(locationKey, domainKey, content1, content4);
 		Assert.assertEquals(3, result.size());
@@ -143,8 +144,8 @@ public class TestStorage
 	private void testPutIfAbsent(StorageGeneric storage) throws IOException
 	{
 		store(storage);
-		boolean store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, true, false);
-		Assert.assertEquals(false, store);
+		PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, true, false);
+		Assert.assertEquals(PutStatus.FAILED, store);
 		storage.put(locationKey, domainKey, content3, new Data("test4"), null, true, false);
 		SortedMap<Number480, Data> result1 = storage.subMap(locationKey, domainKey, content1, content4);
 		Assert.assertEquals(3, result1.size());
@@ -259,13 +260,13 @@ public class TestStorage
 		KeyPair pair1 = gen.generateKeyPair();
 		KeyPair pair2 = gen.generateKeyPair();
 		store(storage, pair1.getPublic(), true);
-		boolean result1 = storage.put(locationKey, domainKey, content3, new Data("test4"), pair1.getPublic(), false, false);
-		Assert.assertEquals(true, result1);
-		boolean result3 = storage.put(locationKey, domainKey, content3, new Data("test6"), pair1.getPublic(), false, true);
-		Assert.assertEquals(true, result3);
+		PutStatus result1 = storage.put(locationKey, domainKey, content3, new Data("test4"), pair1.getPublic(), false, false);
+		Assert.assertEquals(PutStatus.OK, result1);
+		PutStatus result3 = storage.put(locationKey, domainKey, content3, new Data("test6"), pair1.getPublic(), false, true);
+		Assert.assertEquals(PutStatus.OK, result3);
 		// domain is protected by pair1
-		boolean result2 = storage.put(locationKey, domainKey, content3, new Data("test5"), pair2.getPublic(), false, true);
-		Assert.assertEquals(false, result2);
+		PutStatus result2 = storage.put(locationKey, domainKey, content3, new Data("test5"), pair2.getPublic(), false, true);
+		Assert.assertEquals(PutStatus.FAILED, result2);
 	}
 	
 	@Test

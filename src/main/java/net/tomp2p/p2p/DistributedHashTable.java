@@ -67,7 +67,7 @@ public class DistributedHashTable
 	public FutureDHT add(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Data> dataSet, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean protectDomain,
-			final boolean signMessage, final boolean isAutomaticCleanup, final FutureCreate<FutureDHT> futureCreate,
+			final boolean signMessage, final boolean isAutomaticCleanup, final boolean list, final FutureCreate<FutureDHT> futureCreate,
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -102,7 +102,7 @@ public class DistributedHashTable
 											public FutureResponse create(ChannelCreator channelCreator, PeerAddress address)
 											{
 												return storeRCP.add(address, locationKey, domainKey, dataSet,
-														protectDomain, signMessage, channelCreator, p2pConfiguration.isForceUPD());
+														protectDomain, signMessage, list, channelCreator, p2pConfiguration.isForceUPD());
 											}
 
 											@Override

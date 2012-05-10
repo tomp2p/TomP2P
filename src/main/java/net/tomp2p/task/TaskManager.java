@@ -9,10 +9,10 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class TaskManager
 {
 	final private static Logger logger = LoggerFactory.getLogger(TaskManager.class);
-	final private  PeerBean peerBean;
+	final private Peer peer;
 	final private ConnectionBean connectionBean;
 	final private Object lock = new Object();
 	final private ThreadPoolExecutor executor;
@@ -66,7 +66,7 @@ public class TaskManager
 			Map<Number160, Data> outputData = null;
 			try
 			{
-				outputData = mapper.execute(inputData, peerBean.getStorage());
+				outputData = mapper.execute(peer, inputData);
 			}
 			catch (Exception e)
 			{
@@ -86,7 +86,7 @@ public class TaskManager
 				{
 					if(futureChannelCreator.isSuccess())
 					{
-						FutureResponse futureResponse = getTaskRPC().sendResult(senderAddress, futureChannelCreator.getChannelCreator(), taskId, outputData2, peerBean.getKeyPair(), false, sign);
+						FutureResponse futureResponse = getTaskRPC().sendResult(senderAddress, futureChannelCreator.getChannelCreator(), taskId, outputData2, peer.getPeerBean().getKeyPair(), false, sign);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
 						{
 							@Override
@@ -116,9 +116,9 @@ public class TaskManager
 		}
 	}
 	
-	public TaskManager(PeerBean peerBean, ConnectionBean connectionBean, int threads)
+	public TaskManager(Peer peer, ConnectionBean connectionBean, int threads)
 	{
-		this.peerBean = peerBean;
+		this.peer = peer;
 		this.connectionBean = connectionBean;
 		this.executor = new ThreadPoolExecutor(threads, threads,
 	            0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());

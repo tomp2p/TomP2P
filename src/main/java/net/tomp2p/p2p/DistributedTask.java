@@ -22,6 +22,7 @@ import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.AsyncTask;
 import net.tomp2p.task.Worker;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +55,7 @@ public class DistributedTask
 	 * @return
 	 */
 	public FutureTask submit(final Number160 locationKey, final Map<Number160, Data> dataMap, final Worker worker,
-			final RoutingConfiguration routingConfiguration, final TaskConfiguration taskConfiguration, 
+			final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration requestP2PConfiguration, 
 			final FutureChannelCreator futureChannelCreator,  final boolean signMessage, final boolean isAutomaticCleanup,
 			final ConnectionReservation connectionReservation)
 	{
@@ -69,7 +70,7 @@ public class DistributedTask
 					final ChannelCreator channelCreator = future.getChannelCreator();
 					//routing, find close peers
 					final FutureRouting futureRouting = createRouting(locationKey, null, null,
-							routingConfiguration, taskConfiguration, Type.REQUEST_4, channelCreator);
+							routingConfiguration, requestP2PConfiguration, Type.REQUEST_4, channelCreator);
 					futureRouting.addListener(new BaseFutureAdapter<FutureRouting>()
 					{
 						@Override
@@ -77,10 +78,12 @@ public class DistributedTask
 						{
 							if (futureRouting.isSuccess())
 							{
+								//direct hits mean that there is a task scheduled
 								SortedMap<PeerAddress, DigestInfo> map = future.getDirectHitsDigest();
-								NavigableSet<Pair> queue = findBest(map);
-								parallelRequests(futureTask, queue, taskConfiguration, channelCreator, locationKey, dataMap, 
-										worker, taskConfiguration.isForceUPD(), taskConfiguration.isSign());
+								//potential hits means that no task is scheduled
+								NavigableSet<Pair> queue = findBest(map, future.getPotentialHits());
+								parallelRequests(futureTask, queue, requestP2PConfiguration, channelCreator, locationKey, dataMap, 
+										worker, requestP2PConfiguration.isForceUPD(), signMessage);
 							}
 							else
 							{
@@ -88,6 +91,10 @@ public class DistributedTask
 							}
 						}
 					});
+				}
+				if(isAutomaticCleanup)
+				{
+					Utils.addReleaseListenerAll(futureTask, connectionReservation, future.getChannelCreator());
 				}
 				else
 				{
@@ -99,12 +106,12 @@ public class DistributedTask
 	}
 	
 	private void parallelRequests(FutureTask futureTask, NavigableSet<Pair> queue, 
-			TaskConfiguration taskConfiguration, ChannelCreator channelCreator, Number160 taskId, 
+			RequestP2PConfiguration requestP2PConfiguration, ChannelCreator channelCreator, Number160 taskId, 
 			Map<Number160, Data> dataMap, Worker worker, boolean forceUDP, boolean sign)
 	{
-		FutureAsyncTask[] futures = new FutureAsyncTask[taskConfiguration.getParallel()];
-		loopRec(queue, taskConfiguration.getMinimumResults(), new AtomicInteger(0), taskConfiguration
-				.getMaxFailure(), taskConfiguration.getParallelDiff(), futures, futureTask,
+		FutureAsyncTask[] futures = new FutureAsyncTask[requestP2PConfiguration.getParallel()];
+		loopRec(queue, requestP2PConfiguration.getMinimumResults(), new AtomicInteger(0), requestP2PConfiguration
+				.getMaxFailure(), requestP2PConfiguration.getParallelDiff(), futures, futureTask,
 				true, channelCreator, taskId, dataMap, worker, forceUDP, sign);
 	}
 	
@@ -174,22 +181,26 @@ public class DistributedTask
 	
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
 			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
-			TaskConfiguration taskConfiguration, Type type, ChannelCreator channelCreator)
+			RequestP2PConfiguration requestP2PConfiguration, Type type, ChannelCreator channelCreator)
 	{
 		return routing.route(locationKey, domainKey, contentKeys, type, routingConfiguration
-				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(taskConfiguration
+				.getDirectHits(), routingConfiguration.getMaxNoNewInfo(requestP2PConfiguration
 				.getMinimumResults()), routingConfiguration.getMaxFailures(),
 				routingConfiguration.getMaxSuccess(),
 				routingConfiguration.getParallel(), routingConfiguration.isForceTCP(),
 				channelCreator);
 	}
 	
-	static NavigableSet<Pair> findBest(SortedMap<PeerAddress, DigestInfo> map)
+	static NavigableSet<Pair> findBest(SortedMap<PeerAddress, DigestInfo> map, NavigableSet<PeerAddress> navigableSet)
 	{
 		NavigableSet<Pair> set = new TreeSet<DistributedTask.Pair>();
 		for(Map.Entry<PeerAddress, DigestInfo> entry:map.entrySet())
 		{
 			set.add(new Pair(entry.getKey(), entry.getValue().getSize()));
+		}
+		for(PeerAddress peerAddress:navigableSet)
+		{
+			set.add(new Pair(peerAddress, 0));
 		}
 		return set;
 	}

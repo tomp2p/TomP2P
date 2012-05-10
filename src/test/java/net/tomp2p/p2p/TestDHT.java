@@ -798,6 +798,46 @@ public class TestDHT
 			master.shutdown();
 		}
 	}
+	
+	@Test
+	public void testAddListGet() throws Exception
+	{
+		Peer master = null;
+		try
+		{
+			// setup
+			Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			Number160 nr = new Number160(rnd);
+			String toStore1 = "hallo1";
+			String toStore2 = "hallo1";
+			Data data1 = new Data(toStore1.getBytes());
+			Data data2 = new Data(toStore2.getBytes());
+			FutureDHT futureDHT = peers[30].add(nr).setData(data1).setList(true).add();
+			futureDHT.awaitUninterruptibly();
+			System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
+			futureDHT = peers[50].add(nr).setData(data2).setList(true).add();
+			futureDHT.awaitUninterruptibly();
+			System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
+			futureDHT = peers[77].getAll(nr);
+			futureDHT.awaitUninterruptibly();
+			Assert.assertEquals(true, futureDHT.isSuccess());
+			//majority voting with getDataMap is not possible since we create random content key on the recipient
+			Assert.assertEquals(2, futureDHT.getRawData().values().iterator().next().values().size());
+			Iterator<Data> iterator = futureDHT.getRawData().values().iterator().next().values()
+					.iterator();
+			System.out.println("got: " + new String(iterator.next().getData()) + " ("
+					+ futureDHT.isSuccess() + ")");
+			System.out.println("got: " + new String(iterator.next().getData()) + " ("
+					+ futureDHT.isSuccess() + ")");
+		}
+		finally
+		{
+			master.shutdown();
+		}
+	}
 
 	@Test
 	public void testAddGet() throws Exception
@@ -1406,7 +1446,7 @@ public class TestDHT
 			final class MyStorageMemory extends StorageMemory
 			{
 				@Override
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					System.err.println("here");

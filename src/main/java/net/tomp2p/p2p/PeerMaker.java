@@ -74,7 +74,7 @@ public class PeerMaker
 	private boolean enableRouting = true;
 	private boolean enableDHT = true;
 	private boolean enableTracker = true;
-	private boolean enableTask = false; //disabled for the moment, work still in progress
+	private boolean enableTask = true;
 	private boolean enableMaintenance = true;
 	private boolean enableIndirectReplication = false;
 	
@@ -169,7 +169,7 @@ public class PeerMaker
 		if(isEnableTaskRPC())
 		{
 			// create task manager, which is needed by the task RPC
-			peerBean.setTaskManager(new TaskManager(peerBean, connectionBean, workerThreads));
+			peerBean.setTaskManager(new TaskManager(peer, connectionBean, workerThreads));
 			TaskRPC taskRPC = new TaskRPC(peerBean, connectionBean);
 			peer.setTaskRPC(taskRPC);
 		}

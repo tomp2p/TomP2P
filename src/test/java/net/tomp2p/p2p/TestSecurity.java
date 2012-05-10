@@ -42,7 +42,7 @@ public class TestSecurity
 			slave1.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					System.err.println("P is " + publicKey);
@@ -98,7 +98,7 @@ public class TestSecurity
 			master.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					gotPK.set(publicKey != null);
@@ -286,7 +286,7 @@ public class TestSecurity
 			slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).buildAndListen();
 			master.getPeerBean().setStorage(new StorageMemory()
 			{
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					//System.out.println("store1");
@@ -296,7 +296,7 @@ public class TestSecurity
 			slave1.getPeerBean().setStorage(new StorageMemory()
 			{
 				@Override
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					//System.out.println("store2");

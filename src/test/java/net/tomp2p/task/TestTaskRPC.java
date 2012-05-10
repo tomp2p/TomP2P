@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Random;
 
 import junit.framework.Assert;
-
 import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -15,9 +14,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.Storage;
-import net.tomp2p.task.TaskStatus;
-import net.tomp2p.task.Worker;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
@@ -206,7 +202,7 @@ class MyWorker1 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Map<Number160, Data> inputData, Storage storage)
+	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed!");
@@ -218,7 +214,7 @@ class MyWorker2 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Map<Number160, Data> inputData, Storage storage)
+	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed, now waiting 250msec");
@@ -231,7 +227,7 @@ class MyWorker3 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Map<Number160, Data> inputData, Storage storage)
+	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed, now waiting 1250msec");

@@ -46,7 +46,7 @@ public class ExampleDST
 			StorageMemory sm = new StorageMemory()
 			{
 				@Override
-				public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+				public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 						Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 				{
 					Map<Number480, Data> map = subMap(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
@@ -56,7 +56,7 @@ public class ExampleDST
 					}
 					else
 					{
-						return false;
+						return PutStatus.FAILED;
 					}
 				}
 				

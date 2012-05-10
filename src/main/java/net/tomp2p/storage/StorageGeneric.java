@@ -34,14 +34,9 @@ import net.tomp2p.utils.Utils;
 
 public abstract class StorageGeneric implements Storage
 {
-	public enum ProtectionEnable
-	{
-		ALL, NONE
-	};
-	public enum ProtectionMode
-	{
-		NO_MASTER, MASTER_PUBLIC_KEY
-	};
+	public enum ProtectionEnable { ALL, NONE };
+	public enum ProtectionMode { NO_MASTER, MASTER_PUBLIC_KEY};
+	public enum PutStatus {OK, FAILED_NOT_ABSENT, FAILED};
 	// Hash of public key is always preferred
 	private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
 	// Domains can generallay be protected
@@ -179,7 +174,7 @@ public abstract class StorageGeneric implements Storage
 		return retVal;
 	}
 	
-	public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
+	public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, 
 			Data newData, PublicKey publicKey, boolean putIfAbsent, boolean domainProtection)
 	{
 		boolean retVal = false;
@@ -189,12 +184,12 @@ public abstract class StorageGeneric implements Storage
 		{
 			if (!securityDomainCheck(locationKey, domainKey, publicKey, domainProtection))
 			{
-				return false;
+				return PutStatus.FAILED;
 			}
 			boolean contains = contains(locationKey, domainKey, contentKey); 
 			if (putIfAbsent && contains)
 			{
-				return false;
+				return PutStatus.FAILED_NOT_ABSENT;
 			}
 			if (contains)
 			{
@@ -202,7 +197,7 @@ public abstract class StorageGeneric implements Storage
 				boolean protectEntry = newData.isProtectedEntry();
 				if (!canUpdateEntry(contentKey, oldData, newData, protectEntry))
 				{
-					return false;
+					return PutStatus.FAILED;
 				}
 			}
 			retVal = put(locationKey, domainKey, contentKey, newData);
@@ -217,7 +212,7 @@ public abstract class StorageGeneric implements Storage
 		{
 			dataLock480.unlock(lockKey, lock);
 		}
-		return retVal;
+		return retVal ? PutStatus.OK : PutStatus.FAILED;
 	}
 	
 	public Data remove(Number160 locationKey, Number160 domainKey, Number160 contentKey, PublicKey publicKey)

@@ -42,7 +42,16 @@ import org.slf4j.LoggerFactory;
 
 public class StorageDisk extends StorageGeneric
 {
+	
 	final private static Logger logger = LoggerFactory.getLogger(StorageDisk.class);
+	
+	private static final String DATA_MAP = "dataMap";
+	private static final String RESPONSIBILITY_MAP_REV = "responsibilityMapRev";
+	private static final String RESPONSIBILITY_MAP = "responsibilityMap";
+	private static final String PROTECTED_MAP = "protectedMap";
+	private static final String TIMEOUT_MAP_REV = "timeoutMapRev";
+	private static final String TIMEOUT_MAP = "timeoutMap";
+	
 	final private DB db;
 	// Core
 	final private NavigableMap<Number480, Data> dataMap;
@@ -66,12 +75,20 @@ public class StorageDisk extends StorageGeneric
 	{
 		dirName = fileName+File.separator+"tomp2p";
 		db = DBMaker.openFile(dirName).make();
-		dataMap = db.<Number480, Data>createTreeMap("dataMap");
-		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
-		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");
-		protectedMap = db.<Number320, byte[]>createHashMap("protectedMap");
-		responsibilityMap = db.<Number160, Number160>createHashMap("responsibilityMap");
-		responsibilityMapRev = db.<Number160, Set<Number160>>createHashMap("responsibilityMapRev");
+		dataMap = this.<Number480, Data>getOrCreateTreeMap(DATA_MAP);
+		timeoutMap = this.<Number480, Long>getOrCreateHashMap(TIMEOUT_MAP);
+		timeoutMapRev = this.<Long, Set<Number480>>getOrCreateTreeMap(TIMEOUT_MAP_REV);
+		protectedMap = this.<Number320, byte[]>getOrCreateHashMap(PROTECTED_MAP);
+		responsibilityMap = this.<Number160, Number160>getOrCreateHashMap(RESPONSIBILITY_MAP);
+		responsibilityMapRev = this.<Number160, Set<Number160>>getOrCreateHashMap(RESPONSIBILITY_MAP_REV);
+	}
+
+	private <K extends Comparable,V> NavigableMap<K, V> getOrCreateTreeMap(String name) {
+		return db.<K,V>getTreeMap(name)!=null ? db.<K,V>getTreeMap(name) : db.<K,V>createTreeMap(name);
+	}
+	
+	private <K extends Comparable,V> ConcurrentMap<K,V> getOrCreateHashMap(String name) {
+		return db.<K,V>getHashMap(name)!=null ? db.<K,V>getHashMap(name) : db.<K,V>createHashMap(name);
 	}
 	
 	@Override

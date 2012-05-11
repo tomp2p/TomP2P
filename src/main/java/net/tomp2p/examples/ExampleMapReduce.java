@@ -13,6 +13,7 @@ import java.util.StringTokenizer;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureTask;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -43,20 +44,20 @@ public class ExampleMapReduce
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
 	private static void exampleMapReduce(Peer[] peers, Number160 nr) throws IOException, ClassNotFoundException
 	{
 		final Number160 result = Number160.createHash(0);
-		final Number160 nr1 = Number160.createHash(1);
-		final Number160 nr2 = Number160.createHash(2);
-		final Number160 nr3 = Number160.createHash(3);
+		final Number160 nr1 = Number160.createHash("1");
+		final Number160 nr2 = Number160.createHash("2");
+		final Number160 nr3 = Number160.createHash("3");
 		Worker map = new Worker()
 		{
 			private static final long serialVersionUID = 276677516112036039L;
 			@Override
 			public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData) throws Exception
 			{
-				Map<Number160, FutureDHT> futures = new HashMap<Number160, FutureDHT>();
+				List<FutureDHT> futures = new ArrayList<FutureDHT>();
+				Map<Number160, Data> retVal = new HashMap<Number160, Data>();
 				for(Map.Entry<Number160, Data> entry: inputData.entrySet())
 				{
 					String text = (String)entry.getValue().getObject();
@@ -65,15 +66,13 @@ public class ExampleMapReduce
 					{
 						String word = st.nextToken();
 						Number160 key = Number160.createHash(word);
-						futures.put(key, peer.add(key).setData(new Data(1)).setList(true).add());
+						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).add();
+						System.out.println("map DHT call for word ["+word+"], key="+key+" on peer "+peer.getPeerID());
+						futures.add(futureDHT);
+						retVal.put(key, new Data(key));
 					}
 				}
-				Map<Number160, Data> retVal = new HashMap<Number160, Data>();
-				for(Map.Entry<Number160, FutureDHT> entry : futures.entrySet())
-				{
-					entry.getValue().awaitUninterruptibly();
-					retVal.put(entry.getKey(), new Data(entry.getValue().getType()));
-				}
+				for(FutureDHT futureDHT: futures) futureDHT.awaitUninterruptibly();
 				return retVal;
 			}
 		};
@@ -89,6 +88,7 @@ public class ExampleMapReduce
 				{
 					Number160 key = entry.getKey();
 					int size = peer.getPeerBean().getStorage().get(key, Configurations.DEFAULT_DOMAIN, Number160.ZERO, Number160.MAX_VALUE).size();
+					System.out.println("reduce DHT call " + key+" found "+size+" on peer "+peer.getPeerID());
 					Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 					dataMap.put(peer.getPeerAddress().getID(), new Data(size));
 					futures.put(key, peer.put(result, dataMap, Configurations.defaultStoreConfiguration()));
@@ -102,43 +102,44 @@ public class ExampleMapReduce
 				return retVal;
 			}
 		};
-		FutureTask ft1 = peers[33].submit(nr1, map).setDataMap(createData(text1)).submit();
-		FutureTask ft2 = peers[34].submit(nr2, map).setDataMap(createData(text2)).submit();
-		FutureTask ft3 = peers[35].submit(nr3, map).setDataMap(createData(text3)).submit();
+		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).submit();
+		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).submit();
+		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).submit();
 		ft1.awaitUninterruptibly();
 		ft2.awaitUninterruptibly();
 		ft3.awaitUninterruptibly();
 		Set<Number160> intermediate = new HashSet<Number160>();
-		intermediate.addAll(((Map<Number160, Data>)(ft1.getRawDataMap().values())).keySet());
-		intermediate.addAll(((Map<Number160, Data>)(ft2.getRawDataMap().values())).keySet());
-		intermediate.addAll(((Map<Number160, Data>)(ft3.getRawDataMap().values())).keySet());
+		
+		for(Map<Number160, Data> map1:ft1.getRawDataMap().values()) intermediate.addAll(map1.keySet());
+		for(Map<Number160, Data> map1:ft2.getRawDataMap().values()) intermediate.addAll(map1.keySet());
+		for(Map<Number160, Data> map1:ft3.getRawDataMap().values()) intermediate.addAll(map1.keySet());
 		int i=0;
 		List<FutureTask> resultList = new ArrayList<FutureTask>();
+		System.out.println("we got "+intermediate.size()+" unique words");
 		for(Number160 location: intermediate)
 		{
-			resultList.add(peers[36+i].submit(location, reduce).setDataMap(createData(location)).submit());
+			resultList.add(peers[40+i].submit(location, reduce).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(location)).submit());
 			i++;
 		}
 		//now we wait for the completion
-		for(FutureTask futureTask:resultList)
-		{
-			futureTask.awaitUninterruptibly();
-		}
+		for(FutureTask futureTask:resultList) futureTask.awaitUninterruptibly();
 		FutureDHT futureDHT = peers[20].getAll(result);
 		futureDHT.awaitUninterruptibly();
 		int counter = 0;
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
-			counter += (Integer) entry.getValue().getObject();
+			Data data = entry.getValue();
+			Object obj = data.getObject();
+			counter += (Integer) obj;
 		}
-		System.out.println("count returns " + counter);
+		System.out.println("final result DHT call, count returns " + counter);
 	}
 
 	private static Map<Number160, Data> createData(Number160 location) throws IOException
 	{
 		Map<Number160, Data> retVal = new HashMap<Number160, Data>();
 		Data data = new Data(location);
-		retVal.put(data.getHash(), data);
+		retVal.put(location, data);
 		return retVal;
 	}
 

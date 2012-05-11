@@ -49,7 +49,7 @@ public class TaskRPC extends ReplyHandler
 	public TaskRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
-		this.taskManager = peerBean.getTaskManager();
+		this.taskManager = connectionBean.getTaskManager();
 		registerIoHandler(Command.TASK);
 	}
 
@@ -173,7 +173,7 @@ public class TaskRPC extends ReplyHandler
 			Object obj = Utils.decodeJavaObject(channelBuffer.array(), channelBuffer.arrayOffset(),
 					channelBuffer.capacity());
 			Worker mapper = (Worker) obj;
-			int queuePosition = taskManager.submitTask(taskId, mapper, dataMap, message.getSender(), sign);
+			int queuePosition = taskManager.submitTask(getPeerBean().getPeer(), taskId, mapper, dataMap, message.getSender(), sign);
 			responseMessage.setInteger(queuePosition);
 		}
 		else if(message.getType() == Type.REQUEST_2)

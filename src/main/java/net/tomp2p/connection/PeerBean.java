@@ -16,13 +16,13 @@
 package net.tomp2p.connection;
 import java.security.KeyPair;
 
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.TrackerStorage;
-import net.tomp2p.task.TaskManager;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings
@@ -45,7 +45,7 @@ public class PeerBean
 	private Replication replicationStorage;
 	private Replication replicationTracker;
 	private Statistics statistics;
-	private TaskManager taskManager;
+	private Peer peer;
 	
 	public PeerBean(KeyPair keyPair)
 	{
@@ -117,16 +117,6 @@ public class PeerBean
 		return statistics;
 	}
 
-	public TaskManager getTaskManager()
-	{
-		return taskManager;
-	}
-
-	public void setTaskManager(TaskManager taskManager)
-	{
-		this.taskManager = taskManager;
-	}
-
 	public Replication getReplicationTracker()
 	{
 		return replicationTracker;
@@ -135,5 +125,15 @@ public class PeerBean
 	public void setReplicationTracker(Replication replicationTracker)
 	{
 		this.replicationTracker = replicationTracker;
+	}
+
+	public Peer getPeer()
+	{
+		return peer;
+	}
+
+	public void setPeer(Peer peer)
+	{
+		this.peer = peer;
 	}
 }

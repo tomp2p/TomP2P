@@ -143,7 +143,7 @@ public class NeighborRPC extends ReplyHandler
 			}
 			else if(message.getType() == Type.REQUEST_4)
 			{
-				DigestInfo digestInfo = getPeerBean().getTaskManager().digest();
+				DigestInfo digestInfo = getConnectionBean().getTaskManager().digest();
 				responseMessage.setInteger(digestInfo.getSize());
 			}
 		}

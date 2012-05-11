@@ -18,6 +18,7 @@ import net.tomp2p.futures.FutureTask;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.AsyncTask;
@@ -81,7 +82,7 @@ public class DistributedTask
 								//direct hits mean that there is a task scheduled
 								SortedMap<PeerAddress, DigestInfo> map = future.getDirectHitsDigest();
 								//potential hits means that no task is scheduled
-								NavigableSet<Pair> queue = findBest(map, future.getPotentialHits());
+								NavigableSet<Pair> queue = findBest(map, future.getPotentialHits(), locationKey);
 								parallelRequests(futureTask, queue, requestP2PConfiguration, channelCreator, locationKey, dataMap, 
 										worker, requestP2PConfiguration.isForceUPD(), signMessage);
 							}
@@ -191,16 +192,16 @@ public class DistributedTask
 				channelCreator);
 	}
 	
-	static NavigableSet<Pair> findBest(SortedMap<PeerAddress, DigestInfo> map, NavigableSet<PeerAddress> navigableSet)
+	static NavigableSet<Pair> findBest(SortedMap<PeerAddress, DigestInfo> map, NavigableSet<PeerAddress> navigableSet, Number160 locationKey)
 	{
 		NavigableSet<Pair> set = new TreeSet<DistributedTask.Pair>();
 		for(Map.Entry<PeerAddress, DigestInfo> entry:map.entrySet())
 		{
-			set.add(new Pair(entry.getKey(), entry.getValue().getSize()));
+			set.add(new Pair(entry.getKey(), entry.getValue().getSize(), locationKey));
 		}
 		for(PeerAddress peerAddress:navigableSet)
 		{
-			set.add(new Pair(peerAddress, 0));
+			set.add(new Pair(peerAddress, 0, locationKey));
 		}
 		return set;
 	}
@@ -209,17 +210,19 @@ public class DistributedTask
 	{
 		private final PeerAddress peerAddress;
 		private final int queueSize;
-		public Pair(PeerAddress peerAddress, int queueSize)
+		private final Number160 locationKey;
+		public Pair(PeerAddress peerAddress, int queueSize, Number160 locationKey)
 		{
 			this.peerAddress = peerAddress;
 			this.queueSize = queueSize;
+			this.locationKey = locationKey;
 		}
 		@Override
 		public int compareTo(Pair o)
 		{
 			int diff = queueSize - o.queueSize;
 			if(diff != 0) return diff;
-			return peerAddress.compareTo(o.peerAddress);
+			return PeerMapKadImpl.isKadCloser(locationKey, peerAddress, o.peerAddress);
 		}
 		
 		@Override

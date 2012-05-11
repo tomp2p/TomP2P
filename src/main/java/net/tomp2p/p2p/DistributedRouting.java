@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -57,12 +58,14 @@ public class DistributedRouting
 	final private static Logger logger = LoggerFactory.getLogger(DistributedRouting.class);
 	final private NeighborRPC neighbors;
 	final private PeerBean peerBean;
+	final private ConnectionBean connectionBean;
 	final private Random rnd;
 
-	public DistributedRouting(PeerBean peerBean, NeighborRPC neighbors)
+	public DistributedRouting(PeerBean peerBean, ConnectionBean connectionBean, NeighborRPC neighbors)
 	{
 		this.neighbors = neighbors;
 		this.peerBean = peerBean;
+		this.connectionBean = connectionBean;
 		rnd = new Random(peerBean.getServerPeerAddress().getID().hashCode());
 	}
 
@@ -214,7 +217,7 @@ public class DistributedRouting
 		//with request4 we should never see random search, but just to be very specific here add the flag
 		else if (type == Type.REQUEST_4  && !randomSearch)
 		{
-			DigestInfo digestInfo = peerBean.getTaskManager().digest();
+			DigestInfo digestInfo = connectionBean.getTaskManager().digest();
 			if (digestInfo.getSize() > 0)
 			{
 				directHits.put(peerBean.getServerPeerAddress(), digestInfo);

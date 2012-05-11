@@ -34,6 +34,7 @@ public class FutureTask extends BaseFutureImpl
 {
 	final private List<FutureAsyncTask> requests = new ArrayList<FutureAsyncTask>();
 	final private Map<PeerAddress, Map<Number160, Data>> dataMap = new HashMap<PeerAddress, Map<Number160,Data>>();
+	final private StringBuilder message = new StringBuilder();
 	private int resultSuccess = 0;
 	private int resultFailed = 0;
 	
@@ -63,6 +64,7 @@ public class FutureTask extends BaseFutureImpl
 			{
 				return;
 			}
+			this.reason = message.toString();
 			this.type = resultSuccess > 0 ? FutureType.OK: FutureType.FAILED;
 		}
 		notifyListerenrs();
@@ -89,9 +91,11 @@ public class FutureTask extends BaseFutureImpl
 					dataMap.put(peerAddress, tmp);
 				}
 				tmp.putAll(futureAsyncTask.getDataMap());
+				message.append("[Ok] ");
 			}
 			else
 			{
+				message.append("[").append(futureAsyncTask.getFailedReason()).append("] ");
 				resultFailed++;
 			}
 		}

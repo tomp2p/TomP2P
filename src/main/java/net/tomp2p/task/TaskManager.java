@@ -3,6 +3,7 @@ package net.tomp2p.task;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,7 +27,6 @@ import org.slf4j.LoggerFactory;
 public class TaskManager
 {
 	final private static Logger logger = LoggerFactory.getLogger(TaskManager.class);
-	final private Peer peer;
 	final private ConnectionBean connectionBean;
 	final private Object lock = new Object();
 	final private ThreadPoolExecutor executor;
@@ -44,8 +44,10 @@ public class TaskManager
 		private final Map<Number160, Data> inputData;
 		private final PeerAddress senderAddress;
 		private final boolean sign;
-		public Task(Number160 taskId, Worker mapper, Map<Number160, Data> inputData, PeerAddress senderAddress, boolean sign)
+		private final Peer peer;
+		public Task(Peer peer, Number160 taskId, Worker mapper, Map<Number160, Data> inputData, PeerAddress senderAddress, boolean sign)
 		{
+			this.peer = peer;
 			this.taskId = taskId;
 			this.mapper = mapper;
 			this.inputData = inputData;
@@ -55,6 +57,7 @@ public class TaskManager
 		@Override
 		public void run()
 		{
+			Thread.currentThread().setName("task-manager "+taskId);
 			if(logger.isDebugEnabled())
 			{
 				logger.debug("started task "+taskId+" which came from "+senderAddress);
@@ -116,9 +119,8 @@ public class TaskManager
 		}
 	}
 	
-	public TaskManager(Peer peer, ConnectionBean connectionBean, int threads)
+	public TaskManager(ConnectionBean connectionBean, int threads)
 	{
-		this.peer = peer;
 		this.connectionBean = connectionBean;
 		this.executor = new ThreadPoolExecutor(threads, threads,
 	            0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
@@ -208,13 +210,13 @@ public class TaskManager
 		return statusResult;
 	}
 
-	public int submitTask(Number160 taskId, Worker mapper, Map<Number160, Data> data, PeerAddress senderAddress, boolean sign)
+	public int submitTask(Peer peer, Number160 taskId, Worker mapper, Map<Number160, Data> data, PeerAddress senderAddress, boolean sign)
 	{
 		synchronized (lock)
 		{
 			status.put(taskId, 	TaskStatus.Status.QUEUE);
 		}
-		Task task = new Task(taskId, mapper, data, senderAddress, sign);
+		Task task = new Task(peer, taskId, mapper, data, senderAddress, sign);
 		executor.execute(task);
 		return executor.getQueue().size();
 	}
@@ -230,5 +232,14 @@ public class TaskManager
 	public DigestInfo digest()
 	{
 		return new DigestInfo(executor.getQueue().size());
+	}
+	
+	public void shutdown()
+	{
+		List<Runnable> jobs = executor.shutdownNow();
+		if(jobs.size() > 0 && logger.isWarnEnabled())
+		{
+			logger.warn("shutting down and not executing "+jobs.size()+" jobs");
+		}
 	}
 }

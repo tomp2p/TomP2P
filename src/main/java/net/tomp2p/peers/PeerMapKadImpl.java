@@ -682,7 +682,7 @@ public class PeerMapKadImpl implements PeerMap
 	 * @param rn2 The other peer to test if closer to the id
 	 * @return -1 if first peer is closer, 1 otherwise, 0 if both are equal
 	 */
-	private static int isKadCloser(Number160 id, PeerAddress rn, PeerAddress rn2)
+	public static int isKadCloser(Number160 id, PeerAddress rn, PeerAddress rn2)
 	{
 		return distance(id, rn.getID()).compareTo(distance(id, rn2.getID()));
 	}

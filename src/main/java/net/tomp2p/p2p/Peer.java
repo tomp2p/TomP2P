@@ -237,6 +237,7 @@ public class Peer
 		if(masterFlag)
 		{
 			getConnectionBean().getSender().shutdown();
+			getConnectionBean().getTaskManager().shutdown();
 		}
 		getConnectionHandler().shutdown();
 		if (masterFlag && timer != null)
@@ -263,7 +264,7 @@ public class Peer
 	 * @throws Exception
 	 */
 	ConnectionHandler listen(final int udpPort, final int tcpPort, final Bindings bindings,
-			final File fileMessageLogger) throws IOException
+			final File fileMessageLogger, int workerThreads) throws IOException
 	{
 		// I'm the master
 		masterFlag = true;
@@ -271,7 +272,7 @@ public class Peer
 		this.bindings = bindings;
 		
 		ConnectionHandler connectionHandler = new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
-				configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize, maintenanceThreads, replicationThreads);
+				configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize, maintenanceThreads, replicationThreads, workerThreads);
 		logger.debug("listen done");
 		this.connectionHandler = connectionHandler;
 		return connectionHandler;

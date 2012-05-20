@@ -84,9 +84,9 @@ public class ExampleConsistency
 		mpeer2.bootstrap(peers[0].getPeerAddress()).awaitUninterruptibly();
 		mpeer3.bootstrap(peers[0].getPeerAddress()).awaitUninterruptibly();
 		// load old data
-		mpeer1.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack!"));
-		mpeer2.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack!"));
-		mpeer3.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack!"));
+		mpeer1.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
+		mpeer2.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
+		mpeer3.getPeerBean().getStorage().put(key1, Configurations.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
 		// we got attack!
 		ConfigurationGet cg = Configurations.defaultGetConfiguration();
 		cg.setRequestP2PConfiguration(new RequestP2PConfiguration(6, 0, 6));

@@ -1897,6 +1897,36 @@ public class TestDHT
 		}
 	}
 	
+	@Test
+	public void testGracefulShutdown() throws Exception
+	{
+		Peer sender = null;
+		Peer recv1 = null;
+		try
+		{
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender.bootstrap(recv1.getPeerAddress()).awaitUninterruptibly();
+			Assert.assertEquals(1, sender.getPeerBean().getPeerMap().getAll().size());
+			Assert.assertEquals(1, recv1.getPeerBean().getPeerMap().getAll().size());
+			//graceful shutdown
+			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
+			fcc.awaitUninterruptibly();
+			ChannelCreator cc = fcc.getChannelCreator();
+			FutureResponse fr = sender.getQuitRPC().quit(recv1.getPeerAddress(), cc, false);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
+			sender.shutdown();
+			//dont care about the sender
+			Assert.assertEquals(0, recv1.getPeerBean().getPeerMap().getAll().size());
+			
+		}
+		finally
+		{
+			if (recv1 != null)
+				recv1.shutdown();
+		}
+	}
+	
 	private void setData(Peer peer, String location, String domain, String content, Data data) throws IOException
 	{
 		final Number160 locationKey = Number160.createHash(location);

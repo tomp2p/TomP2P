@@ -1346,7 +1346,7 @@ public class Peer
 		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
 				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
 				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
-				false, false, config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
+				false, false, config.isRange(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
 		return futureDHT;
 	}
 	
@@ -1434,7 +1434,7 @@ public class Peer
 		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
 				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
 				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
-				true, config.isReturnBloomFliter(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
+				true, config.isReturnBloomFliter(), config.isRange(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
 		return futureDHT;
 	}
 

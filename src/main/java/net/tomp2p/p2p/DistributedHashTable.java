@@ -326,7 +326,7 @@ public class DistributedHashTable
 			final SimpleBloomFilter<Number160> contentBloomFilter, final PublicKey publicKey, 
 			final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration p2pConfiguration, 
 			final EvaluatingSchemeDHT evaluationScheme,  final boolean signMessage, final boolean digest, 
-			final boolean returnBloomFilter, final boolean isAutomaticCleanup, 
+			final boolean returnBloomFilter, final boolean range, final boolean isAutomaticCleanup, 
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -354,8 +354,9 @@ public class DistributedHashTable
 								}
 								// this adjust is based on results from the routing process,
 								// if we find the same data on 2 peers, we want to get it from one only. Unless its digest, then we want to know exactly what is going on
-								RequestP2PConfiguration p2pConfiguration2 = digest ? p2pConfiguration : adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest());
-								parallelRequests(p2pConfiguration2,	futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
+								RequestP2PConfiguration p2pConfiguration2 = digest || range ? p2pConfiguration : adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest());
+								//TODO: make the range also store in direct hits
+								parallelRequests(p2pConfiguration2,	range ? futureRouting.getPotentialHits() : futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
 										new Operation()
 										{
 											Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
@@ -365,7 +366,7 @@ public class DistributedHashTable
 											public FutureResponse create(ChannelCreator channelCreator, PeerAddress address)
 											{
 												return storeRCP.get(address, locationKey, domainKey, contentKeys, keyBloomFilter, contentBloomFilter, publicKey, 
-														signMessage, digest, returnBloomFilter, channelCreator, p2pConfiguration.isForceUPD());
+														signMessage, digest, returnBloomFilter, range, channelCreator, p2pConfiguration.isForceUPD());
 											}
 
 											@Override

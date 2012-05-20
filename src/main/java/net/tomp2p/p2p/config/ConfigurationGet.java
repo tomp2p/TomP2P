@@ -29,6 +29,7 @@ public class ConfigurationGet extends ConfigurationBaseDHT
 	private SimpleBloomFilter<Number160> keyBloomFilter;
 	private SimpleBloomFilter<Number160> contentBloomFilter;
 	private boolean returnBloomFliter;
+	private boolean range;
 
 	public ConfigurationGet setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme)
 	{
@@ -83,5 +84,16 @@ public class ConfigurationGet extends ConfigurationBaseDHT
 	public boolean isReturnBloomFliter()
 	{
 		return returnBloomFliter;
+	}
+	
+	public ConfigurationGet setRange(boolean range)
+	{
+		this.range = range;
+		return this;
+	}
+
+	public boolean isRange()
+	{
+		return range;
 	}
 }

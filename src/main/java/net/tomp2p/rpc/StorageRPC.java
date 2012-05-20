@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
@@ -334,18 +335,26 @@ public class StorageRPC extends ReplyHandler
 			final Number160 domainKey, final Collection<Number160> contentKeys,
 			final SimpleBloomFilter<Number160> keyBloomFilter, final SimpleBloomFilter<Number160> contentBloomFilter,
 			final PublicKey protectedDomains, final boolean signMessage, final boolean digest, 
-			final boolean returnBloomFilter, final ChannelCreator channelCreator, final boolean forceUDP)
+			final boolean returnBloomFilter, final boolean range, final ChannelCreator channelCreator, final boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
-		Type type = Type.REQUEST_1;
-		if(digest)
+		Type type;
+		if(range && !digest)
+		{
+			type = Type.REQUEST_4;
+		}
+		else if(!range && !digest)
+		{
+			type = Type.REQUEST_1;
+		}
+		else if(digest && !returnBloomFilter)
 		{
 			type = Type.REQUEST_2;
-			if(returnBloomFilter)
-			{
-				//TODO: sent arguments bitArraySize and expectedElement
-				type = Type.REQUEST_3;
-			}
+		}
+		else// if(digest && returnBloomFilter)
+		{
+			//TODO: sent arguments bitArraySize and expectedElement
+			type = Type.REQUEST_3;
 		}
 		final Message message = createMessage(remotePeer, Command.GET, type);
 		if (signMessage) 
@@ -610,7 +619,7 @@ public class StorageRPC extends ReplyHandler
 		final Collection<Number160> contentKeys = message.getKeys();
 		final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter1();
 		final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter2();
-		
+		final boolean range = message.getType() == Type.REQUEST_4;
 		final boolean digest = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3;
 		if(digest)
 		{
@@ -641,14 +650,35 @@ public class StorageRPC extends ReplyHandler
 			if (contentKeys != null)
 			{
 				result = new HashMap<Number480, Data>();
-				for (Number160 contentKey : contentKeys)
+				if(!range || contentKeys.size() != 2)
 				{
-					Data data = getPeerBean().getStorage().get(locationKey, domainKey, contentKey);
-					if (data != null)
+					for (Number160 contentKey : contentKeys)
 					{
-						Number480 key = new Number480(locationKey, domainKey, contentKey);
-						result.put(key, data);
+						Data data = getPeerBean().getStorage().get(locationKey, domainKey, contentKey);
+						if (data != null)
+						{
+							Number480 key = new Number480(locationKey, domainKey, contentKey);
+							result.put(key, data);
+						}
 					}
+				}
+				else
+				{
+					//get min/max
+					Iterator<Number160> iterator = contentKeys.iterator();
+					Number160 min = iterator.next();
+					Number160 max = iterator.next();
+					SortedMap<Number480, Data> map = getPeerBean().getStorage().get(locationKey, domainKey, min, max);
+					Number320 lockKey = new Number320(locationKey, domainKey);
+					Lock lock = getPeerBean().getStorage().getLockNumber320().lock(lockKey);
+					try
+					{
+						result.putAll(map);
+					}
+					finally
+					{
+						getPeerBean().getStorage().getLockNumber320().unlock(lockKey, lock);
+					}		
 				}
 			}
 			else if(keyBloomFilter !=null || contentBloomFilter!=null)

@@ -58,6 +58,7 @@ public class Message
 		// REQUEST_1 is the normal request
 		// REQUEST_2 for GET returns the extended digest (hashes of all stored data)
 		// REQUEST_3 for GET returns a Bloom filter
+		// REQUEST_4 for GET returns a range (min/max)
 		// REQUEST_2 for PUT/ADD/COMPARE_PUT means protect domain
 		// REQUEST_3 for PUT means put if absent
 		// REQUEST_3 for COMPARE_PUT means partial (partial means that put those data that match compare, ignore others)

@@ -2,11 +2,9 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import net.tomp2p.examples.Query.QueryType;
 import net.tomp2p.examples.Query.ValueType;

@@ -45,15 +45,20 @@ public class ExampleUnQL
 
 	private static void exampleUnQL(Peer[] peers) throws IOException, ClassNotFoundException
 	{
-		executeUpdate(peers[22], new Query(QUERY_1));
-		executeUpdate(peers[23], new Query(QUERY_2));
-		executeUpdate(peers[24], new Query(QUERY_3));
-		executeUpdate(peers[25], new Query(QUERY_4));
-		executeUpdate(peers[26], new Query(QUERY_5));
-		executeUpdate(peers[27], new Query(QUERY_6));
+		execute(peers[22], new Query(QUERY_1));
+		execute(peers[23], new Query(QUERY_2));
+		execute(peers[24], new Query(QUERY_3));
+		execute(peers[25], new Query(QUERY_4));
+		execute(peers[26], new Query(QUERY_5));
+		execute(peers[27], new Query(QUERY_6));
+	}
+	
+	public static void execute(Peer peer, String query) throws IOException, ClassNotFoundException
+	{
+		execute(peer, new Query(query));
 	}
 
-	private static void executeUpdate(Peer peer, Query query) throws IOException, ClassNotFoundException
+	private static void execute(Peer peer, Query query) throws IOException, ClassNotFoundException
 	{
 		Number160 locationKey = Number160.createHash(query.getCollectionName());
 		if(query.getQueryType() == QueryType.INSERT)

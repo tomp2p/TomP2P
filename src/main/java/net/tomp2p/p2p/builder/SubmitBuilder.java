@@ -1,10 +1,13 @@
-package net.tomp2p.p2p;
+package net.tomp2p.p2p.builder;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureTask;
+import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.RequestP2PConfiguration;
+import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.Worker;
@@ -14,7 +17,6 @@ public class SubmitBuilder
 	private final static Map<Number160, Data> EMPTY_MAP = new HashMap<Number160, Data>();
 	private final Number160 locationKey;
 	private final Worker worker;
-	private final DistributedTask distributedTask;
 	private final Peer peer;
 	//
 	private Map<Number160, Data> dataMap;
@@ -22,12 +24,11 @@ public class SubmitBuilder
 	private RequestP2PConfiguration requestP2PConfiguration;
 	private FutureChannelCreator futureChannelCreator;
 	private boolean signMessage = false;
-	private boolean isAutomaticCleanup = true;
+	private boolean isManualCleanup = false;
 	//
-	public SubmitBuilder(Peer peer, DistributedTask distributedTask, Number160 locationKey, Worker worker)
+	public SubmitBuilder(Peer peer, Number160 locationKey, Worker worker)
 	{
 		this.peer = peer;
-		this.distributedTask = distributedTask;
 		this.locationKey = locationKey;
 		this.worker = worker;
 	}
@@ -86,19 +87,31 @@ public class SubmitBuilder
 		this.signMessage = signMessage;
 		return this;
 	}
-
-	public boolean isAutomaticCleanup()
+	
+	public SubmitBuilder signMessage()
 	{
-		return isAutomaticCleanup;
+		this.signMessage = true;
+		return this;
 	}
 
-	public SubmitBuilder setAutomaticCleanup(boolean isAutomaticCleanup)
+	public boolean isManualCleanup()
 	{
-		this.isAutomaticCleanup = isAutomaticCleanup;
+		return isManualCleanup;
+	}
+
+	public SubmitBuilder setManualCleanup(boolean isManualCleanup)
+	{
+		this.isManualCleanup = isManualCleanup;
 		return this;
 	}
 	
-	public FutureTask submit()
+	public SubmitBuilder manualCleanup()
+	{
+		this.isManualCleanup = true;
+		return this;
+	}
+	
+	public FutureTask build()
 	{
 		if(dataMap == null)
 		{
@@ -116,7 +129,7 @@ public class SubmitBuilder
 		{
 			futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, "submit-builder");
 		}	
-		return distributedTask.submit(locationKey, dataMap, worker, routingConfiguration, requestP2PConfiguration, 
-				futureChannelCreator, signMessage, isAutomaticCleanup, peer.getConnectionBean().getConnectionReservation());
+		return peer.getDistributedTask().submit(locationKey, dataMap, worker, routingConfiguration, requestP2PConfiguration, 
+				futureChannelCreator, signMessage, isManualCleanup, peer.getConnectionBean().getConnectionReservation());
 	}	
 }

@@ -31,7 +31,7 @@ public class TestTaskDHT
 			// do testing
 			Number160 locationKey = new Number160(rnd);
 			FutureTask ft = peers[12].submit(locationKey, new Worker2())
-					.setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).submit();
+					.setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).build();
 			ft.awaitUninterruptibly();
 			Assert.assertEquals(true, ft.isSuccess());
 		}

@@ -30,7 +30,7 @@ public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<
 		FutureBootstrap
 {
 	private Collection<PeerAddress> bootstrapTo;
-
+	
 	/**
 	 * The addresses we boostrap to. If we broadcast, we don't know the
 	 * addresses in advance.

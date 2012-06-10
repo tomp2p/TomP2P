@@ -18,7 +18,7 @@ package net.tomp2p.rpc;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
-import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
@@ -39,7 +39,7 @@ public class DirectDataRPC extends ReplyHandler
 		registerIoHandler(Command.DIRECT_DATA);
 	}
 	
-	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
+	public FutureResponse send(final PeerAddress remotePeer, final ChannelBuffer buffer,
 			boolean raw, ChannelCreator channelCreator, boolean forceUDP)
 	{
 		return send(remotePeer, buffer, raw, channelCreator, getConnectionBean().getConfiguration().getIdleTCPMillis(), forceUDP);
@@ -60,20 +60,20 @@ public class DirectDataRPC extends ReplyHandler
 	 *        is TCP
 	 * @return FutureResponse that stores which content keys have been stored.
 	 */
-	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer buffer,
+	public FutureResponse send(final PeerAddress remotePeer, final ChannelBuffer buffer,
 			boolean raw, ChannelCreator channelCreator, int idleTCPMillis, boolean forceUDP)
 	{
 		final Message message = createMessage(remotePeer, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);
-		final FutureData futureData = new FutureData(message, raw);
+		final FutureResponse futureResponse = new FutureResponse(message, raw);
 		if(!forceUDP)
 		{
-			final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
+			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendTCP(channelCreator, idleTCPMillis);
 		}
 		else
 		{
-			final RequestHandlerUDP<FutureData> requestHandler = new RequestHandlerUDP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
+			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 			return requestHandler.sendUDP(channelCreator);
 		}
 	}
@@ -87,12 +87,12 @@ public class DirectDataRPC extends ReplyHandler
 	 *        converted to an object
 	 * @return The request handler that sends with TCP
 	 */
-	public RequestHandlerTCP<FutureData> prepareSend(final PeerAddress remotePeer, final ChannelBuffer buffer, boolean raw)
+	public RequestHandlerTCP<FutureResponse> prepareSend(final PeerAddress remotePeer, final ChannelBuffer buffer, boolean raw)
 	{
 		final Message message = createMessage(remotePeer, Command.DIRECT_DATA, raw ? Type.REQUEST_1 : Type.REQUEST_2);
 		message.setPayload(buffer);
-		final FutureData futureData = new FutureData(message, raw);
-		final RequestHandlerTCP<FutureData> requestHandler = new RequestHandlerTCP<FutureData>(futureData, getPeerBean(), getConnectionBean(), message);
+		final FutureResponse futureResponse = new FutureResponse(message, raw);
+		final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
 		return requestHandler;
 	}
 

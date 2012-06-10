@@ -321,8 +321,6 @@ public class StorageRPC extends ReplyHandler
 	 * @param locationKey The location key
 	 * @param domainKey The domain key
 	 * @param contentKeys The content keys or null if requested all
-	 * @param protectedDomains Add the public key to protect the domain. In
-	 *        order to make this work, the message needs to be signed
 	 * @param signMessage Adds a public key and signs the message
 	 * @param digest Returns a list of hashes of the data stored on this peer
 	 * @param channelCreator The channel creator that creates connections.
@@ -334,8 +332,8 @@ public class StorageRPC extends ReplyHandler
 	public FutureResponse get(final PeerAddress remotePeer, final Number160 locationKey,
 			final Number160 domainKey, final Collection<Number160> contentKeys,
 			final SimpleBloomFilter<Number160> keyBloomFilter, final SimpleBloomFilter<Number160> contentBloomFilter,
-			final PublicKey protectedDomains, final boolean signMessage, final boolean digest, 
-			final boolean returnBloomFilter, final boolean range, final ChannelCreator channelCreator, final boolean forceUDP)
+			final boolean signMessage, final boolean digest, final boolean returnBloomFilter, final boolean range, 
+			final ChannelCreator channelCreator, final boolean forceUDP)
 	{
 		nullCheck(remotePeer, locationKey, domainKey);
 		Type type;
@@ -369,10 +367,6 @@ public class StorageRPC extends ReplyHandler
 		else if(keyBloomFilter !=null || contentBloomFilter!=null)
 		{
 			message.setTwoBloomFilter(keyBloomFilter, contentBloomFilter);
-		}
-		if (protectedDomains != null)
-		{
-			message.setPublicKey(protectedDomains);
 		}
 		FutureResponse futureResponse = new FutureResponse(message);
 		if(!forceUDP)

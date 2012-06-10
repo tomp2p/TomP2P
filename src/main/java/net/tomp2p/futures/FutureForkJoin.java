@@ -34,7 +34,7 @@ import java.util.List;
  * 
  * @param <K>
  */
-public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl implements BaseFuture
+public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureForkJoin<K>> implements BaseFuture
 {
 	// setup
 	final private K[] forks;
@@ -85,6 +85,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl impleme
 		{
 			join();
 		}
+		self(this);
 	}
 
 	/**

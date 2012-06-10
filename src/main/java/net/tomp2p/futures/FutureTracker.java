@@ -33,7 +33,7 @@ import net.tomp2p.storage.TrackerData;
  * 
  * @author Thomas Bocek
  */
-public class FutureTracker extends BaseFutureImpl implements FutureCleanup
+public class FutureTracker extends BaseFutureImpl<FutureTracker> implements FutureCleanup
 {
 	// since we receive results from multiple peers, we need to summarize them
 	final private EvaluatingSchemeTracker evaluatingSchemeTracker;
@@ -90,6 +90,7 @@ public class FutureTracker extends BaseFutureImpl implements FutureCleanup
 		this.evaluatingSchemeTracker = evaluatingSchemeTracker;
 		this.knownPeers = knownPeers;
 		this.futureCreate = futureCreate;
+		self(this);
 	}
 
 	/**

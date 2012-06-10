@@ -30,13 +30,18 @@ import net.tomp2p.storage.Data;
  * 
  * @author Thomas Bocek
  */
-public class FutureTask extends BaseFutureImpl
+public class FutureTask extends BaseFutureImpl<FutureTask>
 {
 	final private List<FutureAsyncTask> requests = new ArrayList<FutureAsyncTask>();
 	final private Map<PeerAddress, Map<Number160, Data>> dataMap = new HashMap<PeerAddress, Map<Number160,Data>>();
 	final private StringBuilder message = new StringBuilder();
 	private int resultSuccess = 0;
 	private int resultFailed = 0;
+	
+	public FutureTask()
+	{
+		self(this);
+	}
 	
 	/**
 	 * Adds all requests that have been created for the DHT operations. Those

@@ -14,7 +14,6 @@
  * the License.
  */
 package net.tomp2p.p2p;
-import java.security.PublicKey;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,7 +29,6 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureData;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
@@ -67,7 +65,7 @@ public class DistributedHashTable
 	public FutureDHT add(final Number160 locationKey, final Number160 domainKey,
 			final Collection<Data> dataSet, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean protectDomain,
-			final boolean signMessage, final boolean isAutomaticCleanup, final boolean list, final FutureCreate<FutureDHT> futureCreate,
+			final boolean signMessage, final boolean isManualCleanup, final boolean list, final FutureCreate<FutureDHT> futureCreate,
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -130,7 +128,7 @@ public class DistributedHashTable
 						}
 					});
 					
-					if(isAutomaticCleanup)
+					if(!isManualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -147,7 +145,7 @@ public class DistributedHashTable
 	public FutureDHT direct(final Number160 locationKey, final ChannelBuffer buffer,
 			final boolean raw, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration,
-			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish, final boolean isAutomaticCleanup,
+			final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish, final boolean manualCleanup,
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -201,16 +199,15 @@ public class DistributedHashTable
 												//the future tells us that the communication was successful, but we need to check the result if we could store it.
 												if(future.isSuccess() && future.getResponse().isOk())
 												{
-													FutureData futureData = (FutureData) future;
 													if (raw)
 													{
 														rawChannels.put(future.getRequest().getRecipient(),
-																futureData.getBuffer());
+																future.getBuffer());
 													}
 													else
 													{
 														rawObjects.put(future.getRequest().getRecipient(),
-																futureData.getObject());
+																future.getObject());
 													}
 												}
 											}
@@ -222,7 +219,7 @@ public class DistributedHashTable
 							}
 						}
 					});
-					if(isAutomaticCleanup)
+					if(!manualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -241,7 +238,7 @@ public class DistributedHashTable
 	public FutureDHT put(final Number160 locationKey, final Number160 domainKey,
 			final Map<Number160, Data> dataMap, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean putIfAbsent,
-			final boolean protectDomain, final boolean signMessage, final boolean isAutomaticCleanup,
+			final boolean protectDomain, final boolean signMessage, final boolean isManualCleanup,
 			final FutureCreate<FutureDHT> futureCreate, final FutureChannelCreator futureChannelCreator,
 			final ConnectionReservation connectionReservation)
 	{
@@ -307,7 +304,7 @@ public class DistributedHashTable
 							}
 						}
 					});
-					if(isAutomaticCleanup)
+					if(!isManualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -322,11 +319,11 @@ public class DistributedHashTable
 	}
 
 	public FutureDHT get(final Number160 locationKey, final Number160 domainKey,
-			final Set<Number160> contentKeys, final SimpleBloomFilter<Number160> keyBloomFilter,
-			final SimpleBloomFilter<Number160> contentBloomFilter, final PublicKey publicKey, 
+			final Collection<Number160> contentKeys, final SimpleBloomFilter<Number160> keyBloomFilter,
+			final SimpleBloomFilter<Number160> contentBloomFilter, 
 			final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration p2pConfiguration, 
 			final EvaluatingSchemeDHT evaluationScheme,  final boolean signMessage, final boolean digest, 
-			final boolean returnBloomFilter, final boolean range, final boolean isAutomaticCleanup, 
+			final boolean returnBloomFilter, final boolean range, final boolean isManualCleanup, 
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -365,7 +362,7 @@ public class DistributedHashTable
 											@Override
 											public FutureResponse create(ChannelCreator channelCreator, PeerAddress address)
 											{
-												return storeRCP.get(address, locationKey, domainKey, contentKeys, keyBloomFilter, contentBloomFilter, publicKey, 
+												return storeRCP.get(address, locationKey, domainKey, contentKeys, keyBloomFilter, contentBloomFilter, 
 														signMessage, digest, returnBloomFilter, range, channelCreator, p2pConfiguration.isForceUPD());
 											}
 
@@ -421,7 +418,7 @@ public class DistributedHashTable
 							}
 						}
 					});
-					if(isAutomaticCleanup)
+					if(!isManualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -436,9 +433,9 @@ public class DistributedHashTable
 	}
 
 	public FutureDHT remove(final Number160 locationKey, final Number160 domainKey,
-			final Set<Number160> contentKeys, final RoutingConfiguration routingConfiguration,
+			final Collection<Number160> contentKeys, final RoutingConfiguration routingConfiguration,
 			final RequestP2PConfiguration p2pConfiguration, final boolean returnResults,
-			final boolean signMessage, final boolean isAutomaticCleanup, FutureCreate<FutureDHT> futureCreate, 
+			final boolean signMessage, final boolean isManualCleanup, FutureCreate<FutureDHT> futureCreate, 
 			final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -510,7 +507,7 @@ public class DistributedHashTable
 								futureDHT.setFailed("routing failed");
 						}
 					});
-					if(isAutomaticCleanup)
+					if(!isManualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -540,7 +537,7 @@ public class DistributedHashTable
 	public FutureDHT parallelRequests(final RequestP2PConfiguration p2pConfiguration,
 			final NavigableSet<PeerAddress> queue, final boolean cancleOnFinish,
 			final FutureChannelCreator futureChannelCreator,
-			final ConnectionReservation connectionReservation, final boolean isAutomaticCleanup,
+			final ConnectionReservation connectionReservation, final boolean manualCleanup,
 			final Operation operation)
 	{
 		final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(),
@@ -554,7 +551,7 @@ public class DistributedHashTable
 				if(future.isSuccess())
 				{
 					parallelRequests(p2pConfiguration, queue, futureDHT, cancleOnFinish, future.getChannelCreator(), operation);
-					if(isAutomaticCleanup)
+					if(!manualCleanup)
 					{
 						Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
 					}
@@ -644,7 +641,7 @@ public class DistributedHashTable
 	}
 
 	private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
-			Set<Number160> contentKeys, RoutingConfiguration routingConfiguration,
+			Collection<Number160> contentKeys, RoutingConfiguration routingConfiguration,
 			RequestP2PConfiguration p2pConfiguration, Type type, ChannelCreator channelCreator)
 	{
 		return routing.route(locationKey, domainKey, contentKeys, type, routingConfiguration

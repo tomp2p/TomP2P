@@ -34,7 +34,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
  * @author Thomas Bocek
  * 
  */
-public class FutureDHT extends BaseFutureImpl implements FutureCleanup
+public class FutureDHT extends BaseFutureImpl<FutureDHT> implements FutureCleanup
 {
 	// The minimum number of expected results. This is also used for put()
 	// operations to decide if a future failed or not.
@@ -82,6 +82,7 @@ public class FutureDHT extends BaseFutureImpl implements FutureCleanup
 		this.min = min;
 		this.evaluationScheme = evaluationScheme;
 		this.futureCreate = futureCreate;
+		self(this);
 	}
 	
 	/**

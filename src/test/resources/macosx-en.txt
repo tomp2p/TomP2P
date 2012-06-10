@@ -1,0 +1,46 @@
+Routing tables
+
+Internet:
+Destination        Gateway            Flags        Refs      Use   Netif Expire
+default            130.60.155.1       UGSc          130        0     en0
+127                127.0.0.1          UCS             0        0     lo0
+127.0.0.1          127.0.0.1          UH              6    13844     lo0
+130.60.155/24      link#4             UCS            20        0     en0
+130.60.155.1       0:21:a0:50:86:0    UHLWIi        129        0     en0   1126
+130.60.155.4       0:1b:21:d3:a3:88   UHLWIi         10     2038     en0   1117
+130.60.155.11      0:1c:23:c1:93:0    UHLWIi          0      684     en0   1136
+130.60.155.54      0:14:4f:b0:12:b3   UHLWIi          0        0     en0   1183
+130.60.155.60      0:3:93:c1:70:e8    UHLWIi          0      673     en0   1171
+130.60.155.72      0:23:df:df:4b:23   UHLWIi          1        2     en0   1150
+130.60.155.93      90:e2:ba:7:47:11   UHLWIi          0        4     en0    592
+130.60.155.158     0:3:93:95:b5:fc    UHLWIi          0        0     en0    576
+130.60.155.169     0:a:95:a6:71:c     UHLWIi          0        0     en0    784
+130.60.155.170     0:25:4b:b1:67:10   UHLWIi          0        0     en0   1129
+130.60.155.172     c4:2c:3:2c:54:3b   UHLWIi          0        0     en0   1185
+130.60.155.175     3c:7:54:31:2b:50   UHLWIi          0        2     en0   1096
+130.60.155.182     60:fb:42:f0:f6:e2  UHLWIi          0        2     en0   1194
+130.60.155.185     58:b0:35:f1:fc:2d  UHLWIi          0        1     en0    997
+130.60.155.188     58:6d:8f:36:f3:91  UHLWIi          0        0     en0   1193
+130.60.155.197     f0:de:f1:78:ae:29  UHLWIi          0        0     en0    772
+130.60.155.209     0:26:4a:17:de:e0   UHLWIi          0        0     en0   1182
+130.60.155.214     0:26:bb:61:ec:a8   UHLWIi          0        0     en0   1148
+130.60.155.222     0:21:cc:5d:d:a6    UHLWIi          0        0     en0   1175
+130.60.155.228     127.0.0.1          UHS             0        0     lo0
+169.254            link#4             UCS             1        0     en0
+169.254.255.255    0:21:a0:50:86:0    UHLSW           0        0     en0
+
+Internet6:
+Destination                             Gateway                         Flags         Netif Expire
+::1                                     link#1                          UHL             lo0
+fe80::%lo0/64                           fe80::1%lo0                     UcI             lo0
+fe80::1%lo0                             link#1                          UHLI            lo0
+fe80::%en0/64                           link#4                          UCI             en0
+fe80::ca2a:14ff:fe1f:2e15%en0           c8:2a:14:1f:2e:15               UHLI            lo0
+fe80::%en1/64                           link#5                          UCI             en1
+ff01::%lo0/32                           fe80::1%lo0                     UmCI            lo0
+ff01::%en0/32                           link#4                          UmCI            en0
+ff01::%en1/32                           link#5                          UmCI            en1
+ff02::%lo0/32                           fe80::1%lo0                     UmCI            lo0
+ff02::%en0/32                           link#4                          UmCI            en0
+ff02::fb%en0                            link#4                          UHmW3I          en0   3574
+ff02::%en1/32                           link#5                          UmCI            en1

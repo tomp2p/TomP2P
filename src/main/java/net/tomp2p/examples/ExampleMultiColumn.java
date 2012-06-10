@@ -85,8 +85,22 @@ public class ExampleMultiColumn
 		futureDHT.awaitUninterruptibly();
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
-			System.out.println("multi fetch: "+entry.getValue().getObject());
-		}		
+			System.out.println("multi fetch1: "+entry.getValue().getObject());
+		}
+		System.out.println("col get...");
+		// column get
+		range = new TreeSet<Number160>();
+		range.add(createNr(col1, 0));
+		range.add(createNr(col1,-1));
+		cg1 = Configurations.defaultGetConfiguration();
+		//cg1.setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 3));
+		cg1.setRange(true);
+		futureDHT = peers[22].get(locationKey, range, cg1);
+		futureDHT.awaitUninterruptibly();
+		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
+		{
+			System.out.println("multi fetch2: "+entry.getValue().getObject());
+		}
 	}
 
 	private static void multiAdd(Peer peer, String rowKey, String col, String string) throws IOException
@@ -94,6 +108,8 @@ public class ExampleMultiColumn
 		Number160 locationKey = Number160.createHash("users");
 		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
 		cs.setContentKey(combine(rowKey, col));
+		peer.put(locationKey, new Data(string), cs).awaitUninterruptibly();
+		cs.setContentKey(combine(col, rowKey));
 		peer.put(locationKey, new Data(string), cs).awaitUninterruptibly();
 	}
 	

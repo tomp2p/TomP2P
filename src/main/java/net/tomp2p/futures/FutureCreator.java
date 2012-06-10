@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Thomas Bocek
+ * Copyright 2012 Thomas Bocek
  * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -13,20 +13,21 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-
-package net.tomp2p.p2p.config;
-
-public class ConfigurationBootstrap extends ConfigurationBaseDHT
+package net.tomp2p.futures;
+/**
+ * For direct replication, the DHT needs to be created repeatedly. In order for
+ * the user to be able to customize the creation, this interface exists. The
+ * user can create the future for example with data reading from a file or
+ * database instead of keeping everything in memory.
+ * 
+ * @author Thomas Bocek
+ * 
+ * @param <K>
+ */
+public interface FutureCreator<K extends BaseFuture>
 {
-	private boolean isForceRoutingOnlyToSelf;
-
-	public boolean isForceRoutingOnlyToSelf()
-	{
-		return isForceRoutingOnlyToSelf;
-	}
-
-	public void setForceRoutingOnlyToSelf(boolean isForceRoutingOnlyToSelf)
-	{
-		this.isForceRoutingOnlyToSelf = isForceRoutingOnlyToSelf;
-	}
+	/**
+	 * @return A newly created future
+	 */
+	public K create();
 }

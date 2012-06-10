@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public abstract class BaseFutureImpl implements BaseFuture
+public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 {
 	final private static Logger logger = LoggerFactory.getLogger(BaseFutureImpl.class);
 	// Listeners that gets notified if the future finished
@@ -47,6 +47,13 @@ public abstract class BaseFutureImpl implements BaseFuture
 	// always set to failed
 	protected FutureType type = FutureType.INIT;
 	protected String reason = "unknown";
+	
+	private K self;
+	
+	protected void self(K self)
+	{
+		this.self = self;
+	}
 
 	public BaseFutureImpl()
 	{
@@ -54,7 +61,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 	}
 
 	@Override
-	public BaseFuture await() throws InterruptedException
+	public K await() throws InterruptedException
 	{
 		synchronized (lock)
 		{
@@ -63,12 +70,12 @@ public abstract class BaseFutureImpl implements BaseFuture
 			{
 				lock.wait();
 			}
-			return this;
+			return self;
 		}
 	}
 
 	@Override
-	public BaseFuture awaitUninterruptibly()
+	public K awaitUninterruptibly()
 	{
 		synchronized (lock)
 		{
@@ -82,7 +89,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 				catch (final InterruptedException e)
 				{}
 			}
-			return this;
+			return self;
 		}
 	}
 
@@ -190,26 +197,26 @@ public abstract class BaseFutureImpl implements BaseFuture
 	}
 	
 	@Override
-	public void setFailed(final BaseFuture origin)
+	public K setFailed(final BaseFuture origin)
 	{
-		setFailed(origin.getFailedReason());
+		return setFailed(origin.getFailedReason());
 	}
 	
 	@Override
-	public void setFailed(final String reason, final BaseFuture origin)
+	public K setFailed(final String reason, final BaseFuture origin)
 	{
 		StringBuilder sb = new StringBuilder(reason);
-		setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
+		return setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
 	}
 
 	@Override
-	public void setFailed(final String reason)
+	public K setFailed(final String reason)
 	{
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
 			{
-				return;
+				return self;
 			}
 			if (logger.isWarnEnabled())
 			{
@@ -219,6 +226,7 @@ public abstract class BaseFutureImpl implements BaseFuture
 			this.type = FutureType.FAILED;
 		}
 		notifyListerenrs();
+		return self;
 	}
 
 	@Override

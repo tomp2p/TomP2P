@@ -31,7 +31,7 @@ import org.jboss.netty.util.TimerTask;
  * @author Thomas Bocek
  * 
  */
-public class FutureDiscover extends BaseFutureImpl
+public class FutureDiscover extends BaseFutureImpl<FutureDiscover>
 {
 	// timeout to tell us when discovery failed.
 	private Timeout timeout;
@@ -40,6 +40,11 @@ public class FutureDiscover extends BaseFutureImpl
 	private PeerAddress reporter;
 	private boolean discoveredTCP = false;
 	private boolean discoveredUDP = false;
+	
+	public FutureDiscover()
+	{
+		self(this);
+	}
 
 	/**
 	 * Creates a new future object and creates a timer that fires failed after a

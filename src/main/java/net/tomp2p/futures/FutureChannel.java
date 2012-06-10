@@ -25,10 +25,15 @@ import org.jboss.netty.channel.Channel;
  * @author Thomas Bocek
  * 
  */
-public class FutureChannel  extends BaseFutureImpl
+public class FutureChannel extends BaseFutureImpl<FutureChannel>
 {
 	private Channel channel;
 	private boolean semaphoreAcquired;
+	
+	public FutureChannel()
+	{
+		self(this);
+	}
 
 	/**
 	 * Finishes this future.

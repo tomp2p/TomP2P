@@ -66,7 +66,7 @@ public class ExampleMapReduce
 					{
 						String word = st.nextToken();
 						Number160 key = Number160.createHash(word);
-						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).add();
+						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).build();
 						System.out.println("map DHT call for word ["+word+"], key="+key+" on peer "+peer.getPeerID());
 						futures.add(futureDHT);
 						retVal.put(key, new Data(key));
@@ -102,9 +102,9 @@ public class ExampleMapReduce
 				return retVal;
 			}
 		};
-		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).submit();
-		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).submit();
-		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).submit();
+		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).build();
+		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).build();
+		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).build();
 		ft1.awaitUninterruptibly();
 		ft2.awaitUninterruptibly();
 		ft3.awaitUninterruptibly();
@@ -118,7 +118,7 @@ public class ExampleMapReduce
 		System.out.println("we got "+intermediate.size()+" unique words");
 		for(Number160 location: intermediate)
 		{
-			resultList.add(peers[40+i].submit(location, reduce).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(location)).submit());
+			resultList.add(peers[40+i].submit(location, reduce).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(location)).build());
 			i++;
 		}
 		//now we wait for the completion

@@ -37,12 +37,17 @@ import net.tomp2p.rpc.DigestInfo;
  * 
  * @author Thomas Bocek
  */
-public class FutureRouting extends BaseFutureImpl
+public class FutureRouting extends BaseFutureImpl<FutureRouting>
 {
 	private NavigableSet<PeerAddress> potentialHits;
 	private SortedMap<PeerAddress, DigestInfo> directHits;
 	private SortedSet<PeerAddress> routingPath;
 
+	public FutureRouting()
+	{
+		self(this);
+	}
+	
 	/**
 	 * Sets the result of the routing process and finishes the future. This will notify all listeners. The future will always 
 	 * succeed if we do DHT operations or bootstrap to ourself. It will fail if we bootstrap to another peer, but could not 

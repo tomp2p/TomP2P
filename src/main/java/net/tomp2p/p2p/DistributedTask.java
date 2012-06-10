@@ -57,7 +57,7 @@ public class DistributedTask
 	 */
 	public FutureTask submit(final Number160 locationKey, final Map<Number160, Data> dataMap, final Worker worker,
 			final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration requestP2PConfiguration, 
-			final FutureChannelCreator futureChannelCreator,  final boolean signMessage, final boolean isAutomaticCleanup,
+			final FutureChannelCreator futureChannelCreator,  final boolean signMessage, final boolean isManualCleanup,
 			final ConnectionReservation connectionReservation)
 	{
 		final FutureTask futureTask = new FutureTask();
@@ -93,7 +93,7 @@ public class DistributedTask
 						}
 					});
 				}
-				if(isAutomaticCleanup)
+				if(!isManualCleanup)
 				{
 					Utils.addReleaseListenerAll(futureTask, connectionReservation, future.getChannelCreator());
 				}

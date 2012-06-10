@@ -14,8 +14,13 @@
  * the License.
  */
 package net.tomp2p.futures;
+import java.io.IOException;
+
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import net.tomp2p.connection.ReplyTimeoutHandler;
 import net.tomp2p.message.Message;
+import net.tomp2p.utils.Utils;
 
 /**
  * Each response has one request messages. The corresponding response message is
@@ -24,13 +29,16 @@ import net.tomp2p.message.Message;
  * @author Thomas Bocek
  * 
  */
-public class FutureResponse extends BaseFutureImpl
+public class FutureResponse extends BaseFutureImpl<FutureResponse>
 {
 	// the message that was requested
 	final private Message requestMessage;
 	final private FutureSuccessEvaluator futureSuccessEvaluator;
 	// the reply to this request
 	private Message responseMessage;
+	// if set to raw, we expose the user directly to the Netty buffer, otherwise
+	// we are converting byte[] arrays to objecs
+	final private boolean raw;
 
 	/**
 	 * Create the future and set the request message
@@ -40,7 +48,17 @@ public class FutureResponse extends BaseFutureImpl
 	 */
 	public FutureResponse(final Message requestMessage)
 	{
-		this(requestMessage, new FutureSuccessEvaluatorCommunication());
+		this(requestMessage, new FutureSuccessEvaluatorCommunication(), false);
+	}
+	
+	public FutureResponse(final Message requestMessage, boolean raw)
+	{
+		this(requestMessage, new FutureSuccessEvaluatorCommunication(), raw);
+	}
+	
+	public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator)
+	{
+		this(requestMessage, futureSuccessEvaluator, false);
 	}
 	
 	/**
@@ -50,10 +68,12 @@ public class FutureResponse extends BaseFutureImpl
 	 *        wire.
 	 * @param futureSuccessEvaluator Evaluates if the future was a success or failure
 	 */
-	public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator)
+	public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator, boolean raw)
 	{
 		this.requestMessage = requestMessage;
 		this.futureSuccessEvaluator = futureSuccessEvaluator;
+		this.raw = raw;
+		self(this);
 	}
 
 	/**
@@ -97,17 +117,65 @@ public class FutureResponse extends BaseFutureImpl
 		notifyListerenrs();
 	}
 
+	/**
+	 * Returns the raw buffer or null if the answer was empty.
+	 * 
+	 * @return The transferred buffer
+	 */
+	public ChannelBuffer getBuffer()
+	{
+		synchronized (lock)
+		{
+			return responseMessage.getPayload1();
+		}
+	}
+
+	/**
+	 * Returns the object or null if the underlying buffer was raw or the answer
+	 * was empty.
+	 * 
+	 * @return The transferred object
+	 */
+	public Object getObject()
+	{
+		synchronized (lock)
+		{
+			ChannelBuffer buffer = responseMessage.getPayload1();
+			Object object = null;
+			if (!raw && type == FutureType.OK && buffer != null)
+			{
+				try
+				{
+					object = Utils.decodeJavaObject(buffer.array(), buffer
+							.arrayOffset(), buffer.capacity());
+				}
+				catch (ClassNotFoundException e)
+				{
+					throw new RuntimeException(e);
+				}
+				catch (IOException e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
+			return object;
+		}
+	}
+
 	@Override
-	public void setFailed(String reason)
+	public FutureResponse setFailed(String reason)
 	{
 		synchronized (lock)
 		{
 			if (!setCompletedAndNotify())
-				return;
+			{
+				return this;
+			}
 			this.reason = reason;
 			this.type = FutureType.FAILED;
 		}
 		notifyListerenrs();
+		return this;
 	}
 
 	/**

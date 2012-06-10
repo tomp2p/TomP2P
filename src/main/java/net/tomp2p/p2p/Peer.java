@@ -17,18 +17,11 @@ package net.tomp2p.p2p;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
-import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -36,38 +29,26 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionHandler;
-import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.Cancellable;
-import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureCleanup;
-import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureData;
-import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.futures.FutureLateJoin;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureRouting;
-import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.futures.FutureWrappedBootstrap;
-import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.natpmp.NatPmpException;
-import net.tomp2p.p2p.DistributedHashTable.Operation;
-import net.tomp2p.p2p.config.ConfigurationBaseDHT;
-import net.tomp2p.p2p.config.ConfigurationBootstrap;
-import net.tomp2p.p2p.config.ConfigurationDirect;
-import net.tomp2p.p2p.config.ConfigurationGet;
-import net.tomp2p.p2p.config.ConfigurationRemove;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.ConfigurationTrackerGet;
-import net.tomp2p.p2p.config.ConfigurationTrackerStore;
-import net.tomp2p.p2p.config.Configurations;
+import net.tomp2p.p2p.builder.AddBuilder;
+import net.tomp2p.p2p.builder.AddTrackerBuilder;
+import net.tomp2p.p2p.builder.BootstrapBuilder;
+import net.tomp2p.p2p.builder.DiscoverBuilder;
+import net.tomp2p.p2p.builder.GetBuilder;
+import net.tomp2p.p2p.builder.GetTrackerBuilder;
+import net.tomp2p.p2p.builder.ParallelRequestBuilder;
+import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.p2p.builder.PutBuilder;
+import net.tomp2p.p2p.builder.RemoveBuilder;
+import net.tomp2p.p2p.builder.SendBuilder;
+import net.tomp2p.p2p.builder.SendDirectBuilder;
+import net.tomp2p.p2p.builder.SubmitBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapKadImpl;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
@@ -76,21 +57,13 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
-import net.tomp2p.rpc.RequestHandlerTCP;
-import net.tomp2p.rpc.RequestHandlerUDP;
-import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
-import net.tomp2p.storage.Data;
-import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.task.AsyncTask;
 import net.tomp2p.task.Worker;
 import net.tomp2p.utils.CacheMap;
-import net.tomp2p.utils.Utils;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
@@ -508,6 +481,22 @@ public class Peer
 		else
 			return connectionHandler;
 	}
+	
+	public Bindings getBindings()
+	{
+		if (bindings == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		else
+			return bindings;
+	}
+	
+	public Timer getTimer()
+	{
+		if (timer == null)
+			throw new RuntimeException("Not listening to anything. Use the listen method first");
+		else
+			return timer;
+	}
 
 	public PeerBean getPeerBean()
 	{
@@ -579,345 +568,6 @@ public class Peer
 		return peerConnection;
 	}
 
-	// custom message
-	public FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer)
-	{
-		return send(remotePeer, requestBuffer, true);
-	}
-
-	public FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer)
-	{
-		return send(connection, requestBuffer, true);
-	}
-
-	public FutureData send(final PeerAddress remotePeer, final Object object)
-			throws IOException
-	{
-		byte[] me = Utils.encodeJavaObject(object);
-		return send(remotePeer, ChannelBuffers.wrappedBuffer(me), false);
-	}
-
-	public FutureData send(final PeerConnection connection, final Object object)
-			throws IOException
-	{
-		byte[] me = Utils.encodeJavaObject(object);
-		return send(connection, ChannelBuffers.wrappedBuffer(me), false);
-	}
-
-	private FutureData send(final PeerConnection connection, final ChannelBuffer requestBuffer,
-			boolean raw)
-	{
-		RequestHandlerTCP<FutureData> request = getDirectDataRPC().prepareSend(connection.getDestination(),
-				requestBuffer.slice(), raw);
-		request.setKeepAlive(true);
-		// since we keep one connection open, we need to make sure that we do
-		// not send anything in parallel.
-		try
-		{
-			connection.aquireSingleConnection();
-		}
-		catch (InterruptedException e)
-		{
-			request.getFutureResponse().setFailed("Interupted " + e);
-		}
-		request.sendTCP(connection.getChannelCreator(), connection.getIdleTCPMillis());
-		request.getFutureResponse().addListener(new BaseFutureAdapter<FutureResponse>()
-		{
-			@Override
-			public void operationComplete(FutureResponse future) throws Exception
-			{
-				connection.releaseSingleConnection();
-			}
-		});
-		return request.getFutureResponse();
-	}
-
-	private FutureData send(final PeerAddress remotePeer, final ChannelBuffer requestBuffer,
-			boolean raw)
-	{
-		final RequestHandlerTCP<FutureData> request = getDirectDataRPC().prepareSend(remotePeer, requestBuffer.slice(),
-				raw);
-		getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-		{
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception
-			{
-				if(future.isSuccess())
-				{
-					FutureData futureData = request.sendTCP(future.getChannelCreator());
-					Utils.addReleaseListenerAll(futureData, getConnectionBean().getConnectionReservation(), future.getChannelCreator());
-				}
-				else
-				{
-					request.getFutureResponse().setFailed(future);
-				}
-			}
-		});
-		return request.getFutureResponse();
-	}
-
-	// Boostrap and ping
-
-	public FutureBootstrap bootstrapBroadcast()
-	{
-		return bootstrapBroadcast(Bindings.DEFAULT_PORT);
-	}
-
-	public FutureBootstrap bootstrapBroadcast(int port)
-	{
-		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		// limit after
-		final FutureLateJoin<FutureResponse> tmp = pingBroadcast(port);
-		tmp.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
-		{
-			@Override
-			public void operationComplete(final FutureLateJoin<FutureResponse> future)
-					throws Exception
-			{
-				if (future.isSuccess())
-				{
-					FutureResponse futureResponse = future.getLastSuceessFuture();
-					if(futureResponse==null)
-					{
-						result.setFailed("no futures found", future);
-						return;
-					}
-					final PeerAddress sender = futureResponse.getResponse().getSender();
-					Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
-					bootstrapTo.add(sender);
-					result.setBootstrapTo(bootstrapTo);
-					result.waitFor(bootstrap(sender));
-				}
-				else
-				{
-					result.setFailed("could not reach anyone with the broadcast", future);
-				}
-			}
-		});
-		return result;
-	}
-
-	FutureLateJoin<FutureResponse> pingBroadcast(final int port)
-	{
-		final int size = bindings.getBroadcastAddresses().size();
-		final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
-		if (size > 0)
-		{
-			getConnectionBean().getConnectionReservation().reserve(size).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if(future.isSuccess())
-					{
-						FutureResponse validBroadcast = null;
-						for (int i = 0; i < size ; i++)
-						{
-							final InetAddress broadcastAddress = bindings.getBroadcastAddresses().get(i);
-							final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
-									port, port);
-							validBroadcast = getHandshakeRPC().pingBroadcastUDP(peerAddress, future.getChannelCreator());
-							Utils.addReleaseListener(validBroadcast, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-							if(logger.isDebugEnabled())
-							{
-								logger.debug("ping broadcast to " + broadcastAddress);
-							}
-							if(!futureLateJoin.add(validBroadcast))
-							{
-								//the late join future is fininshed if the add returns false
-								break;
-							}
-						}
-					}
-					else
-					{
-						futureLateJoin.setFailed(future);
-					}				
-				}
-			});
-		}
-		else
-		{
-			futureLateJoin.setFailed("No broadcast address found. Cannot ping nothing");
-		}
-		return futureLateJoin;
-	}
-	
-	/**
-	 * Pings a peer. Default is to use UDP
-	 * 
-	 * @param address The address of the remote peer.
-	 * @return The future response
-	 */
-	public FutureResponse ping(final InetSocketAddress address)
-	{
-		return ping(address, true);
-	}
-
-	/**
-	 * Pings a peer.
-	 * 
-	 * @param address The address of the remote peer.
-	 * @param isUDP Set to true if UDP should be used, false for TCP.
-	 * @return The future response
-	 */
-	public FutureResponse ping(final InetSocketAddress address, boolean isUDP)
-	{
-		if (isUDP)
-		{
-			final RequestHandlerUDP<FutureResponse> request = getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
-			getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if (future.isSuccess())
-					{
-						FutureResponse futureResponse = request.sendUDP(future.getChannelCreator());
-						Utils.addReleaseListener(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-					}
-					else
-					{
-						request.getFutureResponse().setFailed(future);
-					}
-				}
-			});
-			return request.getFutureResponse();
-		}
-		else
-		{
-			final RequestHandlerTCP<FutureResponse> request = getHandshakeRPC().pingTCP(new PeerAddress(Number160.ZERO, address));
-			getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if (future.isSuccess())
-					{
-						FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
-						Utils.addReleaseListener(futureResponse, getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-					}
-					else
-					{
-						request.getFutureResponse().setFailed(future);
-					}
-				}
-			});
-			return request.getFutureResponse();
-		}
-	}
-
-	/**
-	 * Boostraps to a known peer. First the ID of the peer is searched. Then
-	 * channels are reserved, then #discover(PeerAddress) is called to verify
-	 * this Internet connection settings. Then the routing is initiated to the
-	 * same peer as used for {@link #discover(PeerAddress)}.
-	 * 
-	 * @param address InetAddress and the UDP port of the peer to boostrap to
-	 * @return The future bootstrap
-	 */
-	public FutureBootstrap bootstrap(final InetSocketAddress address)
-	{
-		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		final FutureResponse tmp = ping(address, true);
-		tmp.addListener(new BaseFutureAdapter<FutureResponse>()
-		{
-			@Override
-			public void operationComplete(final FutureResponse future) throws Exception
-			{
-				if (future.isSuccess())
-				{
-					final PeerAddress sender = future.getResponse().getSender();
-					Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
-					bootstrapTo.add(sender);
-					result.setBootstrapTo(bootstrapTo);
-					result.waitFor(bootstrap(sender));
-				}
-				else
-				{
-					result.setFailed("could not reach anyone with bootstrap");
-				}
-			}
-		});
-		return result;
-	}
-
-	/**
-	 * Boostraps to a known peer. First channels are reserved, then
-	 * #discover(PeerAddress) is called to verify this Internet connection
-	 * settings. Then the routing is initiated to the same peer as used for
-	 * {@link #discover(PeerAddress)}. Please be aware that in order to boostrap
-	 * you need to know the peer ID of the remote peer. Passing Number160.ZERO
-	 * does *not* work. If the peerID is not known, use
-	 * {@link #bootstrap(InetSocketAddress)}.
-	 * 
-	 * @param peerAddress The peer address to bootstrap to
-	 * @return The future bootstrap
-	 * @throws IllegalArgumentException If the peer ID is Number160.ZERO,
-	 *         because routing would fail.
-	 */
-	public FutureBootstrap bootstrap(final PeerAddress peerAddress)
-	{
-		if(peerAddress.getID() == Number160.ZERO)
-		{
-			if(logger.isWarnEnabled())
-			{
-				logger.warn("The peer ID is Number160.ZERO, " +
-						"which cannot be used to bootstrap. If the ID is unknown, use bootstrap(InetSocketAddress)");
-			}
-			throw new IllegalArgumentException("The peer ID is Number160.ZERO, " +
-					"which cannot be used to bootstrap. If the ID is unknown, use bootstrap(InetSocketAddress)");
-		}
-		Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
-		bootstrapTo.add(peerAddress);
-		return bootstrap(peerAddress, bootstrapTo, Configurations.defaultBootstrapConfiguration());
-	}
-	
-	/**
-	 * Boostraps to a known peer. First channels are reserved, then
-	 * #discover(PeerAddress) is called to verify this Internet connection
-	 * settings using the argument peerAddress. Then the routing is initiated to
-	 * the peers specified in bootstrapTo. Please be aware that in order to
-	 * boostrap you need to know the peer ID of all peers in the collection
-	 * bootstrapTo. Passing Number160.ZERO does *not* work.
-	 * 
-	 * @param discoveryPeerAddress The peer address to use for discovery
-	 * @param bootstrapTo The peers used to bootstrap
-	 * @param config The configuration
-	 * @return The future bootstrap
-	 */
-	public FutureBootstrap bootstrap(final PeerAddress discoveryPeerAddress,
-			final Collection<PeerAddress> bootstrapTo, final ConfigurationBootstrap config)
-	{
-		final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result = new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
-		result.setBootstrapTo(bootstrapTo);
-		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
-				.getRequestP2PConfiguration().getParallel());
-		getConnectionBean().getConnectionReservation().reserve(conn).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-		{
-			@Override
-			public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception
-			{
-				if(futureChannelCreator.isSuccess())
-				{
-					FutureWrapper<FutureRouting> futureBootstrap = distributedRouting.bootstrap(bootstrapTo, config
-							.getRoutingConfiguration().getMaxNoNewInfo(config.getRequestP2PConfiguration().getMinimumResults()),
-							config.getRoutingConfiguration().getMaxFailures(), config.getRoutingConfiguration().getMaxSuccess(),
-							config.getRoutingConfiguration().getParallel(), false, 
-							config.isForceRoutingOnlyToSelf(), futureChannelCreator.getChannelCreator());
-					Utils.addReleaseListenerAll(futureBootstrap, getConnectionBean().getConnectionReservation(), 
-							futureChannelCreator.getChannelCreator());
-					result.waitFor(futureBootstrap);
-				}
-				else
-				{
-					result.setFailed(futureChannelCreator);
-				}
-			}
-		});
-		return result;
-	}
-
 	/**
 	 * The Dynamic and/or Private Ports are those from 49152 through 65535
 	 * (http://www.iana.org/assignments/port-numbers)
@@ -930,18 +580,16 @@ public class Peer
 	{
 		int portUDP = bindings.getOutsideUDPPort();
 		int portTCP = bindings.getOutsideTCPPort();
-		boolean success = false;
+		boolean success;
 
 		try
 		{
 			success = connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),
 					getPeerAddress().portTCP(), portUDP, portTCP);
-			// connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
-			// getPeerAddress().portTCP(), portUDP, portTCP);
 		}
 		catch (IOException e)
-		// catch (NatPmpException e)
 		{
+			success = false;
 		}
 
 		if (!success)
@@ -964,967 +612,76 @@ public class Peer
 		return success;
 	}
 	
-	/**
-	 * Discover attempts to find the external IP address of this peer. This is
-	 * done by first trying to set UPNP with port forwarding (gives us the
-	 * external address), query UPNP for the external address, and pinging a
-	 * well known peer. The fallback is NAT-PMP.
-	 * 
-	 * @param inetAddress The Internet address of the peer to send the discover request
-	 * @param portUDP The UDP port of the peer to send the discover request
-	 * @param portTCP The TCP port of the peer to send the discover request
-	 * @return The future discover. This future holds also the real ID of the
-	 *         peer we send the discover request
-	 */
-	public FutureDiscover discover(final InetAddress inetAddress, int portUDP, int portTCP)
-	{
-		PeerAddress peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
-		return discover(peerAddress);
-	}
-
-	/**
-	 * Discover attempts to find the external IP address of this peer. This is
-	 * done by first trying to set UPNP with port forwarding (gives us the
-	 * external address), query UPNP for the external address, and pinging a
-	 * well known peer. The fallback is NAT-PMP.
-	 * 
-	 * @param peerAddress The peer address. Since pings are used the peer ID can
-	 *        be Number160.ZERO
-	 * @return The future discover. This future holds also the real ID of the
-	 *         peer we send the discover request
-	 */
-	public FutureDiscover discover(final PeerAddress peerAddress)
-	{
-		final FutureDiscover futureDiscover = new FutureDiscover();
-		getConnectionBean().getConnectionReservation().reserve(3).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-		{
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception
-			{
-				if(future.isSuccess())
-				{
-					discover(futureDiscover, peerAddress, future.getChannelCreator());
-				}
-				else
-				{
-					futureDiscover.setFailed(future);
-				}
-			}
-		});
-		return futureDiscover;
-	}
-	
-	/**
-	 * Needs 3 connections. Cleans up ChannelCreator, which means they will be released.
-	 * 
-	 * @param peerAddress
-	 * @param cc
-	 * @return
-	 */
-	private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress, final ChannelCreator cc)
-	{
-		final FutureResponse futureResponseTCP = getHandshakeRPC().pingTCPDiscover(peerAddress, cc);
-		Utils.addReleaseListener(futureResponseTCP, getConnectionBean().getConnectionReservation(), cc, 1);
-		addPeerListener(new PeerListener()
-		{
-			private boolean changedUDP = false;
-			private boolean changedTCP = false;
-
-			@Override
-			public void serverAddressChanged(PeerAddress peerAddress, PeerAddress reporter, boolean tcp)
-			{
-				if (tcp)
-				{
-					changedTCP = true;
-					futureDiscover.setDiscoveredTCP();
-				}
-				else
-				{
-					changedUDP = true;
-					futureDiscover.setDiscoveredUDP();
-				}
-				if (changedTCP && changedUDP)
-				{
-					futureDiscover.done(peerAddress, reporter);
-				}
-			}
-
-			@Override
-			public void notifyOnStart()
-			{}
-
-			@Override
-			public void notifyOnShutdown()
-			{}
-		});
-		futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>()
-		{
-			@Override
-			public void operationComplete(FutureResponse future) throws Exception
-			{
-				PeerAddress serverAddress = getPeerBean().getServerPeerAddress();
-				if (futureResponseTCP.isSuccess())
-				{
-					Collection<PeerAddress> tmp = futureResponseTCP.getResponse().getNeighbors();
-					if (tmp.size() == 1)
-					{
-						PeerAddress seenAs = tmp.iterator().next();
-						logger.info("I'm seen as " + seenAs + " by peer " + peerAddress+" I see myself as "+getPeerAddress().getInetAddress());
-						if (!getPeerAddress().getInetAddress().equals(seenAs.getInetAddress()))
-						{
-							// check if we have this interface in that we can listen to
-							Bindings bindings2 = new Bindings(seenAs.getInetAddress());
-							String status = DiscoverNetworks.discoverInterfaces(bindings2);
-							logger.info("2nd interface discovery: "+status);
-							if (bindings2.getFoundAddresses().size() > 0 &&  bindings2.getFoundAddresses().contains(seenAs.getInetAddress()))
-							{
-								serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-								getPeerBean().setServerPeerAddress(serverAddress);
-							}
-							else
-							{
-								// now we know our internal IP, where we receive packets
-								if (bindings.isSetExternalPortsManually() || 
-										setupPortForwanding(futureResponseTCP.getResponse().getRecipient().getInetAddress().getHostAddress()))
-								{
-									serverAddress = serverAddress.changePorts(bindings.getOutsideUDPPort(),
-											bindings.getOutsideTCPPort());
-									serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-									getPeerBean().setServerPeerAddress(serverAddress);
-								}
-							}
-						}
-						// else -> we announce exactly how the other peer sees us
-						FutureResponse fr1 = getHandshakeRPC().pingTCPProbe(peerAddress, cc);
-						FutureResponse fr2 = getHandshakeRPC().pingUDPProbe(peerAddress, cc);
-						Utils.addReleaseListener(fr1, getConnectionBean().getConnectionReservation(), cc, 1);
-						Utils.addReleaseListener(fr2, getConnectionBean().getConnectionReservation(), cc, 1);
-						// from here we probe, set the timeout here
-						futureDiscover.setTimeout(timer, configuration.getDiscoverTimeoutSec());
-						return;
-					}
-					else
-					{
-						// important to release connection if not needed
-						getConnectionBean().getConnectionReservation().release(cc, 2);
-						//System.err.println("release 2"+cc);
-						futureDiscover.setFailed("Peer " + peerAddress
-								+ " did not report our IP address");
-						return;
-					}
-				}
-				else
-				{
-					// important to release connection if not needed
-					getConnectionBean().getConnectionReservation().release(cc, 2);
-					//System.err.println("release 2"+cc);
-					futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection: "+futureResponseTCP.getFailedReason());
-					return;
-				}
-			}
-		});
-	}
-
-	// ////////////////// from here, DHT calls
-	// PUT
-	public FutureDHT put(final Number160 locationKey, final Data data)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		return put(locationKey, data, Configurations.defaultStoreConfiguration());
-	}
-	
-	public FutureDHT put(final Number160 locationKey, final Data data, ConfigurationStore config)
-	{
-		return put(locationKey, data, config, reserve(config));
-	}
-
-	public FutureDHT put(final Number160 locationKey, final Data data, ConfigurationStore config,
-			final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
-		dataMap.put(config.getContentKey(), data);
-		return put(locationKey, dataMap, config, channelCreator);
-	}
-
-	public FutureDHT put(final Number160 locationKey, final Map<Number160, Data> dataMap,
-			final ConfigurationStore config)
-	{
-		return put(locationKey, dataMap, config, reserve(config));
-	}
-	/**
-	 * Stores values in the DHT. First the closest n peers are found, then the
-	 * values provided in the dataMap are stored on those peers. A future object
-	 * will track the progress since this method returns immediately and the
-	 * operations are performed in an other thread.
-	 * 
-	 * @param locationKey The location in the DHT
-	 * @param dataMap If multiple keys and values are provided, then this method
-	 *        behaves as putAll()
-	 * @param config The configuration, which be used to configure the
-	 *        protection mode, putIfAbsent, and repetitions
-	 * @param channelCreator The future channel creator
-	 * @return The future state of this operation.
-	 */
-	public FutureDHT put(final Number160 locationKey, final Map<Number160, Data> dataMap,
-			final ConfigurationStore config, final FutureChannelCreator channelCreator)
-	{
-		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
-				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDistributedHashMap().put(locationKey, config.getDomain(), dataMap,
-				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(), 
-				config.isAutomaticCleanup(), config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
-		if (config.getRefreshSeconds() > 0)
-		{
-			final ScheduledFuture<?> tmp = schedulePut(locationKey, dataMap, config, futureDHT);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-
-	private ScheduledFuture<?> schedulePut(final Number160 locationKey,
-			final Map<Number160, Data> dataMap,
-			final ConfigurationStore config, final FutureDHT futureDHT)
-	{
-
-		Runnable runner = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDistributedHashMap().put(locationKey, config.getDomain(), dataMap,
-						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isStoreIfAbsent(), config.isProtectDomain(), config.isSignMessage(), true,
-						config.getFutureCreate(), futureChannelCreator, getConnectionBean().getConnectionReservation());
-				futureDHT.repeated(futureDHT2);
-			}
-		};
-		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
-				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	// ADD
-	public FutureDHT add(final Number160 locationKey, final Data data)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		return add(locationKey, data, Configurations.defaultStoreConfiguration());
-	}
-	
-	public FutureDHT add(final Number160 locationKey, final Data data,
-			final ConfigurationStore config)
-	{
-		return add(locationKey, data, config, reserve(config));
-	}
-
-	public FutureDHT add(final Number160 locationKey, final Data data,
-			final ConfigurationStore config, final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final Collection<Data> dataCollection = new ArrayList<Data>();
-		dataCollection.add(data);
-		return add(locationKey, dataCollection, config, channelCreator);
-	}
-	
-	public FutureDHT add(final Number160 locationKey, final Collection<Data> dataCollection,
-			final ConfigurationStore config)
-	{
-		return add(locationKey, dataCollection, config, reserve(config));
-	}
-
-	public FutureDHT add(final Number160 locationKey, final Collection<Data> dataCollection,
-			final ConfigurationStore config, final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		if (config.getContentKey() != null && !config.getContentKey().equals(Number160.ZERO))
-			logger.warn("Warning, setting a content key in add() does not have any effect");
-		if (!config.isSignMessage())
-		{
-			for (Data data : dataCollection)
-			{
-				if (data.isProtectedEntry())
-				{
-					config.setSignMessage(true);
-					break;
-				}
-			}
-		}
-		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
-				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDistributedHashMap().add(locationKey, config.getDomain(), dataCollection,
-				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.isProtectDomain(), config.isSignMessage(), config.isAutomaticCleanup(), false,
-				config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
-		if (config.getRefreshSeconds() > 0)
-		{
-			final ScheduledFuture<?> tmp = scheduleAdd(locationKey, dataCollection, config,
-					futureDHT);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-
-	private ScheduledFuture<?> scheduleAdd(final Number160 locationKey,
-			final Collection<Data> dataCollection,
-			final ConfigurationStore config, final FutureDHT futureDHT)
-	{
-		Runnable runner = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDistributedHashMap().add(locationKey, config.getDomain(),
-						dataCollection, config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isProtectDomain(), config.isSignMessage(), true, false, config.getFutureCreate(),
-						futureChannelCreator, getConnectionBean().getConnectionReservation());
-				futureDHT.repeated(futureDHT2);
-			}
-		};
-		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
-				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	// GET
-	public FutureDHT getAll(final Number160 locationKey)
-	{
-		return get(locationKey, null, Configurations.defaultGetConfiguration());
-	}
-
-	public FutureDHT getAll(final Number160 locationKey, final ConfigurationGet config)
-	{
-		return get(locationKey, null, config, reserve(config));
-	}
-	
-	public FutureDHT getAll(final Number160 locationKey, final ConfigurationGet config,
-			final FutureChannelCreator channelCreator)
-	{
-		return get(locationKey, null, config, channelCreator);
-	}
-
-	public FutureDHT get(final Number160 locationKey)
-	{
-		return get(locationKey, Configurations.defaultGetConfiguration());
-	}
-	
-	public FutureDHT get(final Number160 locationKey, final ConfigurationGet config)
-	{
-		return get(locationKey, config, reserve(config));
-	}
-
-	public FutureDHT get(final Number160 locationKey, final ConfigurationGet config,
-			final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		Set<Number160> keyCollection = new HashSet<Number160>();
-		keyCollection.add(config.getContentKey());
-		return get(locationKey, keyCollection, config, channelCreator);
-	}
-	
-	public FutureDHT get(final Number160 locationKey, Set<Number160> keyCollection,
-			final ConfigurationGet config)
-	{
-		return get(locationKey, keyCollection, config, reserve(config));
-	}
-
-	public FutureDHT get(final Number160 locationKey, Set<Number160> keyCollection,
-			final ConfigurationGet config, final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
-				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
-				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
-				false, false, config.isRange(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
-		return futureDHT;
-	}
-	
-	//----------------- parallel request
-	
-	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
-			final boolean cancleOnFinish, final NavigableSet<PeerAddress> queue, final Operation operation)
-	{
-		return parallelRequests(locationKey, config, reserve(config), cancleOnFinish, queue, operation);
-	}
-	
-	public FutureDHT parallelRequests(final Number160 locationKey, final ConfigurationBaseDHT config, 
-			final FutureChannelCreator channelCreator, final boolean cancleOnFinish, 
-			final NavigableSet<PeerAddress> queue, final Operation operation)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		
-		final FutureDHT futureDHT = getDistributedHashMap().parallelRequests(config.getRequestP2PConfiguration(), 
-				queue, cancleOnFinish, channelCreator, getConnectionBean().getConnectionReservation(), 
-				config.isAutomaticCleanup(), operation);
-		return futureDHT;
-	}
-	
-	//----------------- digest
-	
-	public FutureDHT digestAll(final Number160 locationKey)
-	{
-		return digest(locationKey, null, Configurations.defaultGetConfiguration());
-	}
-	
-	public FutureDHT digestAll(final Number160 locationKey, final ConfigurationGet config)
-	{
-		return digestAll(locationKey, config, reserve(config));
-	}
-
-	public FutureDHT digestAll(final Number160 locationKey, final ConfigurationGet config, 
-			final FutureChannelCreator channelCreator)
-	{
-		return digest(locationKey, null, config, channelCreator);
-	}
-	
-	public FutureDHT digest(final Number160 locationKey)
-	{
-		return digest(locationKey, Configurations.defaultGetConfiguration());
-	}
-	
-	public FutureDHT digest(final Number160 locationKey, final ConfigurationGet config)
-	{
-		return digest(locationKey, config, reserve(config));
-	}
-
-	public FutureDHT digest(final Number160 locationKey, final ConfigurationGet config, 
-			final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		Set<Number160> keyCollection = new HashSet<Number160>();
-		keyCollection.add(config.getContentKey());
-		return digest(locationKey, keyCollection, config, channelCreator);
-	}
-	
-	public FutureDHT digest(final Number160 locationKey, Set<Number160> keyCollection,
-			final ConfigurationGet config)
-	{
-		return digest(locationKey, keyCollection, config, reserve(config));
-	}
-	
-	/**
-	 * Returns a digest of data on other peers. This command does the same as
-	 * get() expect that instead of returning the data, the keys are returned. 
-	 * 
-	 * @param locationKey The location in the DHT
-	 * @param keyCollection Setting this to null results in getting all the contents
-	 * @param config The configuration, which be used to configure the
-	 *        the Bloom filters
-	 * @param channelCreator The future channel creator
-	 * @return The future state of this operation
-	 */
-	public FutureDHT digest(final Number160 locationKey, Set<Number160> keyCollection,
-			final ConfigurationGet config, final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		final FutureDHT futureDHT = getDistributedHashMap().get(locationKey, config.getDomain(), keyCollection,
-				config.getKeyBloomFilter(), config.getContentBloomFilter(), config.getPublicKey(), config.getRoutingConfiguration(), 
-				config.getRequestP2PConfiguration(), config.getEvaluationScheme(), config.isSignMessage(), 
-				true, config.isReturnBloomFliter(), config.isRange(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
-		return futureDHT;
-	}
-
-	// REMOVE
-	public FutureDHT removeAll(final Number160 locationKey)
-	{
-		return removeAll(locationKey, Configurations.defaultRemoveConfiguration());
-	}
-	
-	public FutureDHT removeAll(final Number160 locationKey, ConfigurationRemove config)
-	{
-		return removeAll(locationKey, config, reserve(config));
-	}
-
-	public FutureDHT removeAll(final Number160 locationKey, ConfigurationRemove config, 
-			final FutureChannelCreator channelCreator)
-	{
-		return remove(locationKey, null, config, channelCreator);
-	}
-
-	public FutureDHT remove(final Number160 locationKey)
-	{
-		return remove(locationKey, Configurations.defaultRemoveConfiguration());
-	}
-	
-	public FutureDHT remove(final Number160 locationKey, ConfigurationRemove config)
-	{
-		return remove(locationKey, config, reserve(config));
-	}
-
-	public FutureDHT remove(final Number160 locationKey, ConfigurationRemove config, 
-			final FutureChannelCreator channelCreator)
-	{
-		Set<Number160> keyCollection = new HashSet<Number160>();
-		keyCollection.add(config.getContentKey());
-		return remove(locationKey, keyCollection, config, channelCreator);
-	}
-
-	public FutureDHT remove(final Number160 locationKey, final Number160 contentKey)
-	{
-		Set<Number160> keyCollection = new HashSet<Number160>();
-		keyCollection.add(contentKey);
-		return remove(locationKey, keyCollection, Configurations.defaultRemoveConfiguration());
-	}
-	
-	public FutureDHT remove(final Number160 locationKey, final Set<Number160> keyCollection,
-			final ConfigurationRemove config)
-	{
-		return remove(locationKey, keyCollection, config, reserve(config));
-	}
-
-	public FutureDHT remove(final Number160 locationKey, final Set<Number160> keyCollection,
-			final ConfigurationRemove config, final FutureChannelCreator channelCreator)
-	{
-		if (keyCollection != null)
-		{
-			for (Number160 contentKey : keyCollection)
-				getPeerBean().getStorage().remove(
-						locationKey, config.getDomain(), contentKey,
-						keyPair.getPublic());
-		}
-		else
-		{
-			getPeerBean().getStorage().remove(locationKey, config.getDomain(), Number160.ZERO, Number160.MAX_VALUE,
-					keyPair.getPublic());
-		}
-		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
-				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDistributedHashMap().remove(locationKey, config.getDomain(), keyCollection,
-				config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-				config.isReturnResults(),
-				config.isSignMessage(), config.isAutomaticCleanup(), config.getFutureCreate(), channelCreator, getConnectionBean().getConnectionReservation());
-		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
-		{
-			final ScheduledFuture<?> tmp = scheduleRemove(locationKey, keyCollection, config,
-					futureDHT);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-
-	private ScheduledFuture<?> scheduleRemove(final Number160 locationKey,
-			final Set<Number160> keyCollection,
-			final ConfigurationRemove config, final FutureDHT futureDHT)
-	{
-		final int repetion = config.getRepetitions();
-		final class MyRunnable implements Runnable
-		{
-			private ScheduledFuture<?> future;
-			private boolean canceled = false;
-			private int counter = 0;
-
-			@Override
-			public void run()
-			{
-				final FutureChannelCreator futureChannelCreator = reserve(config);
-				FutureDHT futureDHT2 = getDistributedHashMap().remove(locationKey, config.getDomain(),
-						keyCollection,
-						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.isReturnResults(), config.isSignMessage(), true, config.getFutureCreate(),
-						futureChannelCreator, getConnectionBean().getConnectionReservation());
-				futureDHT.repeated(futureDHT2);
-				if (++counter >= repetion)
-				{
-					synchronized (this)
-					{
-						canceled = true;
-						if (future != null)
-							future.cancel(false);
-					}
-				}
-			}
-
-			public void setFuture(ScheduledFuture<?> future)
-			{
-				synchronized (this)
-				{
-					if (canceled == true)
-						future.cancel(false);
-					else
-						this.future = future;
-				}
-			}
-		}
-		MyRunnable myRunnable = new MyRunnable();
-		final ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(
-				myRunnable,
-				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
-		myRunnable.setFuture(tmp);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	// Direct
-	public FutureDHT send(final Number160 locationKey, final ChannelBuffer buffer)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		return send(locationKey, buffer, Configurations.defaultConfigurationDirect());
-	}
-	
-	public FutureDHT send(final Number160 locationKey, final ChannelBuffer buffer,
-			final ConfigurationDirect config)
-	{
-		return send(locationKey, buffer, config, reserve(config));
-	}
-
-	public FutureDHT send(final Number160 locationKey, final ChannelBuffer buffer,
-			final ConfigurationDirect config, final FutureChannelCreator channelCreator)
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
-				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDistributedHashMap().direct(locationKey, buffer, true,
-				config.getRoutingConfiguration(),
-				config.getRequestP2PConfiguration(), config.getFutureCreate(),
-				config.isCancelOnFinish(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
-		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
-		{
-			final ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-
-	public FutureDHT send(final Number160 locationKey, final Object object) throws IOException
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		return send(locationKey, object, Configurations.defaultConfigurationDirect());
-	}
-	
-	public FutureDHT send(final Number160 locationKey, final Object object,
-			final ConfigurationDirect config)
-			throws IOException
-	{
-		return send(locationKey, object, config, reserve(config));
-	}
-
-	public FutureDHT send(final Number160 locationKey, final Object object,
-			final ConfigurationDirect config, final FutureChannelCreator channelCreator)
-			throws IOException
-	{
-		if (locationKey == null)
-			throw new IllegalArgumentException("null in get not allowed in locationKey");
-		byte[] me = Utils.encodeJavaObject(object);
-		ChannelBuffer buffer = ChannelBuffers.wrappedBuffer(me);
-		config.setRequestP2PConfiguration(adjustConfiguration(config.getRequestP2PConfiguration(),
-				getPeerBean().getPeerMap()));
-		final FutureDHT futureDHT = getDistributedHashMap().direct(locationKey, buffer, false,
-				config.getRoutingConfiguration(),
-				config.getRequestP2PConfiguration(), config.getFutureCreate(),
-				config.isCancelOnFinish(), config.isAutomaticCleanup(), channelCreator, getConnectionBean().getConnectionReservation());
-		if (config.getRefreshSeconds() > 0 && config.getRepetitions() > 0)
-		{
-			final ScheduledFuture<?> tmp = scheduleSend(locationKey, buffer, config, futureDHT);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-
-	private ScheduledFuture<?> scheduleSend(final Number160 locationKey,
-			final ChannelBuffer buffer,
-			final ConfigurationDirect config, final FutureDHT futureDHT)
-	{
-		final int repetion = config.getRepetitions();
-		final class MyRunnable implements Runnable
-		{
-			private ScheduledFuture<?> future;
-			private boolean canceled = false;
-			private int counter = 0;
-
-			@Override
-			public void run()
-			{
-				final FutureChannelCreator futureChannelCreator = reserve(config);
-				config.setRequestP2PConfiguration(adjustConfiguration(
-						config.getRequestP2PConfiguration(), getPeerBean().getPeerMap()));
-				final FutureDHT futureDHT2 = getDistributedHashMap().direct(locationKey, buffer, false,
-						config.getRoutingConfiguration(), config.getRequestP2PConfiguration(),
-						config.getFutureCreate(), config.isCancelOnFinish(), true, 
-						futureChannelCreator, getConnectionBean().getConnectionReservation());
-				futureDHT.repeated(futureDHT2);
-				if (++counter >= repetion)
-				{
-					synchronized (this)
-					{
-						canceled = true;
-						if (future != null)
-							future.cancel(false);
-					}
-				}
-			}
-
-			public void setFuture(ScheduledFuture<?> future)
-			{
-				synchronized (this)
-				{
-					if (canceled == true)
-						future.cancel(false);
-					else
-						this.future = future;
-				}
-			}
-		}
-		MyRunnable myRunnable = new MyRunnable();
-		final ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(
-				myRunnable,
-				config.getRefreshSeconds(), config.getRefreshSeconds(), TimeUnit.SECONDS);
-		myRunnable.setFuture(tmp);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	// GET TRACKER
-	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config)
-	{
-		// make a good guess based on the config and the maxium tracker that can
-		// be found
-		return getFromTracker(locationKey, config, new SimpleBloomFilter<Number160>(
-				BLOOMFILTER_SIZE, 200));
-	}
-
-	public FutureTracker getFromTrackerCreateBloomfilter1(Number160 locationKey,
-			ConfigurationTrackerGet config,
-			Collection<PeerAddress> knownPeers)
-	{
-		// make a good guess based on the config and the maxium tracker that can
-		// be found
-		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(
-				BLOOMFILTER_SIZE, 200);
-		if (!knownPeers.isEmpty())
-		{
-			for (PeerAddress peerAddress : knownPeers)
-			{
-				bloomFilter.add(peerAddress.getID());
-			}
-		}
-		return getFromTracker(locationKey, config, bloomFilter);
-	}
-
-	public FutureTracker getFromTrackerCreateBloomfilter2(Number160 locationKey,
-			ConfigurationTrackerGet config,
-			Collection<Number160> knownPeers)
-	{
-		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(
-				BLOOMFILTER_SIZE, 200);
-		// System.err.println("FP-Rate:"+bloomFilter.expectedFalsePositiveProbability());
-		if (!knownPeers.isEmpty())
-		{
-			for (Number160 number160 : knownPeers)
-			{
-				bloomFilter.add(number160);
-			}
-		}
-		return getFromTracker(locationKey, config, bloomFilter);
-	}
-
-	public FutureTracker getFromTracker(Number160 locationKey, ConfigurationTrackerGet config,
-			Set<Number160> knownPeers)
-	{
-		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
-				.getTrackerConfiguration().getParallel());
-		final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
-
-		FutureTracker futureTracker = getDistributedTracker().getFromTracker(locationKey, config.getDomain(),
-				config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-				config.isExpectAttachement(), config.getEvaluationScheme(), config.isSignMessage(),
-				config.isUseSecondaryTrackers(), knownPeers, futureChannelCreator,
-				getConnectionBean().getConnectionReservation());
-		return futureTracker;
-	}
-
-	public FutureTracker addToTracker(final Number160 locationKey,
-			final ConfigurationTrackerStore config)
-	{
-		// make a good guess based on the config and the maxium tracker that can
-		// be found
-		SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(
-				BLOOMFILTER_SIZE, 1024);
-		// add myself to my local tracker, since we use a mesh we are part of
-		// the tracker mesh as well.
-		getPeerBean().getTrackerStorage().put(locationKey, config.getDomain(), getPeerAddress(),
-				getPeerBean().getKeyPair().getPublic(), config.getAttachement());
-		int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
-				.getTrackerConfiguration().getParallel());
-		final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
-
-		final FutureTracker futureTracker = getDistributedTracker().addToTracker(locationKey,
-				config.getDomain(),
-				config.getAttachement(), config.getRoutingConfiguration(),
-				config.getTrackerConfiguration(),
-				config.isSignMessage(), config.getFutureCreate(), bloomFilter, futureChannelCreator, 
-				getConnectionBean().getConnectionReservation());
-		if (getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() > 0)
-		{
-			final ScheduledFuture<?> tmp = scheduleAddTracker(locationKey, config, futureTracker);
-			setupCancel(futureTracker, tmp);
-		}
-		if (config.getWaitBeforeNextSendSeconds() > 0)
-		{
-			final ScheduledFuture<?> tmp = schedulePeerExchange(locationKey, config, futureTracker);
-			setupCancel(futureTracker, tmp);
-		}
-		return futureTracker;
-	}
-
-	private void setupCancel(final FutureCleanup futureTracker, final ScheduledFuture<?> tmp)
-	{
-		scheduledFutures.add(tmp);
-		futureTracker.addCleanup(new Cancellable()
-		{
-			@Override
-			public void cancel()
-			{
-				tmp.cancel(true);
-				scheduledFutures.remove(tmp);
-			}
-		});
-	}
-
-	private ScheduledFuture<?> scheduleAddTracker(final Number160 locationKey,
-			final ConfigurationTrackerStore config,
-			final FutureTracker futureTracker)
-	{
-		Runnable runner = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				// make a good guess based on the config and the maxium tracker
-				// that can be found
-				SimpleBloomFilter<Number160> bloomFilter = new SimpleBloomFilter<Number160>(
-						BLOOMFILTER_SIZE, 1024);
-				int conn = Math.max(config.getRoutingConfiguration().getParallel(), config
-						.getTrackerConfiguration().getParallel());
-				final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(conn);
-
-				FutureTracker futureTracker2 = getDistributedTracker().addToTracker(locationKey,
-						config.getDomain(), config.getAttachement(),
-						config.getRoutingConfiguration(), config.getTrackerConfiguration(),
-						config.isSignMessage(), config.getFutureCreate(), bloomFilter,
-						futureChannelCreator, getConnectionBean().getConnectionReservation());
-				futureTracker.repeated(futureTracker2);
-			}
-		};
-		int refresh = getPeerBean().getTrackerStorage().getTrackerTimoutSeconds() * 3 / 4;
-		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
-				refresh, refresh,
-				TimeUnit.SECONDS);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	private ScheduledFuture<?> schedulePeerExchange(final Number160 locationKey,
-			final ConfigurationTrackerStore config, final FutureTracker futureTracker)
-	{
-		Runnable runner = new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				final FutureChannelCreator futureChannelCreator = getConnectionBean().getConnectionReservation().reserve(
-						TrackerStorage.TRACKER_SIZE);
-				FutureLateJoin<FutureResponse> futureLateJoin = getDistributedTracker().startPeerExchange(
-						locationKey, config.getDomain(), futureChannelCreator, 
-						getConnectionBean().getConnectionReservation(), config.getTrackerConfiguration().isForceTCP());
-				futureTracker.repeated(futureLateJoin);
-			}
-		};
-		int refresh = config.getWaitBeforeNextSendSeconds();
-		ScheduledFuture<?> tmp = getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().scheduleAtFixedRate(runner,
-				refresh, refresh,
-				TimeUnit.SECONDS);
-		scheduledFutures.add(tmp);
-		return tmp;
-	}
-
-	
-	/**
-	 * For a low number of peers, we need to adjust the number of results.
-	 * Otherwise a future may report that its operation was not successful. We
-	 * assume that a peer bootstraps and peers are well distributed
-	 * 
-	 * @param p2pConfiguration The configuration to adjust
-	 * @param peerMap The peerMap
-	 * @return An adjusted RequestP2PConfiguration if necessary or returns the
-	 *         same object otherwise
-	 */
-	private static RequestP2PConfiguration adjustConfiguration(
-			RequestP2PConfiguration p2pConfiguration, PeerMap peerMap)
-	{
-		int size = peerMap.size() + 1;
-		int requested = p2pConfiguration.getMinimumResults();
-		if (size >= requested)
-		{
-			return p2pConfiguration;
-		}
-		else
-		{
-			return new RequestP2PConfiguration(size, p2pConfiguration.getMaxFailure(),
-					p2pConfiguration.getParallelDiff());
-		}
-	}
-	
-	// New API - using builder pattern
-	// *************************** Map Reduce ************************************
+	// New API - builder pattern --------------------------------------------------
 	
 	public SubmitBuilder submit(Number160 locationKey, Worker worker)
 	{
-		return new SubmitBuilder(this, getDistributedTask(), locationKey, worker);
+		return new SubmitBuilder(this,locationKey, worker);
 	}
 	
 	public AddBuilder add(Number160 locationKey)
 	{
-		return new AddBuilder(this, getDistributedHashMap(), locationKey);
+		return new AddBuilder(this, locationKey);
 	}
+	
+	public PutBuilder put(Number160 locationKey)
+	{
+		return new PutBuilder(this, locationKey);
+	}
+	
+	public GetBuilder get(Number160 locationKey)
+	{
+		return new GetBuilder(this, locationKey);
+	}
+	
+	public RemoveBuilder remove(Number160 locationKey)
+	{
+		return new RemoveBuilder(this, locationKey);
+	}
+	
+	public SendBuilder send(Number160 locationKey)
+	{
+		return new SendBuilder(this, locationKey);
+	}
+	
+	public SendDirectBuilder sendDirect()
+	{
+		return new SendDirectBuilder(this);
+	}
+	
+	public BootstrapBuilder boostrap()
+	{
+		return new BootstrapBuilder(this);
+	}
+	
+	public PingBuilder ping()
+	{
+		return new PingBuilder(this);
+	}
+	
+	public DiscoverBuilder discover()
+	{
+		return new DiscoverBuilder(this);
+	}
+	
+	public AddTrackerBuilder addTracker(Number160 locationKey)
+	{
+		return new AddTrackerBuilder(this, locationKey);
+	}
+	
+	public GetTrackerBuilder getTracker(Number160 locationKey)
+	{
+		return new GetTrackerBuilder(this, locationKey);
+	}
+	
+	public ParallelRequestBuilder parallelRequest(Number160 locationKey)
+	{
+		return new ParallelRequestBuilder(this, locationKey);
+	}
+	
+	
 	
 	// *************************** Connection Reservation ************************
-		
-	/**
-	 * Reserves a connection for a routing and DHT operation. This call blocks
-	 * until connections have been reserved.
-	 * 
-	 * @param configurationBaseDHT The information about the routing and the DHT
-	 *        operation
-	 * @param name The name of the ChannelCreator, used for easier debugging
-	 * @return A ChannelCreator that can create channel according to
-	 *         routingConfiguration and requestP2PConfiguration
-	 */
-	public FutureChannelCreator reserve(final ConfigurationBaseDHT configurationBaseDHT, String name)
-	{
-		return reserve(configurationBaseDHT.getRoutingConfiguration(),
-				configurationBaseDHT.getRequestP2PConfiguration(), name);
-	}
-	
-	/**
-	 * Reserves a connection for a routing and DHT operation. This call blocks
-	 * until connections have been reserved.
-	 * 
-	 * @param configurationBaseDHT The information about the routing and the DHT
-	 *        operation
-	 * @return A ChannelCreator that can create channel according to
-	 *         routingConfiguration and requestP2PConfiguration
-	 */
-	public FutureChannelCreator reserve(final ConfigurationBaseDHT configurationBaseDHT)
-	{
-		return reserve(configurationBaseDHT, "default");
-	}
 	
 	/**
 	 * Reserves a connection for a routing and DHT operation. This call does not

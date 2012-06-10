@@ -32,7 +32,7 @@ import net.tomp2p.storage.Data;
  * @author Thomas Bocek
  * 
  */
-public class FutureAsyncTask extends BaseFutureImpl
+public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask>
 {
 	private final PeerAddress remotePeer;
 	private Map<Number160, Data> dataMap;
@@ -45,6 +45,7 @@ public class FutureAsyncTask extends BaseFutureImpl
 	public FutureAsyncTask(PeerAddress remotePeer)
 	{
 		this.remotePeer = remotePeer;
+		self(this);
 	}
 	
 	/**

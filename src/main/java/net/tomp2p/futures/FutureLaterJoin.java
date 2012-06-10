@@ -28,7 +28,7 @@ import java.util.List;
  * 
  * @param <K>
  */
-public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl implements BaseFuture
+public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<FutureLaterJoin<K>> implements BaseFuture
 {
 	final private List<K> futuresDone;
 	private int nrMaxFutures = Integer.MAX_VALUE;
@@ -43,6 +43,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl implem
 	public FutureLaterJoin()
 	{
 		this.futuresDone = new ArrayList<K>();
+		self(this);
 	}
 
 	/**

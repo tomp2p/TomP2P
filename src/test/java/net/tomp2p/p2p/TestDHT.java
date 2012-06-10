@@ -815,10 +815,10 @@ public class TestDHT
 			String toStore2 = "hallo1";
 			Data data1 = new Data(toStore1.getBytes());
 			Data data2 = new Data(toStore2.getBytes());
-			FutureDHT futureDHT = peers[30].add(nr).setData(data1).setList(true).add();
+			FutureDHT futureDHT = peers[30].add(nr).setData(data1).setList(true).build();
 			futureDHT.awaitUninterruptibly();
 			System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
-			futureDHT = peers[50].add(nr).setData(data2).setList(true).add();
+			futureDHT = peers[50].add(nr).setData(data2).setList(true).build();
 			futureDHT.awaitUninterruptibly();
 			System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
 			futureDHT = peers[77].getAll(nr);

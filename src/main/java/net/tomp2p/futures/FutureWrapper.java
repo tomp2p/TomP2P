@@ -25,7 +25,7 @@ package net.tomp2p.futures;
  * 
  * @param <K>
  */
-public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl
+public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K>
 {
 	private K wrappedFuture;
 
@@ -37,6 +37,7 @@ public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl
 	 */
 	public void waitFor(final K future)
 	{
+		self(future);
 		future.addListener(new BaseFutureAdapter<K>()
 		{
 			@Override

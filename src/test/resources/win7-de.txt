@@ -1,0 +1,48 @@
+===========================================================================
+Schnittstellenliste
+ 10...08 00 27 a0 c4 c8 ......Intel(R) PRO/1000 MT-Desktopadapter
+  1...........................Software Loopback Interface 1
+ 13...00 00 00 00 00 00 00 e0 Microsoft-ISATAP-Adapter
+ 11...00 00 00 00 00 00 00 e0 Teredo Tunneling Pseudo-Interface
+===========================================================================
+
+IPv4-Routentabelle
+===========================================================================
+Aktive Routen:
+     Netzwerkziel    Netzwerkmaske          Gateway    Schnittstelle Metrik
+          0.0.0.0          0.0.0.0         10.0.2.2        10.0.2.15     10
+         10.0.2.0    255.255.255.0   Auf Verbindung         10.0.2.15    266
+        10.0.2.15  255.255.255.255   Auf Verbindung         10.0.2.15    266
+       10.0.2.255  255.255.255.255   Auf Verbindung         10.0.2.15    266
+        127.0.0.0        255.0.0.0   Auf Verbindung         127.0.0.1    306
+        127.0.0.1  255.255.255.255   Auf Verbindung         127.0.0.1    306
+  127.255.255.255  255.255.255.255   Auf Verbindung         127.0.0.1    306
+        224.0.0.0        240.0.0.0   Auf Verbindung         127.0.0.1    306
+        224.0.0.0        240.0.0.0   Auf Verbindung         10.0.2.15    266
+  255.255.255.255  255.255.255.255   Auf Verbindung         127.0.0.1    306
+  255.255.255.255  255.255.255.255   Auf Verbindung         10.0.2.15    266
+===========================================================================
+Ständige Routen:
+  Keine
+
+IPv6-Routentabelle
+===========================================================================
+Aktive Routen:
+ If Metrik Netzwerkziel             Gateway
+ 11     58 ::/0                     Auf Verbindung
+  1    306 ::1/128                  Auf Verbindung
+ 11     58 2001::/32                Auf Verbindung
+ 11    306 2001:0:5ef5:79fb:c1b:3852:f5ff:fdf0/128
+                                    Auf Verbindung
+ 10    266 fe80::/64                Auf Verbindung
+ 11    306 fe80::/64                Auf Verbindung
+ 10    266 fe80::9d8:badb:c0d7:334a/128
+                                    Auf Verbindung
+ 11    306 fe80::c1b:3852:f5ff:fdf0/128
+                                    Auf Verbindung
+  1    306 ff00::/8                 Auf Verbindung
+ 11    306 ff00::/8                 Auf Verbindung
+ 10    266 ff00::/8                 Auf Verbindung
+===========================================================================
+Ständige Routen:
+  Keine

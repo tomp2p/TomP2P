@@ -8,8 +8,6 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -149,11 +147,8 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 				else
 				{
 					final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
-					ConfigurationStore config = Configurations.defaultStoreConfiguration();
-					config.setDomain(domainKey);
-					config.setStoreIfAbsent(true);
-					pendingFutures.put(peer.put(locationKey, dataMapConverted1, config), System
-						.currentTimeMillis());
+					pendingFutures.put(peer.put(locationKey).setDataMap(
+							dataMapConverted1).setDomainKey(domainKey).setPutIfAbsent(true).build(), System.currentTimeMillis());
 					dataMapConverted.clear();
 					dataMapConverted.put(contentKey, data);
 				}
@@ -161,10 +156,8 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 			}
 			if(!dataMapConverted.isEmpty() && domainKeyOld != null)
 			{
-				ConfigurationStore config = Configurations.defaultStoreConfiguration();
-				config.setDomain(domainKeyOld);
-				config.setStoreIfAbsent(true);
-				pendingFutures.put(peer.put(locationKey, dataMapConverted, config), System
+				pendingFutures.put(peer.put(locationKey).setDataMap(
+						dataMapConverted).setDomainKey(domainKeyOld).setPutIfAbsent(true).build(), System
 					.currentTimeMillis());
 			}
 		}

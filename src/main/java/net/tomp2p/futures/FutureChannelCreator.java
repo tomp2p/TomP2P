@@ -23,9 +23,14 @@ import net.tomp2p.connection.ChannelCreator;
  * @author Thomas Bocek
  * 
  */
-public class FutureChannelCreator extends BaseFutureImpl
+public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator>
 {
 	private ChannelCreator channelCreator;
+	
+	public FutureChannelCreator()
+	{
+		self(this);
+	}
 
 	/**
 	 * Called if a channel creator could be created. With this channel creator

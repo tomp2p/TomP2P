@@ -13,7 +13,6 @@ import net.tomp2p.examples.json.simple.JSONObject;
 import net.tomp2p.examples.json.simple.JSONValue;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -63,13 +62,13 @@ public class ExampleUnQL
 		{
 			if(query.getValueType() == ValueType.SINGLE)
 			{
-				peer.add(locationKey, new Data(query.getValue())).awaitUninterruptibly();
+				peer.add(locationKey).setData(new Data(query.getValue())).build().awaitUninterruptibly();
 			}
 			else if(query.getValueType() == ValueType.ARRAY)
 			{
 				for(String value: query.getValues())
 				{
-					peer.add(locationKey, new Data(value)).awaitUninterruptibly();
+					peer.add(locationKey).setData(new Data(value)).build().awaitUninterruptibly();
 				}
 			}
 			else if(query.getValueType() == ValueType.MAP)
@@ -79,12 +78,12 @@ public class ExampleUnQL
 				{
 					dataMap.put(Number160.createHash(entry.getKey()), new Data(entry.getValue()));
 				}
-				peer.put(locationKey, dataMap, Configurations.defaultStoreConfiguration()).awaitUninterruptibly();
+				peer.put(locationKey).setDataMap(dataMap).build().awaitUninterruptibly();
 			}
 		}
 		else if(query.getQueryType() == QueryType.SELECT)
 		{
-			FutureDHT futureDHT = peer.getAll(locationKey);
+			FutureDHT futureDHT = peer.get(locationKey).setAll().build();
 			futureDHT.awaitUninterruptibly();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
 			{

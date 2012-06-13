@@ -17,8 +17,8 @@ import net.tomp2p.utils.Utils;
 public class SendDirectBuilder
 {
 	final private Peer peer;
-	private PeerAddress remotePeer;
-	private ChannelBuffer requestBuffer;
+	private PeerAddress peerAddress;
+	private ChannelBuffer buffer;
 	private PeerConnection connection;
 	private Object object;
 	private FutureChannelCreator futureChannelCreator;
@@ -27,25 +27,25 @@ public class SendDirectBuilder
 		this.peer = peer;
 	}
 	
-	public PeerAddress getRemotePeer()
+	public PeerAddress getPeerAddress()
 	{
-		return remotePeer;
+		return peerAddress;
 	}
 
-	public SendDirectBuilder setRemotePeer(PeerAddress remotePeer)
+	public SendDirectBuilder setPeerAddress(PeerAddress peerAddress)
 	{
-		this.remotePeer = remotePeer;
+		this.peerAddress = peerAddress;
 		return this;
 	}
 
-	public ChannelBuffer getRequestBuffer()
+	public ChannelBuffer getBuffer()
 	{
-		return requestBuffer;
+		return buffer;
 	}
 
-	public SendDirectBuilder setRequestBuffer(ChannelBuffer requestBuffer)
+	public SendDirectBuilder setBuffer(ChannelBuffer buffer)
 	{
-		this.requestBuffer = requestBuffer;
+		this.buffer = buffer;
 		return this;
 	}
 
@@ -85,11 +85,11 @@ public class SendDirectBuilder
 	public FutureResponse build()
 	{
 		final boolean keepAlive;
-		if(remotePeer != null && connection == null)
+		if(peerAddress != null && connection == null)
 		{
 			keepAlive = false;
 		}
-		else if(remotePeer == null && connection != null)
+		else if(peerAddress == null && connection != null)
 		{
 			keepAlive = true;
 		}
@@ -98,7 +98,7 @@ public class SendDirectBuilder
 			throw new IllegalArgumentException("either remotePeer or connection has to be set");
 		}
 		final boolean raw;
-		if(object != null && requestBuffer == null)
+		if(object != null && buffer == null)
 		{
 			byte[] me;
 			try
@@ -110,14 +110,14 @@ public class SendDirectBuilder
 				FutureResponse futureResponse = new FutureResponse(null);
 				return futureResponse.setFailed("cannot serialize object: "+e);
 			}
-			requestBuffer = ChannelBuffers.wrappedBuffer(me);
+			buffer = ChannelBuffers.wrappedBuffer(me);
 			raw = false;
 		}
 		else
 		{
 			raw = true;
 		}
-		if(requestBuffer != null)
+		if(buffer != null)
 		{
 			if(keepAlive)
 			{
@@ -141,7 +141,7 @@ public class SendDirectBuilder
 	private FutureResponse sendDirectAlive(boolean raw)
 	{
 		RequestHandlerTCP<FutureResponse> request = peer.getDirectDataRPC().prepareSend(connection.getDestination(),
-				requestBuffer.slice(), raw);
+				buffer.slice(), raw);
 		request.setKeepAlive(true);
 		// since we keep one connection open, we need to make sure that we do
 		// not send anything in parallel.
@@ -167,7 +167,7 @@ public class SendDirectBuilder
 	
 	private FutureResponse sendDirectClose(final boolean raw)
 	{
-		final RequestHandlerTCP<FutureResponse> request = peer.getDirectDataRPC().prepareSend(remotePeer, requestBuffer.slice(),
+		final RequestHandlerTCP<FutureResponse> request = peer.getDirectDataRPC().prepareSend(peerAddress, buffer.slice(),
 				raw);
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>()
 		{

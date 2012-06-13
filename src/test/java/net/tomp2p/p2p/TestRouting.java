@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -15,14 +14,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureLateJoin;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapKadImpl;
@@ -962,7 +959,7 @@ public class TestRouting
 		{
 			master = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen();
 			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4000);
+			BaseFuture tmp = client.ping().setBroadcast().setPort(4000).build();
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
 			Assert.assertEquals(1, client.getPeerBean().getPeerMap().size());
@@ -983,7 +980,7 @@ public class TestRouting
 		{
 			master = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
 			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			FutureLateJoin<FutureResponse> tmp = client.pingBroadcast(4001);
+			BaseFuture tmp = client.ping().setBroadcast().setPort(4001).build();
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 			Assert.assertEquals(0, client.getPeerBean().getPeerMap().size());
@@ -1022,7 +1019,6 @@ public class TestRouting
 						.reserve(2);
 				fcc.awaitUninterruptibly();
 				final ChannelCreator cc = fcc.getChannelCreator();
-				Configurations.defaultConfigurationDirect();
 				FutureRouting frr = peers[50].getDistributedRouting().route(find, null, null,
 						Type.REQUEST_1, Integer.MAX_VALUE, 5, 10, 20, 2, false, cc);
 				frr.awaitUninterruptibly();
@@ -1061,13 +1057,11 @@ public class TestRouting
 			Number160 key = new Number160(rnd);
 			Thread.sleep(1000);
 			System.out.println("start tracker");
-			FutureTracker ft1 = peers[42].addToTracker(key,
-					Configurations.defaultTrackerStoreConfiguration());
+			FutureTracker ft1 = peers[42].addTracker(key).build();
 			ft1.awaitUninterruptibly();
 			Thread.sleep(1000);
 			System.out.println("searching for key " + key);
-			FutureTracker ft = peers[55].getFromTracker(key,
-					Configurations.defaultTrackerGetConfiguration());
+			FutureTracker ft = peers[55].getTracker(key).build();
 			SortedSet<PeerAddress> pa2 = new TreeSet<PeerAddress>(
 					PeerMapKadImpl.createComparator(key));
 			pa2.addAll(peers[55].getPeerBean().getPeerMap().getAll());

@@ -65,6 +65,13 @@ public class DiscoverBuilder
 		this.portTCP = portTCP;
 		return this;
 	}
+	
+	public DiscoverBuilder setPorts(int port)
+	{
+		this.portTCP = port;
+		this.portUDP = port;
+		return this;
+	}
 
 	public PeerAddress getPeerAddress()
 	{
@@ -94,7 +101,7 @@ public class DiscoverBuilder
 		{
 			peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
 		}
-		else
+		if(peerAddress == null)
 		{
 			throw new IllegalArgumentException("need peeraddress or inetaddress");
 		}

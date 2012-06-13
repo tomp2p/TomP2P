@@ -94,7 +94,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		return this;
 	}
 	
-	public GetBuilder all()
+	public GetBuilder setAll()
 	{
 		this.all = true;
 		return this;
@@ -111,7 +111,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		return this;
 	}
 	
-	public GetBuilder digest()
+	public GetBuilder setDigest()
 	{
 		this.digest = true;
 		return this;
@@ -128,7 +128,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		return this;
 	}
 	
-	public GetBuilder returnBloomFilter()
+	public GetBuilder setReturnBloomFilter()
 	{
 		this.returnBloomFilter = true;
 		return this;
@@ -145,7 +145,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		return this;
 	}
 	
-	public GetBuilder range()
+	public GetBuilder setRange()
 	{
 		this.range = true;
 		return this;

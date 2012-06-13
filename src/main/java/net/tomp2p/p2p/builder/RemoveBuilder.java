@@ -69,7 +69,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder>
 		return this;
 	}
 	
-	public RemoveBuilder all()
+	public RemoveBuilder setAll()
 	{
 		this.all = true;
 		return this;
@@ -86,7 +86,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder>
 		return this;
 	}
 	
-	public RemoveBuilder returnResults()
+	public RemoveBuilder setReturnResults()
 	{
 		this.returnResults = true;
 		return this;

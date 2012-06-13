@@ -20,9 +20,6 @@ import java.util.Map;
 
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationGet;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -78,10 +75,7 @@ public class ExampleHashMap
 			Number160 locationKey = Number160.createHash(key);
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
-			ConfigurationGet cg = Configurations.defaultGetConfiguration();
-			cg.setDomain(domainKey);
-			cg.setContentKey(contentKey);
-			return peer.get(locationKey, cg);
+			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).build();
 		}
 
 		private FutureDHT put(String key, String domain, String content, String data)
@@ -95,10 +89,7 @@ public class ExampleHashMap
 			myData.setDomain(domain);
 			myData.setContent(content);
 			myData.setData(data);
-			ConfigurationStore cs = Configurations.defaultStoreConfiguration();
-			cs.setDomain(domainKey);
-			cs.setContentKey(contentKey);
-			return peer.put(locationKey, new Data(myData), cs);
+			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).build();
 		}
 	}
 	private static class MyData implements Serializable

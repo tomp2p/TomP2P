@@ -133,7 +133,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		return self;
 	}
 	
-	public K protectDomain()
+	public K setProtectDomain()
 	{
 		this.protectDomain = true;
 		return self;
@@ -150,7 +150,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		return self;
 	}
 	
-	public K signMessage()
+	public K setSignMessage()
 	{
 		this.signMessage = true;
 		return self;
@@ -167,7 +167,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		return self;
 	}
 	
-	public K manualCleanup()
+	public K setManualCleanup()
 	{
 		this.manualCleanup = true;
 		return self;
@@ -184,7 +184,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		return self;
 	}
 	
-	public K directReplication()
+	public K setDirectReplication()
 	{
 		this.directReplication = true;
 		return self;

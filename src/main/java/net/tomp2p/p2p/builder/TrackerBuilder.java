@@ -58,7 +58,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>>
 		return trackerConfiguration;
 	}
 
-	public K setRequestP2PConfiguration(TrackerConfiguration trackerConfiguration)
+	public K setTrackerConfiguration(TrackerConfiguration trackerConfiguration)
 	{
 		this.trackerConfiguration = trackerConfiguration;
 		return self;

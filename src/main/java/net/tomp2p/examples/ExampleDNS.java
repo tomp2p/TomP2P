@@ -32,9 +32,9 @@ public class ExampleDNS
 	final private Peer peer;
 	public ExampleDNS(int nodeId) throws Exception {
 		peer=new PeerMaker(Number160.createHash(nodeId)).setPorts(4000+nodeId).buildAndListen();
-		FutureBootstrap fb=this.peer.bootstrapBroadcast(4001);
+		FutureBootstrap fb=this.peer.bootstrap().setBroadcast(true).setPorts(4001).build();
 		fb.awaitUninterruptibly();
-		peer.discover(fb.getBootstrapTo().iterator().next()).awaitUninterruptibly();
+		peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).build().awaitUninterruptibly();
 		
 	}
 	public static void main(String[] args) throws NumberFormatException, Exception {
@@ -48,7 +48,7 @@ public class ExampleDNS
 	}
 	private String get(String name) throws ClassNotFoundException, IOException
 	{
-		FutureDHT futureDHT=peer.get(Number160.createHash(name));
+		FutureDHT futureDHT=peer.get(Number160.createHash(name)).build();
 		futureDHT.awaitUninterruptibly();
 		if(futureDHT.isSuccess()) {
 			return futureDHT.getDataMap().values().iterator().next().getObject().toString();
@@ -57,6 +57,6 @@ public class ExampleDNS
 	}
 	private void store(String name, String ip) throws IOException
 	{
-		peer.put(Number160.createHash(name), new Data(ip)).awaitUninterruptibly();
+		peer.put(Number160.createHash(name)).setData(new Data(ip)).build().awaitUninterruptibly();
 	}
 }

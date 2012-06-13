@@ -14,7 +14,7 @@ import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureTask;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
-import net.tomp2p.p2p.config.Configurations;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.Worker;
@@ -87,11 +87,11 @@ public class ExampleMapReduce
 				for(Map.Entry<Number160, Data> entry: inputData.entrySet())
 				{
 					Number160 key = entry.getKey();
-					int size = peer.getPeerBean().getStorage().get(key, Configurations.DEFAULT_DOMAIN, Number160.ZERO, Number160.MAX_VALUE).size();
+					int size = peer.getPeerBean().getStorage().get(key, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, Number160.MAX_VALUE).size();
 					System.out.println("reduce DHT call " + key+" found "+size+" on peer "+peer.getPeerID());
 					Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 					dataMap.put(peer.getPeerAddress().getID(), new Data(size));
-					futures.put(key, peer.put(result, dataMap, Configurations.defaultStoreConfiguration()));
+					futures.put(key, peer.put(result).setDataMap(dataMap).build());
 				}
 				Map<Number160, Data> retVal = new HashMap<Number160, Data>();
 				for(Map.Entry<Number160, FutureDHT> entry : futures.entrySet())
@@ -123,7 +123,7 @@ public class ExampleMapReduce
 		}
 		//now we wait for the completion
 		for(FutureTask futureTask:resultList) futureTask.awaitUninterruptibly();
-		FutureDHT futureDHT = peers[20].getAll(result);
+		FutureDHT futureDHT = peers[20].get(result).setAll().build();
 		futureDHT.awaitUninterruptibly();
 		int counter = 0;
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())

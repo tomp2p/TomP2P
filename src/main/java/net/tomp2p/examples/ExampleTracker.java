@@ -6,11 +6,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationTrackerStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -85,16 +83,14 @@ public class ExampleTracker
 		{
 			for(Map.Entry<Number160, String> entry:downloaded.entrySet())
 			{
-				ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
 				Collection<String> tmp = new ArrayList<String>(downloaded.values());
 				tmp.remove(entry.getValue());
-				cts.setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0])));
-				peer.addToTracker(entry.getKey(), cts).awaitUninterruptibly();
+				peer.addTracker(entry.getKey()).setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0]))).build().awaitUninterruptibly();
 			}
 		}
 		public String download(Number160 key) throws IOException, ClassNotFoundException
 		{
-			FutureTracker futureTracker = peer.getFromTracker(key, Configurations.defaultTrackerGetConfiguration());
+			FutureTracker futureTracker = peer.getTracker(key).build();
 			//now we know which peer has this data, and we also know what other things this peer has
 			futureTracker.awaitUninterruptibly();
 			Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
@@ -109,7 +105,7 @@ public class ExampleTracker
 			}
 			System.out.println("Tracker reports that "+trackerDatas.size()+" peer(s) have this song");
 			//here we download
-			FutureData futureData = peer.send(trackerDatas.iterator().next().getPeerAddress(), key);
+			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).build();
 			futureData.awaitUninterruptibly();
 			String downloaded = (String)futureData.getObject();
 			// we need to announce that we have this piece now

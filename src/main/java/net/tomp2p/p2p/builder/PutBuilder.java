@@ -30,6 +30,11 @@ public class PutBuilder extends DHTBuilder<PutBuilder>
 	{
 		return data;
 	}
+	
+	public PutBuilder setData(final Data data)
+	{
+		return setData(Number160.ZERO, data);
+	}
 
 	public PutBuilder setData(final Number160 key, final Data data)
 	{
@@ -78,7 +83,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder>
 		return this;
 	}
 	
-	public PutBuilder putIfAbsent()
+	public PutBuilder setPutIfAbsent()
 	{
 		this.putIfAbsent = true;
 		return this;

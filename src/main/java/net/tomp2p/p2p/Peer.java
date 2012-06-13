@@ -649,7 +649,7 @@ public class Peer
 		return new SendDirectBuilder(this);
 	}
 	
-	public BootstrapBuilder boostrap()
+	public BootstrapBuilder bootstrap()
 	{
 		return new BootstrapBuilder(this);
 	}

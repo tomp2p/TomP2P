@@ -57,7 +57,7 @@ public class AddBuilder extends DHTBuilder<AddBuilder>
 		return this;
 	}
 	
-	public AddBuilder list()
+	public AddBuilder setList()
 	{
 		this.list = true;
 		return this;

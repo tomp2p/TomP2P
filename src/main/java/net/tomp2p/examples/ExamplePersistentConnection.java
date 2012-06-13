@@ -18,7 +18,7 @@ package net.tomp2p.examples;
 import java.util.Random;
 
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
@@ -54,12 +54,12 @@ public class ExamplePersistentConnection
 			//keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
 			PeerConnection peerConnection = peer1.createPeerConnection(peer2.getPeerAddress(), 20);
 			String sentObject = "Hello";
-			FutureData fd=peer1.send(peerConnection, sentObject);
+			FutureResponse fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).build();
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
 			System.out.println("received "+fd.getObject() + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			//we reuse the connection
-			fd=peer1.send(peerConnection, sentObject);
+			fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).build();
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
 			System.out.println("received "+fd.getObject()  + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());

@@ -18,11 +18,6 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.RequestP2PConfiguration;
-import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -106,10 +101,9 @@ public class TestAddUpdateTTL
 			Assert.fail();
 			return null;
 		}
-		final FutureBootstrap fb = peer.bootstrapBroadcast(seed
-				.getPeerAddress().portTCP());
+		final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().portTCP()).build();
 		fb.awaitUninterruptibly();
-		peer.discover(fb.getBootstrapTo().iterator().next());
+		peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).build();
 		fb.addListener(new BaseFutureListener<BaseFuture>()
 		{
 			@Override
@@ -118,8 +112,7 @@ public class TestAddUpdateTTL
 				Collection<PeerAddress> addresses = fb.getBootstrapTo();
 				if (addresses != null && !addresses.isEmpty())
 				{
-					peer.discover(addresses.iterator().next())
-							.awaitUninterruptibly();
+					peer.discover().setPeerAddress(addresses.iterator().next()).build().awaitUninterruptibly();
 				}
 				else
 				{
@@ -140,15 +133,11 @@ public class TestAddUpdateTTL
 	private void add(Peer peer, byte[] key, byte[] value)
 			throws InterruptedException
 	{
-		RoutingConfiguration rc = new RoutingConfiguration(1, 0, 10, 1);
-		RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
-		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
-		cs.setRequestP2PConfiguration(pc);
-		cs.setRoutingConfiguration(rc);
-
 		Data data = new Data(value);
 		data.setTTLSeconds(3);
-		peer.add(new Number160(key), data, cs).addListener(
+		peer.add(new Number160(key)).setData(data).
+			setRoutingConfiguration(new RoutingConfiguration(1, 0, 10, 1)).
+			setRequestP2PConfiguration(new RequestP2PConfiguration(3, 5, 0)).build().addListener(
 				new BaseFutureAdapter<FutureDHT>()
 				{
 					@Override
@@ -206,7 +195,7 @@ public class TestAddUpdateTTL
 		{
 			for (final byte[] key : keyValueStore.keySet())
 			{
-				peer.getAll(new Number160(key)).addListener(
+				peer.get(new Number160(key)).setAll().build().addListener(
 						new BaseFutureAdapter<FutureDHT>()
 						{
 							@Override

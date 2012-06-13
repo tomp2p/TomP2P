@@ -22,16 +22,16 @@ public class ExampleIndirectReplication
 		Peer peer3 = new PeerMaker(new Number160(4)).setPorts(4003).setEnableIndirectReplication(true).buildAndListen();
 		Peer[] peers = new Peer[]{peer1, peer2, peer3};
 		//
-		FutureDHT futureDHT = peer1.put(new Number160(4), new Data("store on peer1"));
+		FutureDHT futureDHT = peer1.put(new Number160(4)).setData(new Data("store on peer1")).build();
 		futureDHT.awaitUninterruptibly();
-		futureDHT = peer1.digest(new Number160(4));
+		futureDHT = peer1.get(new Number160(4)).setDigest().build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("we found the data on "+futureDHT.getRawDigest().size()+" peers");
 		// now peer1 gets to know peer2, transfer the data
-		peer1.bootstrap(peer2.getPeerAddress());
-		peer1.bootstrap(peer3.getPeerAddress());
+		peer1.bootstrap().setPeerAddress(peer2.getPeerAddress()).build();
+		peer1.bootstrap().setPeerAddress(peer3.getPeerAddress()).build();
 		Thread.sleep(1000);
-		futureDHT = peer1.digest(new Number160(4));
+		futureDHT = peer1.get(new Number160(4)).setDigest().build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("we found the data on "+futureDHT.getRawDigest().size()+" peers");
 		shutdown(peers);

@@ -91,7 +91,7 @@ public class ExampleNAT
 		peer.getConfiguration().setBehindFirewall(true);
 		PeerAddress pa = new PeerAddress(Number160.ZERO,
 				InetAddress.getByName(ip), 4000, 4000);
-		FutureDiscover fd = peer.discover(pa);
+		FutureDiscover fd = peer.discover().setPeerAddress(pa).build();
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) 
 		{

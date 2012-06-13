@@ -7,10 +7,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -40,7 +39,7 @@ public class ExampleFastSS
 		//key of the file
 		final Number160 key = Number160.createHash(title);
 		//peer 15 has this song
-		peers[15].addToTracker(key, Configurations.defaultTrackerStoreConfiguration()).awaitUninterruptibly();
+		peers[15].addTracker(key).build().awaitUninterruptibly();
 		//when a peer asks us, we reply with the song
 		peers[15].setObjectDataReply(new ObjectDataReply()
 		{	
@@ -63,26 +62,25 @@ public class ExampleFastSS
 			for(String deletion:deletion(word))
 			{
 				Object[] tmp=new Object[]{key, word, deletion};
-				peers[15].put(Number160.createHash(deletion), new Data(tmp)).awaitUninterruptibly();
+				peers[15].put(Number160.createHash(deletion)).setData(new Data(tmp)).build().awaitUninterruptibly();
 			}
 		}
 		System.out.println("we have indexed ["+title+"]");
 		//done, now search for greet
 		for(String deletion:deletion("greet"))
 		{
-			FutureDHT futureDHT = peers[20].get(Number160.createHash(deletion));
-			futureDHT.awaitUninterruptibly();
+			FutureDHT futureDHT = peers[20].get(Number160.createHash(deletion)).build().awaitUninterruptibly();
 			if(futureDHT.isSuccess())
 			{
 				//if we found a match
 				Object[] tmp=(Object[])futureDHT.getData().getObject();
 				Number160 key1 = (Number160)tmp[0];
 				//get the peers that have this file
-				FutureTracker futureTracker = peers[20].getFromTracker(key1, Configurations.defaultTrackerGetConfiguration());
+				FutureTracker futureTracker = peers[20].getTracker(key1).build();
 				futureTracker.awaitUninterruptibly();
 				PeerAddress peerAddress = futureTracker.getTrackers().iterator().next().getPeerAddress();
 				//download
-				FutureData futureData = peers[20].send(peerAddress, key1);
+				FutureResponse futureData = peers[20].sendDirect().setPeerAddress(peerAddress).setObject(key1).build();
 				futureData.awaitUninterruptibly();
 				System.out.println("we searched for \"greet\", and found ["+tmp[2]+"], ed("+tmp[1]+",greet)="+LD((String)tmp[1],"greet")+". After downloading we get ["+futureData.getObject()+"]");
 			}

@@ -393,7 +393,7 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, null,null, false,false,false,false,  cc, false);
+					.toNumber160(), tmp.keySet(), null,null, false,false,false,false,  cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -443,7 +443,7 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, null,null, false, false, false,false, cc, false);
+					.toNumber160(), null, null,null, false, false, false,false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -522,7 +522,7 @@ public class TestStorage
 			compare(tmp, removed);
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, null,null, false, false, false,false, cc, false);
+					.toNumber160(), tmp.keySet(), null,null, false, false, false,false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			m = fr.getResponse();
@@ -579,7 +579,7 @@ public class TestStorage
 			compare(tmp, removed);
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), tmp.keySet(), null, null,null, false, false,false, false, cc, false);
+					.toNumber160(), tmp.keySet(), null,null, false, false,false, false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			m = fr.getResponse();
@@ -628,7 +628,7 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, null,null, false, false, false,false, cc, false);
+					.toNumber160(), null, null,null, false, false, false,false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -767,7 +767,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			cc = fcc.getChannelCreator();
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, null,null, false, false,false, false, cc, false);
+					.toNumber160(), null, null,null, false, false,false, false, cc, false);
 			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
@@ -862,7 +862,7 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			cc = fcc.getChannelCreator();
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, null, null, null, false, false, false,false, cc, false);
+					.toNumber160(), null, null, null, false, false, false,false, cc, false);
 			Utils.addReleaseListener(fr, sender.getConnectionBean().getConnectionReservation(), cc, 1);
 			Timings.sleep(100);
 			fr.cancel();
@@ -1039,9 +1039,9 @@ public class TestStorage
 			master.getStoreRPC().put(master.getPeerAddress(), loc, domainKey,  contentMap, false, false, false, cc, false).awaitUninterruptibly();
 			slave1 = new PeerMaker(new Number160(rnd)).setPorts(8001).buildAndListen();
 			slave2 = new PeerMaker(new Number160(rnd)).setPorts(8002).buildAndListen();
-			FutureBootstrap futureBootstrap = slave1.bootstrap(master.getPeerAddress());
+			FutureBootstrap futureBootstrap = slave1.bootstrap().setPeerAddress(master.getPeerAddress()).build();
 			futureBootstrap.awaitUninterruptibly();
-			slave2.bootstrap(master.getPeerAddress()).awaitUninterruptibly();
+			slave2.bootstrap().setPeerAddress(master.getPeerAddress()).build().awaitUninterruptibly();
 			master.getPeerBean().getPeerMap().peerOffline(slave2.getPeerAddress(), true);
 			slave2.shutdown();
 			Assert.assertEquals(1, test1.get());
@@ -1111,7 +1111,7 @@ public class TestStorage
 			
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, sbf, null, null, false, false, false,false, cc, false);
+					.toNumber160(), null, sbf, null, false, false, false,false, cc, false);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
 			Message m = fr.getResponse();
@@ -1167,7 +1167,7 @@ public class TestStorage
 			
 			// get
 			fr = smmSender.get(recv1.getPeerAddress(), new Number160(33), new ShortString("test")
-					.toNumber160(), null, sbf, null, null, false, true,false, false,  cc, false);
+					.toNumber160(), null, sbf, null, false, true,false, false,  cc, false);
 			fr.awaitUninterruptibly();
 			sender.getConnectionBean().getConnectionReservation().release(cc);
 			Assert.assertEquals(true, fr.isSuccess());

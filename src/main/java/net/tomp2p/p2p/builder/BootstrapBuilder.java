@@ -107,6 +107,13 @@ public class BootstrapBuilder
 		this.portTCP = portTCP;
 		return this;
 	}
+	
+	public BootstrapBuilder setPorts(int port)
+	{
+		this.portTCP = port;
+		this.portUDP = port;
+		return this;
+	}
 
 	public RoutingConfiguration getRoutingConfiguration()
 	{
@@ -202,7 +209,7 @@ public class BootstrapBuilder
 		}
 	}
 	
-	public FutureBootstrap bootstrap()
+	private FutureBootstrap bootstrap()
 	{
 		final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result = new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
 		result.setBootstrapTo(bootstrapTo);

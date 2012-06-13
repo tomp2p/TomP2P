@@ -94,11 +94,11 @@ public class ExampleDiscover {
 		
 		
 		//Future Discover
-		FutureDiscover futureDiscover = client.discover(address,masterPort,masterPort);
+		FutureDiscover futureDiscover = client.discover().setInetAddress(address).setPorts(masterPort).build();
 		futureDiscover.awaitUninterruptibly();
 		
 		//Future Bootstrap - slave
-		FutureBootstrap futureBootstrap = client.bootstrap(new InetSocketAddress(address,masterPort));
+		FutureBootstrap futureBootstrap = client.bootstrap().setInetAddress(address).setPorts(masterPort).build();
 		futureBootstrap.awaitUninterruptibly();
 		
 		Collection<PeerAddress> addressList =  client.getPeerBean().getPeerMap().getAll();

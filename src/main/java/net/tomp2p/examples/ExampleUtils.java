@@ -41,7 +41,7 @@ public class ExampleUtils
 		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureDiscover tmp=peers[i].discover(peers[0].getPeerAddress());
+			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).build();
 			futures2.add(tmp);
 		}
 		for (FutureDiscover future : futures2)
@@ -50,12 +50,12 @@ public class ExampleUtils
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[i].bootstrap(peers[0].getPeerAddress());
+			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).build();
 			futures1.add(tmp);
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[0].bootstrap(peers[i].getPeerAddress());
+			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).build();
 			futures1.add(tmp);
 		}
 		for (FutureBootstrap future : futures1)

@@ -7,12 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureData;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.ConfigurationTrackerStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -87,23 +84,21 @@ public class ExampleDHT
 		{
 			for(Map.Entry<Number160, String> entry:downloaded.entrySet())
 			{
-				ConfigurationTrackerStore cts = Configurations.defaultTrackerStoreConfiguration();
-				peer.addToTracker(entry.getKey(), cts).awaitUninterruptibly();
+				peer.addTracker(entry.getKey()).build().awaitUninterruptibly();
 				//announce it on DHT
 				Collection<String> tmp = new ArrayList<String>(downloaded.values());
 				tmp.remove(entry.getValue());
-				ConfigurationStore cs = Configurations.defaultStoreConfiguration();
 				Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 				for(String song:tmp) 
 				{
 					dataMap.put(peer.getPeerID().xor(Number160.createHash(song)),new Data(song));
 				}
-				peer.put(entry.getKey(), dataMap, cs).awaitUninterruptibly();
+				peer.put(entry.getKey()).setDataMap(dataMap).build().awaitUninterruptibly();
 			}
 		}
 		public String download(Number160 key) throws IOException, ClassNotFoundException
 		{
-			FutureTracker futureTracker = peer.getFromTracker(key, Configurations.defaultTrackerGetConfiguration());
+			FutureTracker futureTracker = peer.getTracker(key).build();
 			//now we know which peer has this data, and we also know what other things this peer has
 			futureTracker.awaitUninterruptibly();
 			Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
@@ -113,11 +108,11 @@ public class ExampleDHT
 			}
 			System.out.println("Tracker reports that "+trackerDatas.size()+" peer(s) have this song");
 			//here we download
-			FutureData futureData = peer.send(trackerDatas.iterator().next().getPeerAddress(), key);
+			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).build();
 			futureData.awaitUninterruptibly();
 			String downloaded = (String)futureData.getObject();
 			// get the recommondation
-			FutureDHT futureDHT = peer.getAll(key);
+			FutureDHT futureDHT = peer.get(key).setAll().build();
 			futureDHT.awaitUninterruptibly();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
 			{

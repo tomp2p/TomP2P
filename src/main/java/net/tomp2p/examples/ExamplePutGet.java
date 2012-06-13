@@ -22,9 +22,6 @@ import java.util.Random;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationGet;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -64,10 +61,10 @@ public class ExamplePutGet
 
 	public static void examplePutGet(Peer[] peers, Number160 nr) throws IOException, ClassNotFoundException
 	{
-		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"));
+		FutureDHT futureDHT = peers[30].put(nr).setData(new Data("hallo")).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
-		futureDHT = peers[77].get(nr);
+		futureDHT = peers[77].get(nr).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
 		// the output should look like this:
@@ -78,21 +75,15 @@ public class ExamplePutGet
 	public static void examplePutGetConfig(Peer[] peers, Number160 nr2) throws IOException, ClassNotFoundException
 	{
 		Number160 nr = new Number160(rnd);
-		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
-		cs.setDomain(Number160.createHash("my_domain"));
-		cs.setContentKey(new Number160(11));
-		FutureDHT futureDHT = peers[30].put(nr, new Data("hallo"), cs);
+		FutureDHT futureDHT = peers[30].put(nr).setData(new Number160(11), new Data("hallo")).setDomainKey(Number160.createHash("my_domain")).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
 		//this will fail, since we did not specify the domain
-		futureDHT = peers[77].getAll(nr);
+		futureDHT = peers[77].get(nr).setAll().build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("peer 77 got: \"" + futureDHT.getData() + "\" for the key "+nr);
 		//this will succeed, since we specify the domain
-		ConfigurationGet cg = Configurations.defaultGetConfiguration();
-		cg.setDomain(Number160.createHash("my_domain"));
-		futureDHT = peers[77].getAll(nr, cg);
-		futureDHT.awaitUninterruptibly();
+		futureDHT = peers[77].get(nr).setAll().setDomainKey(Number160.createHash("my_domain")).build().awaitUninterruptibly();
 		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
 		// the output should look like this:
 		// peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
@@ -106,13 +97,13 @@ public class ExamplePutGet
 		String toStore2 = "hallo2";
 		Data data1 = new Data(toStore1);
 		Data data2 = new Data(toStore2);
-		FutureDHT futureDHT = peers[30].add(nr, data1);
+		FutureDHT futureDHT = peers[30].add(nr).setData(data1).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = peers[50].add(nr, data2);
+		futureDHT = peers[50].add(nr).setData(data2).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = peers[77].getAll(nr);
+		futureDHT = peers[77].get(nr).setAll().build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("size" + futureDHT.getDataMap().size());
 		Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
@@ -124,7 +115,7 @@ public class ExamplePutGet
 	
 	public static void exampleGetBlocking(Peer[] peers,  Number160 nr) throws ClassNotFoundException, IOException
     {
-		FutureDHT futureDHT = peers[77].get(nr);
+		FutureDHT futureDHT = peers[77].get(nr).build();
 		//blocking operation
         futureDHT.awaitUninterruptibly();
         System.out.println("result: "+futureDHT.getData().getObject());
@@ -133,7 +124,7 @@ public class ExamplePutGet
 	
 	public static void exampleGetNonBlocking(Peer[] peers,  Number160 nr)
 	{
-		FutureDHT futureDHT = peers[77].get(nr);
+		FutureDHT futureDHT = peers[77].get(nr).build();
         //non-blocking operation
         futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() 
         {

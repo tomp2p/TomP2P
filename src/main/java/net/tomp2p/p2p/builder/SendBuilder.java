@@ -61,6 +61,23 @@ public class SendBuilder  extends DHTBuilder<SendBuilder>
 		return this;
 	}
 	
+	public boolean isCancelOnFinish()
+	{
+		return cancelOnFinish;
+	}
+
+	public SendBuilder setCancelOnFinish(boolean cancelOnFinish)
+	{
+		this.cancelOnFinish = cancelOnFinish;
+		return this;
+	}
+	
+	public SendBuilder setCancelOnFinish()
+	{
+		this.cancelOnFinish = true;
+		return this;
+	}
+	
 	@Override
 	public FutureDHT build()
 	{
@@ -90,7 +107,7 @@ public class SendBuilder  extends DHTBuilder<SendBuilder>
 		}
 		final FutureDHT futureDHT = peer.getDistributedHashMap().direct(locationKey, buffer, raw,
 				routingConfiguration, requestP2PConfiguration, futureCreate,
-				cancelOnFinish, manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
+				isCancelOnFinish(), manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
 		if(directReplication)
 		{
 			if(defaultDirectReplication == null)
@@ -120,6 +137,7 @@ public class SendBuilder  extends DHTBuilder<SendBuilder>
 		}
 		return futureDHT;
 	}
+	
 	private class DefaultDirectReplication implements FutureCreator<FutureDHT>
 	{
 		@Override
@@ -128,7 +146,7 @@ public class SendBuilder  extends DHTBuilder<SendBuilder>
 			final FutureChannelCreator futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, "send-builder-direct-replication");
 			final FutureDHT futureDHT = peer.getDistributedHashMap().direct(locationKey, buffer, raw,
 					routingConfiguration, requestP2PConfiguration, futureCreate,
-					cancelOnFinish, manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
+					isCancelOnFinish(), manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
 			return futureDHT;
 			}	
 		}

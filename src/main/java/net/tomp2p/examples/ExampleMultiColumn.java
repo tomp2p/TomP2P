@@ -7,9 +7,6 @@ import java.util.TreeSet;
 
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationGet;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -68,20 +65,16 @@ public class ExampleMultiColumn
 		//
 		//search
 		Number160 locationKey = Number160.createHash("users");
-		ConfigurationGet cg = Configurations.defaultGetConfiguration();
-		cg.setContentKey(combine(rowKey1, col1));
+		Number160 contentKey = combine(rowKey1, col1);
 		//get entry
-		FutureDHT futureDHT = peers[22].get(locationKey, cg);
+		FutureDHT futureDHT = peers[22].get(locationKey).setContentKey(contentKey).build();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("single fetch: "+futureDHT.getData().getObject());
 		//get list
 		Set<Number160> range = new TreeSet<Number160>();
 		range.add(createNr(rowKey1, 0));
 		range.add(createNr(rowKey1,-1));
-		ConfigurationGet cg1 = Configurations.defaultGetConfiguration();
-		//cg1.setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 3));
-		cg1.setRange(true);
-		futureDHT = peers[22].get(locationKey, range, cg1);
+		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().build();
 		futureDHT.awaitUninterruptibly();
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
@@ -92,10 +85,7 @@ public class ExampleMultiColumn
 		range = new TreeSet<Number160>();
 		range.add(createNr(col1, 0));
 		range.add(createNr(col1,-1));
-		cg1 = Configurations.defaultGetConfiguration();
-		//cg1.setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 3));
-		cg1.setRange(true);
-		futureDHT = peers[22].get(locationKey, range, cg1);
+		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().build();
 		futureDHT.awaitUninterruptibly();
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
@@ -106,11 +96,10 @@ public class ExampleMultiColumn
 	private static void multiAdd(Peer peer, String rowKey, String col, String string) throws IOException
 	{
 		Number160 locationKey = Number160.createHash("users");
-		ConfigurationStore cs = Configurations.defaultStoreConfiguration();
-		cs.setContentKey(combine(rowKey, col));
-		peer.put(locationKey, new Data(string), cs).awaitUninterruptibly();
-		cs.setContentKey(combine(col, rowKey));
-		peer.put(locationKey, new Data(string), cs).awaitUninterruptibly();
+		Number160 contentKey = combine(rowKey, col);
+		peer.put(locationKey).setData(contentKey, new Data(string)).build().awaitUninterruptibly();
+		contentKey = combine(col, rowKey);
+		peer.put(locationKey).setData(contentKey, new Data(string)).build().awaitUninterruptibly();
 	}
 	
 	private static Number160 createNr(String key1, int nr)

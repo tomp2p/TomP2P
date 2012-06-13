@@ -13,8 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.config.ConfigurationStore;
-import net.tomp2p.p2p.config.Configurations;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
@@ -139,7 +137,7 @@ public class ExampleDST
 			already.add(inter2.toString());
 			//get the interval
 			System.out.println("get for "+inter2);
-			FutureDHT futureDHT = peer.getAll(key);
+			FutureDHT futureDHT = peer.get(key).setAll().build();
 			futureDHT.awaitUninterruptibly();
 			dhtCounter.incrementAndGet();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
@@ -161,9 +159,7 @@ public class ExampleDST
 		for(int i=0;i<=height;i++)
 		{
 			Number160 key=Number160.createHash(inter.toString());
-			ConfigurationStore cs = Configurations.defaultStoreConfiguration();
-			cs.setContentKey(new Number160(index));
-			FutureDHT futureDHT = peer.put(key, new Data(word), cs);
+			FutureDHT futureDHT = peer.put(key).setData(new Number160(index), new Data(word)).build();
 			futureDHT.awaitUninterruptibly();
 			System.out.println("stored "+word+" in "+inter+" status: "+futureDHT.getAvgStoredKeys());
 			inter = inter.split(index);

@@ -36,7 +36,7 @@ public abstract class StorageGeneric implements Storage
 {
 	public enum ProtectionEnable { ALL, NONE };
 	public enum ProtectionMode { NO_MASTER, MASTER_PUBLIC_KEY};
-	public enum PutStatus {OK, FAILED_NOT_ABSENT, FAILED};
+	public enum PutStatus {OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED};
 	// Hash of public key is always preferred
 	private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
 	// Domains can generallay be protected
@@ -197,7 +197,7 @@ public abstract class StorageGeneric implements Storage
 				boolean protectEntry = newData.isProtectedEntry();
 				if (!canUpdateEntry(contentKey, oldData, newData, protectEntry))
 				{
-					return PutStatus.FAILED;
+					return PutStatus.FAILED_SECURITY;
 				}
 			}
 			retVal = put(locationKey, domainKey, contentKey, newData);

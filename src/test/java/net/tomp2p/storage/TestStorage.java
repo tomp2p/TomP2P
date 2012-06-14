@@ -145,7 +145,7 @@ public class TestStorage
 	{
 		store(storage);
 		PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, true, false);
-		Assert.assertEquals(PutStatus.FAILED, store);
+		Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
 		storage.put(locationKey, domainKey, content3, new Data("test4"), null, true, false);
 		SortedMap<Number480, Data> result1 = storage.subMap(locationKey, domainKey, content1, content4);
 		Assert.assertEquals(3, result1.size());

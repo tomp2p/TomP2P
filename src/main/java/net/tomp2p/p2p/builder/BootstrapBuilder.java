@@ -20,6 +20,9 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Boostraps to a known peer. First channels are reserved, then
@@ -37,6 +40,7 @@ import net.tomp2p.utils.Utils;
 
 public class BootstrapBuilder 
 {
+	final private static Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
 	final private Peer peer;
 	private Collection<PeerAddress> bootstrapTo;
 	private PeerAddress peerAddress;
@@ -285,8 +289,12 @@ public class BootstrapBuilder
 						result.setFailed("no futures found", future);
 						return;
 					}
+					if(bootstrapTo!=null && bootstrapTo.size() > 0)
+					{
+						logger.info("you added peers to bootstrapTo. However with broadcast we found our own peers.");
+					}
 					peerAddress = futureResponse.getResponse().getSender();
-					Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(1);
+					bootstrapTo = new ArrayList<PeerAddress>(1);
 					bootstrapTo.add(peerAddress);
 					result.setBootstrapTo(bootstrapTo);
 					result.waitFor(bootstrap());

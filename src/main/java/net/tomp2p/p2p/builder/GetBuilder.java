@@ -1,16 +1,22 @@
 package net.tomp2p.p2p.builder;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
+import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.message.MessageCodec;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.RoutingConfiguration;
+import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class GetBuilder extends DHTBuilder<GetBuilder>
 {
+	// if we don't provide any content key, the default is Number160.ZERO
+	private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
+	private final static FutureDHT FUTURE_DHT_MESSAGE_TOO_LARGE = new FutureDHT();
 	private Collection<Number160> contentKeys;
 	private Number160 contentKey;
 	private SimpleBloomFilter<Number160> keyBloomFilter;
@@ -21,18 +27,34 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 	private boolean digest = false;
 	private boolean returnBloomFilter = false;
 	private boolean range = false;
-	
+	static
+	{
+		NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
+		FUTURE_DHT_MESSAGE_TOO_LARGE.setFailed("Message size exceeds UDP transfer size, please consider using TCP");
+	}
+
 	public GetBuilder(Peer peer, Number160 locationKey)
 	{
 		super(peer, locationKey);
 		self(this);
 	}
-	
+
 	public Collection<Number160> getContentKeys()
 	{
 		return contentKeys;
 	}
 
+	/**
+	 * Set the content keys that should be found. Please note that if the
+	 * content keys are too large, you may need to switch to TCP during routing.
+	 * The default routing is UDP. Currently, the header is 59bytes, and the
+	 * length of the content keys is as follows: 4 bytes for the length, 20bytes
+	 * per content key. The user is warned if it will exceed the UDP size of
+	 * 1400 (ConnectionHandler.UDP_LIMIT)
+	 * 
+	 * @param contentKeys
+	 * @return
+	 */
 	public GetBuilder setContentKeys(Collection<Number160> contentKeys)
 	{
 		this.contentKeys = contentKeys;
@@ -49,7 +71,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.contentKey = contentKey;
 		return this;
 	}
-	
+
 	public SimpleBloomFilter<Number160> getKeyBloomFilter()
 	{
 		return keyBloomFilter;
@@ -71,7 +93,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.valueBloomFilter = valueBloomFilter;
 		return this;
 	}
-	
+
 	public EvaluatingSchemeDHT getEvaluationScheme()
 	{
 		return evaluationScheme;
@@ -93,13 +115,13 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.all = all;
 		return this;
 	}
-	
+
 	public GetBuilder setAll()
 	{
 		this.all = true;
 		return this;
 	}
-	
+
 	public boolean isDigest()
 	{
 		return digest;
@@ -110,7 +132,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.digest = digest;
 		return this;
 	}
-	
+
 	public GetBuilder setDigest()
 	{
 		this.digest = true;
@@ -127,7 +149,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.returnBloomFilter = returnBloomFilter;
 		return this;
 	}
-	
+
 	public GetBuilder setReturnBloomFilter()
 	{
 		this.returnBloomFilter = true;
@@ -144,40 +166,69 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 		this.range = range;
 		return this;
 	}
-	
+
 	public GetBuilder setRange()
 	{
 		this.range = true;
 		return this;
 	}
-	
+
 	@Override
 	public GetBuilder setRefreshSeconds(int refreshSeconds)
 	{
-		//this is not supported for get(), only for put(), add(), and remove()
+		// this is not supported for get(), only for put(), add(), and remove()
 		throw new UnsupportedOperationException("The get() does not have a refresh");
 	}
-	
+
 	@Override
 	public FutureDHT build()
 	{
 		preBuild("get-builder");
-		if(all)
+		if (all)
 		{
 			contentKeys = null;
 		}
-		else if(contentKeys == null && !all)
+		else if (contentKeys == null && !all)
 		{
-			contentKeys = new ArrayList<Number160>(1);
-			if(contentKey == null)
+			// default is Number160.ZERO
+			if (contentKey == null)
 			{
-				contentKey = Number160.ZERO;
+				contentKeys = NUMBER_ZERO_CONTENT_KEYS;
 			}
-			contentKeys.add(contentKey);
+			else
+			{
+				contentKeys = new ArrayList<Number160>(1);
+				contentKeys.add(contentKey);
+			}
 		}
-		return peer.getDistributedHashMap().get(locationKey, domainKey, 
-				contentKeys, keyBloomFilter, valueBloomFilter, routingConfiguration, requestP2PConfiguration, 
-				evaluationScheme, signMessage, digest, returnBloomFilter, range, manualCleanup, futureChannelCreator, 
-				peer.getConnectionBean().getConnectionReservation());
+		else
+		{
+			// check length of call, maybe we need to use TCP
+			if (isMessageTooLargeForUDP() && !routingConfiguration.isForceTCP())
+			{
+				return FUTURE_DHT_MESSAGE_TOO_LARGE;
+			}
+		}
+		if (evaluationScheme == null)
+		{
+			evaluationScheme = new VotingSchemeDHT();
+		}
+		return peer.getDistributedHashMap().get(locationKey, domainKey, contentKeys,
+				keyBloomFilter, valueBloomFilter, routingConfiguration, requestP2PConfiguration,
+				evaluationScheme, signMessage, digest, returnBloomFilter, range, manualCleanup,
+				futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
+	}
+
+	/**
+	 * Check if the message size exceeds the UDP size. In case it does, the
+	 * future will fail and the user is notified. In this case, the user has to
+	 * use this method to check if {@link RoutingConfiguration} needs to have
+	 * the forceTCP flag.
+	 * 
+	 * @return True if the size is too large for UDP
+	 */
+	public boolean isMessageTooLargeForUDP()
+	{
+		return MessageCodec.HEADER_SIZE + 4 + (20 * contentKeys.size()) > ConnectionHandler.UDP_LIMIT;
 	}
 }

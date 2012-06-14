@@ -170,7 +170,7 @@ public class TestSecurity
 			// get at least 3 results, because we want to test the domain
 			// removel feature
 			RequestP2PConfiguration rc = new RequestP2PConfiguration(3, 3, 3);
-			FutureDHT fdht4 = slave1.get(locationKey).setRequestP2PConfiguration(rc).setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).build();
+			FutureDHT fdht4 = slave1.get(locationKey).setAll().setRequestP2PConfiguration(rc).setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).build();
 			fdht4.awaitUninterruptibly();
 			Assert.assertEquals(true, fdht4.isSuccess());
 			Assert.assertEquals(2, fdht4.getDataMap().size());

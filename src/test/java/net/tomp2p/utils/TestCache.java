@@ -2,6 +2,7 @@ package net.tomp2p.utils;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import junit.framework.Assert;
 
@@ -36,16 +37,25 @@ public class TestCache
 	}
 	
 	@Test
+	public void testCache3multi()
+	{
+		for(int i=0;i<5;i++)
+		{
+			testCache3();
+		}
+	}
+	
+	@Test
 	public void testCache3()
 	{
-		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(6);
+		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(3);
 		test.put("hallo0", "test0");
-		final long start = System.currentTimeMillis();
 		Timings.sleepUninterruptibly(1000);
+		final long start = System.currentTimeMillis();
 		final AtomicBoolean failed = new AtomicBoolean(false);
-		final AtomicInteger integer1 = new AtomicInteger(0);
-		final AtomicInteger integer2 = new AtomicInteger(0);
-		
+		final AtomicInteger integer1 = new AtomicInteger(1);
+		final AtomicInteger integer2 = new AtomicInteger(1);
+		final AtomicLong long1 = new AtomicLong();
 		for(int i=1;i<800;i++)
 		{
 			final int ii=i;
@@ -56,6 +66,12 @@ public class TestCache
 				{
 					integer1.incrementAndGet();
 					test.put("hallo"+ii, "test"+ii);
+					synchronized (long1)
+					{
+						long seen = System.currentTimeMillis();
+						if(seen > long1.get())
+							long1.set(seen);
+					}
 					integer2.incrementAndGet();
 					new Thread(new Runnable()
 					{
@@ -72,7 +88,7 @@ public class TestCache
 				}
 			}).start();
 		}
-		long waitfor = 6000-(System.currentTimeMillis()-start);
+		long waitfor = 2900-(System.currentTimeMillis()-start);
 		System.out.println("waitfor: "+waitfor);
 		Timings.sleepUninterruptibly((int)waitfor);
 		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer1+"/"+integer2+", threads: "+Thread.activeCount());

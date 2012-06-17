@@ -34,6 +34,10 @@ public class TestFindRouter
 		for(Map.Entry<String, String> entry:MAP.entrySet())
 		{
 			InputStream is = TestFindRouter.class.getResourceAsStream("/"+entry.getKey());
+			if(is == null)
+			{
+				is = TestFindRouter.class.getResourceAsStream(entry.getKey());
+			}
 			BufferedReader br = new BufferedReader(new InputStreamReader(is));
 			InetAddress inet = Gateway.parse(br);
 			Assert.assertEquals(entry.getValue(), inet.toString());

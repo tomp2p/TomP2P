@@ -249,11 +249,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 
 	public boolean containsValue(Object value)
 	{
-		expireAll();
 		for (CacheMap<K, ExpiringObject> segment : segments)
 		{
 			synchronized (segment)
 			{
+				expireSegment(segment);
 				if (segment.containsValue(value))
 				{
 					return true;
@@ -265,12 +265,12 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 
 	public int size()
 	{
-		expireAll();
 		int size = 0;
 		for (CacheMap<K, ExpiringObject> segment : segments)
 		{
 			synchronized (segment)
 			{
+				expireSegment(segment);
 				size += segment.size();
 			}
 		}
@@ -279,11 +279,11 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 
 	public boolean isEmpty()
 	{
-		expireAll();
 		for (CacheMap<K, ExpiringObject> segment : segments)
 		{
 			synchronized (segment)
 			{
+				expireSegment(segment);
 				if (!segment.isEmpty())
 				{
 					return false;
@@ -307,12 +307,12 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	@Override
 	public int hashCode()
 	{
-		expireAll();
 		int hashCode = 0;
 		for (CacheMap<K, ExpiringObject> segment : segments)
 		{
 			synchronized (segment)
 			{
+				expireSegment(segment);
 				// as seen in AbstractMap
 				hashCode += segment.hashCode();
 			}
@@ -322,12 +322,12 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 
 	public Set<K> keySet()
 	{
-		expireAll();
 		Set<K> retVal = new HashSet<K>();
 		for (CacheMap<K, ExpiringObject> segment : segments)
 		{
 			synchronized (segment)
 			{
+				expireSegment(segment);
 				retVal.addAll(segment.keySet());
 			}
 		}
@@ -337,37 +337,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	@Override
 	public boolean equals(Object obj)
 	{
-		if (obj == this)
-		{
-			return true;
-		}
-		if (!(obj instanceof ConcurrentCacheMap))
-		{
-			return false;
-		}
-		int len = segments.length;
-		@SuppressWarnings("unchecked")
-		ConcurrentCacheMap<K, V> m = (ConcurrentCacheMap<K, V>) obj;
-		if (len != m.segments.length)
-		{
-			return false;
-		}
-		expireAll();
-		m.expireAll();
-		for (int i = 0; i < len; i++)
-		{
-			synchronized (segments[i])
-			{
-				synchronized (m.segments[i])
-				{
-					if (!segments[i].equals(m.segments[i]))
-					{
-						return false;
-					}
-				}
-			}
-		}
-		return true;
+		throw new UnsupportedOperationException("not supported");
 	}
 
 	public void putAll(Map<? extends K, ? extends V> inMap)
@@ -522,41 +492,35 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 						logger.debug("remove in expire "+value.getValue());
 					}
 					removed.incrementAndGet();
-					return true;
 				}
 			}
+			return true;
 		}
 		return false;
 	}
-
+	
 	/**
 	 * Fast expiration. Since the ExpiringObject is ordered the for loop can
 	 * break early if a object is not expired.
 	 */
-	private void expireAll()
+	private void expireSegment(CacheMap<K, ExpiringObject> segment)
 	{
-		for (CacheMap<K, ExpiringObject> segment : segments)
+		Iterator<ExpiringObject> iterator = segment.values().iterator();
+		while (iterator.hasNext())
 		{
-			synchronized (segment)
+			ExpiringObject expiringObject = iterator.next();
+			if (expiringObject.isExpired())
 			{
-				Iterator<ExpiringObject> iterator = segment.values().iterator();
-				while (iterator.hasNext())
+				iterator.remove();
+				if(logger.isDebugEnabled())
 				{
-					ExpiringObject expiringObject = iterator.next();
-					if (expiringObject.isExpired())
-					{
-						iterator.remove();
-						if(logger.isDebugEnabled())
-						{
-							logger.debug("remove in expireAll "+expiringObject.getValue());
-						}
-						removed.incrementAndGet();
-					}
-					else
-					{
-						break;
-					}
+					logger.debug("remove in expireAll "+expiringObject.getValue());
 				}
+				removed.incrementAndGet();
+			}
+			else
+			{
+				break;
 			}
 		}
 	}

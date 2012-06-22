@@ -64,6 +64,7 @@ public class TestCache
 				@Override
 				public void run()
 				{
+					Thread.currentThread().setName("test-cache1 "+ii);
 					integer1.incrementAndGet();
 					test.put("hallo"+ii, "test"+ii);
 					synchronized (long1)
@@ -78,6 +79,7 @@ public class TestCache
 						@Override
 						public void run()
 						{
+							Thread.currentThread().setName("test-cache2 "+ii);
 							String val = test.get("hallo"+ii);
 							if(!("test"+ii).equals(val))
 							{
@@ -92,6 +94,10 @@ public class TestCache
 		System.out.println("waitfor: "+waitfor);
 		Timings.sleepUninterruptibly((int)waitfor);
 		System.out.println("TestCache: expected: "+(800-1)+", got: "+test.size()+", failed: "+failed.get()+" - expired "+test.expiredCounter()+", inserts: "+integer1+"/"+integer2+", threads: "+Thread.activeCount());
+		for(Thread t:Thread.getAllStackTraces().keySet())
+		{
+			System.out.println(t.getName());
+		}
 		Assert.assertEquals(800-1, test.size());
 		Assert.assertEquals(false, failed.get());
 	}

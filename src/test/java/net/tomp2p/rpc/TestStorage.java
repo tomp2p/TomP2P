@@ -36,6 +36,8 @@ import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
+import org.apache.jdbm.DB;
+import org.apache.jdbm.DBMaker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,6 +49,18 @@ public class TestStorage
 	final private static Number160 domainKey = new Number160(20);
 	private static String DIR1;
 	private static String DIR2;
+	
+	/*@Test
+	public void loadDB()
+	{
+		String dirName = "/tmp/jdbm";
+		DB db = DBMaker.openFile(dirName).disableTransactions().make();
+		Map<String, String> dataMap = db.<String, String>createTreeMap("test-map");
+		dataMap.put("hallo", "test");
+		db.close();
+		db = DBMaker.openFile(dirName).disableTransactions().make();
+		dataMap = db.<String, String>createTreeMap("test-map");	
+	}*/
 		
 	@Before
 	public void before() throws IOException

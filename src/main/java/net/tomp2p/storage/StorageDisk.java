@@ -26,8 +26,8 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
-import net.kotek.jdbm.DB;
-import net.kotek.jdbm.DBMaker;
+import org.apache.jdbm.DB;
+import org.apache.jdbm.DBMaker;
 import net.tomp2p.message.DataInput;
 import net.tomp2p.message.MessageCodec;
 import net.tomp2p.message.ProtocolChunked;
@@ -65,7 +65,7 @@ public class StorageDisk extends StorageGeneric
 	public StorageDisk(String fileName)
 	{
 		dirName = fileName+File.separator+"tomp2p";
-		db = DBMaker.openFile(dirName).make();
+		db = DBMaker.openFile(dirName).disableTransactions().make();
 		dataMap = db.<Number480, Data>createTreeMap("dataMap");
 		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
 		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");

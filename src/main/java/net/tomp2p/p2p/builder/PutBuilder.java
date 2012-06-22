@@ -1,5 +1,6 @@
 package net.tomp2p.p2p.builder;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -59,6 +60,16 @@ public class PutBuilder extends DHTBuilder<PutBuilder>
 			}
 		};
 		return this;
+	}
+	
+	public PutBuilder setObject(Data data) throws IOException
+	{
+		return setData(new Data(data));
+	}
+	
+	public PutBuilder setKeyObject(Number160 contentKey, Data data) throws IOException
+	{
+		return setData(contentKey, new Data(data));
 	}
 
 	public Map<Number160, Data> getDataMap()

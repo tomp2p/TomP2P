@@ -1,5 +1,6 @@
 package net.tomp2p.p2p.builder;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ScheduledFuture;
@@ -39,11 +40,16 @@ public class AddBuilder extends DHTBuilder<AddBuilder>
 	{
 		return data;
 	}
-
+	
 	public AddBuilder setData(Data data)
 	{
 		this.data = data;
 		return this;
+	}
+	
+	public AddBuilder setObject(Data data) throws IOException
+	{
+		return setData(new Data(data));
 	}
 	
 	public boolean isList()

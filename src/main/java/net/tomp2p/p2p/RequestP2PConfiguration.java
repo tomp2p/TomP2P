@@ -43,6 +43,11 @@ public class RequestP2PConfiguration
 		this.forceUPD = forceUPD;
 		this.forceTCP = forceTCP;
 	}
+	
+	public RequestP2PConfiguration adjustMinimumResult(int minimumResultsLow)
+	{
+		return new RequestP2PConfiguration(Math.min(minimumResultsLow, minimumResults), maxFailure, parallelDiff);
+	}
 
 	public int getMinimumResults()
 	{

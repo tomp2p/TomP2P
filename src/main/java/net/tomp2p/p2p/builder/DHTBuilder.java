@@ -216,9 +216,10 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		}
 		if(requestP2PConfiguration == null)
 		{
-			int size = peer.getPeerBean().getPeerMap().size() + 1;
-			requestP2PConfiguration = new RequestP2PConfiguration(Math.min(size, 3), 5, 3);
+			requestP2PConfiguration = new RequestP2PConfiguration(3, 5, 3);
 		}
+		int size = peer.getPeerBean().getPeerMap().size() + 1;
+		requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult(size);
 		if(futureChannelCreator == null)
 		{
 			futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, name);

@@ -2,9 +2,6 @@ package net.tomp2p.p2p;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +30,6 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureSuccessEvaluatorOperation;
 import net.tomp2p.p2p.DistributedHashTable.Operation;
@@ -48,8 +44,6 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric.ProtectionEnable;
-import net.tomp2p.storage.StorageGeneric.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
@@ -91,7 +85,7 @@ public class TestDHT
 			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
 			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
 			List<PeerConnection> list3 = new ArrayList<PeerConnection>();
-			for(int i=0;i<200;i++)
+			for(int i=0;i<450;i++)
 			{
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
@@ -106,8 +100,6 @@ public class TestDHT
 				byte[] me=Utils.intToByteArray(i);
 				System.arraycopy(me, 0, b, 0, 4);
 				list2.add(master.sendDirect().setPeerAddress(slave.getPeerAddress()).setBuffer(ChannelBuffers.wrappedBuffer(b)).build());
-				//Utils2.execute("netstat -tn | wc");
-				//System.out.print(".");
 			}
 			for(BaseFuture bf:list1)
 			{

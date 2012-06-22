@@ -93,6 +93,7 @@ public interface BaseFuture extends Cancellable
 	 * Sets the failed flat to true and the completed flag to true. This will
 	 * notify listeners and set the reason
 	 * 
+	 * @param reason The reason of failure
 	 * @return this
 	 */
 	public abstract BaseFuture setFailed(String reason);
@@ -101,6 +102,7 @@ public interface BaseFuture extends Cancellable
 	 * Sets the failed flat to true and the completed flag to true. This will
 	 * notify listeners and set the reason based on the origin BaseFuture.
 	 * 
+	 * @param origin The origin of failure
 	 * @return this
 	 */
 	public abstract BaseFuture setFailed(BaseFuture origin);
@@ -109,9 +111,30 @@ public interface BaseFuture extends Cancellable
 	 * Sets the failed flat to true and the completed flag to true. This will
 	 * notify listeners and append the reason based on the origin BaseFuture.
 	 * 
+	 * @param reason The reason of failure
+	 * @param origin The origin of failure
 	 * @return this
 	 */
 	public abstract BaseFuture setFailed(String reason, BaseFuture origin);
+	
+	/**
+	 * Sets the failed flat to true and the completed flag to true. This will
+	 * notify listeners and append the reason based on the origin BaseFuture.
+	 * 
+	 * @param t The stack trace where the failure happened
+	 * @return this
+	 */
+	public abstract BaseFuture setFailed(final Throwable t);
+	
+	/**
+	 * Sets the failed flat to true and the completed flag to true. This will
+	 * notify listeners and append the reason based on the origin BaseFuture.
+	 * 
+	 * @param reason The reason of failure
+	 * @param t The stack trace where the failure happened
+	 * @return this
+	 */
+	public abstract BaseFuture setFailed(final String reason, final Throwable t);
 
 	/**
 	 * The default failed reason is Unknown.

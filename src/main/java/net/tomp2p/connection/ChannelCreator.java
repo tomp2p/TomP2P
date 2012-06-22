@@ -253,7 +253,7 @@ public class ChannelCreator
 							}
 							else
 							{
-								futureChannelCreation.setFailed("ChannelFuture failed (TCP)");
+								futureChannelCreation.setFailed("ChannelFuture failed (TCP, reuse)", future.getCause());
 								connectionSemaphore.release();
 								statistics.decrementTCPChannelCreation();
 							}
@@ -263,7 +263,7 @@ public class ChannelCreator
 				}
 				catch (Exception e)
 				{
-					futureChannelCreation.setFailed("Cannot create channel " + e);
+					futureChannelCreation.setFailed("Cannot create channel (TCP, reuse)", e);
 					connectionSemaphore.release();
 					statistics.decrementTCPChannelCreation();
 					return;
@@ -306,7 +306,7 @@ public class ChannelCreator
 						}
 						else
 						{
-							futureChannelCreation.setFailed("ChannelFuture failed (UDP)");
+							futureChannelCreation.setFailed("ChannelFuture failed (TCP)", future.getCause());
 							connectionSemaphore.release();
 							statistics.decrementTCPChannelCreation();
 						}
@@ -315,7 +315,7 @@ public class ChannelCreator
 			}
 			catch (Exception e)
 			{
-				futureChannelCreation.setFailed("Cannot create channel " + e);
+				futureChannelCreation.setFailed("Cannot create channel (TCP)", e);
 				connectionSemaphore.release();
 				statistics.decrementTCPChannelCreation();
 				return;

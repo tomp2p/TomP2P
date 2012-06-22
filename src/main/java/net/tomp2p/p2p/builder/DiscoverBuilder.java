@@ -234,8 +234,7 @@ public class DiscoverBuilder
 						// important to release connection if not needed
 						peer.getConnectionBean().getConnectionReservation().release(cc, 2);
 						//System.err.println("release 2"+cc);
-						futureDiscover.setFailed("Peer " + peerAddress
-								+ " did not report our IP address");
+						futureDiscover.setFailed("Peer " + peerAddress + " did not report our IP address");
 						return;
 					}
 				}
@@ -244,7 +243,7 @@ public class DiscoverBuilder
 					// important to release connection if not needed
 					peer.getConnectionBean().getConnectionReservation().release(cc, 2);
 					//System.err.println("release 2"+cc);
-					futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection: "+futureResponseTCP.getFailedReason());
+					futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection", futureResponseTCP);
 					return;
 				}
 			}

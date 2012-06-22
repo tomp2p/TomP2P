@@ -14,6 +14,8 @@
  * the License.
  */
 package net.tomp2p.futures;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -209,6 +211,25 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 	{
 		StringBuilder sb = new StringBuilder(reason);
 		return setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
+	}
+	
+	@Override
+	public K setFailed(final Throwable t)
+	{
+		StringWriter stringWriter = new StringWriter();
+	    PrintWriter printWriter = new PrintWriter(stringWriter);
+		t.printStackTrace(printWriter);
+		return setFailed(stringWriter.toString());
+	}
+	
+	@Override
+	public K setFailed(final String reason, final Throwable t)
+	{
+		StringBuilder sb = new StringBuilder(reason);
+		StringWriter stringWriter = new StringWriter();
+	    PrintWriter printWriter = new PrintWriter(stringWriter);
+		t.printStackTrace(printWriter);
+		return setFailed(sb.append(" <-> ").append(stringWriter.toString()).toString());
 	}
 
 	@Override

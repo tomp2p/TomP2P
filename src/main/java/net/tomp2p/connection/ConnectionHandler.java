@@ -329,7 +329,7 @@ public class ConnectionHandler
 			}
 		});
 		//as suggested by http://stackoverflow.com/questions/8442166/how-to-allow-more-concurrent-client-connections-with-netty
-		bootstrap.setOption("backlog", 8192);
+		//bootstrap.setOption("backlog", 8192);
 		//as suggested by http://stackoverflow.com/questions/8655973/latency-in-netty-due-to-passing-requests-from-boss-thread-to-worker-thread
 		bootstrap.setOption("child.tcpNoDelay", true);
 		Channel channel = bootstrap.bind(listenAddressesTCP);

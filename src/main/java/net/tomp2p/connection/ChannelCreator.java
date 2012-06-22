@@ -535,6 +535,11 @@ public class ChannelCreator
 	{
 		return permits;
 	}
+	
+	public int getCurrentPermits()
+	{
+		return permitsCount.get();
+	}
 
 	/**
 	 * Releases permits. This can also be a partial release

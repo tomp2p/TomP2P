@@ -223,6 +223,10 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		{
 			futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, name);
 		}
+		if(refreshSeconds > 0)
+		{
+			directReplication = true;
+		}
 	}
 	
 	public abstract FutureDHT build();

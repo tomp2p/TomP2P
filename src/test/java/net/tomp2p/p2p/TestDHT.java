@@ -85,7 +85,7 @@ public class TestDHT
 			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
 			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
 			List<PeerConnection> list3 = new ArrayList<PeerConnection>();
-			for(int i=0;i<450;i++)
+			for(int i=0;i<300;i++)
 			{
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);

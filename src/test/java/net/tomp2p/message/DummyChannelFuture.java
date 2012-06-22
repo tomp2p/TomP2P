@@ -131,4 +131,18 @@ public class DummyChannelFuture implements ChannelFuture
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public ChannelFuture sync() throws InterruptedException
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ChannelFuture syncUninterruptibly()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

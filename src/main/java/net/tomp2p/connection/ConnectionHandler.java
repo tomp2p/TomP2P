@@ -382,11 +382,11 @@ public class ConnectionHandler
 			// channelChache.shutdown();
 			if (messageLoggerFilter != null)
 				messageLoggerFilter.shutdown();
-			// close server first, then all connected clients. This is only done
-			// by the master, other groups are
-			// empty
-			connectionBean.getConnectionReservation().shutdown();
+			//first close channels, which may trigger a close event that will release a channel
 			connectionBean.getChannelGroup().close().awaitUninterruptibly();
+			//then shutdown the reservation
+			connectionBean.getConnectionReservation().shutdown();
+			
 			
 			//if udpChannelFactory is null, tcpServerChannelFactory and tcpClientChannelFactory are also null
 			if(udpChannelFactory != null)

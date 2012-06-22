@@ -6,6 +6,7 @@ import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.EvaluatingSchemeTracker;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder>
 {
@@ -97,6 +98,11 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder>
 	public FutureTracker build()
 	{
 		preBuild("get-tracker-builder");
+		
+		if (knownPeers == null)
+		{
+			knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
+		}
 		
 		return peer.getDistributedTracker().getFromTracker(locationKey, domainKey, 
 				routingConfiguration, trackerConfiguration, expectAttachement, evaluatingScheme, signMessage, 

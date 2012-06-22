@@ -186,7 +186,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder>
 					.getScheduler()
 					.getScheduledExecutorServiceReplication()
 					.scheduleAtFixedRate(
-							runner, trackerTimeoutSec * (2 / 3), trackerTimeoutSec * (2 / 3),
+							runner, trackerTimeoutSec / 2, trackerTimeoutSec / 2,
 							TimeUnit.SECONDS);
 			setupCancel(futureTracker, tmp);
 		}

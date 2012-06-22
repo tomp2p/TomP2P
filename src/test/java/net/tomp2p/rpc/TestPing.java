@@ -429,6 +429,15 @@ public class TestPing
 	}
 	
 	@Test
+	public void testPingReserveLoop() throws Exception
+	{
+		for(int i=0;i<100;i++)
+		{
+			testPingReserve();
+		}
+	}
+	
+	@Test
 	public void testPingReserve() throws Exception
 	{
 		Peer sender = null;
@@ -443,10 +452,13 @@ public class TestPing
 			FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
 			Utils.addReleaseListenerAll(fr, recv1.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
+			fr.awaitListeners();
 			Assert.assertEquals(true, fr.isSuccess());
 			FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc);
 			fr2.awaitUninterruptibly();
+			fr2.awaitListeners();
 			//we have released the reservation here
+			//System.err.println(fr2.getFailedReason());
 			Assert.assertEquals(false, fr2.isSuccess());
 			
 		}

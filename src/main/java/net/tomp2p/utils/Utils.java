@@ -503,7 +503,9 @@ public class Utils
 	public static void addReleaseListenerAll(BaseFuture baseFuture, final ConnectionReservation connectionReservation, final ChannelCreator channelCreator) 
 	{
 		if(channelCreator == null)
+		{
 			throw new IllegalArgumentException("channelCreator cannot be null");
+		}
 		baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() 
 		{
 			@Override
@@ -511,7 +513,7 @@ public class Utils
 			{
 				connectionReservation.release(channelCreator);
 			}
-		});
+		}, false);
 	}
 
 	public static Map<Number160, TrackerData> limitRandom(

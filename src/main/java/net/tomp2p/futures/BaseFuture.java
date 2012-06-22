@@ -126,6 +126,15 @@ public interface BaseFuture extends Cancellable
 	 * @return The fail type
 	 */
 	public abstract FutureType getType();
+	
+	/**
+	 * Waits until all the listener finished. This may include the release of
+	 * resources.
+	 * 
+	 * @return this
+	 * @throws InterruptedException
+	 */
+	public abstract BaseFuture awaitListeners() throws InterruptedException;
 
 	/**
 	 * Adds a listener which is notified when the state of this future changes.
@@ -138,6 +147,23 @@ public interface BaseFuture extends Cancellable
 	 * @return this
 	 */
 	public abstract BaseFuture addListener(BaseFutureListener<? extends BaseFuture> listener);
+	
+	/**
+	 * Adds a listener which is notified when the state of this future changes.
+	 * All notifications are performed in a thread, which means that this method
+	 * returns immediately. If a future is complete, then all listeners are
+	 * called and after that, the listener list is cleared, so there is no need
+	 * to call removeListener if a future has been completed.
+	 * 
+	 * A flag decides if the listener is added at the end of the list or at the
+	 * beginning.
+	 * 
+	 * @param listener The listener extends the BaseFuture
+	 * @param last Set to true if the listener should be added at the end of the
+	 *        list, true if it should be added first
+	 * @return this
+	 */
+	public abstract BaseFuture addListener(BaseFutureListener<? extends BaseFuture> listener, boolean last);
 
 	/**
 	 * Removes a listener which is notified when the state of this future

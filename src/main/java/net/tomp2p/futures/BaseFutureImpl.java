@@ -16,6 +16,7 @@
 package net.tomp2p.futures;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.utils.Timings;
@@ -40,6 +41,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 	// While a future is running, the process may add cancellations for faster
 	// cancel operations, e.g. cancel connection attempt
 	final private List<Cancellable> cancellables = new ArrayList<Cancellable>(1);
+	final private CountDownLatch listenersFinished = new CountDownLatch(1);
 	final protected Object lock;
 	// set the ready flag if operation completed
 	protected boolean completed = false;
@@ -272,9 +274,21 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 			return false;
 		}
 	}
+	
+	public K awaitListeners() throws InterruptedException
+	{
+		listenersFinished.await();
+		return self;
+	}
+	
+	@Override
+	public K addListener(final BaseFutureListener<? extends BaseFuture> listener)
+	{
+		return addListener(listener, true);
+	}
 
 	@Override
-	public BaseFuture addListener(final BaseFutureListener<? extends BaseFuture> listener)
+	public K addListener(final BaseFutureListener<? extends BaseFuture> listener, boolean last)
 	{
 		boolean notifyNow = false;
 		synchronized (lock)
@@ -285,7 +299,14 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 			}
 			else
 			{
-				listeners.add(listener);
+				if(last)
+				{
+					listeners.add(listener);
+				}
+				else
+				{
+					listeners.add(0, listener);
+				}
 			}
 		}
 		// called only once
@@ -293,7 +314,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 		{
 			callOperationComplete(listener);
 		}
-		return this;
+		return self;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -348,6 +369,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 		{
 			callOperationComplete(listener);
 		}
+		listenersFinished.countDown();
 		listeners.clear();
 		// all events are one time events. It cannot happen that you get
 		// notified twice

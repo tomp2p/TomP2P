@@ -34,6 +34,14 @@ import org.slf4j.LoggerFactory;
 public class StorageDisk extends StorageGeneric
 {
 	final private static Logger logger = LoggerFactory.getLogger(StorageDisk.class);
+
+	private static final String DATA_MAP = "dataMap";
+	private static final String RESPONSIBILITY_MAP_REV = "responsibilityMapRev";
+	private static final String RESPONSIBILITY_MAP = "responsibilityMap";
+	private static final String PROTECTED_MAP = "protectedMap";
+	private static final String TIMEOUT_MAP_REV = "timeoutMapRev";
+	private static final String TIMEOUT_MAP = "timeoutMap";
+
 	final private DB db;
 	// Core
 	final private NavigableMap<Number480, Data> dataMap;
@@ -56,26 +64,26 @@ public class StorageDisk extends StorageGeneric
 	public StorageDisk(String dirName)
 	{
 		this.dirName = dirName;
-		String fileName = dirName+File.separator+"tomp2p";
-		db = DBMaker.openFile(fileName).disableTransactions().make();
-		//get or create
-		final NavigableMap<Number480, Data> dataMap2 =  db.<Number480, Data>getTreeMap("dataMap");
-		dataMap = dataMap2 == null ? db.<Number480, Data>createTreeMap("dataMap") : dataMap2;
-		//get or create
-		final Map<Number480, Long> timeoutMap2 = db.<Number480, Long>getHashMap("timeoutMap");
-		timeoutMap = timeoutMap2 == null ? db.<Number480, Long>createHashMap("timeoutMap") : timeoutMap2;
-		//get or create
-		final SortedMap<Long, Set<Number480>> timeoutMapRev2 = db.<Long, Set<Number480>>getTreeMap("timeoutMapRev");
-		timeoutMapRev = timeoutMapRev2 == null ? db.<Long, Set<Number480>>createTreeMap("timeoutMapRev") : timeoutMapRev2;
-		//get or create
-		final Map<Number320, byte[]> protectedMap2 = db.<Number320, byte[]>getHashMap("protectedMap");
-		protectedMap = protectedMap2 == null ? db.<Number320, byte[]>createHashMap("protectedMap") : protectedMap2;
-		//get or create
-		final Map<Number160, Number160> responsibilityMap2 = db.<Number160, Number160>getHashMap("responsibilityMap");
-		responsibilityMap = responsibilityMap2 == null ? db.<Number160, Number160>createHashMap("responsibilityMap") : responsibilityMap2;
-		//get or create
-		final Map<Number160, Set<Number160>> responsibilityMapRev2 = db.<Number160, Set<Number160>>getTreeMap("responsibilityMapRev");
-		responsibilityMapRev = responsibilityMapRev2 == null ? db.<Number160, Set<Number160>>createTreeMap("responsibilityMapRev") : responsibilityMapRev2;
+		String fileName = dirName + File.separator + "tomp2p";
+		db = DBMaker.openFile(fileName).make();
+		dataMap = this.<Number480, Data>getOrCreateTreeMap(DATA_MAP);
+		timeoutMap = this.<Number480, Long>getOrCreateHashMap(TIMEOUT_MAP);
+		timeoutMapRev = this.<Long, Set<Number480>>getOrCreateTreeMap(TIMEOUT_MAP_REV);
+		protectedMap = this.<Number320, byte[]>getOrCreateHashMap(PROTECTED_MAP);
+		responsibilityMap = this.<Number160, Number160>getOrCreateHashMap(RESPONSIBILITY_MAP);
+		responsibilityMapRev = this.<Number160, Set<Number160>>getOrCreateHashMap(RESPONSIBILITY_MAP_REV);
+	}
+
+	private <K extends Comparable<?>,V> NavigableMap<K, V> getOrCreateTreeMap(String name) 
+	{
+		final NavigableMap<K, V> navigableMap = db.<K,V>getTreeMap(name);
+		return navigableMap != null ? navigableMap : db.<K,V>createTreeMap(name);
+	}
+
+	private <K extends Comparable<?>,V> ConcurrentMap<K,V> getOrCreateHashMap(String name) 
+	{
+		final ConcurrentMap<K,V> concurrentMap = db.<K,V>getHashMap(name);
+		return concurrentMap != null ? concurrentMap : db.<K,V>createHashMap(name);
 	}
 	
 	@Override

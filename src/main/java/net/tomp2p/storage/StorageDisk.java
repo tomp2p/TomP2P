@@ -83,19 +83,46 @@ public class StorageDisk extends StorageGeneric
 	@Override
 	public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data value)
 	{
-		dataMap.put(new Number480(locationKey, domainKey, contentKey), value);
+		Number480 key = new Number480(locationKey, domainKey, contentKey);
+		//8MB is the limit
+		boolean retVal = true;
+		if(value.getLength() > 5 * 1024 * 1024)
+		{
+			//store reference
+			retVal = storeReference(value, key);
+		}
+		else
+		{
+			//store directly
+			dataMap.put(key , value);
+		}
 		db.commit();
-		return true;
+		return retVal;
+	}
+
+	private boolean storeReference(Data value, Number480 key)
+	{
+		try
+		{
+			File file = store(key, value);
+			dataMap.put(key , new Data(file, value.getPeerId()));
+			return true;
+		}
+		catch (IOException e)
+		{
+			logger.error("cannot store reference: "+e);
+			return false;
+		}
 	}
 	
 	//TODO: store big data directly
-	private void store(Number480 key, Data value) throws IOException
+	private File store(Number480 key, Data value) throws IOException
 	{
-		File dir = new File(dirName, key.toString());
+		File file = new File(dirName, key.toString());
 		OutputStream output = null;
 		try
 		{
-			output = new BufferedOutputStream(new FileOutputStream(dir));
+			output = new BufferedOutputStream(new FileOutputStream(file));
 			MyProtocolInput myProtocolInput = new MyProtocolInput(output);
 			MessageCodec.encodeData(myProtocolInput, value);
 		}
@@ -103,6 +130,7 @@ public class StorageDisk extends StorageGeneric
 		{
 			output.close();
 		}
+		return file;
 	}
 	
 	//TODO: store big data directly
@@ -138,6 +166,23 @@ public class StorageDisk extends StorageGeneric
 	public Data remove(Number160 locationKey, Number160 domainKey, Number160 contentKey)
 	{
 		Data retVal = dataMap.remove(new Number480(locationKey, domainKey, contentKey));
+		//
+		try
+		{
+			if(retVal.getObject() instanceof File)
+			{
+				File file = (File) retVal.getObject();
+				file.delete();
+			}
+		}
+		catch (ClassNotFoundException e)
+		{
+			logger.error("cannot remove "+e);
+		}
+		catch (IOException e)
+		{
+			logger.error("cannot remove "+e);
+		}
 		db.commit();
 		return retVal;
 	}

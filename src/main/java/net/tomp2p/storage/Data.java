@@ -40,12 +40,13 @@ public class Data implements Serializable
 	final private int length;
 	// never serialied over the network
 	final private long validFromMillis;
-	//
 	final private Number160 peerId;
+	//
 	private int ttlSeconds;
 	private Number160 hash;
 	private boolean protectedEntry;
 	private boolean directReplication;
+	private boolean fileReference;
 	// never serialized in this object over the network
 	private PublicKey publicKey;
 	
@@ -110,16 +111,6 @@ public class Data implements Serializable
 		return validFromMillis;
 	}
 
-	public int getTTLSeconds()
-	{
-		return ttlSeconds;
-	}
-
-	public void setTTLSeconds(int ttlSeconds)
-	{
-		this.ttlSeconds = ttlSeconds;
-	}
-
 	public Number160 getHash()
 	{
 		if (this.hash == null)
@@ -141,25 +132,83 @@ public class Data implements Serializable
 	{
 		return ttlSeconds <= 0 ? Long.MAX_VALUE : validFromMillis + (ttlSeconds * 1000L);
 	}
+	
+	public Number160 getPeerId()
+	{
+		return peerId;
+	}
+	
+	public int getTTLSeconds()
+	{
+		return ttlSeconds;
+	}
+
+	public Data setTTLSeconds(int ttlSeconds)
+	{
+		this.ttlSeconds = ttlSeconds;
+		return this;
+	}
+
+	public PublicKey getPublicKey()
+	{
+		return publicKey;
+	}
+	
+	public Data setPublicKey(PublicKey publicKey)
+	{
+		this.publicKey = publicKey;
+		return this;
+	}
+
+	public boolean isFileReference()
+	{
+		return fileReference;
+	}
+	
+	public Data setFileReference()
+	{
+		this.fileReference = true;
+		return this;
+	}
+
+	public Data setFileReference(boolean fileReference)
+	{
+		this.fileReference = fileReference;
+		return this;
+	}
 
 	public boolean isProtectedEntry()
 	{
 		return protectedEntry;
 	}
 
-	public void setProtectedEntry(boolean protectedEntry)
+	public Data setProtectedEntry()
+	{
+		this.protectedEntry = true;
+		return this;
+	}
+	
+	public Data setProtectedEntry(boolean protectedEntry)
 	{
 		this.protectedEntry = protectedEntry;
-	}
-
-	public void setDirectReplication(boolean directReplication)
-	{
-		this.directReplication = directReplication;
+		return this;
 	}
 
 	public boolean isDirectReplication()
 	{
 		return directReplication;
+	}
+	
+	public Data setDirectReplication()
+	{
+		this.directReplication = true;
+		return this;
+	}
+	
+	public Data setDirectReplication(boolean directReplication)
+	{
+		this.directReplication = directReplication;
+		return this;
 	}
 
 	@Override
@@ -178,18 +227,5 @@ public class Data implements Serializable
 		return sb.toString();
 	}
 
-	public Number160 getPeerId()
-	{
-		return peerId;
-	}
-
-	public void setPublicKey(PublicKey publicKey)
-	{
-		this.publicKey = publicKey;
-	}
-
-	public PublicKey getPublicKey()
-	{
-		return publicKey;
-	}
+	
 }

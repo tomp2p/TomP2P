@@ -15,10 +15,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.futures.FutureSuccessEvaluatorCommunication;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureSuccessEvaluatorCommunication;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -36,8 +36,6 @@ import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
-import org.apache.jdbm.DB;
-import org.apache.jdbm.DBMaker;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,18 +47,6 @@ public class TestStorage
 	final private static Number160 domainKey = new Number160(20);
 	private static String DIR1;
 	private static String DIR2;
-	
-	/*@Test
-	public void loadDB()
-	{
-		String dirName = "/tmp/jdbm";
-		DB db = DBMaker.openFile(dirName).disableTransactions().make();
-		Map<String, String> dataMap = db.<String, String>createTreeMap("test-map");
-		dataMap.put("hallo", "test");
-		db.close();
-		db = DBMaker.openFile(dirName).disableTransactions().make();
-		dataMap = db.<String, String>createTreeMap("test-map");	
-	}*/
 		
 	@Before
 	public void before() throws IOException
@@ -724,7 +710,7 @@ public class TestStorage
 			recv1.getPeerBean().setStorage(storeRecv);
 			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
-			byte[] me1 = new byte[50 * 1014 * 1024];
+			byte[] me1 = new byte[50 * 1024 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
 			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -734,6 +720,11 @@ public class TestStorage
 			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(true, fr.isSuccess());
+			Data data = recv1.getPeerBean().getStorage().get(new Number160(33), new ShortString("test").toNumber160(), new Number160(77));
+			if(storeSender instanceof StorageDisk)
+			{
+				Assert.assertEquals(true, data.isFileReference());
+			}
 		}
 		finally
 		{
@@ -766,7 +757,7 @@ public class TestStorage
 			recv1.getPeerBean().setStorage(storeRecv);
 			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
-			byte[] me1 = new byte[50 * 1014 * 1024];
+			byte[] me1 = new byte[50 * 1024 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
 			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -784,7 +775,9 @@ public class TestStorage
 					.toNumber160(), null, null,null, false, false,false, false, cc, false);
 			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
+			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
+			Assert.assertEquals(50*1024*1024, fr.getResponse().getDataMap().get(new Number160(77)).getData().length);
 		}
 		finally
 		{
@@ -816,7 +809,7 @@ public class TestStorage
 			recv1.getPeerBean().setStorage(storeRecv);
 			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
-			byte[] me1 = new byte[50 * 1014 * 1024];
+			byte[] me1 = new byte[50 * 1024 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
 			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -860,7 +853,7 @@ public class TestStorage
 			recv1.getPeerBean().setStorage(storeRecv);
 			new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			Map<Number160, Data> tmp = new HashMap<Number160, Data>();
-			byte[] me1 = new byte[50 * 1014 * 1024];
+			byte[] me1 = new byte[50 * 1024 * 1024];
 			tmp.put(new Number160(77), new Data(me1));
 			FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();

@@ -93,9 +93,11 @@ public class MessageCodec
 	 * @throws NoSuchAlgorithmException
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
 	 */
 	public static void encodePayload(final Message message, ProtocolChunkedInput input)
-			throws InvalidKeyException, SignatureException, NoSuchAlgorithmException
+			throws InvalidKeyException, SignatureException, NoSuchAlgorithmException, ClassNotFoundException, IOException
 	{
 		int contentLength = 0;
 		if (message.getContentType1() != Message.Content.EMPTY)
@@ -135,12 +137,11 @@ public class MessageCodec
 	 * @param contentType The type of the content to encode
 	 * @param input The ProtocolChunkedInput to fill
 	 * @param message The message which contains the payload
-	 * @throws NoSuchAlgorithmException
-	 * @throws SignatureException
-	 * @throws InvalidKeyException
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
 	 */
 	private static int encodePayloadType(final Content content, final ProtocolChunked input,
-			final Message message)
+			final Message message) throws ClassNotFoundException, IOException
 	{
 		final int size;
 		final byte[] data;
@@ -164,7 +165,7 @@ public class MessageCodec
 					{
 						input.copyToCurrent(entry.getKey().getContentKey().toByteArray());
 						count += 20;
-						count += encodeData(input, entry.getValue());
+						count += DataCodec.encodeData(input, entry.getValue());
 					}
 					return count;
 				}
@@ -175,7 +176,7 @@ public class MessageCodec
 					{
 						input.copyToCurrent(entry.getKey().toByteArray());
 						count += 20;
-						count += encodeData(input, entry.getValue());
+						count += DataCodec.encodeData(input, entry.getValue());
 					}
 					return count;
 				}
@@ -188,7 +189,7 @@ public class MessageCodec
 					count += 20;
 					input.copyToCurrent(entry.getValue().getHash().toByteArray());
 					count += 20;
-					count += encodeData(input, entry.getValue().getData());
+					count += DataCodec.encodeData(input, entry.getValue().getData());
 				}
 				return count;
 			case MAP_KEY_KEY:
@@ -327,20 +328,7 @@ public class MessageCodec
 		}
 	}
 
-	public static int encodeData(ProtocolChunked input, Data data)
-	{
-		int count = 4 + 4;
-		// encode entry protection in millis as the sign bit. Thus the max value
-		// of millis is 2^31, which is more than enough
-		int seconds = data.getTTLSeconds();
-		seconds = data.isProtectedEntry() ? seconds | 0x80000000 : seconds & 0x7FFFFFFF;
-		input.copyToCurrent(seconds);
-		input.copyToCurrent(data.getLength());
-		// the real data
-		input.copyToCurrent(data.getData(), data.getOffset(), data.getLength());
-		count += data.getLength();
-		return count;
-	}
+	
 
 	/**
 	 * Decode a message header from a Netty buffer
@@ -422,7 +410,7 @@ public class MessageCodec
 				{
 					if(buffer.readableBytes() < 20) return false;
 					Number160 key = readID(buffer);
-					final Data data = decodeData(new ChannelDecoder(buffer), message.getSender());
+					final Data data = DataCodec.decodeData(new ChannelDecoder(buffer), message.getSender());
 					if(data == null) return false;
 					if(message.isRequest()) {
 						if(data.isProtectedEntry() && message.getPublicKey()==null)
@@ -443,7 +431,7 @@ public class MessageCodec
 					Number160 key = readID(buffer);
 					if(buffer.readableBytes() < 20) return false;
 					Number160 hash = readID(buffer);
-					final Data data = decodeData(new ChannelDecoder(buffer), message.getSender());
+					final Data data = DataCodec.decodeData(new ChannelDecoder(buffer), message.getSender());
 					if(data == null) return false;
 					if(message.isRequest()) {
 						if(data.isProtectedEntry() && message.getPublicKey()==null)
@@ -586,78 +574,7 @@ public class MessageCodec
 		}
 	}
 
-	public static Data decodeData(final DataInput buffer, PeerAddress originator)
-			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException
-	{
-		//mini header for data, 8 bytes ttl and data length
-		if (buffer.readableBytes() < 4 + 4) return null;
-		int ttl = buffer.readInt();
-		boolean protectedEntry = (ttl & 0x80000000) != 0;
-		ttl &= 0x7FFFFFFF;
-		int dateLength = buffer.readInt();
-		//
-		if (buffer.readableBytes() < dateLength) return null;
-		ByteBuffer[] byteBuffers = buffer.toByteBuffers(buffer.readerIndex(), dateLength);
-		
-		final Data data = createData(byteBuffers, dateLength, ttl, protectedEntry, originator);
-		
-		//final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-		//		dateLength, ttl, protectedEntry, originator);
-		buffer.skipBytes(dateLength);
-		return data;
-	}
-
-	public static Data createData(ByteBuffer[] byteBuffers, final int length, int ttl, boolean protectedEntry,
-			PeerAddress originator)
-	{
-		Data data;
-		// length may be 0 if data is only used for expiration
-		if (length == 0)
-		{
-			data = new Data(EMPTY_BYTE_ARRAY, originator.getID());
-		}
-		else
-		{
-			data = new Data(byteBuffers, length, originator.getID());
-		}
-		data.setTTLSeconds(ttl);
-		data.setProtectedEntry(protectedEntry);
-		return data;
-	}
-
-	public static Data createData(final byte[] me, final int offset, final int length,
-			final int ttl, boolean protectedEntry, PeerAddress originator)
-	{
-		Data data;
-		// length may be 0 if data is only used for expiration
-		if (length == 0)
-			data = new Data(EMPTY_BYTE_ARRAY, originator.getID());
-		else
-		{
-			// check if its worth coping the buffer, or just take the one backed
-			// by the bytebuffer. If the backing buffer is too big, then its a
-			// waste of space and we should copy, otherwise, take the backing
-			// array.
-			// TODO: find good values for this. This is just a guess
-			//TODO find out why we need to copy!
-			final boolean copy = true;
-			// final boolean copy = me.length / length > 1;
-			// we have to use copy if we use an exectution handler, otherwise
-			// the buffer will have different data.
-			if (copy)
-			{
-				final byte[] me2 = new byte[length];
-				System.arraycopy(me, offset, me2, 0, length);
-				data = new Data(me2, 0, length, originator.getID());
-			}
-			else
-				data = new Data(me, offset, length, originator.getID());
-		}
-		data.setTTLSeconds(ttl);
-		data.setProtectedEntry(protectedEntry);
-		return data;
-	}
-
+	
 	/**
 	 * Read a 160bit number from a Netty buffer. I did not want to include
 	 * ChannelBuffer in the class Number160.

@@ -217,7 +217,7 @@ public class Data implements Serializable
 		StringBuilder sb = new StringBuilder();
 		sb.append("Data[l:");
 		sb.append(length);
-		sb.append(",tyn:");
+		sb.append(",t:");
 		sb.append(getTTLSeconds());
 		sb.append(",hasPK:");
 		sb.append(publicKey!=null);
@@ -225,7 +225,5 @@ public class Data implements Serializable
 		sb.append(getHash());
 		sb.append("]");
 		return sb.toString();
-	}
-
-	
+	}	
 }

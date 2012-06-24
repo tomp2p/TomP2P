@@ -21,6 +21,7 @@ import org.jboss.netty.channel.ChannelDownstreamHandler;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.FileRegion;
 import org.jboss.netty.channel.MessageEvent;
 
 import static org.jboss.netty.channel.Channels.write;
@@ -56,7 +57,14 @@ public class TomP2PEncoderUDP implements ChannelDownstreamHandler
 			int size = input.size();
 			ChannelBuffer[] tmp = new ChannelBuffer[size];
 			for (int i = 0; i < size; i++)
-				tmp[i] = (ChannelBuffer) input.nextChunk();
+			{
+				Object object = input.nextChunk();
+				if(object instanceof FileRegion)
+				{
+					throw new RuntimeException("FileRegion for UDP not supported!");
+				}
+				tmp[i] = (ChannelBuffer) object;
+			}
 			write(ctx, e.getFuture(), ChannelBuffers.wrappedBuffer(tmp), evt.getRemoteAddress());
 		}
 		else

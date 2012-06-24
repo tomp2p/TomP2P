@@ -1,15 +1,10 @@
 package net.tomp2p.storage;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
@@ -26,16 +21,12 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 
-import org.apache.jdbm.DB;
-import org.apache.jdbm.DBMaker;
-import net.tomp2p.message.DataInput;
-import net.tomp2p.message.MessageCodec;
-import net.tomp2p.message.ProtocolChunked;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 
-import org.jboss.netty.buffer.ChannelBuffer;
+import org.apache.jdbm.DB;
+import org.apache.jdbm.DBMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,16 +53,29 @@ public class StorageDisk extends StorageGeneric
 	
 	final private String dirName;
 	
-	public StorageDisk(String fileName)
+	public StorageDisk(String dirName)
 	{
-		dirName = fileName+File.separator+"tomp2p";
-		db = DBMaker.openFile(dirName).disableTransactions().make();
-		dataMap = db.<Number480, Data>createTreeMap("dataMap");
-		timeoutMap = db.<Number480, Long>createHashMap("timeoutMap");
-		timeoutMapRev = db.<Long, Set<Number480>>createTreeMap("timeoutMapRev");
-		protectedMap = db.<Number320, byte[]>createHashMap("protectedMap");
-		responsibilityMap = db.<Number160, Number160>createHashMap("responsibilityMap");
-		responsibilityMapRev = db.<Number160, Set<Number160>>createHashMap("responsibilityMapRev");
+		this.dirName = dirName;
+		String fileName = dirName+File.separator+"tomp2p";
+		db = DBMaker.openFile(fileName).disableTransactions().make();
+		//get or create
+		final NavigableMap<Number480, Data> dataMap2 =  db.<Number480, Data>getTreeMap("dataMap");
+		dataMap = dataMap2 == null ? db.<Number480, Data>createTreeMap("dataMap") : dataMap2;
+		//get or create
+		final Map<Number480, Long> timeoutMap2 = db.<Number480, Long>getHashMap("timeoutMap");
+		timeoutMap = timeoutMap2 == null ? db.<Number480, Long>createHashMap("timeoutMap") : timeoutMap2;
+		//get or create
+		final SortedMap<Long, Set<Number480>> timeoutMapRev2 = db.<Long, Set<Number480>>getTreeMap("timeoutMapRev");
+		timeoutMapRev = timeoutMapRev2 == null ? db.<Long, Set<Number480>>createTreeMap("timeoutMapRev") : timeoutMapRev2;
+		//get or create
+		final Map<Number320, byte[]> protectedMap2 = db.<Number320, byte[]>getHashMap("protectedMap");
+		protectedMap = protectedMap2 == null ? db.<Number320, byte[]>createHashMap("protectedMap") : protectedMap2;
+		//get or create
+		final Map<Number160, Number160> responsibilityMap2 = db.<Number160, Number160>getHashMap("responsibilityMap");
+		responsibilityMap = responsibilityMap2 == null ? db.<Number160, Number160>createHashMap("responsibilityMap") : responsibilityMap2;
+		//get or create
+		final Map<Number160, Set<Number160>> responsibilityMapRev2 = db.<Number160, Set<Number160>>getTreeMap("responsibilityMapRev");
+		responsibilityMapRev = responsibilityMapRev2 == null ? db.<Number160, Set<Number160>>createTreeMap("responsibilityMapRev") : responsibilityMapRev2;
 	}
 	
 	@Override
@@ -86,7 +90,7 @@ public class StorageDisk extends StorageGeneric
 		Number480 key = new Number480(locationKey, domainKey, contentKey);
 		//8MB is the limit
 		boolean retVal = true;
-		if(value.getLength() > 5 * 1024 * 1024)
+		if(value.getLength() > (1 * 1024 * 1024))
 		{
 			//store reference
 			retVal = storeReference(value, key);
@@ -105,7 +109,12 @@ public class StorageDisk extends StorageGeneric
 		try
 		{
 			File file = store(key, value);
-			dataMap.put(key , new Data(file, value.getPeerId()));
+			Data data = new Data(file, value.getPeerId()).setFileReference();
+			data.setTTLSeconds(value.getTTLSeconds());
+			data.setProtectedEntry(value.isProtectedEntry());
+			data.setDirectReplication(value.isDirectReplication());
+			data.setPublicKey(value.getPublicKey());
+			dataMap.put(key, data);
 			return true;
 		}
 		catch (IOException e)
@@ -113,41 +122,36 @@ public class StorageDisk extends StorageGeneric
 			logger.error("cannot store reference: "+e);
 			return false;
 		}
+		catch (ClassNotFoundException e)
+		{
+			logger.error("cannot store reference: "+e);
+			return false;
+		}
 	}
 	
-	//TODO: store big data directly
-	private File store(Number480 key, Data value) throws IOException
+	/**
+	 * Store big data on disk.
+	 * @param key The key of the value
+	 * @param value The value
+	 * @return Returns the file where the data was stored
+	 * @throws IOException
+	 * @throws ClassNotFoundException 
+	 */
+	private File store(Number480 key, Data value) throws IOException, ClassNotFoundException
 	{
 		File file = new File(dirName, key.toString());
+		file.createNewFile();
 		OutputStream output = null;
 		try
 		{
 			output = new BufferedOutputStream(new FileOutputStream(file));
-			MyProtocolInput myProtocolInput = new MyProtocolInput(output);
-			MessageCodec.encodeData(myProtocolInput, value);
+			output.write(value.getData());
 		}
 		finally
 		{
 			output.close();
 		}
 		return file;
-	}
-	
-	//TODO: store big data directly
-	private Data read(Number480 key) throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, IOException
-	{
-		File dir = new File(dirName, key.toString());
-		InputStream input = null;
-		try
-		{
-			input = new BufferedInputStream(new FileInputStream(dir));
-			MyDataInput myDataInput = new MyDataInput(dir, input);
-			return MessageCodec.decodeData(myDataInput, null);
-		}
-		finally
-		{
-			input.close();
-		}
 	}
 	
 	@Override
@@ -449,177 +453,5 @@ public class StorageDisk extends StorageGeneric
 				responsibilityMapRev.remove(peerId);
 			}
 		}		
-	}
-	
-	private static class MyDataInput implements DataInput
-	{
-		final private InputStream input;
-		private int counter;
-		public MyDataInput(File file, InputStream input)
-		{
-			this.input = input;
-			counter = (int)file.length();
-		}
-
-		@Override
-		public int readInt()
-		{
-			try
-			{
-				counter -=4;
-				return input.read();
-			}
-			catch (IOException e)
-			{
-				logger.error(e.toString());
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public void readBytes(byte[] buf)
-		{
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public int readUnsignedShort()
-		{
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public int readUnsignedByte()
-		{
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public int getUnsignedByte()
-		{
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public byte[] array()
-		{
-			try
-			{
-				byte[] all = new byte[counter];
-				input.read(all);
-				counter = 0;
-				return all;
-			}
-			catch (IOException e)
-			{
-				logger.error(e.toString());
-				throw new RuntimeException(e);
-			}
-		}
-
-		@Override
-		public int arrayOffset()
-		{
-			return 0;
-		}
-
-		@Override
-		public int readerIndex()
-		{
-			return 0;
-		}
-
-		@Override
-		public void skipBytes(int size)
-		{
-			counter -= size;
-		}
-
-		@Override
-		public int readableBytes()
-		{
-			return counter;
-		}
-
-		@Override
-		public ByteBuffer[] toByteBuffers(int index, int length)
-		{
-			return new ByteBuffer[]{ByteBuffer.wrap(array())};
-		}
-	}
-	
-	private static class MyProtocolInput implements ProtocolChunked
-	{
-		private final OutputStream output;
-		public MyProtocolInput(OutputStream output)
-		{
-			this.output = output;
-		}
-
-		@Override
-		public void copyToCurrent(byte[] byteArray)
-		{
-			try
-			{
-				output.write(byteArray);
-			}
-			catch (IOException e)
-			{
-				logger.error(e.toString());
-			}
-		}
-
-		@Override
-		public void copyToCurrent(int size)
-		{
-			try
-			{
-				output.write(size);
-			}
-			catch (IOException e)
-			{
-				logger.error(e.toString());
-			}	
-		}
-		
-		@Override
-		public void copyToCurrent(byte[] array, int offset, int length)
-		{
-			try
-			{
-				output.write(array, offset, length);
-			}
-			catch (IOException e)
-			{
-				logger.error(e.toString());
-			}
-		}		
-
-		@Override
-		public void copyToCurrent(byte size)
-		{
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void copyToCurrent(long long1)
-		{
-			throw new UnsupportedOperationException();
-			
-		}
-
-		@Override
-		public void copyToCurrent(short short1)
-		{
-			throw new UnsupportedOperationException();
-			
-		}
-
-		@Override
-		public void copyToCurrent(ChannelBuffer slice)
-		{
-			throw new UnsupportedOperationException();
-			
-		}
 	}
 }

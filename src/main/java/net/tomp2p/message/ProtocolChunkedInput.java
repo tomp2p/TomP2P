@@ -15,6 +15,8 @@
  */
 package net.tomp2p.message;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -25,13 +27,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.DefaultFileRegion;
 import org.jboss.netty.handler.stream.ChunkedInput;
 import org.jboss.netty.handler.stream.ChunkedWriteHandler;
 
 public class ProtocolChunkedInput implements ChunkedInput, ProtocolChunked
 {
 	private final ChannelHandlerContext ctx;
-	private final Queue<ChannelBuffer> queue = new ConcurrentLinkedQueue<ChannelBuffer>();
+	private final Queue<Object> queue = new ConcurrentLinkedQueue<Object>();
 	private ChannelBuffer channelBuffer = ChannelBuffers.dynamicBuffer();
 	private volatile boolean done = false;
 	private final Signature signature;
@@ -60,25 +63,44 @@ public class ProtocolChunkedInput implements ChunkedInput, ProtocolChunked
 	@Override
 	public Object nextChunk() throws Exception
 	{
-		ChannelBuffer channelBuffer = queue.poll();
-		if (channelBuffer == null)
+		Object object = queue.poll();
+		if (object == null)
 		{
 			return null;
 		}
-		if (signature != null && channelBuffer != ChannelBuffers.EMPTY_BUFFER)
+		if(object instanceof ChannelBuffer)
 		{
-			signature.update(channelBuffer.array(), channelBuffer.arrayOffset(), channelBuffer.arrayOffset()
+			ChannelBuffer channelBuffer = (ChannelBuffer) object;
+			if (signature != null && channelBuffer != ChannelBuffers.EMPTY_BUFFER)
+			{
+				signature.update(channelBuffer.array(), channelBuffer.arrayOffset(), channelBuffer.arrayOffset()
 					+ channelBuffer.writerIndex());
-		}
-		else if (signature != null && channelBuffer == ChannelBuffers.EMPTY_BUFFER)
-		{
-			byte[] signatureData = signature.sign();
-			SHA1Signature decodedSignature = new SHA1Signature();
-			decodedSignature.decode(signatureData);
-			channelBuffer = ChannelBuffers.wrappedBuffer(decodedSignature.getNumber1().toByteArray(), decodedSignature
+			}
+			else if (signature != null && channelBuffer == ChannelBuffers.EMPTY_BUFFER)
+			{
+				byte[] signatureData = signature.sign();
+				SHA1Signature decodedSignature = new SHA1Signature();
+				decodedSignature.decode(signatureData);
+				channelBuffer = ChannelBuffers.wrappedBuffer(decodedSignature.getNumber1().toByteArray(), decodedSignature
 					.getNumber2().toByteArray());
+			}
+			return channelBuffer;
 		}
-		return channelBuffer;
+		if(object instanceof DefaultFileRegion)
+		{
+			DefaultFileRegion fileRegion = (DefaultFileRegion) object;
+			if(signature !=null)
+			{
+				//TODO: implement the update of the signature for filechannel / fileregion
+			}
+			//ByteBuffer chunk = ByteBuffer.wrap(2*1024*1024);
+			//fileRegion.
+			return fileRegion;
+		}
+		else
+		{
+			throw new RuntimeException("unknown object");
+		}
 	}
 
 	public int size()
@@ -206,5 +228,17 @@ public class ProtocolChunkedInput implements ChunkedInput, ProtocolChunked
 		}
 		if (last)
 			done = true;
+	}
+
+	@Override
+	public void transferToCurrent(FileChannel inChannel, long length) throws IOException
+	{
+		if (done)
+			return;
+		if (length == 0)
+			return;
+		flush(false);
+		DefaultFileRegion defaultFileRegion = new DefaultFileRegion(inChannel, 0, length);
+		queue.add(defaultFileRegion);
 	}
 }

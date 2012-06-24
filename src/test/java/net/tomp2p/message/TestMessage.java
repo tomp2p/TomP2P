@@ -364,4 +364,30 @@ public class TestMessage
 		System.arraycopy(me, 0, me2, me2.length - me.length, me.length);
 		Assert.assertEquals(i3, new Number160(me2));
 	}
+	
+	@Test
+	public void testBigData() throws Exception
+	{
+		// setup
+		SocketAddress sockRemote = new InetSocketAddress(2000);
+		SocketAddress sockLocal = new InetSocketAddress(1000);
+		DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
+		
+		byte[] me1 = new byte[50 * 1024 * 1024];
+		Data data = new Data(me1);
+		ChannelBuffer buffer = null;
+		DummyCoder coder=new DummyCoder(true);
+		TomP2PDecoderTCP dec=new TomP2PDecoderTCP();
+		
+		Message m1 = Utils2.createDummyMessage();
+		Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+		dataMap.put(Number160.ONE, data);
+		m1.setDataMap(dataMap);
+		// encode
+		buffer = coder.encode(m1);
+		// decode
+		Object obj = dec.decode(null, dc, buffer);
+		Message m2 = (Message) obj;
+		Assert.assertEquals(50*1024*1024, m2.getDataMap().get(Number160.ONE).getData().length);
+	}
 }

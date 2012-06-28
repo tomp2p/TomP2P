@@ -78,8 +78,8 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	
 	public SimpleBloomFilter(ChannelBuffer channelBuffer, int length)
 	{
-		int bitArraySize = channelBuffer.readInt();
 		int expectedElements = channelBuffer.readInt();
+		int bitArraySize = channelBuffer.readInt();
 		if (bitArraySize % 8 != 0)
 		{
 			throw new RuntimeException("BitArraySize must be a multiple of 8, it is "+bitArraySize);

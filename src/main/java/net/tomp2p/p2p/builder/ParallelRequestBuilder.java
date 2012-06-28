@@ -70,8 +70,12 @@ public class ParallelRequestBuilder extends DHTBuilder<ParallelRequestBuilder>
 	}
 	
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("parallel-builder");
 		if(queue == null || queue.size() == 0)
 		{

@@ -70,8 +70,12 @@ public class AddBuilder extends DHTBuilder<AddBuilder>
 	}
 	
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("add-builder");
 		if(dataSet == null)
 		{

@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 public class DiscoverBuilder
 {
 	final private static Logger logger = LoggerFactory.getLogger(DiscoverBuilder.class);
+	final private static FutureDiscover FUTURE_DISCOVER_SHUTDOWN = new FutureDiscover().setFailed("Peer is shutting down");
 	final private Peer peer;
 	private InetAddress inetAddress;
 	private int portUDP = Bindings.DEFAULT_PORT;
@@ -95,8 +96,13 @@ public class DiscoverBuilder
 		return this;
 	}
 	
-	public FutureDiscover build()
+	public FutureDiscover start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DISCOVER_SHUTDOWN;
+		}
+		
 		if(peerAddress == null && inetAddress!=null)
 		{
 			peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);

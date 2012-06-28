@@ -93,8 +93,12 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder>
 	}
 
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("remove-builder");
 		if(all)
 		{

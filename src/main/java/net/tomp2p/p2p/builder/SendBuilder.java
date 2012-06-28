@@ -79,8 +79,12 @@ public class SendBuilder  extends DHTBuilder<SendBuilder>
 	}
 	
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("send-builder");
 		if(buffer == null && object != null)
 		{

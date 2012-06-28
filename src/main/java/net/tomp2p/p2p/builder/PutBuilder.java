@@ -101,8 +101,12 @@ public class PutBuilder extends DHTBuilder<PutBuilder>
 	}
 	
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("put-builder");
 		if(dataMap == null)
 		{

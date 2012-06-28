@@ -9,6 +9,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -18,6 +19,7 @@ import net.tomp2p.utils.Utils;
 
 public class PingBuilder
 {
+	final private static BaseFuture FUTURE_PING_SHUTDOWN = new FutureWrapper<BaseFuture>().setFailed("Peer is shutting down");
 	final private Peer peer;
 	private PeerAddress peerAddress;
 	private InetAddress inetAddress;
@@ -96,8 +98,13 @@ public class PingBuilder
 		return this;
 	}
 	
-	public BaseFuture build()
+	public BaseFuture start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_PING_SHUTDOWN;
+		}
+		
 		if(broadcast)
 		{
 			return pingBroadcast(port);

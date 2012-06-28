@@ -95,8 +95,13 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder>
 		return this;
 	}
 	
-	public FutureTracker build()
+	public FutureTracker start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_TRACKER_SHUTDOWN;
+		}
+		
 		preBuild("get-tracker-builder");
 		
 		if (knownPeers == null)

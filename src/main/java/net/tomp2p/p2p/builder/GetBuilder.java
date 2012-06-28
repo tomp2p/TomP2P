@@ -16,7 +16,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 {
 	// if we don't provide any content key, the default is Number160.ZERO
 	private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
-	private final static FutureDHT FUTURE_DHT_MESSAGE_TOO_LARGE = new FutureDHT();
+	private final static FutureDHT FUTURE_DHT_MESSAGE_TOO_LARGE = new FutureDHT().setFailed("Message size exceeds UDP transfer size, please consider using TCP");
 	private Collection<Number160> contentKeys;
 	private Number160 contentKey;
 	private SimpleBloomFilter<Number160> keyBloomFilter;
@@ -30,7 +30,6 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 	static
 	{
 		NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
-		FUTURE_DHT_MESSAGE_TOO_LARGE.setFailed("Message size exceeds UDP transfer size, please consider using TCP");
 	}
 
 	public GetBuilder(Peer peer, Number160 locationKey)
@@ -181,8 +180,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder>
 	}
 
 	@Override
-	public FutureDHT build()
+	public FutureDHT start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_DHT_SHUTDOWN;
+		}
 		preBuild("get-builder");
 		if (all)
 		{

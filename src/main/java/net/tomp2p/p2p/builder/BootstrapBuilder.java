@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
 public class BootstrapBuilder 
 {
 	final private static Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
+	private final static FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>().setFailed("Peer is shutting down");
 	final private Peer peer;
 	private Collection<PeerAddress> bootstrapTo;
 	private PeerAddress peerAddress;
@@ -175,8 +176,13 @@ public class BootstrapBuilder
 		return this;
 	}
 	
-	public FutureBootstrap build()
+	public FutureBootstrap start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_BOOTSTRAP_SHUTDOWN;
+		}
+		
 		if(routingConfiguration == null)
 		{
 			routingConfiguration = new RoutingConfiguration(5, 10, 2);
@@ -246,7 +252,7 @@ public class BootstrapBuilder
 	private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing(PeerAddress address)
 	{
 		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		final FutureResponse tmp = (FutureResponse) peer.ping().setPeerAddress(address).setTcpPing().build();
+		final FutureResponse tmp = (FutureResponse) peer.ping().setPeerAddress(address).setTcpPing().start();
 		tmp.addListener(new BaseFutureAdapter<FutureResponse>()
 		{
 			@Override
@@ -274,7 +280,7 @@ public class BootstrapBuilder
 		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
 		// limit after
 		@SuppressWarnings("unchecked")
-		final FutureLateJoin<FutureResponse> tmp = (FutureLateJoin<FutureResponse>) peer.ping().setBroadcast().setPort(portUDP).build();
+		final FutureLateJoin<FutureResponse> tmp = (FutureLateJoin<FutureResponse>) peer.ping().setBroadcast().setPort(portUDP).start();
 		tmp.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
 		{
 			@Override

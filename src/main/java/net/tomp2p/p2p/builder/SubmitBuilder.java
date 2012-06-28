@@ -14,6 +14,7 @@ import net.tomp2p.task.Worker;
 
 public class SubmitBuilder
 {
+	private final static FutureTask FUTURE_TASK_SHUTDOWN = new FutureTask().setFailed("Peer is shutting down");
 	private final static Map<Number160, Data> EMPTY_MAP = new HashMap<Number160, Data>();
 	private final Number160 locationKey;
 	private final Worker worker;
@@ -111,8 +112,12 @@ public class SubmitBuilder
 		return this;
 	}
 	
-	public FutureTask build()
+	public FutureTask start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_TASK_SHUTDOWN;
+		}
 		if(dataMap == null)
 		{
 			dataMap = EMPTY_MAP;

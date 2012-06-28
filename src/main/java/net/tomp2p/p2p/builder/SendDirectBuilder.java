@@ -2,9 +2,6 @@ package net.tomp2p.p2p.builder;
 
 import java.io.IOException;
 
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.buffer.ChannelBuffers;
-
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -14,8 +11,12 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.utils.Utils;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.jboss.netty.buffer.ChannelBuffers;
+
 public class SendDirectBuilder
 {
+	final private static FutureResponse FUTURE_REQUEST_SHUTDOWN = new FutureResponse(null).setFailed("Peer is shutting down");
 	final private Peer peer;
 	private PeerAddress peerAddress;
 	private ChannelBuffer buffer;
@@ -82,8 +83,13 @@ public class SendDirectBuilder
 		return this;
 	}
 	
-	public FutureResponse build()
+	public FutureResponse start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_REQUEST_SHUTDOWN;
+		}
+		
 		final boolean keepAlive;
 		if(peerAddress != null && connection == null)
 		{

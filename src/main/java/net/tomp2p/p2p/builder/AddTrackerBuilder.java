@@ -147,8 +147,12 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder>
 	}
 
 	@Override
-	public FutureTracker build()
+	public FutureTracker start()
 	{
+		if(peer.isShutdown())
+		{
+			return FUTURE_TRACKER_SHUTDOWN;
+		}
 		preBuild("add-tracker-build");
 
 		if (bloomFilter == null)

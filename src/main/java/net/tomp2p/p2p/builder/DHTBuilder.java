@@ -16,6 +16,7 @@ import net.tomp2p.peers.Number160;
 public abstract class DHTBuilder<K extends DHTBuilder<K>>
 {
 	public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-dht");
+	protected final static FutureDHT FUTURE_DHT_SHUTDOWN = new FutureDHT().setFailed("Peer is shutting down");
 	protected final Peer peer;
 	protected final Number160 locationKey;
 	//
@@ -230,5 +231,5 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>>
 		}
 	}
 	
-	public abstract FutureDHT build();
+	public abstract FutureDHT start();
 }

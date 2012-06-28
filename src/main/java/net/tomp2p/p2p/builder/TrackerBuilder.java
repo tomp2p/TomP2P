@@ -9,7 +9,8 @@ import net.tomp2p.peers.Number160;
 
 public abstract class TrackerBuilder<K extends TrackerBuilder<K>>
 {
-	public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-tracker");	
+	public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-tracker");
+	protected final static FutureTracker FUTURE_TRACKER_SHUTDOWN = new FutureTracker().setFailed("Peer is shutting down");
 	protected final Peer peer;
 	protected final Number160 locationKey;
 	//
@@ -97,5 +98,5 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>>
 		}
 	}
 	
-	public abstract FutureTracker build();
+	public abstract FutureTracker start();
 }

@@ -204,7 +204,8 @@ public class TrackerRPC extends ReplyHandler
 		final TrackerStorage trackerStorage = getPeerBean().getTrackerStorage();
 
 		Map<Number160, TrackerData> meshPeers = trackerStorage.meshPeers(locationKey, domainKey);
-		if(knownPeers != null){
+		if(knownPeers != null)
+		{
 			meshPeers = Utils.disjunction(meshPeers, knownPeers);
 		}
 		int size = meshPeers.size();

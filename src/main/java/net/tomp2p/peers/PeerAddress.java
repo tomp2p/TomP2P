@@ -25,6 +25,8 @@ import java.util.Arrays;
 
 import net.tomp2p.utils.Utils;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 /**
  * A PeerAddress contains the node ID and how to contact this node using both
  * TCP and UDP. This class is thread safe (or it does not matter if its not).
@@ -163,6 +165,71 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable
 			offset += 16;
 		}
 		this.readBytes = offset - offsetOld;
+		this.offset = offset;
+		this.hashCode = id.hashCode();
+	}
+	
+	public PeerAddress(Number160 id, ChannelBuffer channelBuffer)
+	{
+		// get the peer ID, this is independent of the type
+		this.id = id;
+		// get the type
+		final int options = channelBuffer.readUnsignedByte();
+		this.net6 = (options & NET6) > 0;
+		this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+		this.firewalledTCP = (options & FIREWALL_TCP) > 0;
+		int offset = 1;
+		this.portTCP = channelBuffer.readUnsignedShort();
+		this.portUDP = channelBuffer.readUnsignedShort();
+		offset+=4;
+		byte[] tmp2;
+		if (isIPv4())
+		{
+			// IPv4 is 32 bit
+			tmp2 = new byte[4];
+			channelBuffer.readBytes(tmp2);
+			try 
+			{
+				this.address = Inet4Address.getByAddress(tmp2);
+			} 
+			catch (UnknownHostException e) 
+			{
+				/*
+			     * This really shouldn't happen in practice since all our byte
+			     * sequences have the right length.
+			     *
+			     * However {@link InetAddress#getByAddress} is documented as
+			     * potentially throwing this "if IP address is of illegal length".
+			     *
+			     */
+			    throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.", Arrays.toString(tmp2)), e);
+			}
+			offset += 4;
+		}
+		else
+		{
+			// IPv6 is 128 bit
+			tmp2 = new byte[16];
+			channelBuffer.readBytes(tmp2);
+			try 
+			{
+				this.address = Inet6Address.getByAddress(tmp2);
+			} 
+			catch (UnknownHostException e) 
+			{
+				/*
+			     * This really shouldn't happen in practice since all our byte
+			     * sequences have the right length.
+			     *
+			     * However {@link InetAddress#getByAddress} is documented as
+			     * potentially throwing this "if IP address is of illegal length".
+			     *
+			     */
+			    throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.", Arrays.toString(tmp2)), e);
+			}
+			offset += 16;
+		}
+		this.readBytes = offset;
 		this.offset = offset;
 		this.hashCode = id.hashCode();
 	}

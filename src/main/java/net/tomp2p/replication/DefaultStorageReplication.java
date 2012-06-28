@@ -148,7 +148,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 				{
 					final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
 					pendingFutures.put(peer.put(locationKey).setDataMap(
-							dataMapConverted1).setDomainKey(domainKey).setPutIfAbsent(true).build(), System.currentTimeMillis());
+							dataMapConverted1).setDomainKey(domainKey).setPutIfAbsent(true).start(), System.currentTimeMillis());
 					dataMapConverted.clear();
 					dataMapConverted.put(contentKey, data);
 				}
@@ -157,7 +157,7 @@ public class DefaultStorageReplication implements ResponsibilityListener, Runnab
 			if(!dataMapConverted.isEmpty() && domainKeyOld != null)
 			{
 				pendingFutures.put(peer.put(locationKey).setDataMap(
-						dataMapConverted).setDomainKey(domainKeyOld).setPutIfAbsent(true).build(), System
+						dataMapConverted).setDomainKey(domainKeyOld).setPutIfAbsent(true).start(), System
 					.currentTimeMillis());
 			}
 		}

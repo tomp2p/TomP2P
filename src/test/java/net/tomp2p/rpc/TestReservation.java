@@ -12,6 +12,14 @@ import org.junit.Test;
 
 public class TestReservation 
 {
+	
+	/*@Test
+	public void testReservationTCPL() throws Exception
+	{
+		for(int i=0;i<100;i++)
+			testReservationTCP();
+	}*/
+	
 	@Test
 	public void testReservationTCP() throws Exception
 	{
@@ -32,12 +40,16 @@ public class TestReservation
 				fr1.awaitUninterruptibly();
 				fr2.awaitUninterruptibly();
 				fr3.awaitUninterruptibly();
-				System.err.println(fr1.getFailedReason());
+				System.err.println(fr1.getFailedReason() + " / "+fr2.getFailedReason() + " / "+fr3.getFailedReason());
 				Assert.assertEquals(true, fr1.isSuccess());
 				Assert.assertEquals(true, fr2.isSuccess());
 				Assert.assertEquals(true, fr3.isSuccess());
 			}
 			recv1.getConnectionBean().getConnectionReservation().release(cc);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
 		}
 		finally
 		{
@@ -47,6 +59,14 @@ public class TestReservation
 				recv1.shutdown();
 		}
 	}
+	
+	/*@Test
+	public void testReservationUDPL() throws Exception
+	{
+		for(int i=0;i<100;i++)
+			testReservationUDP();
+	}*/
+	
 	@Test
 	public void testReservationUDP() throws Exception
 	{
@@ -67,12 +87,16 @@ public class TestReservation
 				fr1.awaitUninterruptibly();
 				fr2.awaitUninterruptibly();
 				fr3.awaitUninterruptibly();
-				System.err.println(fr1.getFailedReason());
+				System.err.println(fr1.getFailedReason() + " / "+fr2.getFailedReason() + " / "+fr3.getFailedReason());
 				Assert.assertEquals(true, fr1.isSuccess());
 				Assert.assertEquals(true, fr2.isSuccess());
 				Assert.assertEquals(true, fr3.isSuccess());
 			}
 			recv1.getConnectionBean().getConnectionReservation().release(cc);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
 		}
 		finally
 		{

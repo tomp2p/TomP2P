@@ -105,9 +105,6 @@
     </resources>
     <testResources>
       <testResource>
-        <directory>src/main/config</directory>
-      </testResource>
-      <testResource>
         <directory>src/test/resources</directory>
       </testResource>
     </testResources>

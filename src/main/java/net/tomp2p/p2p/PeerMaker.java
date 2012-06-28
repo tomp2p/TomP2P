@@ -88,7 +88,7 @@ public class PeerMaker
 		this.keyPair = keyPair;
 	}
 	
-	public Peer buildAndListen() throws IOException
+	public Peer makeAndListen() throws IOException
 	{
 		final PeerMapKadImpl peerMap = new PeerMapKadImpl(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
 				getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap());

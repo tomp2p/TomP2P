@@ -169,11 +169,16 @@ public class TestTracker
 			bloomFilter.add(sender.getPeerID());
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
 					false, bloomFilter, cc);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			Assert.assertEquals(0, fr.getResponse().getTrackerData().size());
-			sender.getConnectionBean().getConnectionReservation().release(cc);
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+			Assert.fail();
 		}
 		finally
 		{

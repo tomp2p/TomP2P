@@ -16,8 +16,8 @@ public class ConnectionConfiguration
 	// idle needs to be larger than timeout for TCP
 	
 	// doing tests on localhost, we open 2 * maxOpenConnection
-	private int maxOpenConnection = 300;
-	private int maxCreating = 50;
+	private int maxOpenConnection = 400;
+	private int maxCreating = 100;
 	// these values depend on how many connections we create
 	private int idleTCPMillis = (maxOpenConnection + maxCreating) * 20;
 	private int idleUDPMillis = (maxOpenConnection + maxCreating) * 10;

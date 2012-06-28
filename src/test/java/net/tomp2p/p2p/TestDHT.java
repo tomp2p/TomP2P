@@ -85,7 +85,7 @@ public class TestDHT
 			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
 			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
 			List<PeerConnection> list3 = new ArrayList<PeerConnection>();
-			for(int i=0;i<300;i++)
+			for(int i=0;i<400;i++)
 			{
 				final byte[] b=new byte[10000];
 				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
@@ -117,6 +117,77 @@ public class TestDHT
 			for(PeerConnection pc:list3)
 			{
 				pc.close();
+			}
+			for(BaseFuture bf:list2)
+			{
+				bf.awaitUninterruptibly();
+				if(bf.isFailed())
+				{
+					System.err.println("WTF "+bf.getFailedReason());
+				}
+				else
+				{
+					System.err.print(".");
+				}
+				Assert.assertEquals(true, bf.isSuccess());
+			}
+			System.err.println("done!!");
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			System.err.println("done!1!");
+			master.shutdown();
+			slave.shutdown();
+		}
+	}
+	
+	@Test
+	public void testTooManyOpenFilesInSystem2() throws Exception
+	{
+		Peer master = null;
+		Peer slave = null;
+		try
+		{	
+			master = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
+			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
+			
+			System.err.println("peers up and running");
+			
+			slave.setRawDataReply(new RawDataReply() 
+			{	
+				@Override
+				public ChannelBuffer reply(PeerAddress sender, ChannelBuffer requestBuffer)
+						throws Exception 
+				{
+					final byte[] b1=new byte[10000];
+					int i=requestBuffer.getInt(0);
+					ChannelBuffer ret=ChannelBuffers.wrappedBuffer(b1);
+					ret.setInt(0, i);
+					return ret;
+				}
+			});
+			List<BaseFuture> list1 = new ArrayList<BaseFuture>();
+			List<BaseFuture> list2 = new ArrayList<BaseFuture>();
+			List<PeerConnection> list3 = new ArrayList<PeerConnection>();
+			for(int i=0;i<400;i++)
+			{
+				final byte[] b=new byte[10000];
+				PeerConnection pc=master.createPeerConnection(slave.getPeerAddress(), 5000);
+				list1.add(master.sendDirect().setConnection(pc).setBuffer(ChannelBuffers.wrappedBuffer(b)).build());
+				list3.add(pc);
+				pc.close();
+			}
+			for(int i=0;i<20000;i++)
+			{
+				list2.add(master.discover().setPeerAddress(slave.getPeerAddress()).build());
+				final byte[] b=new byte[10000];
+				byte[] me=Utils.intToByteArray(i);
+				System.arraycopy(me, 0, b, 0, 4);
+				list2.add(master.sendDirect().setPeerAddress(slave.getPeerAddress()).setBuffer(ChannelBuffers.wrappedBuffer(b)).build());
 			}
 			for(BaseFuture bf:list2)
 			{

@@ -217,7 +217,9 @@ public class Peer
 		}
 		getConnectionHandler().shutdown();
 		if (masterFlag && timer != null)
+		{
 			timer.stop();
+		}
 		
 		//listeners may be called from other threads
 		synchronized (listeners)

@@ -42,7 +42,7 @@ public class DataCodec
 		    FileChannel inChannel = inFile.getChannel();
 			input.transferToCurrent(inChannel, file.length());
 			count += len;
-			inFile.close();
+			//cannot close inFile, since we still need to transfer it!
 		}
 		else
 		{

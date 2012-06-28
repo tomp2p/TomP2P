@@ -10,6 +10,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Utils;
 
 import org.junit.Test;
 
@@ -41,12 +42,18 @@ public class TestTracker
 			bloomFilter=new SimpleBloomFilter<Number160>(4096, 1000);
 			fr = sender.getTrackerRPC().getFromTracker(recv1.getPeerAddress(), loc, dom, false,
 					false, bloomFilter, cc);
+			Utils.addReleaseListenerAll(fr, sender.getConnectionBean().getConnectionReservation(), cc);
 			fr.awaitUninterruptibly();
 			System.err.println(fr.getFailedReason());
 			Assert.assertEquals(true, fr.isSuccess());
 			PeerAddress peerAddress=fr.getResponse().getTrackerData().iterator().next().getPeerAddress();
 			Assert.assertEquals(sender.getPeerAddress(), peerAddress);
-			sender.getConnectionBean().getConnectionReservation().release(cc);
+			
+		}
+		catch (Throwable t)
+		{
+			t.printStackTrace();
+			Assert.fail();
 		}
 		finally
 		{

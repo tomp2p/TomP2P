@@ -118,7 +118,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse>
 	}
 
 	/**
-	 * Returns the raw buffer or null if the answer was empty.
+	 * Returns the raw buffer or null if the answer was empty. This is used for direct messages.
 	 * 
 	 * @return The transferred buffer
 	 */
@@ -132,7 +132,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse>
 
 	/**
 	 * Returns the object or null if the underlying buffer was raw or the answer
-	 * was empty.
+	 * was empty. This is used for direct messages.
 	 * 
 	 * @return The transferred object
 	 */
@@ -146,8 +146,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse>
 			{
 				try
 				{
-					object = Utils.decodeJavaObject(buffer.array(), buffer
-							.arrayOffset(), buffer.capacity());
+					object = Utils.decodeJavaObject(buffer);
 				}
 				catch (ClassNotFoundException e)
 				{

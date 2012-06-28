@@ -170,8 +170,7 @@ public class TaskRPC extends ReplyHandler
 			// request 1 is task creation
 			Map<Number160, Data> dataMap = message.getDataMap();
 			ChannelBuffer channelBuffer = message.getPayload1();
-			Object obj = Utils.decodeJavaObject(channelBuffer.array(), channelBuffer.arrayOffset(),
-					channelBuffer.capacity());
+			Object obj = Utils.decodeJavaObject(channelBuffer);
 			Worker mapper = (Worker) obj;
 			int queuePosition = taskManager.submitTask(getPeerBean().getPeer(), taskId, mapper, dataMap, message.getSender(), sign);
 			responseMessage.setInteger(queuePosition);

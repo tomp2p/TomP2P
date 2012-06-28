@@ -189,7 +189,7 @@ public class TrackerRPC extends ReplyHandler
 		int length = buffer.writerIndex();
 		if (length > 0)
 		{
-			knownPeers = new SimpleBloomFilter<Number160>(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(), length);
+			knownPeers = new SimpleBloomFilter<Number160>(buffer, length);
 		}
 		byte[] attachement = null;
 		if (message.getPayload2() != null)

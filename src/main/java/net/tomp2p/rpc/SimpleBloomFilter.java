@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 /**
  * A simple Bloom Filter (see http://en.wikipedia.org/wiki/Bloom_filter) that
  * uses java.util.Random as a primitive hash function, and which implements
@@ -73,6 +75,30 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	{
 		this(rawBitArray, 0, rawBitArray.length);
 	}
+	
+	public SimpleBloomFilter(ChannelBuffer channelBuffer, int length)
+	{
+		int bitArraySize = channelBuffer.readInt();
+		int expectedElements = channelBuffer.readInt();
+		if (bitArraySize % 8 != 0)
+		{
+			throw new RuntimeException("BitArraySize must be a multiple of 8, it is "+bitArraySize);
+		}
+		this.bitArraySize = bitArraySize;
+		this.expectedElements = expectedElements;
+		this.k = (int) Math.ceil((bitArraySize / expectedElements) * Math.log(2.0));
+		int arrayLength = length -8;
+		if(arrayLength > 0)
+		{
+			byte[] me = new byte[arrayLength];
+			channelBuffer.readBytes(me);
+			this.bitSet = fromByteArray(new BitSet(), me, 0, arrayLength);
+		}
+		else
+		{
+			this.bitSet = new BitSet();
+		}
+	}
 
 	/**
 	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
@@ -121,7 +147,9 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 	public SimpleBloomFilter(int bitArraySize, int expectedElements, BitSet bitSet)
 	{
 		if (bitArraySize % 8 != 0)
+		{
 			throw new RuntimeException("BitArraySize must be a multiple of 8, it is "+bitArraySize);
+		}
 		this.bitArraySize = bitArraySize;
 		this.expectedElements = expectedElements;
 		this.k = (int) Math.ceil((bitArraySize / expectedElements) * Math.log(2.0));

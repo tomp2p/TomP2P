@@ -157,8 +157,7 @@ public class DirectDataRPC extends ReplyHandler
 			}
 			else
 			{
-				Object obj = Utils.decodeJavaObject(requestBuffer.array(), requestBuffer.arrayOffset(),
-						requestBuffer.capacity());
+				Object obj = Utils.decodeJavaObject(requestBuffer);
 				Object reply = objectDataReply2.reply(message.getSender(), obj);
 				if (reply == null)
 					responseMessage.setType(Type.NOT_FOUND);

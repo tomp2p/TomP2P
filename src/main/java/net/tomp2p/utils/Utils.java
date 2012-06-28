@@ -15,6 +15,7 @@
  */
 package net.tomp2p.utils;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -22,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Inet4Address;
@@ -52,6 +54,8 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
+
+import org.jboss.netty.buffer.ChannelBuffer;
 
 public class Utils
 {
@@ -235,6 +239,15 @@ public class Utils
 		// no need to call close of flush since we use ByteArrayOutputStream
 		byte[] data = bos.toByteArray();
 		return data;
+	}
+	
+	public static Object decodeJavaObject(ChannelBuffer channelBuffer) throws ClassNotFoundException, IOException
+	{
+		InputStream is = new MultiByteBufferInputStream(channelBuffer);
+		ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
+		Object obj = ois.readObject();
+		ois.close();
+		return obj;
 	}
 
 	public static Object decodeJavaObject(byte[] me, int offset, int length) throws ClassNotFoundException, IOException

@@ -86,8 +86,8 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 		}
 		this.bitArraySize = bitArraySize;
 		this.expectedElements = expectedElements;
-		this.k = (int) Math.ceil((bitArraySize / expectedElements) * Math.log(2.0));
-		int arrayLength = length -8;
+		this.k = (int) Math.ceil((bitArraySize / (double) expectedElements) * Math.log(2.0));
+		int arrayLength = length - 8;
 		if(arrayLength > 0)
 		{
 			byte[] me = new byte[arrayLength];
@@ -152,7 +152,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable
 		}
 		this.bitArraySize = bitArraySize;
 		this.expectedElements = expectedElements;
-		this.k = (int) Math.ceil((bitArraySize / expectedElements) * Math.log(2.0));
+		this.k = (int) Math.ceil((bitArraySize / (double) expectedElements) * Math.log(2.0));
 		this.bitSet = bitSet;
 	}
 

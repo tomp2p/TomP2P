@@ -139,6 +139,8 @@ public class Peer
 	
 	final private PeerMapKadImpl peerMap;
 	final private int maxMessageSize;
+	
+	private volatile boolean shutdown = false;
 
 
 	Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair,
@@ -200,6 +202,7 @@ public class Peer
 	 */
 	public void shutdown()
 	{
+		shutdown = true;
 		logger.info("begin shutdown in progres at "+System.nanoTime());
 		synchronized (scheduledFutures)
 		{
@@ -743,5 +746,13 @@ public class Peer
 	public void setFutureTimeout(BaseFuture baseFuture, int millis, String reason)
 	{
 		getConnectionBean().getScheduler().scheduleTimeout(baseFuture, millis, reason);
+	}
+	
+	/**
+	 * Returns true if shutdown has been initiated
+	 */
+	public boolean isShutdown()
+	{
+		return shutdown;
 	}
 }

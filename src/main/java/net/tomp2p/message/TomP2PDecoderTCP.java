@@ -108,7 +108,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 						{
 							signature.update(tmp[i]);
 						}
-						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 					}
 				}
 				readerIndex = buffer.readerIndex();
@@ -132,7 +131,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 						{
 							signature.update(tmp[i]);
 						}
-						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 					}
 				}
 				readerIndex = buffer.readerIndex();
@@ -156,7 +154,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 						{
 							signature.update(tmp[i]);
 						}
-						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 					}
 				}
 				readerIndex = buffer.readerIndex();
@@ -180,7 +177,6 @@ public class TomP2PDecoderTCP extends FrameDecoder
 						{
 							signature.update(tmp[i]);
 						}
-						//signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
 					}
 				}
 				readerIndex = buffer.readerIndex();

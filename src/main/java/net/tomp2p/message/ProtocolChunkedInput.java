@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -73,8 +74,11 @@ public class ProtocolChunkedInput implements ChunkedInput, ProtocolChunked
 			ChannelBuffer channelBuffer = (ChannelBuffer) object;
 			if (signature != null && channelBuffer != ChannelBuffers.EMPTY_BUFFER)
 			{
-				signature.update(channelBuffer.array(), channelBuffer.arrayOffset(), channelBuffer.arrayOffset()
-					+ channelBuffer.writerIndex());
+				ByteBuffer[] tmp = channelBuffer.duplicate().toByteBuffers();
+				for(int i=0;i<tmp.length;i++)
+				{
+					signature.update(tmp[i]);
+				}
 			}
 			else if (signature != null && channelBuffer == ChannelBuffers.EMPTY_BUFFER)
 			{

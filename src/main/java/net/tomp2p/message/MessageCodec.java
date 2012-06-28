@@ -17,7 +17,6 @@ package net.tomp2p.message;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -410,7 +409,7 @@ public class MessageCodec
 				{
 					if(buffer.readableBytes() < 20) return false;
 					Number160 key = readID(buffer);
-					final Data data = DataCodec.decodeData(new ChannelDecoder(buffer), message.getSender());
+					final Data data = DataCodec.decodeData(buffer, message.getSender());
 					if(data == null) return false;
 					if(message.isRequest()) {
 						if(data.isProtectedEntry() && message.getPublicKey()==null)
@@ -431,7 +430,7 @@ public class MessageCodec
 					Number160 key = readID(buffer);
 					if(buffer.readableBytes() < 20) return false;
 					Number160 hash = readID(buffer);
-					final Data data = DataCodec.decodeData(new ChannelDecoder(buffer), message.getSender());
+					final Data data = DataCodec.decodeData(buffer, message.getSender());
 					if(data == null) return false;
 					if(message.isRequest()) {
 						if(data.isProtectedEntry() && message.getPublicKey()==null)
@@ -536,7 +535,7 @@ public class MessageCodec
 				len = buffer.readUnsignedShort();
 				me = new byte[len];
 				if(buffer.readableBytes() < len) return false;
-				message.setPublicKey0(decodePublicKey(new ChannelDecoder(buffer), me));
+				message.setPublicKey0(decodePublicKey(buffer, me));
 				if(content == Content.PUBLIC_KEY_SIGNATURE) {
 					message.setHintSign(true);
 				}
@@ -610,12 +609,11 @@ public class MessageCodec
 		//now we know the length
 		int len=PeerAddress.expectedSocketLength(type);
 		if(buffer.readableBytes() < len ) return null;
-		PeerAddress peerAddress = new PeerAddress(id, buffer.array(), buffer.arrayOffset() + buffer.readerIndex());
-		buffer.skipBytes(len);
+		PeerAddress peerAddress = new PeerAddress(id, buffer);
 		return peerAddress;
 	}
 
-	public static PublicKey decodePublicKey(DataInput buffer, byte[] receivedRawPublicKey)
+	public static PublicKey decodePublicKey(ChannelBuffer buffer, byte[] receivedRawPublicKey)
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException
 	{
 		buffer.readBytes(receivedRawPublicKey);
@@ -639,81 +637,5 @@ public class MessageCodec
 		}
 		// set data maps
 		return true;
-	}
-	
-	private static class ChannelDecoder implements DataInput
-	{
-		final private ChannelBuffer buffer;
-
-		private ChannelDecoder(ChannelBuffer buffer)
-		{
-			this.buffer = buffer;
-		}
-		
-		public ByteBuffer[] toByteBuffers(int index,
-                int length)
-		{
-			return buffer.toByteBuffers(index, length);
-		}
-
-		@Override
-		public byte[] array()
-		{
-			return buffer.array();
-		}
-
-		@Override
-		public int arrayOffset()
-		{
-			return buffer.arrayOffset();
-		}
-
-		@Override
-		public void readBytes(byte[] buf)
-		{
-			buffer.readBytes(buf);
-		}
-
-		@Override
-		public int readInt()
-		{
-			return buffer.readInt();
-		}
-
-		@Override
-		public int readUnsignedByte()
-		{
-			return buffer.readUnsignedByte();
-		}
-
-		@Override
-		public int getUnsignedByte()
-		{
-			return buffer.getUnsignedByte(buffer.readerIndex());
-		}
-
-		@Override
-		public int readUnsignedShort()
-		{
-			return buffer.readUnsignedShort();
-		}
-
-		@Override
-		public int readerIndex()
-		{
-			return buffer.readerIndex();
-		}
-
-		@Override
-		public void skipBytes(int size)
-		{
-			buffer.skipBytes(size);
-		}
-
-		@Override
-		public int readableBytes()
-		{
-			return buffer.readableBytes();
-		}
 	}
 }

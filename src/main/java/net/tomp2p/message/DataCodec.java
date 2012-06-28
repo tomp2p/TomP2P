@@ -9,6 +9,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
+import org.jboss.netty.buffer.ChannelBuffer;
+
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -40,6 +42,7 @@ public class DataCodec
 		    FileChannel inChannel = inFile.getChannel();
 			input.transferToCurrent(inChannel, file.length());
 			count += len;
+			inFile.close();
 		}
 		else
 		{
@@ -50,7 +53,7 @@ public class DataCodec
 		return count;
 	}
 	
-	public static Data decodeData(final DataInput buffer, PeerAddress originator)
+	public static Data decodeData(final ChannelBuffer buffer, PeerAddress originator)
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException
 	{
 		//mini header for data, 8 bytes ttl and data length
@@ -65,9 +68,6 @@ public class DataCodec
 		ByteBuffer[] byteBuffers = buffer.toByteBuffers(buffer.readerIndex(), dateLength);
 		
 		final Data data = createData(byteBuffers, dateLength, ttl, protectedEntry, fileReference, originator);
-		
-		//final Data data = createData(buffer.array(), buffer.arrayOffset() + buffer.readerIndex(),
-		//		dateLength, ttl, protectedEntry, originator);
 		buffer.skipBytes(dateLength);
 		return data;
 	}

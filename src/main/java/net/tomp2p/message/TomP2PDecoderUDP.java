@@ -17,6 +17,7 @@ package net.tomp2p.message;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.security.Signature;
 
 import org.jboss.netty.buffer.ChannelBuffer;
@@ -100,7 +101,14 @@ public class TomP2PDecoderUDP implements ChannelUpstreamHandler
 				Signature signature = Signature.getInstance("SHA1withDSA");
 				signature.initVerify(message.getPublicKey());
 				int read = buffer.readerIndex() - readerIndex;
-				signature.update(buffer.array(), buffer.arrayOffset() + readerIndex, read);
+				if(read > 0)
+				{
+					ByteBuffer[] tmp = buffer.toByteBuffers(readerIndex, read);
+					for(int i=0;i<tmp.length;i++)
+					{
+						signature.update(tmp[i]);
+					}
+				}
 				// dont worry about the return value
 				if (!MessageCodec.decodeSignature(signature, message, buffer))
 				{

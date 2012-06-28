@@ -115,33 +115,33 @@ public class Utils2
 		{
 			if(enableIndirectReplication)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
 			}
 			else
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
 			}
 		}
 		else
 		{
 			if(enableIndirectReplication)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).makeAndListen();
 			}
 			else
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).makeAndListen();
 			}
 		}
 		for (int i = 1; i < nrOfPeers; i++) 
 		{
 			if(enableIndirectReplication)
 			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setMasterPeer(peers[0]).buildAndListen();
+				peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setMasterPeer(peers[0]).makeAndListen();
 			}
 			else
 			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).makeAndListen();
 			}
 		}
 		System.err.println("peers created.");
@@ -156,7 +156,7 @@ public class Utils2
 		Peer[] peers = new Peer[nrOfPeers];
 		for (int i = 0; i < nrOfPeers; i++) 
 		{
-			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(startPort + i).buildAndListen();
+			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(startPort + i).makeAndListen();
 		}
 		System.err.println("real peers created.");
 		return peers;
@@ -169,10 +169,10 @@ public class Utils2
 			throw new IllegalArgumentException("Cannot create less than 1 peer");
 		}
 		Peer[] peers = new Peer[nrOfPeers];
-		peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(port).buildAndListen();
+		peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setPorts(port).makeAndListen();
 		for (int i = 1; i < nrOfPeers; i++) 
 		{
-			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setMasterPeer(peers[0]).buildAndListen();
+			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setMasterPeer(peers[0]).makeAndListen();
 		}
 		System.err.println("non-maintenance peers created.");
 		return peers;
@@ -225,11 +225,11 @@ public class Utils2
 		{
 			if(i == 0)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).makeAndListen();
 			}
 			else
 			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).makeAndListen();
 			}
 		}
 		return peers;
@@ -241,7 +241,7 @@ public class Utils2
 		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).build();
+			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).start();
 			futures2.add(tmp);
 		}
 		for (FutureDiscover future : futures2)
@@ -250,12 +250,12 @@ public class Utils2
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).build();
+			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
 			futures1.add(tmp);
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).build();
+			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).start();
 			futures1.add(tmp);
 		}
 		for (FutureBootstrap future : futures1)

@@ -617,7 +617,7 @@ public class TestRouting
 		{
 			sb.append("f");
 			peers[i] = new PeerMaker(new Number160(sb.toString())).setPorts(4001 + i)
-					.buildAndListen();
+					.makeAndListen();
 		}
 		return peers;
 	}
@@ -957,9 +957,9 @@ public class TestRouting
 		Peer client = null;
 		try
 		{
-			master = new PeerMaker(new Number160(rnd)).setPorts(4000).buildAndListen();
-			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			BaseFuture tmp = client.ping().setBroadcast().setPort(4000).build();
+			master = new PeerMaker(new Number160(rnd)).setPorts(4000).makeAndListen();
+			client = new PeerMaker(new Number160(rnd)).setPorts(4001).makeAndListen();
+			BaseFuture tmp = client.ping().setBroadcast().setPort(4000).start();
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(true, tmp.isSuccess());
 			Assert.assertEquals(1, client.getPeerBean().getPeerMap().size());
@@ -978,9 +978,9 @@ public class TestRouting
 		Peer client = null;
 		try
 		{
-			master = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
-			client = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			BaseFuture tmp = client.ping().setBroadcast().setPort(4001).build();
+			master = new PeerMaker(new Number160(rnd)).setPorts(4002).makeAndListen();
+			client = new PeerMaker(new Number160(rnd)).setPorts(4001).makeAndListen();
+			BaseFuture tmp = client.ping().setBroadcast().setPort(4001).start();
 			tmp.awaitUninterruptibly();
 			Assert.assertEquals(false, tmp.isSuccess());
 			Assert.assertEquals(0, client.getPeerBean().getPeerMap().size());
@@ -1057,11 +1057,11 @@ public class TestRouting
 			Number160 key = new Number160(rnd);
 			Thread.sleep(1000);
 			System.out.println("start tracker");
-			FutureTracker ft1 = peers[42].addTracker(key).build();
+			FutureTracker ft1 = peers[42].addTracker(key).start();
 			ft1.awaitUninterruptibly();
 			Thread.sleep(1000);
 			System.out.println("searching for key " + key);
-			FutureTracker ft = peers[55].getTracker(key).build();
+			FutureTracker ft = peers[55].getTracker(key).start();
 			SortedSet<PeerAddress> pa2 = new TreeSet<PeerAddress>(
 					PeerMapKadImpl.createComparator(key));
 			pa2.addAll(peers[55].getPeerBean().getPeerMap().getAll());

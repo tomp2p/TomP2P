@@ -51,7 +51,7 @@ public class TestAddUpdateTTL
 				"foo3".getBytes(),
 				Arrays.asList("bla3a".getBytes(), "bla3b".getBytes(),
 						"bla3c".getBytes()));
-		seed = new PeerMaker(new Number160(rnd)).setPorts(5002).buildAndListen();
+		seed = new PeerMaker(new Number160(rnd)).setPorts(5002).makeAndListen();
 	}
 
 	@Test
@@ -93,7 +93,7 @@ public class TestAddUpdateTTL
 		final Peer peer;
 		try
 		{
-			peer = new PeerMaker(new Number160(rnd)).setPorts(5003).buildAndListen();
+			peer = new PeerMaker(new Number160(rnd)).setPorts(5003).makeAndListen();
 		}
 		catch (Exception e)
 		{
@@ -101,9 +101,9 @@ public class TestAddUpdateTTL
 			Assert.fail();
 			return null;
 		}
-		final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().portTCP()).build();
+		final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().portTCP()).start();
 		fb.awaitUninterruptibly();
-		peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).build();
+		peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).start();
 		fb.addListener(new BaseFutureListener<BaseFuture>()
 		{
 			@Override
@@ -112,7 +112,7 @@ public class TestAddUpdateTTL
 				Collection<PeerAddress> addresses = fb.getBootstrapTo();
 				if (addresses != null && !addresses.isEmpty())
 				{
-					peer.discover().setPeerAddress(addresses.iterator().next()).build().awaitUninterruptibly();
+					peer.discover().setPeerAddress(addresses.iterator().next()).start().awaitUninterruptibly();
 				}
 				else
 				{
@@ -137,7 +137,7 @@ public class TestAddUpdateTTL
 		data.setTTLSeconds(3);
 		peer.add(new Number160(key)).setData(data).
 			setRoutingConfiguration(new RoutingConfiguration(1, 0, 10, 1)).
-			setRequestP2PConfiguration(new RequestP2PConfiguration(3, 5, 0)).build().addListener(
+			setRequestP2PConfiguration(new RequestP2PConfiguration(3, 5, 0)).start().addListener(
 				new BaseFutureAdapter<FutureDHT>()
 				{
 					@Override
@@ -195,7 +195,7 @@ public class TestAddUpdateTTL
 		{
 			for (final byte[] key : keyValueStore.keySet())
 			{
-				peer.get(new Number160(key)).setAll().build().addListener(
+				peer.get(new Number160(key)).setAll().start().addListener(
 						new BaseFutureAdapter<FutureDHT>()
 						{
 							@Override

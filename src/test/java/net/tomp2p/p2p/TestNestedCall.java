@@ -29,8 +29,8 @@ public class TestNestedCall
 	public void setUp() throws Exception
 	{
 		final int seedPort = 5001;
-		seed = new PeerMaker(new Number160(rnd)).setPorts(seedPort).buildAndListen(); 
-		peer = new PeerMaker(new Number160(rnd)).setMasterPeer(seed).buildAndListen(); 
+		seed = new PeerMaker(new Number160(rnd)).setPorts(seedPort).makeAndListen(); 
+		peer = new PeerMaker(new Number160(rnd)).setMasterPeer(seed).makeAndListen(); 
 		final int maxSuccess = 10;
 		final int parallel = 1;
 		final int maxFailure = 3;
@@ -83,7 +83,7 @@ public class TestNestedCall
 		final byte[] key = "foo".getBytes();
 		final byte[] value = "bla".getBytes();
 		final byte[] otherValue = "foobla".getBytes();
-		for (int i = 0; i < 15000; i++)
+		for (int i = 0; i < 1000; i++)
 		{
 			putIfAbsent(key, value, 60, new Callback<Boolean>()
 			{
@@ -147,11 +147,11 @@ public class TestNestedCall
 							throw new IllegalStateException(t);
 						}
 					};
-					peer.put(tomKey).setData(data).setRequestP2PConfiguration(pc).setRoutingConfiguration(rc).build().addListener(listener);
+					peer.put(tomKey).setData(data).setRequestP2PConfiguration(pc).setRoutingConfiguration(rc).start().addListener(listener);
 				}
 			}
 		};
-		peer.get(tomKey).setRequestP2PConfiguration(pc).setRoutingConfiguration(rc).build().addListener(adapter);
+		peer.get(tomKey).setRequestP2PConfiguration(pc).setRoutingConfiguration(rc).start().addListener(adapter);
 	}
 	public interface Callback<T>
 	{

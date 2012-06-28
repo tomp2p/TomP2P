@@ -33,8 +33,8 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
@@ -59,8 +59,8 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			FutureChannelCreator fcc1=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc1.awaitUninterruptibly();
 			ChannelCreator cc1 = fcc1.getChannelCreator();
@@ -91,9 +91,9 @@ public class TestPing
 		Peer recv11 = null;
 		try
 		{
-			final Peer sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen(); 
+			final Peer sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen(); 
 			sender1 = sender;
-			final Peer recv1 =  new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			final Peer recv1 =  new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv11 = recv1;
 			
 			FutureChannelCreator fcc1=sender.getConnectionBean().getConnectionReservation().reserve(1);
@@ -141,10 +141,10 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
 					.getConnectionBean());
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -170,10 +170,10 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
 					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -199,10 +199,10 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
 					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -229,10 +229,10 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
 					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, true);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -261,10 +261,10 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
 			HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender
 					.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			new HandshakeRPC(recv1.getPeerBean(), recv1.getConnectionBean(), new ArrayList<PeerListener>(), false, true, false);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
@@ -290,8 +290,8 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			List<FutureResponse> list = new ArrayList<FutureResponse>(50);
 			final FutureChannelCreator fcc=sender.getConnectionBean().getConnectionReservation().reserve(50);
 			fcc.awaitUninterruptibly();
@@ -325,7 +325,7 @@ public class TestPing
 		{
 			for (int i = 0; i < p.length; i++)
 			{
-				p[i] = new PeerMaker(Number160.createHash(i)).setP2PId(55).setPorts(2424+i).buildAndListen();
+				p[i] = new PeerMaker(Number160.createHash(i)).setP2PId(55).setPorts(2424+i).makeAndListen();
 			}
 			List<FutureResponse> list = new ArrayList<FutureResponse>();
 			for (int i = 0; i < p.length; i++)
@@ -365,8 +365,8 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			long start = System.currentTimeMillis();
 			List<FutureResponse> list = new ArrayList<FutureResponse>(100);
 			for (int i = 0; i < 20; i++)
@@ -444,8 +444,8 @@ public class TestPing
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();

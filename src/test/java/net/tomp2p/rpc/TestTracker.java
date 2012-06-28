@@ -25,8 +25,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
@@ -64,11 +64,11 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
 			
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen(); 
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen(); 
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			recv1.getConfiguration().setIdleUDPMillis(Integer.MAX_VALUE);
 
@@ -107,8 +107,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found
@@ -146,8 +146,8 @@ public class TestTracker
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			Number160 loc = new Number160(rnd);
 			Number160 dom = new Number160(rnd);
 			// make a good guess based on the config and the maxium tracker that can be found

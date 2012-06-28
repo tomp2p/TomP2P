@@ -29,8 +29,8 @@ public class TestTaskRPC
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).buildAndListen();
-			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).makeAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).makeAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);
@@ -63,8 +63,8 @@ public class TestTaskRPC
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).buildAndListen();
-			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).makeAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).makeAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(5);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId1 = new Number160(11);
@@ -135,8 +135,8 @@ public class TestTaskRPC
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).buildAndListen();
-			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).makeAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).makeAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);
@@ -173,8 +173,8 @@ public class TestTaskRPC
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).buildAndListen();
-			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4001).setEnableTask(true).makeAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setWorkerThreads(1).setPorts(4002).setEnableTask(true).makeAndListen();
 			FutureChannelCreator futureChannelCreator = peer1.getConnectionBean().getConnectionReservation().reserve(1);
 			futureChannelCreator.awaitUninterruptibly();
 			Number160 taskId = new Number160(11);

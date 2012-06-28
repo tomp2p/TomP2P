@@ -91,8 +91,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -151,8 +151,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -223,8 +223,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -312,8 +312,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -374,8 +374,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -424,8 +424,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -495,8 +495,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -552,8 +552,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -609,8 +609,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -658,8 +658,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -701,9 +701,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -748,9 +748,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -802,8 +802,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -844,9 +844,9 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			sender.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).buildAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setMaxMessageSize(Integer.MAX_VALUE).makeAndListen();
 			recv1.getConfiguration().setIdleTCPMillis(Integer.MAX_VALUE);
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
@@ -901,8 +901,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			final StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -957,7 +957,7 @@ public class TestStorage
 		Peer slave = null;
 		try
 		{
-			master = new PeerMaker(new Number160("0xee")).buildAndListen();
+			master = new PeerMaker(new Number160("0xee")).makeAndListen();
 			StorageGeneric s1 = new StorageMemory();
 			master.getPeerBean().setStorage(s1);
 			final AtomicInteger test1 = new AtomicInteger(0);
@@ -991,7 +991,7 @@ public class TestStorage
 			fr.awaitUninterruptibly();
 			Utils.addReleaseListenerAll(fr, master.getConnectionBean().getConnectionReservation(), cc);
 			//s1.put(location, Number160.ZERO, null, dataMap, false, false);
-			slave = new PeerMaker(new Number160("0xfe")).setPorts(7701).buildAndListen();
+			slave = new PeerMaker(new Number160("0xfe")).setPorts(7701).makeAndListen();
 			master.getPeerBean().getPeerMap().peerFound(slave.getPeerAddress(), null);
 			master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
 			Assert.assertEquals(1, test1.get());
@@ -1022,7 +1022,7 @@ public class TestStorage
 			contentMap.put(Number160.ZERO, new Data("string"));
 			final AtomicInteger test1 = new AtomicInteger(0);
 			final AtomicInteger test2 = new AtomicInteger(0);
-			master = new PeerMaker(new Number160(rnd)).setPorts(8000).buildAndListen();
+			master = new PeerMaker(new Number160(rnd)).setPorts(8000).makeAndListen();
 			master.getPeerBean().getReplicationStorage().addResponsibilityListener(new ResponsibilityListener()
 			{
 				@Override
@@ -1044,11 +1044,11 @@ public class TestStorage
 			fcc.awaitUninterruptibly();
 			final ChannelCreator cc = fcc.getChannelCreator();
 			master.getStoreRPC().put(master.getPeerAddress(), loc, domainKey,  contentMap, false, false, false, cc, false).awaitUninterruptibly();
-			slave1 = new PeerMaker(new Number160(rnd)).setPorts(8001).buildAndListen();
-			slave2 = new PeerMaker(new Number160(rnd)).setPorts(8002).buildAndListen();
-			FutureBootstrap futureBootstrap = slave1.bootstrap().setPeerAddress(master.getPeerAddress()).build();
+			slave1 = new PeerMaker(new Number160(rnd)).setPorts(8001).makeAndListen();
+			slave2 = new PeerMaker(new Number160(rnd)).setPorts(8002).makeAndListen();
+			FutureBootstrap futureBootstrap = slave1.bootstrap().setPeerAddress(master.getPeerAddress()).start();
 			futureBootstrap.awaitUninterruptibly();
-			slave2.bootstrap().setPeerAddress(master.getPeerAddress()).build().awaitUninterruptibly();
+			slave2.bootstrap().setPeerAddress(master.getPeerAddress()).start().awaitUninterruptibly();
 			master.getPeerBean().getPeerMap().peerOffline(slave2.getPeerAddress(), true);
 			slave2.shutdown();
 			Assert.assertEquals(1, test1.get());
@@ -1093,8 +1093,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);
@@ -1148,8 +1148,8 @@ public class TestStorage
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			sender.getPeerBean().setStorage(storeSender);
 			StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
 			recv1.getPeerBean().setStorage(storeRecv);

@@ -21,7 +21,7 @@ public class TestMaintenance
 		try
 		{
 			PeerMaker p = new PeerMaker(new Number160(rnd));
-			master = p.setEnableMaintenance(false).setPorts(4001).buildAndListen();
+			master = p.setEnableMaintenance(false).setPorts(4001).makeAndListen();
 			Peer[] nodes = createNodes(master, 500);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -50,7 +50,7 @@ public class TestMaintenance
 		try
 		{
 			PeerMaker peerMaker = new PeerMaker(new Number160(rnd)).setPorts(4001);
-			master = setTime(peerMaker, false, 0, 3).buildAndListen();
+			master = setTime(peerMaker, false, 0, 3).makeAndListen();
 			Peer[] nodes = createNodes(master, 500, rnd, false, 0, 3);
 			// perfect routing
 			for (int i = 0; i < nodes.length; i++)
@@ -83,7 +83,7 @@ public class TestMaintenance
 		Peer master = null;
 		try
 		{
-			master = setTime(new PeerMaker(new Number160(rnd)).setPorts(4001), true, 1, 1, 1, 1, 1, 1).buildAndListen();
+			master = setTime(new PeerMaker(new Number160(rnd)).setPorts(4001), true, 1, 1, 1, 1, 1, 1).makeAndListen();
 			Peer[] nodes = createNodes(master, 4, rnd, true, 1, 1, 1, 1, 1, 1);
 			
 			// perfect routing
@@ -136,7 +136,7 @@ public class TestMaintenance
 		Peer[] peers = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
-			peers[i] = setTime(new PeerMaker(new Number160(rnd)).setEnableMaintenance(startMaintenance).setMasterPeer(master), startMaintenance, times).buildAndListen();
+			peers[i] = setTime(new PeerMaker(new Number160(rnd)).setEnableMaintenance(startMaintenance).setMasterPeer(master), startMaintenance, times).makeAndListen();
 		}
 		return peers;
 	}
@@ -146,7 +146,7 @@ public class TestMaintenance
 		Peer[] peers = new Peer[nr];
 		for (int i = 0; i < nr; i++)
 		{
-			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setMasterPeer(master).buildAndListen();
+			peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).setMasterPeer(master).makeAndListen();
 		}
 		return peers;
 	}

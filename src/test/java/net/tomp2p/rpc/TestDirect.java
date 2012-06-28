@@ -20,15 +20,15 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					return "yes";
 				}
 			});
-			FutureResponse fd=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").build();
+			FutureResponse fd=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").start();
 			fd.awaitUninterruptibly();
 			System.err.println(fd.getFailedReason());
 			Assert.assertEquals(true, fd.isSuccess());
@@ -49,21 +49,22 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					return "yes";
 				}
 			});
-			FutureResponse fd1=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").build();
-			FutureResponse fd2=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").build();
+			FutureResponse fd1=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").start();
+			FutureResponse fd2=sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject("test").start();
 			fd1.awaitUninterruptibly();
 			fd2.awaitUninterruptibly();
 			System.err.println(fd1.getFailedReason());
 			Assert.assertEquals(true, fd1.isSuccess());
 			Assert.assertEquals(true, fd2.isSuccess());
+			Assert.assertEquals("yes", fd1.getObject());
 		}
 		finally
 		{
@@ -82,8 +83,8 @@ public class TestDirect
 		try
 		{
 			
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -93,13 +94,13 @@ public class TestDirect
 			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 10*1000);
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
-			FutureResponse fd1=sender.sendDirect().setConnection(peerConnection).setObject( "test").build();
+			FutureResponse fd1=sender.sendDirect().setConnection(peerConnection).setObject( "test").start();
 			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
 			fd1.awaitUninterruptibly();
 			Timings.sleep(2000);
 			System.err.println("send second with the same connection");
-			FutureResponse fd2=sender.sendDirect().setConnection(peerConnection).setObject( "test").build();
+			FutureResponse fd2=sender.sendDirect().setConnection(peerConnection).setObject( "test").start();
 			fd2.awaitUninterruptibly();
 			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
@@ -125,8 +126,8 @@ public class TestDirect
 		try
 		{
 			
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setEnableMaintenance(false).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setEnableMaintenance(false).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).setEnableMaintenance(false).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).setEnableMaintenance(false).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -134,7 +135,7 @@ public class TestDirect
 				}
 			});
 			PeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 5*1000);
-			FutureResponse fd1=sender.sendDirect().setConnection(peerConnection).setObject( "test").build();
+			FutureResponse fd1=sender.sendDirect().setConnection(peerConnection).setObject( "test").start();
 			fd1.awaitUninterruptibly();
 
 			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
@@ -144,7 +145,7 @@ public class TestDirect
 			Assert.assertEquals(0.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(),0.0d);
 			Assert.assertEquals(1.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(),0.0d);
 			System.out.println("#TCP=" +  sender.getPeerBean().getStatistics().getTCPChannelCount()+"/"+sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
-			FutureResponse fd2=sender.sendDirect().setConnection(peerConnection).setObject( "test").build();
+			FutureResponse fd2=sender.sendDirect().setConnection(peerConnection).setObject( "test").start();
 			fd2.awaitUninterruptibly();
 			peerConnection.close();
 			System.out.println("done");
@@ -169,8 +170,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x50")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x20")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -182,7 +183,7 @@ public class TestDirect
 			FutureResponse fd[]=new FutureResponse[len];
 			for(int i=0;i<len;i++)
 			{
-				fd[i]=sender.sendDirect().setConnection(peerConnection).setObject( "test").build();
+				fd[i]=sender.sendDirect().setConnection(peerConnection).setObject( "test").start();
 			}
 			Assert.assertEquals(1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			Assert.assertEquals(0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount());
@@ -210,8 +211,8 @@ public class TestDirect
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			recv1.setObjectDataReply(new ObjectDataReply()
 			{
 				@Override
@@ -224,14 +225,18 @@ public class TestDirect
 			});
 			for (int i = 0; i < 500; i++)
 			{
-				FutureResponse futureData = sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject( (Object) Integer.valueOf(i)).build();
+				FutureResponse futureData = sender.sendDirect().setPeerAddress(recv1.getPeerAddress()).setObject( (Object) Integer.valueOf(i)).start();
 
 				futureData.addListener(new BaseFutureAdapter<FutureResponse>()
 				{
 					@Override
 					public void operationComplete(FutureResponse future) throws Exception
 					{
-						System.err.println(future.getObject());
+						//the future object might be null if the future failed, e.g due to shutdown
+						if(future.isSuccess())
+						{
+							System.err.println(future.getObject());
+						}
 					}
 				});
 			}

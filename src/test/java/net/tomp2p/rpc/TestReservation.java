@@ -19,8 +19,8 @@ public class TestReservation
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(3);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();
@@ -54,8 +54,8 @@ public class TestReservation
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(3);
 			fcc.awaitUninterruptibly();
 			ChannelCreator cc = fcc.getChannelCreator();

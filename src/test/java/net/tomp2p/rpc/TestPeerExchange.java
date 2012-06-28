@@ -21,8 +21,8 @@ public class TestPeerExchange
 		Peer recv1 = null;
 		try
 		{
-			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).buildAndListen();
-			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).buildAndListen();
+			sender = new PeerMaker(new Number160("0x9876")).setP2PId(55).setPorts(2424).makeAndListen();
+			recv1 = new PeerMaker(new Number160("0x1234")).setP2PId(55).setPorts(8088).makeAndListen();
 			Number160 locationKey = new Number160("0x5555");
 			Number160 domainKey = new Number160("0x7777");
 			FutureChannelCreator fcc=recv1.getConnectionBean().getConnectionReservation().reserve(1);

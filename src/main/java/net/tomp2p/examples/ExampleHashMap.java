@@ -75,7 +75,7 @@ public class ExampleHashMap
 			Number160 locationKey = Number160.createHash(key);
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
-			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).build();
+			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).start();
 		}
 
 		private FutureDHT put(String key, String domain, String content, String data)
@@ -89,7 +89,7 @@ public class ExampleHashMap
 			myData.setDomain(domain);
 			myData.setContent(content);
 			myData.setData(data);
-			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).build();
+			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).start();
 		}
 	}
 	private static class MyData implements Serializable

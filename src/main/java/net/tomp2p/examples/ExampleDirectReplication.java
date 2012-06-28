@@ -37,7 +37,7 @@ public class ExampleDirectReplication
 				 System.out.println("put again...");
 			}
 		};
-		FutureDHT futureDHT=peers[1].put(Number160.ONE).setData(new Data("test")).setFutureCreate(futureCreate1).setRefreshSeconds(2).build();
+		FutureDHT futureDHT=peers[1].put(Number160.ONE).setData(new Data("test")).setFutureCreate(futureCreate1).setRefreshSeconds(2).start();
 		Timings.sleepUninterruptibly(9*1000);
 		System.out.println("stop replication");
 		futureDHT.shutdown();
@@ -50,7 +50,7 @@ public class ExampleDirectReplication
 				System.out.println("remove again...");
 			}
 		};
-		futureDHT=peers[1].remove(Number160.ONE).setFutureCreate(futureCreate2).setRefreshSeconds(2).setRepetitions(2).build();
+		futureDHT=peers[1].remove(Number160.ONE).setFutureCreate(futureCreate2).setRefreshSeconds(2).setRepetitions(2).start();
 		Timings.sleepUninterruptibly(9*1000);
 	}
 

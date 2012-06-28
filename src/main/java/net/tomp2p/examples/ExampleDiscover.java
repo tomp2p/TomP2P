@@ -41,7 +41,7 @@ public class ExampleDiscover {
 		Random rnd = new Random(43L);
 		Bindings b = new Bindings(Protocol.IPv4, Inet4Address.getByName("127.0.0.1"), 4000, 4000);
 		//b.addInterface("eth0");
-		Peer master = new PeerMaker(new Number160(rnd)).setPorts(4000).setBindings(b).buildAndListen();
+		Peer master = new PeerMaker(new Number160(rnd)).setPorts(4000).setBindings(b).makeAndListen();
 		System.out.println("Server started Listening to: " + DiscoverNetworks.discoverInterfaces(b));
 		System.out.println("address visible to outside is " + master.getPeerAddress());
 		while(true)
@@ -80,7 +80,7 @@ public class ExampleDiscover {
 		Random rnd = new Random(42L);
 		Bindings b = new Bindings(Protocol.IPv4, Inet4Address.getByName("127.0.0.1"), 4001, 4001);
 		//b.addInterface("eth0");
-		Peer client = new PeerMaker(new Number160(rnd)).setPorts(4001).setBindings(b).buildAndListen();
+		Peer client = new PeerMaker(new Number160(rnd)).setPorts(4001).setBindings(b).makeAndListen();
 		System.out.println("Client started and Listening to: " + DiscoverNetworks.discoverInterfaces(b));
 		System.out.println("address visible to outside is " + client.getPeerAddress());
 		
@@ -94,11 +94,11 @@ public class ExampleDiscover {
 		
 		
 		//Future Discover
-		FutureDiscover futureDiscover = client.discover().setInetAddress(address).setPorts(masterPort).build();
+		FutureDiscover futureDiscover = client.discover().setInetAddress(address).setPorts(masterPort).start();
 		futureDiscover.awaitUninterruptibly();
 		
 		//Future Bootstrap - slave
-		FutureBootstrap futureBootstrap = client.bootstrap().setInetAddress(address).setPorts(masterPort).build();
+		FutureBootstrap futureBootstrap = client.bootstrap().setInetAddress(address).setPorts(masterPort).start();
 		futureBootstrap.awaitUninterruptibly();
 		
 		Collection<PeerAddress> addressList =  client.getPeerBean().getPeerMap().getAll();

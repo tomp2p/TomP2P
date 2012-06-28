@@ -137,7 +137,7 @@ public class ExampleDST
 			already.add(inter2.toString());
 			//get the interval
 			System.out.println("get for "+inter2);
-			FutureDHT futureDHT = peer.get(key).setAll().build();
+			FutureDHT futureDHT = peer.get(key).setAll().start();
 			futureDHT.awaitUninterruptibly();
 			dhtCounter.incrementAndGet();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
@@ -159,7 +159,7 @@ public class ExampleDST
 		for(int i=0;i<=height;i++)
 		{
 			Number160 key=Number160.createHash(inter.toString());
-			FutureDHT futureDHT = peer.put(key).setData(new Number160(index), new Data(word)).build();
+			FutureDHT futureDHT = peer.put(key).setData(new Number160(index), new Data(word)).start();
 			futureDHT.awaitUninterruptibly();
 			System.out.println("stored "+word+" in "+inter+" status: "+futureDHT.getAvgStoredKeys());
 			inter = inter.split(index);

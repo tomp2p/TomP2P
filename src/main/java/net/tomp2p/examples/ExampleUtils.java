@@ -41,7 +41,7 @@ public class ExampleUtils
 		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).build();
+			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).start();
 			futures2.add(tmp);
 		}
 		for (FutureDiscover future : futures2)
@@ -50,12 +50,12 @@ public class ExampleUtils
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).build();
+			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
 			futures1.add(tmp);
 		}
 		for (int i = 1; i < peers.length; i++)
 		{
-			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).build();
+			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).start();
 			futures1.add(tmp);
 		}
 		for (FutureBootstrap future : futures1)
@@ -69,11 +69,11 @@ public class ExampleUtils
 		{
 			if(i == 0)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).buildAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).makeAndListen();
 			}
 			else
 			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).buildAndListen();
+				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).makeAndListen();
 			}
 		}
 		return peers;

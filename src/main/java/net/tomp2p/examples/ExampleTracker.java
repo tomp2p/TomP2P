@@ -85,12 +85,12 @@ public class ExampleTracker
 			{
 				Collection<String> tmp = new ArrayList<String>(downloaded.values());
 				tmp.remove(entry.getValue());
-				peer.addTracker(entry.getKey()).setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0]))).build().awaitUninterruptibly();
+				peer.addTracker(entry.getKey()).setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0]))).start().awaitUninterruptibly();
 			}
 		}
 		public String download(Number160 key) throws IOException, ClassNotFoundException
 		{
-			FutureTracker futureTracker = peer.getTracker(key).build();
+			FutureTracker futureTracker = peer.getTracker(key).start();
 			//now we know which peer has this data, and we also know what other things this peer has
 			futureTracker.awaitUninterruptibly();
 			Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
@@ -105,7 +105,7 @@ public class ExampleTracker
 			}
 			System.out.println("Tracker reports that "+trackerDatas.size()+" peer(s) have this song");
 			//here we download
-			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).build();
+			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).start();
 			futureData.awaitUninterruptibly();
 			String downloaded = (String)futureData.getObject();
 			// we need to announce that we have this piece now

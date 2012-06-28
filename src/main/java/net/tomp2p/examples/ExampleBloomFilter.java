@@ -54,7 +54,7 @@ public class ExampleBloomFilter
 		{
 			contentMap.put(new Number160(i), new Data("data " + i));
 		}
-		FutureDHT futureDHT = peers[30].put(nr1).setDataMap(contentMap).setDomainKey(Number160.createHash("my_domain")).build();
+		FutureDHT futureDHT = peers[30].put(nr1).setDataMap(contentMap).setDomainKey(Number160.createHash("my_domain")).start();
 		futureDHT.awaitUninterruptibly();
 		// store another one
 		Number160 nr2 = new Number160(rnd);
@@ -64,10 +64,10 @@ public class ExampleBloomFilter
 		{
 			contentMap.put(new Number160(i), new Data("data " + i));
 		}
-		futureDHT = peers[60].put(nr2).setDataMap(contentMap).setDomainKey(Number160.createHash("my_domain")).build();
+		futureDHT = peers[60].put(nr2).setDataMap(contentMap).setDomainKey(Number160.createHash("my_domain")).start();
 		futureDHT.awaitUninterruptibly();
 		// digest the first entry
-		futureDHT = peers[20].get(nr1).setDigest().setAll().setReturnBloomFilter().setDomainKey(Number160.createHash("my_domain")).build();
+		futureDHT = peers[20].get(nr1).setDigest().setAll().setReturnBloomFilter().setDomainKey(Number160.createHash("my_domain")).start();
 		futureDHT.awaitUninterruptibly();
 		// we have the bloom filter for the content keys:
 		SimpleBloomFilter<Number160> keyBF = futureDHT.getDigest().getKeyBloomFilter();
@@ -75,7 +75,7 @@ public class ExampleBloomFilter
 				.println("We got bloomfilter for the first key. Test if bloomfilter contains 200: "
 						+ keyBF.contains(new Number160(200)));
 		// query for nr2, but return only those that are in this bloom filter
-		futureDHT = peers[10].get(nr2).setAll().setKeyBloomFilter(keyBF).setDomainKey(Number160.createHash("my_domain")).build();
+		futureDHT = peers[10].get(nr2).setAll().setKeyBloomFilter(keyBF).setDomainKey(Number160.createHash("my_domain")).start();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("For the 2nd key we requested with this Bloom filer and we got "
 				+ futureDHT.getDataMap().size() + " items.");

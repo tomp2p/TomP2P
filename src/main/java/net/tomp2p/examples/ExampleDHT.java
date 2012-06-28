@@ -84,7 +84,7 @@ public class ExampleDHT
 		{
 			for(Map.Entry<Number160, String> entry:downloaded.entrySet())
 			{
-				peer.addTracker(entry.getKey()).build().awaitUninterruptibly();
+				peer.addTracker(entry.getKey()).start().awaitUninterruptibly();
 				//announce it on DHT
 				Collection<String> tmp = new ArrayList<String>(downloaded.values());
 				tmp.remove(entry.getValue());
@@ -93,12 +93,12 @@ public class ExampleDHT
 				{
 					dataMap.put(peer.getPeerID().xor(Number160.createHash(song)),new Data(song));
 				}
-				peer.put(entry.getKey()).setDataMap(dataMap).build().awaitUninterruptibly();
+				peer.put(entry.getKey()).setDataMap(dataMap).start().awaitUninterruptibly();
 			}
 		}
 		public String download(Number160 key) throws IOException, ClassNotFoundException
 		{
-			FutureTracker futureTracker = peer.getTracker(key).build();
+			FutureTracker futureTracker = peer.getTracker(key).start();
 			//now we know which peer has this data, and we also know what other things this peer has
 			futureTracker.awaitUninterruptibly();
 			Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
@@ -108,11 +108,11 @@ public class ExampleDHT
 			}
 			System.out.println("Tracker reports that "+trackerDatas.size()+" peer(s) have this song");
 			//here we download
-			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).build();
+			FutureResponse futureData = peer.sendDirect().setPeerAddress(trackerDatas.iterator().next().getPeerAddress()).setObject(key).start();
 			futureData.awaitUninterruptibly();
 			String downloaded = (String)futureData.getObject();
 			// get the recommondation
-			FutureDHT futureDHT = peer.get(key).setAll().build();
+			FutureDHT futureDHT = peer.get(key).setAll().start();
 			futureDHT.awaitUninterruptibly();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
 			{

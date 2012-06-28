@@ -66,7 +66,7 @@ public class ExampleMapReduce
 					{
 						String word = st.nextToken();
 						Number160 key = Number160.createHash(word);
-						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).build();
+						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).start();
 						System.out.println("map DHT call for word ["+word+"], key="+key+" on peer "+peer.getPeerID());
 						futures.add(futureDHT);
 						retVal.put(key, new Data(key));
@@ -91,7 +91,7 @@ public class ExampleMapReduce
 					System.out.println("reduce DHT call " + key+" found "+size+" on peer "+peer.getPeerID());
 					Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 					dataMap.put(peer.getPeerAddress().getID(), new Data(size));
-					futures.put(key, peer.put(result).setDataMap(dataMap).build());
+					futures.put(key, peer.put(result).setDataMap(dataMap).start());
 				}
 				Map<Number160, Data> retVal = new HashMap<Number160, Data>();
 				for(Map.Entry<Number160, FutureDHT> entry : futures.entrySet())
@@ -102,9 +102,9 @@ public class ExampleMapReduce
 				return retVal;
 			}
 		};
-		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).build();
-		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).build();
-		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).build();
+		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).start();
+		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).start();
+		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).start();
 		ft1.awaitUninterruptibly();
 		ft2.awaitUninterruptibly();
 		ft3.awaitUninterruptibly();
@@ -118,12 +118,12 @@ public class ExampleMapReduce
 		System.out.println("we got "+intermediate.size()+" unique words");
 		for(Number160 location: intermediate)
 		{
-			resultList.add(peers[40+i].submit(location, reduce).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(location)).build());
+			resultList.add(peers[40+i].submit(location, reduce).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(location)).start());
 			i++;
 		}
 		//now we wait for the completion
 		for(FutureTask futureTask:resultList) futureTask.awaitUninterruptibly();
-		FutureDHT futureDHT = peers[20].get(result).setAll().build();
+		FutureDHT futureDHT = peers[20].get(result).setAll().start();
 		futureDHT.awaitUninterruptibly();
 		int counter = 0;
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())

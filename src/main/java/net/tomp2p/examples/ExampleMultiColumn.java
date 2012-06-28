@@ -67,14 +67,14 @@ public class ExampleMultiColumn
 		Number160 locationKey = Number160.createHash("users");
 		Number160 contentKey = combine(rowKey1, col1);
 		//get entry
-		FutureDHT futureDHT = peers[22].get(locationKey).setContentKey(contentKey).build();
+		FutureDHT futureDHT = peers[22].get(locationKey).setContentKey(contentKey).start();
 		futureDHT.awaitUninterruptibly();
 		System.out.println("single fetch: "+futureDHT.getData().getObject());
 		//get list
 		Set<Number160> range = new TreeSet<Number160>();
 		range.add(createNr(rowKey1, 0));
 		range.add(createNr(rowKey1,-1));
-		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().build();
+		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().start();
 		futureDHT.awaitUninterruptibly();
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
@@ -85,7 +85,7 @@ public class ExampleMultiColumn
 		range = new TreeSet<Number160>();
 		range.add(createNr(col1, 0));
 		range.add(createNr(col1,-1));
-		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().build();
+		futureDHT = peers[22].get(locationKey).setContentKeys(range).setRange().start();
 		futureDHT.awaitUninterruptibly();
 		for(Map.Entry<Number160, Data> entry: futureDHT.getDataMap().entrySet())
 		{
@@ -97,9 +97,9 @@ public class ExampleMultiColumn
 	{
 		Number160 locationKey = Number160.createHash("users");
 		Number160 contentKey = combine(rowKey, col);
-		peer.put(locationKey).setData(contentKey, new Data(string)).build().awaitUninterruptibly();
+		peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
 		contentKey = combine(col, rowKey);
-		peer.put(locationKey).setData(contentKey, new Data(string)).build().awaitUninterruptibly();
+		peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
 	}
 	
 	private static Number160 createNr(String key1, int nr)

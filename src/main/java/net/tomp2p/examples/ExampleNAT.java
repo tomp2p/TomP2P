@@ -39,7 +39,7 @@ public class ExampleNAT
 			//peer.getP2PConfiguration().setBehindFirewall(true);
 			Bindings b = new Bindings();
 			b.addInterface("eth0");
-			peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(4000).buildAndListen();
+			peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(4000).makeAndListen();
 			System.out.println("peer started.");
 			for (;;) 
 			{
@@ -87,11 +87,11 @@ public class ExampleNAT
 	public static void startClientNAT(String ip) throws Exception 
 	{
 		Random r = new Random(43L);
-		Peer peer = new PeerMaker(new Number160(r)).setPorts(4000).buildAndListen();
+		Peer peer = new PeerMaker(new Number160(r)).setPorts(4000).makeAndListen();
 		peer.getConfiguration().setBehindFirewall(true);
 		PeerAddress pa = new PeerAddress(Number160.ZERO,
 				InetAddress.getByName(ip), 4000, 4000);
-		FutureDiscover fd = peer.discover().setPeerAddress(pa).build();
+		FutureDiscover fd = peer.discover().setPeerAddress(pa).start();
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) 
 		{

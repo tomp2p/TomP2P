@@ -62,13 +62,13 @@ public class ExampleUnQL
 		{
 			if(query.getValueType() == ValueType.SINGLE)
 			{
-				peer.add(locationKey).setData(new Data(query.getValue())).build().awaitUninterruptibly();
+				peer.add(locationKey).setData(new Data(query.getValue())).start().awaitUninterruptibly();
 			}
 			else if(query.getValueType() == ValueType.ARRAY)
 			{
 				for(String value: query.getValues())
 				{
-					peer.add(locationKey).setData(new Data(value)).build().awaitUninterruptibly();
+					peer.add(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
 				}
 			}
 			else if(query.getValueType() == ValueType.MAP)
@@ -78,12 +78,12 @@ public class ExampleUnQL
 				{
 					dataMap.put(Number160.createHash(entry.getKey()), new Data(entry.getValue()));
 				}
-				peer.put(locationKey).setDataMap(dataMap).build().awaitUninterruptibly();
+				peer.put(locationKey).setDataMap(dataMap).start().awaitUninterruptibly();
 			}
 		}
 		else if(query.getQueryType() == QueryType.SELECT)
 		{
-			FutureDHT futureDHT = peer.get(locationKey).setAll().build();
+			FutureDHT futureDHT = peer.get(locationKey).setAll().start();
 			futureDHT.awaitUninterruptibly();
 			for(Map.Entry<Number160, Data> entry:futureDHT.getDataMap().entrySet())
 			{

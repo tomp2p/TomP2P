@@ -40,8 +40,8 @@ public class ExamplePersistentConnection
 		Peer peer2 = null;
 		try
 		{
-			peer1 = new PeerMaker(new Number160(rnd)).setPorts(4001).buildAndListen();
-			peer2 = new PeerMaker(new Number160(rnd)).setPorts(4002).buildAndListen();
+			peer1 = new PeerMaker(new Number160(rnd)).setPorts(4001).makeAndListen();
+			peer2 = new PeerMaker(new Number160(rnd)).setPorts(4002).makeAndListen();
 			//
 			peer2.setObjectDataReply(new ObjectDataReply() 
 			{
@@ -54,12 +54,12 @@ public class ExamplePersistentConnection
 			//keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
 			PeerConnection peerConnection = peer1.createPeerConnection(peer2.getPeerAddress(), 20);
 			String sentObject = "Hello";
-			FutureResponse fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).build();
+			FutureResponse fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).start();
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
 			System.out.println("received "+fd.getObject() + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
 			//we reuse the connection
-			fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).build();
+			fd=peer1.sendDirect().setConnection(peerConnection).setObject(sentObject).start();
 			System.out.println("send "+ sentObject);
 			fd.awaitUninterruptibly();
 			System.out.println("received "+fd.getObject()  + " connections: "+peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());

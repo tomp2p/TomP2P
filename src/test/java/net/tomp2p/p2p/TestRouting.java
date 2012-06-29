@@ -22,7 +22,7 @@ import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.TrackerData;
 import net.tomp2p.utils.Utils;
 
@@ -37,7 +37,7 @@ public class TestRouting
 	public void testDifference() throws UnknownHostException
 	{
 		// setup
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0],
+		PeerMap test = new PeerMap(new Number160(77), 2, 60 * 1000, 3, new int[0],
 				100, false);
 		Collection<PeerAddress> newC = new ArrayList<PeerAddress>();
 		newC.add(Utils2.createAddress(12));
@@ -62,7 +62,7 @@ public class TestRouting
 	public void testMerge() throws UnknownHostException
 	{
 		// setup
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0],
+		PeerMap test = new PeerMap(new Number160(77), 2, 60 * 1000, 3, new int[0],
 				100, false);
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(
 				test.createPeerComparator(new Number160(88)));
@@ -94,7 +94,7 @@ public class TestRouting
 	public void testEvaluate() throws UnknownHostException
 	{
 		// setup
-		PeerMapKadImpl test = new PeerMapKadImpl(new Number160(77), 2, 60 * 1000, 3, new int[0],
+		PeerMap test = new PeerMap(new Number160(77), 2, 60 * 1000, 3, new int[0],
 				100, false);
 		SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>(
 				test.createPeerComparator(new Number160(88)));
@@ -1063,7 +1063,7 @@ public class TestRouting
 			System.out.println("searching for key " + key);
 			FutureTracker ft = peers[55].getTracker(key).start();
 			SortedSet<PeerAddress> pa2 = new TreeSet<PeerAddress>(
-					PeerMapKadImpl.createComparator(key));
+					PeerMap.createComparator(key));
 			pa2.addAll(peers[55].getPeerBean().getPeerMap().getAll());
 			ft.awaitUninterruptibly();
 			Collection<TrackerData> trackerDatas = ft.getTrackers();

@@ -49,7 +49,7 @@ import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.p2p.builder.SubmitBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -137,7 +137,7 @@ public class Peer
 	final private int replicationThreads;
 	//final private int replicationRefreshMillis;
 	
-	final private PeerMapKadImpl peerMap;
+	final private PeerMap peerMap;
 	final private int maxMessageSize;
 	
 	private volatile boolean shutdown = false;
@@ -145,7 +145,7 @@ public class Peer
 
 	Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair,
 			int maintenanceThreads, int replicationThreads,
-			ConnectionConfiguration configuration, PeerMapKadImpl peerMap, int maxMessageSize)
+			ConnectionConfiguration configuration, PeerMap peerMap, int maxMessageSize)
 	{
 		this.p2pID = p2pID;
 		this.peerId = nodeId;

@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 
 import org.junit.Test;
 
@@ -21,9 +21,9 @@ public class TestNumber160
 		Number160 bi2 = new Number160("0x80");
 		Number160 bi3 = new Number160("0xff");
 		Assert.assertEquals(false, bi1.compareTo(bi2) == 0);
-		Assert.assertEquals(bi3, PeerMapKadImpl.distance(bi1, bi2));
-		Assert.assertEquals(7, PeerMapKadImpl.classMember(bi1, bi2));
-		Assert.assertEquals(6, PeerMapKadImpl.classMember(bi2, bi3));
+		Assert.assertEquals(bi3, PeerMap.distance(bi1, bi2));
+		Assert.assertEquals(7, PeerMap.classMember(bi1, bi2));
+		Assert.assertEquals(6, PeerMap.classMember(bi2, bi3));
 	}
 
 	@Test

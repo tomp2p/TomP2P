@@ -12,7 +12,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.DefaultStorageReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.TrackerStorageReplication;
@@ -90,7 +90,7 @@ public class PeerMaker
 	
 	public Peer makeAndListen() throws IOException
 	{
-		final PeerMapKadImpl peerMap = new PeerMapKadImpl(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
+		final PeerMap peerMap = new PeerMap(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
 				getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap());
 		final Peer peer = new Peer(getP2PId(), peerId, keyPair, getMaintenanceThreads(), 
 				getReplicationThreads(), getConfiguration(), peerMap, getMaxMessageSize());

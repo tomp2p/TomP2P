@@ -13,6 +13,16 @@ import org.junit.Test;
 public class TestMaintenance
 {
 	final private static Random rnd = new Random(42L);
+	
+	@Test
+	public void testMaintenance1L() throws Exception
+	{
+		for(int i=0;i<5;i++)
+		{
+			System.err.println("testMaintenance1 round:"+i);
+			testMaintenance1();
+		}
+	}
 
 	@Test
 	public void testMaintenance1() throws Exception

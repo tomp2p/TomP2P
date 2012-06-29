@@ -18,7 +18,7 @@ import net.tomp2p.futures.FutureTask;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.AsyncTask;
@@ -222,7 +222,7 @@ public class DistributedTask
 		{
 			int diff = queueSize - o.queueSize;
 			if(diff != 0) return diff;
-			return PeerMapKadImpl.isKadCloser(locationKey, peerAddress, o.peerAddress);
+			return PeerMap.isKadCloser(locationKey, peerAddress, o.peerAddress);
 		}
 		
 		@Override

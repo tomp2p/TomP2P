@@ -20,7 +20,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMapKadImpl;
+import net.tomp2p.peers.PeerMap;
 
 
 public class Utils2
@@ -266,9 +266,9 @@ public class Utils2
 	{
 		System.out.println("routing: searching for key " + key);
 		NavigableSet<PeerAddress> pa1 = new TreeSet<PeerAddress>(
-				PeerMapKadImpl.createComparator(key));
+				PeerMap.createComparator(key));
 		NavigableSet<PeerAddress> queried = new TreeSet<PeerAddress>(
-				PeerMapKadImpl.createComparator(key));
+				PeerMap.createComparator(key));
 		Number160 result = Number160.ZERO;
 		Number160 resultPeer = new Number160("0xd75d1a3d57841fbc9e2a3d175d6a35dc2e15b9f");
 		int round = 0;

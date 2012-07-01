@@ -93,7 +93,6 @@ public class TaskManager
 				{
 					if(futureChannelCreator.isSuccess())
 					{
-						System.err.println("send back");
 						FutureResponse futureResponse = getTaskRPC().sendResult(senderAddress, futureChannelCreator.getChannelCreator(), taskId, outputData2, peer.getPeerBean().getKeyPair(), false, sign);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
 						{

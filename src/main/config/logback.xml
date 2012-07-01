@@ -35,6 +35,7 @@
   
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
+  <logger name="net.tomp2p.p2p.DistributedTask" level="TRACE"/>
   <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Statistics" level="TRACE"/> -->
@@ -53,8 +54,11 @@
   <!--  <logger name="net.tomp2p.rpc.PeerExchangeRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.StorageRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.HandshakeRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.TaskRPC" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.storage.TrackerStorage" level="TRACE"/> --> 
+  
+  <!--  <logger name="net.tomp2p.task.AsyncTask" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
  

@@ -73,7 +73,7 @@ public class TestDHT
 			master = masterMaker.makeAndListen();
 			PeerMaker slaveMaker = new PeerMaker(new Number160(rnd)).setPorts(4002);
 			slaveMaker.setConfiguration(new ConnectionConfiguration()).getConfiguration().setMaxCreating(50);
-			slave = masterMaker.makeAndListen();		
+			slave = slaveMaker.makeAndListen();		
 			
 			System.err.println("peers up and running");
 			

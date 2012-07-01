@@ -17,7 +17,6 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;

@@ -8,5 +8,5 @@ import net.tomp2p.storage.Data;
 
 public interface Worker extends Serializable
 {
-	public abstract Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData) throws Exception;
+	public abstract Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData) throws Exception;
 }

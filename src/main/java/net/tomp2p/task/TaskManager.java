@@ -15,6 +15,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.TaskRPC;
@@ -31,8 +32,8 @@ public class TaskManager
 	final private Object lock = new Object();
 	final private ThreadPoolExecutor executor;
 	// may grow
-	final private Map<Number160, Status> status = new HashMap<Number160, Status>();
-	final private Map<Number160, String> exceptions = new HashMap<Number160, String>();
+	final private Map<Number320, Status> status = new HashMap<Number320, Status>();
+	final private Map<Number320, String> exceptions = new HashMap<Number320, String>();
 	final private Collection<TaskResultListener> listeners = new ArrayList<TaskResultListener>();
 	
 	private TaskRPC taskRPC;
@@ -45,6 +46,7 @@ public class TaskManager
 		private final PeerAddress senderAddress;
 		private final boolean sign;
 		private final Peer peer;
+		final Number320 taskKey;
 		public Task(Peer peer, Number160 taskId, Worker mapper, Map<Number160, Data> inputData, PeerAddress senderAddress, boolean sign)
 		{
 			this.peer = peer;
@@ -53,6 +55,7 @@ public class TaskManager
 			this.inputData = inputData;
 			this.senderAddress = senderAddress;
 			this.sign = sign;
+			this.taskKey = new Number320(taskId, peer.getPeerID());
 		}
 		@Override
 		public void run()
@@ -62,23 +65,24 @@ public class TaskManager
 			{
 				logger.debug("started task "+taskId+" which came from "+senderAddress);
 			}
+			
 			synchronized (lock)
 			{
-				status.put(taskId, Status.STARTED);
+				status.put(taskKey, Status.STARTED);
 			}
 			Map<Number160, Data> outputData = null;
 			try
 			{
-				outputData = mapper.execute(peer, inputData);
+				outputData = mapper.execute(peer, taskId, inputData);
 			}
 			catch (Exception e)
 			{
 				outputData = null;
-				registerException(taskId, e.toString());
+				registerException(taskKey, e.toString());
 			}
 			synchronized (lock)
 			{
-				status.put(taskId, Status.SUCCESS_RESULT_NOT_SENT);
+				status.put(taskKey, Status.SUCCESS_RESULT_NOT_SENT);
 			}
 			final Map<Number160, Data> outputData2 = outputData;
 			FutureChannelCreator futureChannelCreator = connectionBean.getConnectionReservation().reserve(1);
@@ -89,6 +93,7 @@ public class TaskManager
 				{
 					if(futureChannelCreator.isSuccess())
 					{
+						System.err.println("send back");
 						FutureResponse futureResponse = getTaskRPC().sendResult(senderAddress, futureChannelCreator.getChannelCreator(), taskId, outputData2, peer.getPeerBean().getKeyPair(), false, sign);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
 						{
@@ -99,12 +104,12 @@ public class TaskManager
 								{
 									synchronized (lock)
 									{
-										status.put(taskId, Status.SUCCESS_RESULT_SENT);
+										status.put(taskKey, Status.SUCCESS_RESULT_SENT);
 									}
 								}
 								else
 								{
-									registerException(taskId, "could not send result back");
+									registerException(taskKey, "could not send result back");
 								}
 								connectionBean.getConnectionReservation().release(futureChannelCreator.getChannelCreator());
 							}
@@ -112,7 +117,7 @@ public class TaskManager
 					}
 					else
 					{
-						registerException(taskId, "could not reserve connection");
+						registerException(taskKey, "could not reserve connection");
 					}
 				}
 			});
@@ -136,11 +141,11 @@ public class TaskManager
 		listeners.remove(taskResultListener);
 	}
 	
-	public void notifyListeners(Number160 taskId, Map<Number160, Data> dataMap)
+	public void notifyListeners(Number320 taskKey, Map<Number160, Data> dataMap)
 	{
 		for(TaskResultListener taskResultListener: listeners)
 		{
-			taskResultListener.taskReceived(taskId, dataMap);
+			taskResultListener.taskReceived(taskKey, dataMap);
 		}
 	}
 	
@@ -158,13 +163,13 @@ public class TaskManager
 		return taskRPC;
 	}
 	
-	public TaskStatus taskStatus(Number160 taskId)
+	public TaskStatus taskStatus(Number320 taskKey)
 	{
 		TaskStatus statusResult = new TaskStatus();
 		String exception;
 		synchronized (lock)
 		{
-			exception = exceptions.get(taskId);
+			exception = exceptions.get(taskKey);
 		}
 		if(exception != null)
 		{
@@ -172,7 +177,7 @@ public class TaskManager
 			statusResult.setStatus(TaskStatus.Status.FAILED);
 			if(logger.isDebugEnabled())
 			{
-				logger.debug("finished task failed for task with ID "+ taskId);
+				logger.debug("finished task failed for task with ID "+ taskKey);
 			}
 			return statusResult;
 		}
@@ -182,7 +187,7 @@ public class TaskManager
 		for(Runnable runnable: executor.getQueue())
 		{
 			Task task = (Task)runnable;
-			if(task.taskId.equals(taskId))
+			if(task.taskKey.equals(taskKey))
 			{
 				taskFound = task;
 				break;
@@ -195,37 +200,38 @@ public class TaskManager
 			statusResult.setStatus(TaskStatus.Status.QUEUE);
 			if(logger.isDebugEnabled())
 			{
-				logger.debug("finished task queue for task with ID "+ taskId);
+				logger.debug("finished task queue for task with ID "+ taskKey);
 			}
 			return statusResult;
 		}
 		synchronized (lock)
 		{
-			statusResult.setStatus(status.get(taskId));
+			statusResult.setStatus(status.get(taskKey));
 		}
 		if(logger.isDebugEnabled())
 		{
-			logger.debug("finished task status for task with ID "+ taskId);
+			logger.debug("finished task status for task with ID "+ taskKey);
 		}
 		return statusResult;
 	}
 
 	public int submitTask(Peer peer, Number160 taskId, Worker mapper, Map<Number160, Data> data, PeerAddress senderAddress, boolean sign)
 	{
+		final Number320 taskKey = new Number320(taskId, peer.getPeerID());
 		synchronized (lock)
 		{
-			status.put(taskId, 	TaskStatus.Status.QUEUE);
+			status.put(taskKey, TaskStatus.Status.QUEUE);
 		}
 		Task task = new Task(peer, taskId, mapper, data, senderAddress, sign);
 		executor.execute(task);
 		return executor.getQueue().size();
 	}
 	
-	private void registerException(Number160 taskId2, String string)
+	private void registerException(Number320 taskKey, String string)
 	{
 		synchronized (lock)
 		{
-			exceptions.put(taskId2, string);
+			exceptions.put(taskKey, string);
 		}
 	}
 

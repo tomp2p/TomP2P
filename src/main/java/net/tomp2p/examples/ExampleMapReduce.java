@@ -54,7 +54,7 @@ public class ExampleMapReduce
 		{
 			private static final long serialVersionUID = 276677516112036039L;
 			@Override
-			public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData) throws Exception
+			public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData) throws Exception
 			{
 				List<FutureDHT> futures = new ArrayList<FutureDHT>();
 				Map<Number160, Data> retVal = new HashMap<Number160, Data>();
@@ -69,7 +69,7 @@ public class ExampleMapReduce
 						FutureDHT futureDHT = peer.add(key).setData(new Data(1)).setList(true).start();
 						System.out.println("map DHT call for word ["+word+"], key="+key+" on peer "+peer.getPeerID());
 						futures.add(futureDHT);
-						retVal.put(key, new Data(key));
+						retVal.put(key, new Data(taskId));
 					}
 				}
 				for(FutureDHT futureDHT: futures) futureDHT.awaitUninterruptibly();
@@ -80,7 +80,7 @@ public class ExampleMapReduce
 		{
 			private static final long serialVersionUID = 87921790732341L;
 			@Override
-			public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
+			public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData)
 					throws Exception
 			{
 				Map<Number160, FutureDHT> futures = new HashMap<Number160, FutureDHT>();
@@ -102,9 +102,9 @@ public class ExampleMapReduce
 				return retVal;
 			}
 		};
-		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text1)).start();
-		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text2)).start();
-		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(text3)).start();
+		FutureTask ft1 = peers[33].submit(nr1, map).setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(text1)).start();
+		FutureTask ft2 = peers[34].submit(nr2, map).setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(text2)).start();
+		FutureTask ft3 = peers[35].submit(nr3, map).setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(text3)).start();
 		ft1.awaitUninterruptibly();
 		ft2.awaitUninterruptibly();
 		ft3.awaitUninterruptibly();

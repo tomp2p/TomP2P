@@ -41,6 +41,7 @@ import net.tomp2p.futures.FutureLaterJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRunnable;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
@@ -412,11 +413,12 @@ public class Scheduler
 	public void keepTrack(PeerAddress remotePeer, Number160 taskId,
 			TaskResultListener taskResultListener)
 	{
-		tracking.put(taskId, new TrackingItem(remotePeer, taskResultListener));
+		Number320 taskKey = new Number320(taskId, remotePeer.getID());
+		tracking.put(taskKey, new TrackingItem(remotePeer, taskResultListener));
 		
 	}
 
-	public void stopKeepTrack(Number160 taskId)
+	public void stopKeepTrack(Number320 taskId)
 	{
 		tracking.remove(taskId);
 	}
@@ -425,7 +427,7 @@ public class Scheduler
 	{
 		private final TaskRPC taskRPC;
 		private final ConnectionReservation connectionReservation;
-		private Map<Number160, TrackingItem> toTrack = new ConcurrentHashMap<Number160, TrackingItem>();
+		private Map<Number320, TrackingItem> toTrack = new ConcurrentHashMap<Number320, TrackingItem>();
 		
 		public Tracking(TaskRPC taskRPC, ConnectionReservation connectionReservation)
 		{
@@ -434,9 +436,9 @@ public class Scheduler
 			setName("tracking");
 		}
 		
-		public void remove(Number160 taskId)
+		public void remove(Number320 taskKey)
 		{
-			toTrack.remove(taskId);
+			toTrack.remove(taskKey);
 		}
 
 		@Override
@@ -453,7 +455,7 @@ public class Scheduler
 					//do nothing
 				}
 				final List<FutureLateJoin<BaseFuture>> list = new ArrayList<FutureLateJoin<BaseFuture>>();
-				for(final Map.Entry<Number160, TrackingItem> entry:toTrack.entrySet())
+				for(final Map.Entry<Number320, TrackingItem> entry:toTrack.entrySet())
 				{
 					final FutureLateJoin<BaseFuture> join = new FutureLateJoin<BaseFuture>(2);
 					list.add(join);
@@ -466,7 +468,7 @@ public class Scheduler
 						public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception
 						{
 							Collection<Number160> taskIDs = new ArrayList<Number160>();
-							taskIDs.add(entry.getKey());
+							taskIDs.add(entry.getKey().getLocationKey());
 							FutureResponse futureResponse = taskRPC.taskStatus(entry.getValue().getRemotePeer(), futureChannelCreator.getChannelCreator(), taskIDs, false);
 							join.add(futureResponse);
 							futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
@@ -491,9 +493,9 @@ public class Scheduler
 				}
 			}
 		}
-		public void put(Number160 taskId, TrackingItem trackingItem)
+		public void put(Number320 taskKey, TrackingItem trackingItem)
 		{
-			toTrack.put(taskId, trackingItem);
+			toTrack.put(taskKey, trackingItem);
 		}
 		public void shutdown()
 		{

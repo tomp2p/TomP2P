@@ -19,7 +19,7 @@ public class TestTaskDHT
 	final private static Random rnd = new Random(42L);
 
 	@Test
-	public void testTaskSubmit() throws Exception
+	public void testTaskSubmit1() throws Exception
 	{
 		Peer master = null;
 		try
@@ -34,6 +34,32 @@ public class TestTaskDHT
 					.setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).start();
 			ft.awaitUninterruptibly();
 			Assert.assertEquals(true, ft.isSuccess());
+			Assert.assertEquals(1, ft.getRawDataMap().size());
+		}
+		finally
+		{
+			System.out.println("done");
+			master.shutdown();
+		}
+	}
+	
+	@Test
+	public void testTaskSubmit2() throws Exception
+	{
+		Peer master = null;
+		try
+		{
+			// setup
+			Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			Number160 locationKey = new Number160(rnd);
+			FutureTask ft = peers[12].submit(locationKey, new Worker2())
+					.setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).start();
+			ft.awaitUninterruptibly();
+			Assert.assertEquals(true, ft.isSuccess());
+			Assert.assertEquals(2, ft.getRawDataMap().size());
 		}
 		finally
 		{
@@ -46,9 +72,8 @@ public class TestTaskDHT
 class Worker2 implements Worker
 {
 	private static final long serialVersionUID = 106846602205331838L;
-
 	@Override
-	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData) throws Exception
+	public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData) throws Exception
 	{
 		System.out.println("executed");
 		Map<Number160, Data> retVal = new HashMap<Number160, Data>();

@@ -202,7 +202,7 @@ class MyWorker1 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
+	public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed!");
@@ -214,7 +214,7 @@ class MyWorker2 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
+	public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed, now waiting 250msec");
@@ -227,7 +227,7 @@ class MyWorker3 implements Worker
 	private static final long serialVersionUID = -4738180600791265774L;
 
 	@Override
-	public Map<Number160, Data> execute(Peer peer, Map<Number160, Data> inputData)
+	public Map<Number160, Data> execute(Peer peer, Number160 taskId, Map<Number160, Data> inputData)
 			throws Exception
 	{
 		System.out.println("executed, now waiting 1250msec");

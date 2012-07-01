@@ -11,6 +11,7 @@ import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureAsyncTask;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.storage.Data;
@@ -24,7 +25,7 @@ public class AsyncTask implements TaskResultListener
 	final private TaskRPC taskRPC;
 	final private Scheduler scheduler;
 	final private PeerBean peerBean;
-	final private Map<Number160, FutureAsyncTask> tasks = new ConcurrentHashMap<Number160, FutureAsyncTask>();
+	final private Map<Number320, FutureAsyncTask> tasks = new ConcurrentHashMap<Number320, FutureAsyncTask>();
 	public AsyncTask(TaskRPC taskRPC, Scheduler scheduler, PeerBean peerBean)
 	{
 		this.taskRPC = taskRPC;
@@ -35,16 +36,17 @@ public class AsyncTask implements TaskResultListener
 	public FutureAsyncTask submit(final PeerAddress remotePeer, ChannelCreator channelCreator, final Number160 taskId, 
 			Map<Number160, Data> dataMap, Worker mapper, boolean forceUDP, boolean sign)
 	{
+		final Number320 taskKey = new Number320(taskId, remotePeer.getID());
 		final FutureAsyncTask futureAsyncTask = new FutureAsyncTask(remotePeer);
 		futureAsyncTask.addCancellation(new Cancellable()
 		{
 			@Override
 			public void cancel()
 			{
-				taskFailed(taskId);
+				taskFailed(taskKey);
 			}
 		});
-		tasks.put(taskId, futureAsyncTask);
+		tasks.put(taskKey, futureAsyncTask);
 		FutureResponse futureResponse = taskRPC.sendTask(remotePeer, channelCreator, taskId, dataMap, mapper, 
 				peerBean.getKeyPair(), forceUDP, sign);
 		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>()
@@ -67,30 +69,31 @@ public class AsyncTask implements TaskResultListener
 	}
 
 	@Override
-	public void taskReceived(Number160 taskId, Map<Number160, Data> dataMap)
+	public void taskReceived(Number320 taskKey, Map<Number160, Data> dataMap)
 	{
 		if(logger.isDebugEnabled())
 		{
-			logger.debug("Task received "+taskId);
+			logger.debug("Task received "+taskKey);
 		}
-		scheduler.stopKeepTrack(taskId);
-		FutureAsyncTask futureAsyncTask = tasks.remove(taskId);
+		scheduler.stopKeepTrack(taskKey);
+		FutureAsyncTask futureAsyncTask = tasks.remove(taskKey);
 		if(futureAsyncTask == null)
 		{
+			logger.error("Task that was completed was not in the tracking list: "+taskKey);
 			return;
 		}
 		futureAsyncTask.setDataMap(dataMap);
 	}
 	
 	@Override
-	public void taskFailed(Number160 taskId)
+	public void taskFailed(Number320 taskKey)
 	{
 		if(logger.isDebugEnabled())
 		{
-			logger.debug("Task failed "+taskId);
+			logger.debug("Task failed "+taskKey);
 		}
 		//this comes from the scheduler
-		FutureAsyncTask futureAsyncTask = tasks.remove(taskId);
+		FutureAsyncTask futureAsyncTask = tasks.remove(taskKey);
 		if(futureAsyncTask == null)
 		{
 			return;

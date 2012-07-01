@@ -29,6 +29,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.TaskManager;
@@ -49,7 +50,7 @@ public class TaskRPC extends ReplyHandler
 	public TaskRPC(PeerBean peerBean, ConnectionBean connectionBean)
 	{
 		super(peerBean, connectionBean);
-		this.taskManager = connectionBean.getTaskManager();
+		this.taskManager = peerBean.getTaskManager();
 		registerIoHandler(Command.TASK);
 	}
 
@@ -122,6 +123,10 @@ public class TaskRPC extends ReplyHandler
 		{
 			message.setPublicKeyAndSign(keyPair);
 		}
+		if(logger.isDebugEnabled())
+		{
+			logger.debug("send Result "+ message);
+		}
 		if(forceUDP)
 		{
 			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
@@ -159,6 +164,10 @@ public class TaskRPC extends ReplyHandler
 		{
 			throw new IllegalArgumentException("Message content is wrong");
 		}
+		if(logger.isDebugEnabled())
+		{
+			logger.debug("send Task - received "+ message);
+		}
 		final Message responseMessage = createResponseMessage(message, Type.OK);
 		if (sign)
 		{
@@ -181,7 +190,8 @@ public class TaskRPC extends ReplyHandler
 			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
 			for(Number160 taskId: taskIDs)
 			{
-				TaskStatus taskStatus = taskManager.taskStatus(taskId);
+				Number320 taskKey = new Number320(taskId, message.getSender().getID());
+				TaskStatus taskStatus = taskManager.taskStatus(taskKey);
 				Data data = new Data(taskStatus);
 				dataMap.put(taskId, data);
 			}
@@ -195,7 +205,8 @@ public class TaskRPC extends ReplyHandler
 		{
 			Number160 taskId = message.getKey();
 			Map<Number160, Data> dataMap = message.getDataMap();
-			taskManager.notifyListeners(taskId, dataMap);
+			Number320 taskKey = new Number320(taskId, message.getSender().getID());
+			taskManager.notifyListeners(taskKey, dataMap);
 		}
 		else
 		{

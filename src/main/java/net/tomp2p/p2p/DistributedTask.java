@@ -139,6 +139,7 @@ public class DistributedTask
 			else
 				active++;
 		}
+		System.err.println("loop "+active+ "/"+min);
 		if (active == 0)
 		{
 			futureTask.setDone();
@@ -156,6 +157,7 @@ public class DistributedTask
 			@Override
 			public void operationComplete(FutureForkJoin<FutureAsyncTask> future) throws Exception
 			{
+				System.err.println("loop");
 				for (FutureAsyncTask futureAsyncTask : future.getCompleted())
 				{
 					futureTask.setProgress(futureAsyncTask);

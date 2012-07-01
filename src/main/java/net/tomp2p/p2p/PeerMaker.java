@@ -12,7 +12,6 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.DefaultStorageReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.TrackerStorageReplication;
@@ -28,6 +27,7 @@ import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.task.AsyncTask;
+import net.tomp2p.task.TaskManager;
 import net.tomp2p.utils.Utils;
 
 public class PeerMaker
@@ -130,6 +130,10 @@ public class PeerMaker
 		peerBean.setReplicationTracker(replicationTracker);
 		
 		peerMap.addPeerOfflineListener(storageTracker);
+		
+		TaskManager taskManager = new TaskManager(connectionBean, workerThreads);
+		peerBean.setTaskManager(taskManager);
+		
 		// RPC communication
 		if(isEnableHandShakeRPC())
 		{
@@ -182,7 +186,7 @@ public class PeerMaker
 		// distributed communication
 		if(isEnableRouting() && isEnableNeighborRPC())
 		{
-			DistributedRouting routing = new DistributedRouting(peerBean, connectionBean, peer.getNeighborRPC());
+			DistributedRouting routing = new DistributedRouting(peerBean, peer.getNeighborRPC());
 			peer.setDistributedRouting(routing);
 		}
 		if(isEnableRouting() && isEnableStorageRPC() && isEnableDirectDataRPC())
@@ -197,11 +201,12 @@ public class PeerMaker
 		}
 		if(isEnableTaskRPC() && isEnableTask() && isEnableRouting())
 		{
+			
 			//the task manager needs to use the rpc to send the result back.
-			connectionBean.getTaskManager().init(peer.getTaskRPC());
+			peerBean.getTaskManager().init(peer.getTaskRPC());
 			AsyncTask asyncTask = new AsyncTask(peer.getTaskRPC(), connectionBean.getScheduler(), peerBean);
 			peer.setAsyncTask(asyncTask);
-			connectionBean.getTaskManager().addListener(asyncTask);
+			peerBean.getTaskManager().addListener(asyncTask);
 			connectionBean.getScheduler().startTracking(peer.getTaskRPC(), connectionBean.getConnectionReservation());
 			DistributedTask distributedTask = new DistributedTask(peer.getDistributedRouting(), peer.getAsyncTask());
 			peer.setDistributedTask(distributedTask);

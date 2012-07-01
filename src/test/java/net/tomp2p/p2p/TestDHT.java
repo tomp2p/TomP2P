@@ -69,10 +69,10 @@ public class TestDHT
 			//with its own limit. Since the limit is 1024 and we stop at 1000 only for the connection, we may run into
 			//too many open files
 			PeerMaker masterMaker = new PeerMaker(new Number160(rnd)).setPorts(4001);
-			masterMaker.getConfiguration().setMaxCreating(50);
+			masterMaker.setConfiguration(new ConnectionConfiguration()).getConfiguration().setMaxCreating(50);
 			master = masterMaker.makeAndListen();
 			PeerMaker slaveMaker = new PeerMaker(new Number160(rnd)).setPorts(4002);
-			slaveMaker.getConfiguration().setMaxCreating(50);
+			slaveMaker.setConfiguration(new ConnectionConfiguration()).getConfiguration().setMaxCreating(50);
 			slave = masterMaker.makeAndListen();		
 			
 			System.err.println("peers up and running");

@@ -64,16 +64,16 @@ public class TestDHT
 		Peer slave = null;
 		try
 		{	
-			master = new PeerMaker(new Number160(rnd)).setPorts(4001).makeAndListen();
-			slave = new PeerMaker(new Number160(rnd)).setPorts(4002).makeAndListen();
-			
 			//since we have two peers, we need to reduce the connections -> we will have 300 * 2 (peer connection)
 			//plus 100 * 2 * 2. The last multiplication is due to discover, where the recipient creates a connection
 			//with its own limit. Since the limit is 1024 and we stop at 1000 only for the connection, we may run into
 			//too many open files
-			
-			master.getConfiguration().setMaxCreating(50);
-			slave.getConfiguration().setMaxCreating(50);
+			PeerMaker masterMaker = new PeerMaker(new Number160(rnd)).setPorts(4001);
+			masterMaker.getConfiguration().setMaxCreating(50);
+			master = masterMaker.makeAndListen();
+			PeerMaker slaveMaker = new PeerMaker(new Number160(rnd)).setPorts(4002);
+			slaveMaker.getConfiguration().setMaxCreating(50);
+			slave = masterMaker.makeAndListen();		
 			
 			System.err.println("peers up and running");
 			

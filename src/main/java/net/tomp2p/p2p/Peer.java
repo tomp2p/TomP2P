@@ -213,7 +213,7 @@ public class Peer
 		if(masterFlag)
 		{
 			getConnectionBean().getSender().shutdown();
-			getConnectionBean().getTaskManager().shutdown();
+			getPeerBean().getTaskManager().shutdown();
 		}
 		getConnectionHandler().shutdown();
 		if (masterFlag && timer != null)

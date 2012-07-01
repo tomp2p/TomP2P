@@ -49,7 +49,7 @@ public class PeerMaker
 	private Peer masterPeer = null;
 	private File fileMessageLogger = null;
 	private Bindings bindings = new Bindings();
-	private ConnectionConfiguration configuration = new ConnectionConfiguration();
+	private ConnectionConfiguration configuration;
 	private StorageGeneric storage = new StorageMemory();
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
@@ -90,10 +90,15 @@ public class PeerMaker
 	
 	public Peer makeAndListen() throws IOException
 	{
+		if(configuration == null)
+		{
+			configuration = new ConnectionConfiguration();
+		}
 		final PeerMap peerMap = new PeerMap(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
 				getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap());
 		final Peer peer = new Peer(getP2PId(), peerId, keyPair, getMaintenanceThreads(), 
-				getReplicationThreads(), getConfiguration(), peerMap, getMaxMessageSize());
+				getReplicationThreads(), configuration, peerMap, getMaxMessageSize());
+		
 		final ConnectionHandler connectionHandler;
 		if(getMasterPeer() != null)
 		{

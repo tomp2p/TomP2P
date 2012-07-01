@@ -32,7 +32,6 @@ import net.tomp2p.p2p.ConnectionConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.task.TaskManager;
 
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -97,8 +96,6 @@ public class ConnectionHandler
 	final private ChannelFactory udpChannelFactory;
 	final private ChannelFactory tcpServerChannelFactory;
 	final private ChannelFactory tcpClientChannelFactory;
-	
-	final private TaskManager taskManager;
 
 	/**
 	 * 
@@ -199,8 +196,6 @@ public class ConnectionHandler
 			}
 		}
 		natUtils = new NATUtils();
-		taskManager = new TaskManager(connectionBean, workerThreads);
-		connectionBean.setTaskManager(taskManager);
 		master = true;
 	}
 
@@ -228,7 +223,6 @@ public class ConnectionHandler
 		this.tcpClientChannelFactory = parent.tcpClientChannelFactory;
 		this.timer = parent.timer;
 		this.natUtils = parent.natUtils;
-		this.taskManager = parent.taskManager;
 		this.master = false;
 	}
 

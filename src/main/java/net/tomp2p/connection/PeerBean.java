@@ -23,6 +23,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.task.TaskManager;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings
@@ -46,6 +47,7 @@ public class PeerBean
 	private Replication replicationTracker;
 	private Statistics statistics;
 	private Peer peer;
+	private TaskManager taskManager;
 	
 	public PeerBean(KeyPair keyPair)
 	{
@@ -135,5 +137,15 @@ public class PeerBean
 	public void setPeer(Peer peer)
 	{
 		this.peer = peer;
+	}
+	
+	public TaskManager getTaskManager()
+	{
+		return taskManager;
+	}
+
+	public void setTaskManager(TaskManager taskManager)
+	{
+		this.taskManager = taskManager;
 	}
 }

@@ -15,7 +15,6 @@
  */
 package net.tomp2p.connection;
 import net.tomp2p.p2p.ConnectionConfiguration;
-import net.tomp2p.task.TaskManager;
 
 import org.jboss.netty.channel.group.ChannelGroup;
 
@@ -35,7 +34,7 @@ public class ConnectionBean
 	final private ConnectionConfiguration configuration;
 	final private Scheduler scheduler;
 	private Sender sender;
-	private TaskManager taskManager;
+	
 
 	public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender,
 			ChannelGroup channelGroup, ConnectionReservation connectionReservation,
@@ -90,16 +89,5 @@ public class ConnectionBean
 	public void setSender(Sender sender)
 	{
 		this.sender=sender;
-	}
-	
-
-	public TaskManager getTaskManager()
-	{
-		return taskManager;
-	}
-
-	public void setTaskManager(TaskManager taskManager)
-	{
-		this.taskManager = taskManager;
 	}
 }

@@ -64,7 +64,7 @@ public class StorageDisk extends StorageGeneric
 	public StorageDisk(String dirName)
 	{
 		this.dirName = dirName;
-		String fileName = dirName + File.separator + "tomp2p";
+		String fileName = dirName + File.separator + "tomp2p-jdbm3";
 		db = DBMaker.openFile(fileName).make();
 		dataMap = this.<Number480, Data>getOrCreateTreeMap(DATA_MAP);
 		timeoutMap = this.<Number480, Long>getOrCreateHashMap(TIMEOUT_MAP);

@@ -38,11 +38,12 @@ public class DataCodec
 			File file = (File)data.getObject();
 			long len = file.length();
 			input.copyToCurrent((int)len);
-		    FileInputStream inFile = new FileInputStream(file);
+			//cannot close inFile, since we still need to transfer it!
+		    @SuppressWarnings("resource")
+			FileInputStream inFile = new FileInputStream(file);
 		    FileChannel inChannel = inFile.getChannel();
 			input.transferToCurrent(inChannel, file.length());
-			count += len;
-			//cannot close inFile, since we still need to transfer it!
+			count += len;	
 		}
 		else
 		{

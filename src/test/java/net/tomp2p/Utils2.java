@@ -115,22 +115,22 @@ public class Utils2
 		{
 			if(enableIndirectReplication)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setRandom(rnd).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
 			}
 			else
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setRandom(rnd).setTcpPort(port).setUdpPort(port).setReplicationRefreshMillis(refresh).makeAndListen();
 			}
 		}
 		else
 		{
 			if(enableIndirectReplication)
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).makeAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setRandom(rnd).setEnableIndirectReplication(enableIndirectReplication).setTcpPort(port).setUdpPort(port).makeAndListen();
 			}
 			else
 			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setTcpPort(port).setUdpPort(port).makeAndListen();
+				peers[0] = new PeerMaker(new Number160(rnd)).setRandom(rnd).setTcpPort(port).setUdpPort(port).makeAndListen();
 			}
 		}
 		for (int i = 1; i < nrOfPeers; i++) 

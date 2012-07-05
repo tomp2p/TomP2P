@@ -92,8 +92,12 @@ public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHa
 
 	public K fireAndForgetTCP(ChannelCreator channelCreator)
 	{
-		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator,
-				connectionBean.getConfiguration().getIdleTCPMillis());
+		return fireAndForgetTCP(channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
+	}
+	
+	public K fireAndForgetTCP(ChannelCreator channelCreator, int idleTCPMillis)
+	{
+		connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator, idleTCPMillis);
 		return futureResponse;
 	}
 

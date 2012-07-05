@@ -37,6 +37,7 @@ import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
+import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.GetTrackerBuilder;
@@ -50,6 +51,7 @@ import net.tomp2p.p2p.builder.SubmitBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -60,6 +62,7 @@ import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
+import net.tomp2p.storage.Data;
 import net.tomp2p.task.AsyncTask;
 import net.tomp2p.task.Worker;
 import net.tomp2p.utils.CacheMap;
@@ -119,6 +122,7 @@ public class Peer
 	private DirectDataRPC directDataRPC;
 	private TrackerRPC trackerRPC;
 	private TaskRPC taskRPC;
+	private BroadcastRPC broadcastRPC;
 	//
 	private Bindings bindings;
 	//
@@ -403,6 +407,21 @@ public class Peer
 	{
 		this.taskRPC = taskRPC;
 	}
+	
+	public void setBroadcastRPC(BroadcastRPC broadcastRPC)
+	{
+		this.broadcastRPC = broadcastRPC;
+		
+	}
+	
+	public BroadcastRPC getBroadcastRPC()
+	{
+		if (broadcastRPC == null)
+		{
+			throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+		}
+		return broadcastRPC;
+	}
 
 	public DistributedRouting getDistributedRouting()
 	{
@@ -684,7 +703,10 @@ public class Peer
 		return new ParallelRequestBuilder(this, locationKey);
 	}
 	
-	
+	public BroadcastBuilder broadcast(Number160 messageKey)
+	{
+		return new BroadcastBuilder(this, messageKey);
+	}
 	
 	// *************************** Connection Reservation ************************
 	
@@ -757,4 +779,6 @@ public class Peer
 	{
 		return shutdown;
 	}
+
+	
 }

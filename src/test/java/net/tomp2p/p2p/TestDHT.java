@@ -1800,6 +1800,38 @@ public class TestDHT
 		}
 	}
 	
+	@Test
+	public void testBroadcast() throws Exception
+	{
+		Peer master = null;
+		try
+		{
+			// setup
+			Peer[] peers = Utils2.createNodes(1000, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			master.broadcast(Number160.createHash("blub")).start();
+			DefaultBroadcastHandler d = (DefaultBroadcastHandler)master.getBroadcastRPC().getBroadcastHandler();
+			int counter=0;
+			while(d.getBroadcastCounter() < 900)
+			{
+				Thread.sleep(100);
+				counter ++;
+				if(counter > 100)
+				{
+					System.err.println("did not broadcast to 1000 peers, but to "+d.getBroadcastCounter());
+					Assert.fail("did not broadcast to 1000 peers, but to "+d.getBroadcastCounter());
+				}
+			}
+			System.err.println("DONE");
+		}
+		finally
+		{
+			master.shutdown();
+		}
+	}
+	
 	private void setData(Peer peer, String location, String domain, String content, Data data) throws IOException
 	{
 		final Number160 locationKey = Number160.createHash(location);

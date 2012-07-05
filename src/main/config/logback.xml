@@ -33,9 +33,10 @@
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->
   
+  <!--  <logger name="net.tomp2p.p2p.DefaultBroadcastHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
-  <logger name="net.tomp2p.p2p.DistributedTask" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.p2p.DistributedTask" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Statistics" level="TRACE"/> -->

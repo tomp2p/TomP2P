@@ -3,6 +3,7 @@ package net.tomp2p.p2p;
 import java.io.File;
 import java.io.IOException;
 import java.security.KeyPair;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.Bindings;
@@ -15,6 +16,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.replication.DefaultStorageReplication;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.TrackerStorageReplication;
+import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.HandshakeRPC;
 import net.tomp2p.rpc.NeighborRPC;
@@ -51,6 +53,7 @@ public class PeerMaker
 	private Bindings bindings = new Bindings();
 	private ConnectionConfiguration configuration;
 	private StorageGeneric storage = new StorageMemory();
+	private BroadcastHandler broadcastHandler;
 	// max, message size to transmit
 	private int maxMessageSize = 2 * 1024 * 1024;
 	// PeerMap
@@ -76,6 +79,9 @@ public class PeerMaker
 	private boolean enableTask = true;
 	private boolean enableMaintenance = true;
 	private boolean enableIndirectReplication = false;
+	private boolean enableBroadcast = true;
+	
+	private Random rnd;
 	
 	public PeerMaker(final Number160 peerId)
 	{
@@ -114,6 +120,10 @@ public class PeerMaker
 	
 	private void init(final Peer peer, final ConnectionHandler connectionHandler, final Statistics statistics)
 	{
+		if(rnd == null)
+		{
+			rnd = new Random();
+		}
 		PeerBean peerBean = connectionHandler.getPeerBean();
 		peerBean.setPeer(peer);
 		peerBean.setStatistics(statistics);
@@ -188,6 +198,15 @@ public class PeerMaker
 					peer.getPeerExchangeRPC(), peer.getPendingFutures(), storageTracker, configuration.isForceTrackerTCP());
 			replicationTracker.addResponsibilityListener(trackerStorageReplication);
 		}
+		if(isEnableBroadcast() )
+		{
+			if (broadcastHandler == null)
+			{
+				broadcastHandler = new DefaultBroadcastHandler(peer, rnd);
+			}
+			BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
+			peer.setBroadcastRPC(broadcastRPC);
+		}
 		// distributed communication
 		if(isEnableRouting() && isEnableNeighborRPC())
 		{
@@ -206,7 +225,6 @@ public class PeerMaker
 		}
 		if(isEnableTaskRPC() && isEnableTask() && isEnableRouting())
 		{
-			
 			//the task manager needs to use the rpc to send the result back.
 			peerBean.getTaskManager().init(peer.getTaskRPC());
 			AsyncTask asyncTask = new AsyncTask(peer.getTaskRPC(), connectionBean.getScheduler(), peerBean);
@@ -626,6 +644,39 @@ public class PeerMaker
 	public PeerMaker setEnableIndirectReplication(boolean enableIndirectReplication)
 	{
 		this.enableIndirectReplication = enableIndirectReplication;
+		return this;
+	}
+
+	public BroadcastHandler getBroadcastHandler()
+	{
+		return broadcastHandler;
+	}
+
+	public PeerMaker setBroadcastHandler(BroadcastHandler broadcastHandler)
+	{
+		this.broadcastHandler = broadcastHandler;
+		return this;
+	}
+
+	public boolean isEnableBroadcast()
+	{
+		return enableBroadcast;
+	}
+
+	public PeerMaker setEnableBroadcast(boolean enableBroadcast)
+	{
+		this.enableBroadcast = enableBroadcast;
+		return this;
+	}
+
+	public Random getRandom()
+	{
+		return rnd;
+	}
+
+	public PeerMaker setRandom(Random rnd)
+	{
+		this.rnd = rnd;
 		return this;
 	}
 }

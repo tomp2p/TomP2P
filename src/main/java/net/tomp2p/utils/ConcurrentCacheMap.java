@@ -68,9 +68,9 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
 	 * 
 	 * @param timeToLive The time-to-live value (seconds)
 	 */
-	public ConcurrentCacheMap(int timeToLive)
+	public ConcurrentCacheMap(int timeToLive, int maxEntries)
 	{
-		this(timeToLive, MAX_ENTRIES, true);
+		this(timeToLive, maxEntries, true);
 	}
 
 	/**

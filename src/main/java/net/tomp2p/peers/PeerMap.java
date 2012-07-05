@@ -832,9 +832,9 @@ public class PeerMap
 	 * 
 	 * @return All neighbors
 	 */
-	public Collection<PeerAddress> getAll()
+	public List<PeerAddress> getAll()
 	{
-		Collection<PeerAddress> all = new ArrayList<PeerAddress>();
+		List<PeerAddress> all = new ArrayList<PeerAddress>();
 		for (Map<Number160, PeerAddress> map : peerMap)
 		{
 			synchronized (map)

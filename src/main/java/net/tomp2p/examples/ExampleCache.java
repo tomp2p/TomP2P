@@ -9,7 +9,7 @@ public class ExampleCache
 {
 	public static void main(String[] args)
 	{
-		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(6);
+		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(6, 1024);
 		test.put("hallo0", "test0");
 		Timings.sleepUninterruptibly(3000);
 		final AtomicBoolean failed = new AtomicBoolean(false);

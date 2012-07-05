@@ -13,7 +13,7 @@ public class TestCache
 	@Test
 	public void testCache()
 	{
-		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
 		test.put("hallo1", "test1");
 		Timings.sleepUninterruptibly(500);
 		test.put("hallo2", "test2");
@@ -25,7 +25,7 @@ public class TestCache
 	@Test
 	public void testCache2()
 	{
-		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
 		test.put("hallo0", "test0");
 		Timings.sleepUninterruptibly(500);
 		for(int i=1;i<800;i++)
@@ -48,7 +48,7 @@ public class TestCache
 	@Test
 	public void testCache3()
 	{
-		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(3);
+		final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(3, 1024);
 		test.put("hallo0", "test0");
 		Timings.sleepUninterruptibly(1000);
 		final long start = System.currentTimeMillis();
@@ -106,7 +106,7 @@ public class TestCache
 	public void testCache4()
 	{
 		String key = "hallo0";
-		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
 		test.put(key, "test0");
 		Timings.sleepUninterruptibly(1100);
 		test.put(key, "test1");
@@ -119,7 +119,7 @@ public class TestCache
 	public void testCache5()
 	{
 		String key = "hallo0";
-		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1);
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
 		test.put(key, "test0");
 		Timings.sleepUninterruptibly(1100);
 		test.put(key, "test1");

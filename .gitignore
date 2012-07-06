@@ -1,9 +1,10 @@
 .classpath
 .project
 .settings
+.checkstyle
+.cache
 target
 bin
 .idea
 *.iml
 *~
-/mapreduce.txt

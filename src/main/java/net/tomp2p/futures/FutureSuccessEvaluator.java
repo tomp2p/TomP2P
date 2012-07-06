@@ -21,5 +21,5 @@ import net.tomp2p.message.Message;
 
 public interface FutureSuccessEvaluator
 {
-	public abstract FutureType evaluate(Message requestMessage, Message responseMessage);
+    public abstract FutureType evaluate( Message requestMessage, Message responseMessage );
 }

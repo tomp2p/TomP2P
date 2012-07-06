@@ -43,32 +43,30 @@
 
 package net.tomp2p.upnp;
 
-
 /**
- * This class contains data returned by a state variable query
- * response
+ * This class contains data returned by a state variable query response
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
 public class StateVariableResponse
 {
-	/***/
-	public final StateVariable stateVar;
+    /***/
+    public final StateVariable stateVar;
 
-	String stateVariableValue;
+    String stateVariableValue;
 
-	StateVariableResponse( StateVariable var )
-	{
-		stateVar = var;
-	}
+    StateVariableResponse( StateVariable var )
+    {
+        stateVar = var;
+    }
 
-	/**
-	 * @return the variable's value
-	 */
-	public String getStateVariableValue()
-	{
-		return stateVariableValue;
-	}
+    /**
+     * @return the variable's value
+     */
+    public String getStateVariableValue()
+    {
+        return stateVariableValue;
+    }
 
 }

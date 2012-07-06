@@ -17,89 +17,95 @@ package net.tomp2p.storage;
 
 import net.tomp2p.peers.PeerAddress;
 
-public class TrackerData implements Comparable<TrackerData>
+public class TrackerData
+    implements Comparable<TrackerData>
 {
-	final private PeerAddress peerAddress;
-	final private PeerAddress referrer;
-	final private byte[] attachement;
-	final private int offset;
-	final private int length;
-	final private boolean couldProvideMoreData;
+    final private PeerAddress peerAddress;
 
-	public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length)
-	{
-		this(peerAddress, referrer, attachement, offset, length, false);
-	}
+    final private PeerAddress referrer;
 
-	public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length,
-			boolean couldProvideMoreData)
-	{
-		this.peerAddress = peerAddress;
-		this.referrer = referrer;
-		this.attachement = attachement;
-		this.offset = offset;
-		this.length = length;
-		this.couldProvideMoreData = couldProvideMoreData;
-	}
+    final private byte[] attachement;
 
-	public PeerAddress getPeerAddress()
-	{
-		return peerAddress;
-	}
+    final private int offset;
 
-	public PeerAddress getReferrer()
-	{
-		return referrer;
-	}
+    final private int length;
 
-	public byte[] getAttachement()
-	{
-		return attachement;
-	}
+    final private boolean couldProvideMoreData;
 
-	public int getOffset()
-	{
-		return offset;
-	}
+    public TrackerData( PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length )
+    {
+        this( peerAddress, referrer, attachement, offset, length, false );
+    }
 
-	public int getLength()
-	{
-		return length;
-	}
+    public TrackerData( PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length,
+                        boolean couldProvideMoreData )
+    {
+        this.peerAddress = peerAddress;
+        this.referrer = referrer;
+        this.attachement = attachement;
+        this.offset = offset;
+        this.length = length;
+        this.couldProvideMoreData = couldProvideMoreData;
+    }
 
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (!(obj instanceof TrackerData))
-		{
-			return false;
-		}
-		TrackerData trackerData = (TrackerData) obj;
-		return trackerData.getPeerAddress().getID().equals(getPeerAddress().getID());
-	}
-	
-	@Override
-	public int hashCode()
-	{
-		return getPeerAddress().getID().hashCode();
-	}
+    public PeerAddress getPeerAddress()
+    {
+        return peerAddress;
+    }
 
-	@Override
-	public int compareTo(TrackerData o)
-	{
-		return getPeerAddress().getID().compareTo(o.getPeerAddress().getID());
-	}
+    public PeerAddress getReferrer()
+    {
+        return referrer;
+    }
 
-	@Override
-	public String toString()
-	{
-		StringBuilder sb = new StringBuilder();
-		sb.append("p:").append(peerAddress).append(",l:").append(length);
-		return sb.toString();
-	}
+    public byte[] getAttachement()
+    {
+        return attachement;
+    }
 
-	public boolean couldProvideMoreData()
-	{
-		return couldProvideMoreData;
-	}
+    public int getOffset()
+    {
+        return offset;
+    }
+
+    public int getLength()
+    {
+        return length;
+    }
+
+    @Override
+    public boolean equals( Object obj )
+    {
+        if ( !( obj instanceof TrackerData ) )
+        {
+            return false;
+        }
+        TrackerData trackerData = (TrackerData) obj;
+        return trackerData.getPeerAddress().getID().equals( getPeerAddress().getID() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return getPeerAddress().getID().hashCode();
+    }
+
+    @Override
+    public int compareTo( TrackerData o )
+    {
+        return getPeerAddress().getID().compareTo( o.getPeerAddress().getID() );
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append( "p:" ).append( peerAddress ).append( ",l:" ).append( length );
+        return sb.toString();
+    }
+
+    public boolean couldProvideMoreData()
+    {
+        return couldProvideMoreData;
+    }
 }

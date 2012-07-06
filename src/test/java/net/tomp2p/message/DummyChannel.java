@@ -10,195 +10,202 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 
-public class DummyChannel implements Channel
+public class DummyChannel
+    implements Channel
 {
-	private final SocketAddress remoteAddress;
-	private final SocketAddress localAddress;
-	List<Object> objects=new ArrayList<Object>();
+    private final SocketAddress remoteAddress;
 
-	public DummyChannel(SocketAddress remoteAddress, SocketAddress localAddress)
-	{
-		this.remoteAddress = remoteAddress;
-		this.localAddress = localAddress;
-	}
-	@Override
-	public ChannelFuture bind(SocketAddress localAddress)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    private final SocketAddress localAddress;
 
-	@Override
-	public ChannelFuture close()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    List<Object> objects = new ArrayList<Object>();
 
-	@Override
-	public ChannelFuture connect(SocketAddress remoteAddress)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    public DummyChannel( SocketAddress remoteAddress, SocketAddress localAddress )
+    {
+        this.remoteAddress = remoteAddress;
+        this.localAddress = localAddress;
+    }
 
-	@Override
-	public ChannelFuture disconnect()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ChannelFuture bind( SocketAddress localAddress )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public ChannelFuture getCloseFuture()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ChannelFuture close()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public ChannelConfig getConfig()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ChannelFuture connect( SocketAddress remoteAddress )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public ChannelFactory getFactory()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ChannelFuture disconnect()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public Integer getId()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public ChannelFuture getCloseFuture()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public int getInterestOps()
-	{
-		// TODO Auto-generated method stub
-		return 0;
-	}
+    @Override
+    public ChannelConfig getConfig()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public SocketAddress getLocalAddress()
-	{
-		return localAddress;
-	}
+    @Override
+    public ChannelFactory getFactory()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public Channel getParent()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public Integer getId()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public ChannelPipeline getPipeline()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public int getInterestOps()
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
 
-	@Override
-	public SocketAddress getRemoteAddress()
-	{
-		return remoteAddress;
-	}
+    @Override
+    public SocketAddress getLocalAddress()
+    {
+        return localAddress;
+    }
 
-	@Override
-	public boolean isBound()
-	{
-		return true;
-	}
+    @Override
+    public Channel getParent()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public boolean isConnected()
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
+    @Override
+    public ChannelPipeline getPipeline()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public boolean isOpen()
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
+    @Override
+    public SocketAddress getRemoteAddress()
+    {
+        return remoteAddress;
+    }
 
-	@Override
-	public boolean isReadable()
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
+    @Override
+    public boolean isBound()
+    {
+        return true;
+    }
 
-	@Override
-	public boolean isWritable()
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
+    @Override
+    public boolean isConnected()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	@Override
-	public ChannelFuture setInterestOps(int interestOps)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public boolean isOpen()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	@Override
-	public ChannelFuture setReadable(boolean readable)
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public boolean isReadable()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	@Override
-	public ChannelFuture unbind()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+    @Override
+    public boolean isWritable()
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	@Override
-	public ChannelFuture write(Object message)
-	{
-		objects.add(message);
-		return null;
-	}
+    @Override
+    public ChannelFuture setInterestOps( int interestOps )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public ChannelFuture write(Object message, SocketAddress remoteAddress)
-	{
-		objects.add(message);
-		return null;
-	}
+    @Override
+    public ChannelFuture setReadable( boolean readable )
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-	@Override
-	public int compareTo(Channel o)
-	{
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	public List<Object> getObjects()
-	{
-		return objects;
-	}
-	@Override
-	public Object getAttachment()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-	@Override
-	public void setAttachment(Object arg0)
-	{
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public ChannelFuture unbind()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public ChannelFuture write( Object message )
+    {
+        objects.add( message );
+        return null;
+    }
+
+    @Override
+    public ChannelFuture write( Object message, SocketAddress remoteAddress )
+    {
+        objects.add( message );
+        return null;
+    }
+
+    @Override
+    public int compareTo( Channel o )
+    {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+    public List<Object> getObjects()
+    {
+        return objects;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void setAttachment( Object arg0 )
+    {
+        // TODO Auto-generated method stub
+
+    }
 }

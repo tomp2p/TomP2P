@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.p2p.builder;
 
 import java.io.IOException;
@@ -14,144 +30,161 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
-public class SendBuilder  extends DHTBuilder<SendBuilder>
+public class SendBuilder
+    extends DHTBuilder<SendBuilder>
 {
-	private ChannelBuffer buffer;
-	private Object object;
-	//
-	private boolean cancelOnFinish = false;
-	private boolean raw = false;
-	private int repetitions = 5;
-	public SendBuilder(Peer peer, Number160 locationKey)
-	{
-		super(peer, locationKey);
-		self(this);
-	}
-	
-	public ChannelBuffer getBuffer()
-	{
-		return buffer;
-	}
+    private ChannelBuffer buffer;
 
-	public SendBuilder setBuffer(ChannelBuffer buffer)
-	{
-		this.buffer = buffer;
-		return this;
-	}
+    private Object object;
 
-	public Object getObject()
-	{
-		return object;
-	}
+    //
+    private boolean cancelOnFinish = false;
 
-	public SendBuilder setObject(Object object)
-	{
-		this.object = object;
-		return this;
-	}
-	
-	public int getRepetitions()
-	{
-		return repetitions;
-	}
+    private boolean raw = false;
 
-	public SendBuilder setRepetitions(int repetitions)
-	{
-		this.repetitions = repetitions;
-		return this;
-	}
-	
-	public boolean isCancelOnFinish()
-	{
-		return cancelOnFinish;
-	}
+    private int repetitions = 5;
 
-	public SendBuilder setCancelOnFinish(boolean cancelOnFinish)
-	{
-		this.cancelOnFinish = cancelOnFinish;
-		return this;
-	}
-	
-	public SendBuilder setCancelOnFinish()
-	{
-		this.cancelOnFinish = true;
-		return this;
-	}
-	
-	@Override
-	public FutureDHT start()
-	{
-		if(peer.isShutdown())
-		{
-			return FUTURE_DHT_SHUTDOWN;
-		}
-		preBuild("send-builder");
-		if(buffer == null && object != null)
-		{
-			raw = false;
-			byte[] me;
-			try
-			{
-				me = Utils.encodeJavaObject(object);
-			}
-			catch (IOException e)
-			{
-				FutureDHT futureDHT = new FutureDHT();
-				return futureDHT.setFailed("problems with encoding the object "+ e);
-			}
-			buffer = ChannelBuffers.wrappedBuffer(me);
-		}
-		else if(buffer !=null && object == null)
-		{
-			raw = true;
-		}
-		else
-		{
-			throw new IllegalArgumentException("either buffer has to be set or object.");
-		}
-		final FutureDHT futureDHT = peer.getDistributedHashMap().direct(locationKey, buffer, raw,
-				routingConfiguration, requestP2PConfiguration, futureCreate,
-				isCancelOnFinish(), manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
-		if(directReplication)
-		{
-			if(defaultDirectReplication == null)
-			{
-				defaultDirectReplication = new DefaultDirectReplication();
-			}
-			Runnable runner = new Runnable()
-			{
-				private int counter = 0;
-				@Override
-				public void run()
-				{
-					if(counter < repetitions)
-					{
-						FutureDHT futureDHTReplication = defaultDirectReplication.create();
-						futureDHT.repeated(futureDHTReplication);
-						counter++;
-						ScheduledFuture<?> tmp = peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().schedule(
-								this, refreshSeconds, TimeUnit.SECONDS);
-						setupCancel(futureDHT, tmp);
-					}
-				}
-			};
-			ScheduledFuture<?> tmp = peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().schedule(
-					runner, refreshSeconds, TimeUnit.SECONDS);
-			setupCancel(futureDHT, tmp);
-		}
-		return futureDHT;
-	}
-	
-	private class DefaultDirectReplication implements FutureCreator<FutureDHT>
-	{
-		@Override
-		public FutureDHT create()
-		{
-			final FutureChannelCreator futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, "send-builder-direct-replication");
-			final FutureDHT futureDHT = peer.getDistributedHashMap().direct(locationKey, buffer, raw,
-					routingConfiguration, requestP2PConfiguration, futureCreate,
-					isCancelOnFinish(), manualCleanup, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
-			return futureDHT;
-			}	
-		}
+    public SendBuilder( Peer peer, Number160 locationKey )
+    {
+        super( peer, locationKey );
+        self( this );
+    }
+
+    public ChannelBuffer getBuffer()
+    {
+        return buffer;
+    }
+
+    public SendBuilder setBuffer( ChannelBuffer buffer )
+    {
+        this.buffer = buffer;
+        return this;
+    }
+
+    public Object getObject()
+    {
+        return object;
+    }
+
+    public SendBuilder setObject( Object object )
+    {
+        this.object = object;
+        return this;
+    }
+
+    public int getRepetitions()
+    {
+        return repetitions;
+    }
+
+    public SendBuilder setRepetitions( int repetitions )
+    {
+        this.repetitions = repetitions;
+        return this;
+    }
+
+    public boolean isCancelOnFinish()
+    {
+        return cancelOnFinish;
+    }
+
+    public SendBuilder setCancelOnFinish( boolean cancelOnFinish )
+    {
+        this.cancelOnFinish = cancelOnFinish;
+        return this;
+    }
+
+    public SendBuilder setCancelOnFinish()
+    {
+        this.cancelOnFinish = true;
+        return this;
+    }
+
+    @Override
+    public FutureDHT start()
+    {
+        if ( peer.isShutdown() )
+        {
+            return FUTURE_DHT_SHUTDOWN;
+        }
+        preBuild( "send-builder" );
+        if ( buffer == null && object != null )
+        {
+            raw = false;
+            byte[] me;
+            try
+            {
+                me = Utils.encodeJavaObject( object );
+            }
+            catch ( IOException e )
+            {
+                FutureDHT futureDHT = new FutureDHT();
+                return futureDHT.setFailed( "problems with encoding the object " + e );
+            }
+            buffer = ChannelBuffers.wrappedBuffer( me );
+        }
+        else if ( buffer != null && object == null )
+        {
+            raw = true;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "either buffer has to be set or object." );
+        }
+        final FutureDHT futureDHT =
+            peer.getDistributedHashMap().direct( locationKey, buffer, raw, routingConfiguration,
+                                                 requestP2PConfiguration, futureCreate, isCancelOnFinish(),
+                                                 manualCleanup, futureChannelCreator,
+                                                 peer.getConnectionBean().getConnectionReservation() );
+        if ( directReplication )
+        {
+            if ( defaultDirectReplication == null )
+            {
+                defaultDirectReplication = new DefaultDirectReplication();
+            }
+            Runnable runner = new Runnable()
+            {
+                private int counter = 0;
+
+                @Override
+                public void run()
+                {
+                    if ( counter < repetitions )
+                    {
+                        FutureDHT futureDHTReplication = defaultDirectReplication.create();
+                        futureDHT.repeated( futureDHTReplication );
+                        counter++;
+                        ScheduledFuture<?> tmp =
+                            peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().schedule( this,
+                                                                                                                       refreshSeconds,
+                                                                                                                       TimeUnit.SECONDS );
+                        setupCancel( futureDHT, tmp );
+                    }
+                }
+            };
+            ScheduledFuture<?> tmp =
+                peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication().schedule( runner,
+                                                                                                           refreshSeconds,
+                                                                                                           TimeUnit.SECONDS );
+            setupCancel( futureDHT, tmp );
+        }
+        return futureDHT;
+    }
+
+    private class DefaultDirectReplication
+        implements FutureCreator<FutureDHT>
+    {
+        @Override
+        public FutureDHT create()
+        {
+            final FutureChannelCreator futureChannelCreator =
+                peer.reserve( routingConfiguration, requestP2PConfiguration, "send-builder-direct-replication" );
+            final FutureDHT futureDHT =
+                peer.getDistributedHashMap().direct( locationKey, buffer, raw, routingConfiguration,
+                                                     requestP2PConfiguration, futureCreate, isCancelOnFinish(),
+                                                     manualCleanup, futureChannelCreator,
+                                                     peer.getConnectionBean().getConnectionReservation() );
+            return futureDHT;
+        }
+    }
 }

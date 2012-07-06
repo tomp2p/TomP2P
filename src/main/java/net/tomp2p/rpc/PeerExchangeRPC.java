@@ -37,143 +37,153 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PeerExchangeRPC extends ReplyHandler
+public class PeerExchangeRPC
+    extends ReplyHandler
 {
-	final private static Logger logger = LoggerFactory.getLogger(PeerExchangeRPC.class);
-	final public static int SENT_PEERS_CACHE_SIZE = 1000;
-	// since PEX is push based, each peer needs to keep track what was sent to
-	// whom.
-	final private Map<Number160, Set<Number160>> sentPeers;
+    final private static Logger logger = LoggerFactory.getLogger( PeerExchangeRPC.class );
 
-	public PeerExchangeRPC(PeerBean peerBean, ConnectionBean connectionBean)
-	{
-		super(peerBean, connectionBean);
-		registerIoHandler(Command.PEX);
-		sentPeers = new CacheMap<Number160, Set<Number160>>(SENT_PEERS_CACHE_SIZE, true);
-	}
+    final public static int SENT_PEERS_CACHE_SIZE = 1000;
 
-	/**
-	 * Peer exchange (PEX) information about other peers from the swarm, to not
-	 * ask the primary trackers too often. This is an RPC.
-	 * 
-	 * @param remotePeer The remote peer to send this request
-	 * @param locationKey The location key
-	 * @param domainKey The domain key
-	 * @param isReplication Set to true if the PEX is started as replication.
-	 *        This means that this peer learned that an other peer is closer and
-	 *        sends tracker information to that peer.
-	 * @param channelCreator The channel creator that creates connections
-	 * @param forceTCP Set to true if the communication should be TCP, default
-	 *        is UDP
-	 * @return The future response to keep track of future events
-	 */
-	public FutureResponse peerExchange(final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
-			boolean isReplication, ChannelCreator channelCreator, boolean forceTCP)
-	{
-		final Message message = createMessage(remotePeer, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1);
-		Set<Number160> tmp1;
-		
-		//Can run concurrently
-		synchronized(sentPeers)
-		{
-			tmp1 = sentPeers.get(remotePeer.getID());
-			if (tmp1 == null)
-			{
-				tmp1 = new HashSet<Number160>();
-				sentPeers.put(remotePeer.getID(), tmp1);
-			}
-		}
+    // since PEX is push based, each peer needs to keep track what was sent to
+    // whom.
+    final private Map<Number160, Set<Number160>> sentPeers;
 
-		Map<Number160, TrackerData> peers;
-		if (isReplication)
-		{
-			peers = getPeerBean().getTrackerStorage().meshPeers(locationKey, domainKey);
-			if (logger.isDebugEnabled())
-				logger.debug("we got stored meshPeers size:" + peers.size());
-		}
-		else
-		{
-			peers = getPeerBean().getTrackerStorage().activePeers(locationKey, domainKey);
-			if (logger.isDebugEnabled())
-				logger.debug("we got stored activePeers size:" + peers.size());
-		}
+    public PeerExchangeRPC( PeerBean peerBean, ConnectionBean connectionBean )
+    {
+        super( peerBean, connectionBean );
+        registerIoHandler( Command.PEX );
+        sentPeers = new CacheMap<Number160, Set<Number160>>( SENT_PEERS_CACHE_SIZE, true );
+    }
 
-		synchronized (tmp1)
-		{
-			peers = Utils.subtract(peers, tmp1);
-			peers = Utils.limit(peers, TrackerRPC.MAX_MSG_SIZE_UDP);
-			// add to our map that we sent the following information to this peer
-			tmp1.addAll(peers.keySet());
-		}
+    /**
+     * Peer exchange (PEX) information about other peers from the swarm, to not ask the primary trackers too often. This
+     * is an RPC.
+     * 
+     * @param remotePeer The remote peer to send this request
+     * @param locationKey The location key
+     * @param domainKey The domain key
+     * @param isReplication Set to true if the PEX is started as replication. This means that this peer learned that an
+     *            other peer is closer and sends tracker information to that peer.
+     * @param channelCreator The channel creator that creates connections
+     * @param forceTCP Set to true if the communication should be TCP, default is UDP
+     * @return The future response to keep track of future events
+     */
+    public FutureResponse peerExchange( final PeerAddress remotePeer, Number160 locationKey, Number160 domainKey,
+                                        boolean isReplication, ChannelCreator channelCreator, boolean forceTCP )
+    {
+        final Message message =
+            createMessage( remotePeer, Command.PEX, isReplication ? Type.REQUEST_FF_2 : Type.REQUEST_FF_1 );
+        Set<Number160> tmp1;
 
-		message.setKeyKey(locationKey, domainKey);
-		// offline peers notification
-		// TODO: enable it again...
-		// if(removed.size() > 0)
-		// message.setKeys(removed);
-		// active peers notification
-		if (peers.size() > 0)
-			message.setTrackerData(peers.values());
-		if (peers.size() > 0) // || removed.size() > 0)
-		{
-			if (logger.isDebugEnabled())
-				logger.debug("sent (" + message.getSender().getID() + ") to " + remotePeer.getID() + " / "
-						+ peers.size());
-			FutureResponse futureResponse = new FutureResponse(message);
-			if(!forceTCP)
-			{
-				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-				return requestHandler.fireAndForgetUDP(channelCreator);
-			}
-			else
-			{
-				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-				return requestHandler.fireAndForgetTCP(channelCreator);
-			}
-		}
-		else
-		{
-			// we have nothing to deliver
-			FutureResponse futureResponse = new FutureResponse(message);
-			futureResponse.setResponse();
-			return futureResponse;
-		}
-	}
+        // Can run concurrently
+        synchronized ( sentPeers )
+        {
+            tmp1 = sentPeers.get( remotePeer.getID() );
+            if ( tmp1 == null )
+            {
+                tmp1 = new HashSet<Number160>();
+                sentPeers.put( remotePeer.getID(), tmp1 );
+            }
+        }
 
-	@Override
-	public Message handleResponse(final Message message, boolean sign) throws Exception
-	{
-		if(!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2)
-				&& message.getCommand() == Command.PEX))
-		{
-			throw new IllegalArgumentException("Message content is wrong");
-		}
-		Collection<TrackerData> tmp = message.getTrackerData();
-		Number160 locationKey = message.getKeyKey1();
-		Number160 domainKey = message.getKeyKey2();
-		Collection<Number160> removedKeys = message.getKeys();
-		if (tmp != null && tmp.size() > 0 && locationKey != null && domainKey != null)
-		{
-			final PeerAddress referrer = message.getSender();
-			for (TrackerData data : tmp)
-			{
-				PeerAddress trackerEntry = data.getPeerAddress();
-				getPeerBean().getTrackerStorage().putReferred(locationKey, domainKey, trackerEntry, referrer,
-						data.getAttachement(), data.getOffset(), data.getLength(),
-						message.getType() == Type.REQUEST_FF_1 ? ReferrerType.ACTIVE : ReferrerType.MESH);
-				if (logger.isDebugEnabled())
-				{
-					logger.debug("Adding " + data.getPeerAddress() + " to the map. I'm " + message.getRecipient());
-				}
-			}
-			if (removedKeys != null)
-			{
-				for (Number160 key : removedKeys)
-				{
-					getPeerBean().getTrackerStorage().removeReferred(locationKey, domainKey, key, referrer);
-				}
-			}
-		}
-		return message;
-	}
+        Map<Number160, TrackerData> peers;
+        if ( isReplication )
+        {
+            peers = getPeerBean().getTrackerStorage().meshPeers( locationKey, domainKey );
+            if ( logger.isDebugEnabled() )
+                logger.debug( "we got stored meshPeers size:" + peers.size() );
+        }
+        else
+        {
+            peers = getPeerBean().getTrackerStorage().activePeers( locationKey, domainKey );
+            if ( logger.isDebugEnabled() )
+                logger.debug( "we got stored activePeers size:" + peers.size() );
+        }
+
+        synchronized ( tmp1 )
+        {
+            peers = Utils.subtract( peers, tmp1 );
+            peers = Utils.limit( peers, TrackerRPC.MAX_MSG_SIZE_UDP );
+            // add to our map that we sent the following information to this peer
+            tmp1.addAll( peers.keySet() );
+        }
+
+        message.setKeyKey( locationKey, domainKey );
+        // offline peers notification
+        // TODO: enable it again...
+        // if(removed.size() > 0)
+        // message.setKeys(removed);
+        // active peers notification
+        if ( peers.size() > 0 )
+            message.setTrackerData( peers.values() );
+        if ( peers.size() > 0 ) // || removed.size() > 0)
+        {
+            if ( logger.isDebugEnabled() )
+                logger.debug( "sent (" + message.getSender().getID() + ") to " + remotePeer.getID() + " / "
+                    + peers.size() );
+            FutureResponse futureResponse = new FutureResponse( message );
+            if ( !forceTCP )
+            {
+                final RequestHandlerUDP<FutureResponse> requestHandler =
+                    new RequestHandlerUDP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+                return requestHandler.fireAndForgetUDP( channelCreator );
+            }
+            else
+            {
+                final RequestHandlerTCP<FutureResponse> requestHandler =
+                    new RequestHandlerTCP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+                return requestHandler.fireAndForgetTCP( channelCreator );
+            }
+        }
+        else
+        {
+            // we have nothing to deliver
+            FutureResponse futureResponse = new FutureResponse( message );
+            futureResponse.setResponse();
+            return futureResponse;
+        }
+    }
+
+    @Override
+    public Message handleResponse( final Message message, boolean sign )
+        throws Exception
+    {
+        if ( !( ( message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2 ) && message.getCommand() == Command.PEX ) )
+        {
+            throw new IllegalArgumentException( "Message content is wrong" );
+        }
+        Collection<TrackerData> tmp = message.getTrackerData();
+        Number160 locationKey = message.getKeyKey1();
+        Number160 domainKey = message.getKeyKey2();
+        Collection<Number160> removedKeys = message.getKeys();
+        if ( tmp != null && tmp.size() > 0 && locationKey != null && domainKey != null )
+        {
+            final PeerAddress referrer = message.getSender();
+            for ( TrackerData data : tmp )
+            {
+                PeerAddress trackerEntry = data.getPeerAddress();
+                getPeerBean().getTrackerStorage().putReferred( locationKey,
+                                                               domainKey,
+                                                               trackerEntry,
+                                                               referrer,
+                                                               data.getAttachement(),
+                                                               data.getOffset(),
+                                                               data.getLength(),
+                                                               message.getType() == Type.REQUEST_FF_1 ? ReferrerType.ACTIVE
+                                                                               : ReferrerType.MESH );
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "Adding " + data.getPeerAddress() + " to the map. I'm " + message.getRecipient() );
+                }
+            }
+            if ( removedKeys != null )
+            {
+                for ( Number160 key : removedKeys )
+                {
+                    getPeerBean().getTrackerStorage().removeReferred( locationKey, domainKey, key, referrer );
+                }
+            }
+        }
+        return message;
+    }
 }

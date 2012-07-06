@@ -14,85 +14,91 @@
  * the License.
  */
 package net.tomp2p.p2p;
+
 public class RoutingConfiguration
 {
-	final private int directHits;
-	final private int maxNoNewInfoDiff;
-	final private int maxFailures;
-	final private int maxSuccess;
-	final private int parallel;
-	final private boolean forceTCP;
-	
-	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int parallel)
-	{
-		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, 20, parallel);
-	}
+    final private int directHits;
 
-	public RoutingConfiguration(int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel)
-	{
-		this(Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel);
-	}
-	
-	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel)
-	{
-		this(directHits, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel, false);
-	}
+    final private int maxNoNewInfoDiff;
 
-	public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel, boolean forceTCP)
-	{
-		if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0)
-			throw new IllegalArgumentException("need to be larger or equals zero");
-		this.directHits = directHits;
-		this.maxNoNewInfoDiff = maxNoNewInfoDiff;
-		this.maxFailures = maxFailures;
-		this.maxSuccess = maxSuccess;
-		this.parallel = parallel;
-		this.forceTCP = forceTCP;
-	}
+    final private int maxFailures;
 
-	public int getDirectHits()
-	{
-		return directHits;
-	}
+    final private int maxSuccess;
 
-	/**
-	 * This returns the difference to the min value of P2P configuration. We
-	 * need to have a difference, because we need to search at least for min
-	 * peers in the routing, as otherwise if we find the closest node by chance,
-	 * then we don't reach min.
-	 * 
-	 * @return
-	 */
-	public int getMaxNoNewInfoDiff()
-	{
-		return maxNoNewInfoDiff;
-	}
+    final private int parallel;
 
-	public int getMaxNoNewInfo(int minimumResults)
-	{
-		return maxNoNewInfoDiff + minimumResults;
-	}
+    final private boolean forceTCP;
 
-	public int getMaxFailures()
-	{
-		return maxFailures;
-	}
-	
-	public int getMaxSuccess()
-	{
-		return maxSuccess;
-	}
+    public RoutingConfiguration( int maxNoNewInfoDiff, int maxFailures, int parallel )
+    {
+        this( Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, 20, parallel );
+    }
 
-	public int getParallel()
-	{
-		return parallel;
-	}
-	
-	/**
-	 * @return True if the routing should use TCP instead of the default UDP
-	 */
-	public boolean isForceTCP()
-	{
-		return forceTCP;
-	}
+    public RoutingConfiguration( int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel )
+    {
+        this( Integer.MAX_VALUE, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel );
+    }
+
+    public RoutingConfiguration( int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel )
+    {
+        this( directHits, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel, false );
+    }
+
+    public RoutingConfiguration( int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel,
+                                 boolean forceTCP )
+    {
+        if ( directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0 )
+            throw new IllegalArgumentException( "need to be larger or equals zero" );
+        this.directHits = directHits;
+        this.maxNoNewInfoDiff = maxNoNewInfoDiff;
+        this.maxFailures = maxFailures;
+        this.maxSuccess = maxSuccess;
+        this.parallel = parallel;
+        this.forceTCP = forceTCP;
+    }
+
+    public int getDirectHits()
+    {
+        return directHits;
+    }
+
+    /**
+     * This returns the difference to the min value of P2P configuration. We need to have a difference, because we need
+     * to search at least for min peers in the routing, as otherwise if we find the closest node by chance, then we
+     * don't reach min.
+     * 
+     * @return
+     */
+    public int getMaxNoNewInfoDiff()
+    {
+        return maxNoNewInfoDiff;
+    }
+
+    public int getMaxNoNewInfo( int minimumResults )
+    {
+        return maxNoNewInfoDiff + minimumResults;
+    }
+
+    public int getMaxFailures()
+    {
+        return maxFailures;
+    }
+
+    public int getMaxSuccess()
+    {
+        return maxSuccess;
+    }
+
+    public int getParallel()
+    {
+        return parallel;
+    }
+
+    /**
+     * @return True if the routing should use TCP instead of the default UDP
+     */
+    public boolean isForceTCP()
+    {
+        return forceTCP;
+    }
 }

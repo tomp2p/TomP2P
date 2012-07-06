@@ -14,42 +14,43 @@
  * the License.
  */
 package net.tomp2p.utils;
+
 /**
- * The implementation that is used for normal operation. This class uses
- * System.currentTimeMillis() and Thread.sleep().
+ * The implementation that is used for normal operation. This class uses System.currentTimeMillis() and Thread.sleep().
  * 
  * @author Thomas Bocek
- * 
  */
-public class TimingImpl implements Timing
+public class TimingImpl
+    implements Timing
 {
-	@Override
-	public long currentTimeMillis()
-	{
-		return System.currentTimeMillis();
-	}
+    @Override
+    public long currentTimeMillis()
+    {
+        return System.currentTimeMillis();
+    }
 
-	@Override
-	public void sleep(int millis) throws InterruptedException
-	{
-		Thread.sleep(millis);
-	}
+    @Override
+    public void sleep( int millis )
+        throws InterruptedException
+    {
+        Thread.sleep( millis );
+    }
 
-	@Override
-	public void sleepUninterruptibly(int millis)
-	{
-		long stopSleep = currentTimeMillis() + millis;
-		long sleep = 0;
-		while ((sleep = stopSleep - currentTimeMillis()) > 0)
-		{
-			try
-			{
-				Thread.sleep(sleep);
-			}
-			catch (InterruptedException e)
-			{
-				Thread.currentThread().interrupt();
-			}
-		}
-	}
+    @Override
+    public void sleepUninterruptibly( int millis )
+    {
+        long stopSleep = currentTimeMillis() + millis;
+        long sleep = 0;
+        while ( ( sleep = stopSleep - currentTimeMillis() ) > 0 )
+        {
+            try
+            {
+                Thread.sleep( sleep );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
 }

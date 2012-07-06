@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.PeerAddress;
@@ -24,164 +25,169 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 
 /**
- * The future that keeps track of network discovery such as discovery if its
- * behind a NAT, the status if UPNP or NAT-PMP could be established, if there is
- * portforwarding.
+ * The future that keeps track of network discovery such as discovery if its behind a NAT, the status if UPNP or NAT-PMP
+ * could be established, if there is portforwarding.
  * 
  * @author Thomas Bocek
- * 
  */
-public class FutureDiscover extends BaseFutureImpl<FutureDiscover>
+public class FutureDiscover
+    extends BaseFutureImpl<FutureDiscover>
 {
-	// timeout to tell us when discovery failed.
-	private Timeout timeout;
-	// result
-	private PeerAddress ourPeerAddress;
-	private PeerAddress reporter;
-	private boolean discoveredTCP = false;
-	private boolean discoveredUDP = false;
-	
-	public FutureDiscover()
-	{
-		self(this);
-	}
+    // timeout to tell us when discovery failed.
+    private Timeout timeout;
 
-	/**
-	 * Creates a new future object and creates a timer that fires failed after a
-	 * timeout.
-	 * 
-	 * @param timer The timer to use
-	 * @param delaySec The delay in seconds
-	 */
-	public void setTimeout(Timer timer, int delaySec)
-	{
-		synchronized (lock)
-		{
-			timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
-			addListener(new BaseFutureAdapter<FutureDiscover>()
-					{
-				@Override
-				public void operationComplete(FutureDiscover future) throws Exception
-				{
-					// cancel timeout if we are done.
-					synchronized (lock)
-					{
-						if(timeout != null)
-						{
-							timeout.cancel();
-						}
-					}
-				}
-			});
-		}
-	}
+    // result
+    private PeerAddress ourPeerAddress;
 
-	/**
-	 * Gets called if the discovery was a success and an other peer could ping
-	 * us with TCP and UDP.
-	 * 
-	 * @param peerAddress The peerAddress of our server
-	 * @param peerAddress The peerAddress of the peer that reported our address
-	 */
-	public void done(PeerAddress ourPeerAddress, PeerAddress reporter)
-	{
-		//System.err.println("called done");
-		synchronized (lock)
-		{
-			if (!setCompletedAndNotify())
-				return;
-			this.type = FutureType.OK;
-			this.ourPeerAddress = ourPeerAddress;
-			this.reporter = reporter;
-		}
-		notifyListerenrs();
-	}
+    private PeerAddress reporter;
 
-	/**
-	 * The peerAddress where we are reachable
-	 * 
-	 * @return The new un-firewalled peerAddress of this peer
-	 */
-	public PeerAddress getPeerAddress()
-	{
-		synchronized (lock)
-		{
-			return ourPeerAddress;
-		}
-	}
-	
-	/**
-	 * @return The reporter that told us what peer address we have
-	 */
-	public PeerAddress getReporter()
-	{
-		synchronized (lock)
-		{
-			return reporter;
-		}
-	}
+    private boolean discoveredTCP = false;
 
-	/**
-	 * Intermediate result if TCP has been discovered. Set discoveredTCP True if
-	 * other peer could reach us with a TCP ping.
-	 */
-	public void setDiscoveredTCP()
-	{
-		synchronized (lock)
-		{
-			this.discoveredTCP = true;
-		}
-	}
+    private boolean discoveredUDP = false;
 
-	/**
-	 * Intermediate result if UDP has been discovered. Set discoveredUDP True if
-	 * other peer could reach us with a UDP ping.
-	 */
-	public void setDiscoveredUDP()
-	{
-		synchronized (lock)
-		{
-			this.discoveredUDP = true;
-		}
-	}
+    public FutureDiscover()
+    {
+        self( this );
+    }
 
-	/**
-	 * Checks if this peer can be reached via TCP.
-	 * 
-	 * @return True if this peer can be reached via TCP from outside.
-	 */
-	public boolean isDiscoveredTCP()
-	{
-		synchronized (lock)
-		{
-			return discoveredTCP;
-		}
-	}
+    /**
+     * Creates a new future object and creates a timer that fires failed after a timeout.
+     * 
+     * @param timer The timer to use
+     * @param delaySec The delay in seconds
+     */
+    public void setTimeout( Timer timer, int delaySec )
+    {
+        synchronized ( lock )
+        {
+            timeout = timer.newTimeout( new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS );
+            addListener( new BaseFutureAdapter<FutureDiscover>()
+            {
+                @Override
+                public void operationComplete( FutureDiscover future )
+                    throws Exception
+                {
+                    // cancel timeout if we are done.
+                    synchronized ( lock )
+                    {
+                        if ( timeout != null )
+                        {
+                            timeout.cancel();
+                        }
+                    }
+                }
+            } );
+        }
+    }
 
-	/**
-	 * Checks if this peer can be reached via UDP.
-	 * 
-	 * @return True if this peer can be reached via UDP from outside.
-	 */
-	public boolean isDiscoveredUDP()
-	{
-		synchronized (lock)
-		{
-			return discoveredUDP;
-		}
+    /**
+     * Gets called if the discovery was a success and an other peer could ping us with TCP and UDP.
+     * 
+     * @param peerAddress The peerAddress of our server
+     * @param peerAddress The peerAddress of the peer that reported our address
+     */
+    public void done( PeerAddress ourPeerAddress, PeerAddress reporter )
+    {
+        // System.err.println("called done");
+        synchronized ( lock )
+        {
+            if ( !setCompletedAndNotify() )
+                return;
+            this.type = FutureType.OK;
+            this.ourPeerAddress = ourPeerAddress;
+            this.reporter = reporter;
+        }
+        notifyListerenrs();
+    }
 
-	}
+    /**
+     * The peerAddress where we are reachable
+     * 
+     * @return The new un-firewalled peerAddress of this peer
+     */
+    public PeerAddress getPeerAddress()
+    {
+        synchronized ( lock )
+        {
+            return ourPeerAddress;
+        }
+    }
 
-	/**
-	 * In case of no peer can contact us, we fire an failed.
-	 */
-	private final class DiscoverTimeoutTask implements TimerTask
-	{
-		private final long start=Timings.currentTimeMillis();
-		@Override
-		public void run(Timeout timeout) throws Exception
-		{
-			setFailed("Timeout in Discover: "+(Timings.currentTimeMillis()-start)+ "ms");
-		}
-	}
+    /**
+     * @return The reporter that told us what peer address we have
+     */
+    public PeerAddress getReporter()
+    {
+        synchronized ( lock )
+        {
+            return reporter;
+        }
+    }
+
+    /**
+     * Intermediate result if TCP has been discovered. Set discoveredTCP True if other peer could reach us with a TCP
+     * ping.
+     */
+    public void setDiscoveredTCP()
+    {
+        synchronized ( lock )
+        {
+            this.discoveredTCP = true;
+        }
+    }
+
+    /**
+     * Intermediate result if UDP has been discovered. Set discoveredUDP True if other peer could reach us with a UDP
+     * ping.
+     */
+    public void setDiscoveredUDP()
+    {
+        synchronized ( lock )
+        {
+            this.discoveredUDP = true;
+        }
+    }
+
+    /**
+     * Checks if this peer can be reached via TCP.
+     * 
+     * @return True if this peer can be reached via TCP from outside.
+     */
+    public boolean isDiscoveredTCP()
+    {
+        synchronized ( lock )
+        {
+            return discoveredTCP;
+        }
+    }
+
+    /**
+     * Checks if this peer can be reached via UDP.
+     * 
+     * @return True if this peer can be reached via UDP from outside.
+     */
+    public boolean isDiscoveredUDP()
+    {
+        synchronized ( lock )
+        {
+            return discoveredUDP;
+        }
+
+    }
+
+    /**
+     * In case of no peer can contact us, we fire an failed.
+     */
+    private final class DiscoverTimeoutTask
+        implements TimerTask
+    {
+        private final long start = Timings.currentTimeMillis();
+
+        @Override
+        public void run( Timeout timeout )
+            throws Exception
+        {
+            setFailed( "Timeout in Discover: " + ( Timings.currentTimeMillis() - start ) + "ms" );
+        }
+    }
 }

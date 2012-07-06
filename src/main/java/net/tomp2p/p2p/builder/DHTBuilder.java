@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.p2p.builder;
 
 import java.util.concurrent.ScheduledFuture;
@@ -15,221 +31,235 @@ import net.tomp2p.peers.Number160;
 
 public abstract class DHTBuilder<K extends DHTBuilder<K>>
 {
-	public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-dht");
-	protected final static FutureDHT FUTURE_DHT_SHUTDOWN = new FutureDHT().setFailed("Peer is shutting down");
-	protected final Peer peer;
-	protected final Number160 locationKey;
-	//
-	protected Number160 domainKey;
-	protected RoutingConfiguration routingConfiguration;
-	protected RequestP2PConfiguration requestP2PConfiguration;
-	protected FutureCreate<FutureDHT> futureCreate;
-	protected FutureChannelCreator futureChannelCreator;
-	protected FutureCreator<FutureDHT> defaultDirectReplication;
-	//
-	protected int refreshSeconds = 30;
-	protected boolean protectDomain = false;
-	protected boolean signMessage = false;
-	protected boolean manualCleanup = false;
-	protected boolean directReplication = false;
-	
-	private K self;
-	
-	public DHTBuilder(Peer peer, Number160 locationKey)
-	{
-		this.peer = peer;
-		this.locationKey = locationKey;
-	}
-	
-	public void self(K self)
-	{
-		this.self = self;
-	}
+    public final static Number160 DEFAULT_DOMAIN = Number160.createHash( "default-dht" );
 
-	public Number160 getDomainKey()
-	{
-		return domainKey;
-	}
+    protected final static FutureDHT FUTURE_DHT_SHUTDOWN = new FutureDHT().setFailed( "Peer is shutting down" );
 
-	public K setDomainKey(Number160 domainKey)
-	{
-		this.domainKey = domainKey;
-		return self;
-	}
+    protected final Peer peer;
 
-	public RoutingConfiguration getRoutingConfiguration()
-	{
-		return routingConfiguration;
-	}
+    protected final Number160 locationKey;
 
-	public K setRoutingConfiguration(RoutingConfiguration routingConfiguration)
-	{
-		this.routingConfiguration = routingConfiguration;
-		return self;
-	}
+    //
+    protected Number160 domainKey;
 
-	public RequestP2PConfiguration getRequestP2PConfiguration()
-	{
-		return requestP2PConfiguration;
-	}
+    protected RoutingConfiguration routingConfiguration;
 
-	public K setRequestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration)
-	{
-		this.requestP2PConfiguration = requestP2PConfiguration;
-		return self;
-	}
+    protected RequestP2PConfiguration requestP2PConfiguration;
 
-	public FutureCreate<FutureDHT> getFutureCreate()
-	{
-		return futureCreate;
-	}
+    protected FutureCreate<FutureDHT> futureCreate;
 
-	public K setFutureCreate(FutureCreate<FutureDHT> futureCreate)
-	{
-		this.futureCreate = futureCreate;
-		return self;
-	}
+    protected FutureChannelCreator futureChannelCreator;
 
-	public FutureChannelCreator getFutureChannelCreator()
-	{
-		return futureChannelCreator;
-	}
+    protected FutureCreator<FutureDHT> defaultDirectReplication;
 
-	public K setFutureChannelCreator(FutureChannelCreator futureChannelCreator)
-	{
-		this.futureChannelCreator = futureChannelCreator;
-		return self;
-	}
+    //
+    protected int refreshSeconds = 30;
 
-	public int getRefreshSeconds()
-	{
-		return refreshSeconds;
-	}
+    protected boolean protectDomain = false;
 
-	public K setRefreshSeconds(int refreshSeconds)
-	{
-		this.refreshSeconds = refreshSeconds;
-		return self;
-	}
+    protected boolean signMessage = false;
 
-	public FutureCreator<FutureDHT> getDefaultDirectReplication()
-	{
-		return defaultDirectReplication;
-	}
+    protected boolean manualCleanup = false;
 
-	public K setDefaultDirectReplication(FutureCreator<FutureDHT> defaultDirectReplication)
-	{
-		this.defaultDirectReplication = defaultDirectReplication;
-		return self;
-	}
+    protected boolean directReplication = false;
 
-	public boolean isProtectDomain()
-	{
-		return protectDomain;
-	}
+    private K self;
 
-	public K setProtectDomain(boolean protectDomain)
-	{
-		this.protectDomain = protectDomain;
-		return self;
-	}
-	
-	public K setProtectDomain()
-	{
-		this.protectDomain = true;
-		return self;
-	}
+    public DHTBuilder( Peer peer, Number160 locationKey )
+    {
+        this.peer = peer;
+        this.locationKey = locationKey;
+    }
 
-	public boolean isSignMessage()
-	{
-		return signMessage;
-	}
+    public void self( K self )
+    {
+        this.self = self;
+    }
 
-	public K setSignMessage(boolean signMessage)
-	{
-		this.signMessage = signMessage;
-		return self;
-	}
-	
-	public K setSignMessage()
-	{
-		this.signMessage = true;
-		return self;
-	}
+    public Number160 getDomainKey()
+    {
+        return domainKey;
+    }
 
-	public boolean isManualCleanup()
-	{
-		return manualCleanup;
-	}
+    public K setDomainKey( Number160 domainKey )
+    {
+        this.domainKey = domainKey;
+        return self;
+    }
 
-	public K setManualCleanup(boolean isManualCleanup)
-	{
-		this.manualCleanup = isManualCleanup;
-		return self;
-	}
-	
-	public K setManualCleanup()
-	{
-		this.manualCleanup = true;
-		return self;
-	}
+    public RoutingConfiguration getRoutingConfiguration()
+    {
+        return routingConfiguration;
+    }
 
-	public boolean isDirectReplication()
-	{
-		return directReplication;
-	}
+    public K setRoutingConfiguration( RoutingConfiguration routingConfiguration )
+    {
+        this.routingConfiguration = routingConfiguration;
+        return self;
+    }
 
-	public K setDirectReplication(boolean directReplication)
-	{
-		this.directReplication = directReplication;
-		return self;
-	}
-	
-	public K setDirectReplication()
-	{
-		this.directReplication = true;
-		return self;
-	}
-	
-	protected void setupCancel(final FutureCleanup futureCleanup, final ScheduledFuture<?> future)
-	{
-		peer.getScheduledFutures().add(future);
-		futureCleanup.addCleanup(new Cancellable()
-		{
-			@Override
-			public void cancel()
-			{
-				future.cancel(true);
-				peer.getScheduledFutures().remove(future);
-			}
-		});
-	}
-	
-	protected void preBuild(String name)
-	{
-		if(domainKey == null)
-		{
-			domainKey = DEFAULT_DOMAIN;
-		}
-		if(routingConfiguration == null)
-		{
-			routingConfiguration = new RoutingConfiguration(5, 10, 2);
-		}
-		if(requestP2PConfiguration == null)
-		{
-			requestP2PConfiguration = new RequestP2PConfiguration(3, 5, 3);
-		}
-		int size = peer.getPeerBean().getPeerMap().size() + 1;
-		requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult(size);
-		if(futureChannelCreator == null)
-		{
-			futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, name);
-		}
-		if(refreshSeconds > 0)
-		{
-			directReplication = true;
-		}
-	}
-	
-	public abstract FutureDHT start();
+    public RequestP2PConfiguration getRequestP2PConfiguration()
+    {
+        return requestP2PConfiguration;
+    }
+
+    public K setRequestP2PConfiguration( RequestP2PConfiguration requestP2PConfiguration )
+    {
+        this.requestP2PConfiguration = requestP2PConfiguration;
+        return self;
+    }
+
+    public FutureCreate<FutureDHT> getFutureCreate()
+    {
+        return futureCreate;
+    }
+
+    public K setFutureCreate( FutureCreate<FutureDHT> futureCreate )
+    {
+        this.futureCreate = futureCreate;
+        return self;
+    }
+
+    public FutureChannelCreator getFutureChannelCreator()
+    {
+        return futureChannelCreator;
+    }
+
+    public K setFutureChannelCreator( FutureChannelCreator futureChannelCreator )
+    {
+        this.futureChannelCreator = futureChannelCreator;
+        return self;
+    }
+
+    public int getRefreshSeconds()
+    {
+        return refreshSeconds;
+    }
+
+    public K setRefreshSeconds( int refreshSeconds )
+    {
+        this.refreshSeconds = refreshSeconds;
+        return self;
+    }
+
+    public FutureCreator<FutureDHT> getDefaultDirectReplication()
+    {
+        return defaultDirectReplication;
+    }
+
+    public K setDefaultDirectReplication( FutureCreator<FutureDHT> defaultDirectReplication )
+    {
+        this.defaultDirectReplication = defaultDirectReplication;
+        return self;
+    }
+
+    public boolean isProtectDomain()
+    {
+        return protectDomain;
+    }
+
+    public K setProtectDomain( boolean protectDomain )
+    {
+        this.protectDomain = protectDomain;
+        return self;
+    }
+
+    public K setProtectDomain()
+    {
+        this.protectDomain = true;
+        return self;
+    }
+
+    public boolean isSignMessage()
+    {
+        return signMessage;
+    }
+
+    public K setSignMessage( boolean signMessage )
+    {
+        this.signMessage = signMessage;
+        return self;
+    }
+
+    public K setSignMessage()
+    {
+        this.signMessage = true;
+        return self;
+    }
+
+    public boolean isManualCleanup()
+    {
+        return manualCleanup;
+    }
+
+    public K setManualCleanup( boolean isManualCleanup )
+    {
+        this.manualCleanup = isManualCleanup;
+        return self;
+    }
+
+    public K setManualCleanup()
+    {
+        this.manualCleanup = true;
+        return self;
+    }
+
+    public boolean isDirectReplication()
+    {
+        return directReplication;
+    }
+
+    public K setDirectReplication( boolean directReplication )
+    {
+        this.directReplication = directReplication;
+        return self;
+    }
+
+    public K setDirectReplication()
+    {
+        this.directReplication = true;
+        return self;
+    }
+
+    protected void setupCancel( final FutureCleanup futureCleanup, final ScheduledFuture<?> future )
+    {
+        peer.getScheduledFutures().add( future );
+        futureCleanup.addCleanup( new Cancellable()
+        {
+            @Override
+            public void cancel()
+            {
+                future.cancel( true );
+                peer.getScheduledFutures().remove( future );
+            }
+        } );
+    }
+
+    protected void preBuild( String name )
+    {
+        if ( domainKey == null )
+        {
+            domainKey = DEFAULT_DOMAIN;
+        }
+        if ( routingConfiguration == null )
+        {
+            routingConfiguration = new RoutingConfiguration( 5, 10, 2 );
+        }
+        if ( requestP2PConfiguration == null )
+        {
+            requestP2PConfiguration = new RequestP2PConfiguration( 3, 5, 3 );
+        }
+        int size = peer.getPeerBean().getPeerMap().size() + 1;
+        requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult( size );
+        if ( futureChannelCreator == null )
+        {
+            futureChannelCreator = peer.reserve( routingConfiguration, requestP2PConfiguration, name );
+        }
+        if ( refreshSeconds > 0 )
+        {
+            directReplication = true;
+        }
+    }
+
+    public abstract FutureDHT start();
 }

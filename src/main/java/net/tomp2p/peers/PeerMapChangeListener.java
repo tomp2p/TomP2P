@@ -14,33 +14,32 @@
  * the License.
  */
 package net.tomp2p.peers;
+
 /**
- * This interface can be added to the map, to get notified of peer insertion or
- * removal. This is useful for replication.
+ * This interface can be added to the map, to get notified of peer insertion or removal. This is useful for replication.
  * 
  * @author Thomas Bocek
- * 
  */
 public interface PeerMapChangeListener
 {
-	/**
-	 * This method is called if a peer is added to the map
-	 * 
-	 * @param peerAddress The peer that has been added.
-	 */
-	public void peerInserted(PeerAddress peerAddress);
+    /**
+     * This method is called if a peer is added to the map
+     * 
+     * @param peerAddress The peer that has been added.
+     */
+    public void peerInserted( PeerAddress peerAddress );
 
-	/**
-	 * This method is called if a peer is removed from the map
-	 * 
-	 * @param peerAddress The peer that has been removed and add to the cache.
-	 */
-	public void peerRemoved(PeerAddress peerAddress);
+    /**
+     * This method is called if a peer is removed from the map
+     * 
+     * @param peerAddress The peer that has been removed and add to the cache.
+     */
+    public void peerRemoved( PeerAddress peerAddress );
 
-	/**
-	 * This method is called if a peer is updated.
-	 * 
-	 * @param peerAddress The peer can change its IP and some statistical data
-	 */
-	public void peerUpdated(PeerAddress peerAddress);
+    /**
+     * This method is called if a peer is updated.
+     * 
+     * @param peerAddress The peer can change its IP and some statistical data
+     */
+    public void peerUpdated( PeerAddress peerAddress );
 }

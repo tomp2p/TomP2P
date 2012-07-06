@@ -14,52 +14,52 @@
  * the License.
  */
 package net.tomp2p.connection;
+
 /**
- * This exception is used internally and passed over to the method
- * exceptionCaught. A PeerException always has a cause
+ * This exception is used internally and passed over to the method exceptionCaught. A PeerException always has a cause
  * 
  * @author Thomas Bocek
- * 
  */
-public class PeerException extends Exception
+public class PeerException
+    extends Exception
 {
-	private static final long serialVersionUID = 3710790196087629945L;
+    private static final long serialVersionUID = 3710790196087629945L;
 
-	public enum AbortCause
-	{
-		/*
-		 * USEL_ABORT means that this peer aborts the communication. PEER_ERROR
-		 * means that the other peer did not react as expected (e.g., no
-		 * reply). PEER_ABORT means that the other peer found an error on our
-		 * side (e.g., if this peer thinks the other peer is someone else)
-		 */
-		USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
-	}
-	final private AbortCause abortCause;
+    public enum AbortCause
+    {
+        /*
+         * USEL_ABORT means that this peer aborts the communication. PEER_ERROR means that the other peer did not react
+         * as expected (e.g., no reply). PEER_ABORT means that the other peer found an error on our side (e.g., if this
+         * peer thinks the other peer is someone else)
+         */
+        USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
+    }
 
-	/**
-	 * Specified error with custom message
-	 * 
-	 * @param abortCause either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
-	 * @param message Custom message
-	 */
-	public PeerException(AbortCause abortCause, String message)
-	{
-		super(message);
-		this.abortCause = abortCause;
-	}
+    final private AbortCause abortCause;
 
-	/**
-	 * @return The cause of the error.
-	 */
-	public AbortCause getAbortCause()
-	{
-		return abortCause;
-	}
+    /**
+     * Specified error with custom message
+     * 
+     * @param abortCause either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
+     * @param message Custom message
+     */
+    public PeerException( AbortCause abortCause, String message )
+    {
+        super( message );
+        this.abortCause = abortCause;
+    }
 
-	@Override
-	public String toString()
-	{
-		return "PeerException (" + abortCause.toString()+ "): " + getMessage();
-	}
+    /**
+     * @return The cause of the error.
+     */
+    public AbortCause getAbortCause()
+    {
+        return abortCause;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "PeerException (" + abortCause.toString() + "): " + getMessage();
+    }
 }

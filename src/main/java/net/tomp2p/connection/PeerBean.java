@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.connection;
+
 import java.security.KeyPair;
 
 import net.tomp2p.p2p.Peer;
@@ -26,126 +27,133 @@ import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.task.TaskManager;
 
 /**
- * A bean that holds non-sharable (unique for each peer) configuration settings
- * for the peer. The sharable configurations are stored in
- * {@link ConnectionBean}.
+ * A bean that holds non-sharable (unique for each peer) configuration settings for the peer. The sharable
+ * configurations are stored in {@link ConnectionBean}.
  * 
  * @author Thomas Bocek
- * 
  */
 public class PeerBean
 {
-	// the key pair cannot be changed anymore
-	private final KeyPair keyPair;
-	// we need to make all volatile, as this can be called by the user from any
-	// thread.
-	private PeerAddress serverPeerAddress;
-	private PeerMap peerMap;
-	private StorageGeneric storage;
-	private TrackerStorage trackerStorage;
-	private Replication replicationStorage;
-	private Replication replicationTracker;
-	private Statistics statistics;
-	private Peer peer;
-	private TaskManager taskManager;
-	
-	public PeerBean(KeyPair keyPair)
-	{
-		this.keyPair = keyPair;
-	}
+    // the key pair cannot be changed anymore
+    private final KeyPair keyPair;
 
-	public PeerAddress getServerPeerAddress()
-	{
-		return serverPeerAddress;
-	}
+    // we need to make all volatile, as this can be called by the user from any
+    // thread.
+    private PeerAddress serverPeerAddress;
 
-	public void setServerPeerAddress(PeerAddress serverPeerAddress)
-	{
-		this.serverPeerAddress = serverPeerAddress;
-	}
+    private PeerMap peerMap;
 
-	public PeerMap getPeerMap()
-	{
-		return peerMap;
-	}
+    private StorageGeneric storage;
 
-	public void setPeerMap(PeerMap routing)
-	{
-		this.peerMap = routing;
-	}
+    private TrackerStorage trackerStorage;
 
-	public void setStorage(StorageGeneric storage)
-	{
-		this.storage = storage;
-	}
+    private Replication replicationStorage;
 
-	public StorageGeneric getStorage()
-	{
-		return storage;
-	}
+    private Replication replicationTracker;
 
-	public void setTrackerStorage(TrackerStorage trackerStorage)
-	{
-		this.trackerStorage = trackerStorage;
-	}
+    private Statistics statistics;
 
-	public TrackerStorage getTrackerStorage()
-	{
-		return trackerStorage;
-	}
+    private Peer peer;
 
-	public KeyPair getKeyPair()
-	{
-		return keyPair;
-	}
+    private TaskManager taskManager;
 
-	public void setReplicationStorage(Replication replicationStorage)
-	{
-		this.replicationStorage = replicationStorage;
-	}
+    public PeerBean( KeyPair keyPair )
+    {
+        this.keyPair = keyPair;
+    }
 
-	public Replication getReplicationStorage()
-	{
-		return replicationStorage;
-	}
+    public PeerAddress getServerPeerAddress()
+    {
+        return serverPeerAddress;
+    }
 
-	public void setStatistics(Statistics statistics)
-	{
-		this.statistics = statistics;
-	}
+    public void setServerPeerAddress( PeerAddress serverPeerAddress )
+    {
+        this.serverPeerAddress = serverPeerAddress;
+    }
 
-	public Statistics getStatistics()
-	{
-		return statistics;
-	}
+    public PeerMap getPeerMap()
+    {
+        return peerMap;
+    }
 
-	public Replication getReplicationTracker()
-	{
-		return replicationTracker;
-	}
+    public void setPeerMap( PeerMap routing )
+    {
+        this.peerMap = routing;
+    }
 
-	public void setReplicationTracker(Replication replicationTracker)
-	{
-		this.replicationTracker = replicationTracker;
-	}
+    public void setStorage( StorageGeneric storage )
+    {
+        this.storage = storage;
+    }
 
-	public Peer getPeer()
-	{
-		return peer;
-	}
+    public StorageGeneric getStorage()
+    {
+        return storage;
+    }
 
-	public void setPeer(Peer peer)
-	{
-		this.peer = peer;
-	}
-	
-	public TaskManager getTaskManager()
-	{
-		return taskManager;
-	}
+    public void setTrackerStorage( TrackerStorage trackerStorage )
+    {
+        this.trackerStorage = trackerStorage;
+    }
 
-	public void setTaskManager(TaskManager taskManager)
-	{
-		this.taskManager = taskManager;
-	}
+    public TrackerStorage getTrackerStorage()
+    {
+        return trackerStorage;
+    }
+
+    public KeyPair getKeyPair()
+    {
+        return keyPair;
+    }
+
+    public void setReplicationStorage( Replication replicationStorage )
+    {
+        this.replicationStorage = replicationStorage;
+    }
+
+    public Replication getReplicationStorage()
+    {
+        return replicationStorage;
+    }
+
+    public void setStatistics( Statistics statistics )
+    {
+        this.statistics = statistics;
+    }
+
+    public Statistics getStatistics()
+    {
+        return statistics;
+    }
+
+    public Replication getReplicationTracker()
+    {
+        return replicationTracker;
+    }
+
+    public void setReplicationTracker( Replication replicationTracker )
+    {
+        this.replicationTracker = replicationTracker;
+    }
+
+    public Peer getPeer()
+    {
+        return peer;
+    }
+
+    public void setPeer( Peer peer )
+    {
+        this.peer = peer;
+    }
+
+    public TaskManager getTaskManager()
+    {
+        return taskManager;
+    }
+
+    public void setTaskManager( TaskManager taskManager )
+    {
+        this.taskManager = taskManager;
+    }
 }

@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.examples;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -24,58 +25,57 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 
-
 /**
- * This simple example creates 10 nodes, bootstraps to the first and put and get
- * data from those 10 nodes.
+ * This simple example creates 10 nodes, bootstraps to the first and put and get data from those 10 nodes.
  * 
  * @author draft
- * 
  */
 public class ExampleUtils
 {
-	final private static Random rnd = new Random(42L);
-	public static void bootstrap(Peer[] peers)
-	{
-		List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
-		List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureDiscover tmp=peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).start();
-			futures2.add(tmp);
-		}
-		for (FutureDiscover future : futures2)
-		{
-			future.awaitUninterruptibly();
-		}
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
-			futures1.add(tmp);
-		}
-		for (int i = 1; i < peers.length; i++)
-		{
-			FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).start();
-			futures1.add(tmp);
-		}
-		for (FutureBootstrap future : futures1)
-			future.awaitUninterruptibly();
-	}
+    final private static Random rnd = new Random( 42L );
 
-	public static Peer[] createAndAttachNodes(int nr, int port) throws Exception
-	{
-		Peer[] peers = new Peer[nr];
-		for (int i = 0; i < nr; i++)
-		{
-			if(i == 0)
-			{
-				peers[0] = new PeerMaker(new Number160(rnd)).setPorts(port).makeAndListen();
-			}
-			else
-			{
-				peers[i] = new PeerMaker(new Number160(rnd)).setMasterPeer(peers[0]).makeAndListen();
-			}
-		}
-		return peers;
-	}
+    public static void bootstrap( Peer[] peers )
+    {
+        List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
+        List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
+        for ( int i = 1; i < peers.length; i++ )
+        {
+            FutureDiscover tmp = peers[i].discover().setPeerAddress( peers[0].getPeerAddress() ).start();
+            futures2.add( tmp );
+        }
+        for ( FutureDiscover future : futures2 )
+        {
+            future.awaitUninterruptibly();
+        }
+        for ( int i = 1; i < peers.length; i++ )
+        {
+            FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start();
+            futures1.add( tmp );
+        }
+        for ( int i = 1; i < peers.length; i++ )
+        {
+            FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress( peers[i].getPeerAddress() ).start();
+            futures1.add( tmp );
+        }
+        for ( FutureBootstrap future : futures1 )
+            future.awaitUninterruptibly();
+    }
+
+    public static Peer[] createAndAttachNodes( int nr, int port )
+        throws Exception
+    {
+        Peer[] peers = new Peer[nr];
+        for ( int i = 0; i < nr; i++ )
+        {
+            if ( i == 0 )
+            {
+                peers[0] = new PeerMaker( new Number160( rnd ) ).setPorts( port ).makeAndListen();
+            }
+            else
+            {
+                peers[i] = new PeerMaker( new Number160( rnd ) ).setMasterPeer( peers[0] ).makeAndListen();
+            }
+        }
+        return peers;
+    }
 }

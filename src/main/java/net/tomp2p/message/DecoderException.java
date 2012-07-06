@@ -15,12 +15,13 @@
  */
 package net.tomp2p.message;
 
-public class DecoderException extends Exception
+public class DecoderException
+    extends Exception
 {
-	private static final long serialVersionUID = 2887861972132753761L;
+    private static final long serialVersionUID = 2887861972132753761L;
 
-	public DecoderException(String reason)
-	{
-		super(reason);
-	}
+    public DecoderException( String reason )
+    {
+        super( reason );
+    }
 }

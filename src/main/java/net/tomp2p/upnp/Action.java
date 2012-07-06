@@ -63,168 +63,160 @@ import org.w3c.dom.Node;
  */
 public class Action
 {
-	/***/
-	public final String name;
+    /***/
+    public final String name;
 
-	/***/
-	public final Service parent;
+    /***/
+    public final Service parent;
 
-	/***/
-	public final Argument[] arguments;
+    /***/
+    public final Argument[] arguments;
 
-	private Argument[] input, output;
+    private Argument[] input, output;
 
-	Action( Service parent, Node xml ) throws XPathExpressionException
-	{
-		this.parent = parent;
-		XPath xpath = XMLUtil.xpath;
+    Action( Service parent, Node xml )
+        throws XPathExpressionException
+    {
+        this.parent = parent;
+        XPath xpath = XMLUtil.xpath;
 
-		name = xpath.evaluate( "name", xml );
+        name = xpath.evaluate( "name", xml );
 
-		Node argList = ( Node ) xpath.evaluate( "argumentList", xml, XPathConstants.NODE );
+        Node argList = (Node) xpath.evaluate( "argumentList", xml, XPathConstants.NODE );
 
-		int argCount =
-				argList == null ? 0 : Integer.parseInt( xpath.evaluate( "count( argument )", argList ) );
-		arguments = new Argument[ argCount ];
+        int argCount = argList == null ? 0 : Integer.parseInt( xpath.evaluate( "count( argument )", argList ) );
+        arguments = new Argument[argCount];
 
-		for( int i = 1; i <= argCount; i++ )
-		{
-			Node argXML =
-					( Node ) xpath.evaluate( "argument[ " + i + " ]", argList, XPathConstants.NODE );
-			arguments[ i - 1 ] = new Argument( argXML );
-		}
-	}
+        for ( int i = 1; i <= argCount; i++ )
+        {
+            Node argXML = (Node) xpath.evaluate( "argument[ " + i + " ]", argList, XPathConstants.NODE );
+            arguments[i - 1] = new Argument( argXML );
+        }
+    }
 
-	/**
-	 * Look for an {@link Argument} for a given name
-	 * 
-	 * @param argumentName
-	 *           the argument name
-	 * @return the argument or null if not found or not available
-	 */
-	public Argument getActionArgument( String argumentName )
-	{
-		for( Argument arg : arguments )
-		{
-			if( arg.name.equals( argumentName ) )
-			{
-				return arg;
-			}
-		}
-		return null;
-	}
+    /**
+     * Look for an {@link Argument} for a given name
+     * 
+     * @param argumentName the argument name
+     * @return the argument or null if not found or not available
+     */
+    public Argument getActionArgument( String argumentName )
+    {
+        for ( Argument arg : arguments )
+        {
+            if ( arg.name.equals( argumentName ) )
+            {
+                return arg;
+            }
+        }
+        return null;
+    }
 
-	/**
-	 * Return a list containing input ( when a response is sent )
-	 * arguments objects
-	 * 
-	 * @return a list containing input arguments ServiceActionArgument
-	 *         objects or null when nothing is needed for such
-	 *         operation
-	 */
-	public Argument[] getInputActionArguments()
-	{
-		if( input == null )
-		{
-			List<Argument> l = new ArrayList<Argument>();
+    /**
+     * Return a list containing input ( when a response is sent ) arguments objects
+     * 
+     * @return a list containing input arguments ServiceActionArgument objects or null when nothing is needed for such
+     *         operation
+     */
+    public Argument[] getInputActionArguments()
+    {
+        if ( input == null )
+        {
+            List<Argument> l = new ArrayList<Argument>();
 
-			for( Argument a : arguments )
-			{
-				if( a.direction == Direction.in )
-				{
-					l.add( a );
-				}
-			}
-			input = l.toArray( new Argument[ l.size() ] );
-		}
+            for ( Argument a : arguments )
+            {
+                if ( a.direction == Direction.in )
+                {
+                    l.add( a );
+                }
+            }
+            input = l.toArray( new Argument[l.size()] );
+        }
 
-		return input;
-	}
+        return input;
+    }
 
-	/**
-	 * Look for an input ServiceActionArgument for a given name
-	 * 
-	 * @param argumentName
-	 *           the input argument name
-	 * @return the argument or null if not found or not available
-	 */
-	public Argument getInputActionArgument( String argumentName )
-	{
-		Argument[] saa = getInputActionArguments();
+    /**
+     * Look for an input ServiceActionArgument for a given name
+     * 
+     * @param argumentName the input argument name
+     * @return the argument or null if not found or not available
+     */
+    public Argument getInputActionArgument( String argumentName )
+    {
+        Argument[] saa = getInputActionArguments();
 
-		for( int i = 0; i < saa.length; i++ )
-		{
-			if( saa[ i ].name.equals( argumentName ) )
-			{
-				return saa[ i ];
-			}
-		}
+        for ( int i = 0; i < saa.length; i++ )
+        {
+            if ( saa[i].name.equals( argumentName ) )
+            {
+                return saa[i];
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * Return a list containing output ( when a response is received )
-	 * arguments objects
-	 * 
-	 * @return a list containing output arguments ServiceActionArgument
-	 *         objects or null when nothing returned for such operation
-	 */
-	public Argument[] getOutputActionArguments()
-	{
-		if( output == null )
-		{
-			List<Argument> l = new ArrayList<Argument>();
+    /**
+     * Return a list containing output ( when a response is received ) arguments objects
+     * 
+     * @return a list containing output arguments ServiceActionArgument objects or null when nothing returned for such
+     *         operation
+     */
+    public Argument[] getOutputActionArguments()
+    {
+        if ( output == null )
+        {
+            List<Argument> l = new ArrayList<Argument>();
 
-			for( Argument a : arguments )
-			{
-				if( a.direction == Direction.out )
-				{
-					l.add( a );
-				}
-			}
-			output = l.toArray( new Argument[ l.size() ] );
-		}
+            for ( Argument a : arguments )
+            {
+                if ( a.direction == Direction.out )
+                {
+                    l.add( a );
+                }
+            }
+            output = l.toArray( new Argument[l.size()] );
+        }
 
-		return output;
-	}
+        return output;
+    }
 
-	/**
-	 * Look for an output {@link Argument} for a given name
-	 * 
-	 * @param argumentName
-	 *           the input argument name
-	 * @return the {@link Argument} or null if not found or not
-	 *         available
-	 */
-	public Argument getOutputActionArgument( String argumentName )
-	{
-		Argument[] saa = getOutputActionArguments();
+    /**
+     * Look for an output {@link Argument} for a given name
+     * 
+     * @param argumentName the input argument name
+     * @return the {@link Argument} or null if not found or not available
+     */
+    public Argument getOutputActionArgument( String argumentName )
+    {
+        Argument[] saa = getOutputActionArguments();
 
-		for( int i = 0; i < saa.length; i++ )
-		{
-			if( saa[ i ].name.equals( argumentName ) )
-			{
-				return saa[ i ];
-			}
-		}
+        for ( int i = 0; i < saa.length; i++ )
+        {
+            if ( saa[i].name.equals( argumentName ) )
+            {
+                return saa[i];
+            }
+        }
 
-		return null;
-	}
+        return null;
+    }
 
-	/**
-	 * The action name
-	 * 
-	 * @return The action name
-	 */
-	public String getName()
-	{
-		return name;
-	}
+    /**
+     * The action name
+     * 
+     * @return The action name
+     */
+    public String getName()
+    {
+        return name;
+    }
 
-	@Override
-	public String toString()
-	{
-		return name + Arrays.toString( arguments );
-	}
+    @Override
+    public String toString()
+    {
+        return name + Arrays.toString( arguments );
+    }
 }

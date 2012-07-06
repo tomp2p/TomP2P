@@ -42,176 +42,186 @@ import org.jboss.netty.buffer.ChannelBuffers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TaskRPC extends ReplyHandler
+public class TaskRPC
+    extends ReplyHandler
 {
-	final private static Logger logger = LoggerFactory.getLogger(TaskRPC.class);
-	private final TaskManager taskManager;
-	
-	public TaskRPC(PeerBean peerBean, ConnectionBean connectionBean)
-	{
-		super(peerBean, connectionBean);
-		this.taskManager = peerBean.getTaskManager();
-		registerIoHandler(Command.TASK);
-	}
+    final private static Logger logger = LoggerFactory.getLogger( TaskRPC.class );
 
-	/**
-	 * Sends a task to a remote peer. This is an RPC.
-	 * 
-	 * @param remotePeer The remote peer to send this request
-	 * @param channelCreator The channel creator that creates connections
-	 * @param forceTCP Set to true if the communication should be TCP, default
-	 *        is UDP
-	 * @return The future response to keep track of future events
-	 */
-	public FutureResponse sendTask(final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID, 
-			Map<Number160, Data> dataMap, Worker mapper, KeyPair keyPair, boolean forceUDP, boolean sign)
-	{
-		final Message message = createMessage(remotePeer, Command.TASK, Type.REQUEST_1);
-		FutureResponse futureResponse = new FutureResponse(message);
-		try
-		{
-			byte[] me = Utils.encodeJavaObject(mapper);
-			ChannelBuffer payload= ChannelBuffers.wrappedBuffer(me);
-			message.setPayload(payload);
-			message.setDataMap(dataMap);
-			message.setKey(taskID);
-			if(sign)
-			{
-				message.setPublicKeyAndSign(keyPair);
-			}
-			if(forceUDP)
-			{
-				final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-				if(logger.isDebugEnabled())
-				{
-					logger.debug("send Task "+ message);
-				}
-				return requestHandler.sendUDP(channelCreator);
-			}
-			else
-			{
-				final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-				if(logger.isDebugEnabled())
-				{
-					logger.debug("send Task "+ message);
-				}
-				return requestHandler.sendTCP(channelCreator);
-			}
-		}
-		catch(IOException ioe)
-		{
-			futureResponse.setFailed(ioe.toString());
-			if(logger.isErrorEnabled())
-			{
-				ioe.printStackTrace();
-			}
-			return futureResponse;
-		}
-	}
-	
-	public FutureResponse sendResult(final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID, 
-			Map<Number160, Data> dataMap, KeyPair keyPair, boolean forceUDP, boolean sign)
-	{
-		final Message message = createMessage(remotePeer, Command.TASK, Type.REQUEST_3);
-		FutureResponse futureResponse = new FutureResponse(message);
-		if(dataMap != null)
-		{
-			message.setDataMap(dataMap);
-		}
-		message.setKey(taskID);
-		if(sign)
-		{
-			message.setPublicKeyAndSign(keyPair);
-		}
-		if(logger.isDebugEnabled())
-		{
-			logger.debug("send Result "+ message);
-		}
-		if(forceUDP)
-		{
-			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.sendUDP(channelCreator);
-		}
-		else
-		{
-			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.sendTCP(channelCreator);
-		}
-	}
-	
-	public FutureResponse taskStatus(final PeerAddress remotePeer, ChannelCreator channelCreator, Collection<Number160> taskIDs, boolean forceTCP)
-	{
-		final Message message = createMessage(remotePeer, Command.TASK, Type.REQUEST_2);
-		message.setKeys(taskIDs);
-		FutureResponse futureResponse = new FutureResponse(message);
-		if(!forceTCP)
-		{
-			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.sendUDP(channelCreator);
-		}
-		else
-		{
-			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.sendTCP(channelCreator);
-		}
-	}
+    private final TaskManager taskManager;
 
-	@Override
-	public Message handleResponse(final Message message, boolean sign) throws Exception
-	{
-		if(!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 
-				|| message.getType() == Type.REQUEST_3) && message.getCommand() == Command.TASK))
-		{
-			throw new IllegalArgumentException("Message content is wrong");
-		}
-		if(logger.isDebugEnabled())
-		{
-			logger.debug("send Task - received "+ message);
-		}
-		final Message responseMessage = createResponseMessage(message, Type.OK);
-		if (sign)
-		{
-			responseMessage.setPublicKeyAndSign(getPeerBean().getKeyPair());
-		}
-		if(message.getType() == Type.REQUEST_1)
-		{
-			Number160 taskId = message.getKey();
-			// request 1 is task creation
-			Map<Number160, Data> dataMap = message.getDataMap();
-			ChannelBuffer channelBuffer = message.getPayload1();
-			Object obj = Utils.decodeJavaObject(channelBuffer);
-			Worker mapper = (Worker) obj;
-			int queuePosition = taskManager.submitTask(getPeerBean().getPeer(), taskId, mapper, dataMap, message.getSender(), sign);
-			responseMessage.setInteger(queuePosition);
-		}
-		else if(message.getType() == Type.REQUEST_2)
-		{
-			Collection<Number160> taskIDs = message.getKeys();
-			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
-			for(Number160 taskId: taskIDs)
-			{
-				Number320 taskKey = new Number320(taskId, message.getSender().getID());
-				TaskStatus taskStatus = taskManager.taskStatus(taskKey);
-				Data data = new Data(taskStatus);
-				dataMap.put(taskId, data);
-			}
-			responseMessage.setDataMap(dataMap);
-			if(logger.isDebugEnabled())
-			{
-				logger.debug("finished task status for tasks "+ taskIDs);
-			}
-		}
-		else if(message.getType() == Type.REQUEST_3)
-		{
-			Number160 taskId = message.getKey();
-			Map<Number160, Data> dataMap = message.getDataMap();
-			Number320 taskKey = new Number320(taskId, message.getSender().getID());
-			taskManager.notifyListeners(taskKey, dataMap);
-		}
-		else
-		{
-			responseMessage.setType(Type.NOT_FOUND);
-		}
-		return responseMessage;
-	}
+    public TaskRPC( PeerBean peerBean, ConnectionBean connectionBean )
+    {
+        super( peerBean, connectionBean );
+        this.taskManager = peerBean.getTaskManager();
+        registerIoHandler( Command.TASK );
+    }
+
+    /**
+     * Sends a task to a remote peer. This is an RPC.
+     * 
+     * @param remotePeer The remote peer to send this request
+     * @param channelCreator The channel creator that creates connections
+     * @param forceTCP Set to true if the communication should be TCP, default is UDP
+     * @return The future response to keep track of future events
+     */
+    public FutureResponse sendTask( final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID,
+                                    Map<Number160, Data> dataMap, Worker mapper, KeyPair keyPair, boolean forceUDP,
+                                    boolean sign )
+    {
+        final Message message = createMessage( remotePeer, Command.TASK, Type.REQUEST_1 );
+        FutureResponse futureResponse = new FutureResponse( message );
+        try
+        {
+            byte[] me = Utils.encodeJavaObject( mapper );
+            ChannelBuffer payload = ChannelBuffers.wrappedBuffer( me );
+            message.setPayload( payload );
+            message.setDataMap( dataMap );
+            message.setKey( taskID );
+            if ( sign )
+            {
+                message.setPublicKeyAndSign( keyPair );
+            }
+            if ( forceUDP )
+            {
+                final RequestHandlerUDP<FutureResponse> requestHandler =
+                    new RequestHandlerUDP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "send Task " + message );
+                }
+                return requestHandler.sendUDP( channelCreator );
+            }
+            else
+            {
+                final RequestHandlerTCP<FutureResponse> requestHandler =
+                    new RequestHandlerTCP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "send Task " + message );
+                }
+                return requestHandler.sendTCP( channelCreator );
+            }
+        }
+        catch ( IOException ioe )
+        {
+            futureResponse.setFailed( ioe.toString() );
+            if ( logger.isErrorEnabled() )
+            {
+                ioe.printStackTrace();
+            }
+            return futureResponse;
+        }
+    }
+
+    public FutureResponse sendResult( final PeerAddress remotePeer, ChannelCreator channelCreator, Number160 taskID,
+                                      Map<Number160, Data> dataMap, KeyPair keyPair, boolean forceUDP, boolean sign )
+    {
+        final Message message = createMessage( remotePeer, Command.TASK, Type.REQUEST_3 );
+        FutureResponse futureResponse = new FutureResponse( message );
+        if ( dataMap != null )
+        {
+            message.setDataMap( dataMap );
+        }
+        message.setKey( taskID );
+        if ( sign )
+        {
+            message.setPublicKeyAndSign( keyPair );
+        }
+        if ( logger.isDebugEnabled() )
+        {
+            logger.debug( "send Result " + message );
+        }
+        if ( forceUDP )
+        {
+            final RequestHandlerUDP<FutureResponse> requestHandler =
+                new RequestHandlerUDP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.sendUDP( channelCreator );
+        }
+        else
+        {
+            final RequestHandlerTCP<FutureResponse> requestHandler =
+                new RequestHandlerTCP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.sendTCP( channelCreator );
+        }
+    }
+
+    public FutureResponse taskStatus( final PeerAddress remotePeer, ChannelCreator channelCreator,
+                                      Collection<Number160> taskIDs, boolean forceTCP )
+    {
+        final Message message = createMessage( remotePeer, Command.TASK, Type.REQUEST_2 );
+        message.setKeys( taskIDs );
+        FutureResponse futureResponse = new FutureResponse( message );
+        if ( !forceTCP )
+        {
+            final RequestHandlerUDP<FutureResponse> requestHandler =
+                new RequestHandlerUDP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.sendUDP( channelCreator );
+        }
+        else
+        {
+            final RequestHandlerTCP<FutureResponse> requestHandler =
+                new RequestHandlerTCP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.sendTCP( channelCreator );
+        }
+    }
+
+    @Override
+    public Message handleResponse( final Message message, boolean sign )
+        throws Exception
+    {
+        if ( !( ( message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3 ) && message.getCommand() == Command.TASK ) )
+        {
+            throw new IllegalArgumentException( "Message content is wrong" );
+        }
+        if ( logger.isDebugEnabled() )
+        {
+            logger.debug( "send Task - received " + message );
+        }
+        final Message responseMessage = createResponseMessage( message, Type.OK );
+        if ( sign )
+        {
+            responseMessage.setPublicKeyAndSign( getPeerBean().getKeyPair() );
+        }
+        if ( message.getType() == Type.REQUEST_1 )
+        {
+            Number160 taskId = message.getKey();
+            // request 1 is task creation
+            Map<Number160, Data> dataMap = message.getDataMap();
+            ChannelBuffer channelBuffer = message.getPayload1();
+            Object obj = Utils.decodeJavaObject( channelBuffer );
+            Worker mapper = (Worker) obj;
+            int queuePosition =
+                taskManager.submitTask( getPeerBean().getPeer(), taskId, mapper, dataMap, message.getSender(), sign );
+            responseMessage.setInteger( queuePosition );
+        }
+        else if ( message.getType() == Type.REQUEST_2 )
+        {
+            Collection<Number160> taskIDs = message.getKeys();
+            Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+            for ( Number160 taskId : taskIDs )
+            {
+                Number320 taskKey = new Number320( taskId, message.getSender().getID() );
+                TaskStatus taskStatus = taskManager.taskStatus( taskKey );
+                Data data = new Data( taskStatus );
+                dataMap.put( taskId, data );
+            }
+            responseMessage.setDataMap( dataMap );
+            if ( logger.isDebugEnabled() )
+            {
+                logger.debug( "finished task status for tasks " + taskIDs );
+            }
+        }
+        else if ( message.getType() == Type.REQUEST_3 )
+        {
+            Number160 taskId = message.getKey();
+            Map<Number160, Data> dataMap = message.getDataMap();
+            Number320 taskKey = new Number320( taskId, message.getSender().getID() );
+            taskManager.notifyListeners( taskKey, dataMap );
+        }
+        else
+        {
+            responseMessage.setType( Type.NOT_FOUND );
+        }
+        return responseMessage;
+    }
 }

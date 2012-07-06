@@ -28,201 +28,201 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 
 /**
- * This class holds the object for future results from the tracker get() and
- * add(). FutureTracker can fail, if the search did not return any results.
+ * This class holds the object for future results from the tracker get() and add(). FutureTracker can fail, if the
+ * search did not return any results.
  * 
  * @author Thomas Bocek
  */
-public class FutureTracker extends BaseFutureImpl<FutureTracker> implements FutureCleanup
+public class FutureTracker
+    extends BaseFutureImpl<FutureTracker>
+    implements FutureCleanup
 {
-	// since we receive results from multiple peers, we need to summarize them
-	final private EvaluatingSchemeTracker evaluatingSchemeTracker;
-	// a set of know peers that we don't want in the result set.
-	final private Set<Number160> knownPeers;
-	// keeps track of futures that are based on this future
-	final private FutureCreate<BaseFuture> futureCreate;
-	final private List<Cancellable> cleanup = new ArrayList<Cancellable>(1);
-	// results
-	private Set<PeerAddress> potentialTrackers;
-	private Set<PeerAddress> directTrackers;
-	private Map<PeerAddress, Collection<TrackerData>> peersOnTracker;
-	
-	public FutureTracker()
-	{
-		this(null);
-	}
+    // since we receive results from multiple peers, we need to summarize them
+    final private EvaluatingSchemeTracker evaluatingSchemeTracker;
 
-	/**
-	 * Create a future object for storing
-	 * 
-	 * @param futureCreate Keeps track of futures that are based on this future
-	 */
-	public FutureTracker(FutureCreate<BaseFuture> futureCreate)
-	{
-		this(new VotingSchemeTracker(), null, futureCreate);
-	}
+    // a set of know peers that we don't want in the result set.
+    final private Set<Number160> knownPeers;
 
-	/**
-	 * Create a future object for retrieving.
-	 * 
-	 * @param evaluatingSchemeTracker Since we receive results from multiple
-	 *        peers, we need to summarize them
-	 * @param knownPeers A set of know peers that we don't want in the result
-	 *        set.
-	 */
-	public FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers)
-	{
-		this(new VotingSchemeTracker(), knownPeers, null);
-	}
+    // keeps track of futures that are based on this future
+    final private FutureCreate<BaseFuture> futureCreate;
 
-	/**
-	 * Sets all the values for this future object.
-	 * 
-	 * @param evaluatingSchemeTracker Since we receive results from multiple
-	 *        peers, we need to summarize them
-	 * @param knownPeers A set of know peers that we don't want in the result
-	 *        set.
-	 * @param futureCreate Keeps track of futures that are based on this future
-	 */
-	private FutureTracker(EvaluatingSchemeTracker evaluatingSchemeTracker,
-			Set<Number160> knownPeers, FutureCreate<BaseFuture> futureCreate)
-	{
-		this.evaluatingSchemeTracker = evaluatingSchemeTracker;
-		this.knownPeers = knownPeers;
-		this.futureCreate = futureCreate;
-		self(this);
-	}
+    final private List<Cancellable> cleanup = new ArrayList<Cancellable>( 1 );
 
-	/**
-	 * Called if a future is created based on this future.
-	 * 
-	 * @param future The newly created future
-	 */
-	public void repeated(BaseFuture future)
-	{
-		if (futureCreate != null)
-			futureCreate.repeated(future);
-	}
+    // results
+    private Set<PeerAddress> potentialTrackers;
 
-	/**
-	 * Set the result of the tracker process.
-	 * 
-	 * @param potentialTrackers The trackers that are close to the key, also
-	 *        containing the direct trackers.
-	 * @param directTrackers Those peers that are close and reported to have the
-	 *        key.
-	 * @param peersOnTracker The data from the trackers.
-	 */
-	public void setTrackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
-			Map<PeerAddress, Collection<TrackerData>> peersOnTracker)
-	{
-		synchronized (lock)
-		{
-			if (!setCompletedAndNotify())
-				return;
-			this.potentialTrackers = potentialTrackers;
-			this.directTrackers = directTrackers;
-			this.peersOnTracker = peersOnTracker;
-			this.type = ((potentialTrackers.size() == 0) && (directTrackers.size() == 0))
-					? BaseFuture.FutureType.FAILED
-					: BaseFuture.FutureType.OK;
-			if (this.type == BaseFuture.FutureType.FAILED)
-			{
-				this.reason = "we did not find anything, are you sure you are serching for the right tracker?";
-			}
-		}
-		notifyListerenrs();
-	}
+    private Set<PeerAddress> directTrackers;
 
-	/**
-	 * @return The trackers that are close to the key, also containing the
-	 *         direct trackers.
-	 */
-	public Set<PeerAddress> getPotentialTrackers()
-	{
-		synchronized (lock)
-		{
-			return potentialTrackers;
-		}
-	}
+    private Map<PeerAddress, Collection<TrackerData>> peersOnTracker;
 
-	/**
-	 * @return Those peers that are close and reported to have the key.
-	 */
-	public Set<PeerAddress> getDirectTrackers()
-	{
-		synchronized (lock)
-		{
-			return directTrackers;
-		}
-	}
+    public FutureTracker()
+    {
+        this( null );
+    }
 
-	/**
-	 * @return the raw data, which means all the data the trackers reported.
-	 */
-	public Map<PeerAddress, Collection<TrackerData>> getRawPeersOnTracker()
-	{
-		synchronized (lock)
-		{
-			return peersOnTracker;
-		}
-	}
+    /**
+     * Create a future object for storing
+     * 
+     * @param futureCreate Keeps track of futures that are based on this future
+     */
+    public FutureTracker( FutureCreate<BaseFuture> futureCreate )
+    {
+        this( new VotingSchemeTracker(), null, futureCreate );
+    }
 
-	/**
-	 * @return The peer address that send back data.
-	 */
-	public Set<PeerAddress> getPeersOnTracker()
-	{
-		synchronized (lock)
-		{
-			return peersOnTracker.keySet();
-		}
-	}
+    /**
+     * Create a future object for retrieving.
+     * 
+     * @param evaluatingSchemeTracker Since we receive results from multiple peers, we need to summarize them
+     * @param knownPeers A set of know peers that we don't want in the result set.
+     */
+    public FutureTracker( EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers )
+    {
+        this( new VotingSchemeTracker(), knownPeers, null );
+    }
 
-	/**
-	 * @return The list of peers which we already have in our result set.
-	 */
-	public Set<Number160> getKnownPeers()
-	{
-		synchronized (lock)
-		{
-			return knownPeers;
-		}
-	}
+    /**
+     * Sets all the values for this future object.
+     * 
+     * @param evaluatingSchemeTracker Since we receive results from multiple peers, we need to summarize them
+     * @param knownPeers A set of know peers that we don't want in the result set.
+     * @param futureCreate Keeps track of futures that are based on this future
+     */
+    private FutureTracker( EvaluatingSchemeTracker evaluatingSchemeTracker, Set<Number160> knownPeers,
+                           FutureCreate<BaseFuture> futureCreate )
+    {
+        this.evaluatingSchemeTracker = evaluatingSchemeTracker;
+        this.knownPeers = knownPeers;
+        this.futureCreate = futureCreate;
+        self( this );
+    }
 
-	/**
-	 * Evaluates the data from the trackers. Since we receive multiple results,
-	 * we evaluate them before we give the data to the user. If the user wants
-	 * to see the raw data, use {@link #getRawPeersOnTracker()}.
-	 * 
-	 * @return The data from the trackers.
-	 */
-	public Collection<TrackerData> getTrackers()
-	{
-		synchronized (lock)
-		{
-			return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
-		}
-	}
+    /**
+     * Called if a future is created based on this future.
+     * 
+     * @param future The newly created future
+     */
+    public void repeated( BaseFuture future )
+    {
+        if ( futureCreate != null )
+            futureCreate.repeated( future );
+    }
 
-	public void addCleanup(Cancellable cancellable)
-	{
-		synchronized (lock)
-		{
-			cleanup.add(cancellable);
-		}
-	}
+    /**
+     * Set the result of the tracker process.
+     * 
+     * @param potentialTrackers The trackers that are close to the key, also containing the direct trackers.
+     * @param directTrackers Those peers that are close and reported to have the key.
+     * @param peersOnTracker The data from the trackers.
+     */
+    public void setTrackers( Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
+                             Map<PeerAddress, Collection<TrackerData>> peersOnTracker )
+    {
+        synchronized ( lock )
+        {
+            if ( !setCompletedAndNotify() )
+                return;
+            this.potentialTrackers = potentialTrackers;
+            this.directTrackers = directTrackers;
+            this.peersOnTracker = peersOnTracker;
+            this.type =
+                ( ( potentialTrackers.size() == 0 ) && ( directTrackers.size() == 0 ) ) ? BaseFuture.FutureType.FAILED
+                                : BaseFuture.FutureType.OK;
+            if ( this.type == BaseFuture.FutureType.FAILED )
+            {
+                this.reason = "we did not find anything, are you sure you are serching for the right tracker?";
+            }
+        }
+        notifyListerenrs();
+    }
 
-	public void shutdown()
-	{
-		// Even though, this future is completed, there may be tasks than can be
-		// canceled due to scheduled futures attached to this event.
-		synchronized (lock)
-		{
-			for (final Cancellable cancellable : cleanup)
-			{
-				cancellable.cancel();
-			}
-		}
-	}
+    /**
+     * @return The trackers that are close to the key, also containing the direct trackers.
+     */
+    public Set<PeerAddress> getPotentialTrackers()
+    {
+        synchronized ( lock )
+        {
+            return potentialTrackers;
+        }
+    }
+
+    /**
+     * @return Those peers that are close and reported to have the key.
+     */
+    public Set<PeerAddress> getDirectTrackers()
+    {
+        synchronized ( lock )
+        {
+            return directTrackers;
+        }
+    }
+
+    /**
+     * @return the raw data, which means all the data the trackers reported.
+     */
+    public Map<PeerAddress, Collection<TrackerData>> getRawPeersOnTracker()
+    {
+        synchronized ( lock )
+        {
+            return peersOnTracker;
+        }
+    }
+
+    /**
+     * @return The peer address that send back data.
+     */
+    public Set<PeerAddress> getPeersOnTracker()
+    {
+        synchronized ( lock )
+        {
+            return peersOnTracker.keySet();
+        }
+    }
+
+    /**
+     * @return The list of peers which we already have in our result set.
+     */
+    public Set<Number160> getKnownPeers()
+    {
+        synchronized ( lock )
+        {
+            return knownPeers;
+        }
+    }
+
+    /**
+     * Evaluates the data from the trackers. Since we receive multiple results, we evaluate them before we give the data
+     * to the user. If the user wants to see the raw data, use {@link #getRawPeersOnTracker()}.
+     * 
+     * @return The data from the trackers.
+     */
+    public Collection<TrackerData> getTrackers()
+    {
+        synchronized ( lock )
+        {
+            return evaluatingSchemeTracker.evaluateSingle( peersOnTracker );
+        }
+    }
+
+    public void addCleanup( Cancellable cancellable )
+    {
+        synchronized ( lock )
+        {
+            cleanup.add( cancellable );
+        }
+    }
+
+    public void shutdown()
+    {
+        // Even though, this future is completed, there may be tasks than can be
+        // canceled due to scheduled futures attached to this event.
+        synchronized ( lock )
+        {
+            for ( final Cancellable cancellable : cleanup )
+            {
+                cancellable.cancel();
+            }
+        }
+    }
 }

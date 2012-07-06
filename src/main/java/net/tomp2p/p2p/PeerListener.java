@@ -19,9 +19,9 @@ import net.tomp2p.peers.PeerAddress;
 
 public interface PeerListener
 {
-	public void notifyOnShutdown();
+    public void notifyOnShutdown();
 
-	public void notifyOnStart();
-	
-	public void serverAddressChanged(PeerAddress peerAddress, PeerAddress reporter, boolean tcp);
+    public void notifyOnStart();
+
+    public void serverAddressChanged( PeerAddress peerAddress, PeerAddress reporter, boolean tcp );
 }

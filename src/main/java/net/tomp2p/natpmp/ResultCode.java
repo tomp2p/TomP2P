@@ -19,44 +19,39 @@ package net.tomp2p.natpmp;
 
 /**
  * Enumerates the result codes from NAT-PMP messages.
+ * 
  * @see Message
  * @author flszen
  */
-public enum ResultCode {
+public enum ResultCode
+{
     /**
-     * Success:
-     * Successful message.
+     * Success: Successful message.
      */
     Success,
 
     /**
-     * Unsupported Version:
-     * The version of this client library (which is 0) is not supported by the
-     * NAT-PMP gateway.
+     * Unsupported Version: The version of this client library (which is 0) is not supported by the NAT-PMP gateway.
      */
     UnsupportedVersion,
 
     /**
-     * Not Authorized/Refused:
-     * e.g.: Gateway supports mapping, but user has turned feature off.
+     * Not Authorized/Refused: e.g.: Gateway supports mapping, but user has turned feature off.
      */
     NotAuthorizedRefused,
 
     /**
-     * Network Failure:
-     * e.g.: The gateway itself has not obtained a DHCP lease.
+     * Network Failure: e.g.: The gateway itself has not obtained a DHCP lease.
      */
     NetworkFailure,
 
     /**
-     * Out of resources:
-     * Gateway cannot create any more mappings at this time.
+     * Out of resources: Gateway cannot create any more mappings at this time.
      */
     OutOfResources,
 
     /**
-     * Unsupported Opcode:
-     * The gateway doesn't support the opcode.
+     * Unsupported Opcode: The gateway doesn't support the opcode.
      */
     UnsupportedOpcode
 }

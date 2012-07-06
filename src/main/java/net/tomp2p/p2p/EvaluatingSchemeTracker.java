@@ -23,5 +23,5 @@ import net.tomp2p.storage.TrackerData;
 
 public interface EvaluatingSchemeTracker
 {
-	public Collection<TrackerData> evaluateSingle(Map<PeerAddress, Collection<TrackerData>> rawData);
+    public Collection<TrackerData> evaluateSingle( Map<PeerAddress, Collection<TrackerData>> rawData );
 }

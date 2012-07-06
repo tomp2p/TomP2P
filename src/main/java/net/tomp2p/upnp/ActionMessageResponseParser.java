@@ -48,161 +48,161 @@ import net.tomp2p.upnp.Argument.Direction;
 import org.xml.sax.Attributes;
 
 /**
- * Simple SAX handler for UPNP response message parsing, this message
- * is in SOAP format
+ * Simple SAX handler for UPNP response message parsing, this message is in SOAP format
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-class ActionMessageResponseParser extends org.xml.sax.helpers.DefaultHandler
+class ActionMessageResponseParser
+    extends org.xml.sax.helpers.DefaultHandler
 {
-	private final static String SOAP_FAULT_EL = "Fault";
+    private final static String SOAP_FAULT_EL = "Fault";
 
-	private final Action serviceAction;
+    private final Action serviceAction;
 
-	private final String bodyElementName;
+    private final String bodyElementName;
 
-	private boolean faultResponse = false;
+    private boolean faultResponse = false;
 
-	private UPNPResponseException msgEx;
+    private UPNPResponseException msgEx;
 
-	private boolean readFaultCode = false;
+    private boolean readFaultCode = false;
 
-	private boolean readFaultString = false;
+    private boolean readFaultString = false;
 
-	private boolean readErrorCode = false;
+    private boolean readErrorCode = false;
 
-	private boolean readErrorDescription = false;
+    private boolean readErrorDescription = false;
 
-	private boolean parseOutputParams = false;
+    private boolean parseOutputParams = false;
 
-	private ActionResponse result;
+    private ActionResponse result;
 
-	private Argument parsedResultOutArg;
+    private Argument parsedResultOutArg;
 
-	ActionMessageResponseParser( Action serviceAction )
-	{
-		this.serviceAction = serviceAction;
-		bodyElementName = serviceAction.getName() + "Response";
-	}
+    ActionMessageResponseParser( Action serviceAction )
+    {
+        this.serviceAction = serviceAction;
+        bodyElementName = serviceAction.getName() + "Response";
+    }
 
-	UPNPResponseException getUPNPResponseException()
-	{
-		return msgEx;
-	}
+    UPNPResponseException getUPNPResponseException()
+    {
+        return msgEx;
+    }
 
-	ActionResponse getActionResponse()
-	{
-		return result;
-	}
+    ActionResponse getActionResponse()
+    {
+        return result;
+    }
 
-	@Override
-	public void characters( char[] ch, int start, int length )
-	{
-		if( parseOutputParams )
-		{
-			if( parsedResultOutArg != null )
-			{
-				String origChars = result.getOutActionArgumentValue( parsedResultOutArg.name );
-				String newChars = new String( ch, start, length );
-				if( origChars == null )
-				{
-					result.addResult( parsedResultOutArg, newChars );
-				}
-				else
-				{
-					result.addResult( parsedResultOutArg, origChars + newChars );
-				}
-			}
-		}
-		else if( readFaultCode )
-		{
-			msgEx.faultCode = new String( ch, start, length );
-			readFaultCode = false;
-		}
-		else if( readFaultString )
-		{
-			msgEx.faultString = new String( ch, start, length );
-			readFaultString = false;
-		}
-		else if( readErrorCode )
-		{
-			String code = new String( ch, start, length );
-			try
-			{
-				msgEx.detailErrorCode = Integer.parseInt( code );
-			}
-			catch( Throwable ex )
-			{
-				ex.printStackTrace();
-			}
+    @Override
+    public void characters( char[] ch, int start, int length )
+    {
+        if ( parseOutputParams )
+        {
+            if ( parsedResultOutArg != null )
+            {
+                String origChars = result.getOutActionArgumentValue( parsedResultOutArg.name );
+                String newChars = new String( ch, start, length );
+                if ( origChars == null )
+                {
+                    result.addResult( parsedResultOutArg, newChars );
+                }
+                else
+                {
+                    result.addResult( parsedResultOutArg, origChars + newChars );
+                }
+            }
+        }
+        else if ( readFaultCode )
+        {
+            msgEx.faultCode = new String( ch, start, length );
+            readFaultCode = false;
+        }
+        else if ( readFaultString )
+        {
+            msgEx.faultString = new String( ch, start, length );
+            readFaultString = false;
+        }
+        else if ( readErrorCode )
+        {
+            String code = new String( ch, start, length );
+            try
+            {
+                msgEx.detailErrorCode = Integer.parseInt( code );
+            }
+            catch ( Throwable ex )
+            {
+                ex.printStackTrace();
+            }
 
-			readErrorCode = false;
-		}
-		else if( readErrorDescription )
-		{
-			msgEx.detailErrorDescription = new String( ch, start, length );
-			readErrorDescription = false;
-		}
-	}
+            readErrorCode = false;
+        }
+        else if ( readErrorDescription )
+        {
+            msgEx.detailErrorDescription = new String( ch, start, length );
+            readErrorDescription = false;
+        }
+    }
 
-	@Override
-	public void startElement( String uri, String localName, String qName, Attributes attributes )
-	{
-		if( parseOutputParams )
-		{
-			Argument arg = serviceAction.getActionArgument( localName );
-			if( arg != null && arg.direction == Direction.out )
-			{
-				parsedResultOutArg = arg;
-				result.addResult( parsedResultOutArg, null );
-			}
-			else
-			{
-				parsedResultOutArg = null;
-			}
-		}
-		else if( faultResponse )
-		{
-			if( localName.equals( "faultcode" ) )
-			{
-				readFaultCode = true;
-			}
-			else if( localName.equals( "faultstring" ) )
-			{
-				readFaultString = true;
-			}
-			else if( localName.equals( "errorCode" ) )
-			{
-				readErrorCode = true;
-			}
-			else if( localName.equals( "errorDescription" ) )
-			{
-				readErrorDescription = true;
-			}
-		}
-		else if( localName.equals( SOAP_FAULT_EL ) )
-		{
-			msgEx = new UPNPResponseException();
-			faultResponse = true;
-		}
-		else if( localName.equals( bodyElementName ) )
-		{
-			parseOutputParams = true;
-			result = new ActionResponse();
-		}
-	}
+    @Override
+    public void startElement( String uri, String localName, String qName, Attributes attributes )
+    {
+        if ( parseOutputParams )
+        {
+            Argument arg = serviceAction.getActionArgument( localName );
+            if ( arg != null && arg.direction == Direction.out )
+            {
+                parsedResultOutArg = arg;
+                result.addResult( parsedResultOutArg, null );
+            }
+            else
+            {
+                parsedResultOutArg = null;
+            }
+        }
+        else if ( faultResponse )
+        {
+            if ( localName.equals( "faultcode" ) )
+            {
+                readFaultCode = true;
+            }
+            else if ( localName.equals( "faultstring" ) )
+            {
+                readFaultString = true;
+            }
+            else if ( localName.equals( "errorCode" ) )
+            {
+                readErrorCode = true;
+            }
+            else if ( localName.equals( "errorDescription" ) )
+            {
+                readErrorDescription = true;
+            }
+        }
+        else if ( localName.equals( SOAP_FAULT_EL ) )
+        {
+            msgEx = new UPNPResponseException();
+            faultResponse = true;
+        }
+        else if ( localName.equals( bodyElementName ) )
+        {
+            parseOutputParams = true;
+            result = new ActionResponse();
+        }
+    }
 
-	@Override
-	public void endElement( String uri, String localName, String qName )
-	{
-		if( parsedResultOutArg != null && parsedResultOutArg.name.equals( localName ) )
-		{
-			parsedResultOutArg = null;
-		}
-		else if( localName.equals( bodyElementName ) )
-		{
-			parseOutputParams = false;
-		}
-	}
+    @Override
+    public void endElement( String uri, String localName, String qName )
+    {
+        if ( parsedResultOutArg != null && parsedResultOutArg.name.equals( localName ) )
+        {
+            parsedResultOutArg = null;
+        }
+        else if ( localName.equals( bodyElementName ) )
+        {
+            parseOutputParams = false;
+        }
+    }
 }

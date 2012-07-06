@@ -47,8 +47,7 @@ import java.net.InetAddress;
 import java.net.URL;
 
 /**
- * This interface can be use to register against the DiscoveryListener
- * class to receive SSDP search responses.
+ * This interface can be use to register against the DiscoveryListener class to receive SSDP search responses.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
@@ -57,24 +56,17 @@ import java.net.URL;
 public interface DiscoveryResultsHandler
 {
 
-	/**
-	 * Method called by the DiscoveryListener class when a search
-	 * response message has been received from the network
-	 * 
-	 * @param usn
-	 *           the device USN
-	 * @param udn
-	 *           the device UDN
-	 * @param nt
-	 *           the device NT
-	 * @param maxAge
-	 *           the message max age
-	 * @param location
-	 *           the device location
-	 * @param firmware
-	 *           the device firmware
-	 */
-	public void discoveredDevice( String usn, String udn, String nt, String maxAge,
-			URL location, String firmware, InetAddress localIP);
+    /**
+     * Method called by the DiscoveryListener class when a search response message has been received from the network
+     * 
+     * @param usn the device USN
+     * @param udn the device UDN
+     * @param nt the device NT
+     * @param maxAge the message max age
+     * @param location the device location
+     * @param firmware the device firmware
+     */
+    public void discoveredDevice( String usn, String udn, String nt, String maxAge, URL location, String firmware,
+                                  InetAddress localIP );
 
 }

@@ -14,20 +14,19 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 /**
- * For direct replication, the DHT needs to be created repeatedly. In order for
- * the user to be able to customize the creation, this interface exists. The
- * user can create the future for example with data reading from a file or
- * database instead of keeping everything in memory.
+ * For direct replication, the DHT needs to be created repeatedly. In order for the user to be able to customize the
+ * creation, this interface exists. The user can create the future for example with data reading from a file or database
+ * instead of keeping everything in memory.
  * 
  * @author Thomas Bocek
- * 
  * @param <K>
  */
 public interface FutureCreator<K extends BaseFuture>
 {
-	/**
-	 * @return A newly created future
-	 */
-	public K create();
+    /**
+     * @return A newly created future
+     */
+    public K create();
 }

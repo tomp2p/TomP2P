@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.utils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -27,553 +28,553 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A map with expiration and more or less LRU. Since the maps are separated in
- * segments, the LRU is done for each segment. A segment is chosen based on the
- * hash of the key. If one segments is more loaded than another, then an entry
- * of the loaded segment may get evicted before an entry used least recently
- * from an other segment.
- * 
- * The expiration is done best effort. There is no thread checking for timed out
- * entries since the cache has a fixed size. Once an entry times out, it remains
- * in the map until it either is accessed or evicted.
- * 
- * A test showed that for the default entry size of 1024, this map has a size of
- * 967 if 1024 items are inserted. This is due to the segmentation and hashing.
+ * A map with expiration and more or less LRU. Since the maps are separated in segments, the LRU is done for each
+ * segment. A segment is chosen based on the hash of the key. If one segments is more loaded than another, then an entry
+ * of the loaded segment may get evicted before an entry used least recently from an other segment. The expiration is
+ * done best effort. There is no thread checking for timed out entries since the cache has a fixed size. Once an entry
+ * times out, it remains in the map until it either is accessed or evicted. A test showed that for the default entry
+ * size of 1024, this map has a size of 967 if 1024 items are inserted. This is due to the segmentation and hashing.
  * 
  * @author Thomas Bocek
  */
-public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V>
+public class ConcurrentCacheMap<K, V>
+    implements ConcurrentMap<K, V>
 {
-	final private static Logger logger = LoggerFactory.getLogger(ConcurrentCacheMap.class);
-	public static final int SEGMENT_NR = 16;
-	public static final int MAX_ENTRIES = 1024;
-	public static final int DEFAULT_TIME_TO_LIVE = 60;
-	private final CacheMap<K, ExpiringObject>[] segments;
-	private final int timeToLive;
-	private final boolean refreshTimeout;
-	private final AtomicInteger removed = new AtomicInteger();
+    final private static Logger logger = LoggerFactory.getLogger( ConcurrentCacheMap.class );
 
-	/**
-	 * Creates a new instance of ConcurrentCacheMap using the supplied values
-	 * and a {@link CacheMap} for the internal data structure.
-	 */
-	public ConcurrentCacheMap()
-	{
-		this(DEFAULT_TIME_TO_LIVE, MAX_ENTRIES, true);
-	}
+    public static final int SEGMENT_NR = 16;
 
-	/**
-	 * Creates a new instance of ConcurrentCacheMap using the supplied values
-	 * and a {@link CacheMap} for the internal data structure.
-	 * 
-	 * @param timeToLive The time-to-live value (seconds)
-	 */
-	public ConcurrentCacheMap(int timeToLive, int maxEntries)
-	{
-		this(timeToLive, maxEntries, true);
-	}
+    public static final int MAX_ENTRIES = 1024;
 
-	/**
-	 * Creates a new instance of ConcurrentCacheMap using the supplied values
-	 * and a {@link CacheMap} for the internal data structure.
-	 * 
-	 * @param timeToLive The time-to-live value (seconds)
-	 * @param maxEntries The maximum entries to keep in cache, default is 1024
-	 * @param refreshTimeout If set to true, timeout will be reset in case of
-	 *        {@link #putIfAbsent(Object, Object)}
-	 */
-	@SuppressWarnings("unchecked")
-	public ConcurrentCacheMap(int timeToLive, int maxEntries, boolean refreshTimeout)
-	{
-		this.segments = new CacheMap[SEGMENT_NR];
-		int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
-		for (int i = 0; i < SEGMENT_NR; i++)
-		{
-			//set the cachemap to true, since it should behave as a regular map
-			segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, true);
-		}
-		this.timeToLive = timeToLive;
-		this.refreshTimeout = refreshTimeout;
-	}
+    public static final int DEFAULT_TIME_TO_LIVE = 60;
 
-	private CacheMap<K, ExpiringObject> segment(Object key)
-	{
-		return segments[(key.hashCode() & Integer.MAX_VALUE) % SEGMENT_NR];
-	}
+    private final CacheMap<K, ExpiringObject>[] segments;
 
-	@Override
-	public V put(K key, V value)
-	{
-		ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		synchronized (segment)
-		{
-			oldValue = segment.put(key, newValue);
-		}
-		if (oldValue == null || oldValue.isExpired())
-		{
-			return null;
-		}
-		return oldValue.getValue();
-	}
+    private final int timeToLive;
 
-	/**
-	 * This does not reset the timer!
-	 */
-	@Override
-	public V putIfAbsent(K key, V value)
-	{
-		final CacheMap<K, ExpiringObject> segment = segment(key);
-		final ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
-		ExpiringObject oldValue = null;
-		synchronized (segment)
-		{
-			if (!segment.containsKey(key))
-			{
-				oldValue = segment.put(key, newValue);
-			}
-			else
-			{
-				oldValue = segment.get(key);
-				if(oldValue.isExpired())
-				{
-					segment.put(key, newValue);
-				}
-				else if (refreshTimeout)
-				{
-					oldValue = new ExpiringObject(oldValue.getValue(), System.currentTimeMillis());
-					segment.put(key, oldValue);
-				}
-			}
-		}
-		if (oldValue == null || oldValue.isExpired())
-		{
-			return null;
-		}
-		return oldValue.getValue();
-	}
+    private final boolean refreshTimeout;
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public V get(Object key)
-	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		synchronized (segment)
-		{
-			oldValue = segment.get(key);
-		}
-		if (oldValue != null)
-		{
-			if (expire(segment, (K) key, oldValue))
-			{
-				return null;
-			}
-			else
-			{
-				if(logger.isDebugEnabled())
-				{
-					logger.debug("get: "+key+";"+oldValue.getValue());
-				}
-				return oldValue.getValue();
-			}
-		}
-		if(logger.isDebugEnabled())
-		{
-			logger.debug("get not found: "+key);
-		}
-		return null;
-	}
+    private final AtomicInteger removed = new AtomicInteger();
 
-	@Override
-	public V remove(Object key)
-	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		synchronized (segment)
-		{
-			oldValue = segment.remove(key);
-		}
-		if (oldValue == null || oldValue.isExpired())
-		{
-			return null;
-		}
-		return oldValue.getValue();
-	}
+    /**
+     * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
+     * data structure.
+     */
+    public ConcurrentCacheMap()
+    {
+        this( DEFAULT_TIME_TO_LIVE, MAX_ENTRIES, true );
+    }
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public boolean remove(Object key, Object value)
-	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		boolean removed = false;
-		synchronized (segment)
-		{
-			oldValue = segment.get(key);
-			if (oldValue != null && oldValue.equals(value) && !oldValue.isExpired())
-			{
-				removed = segment.remove(key) != null;
-			}
-		}
-		if (oldValue != null)
-		{
-			expire(segment, (K) key, oldValue);
-		}
-		return removed;
-	}
+    /**
+     * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
+     * data structure.
+     * 
+     * @param timeToLive The time-to-live value (seconds)
+     */
+    public ConcurrentCacheMap( int timeToLive, int maxEntries )
+    {
+        this( timeToLive, maxEntries, true );
+    }
 
-	@SuppressWarnings("unchecked")
-	public boolean containsKey(Object key)
-	{
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		synchronized (segment)
-		{
-			oldValue = segment.get(key);
-		}
-		if (oldValue != null)
-		{
-			if(expire(segment, (K) key, oldValue))
-			{
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    /**
+     * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
+     * data structure.
+     * 
+     * @param timeToLive The time-to-live value (seconds)
+     * @param maxEntries The maximum entries to keep in cache, default is 1024
+     * @param refreshTimeout If set to true, timeout will be reset in case of {@link #putIfAbsent(Object, Object)}
+     */
+    @SuppressWarnings( "unchecked" )
+    public ConcurrentCacheMap( int timeToLive, int maxEntries, boolean refreshTimeout )
+    {
+        this.segments = new CacheMap[SEGMENT_NR];
+        int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
+        for ( int i = 0; i < SEGMENT_NR; i++ )
+        {
+            // set the cachemap to true, since it should behave as a regular map
+            segments[i] = new CacheMap<K, ExpiringObject>( maxEntriesPerSegment, true );
+        }
+        this.timeToLive = timeToLive;
+        this.refreshTimeout = refreshTimeout;
+    }
 
-	public boolean containsValue(Object value)
-	{
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				expireSegment(segment);
-				if (segment.containsValue(value))
-				{
-					return true;
-				}
-			}
-		}
-		return false;
-	}
+    private CacheMap<K, ExpiringObject> segment( Object key )
+    {
+        return segments[( key.hashCode() & Integer.MAX_VALUE ) % SEGMENT_NR];
+    }
 
-	public int size()
-	{
-		int size = 0;
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				expireSegment(segment);
-				size += segment.size();
-			}
-		}
-		return size;
-	}
+    @Override
+    public V put( K key, V value )
+    {
+        ExpiringObject newValue = new ExpiringObject( value, System.currentTimeMillis() );
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        synchronized ( segment )
+        {
+            oldValue = segment.put( key, newValue );
+        }
+        if ( oldValue == null || oldValue.isExpired() )
+        {
+            return null;
+        }
+        return oldValue.getValue();
+    }
 
-	public boolean isEmpty()
-	{
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				expireSegment(segment);
-				if (!segment.isEmpty())
-				{
-					return false;
-				}
-			}
-		}
-		return true;
-	}
+    /**
+     * This does not reset the timer!
+     */
+    @Override
+    public V putIfAbsent( K key, V value )
+    {
+        final CacheMap<K, ExpiringObject> segment = segment( key );
+        final ExpiringObject newValue = new ExpiringObject( value, System.currentTimeMillis() );
+        ExpiringObject oldValue = null;
+        synchronized ( segment )
+        {
+            if ( !segment.containsKey( key ) )
+            {
+                oldValue = segment.put( key, newValue );
+            }
+            else
+            {
+                oldValue = segment.get( key );
+                if ( oldValue.isExpired() )
+                {
+                    segment.put( key, newValue );
+                }
+                else if ( refreshTimeout )
+                {
+                    oldValue = new ExpiringObject( oldValue.getValue(), System.currentTimeMillis() );
+                    segment.put( key, oldValue );
+                }
+            }
+        }
+        if ( oldValue == null || oldValue.isExpired() )
+        {
+            return null;
+        }
+        return oldValue.getValue();
+    }
 
-	public void clear()
-	{
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				segment.clear();
-			}
-		}
-	}
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public V get( Object key )
+    {
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        synchronized ( segment )
+        {
+            oldValue = segment.get( key );
+        }
+        if ( oldValue != null )
+        {
+            if ( expire( segment, (K) key, oldValue ) )
+            {
+                return null;
+            }
+            else
+            {
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "get: " + key + ";" + oldValue.getValue() );
+                }
+                return oldValue.getValue();
+            }
+        }
+        if ( logger.isDebugEnabled() )
+        {
+            logger.debug( "get not found: " + key );
+        }
+        return null;
+    }
 
-	@Override
-	public int hashCode()
-	{
-		int hashCode = 0;
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				expireSegment(segment);
-				// as seen in AbstractMap
-				hashCode += segment.hashCode();
-			}
-		}
-		return hashCode;
-	}
+    @Override
+    public V remove( Object key )
+    {
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        synchronized ( segment )
+        {
+            oldValue = segment.remove( key );
+        }
+        if ( oldValue == null || oldValue.isExpired() )
+        {
+            return null;
+        }
+        return oldValue.getValue();
+    }
 
-	public Set<K> keySet()
-	{
-		Set<K> retVal = new HashSet<K>();
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				expireSegment(segment);
-				retVal.addAll(segment.keySet());
-			}
-		}
-		return retVal;
-	}
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public boolean remove( Object key, Object value )
+    {
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        boolean removed = false;
+        synchronized ( segment )
+        {
+            oldValue = segment.get( key );
+            if ( oldValue != null && oldValue.equals( value ) && !oldValue.isExpired() )
+            {
+                removed = segment.remove( key ) != null;
+            }
+        }
+        if ( oldValue != null )
+        {
+            expire( segment, (K) key, oldValue );
+        }
+        return removed;
+    }
 
-	@Override
-	public boolean equals(Object obj)
-	{
-		throw new UnsupportedOperationException("not supported");
-	}
+    @SuppressWarnings( "unchecked" )
+    public boolean containsKey( Object key )
+    {
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        synchronized ( segment )
+        {
+            oldValue = segment.get( key );
+        }
+        if ( oldValue != null )
+        {
+            if ( expire( segment, (K) key, oldValue ) )
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public void putAll(Map<? extends K, ? extends V> inMap)
-	{
-		for (Entry<? extends K, ? extends V> e : inMap.entrySet())
-		{
-			this.put(e.getKey(), e.getValue());
-		}
-	}
+    public boolean containsValue( Object value )
+    {
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                expireSegment( segment );
+                if ( segment.containsValue( value ) )
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 
-	public Collection<V> values()
-	{
-		Collection<V> retVal = new ArrayList<V>();
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				Iterator<ExpiringObject> iterator = segment.values().iterator();
-				while (iterator.hasNext())
-				{
-					ExpiringObject expiringObject = iterator.next();
-					if (expiringObject.isExpired())
-					{
-						iterator.remove();
-						if(logger.isDebugEnabled())
-						{
-							logger.debug("remove in entrySet "+expiringObject.getValue());
-						}
-						removed.incrementAndGet();
-					}
-					else
-					{
-						retVal.add(expiringObject.getValue());
-					}
-				}
-			}
-		}
-		return retVal;
-	}
+    public int size()
+    {
+        int size = 0;
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                expireSegment( segment );
+                size += segment.size();
+            }
+        }
+        return size;
+    }
 
-	public Set<Map.Entry<K, V>> entrySet()
-	{
-		Set<Map.Entry<K, V>> retVal = new HashSet<Map.Entry<K, V>>();
-		for (CacheMap<K, ExpiringObject> segment : segments)
-		{
-			synchronized (segment)
-			{
-				Iterator<Map.Entry<K, ExpiringObject>> iterator = segment.entrySet().iterator();
-				while (iterator.hasNext())
-				{
-					final Map.Entry<K, ExpiringObject> entry = iterator.next();
-					if (entry.getValue().isExpired())
-					{
-						iterator.remove();
-						if(logger.isDebugEnabled())
-						{
-							logger.debug("remove in entrySet "+entry.getValue().getValue());
-						}
-						removed.incrementAndGet();
-					}
-					else
-					{
-						retVal.add(new Map.Entry<K, V>()
-						{
-							@Override
-							public K getKey()
-							{
-								return entry.getKey();
-							}
+    public boolean isEmpty()
+    {
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                expireSegment( segment );
+                if ( !segment.isEmpty() )
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 
-							@Override
-							public V getValue()
-							{
-								return entry.getValue().getValue();
-							}
+    public void clear()
+    {
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                segment.clear();
+            }
+        }
+    }
 
-							@Override
-							public V setValue(V value)
-							{
-								throw new UnsupportedOperationException("not supported");
-							}
-						});
-					}
-				}
-			}
-		}
-		return retVal;
-	}
+    @Override
+    public int hashCode()
+    {
+        int hashCode = 0;
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                expireSegment( segment );
+                // as seen in AbstractMap
+                hashCode += segment.hashCode();
+            }
+        }
+        return hashCode;
+    }
 
-	@Override
-	public boolean replace(K key, V oldValue, V newValue)
-	{
-		ExpiringObject oldValue2 = new ExpiringObject(oldValue, 0L);
-		ExpiringObject newValue2 = new ExpiringObject(newValue, System.currentTimeMillis());
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue3;
-		boolean replaced = false;
-		synchronized (segment)
-		{
-			oldValue3 = segment.get(key);
-			if (oldValue3 != null && !oldValue3.isExpired()
-					&& oldValue2.equals(oldValue3.getValue()))
-			{
-				segment.put(key, newValue2);
-				replaced = true;
-			}
-		}
-		if (oldValue3 != null)
-		{
-			expire(segment, key, oldValue3);
-		}
-		return replaced;
-	}
+    public Set<K> keySet()
+    {
+        Set<K> retVal = new HashSet<K>();
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                expireSegment( segment );
+                retVal.addAll( segment.keySet() );
+            }
+        }
+        return retVal;
+    }
 
-	@Override
-	public V replace(K key, V value)
-	{
-		ExpiringObject newValue = new ExpiringObject(value, System.currentTimeMillis());
-		CacheMap<K, ExpiringObject> segment = segment(key);
-		ExpiringObject oldValue;
-		synchronized (segment)
-		{
-			oldValue = segment.get(key);
-			if (oldValue != null && !oldValue.isExpired())
-			{
-				segment.put(key, newValue);
-			}
-		}
-		if (oldValue == null)
-		{
-			return null;
-		}
-		if (expire(segment, key, oldValue))
-		{
-			return null;
-		}
-		return oldValue.getValue();
-	}
+    @Override
+    public boolean equals( Object obj )
+    {
+        throw new UnsupportedOperationException( "not supported" );
+    }
 
-	private boolean expire(CacheMap<K, ExpiringObject> segment, K key, ExpiringObject value)
-	{
-		if (value.isExpired())
-		{
-			synchronized (segment)
-			{
-				ExpiringObject tmp = segment.get(key);
-				if (tmp != null && tmp.equals(value))
-				{
-					segment.remove(key);
-					if(logger.isDebugEnabled())
-					{
-						logger.debug("remove in expire "+value.getValue());
-					}
-					removed.incrementAndGet();
-				}
-			}
-			return true;
-		}
-		return false;
-	}
-	
-	/**
-	 * Fast expiration. Since the ExpiringObject is ordered the for loop can
-	 * break early if a object is not expired.
-	 */
-	private void expireSegment(CacheMap<K, ExpiringObject> segment)
-	{
-		Iterator<ExpiringObject> iterator = segment.values().iterator();
-		while (iterator.hasNext())
-		{
-			ExpiringObject expiringObject = iterator.next();
-			if (expiringObject.isExpired())
-			{
-				iterator.remove();
-				if(logger.isDebugEnabled())
-				{
-					logger.debug("remove in expireAll "+expiringObject.getValue());
-				}
-				removed.incrementAndGet();
-			}
-			else
-			{
-				break;
-			}
-		}
-	}
-	
-	/**
-	 * @return The number of expired objects 
-	 */
-	public int expiredCounter()
-	{
-		return removed.get();
-	}
-	
-	private class ExpiringObject
-	{
-		private final V value;
-		private final long lastAccessTime;
+    public void putAll( Map<? extends K, ? extends V> inMap )
+    {
+        for ( Entry<? extends K, ? extends V> e : inMap.entrySet() )
+        {
+            this.put( e.getKey(), e.getValue() );
+        }
+    }
 
-		ExpiringObject(V value, long lastAccessTime)
-		{
-			if (value == null)
-			{
-				throw new IllegalArgumentException("An expiring object cannot be null.");
-			}
-			this.value = value;
-			this.lastAccessTime = lastAccessTime;
-		}
+    public Collection<V> values()
+    {
+        Collection<V> retVal = new ArrayList<V>();
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                Iterator<ExpiringObject> iterator = segment.values().iterator();
+                while ( iterator.hasNext() )
+                {
+                    ExpiringObject expiringObject = iterator.next();
+                    if ( expiringObject.isExpired() )
+                    {
+                        iterator.remove();
+                        if ( logger.isDebugEnabled() )
+                        {
+                            logger.debug( "remove in entrySet " + expiringObject.getValue() );
+                        }
+                        removed.incrementAndGet();
+                    }
+                    else
+                    {
+                        retVal.add( expiringObject.getValue() );
+                    }
+                }
+            }
+        }
+        return retVal;
+    }
 
-		public boolean isExpired()
-		{
-			return System.currentTimeMillis() > lastAccessTime + (timeToLive * 1000);
-		}
+    public Set<Map.Entry<K, V>> entrySet()
+    {
+        Set<Map.Entry<K, V>> retVal = new HashSet<Map.Entry<K, V>>();
+        for ( CacheMap<K, ExpiringObject> segment : segments )
+        {
+            synchronized ( segment )
+            {
+                Iterator<Map.Entry<K, ExpiringObject>> iterator = segment.entrySet().iterator();
+                while ( iterator.hasNext() )
+                {
+                    final Map.Entry<K, ExpiringObject> entry = iterator.next();
+                    if ( entry.getValue().isExpired() )
+                    {
+                        iterator.remove();
+                        if ( logger.isDebugEnabled() )
+                        {
+                            logger.debug( "remove in entrySet " + entry.getValue().getValue() );
+                        }
+                        removed.incrementAndGet();
+                    }
+                    else
+                    {
+                        retVal.add( new Map.Entry<K, V>()
+                        {
+                            @Override
+                            public K getKey()
+                            {
+                                return entry.getKey();
+                            }
 
-		public V getValue()
-		{
-			return value;
-		}
+                            @Override
+                            public V getValue()
+                            {
+                                return entry.getValue().getValue();
+                            }
 
-		@Override
-		public boolean equals(Object obj)
-		{
-			if(!(obj instanceof ConcurrentCacheMap.ExpiringObject))
-			{
-				return false;
-			}
-			@SuppressWarnings("unchecked")
-			ExpiringObject exp = (ExpiringObject) obj;
-			return value.equals(exp.value);
-		}
+                            @Override
+                            public V setValue( V value )
+                            {
+                                throw new UnsupportedOperationException( "not supported" );
+                            }
+                        } );
+                    }
+                }
+            }
+        }
+        return retVal;
+    }
 
-		@Override
-		public int hashCode()
-		{
-			return value.hashCode();
-		}
-	}
+    @Override
+    public boolean replace( K key, V oldValue, V newValue )
+    {
+        ExpiringObject oldValue2 = new ExpiringObject( oldValue, 0L );
+        ExpiringObject newValue2 = new ExpiringObject( newValue, System.currentTimeMillis() );
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue3;
+        boolean replaced = false;
+        synchronized ( segment )
+        {
+            oldValue3 = segment.get( key );
+            if ( oldValue3 != null && !oldValue3.isExpired() && oldValue2.equals( oldValue3.getValue() ) )
+            {
+                segment.put( key, newValue2 );
+                replaced = true;
+            }
+        }
+        if ( oldValue3 != null )
+        {
+            expire( segment, key, oldValue3 );
+        }
+        return replaced;
+    }
+
+    @Override
+    public V replace( K key, V value )
+    {
+        ExpiringObject newValue = new ExpiringObject( value, System.currentTimeMillis() );
+        CacheMap<K, ExpiringObject> segment = segment( key );
+        ExpiringObject oldValue;
+        synchronized ( segment )
+        {
+            oldValue = segment.get( key );
+            if ( oldValue != null && !oldValue.isExpired() )
+            {
+                segment.put( key, newValue );
+            }
+        }
+        if ( oldValue == null )
+        {
+            return null;
+        }
+        if ( expire( segment, key, oldValue ) )
+        {
+            return null;
+        }
+        return oldValue.getValue();
+    }
+
+    private boolean expire( CacheMap<K, ExpiringObject> segment, K key, ExpiringObject value )
+    {
+        if ( value.isExpired() )
+        {
+            synchronized ( segment )
+            {
+                ExpiringObject tmp = segment.get( key );
+                if ( tmp != null && tmp.equals( value ) )
+                {
+                    segment.remove( key );
+                    if ( logger.isDebugEnabled() )
+                    {
+                        logger.debug( "remove in expire " + value.getValue() );
+                    }
+                    removed.incrementAndGet();
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Fast expiration. Since the ExpiringObject is ordered the for loop can break early if a object is not expired.
+     */
+    private void expireSegment( CacheMap<K, ExpiringObject> segment )
+    {
+        Iterator<ExpiringObject> iterator = segment.values().iterator();
+        while ( iterator.hasNext() )
+        {
+            ExpiringObject expiringObject = iterator.next();
+            if ( expiringObject.isExpired() )
+            {
+                iterator.remove();
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "remove in expireAll " + expiringObject.getValue() );
+                }
+                removed.incrementAndGet();
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return The number of expired objects
+     */
+    public int expiredCounter()
+    {
+        return removed.get();
+    }
+
+    private class ExpiringObject
+    {
+        private final V value;
+
+        private final long lastAccessTime;
+
+        ExpiringObject( V value, long lastAccessTime )
+        {
+            if ( value == null )
+            {
+                throw new IllegalArgumentException( "An expiring object cannot be null." );
+            }
+            this.value = value;
+            this.lastAccessTime = lastAccessTime;
+        }
+
+        public boolean isExpired()
+        {
+            return System.currentTimeMillis() > lastAccessTime + ( timeToLive * 1000 );
+        }
+
+        public V getValue()
+        {
+            return value;
+        }
+
+        @Override
+        public boolean equals( Object obj )
+        {
+            if ( !( obj instanceof ConcurrentCacheMap.ExpiringObject ) )
+            {
+                return false;
+            }
+            @SuppressWarnings( "unchecked" )
+            ExpiringObject exp = (ExpiringObject) obj;
+            return value.equals( exp.value );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return value.hashCode();
+        }
+    }
 }

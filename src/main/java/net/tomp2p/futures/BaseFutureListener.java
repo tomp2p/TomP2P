@@ -14,31 +14,30 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 /**
- * Something interested in being notified when the result of an
- * {@link BaseFuture} becomes available.
+ * Something interested in being notified when the result of an {@link BaseFuture} becomes available.
  * 
  * @author Thomas Bocek
- * 
  * @param <F>
  */
 public interface BaseFutureListener<F extends BaseFuture>
 {
-	/**
-	 * Invoked when the operation associated with the {@link BaseFuture} has
-	 * been completed. If a operation already completed, then this method is not
-	 * invoked.
-	 * 
-	 * @param future The future operation
-	 */
-	public abstract void operationComplete(F future) throws Exception;
+    /**
+     * Invoked when the operation associated with the {@link BaseFuture} has been completed. If a operation already
+     * completed, then this method is not invoked.
+     * 
+     * @param future The future operation
+     */
+    public abstract void operationComplete( F future )
+        throws Exception;
 
-	/**
-	 * If the operation complete is called and the methed throws an exception
-	 * 
-	 * @param t The exception thrown in #operationComplete(BaseFuture).
-	 * @throws Exception If an execption is thrown, it is printed in the log and
-	 *         and System.err
-	 */
-	public abstract void exceptionCaught(Throwable t) throws Exception;
+    /**
+     * If the operation complete is called and the methed throws an exception
+     * 
+     * @param t The exception thrown in #operationComplete(BaseFuture).
+     * @throws Exception If an execption is thrown, it is printed in the log and and System.err
+     */
+    public abstract void exceptionCaught( Throwable t )
+        throws Exception;
 }

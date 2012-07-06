@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.p2p.builder;
 
 import java.net.InetAddress;
@@ -23,13 +39,10 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * Boostraps to a known peer. First channels are reserved, then
- * #discover(PeerAddress) is called to verify this Internet connection
- * settings using the argument peerAddress. Then the routing is initiated to
- * the peers specified in bootstrapTo. Please be aware that in order to
- * boostrap you need to know the peer ID of all peers in the collection
+ * Boostraps to a known peer. First channels are reserved, then #discover(PeerAddress) is called to verify this Internet
+ * connection settings using the argument peerAddress. Then the routing is initiated to the peers specified in
+ * bootstrapTo. Please be aware that in order to boostrap you need to know the peer ID of all peers in the collection
  * bootstrapTo. Passing Number160.ZERO does *not* work.
  * 
  * @param discoveryPeerAddress The peer address to use for discovery
@@ -38,279 +51,300 @@ import org.slf4j.LoggerFactory;
  * @return The future bootstrap
  */
 
-public class BootstrapBuilder 
+public class BootstrapBuilder
 {
-	final private static Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
-	private final static FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>().setFailed("Peer is shutting down");
-	final private Peer peer;
-	private Collection<PeerAddress> bootstrapTo;
-	private PeerAddress peerAddress;
-	private InetAddress inetAddress;
-	private int portUDP = Bindings.DEFAULT_PORT;
-	private int portTCP = Bindings.DEFAULT_PORT;
-	private RoutingConfiguration routingConfiguration;
-	private RequestP2PConfiguration requestP2PConfiguration;
-	private boolean forceRoutingOnlyToSelf = false;
-	private boolean broadcast = false;
-	
-	public BootstrapBuilder(Peer peer)
-	{
-		this.peer = peer;
-	}
-	
-	public Collection<PeerAddress> getBootstrapTo()
-	{
-		return bootstrapTo;
-	}
+    final private static Logger logger = LoggerFactory.getLogger( BootstrapBuilder.class );
 
-	public BootstrapBuilder setBootstrapTo(Collection<PeerAddress> bootstrapTo)
-	{
-		this.bootstrapTo = bootstrapTo;
-		return this;
-	}
+    private final static FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN =
+        new FutureWrappedBootstrap<FutureBootstrap>().setFailed( "Peer is shutting down" );
 
-	public PeerAddress getPeerAddress()
-	{
-		return peerAddress;
-	}
+    final private Peer peer;
 
-	public BootstrapBuilder setPeerAddress(PeerAddress peerAddress)
-	{
-		this.peerAddress = peerAddress;
-		return this;
-	}
+    private Collection<PeerAddress> bootstrapTo;
 
-	public InetAddress getInetAddress()
-	{
-		return inetAddress;
-	}
+    private PeerAddress peerAddress;
 
-	public BootstrapBuilder setInetAddress(InetAddress inetAddress)
-	{
-		this.inetAddress = inetAddress;
-		return this;
-	}
+    private InetAddress inetAddress;
 
-	public int getPortUDP()
-	{
-		return portUDP;
-	}
+    private int portUDP = Bindings.DEFAULT_PORT;
 
-	public BootstrapBuilder setPortUDP(int portUDP)
-	{
-		this.portUDP = portUDP;
-		return this;
-	}
+    private int portTCP = Bindings.DEFAULT_PORT;
 
-	public int getPortTCP()
-	{
-		return portTCP;
-	}
+    private RoutingConfiguration routingConfiguration;
 
-	public BootstrapBuilder setPortTCP(int portTCP)
-	{
-		this.portTCP = portTCP;
-		return this;
-	}
-	
-	public BootstrapBuilder setPorts(int port)
-	{
-		this.portTCP = port;
-		this.portUDP = port;
-		return this;
-	}
+    private RequestP2PConfiguration requestP2PConfiguration;
 
-	public RoutingConfiguration getRoutingConfiguration()
-	{
-		return routingConfiguration;
-	}
+    private boolean forceRoutingOnlyToSelf = false;
 
-	public BootstrapBuilder setRoutingConfiguration(RoutingConfiguration routingConfiguration)
-	{
-		this.routingConfiguration = routingConfiguration;
-		return this;
-	}
+    private boolean broadcast = false;
 
-	public RequestP2PConfiguration getRequestP2PConfiguration()
-	{
-		return requestP2PConfiguration;
-	}
+    public BootstrapBuilder( Peer peer )
+    {
+        this.peer = peer;
+    }
 
-	public BootstrapBuilder setRequestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration)
-	{
-		this.requestP2PConfiguration = requestP2PConfiguration;
-		return this;
-	}
+    public Collection<PeerAddress> getBootstrapTo()
+    {
+        return bootstrapTo;
+    }
 
-	public boolean isForceRoutingOnlyToSelf()
-	{
-		return forceRoutingOnlyToSelf;
-	}
-	
-	public BootstrapBuilder setForceRoutingOnlyToSelf()
-	{
-		this.forceRoutingOnlyToSelf = true;
-		return this;
-	}
+    public BootstrapBuilder setBootstrapTo( Collection<PeerAddress> bootstrapTo )
+    {
+        this.bootstrapTo = bootstrapTo;
+        return this;
+    }
 
-	public BootstrapBuilder setForceRoutingOnlyToSelf(boolean forceRoutingOnlyToSelf)
-	{
-		this.forceRoutingOnlyToSelf = forceRoutingOnlyToSelf;
-		return this;
-	}
-	
-	public boolean isBroadcast()
-	{
-		return broadcast;
-	}
-	
-	public BootstrapBuilder setBroadcast()
-	{
-		this.broadcast = true;
-		return this;
-	}
+    public PeerAddress getPeerAddress()
+    {
+        return peerAddress;
+    }
 
-	public BootstrapBuilder setBroadcast(boolean broadcast)
-	{
-		this.broadcast = broadcast;
-		return this;
-	}
-	
-	public FutureBootstrap start()
-	{
-		if(peer.isShutdown())
-		{
-			return FUTURE_BOOTSTRAP_SHUTDOWN;
-		}
-		
-		if(routingConfiguration == null)
-		{
-			routingConfiguration = new RoutingConfiguration(5, 10, 2);
-		}
-		if(requestP2PConfiguration == null)
-		{
-			int size = peer.getPeerBean().getPeerMap().size() + 1;
-			requestP2PConfiguration = new RequestP2PConfiguration(Math.min(size, 3), 5, 3);
-		}
-		//
-		if(broadcast)
-		{
-			return broadcast();
-		}
-		if(peerAddress == null && inetAddress != null && bootstrapTo == null)
-		{
-			peerAddress = new PeerAddress(Number160.ZERO, inetAddress, portTCP, portUDP);
-			return bootstrapPing(peerAddress);
-			
-		}
-		else if(peerAddress != null && bootstrapTo == null)
-		{
-			bootstrapTo = new ArrayList<PeerAddress>(1);
-			bootstrapTo.add(peerAddress);
-			return bootstrap();
-		}
-		else if(bootstrapTo !=null)
-		{
-			return bootstrap();
-		}
-		else
-		{
-			throw new IllegalArgumentException("need to set an address to bootstrap to");
-		}
-	}
-	
-	private FutureBootstrap bootstrap()
-	{
-		final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result = new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
-		result.setBootstrapTo(bootstrapTo);
-		int conn = Math.max(routingConfiguration.getParallel(), requestP2PConfiguration.getParallel());
-		peer.getConnectionBean().getConnectionReservation().reserve(conn).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-		{
-			@Override
-			public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception
-			{
-				if(futureChannelCreator.isSuccess())
-				{
-					FutureWrapper<FutureRouting> futureBootstrap = peer.getDistributedRouting().bootstrap(bootstrapTo, 
-							routingConfiguration.getMaxNoNewInfo(requestP2PConfiguration.getMinimumResults()),
-							routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
-							routingConfiguration.getParallel(), false, 
-							forceRoutingOnlyToSelf, futureChannelCreator.getChannelCreator());
-					Utils.addReleaseListenerAll(futureBootstrap, peer.getConnectionBean().getConnectionReservation(), 
-							futureChannelCreator.getChannelCreator());
-					result.waitFor(futureBootstrap);
-				}
-				else
-				{
-					result.setFailed(futureChannelCreator);
-				}
-			}
-		});
-		return result;
-	}
-	
-	private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing(PeerAddress address)
-	{
-		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		final FutureResponse tmp = (FutureResponse) peer.ping().setPeerAddress(address).setTcpPing().start();
-		tmp.addListener(new BaseFutureAdapter<FutureResponse>()
-		{
-			@Override
-			public void operationComplete(final FutureResponse future) throws Exception
-			{
-				if (future.isSuccess())
-				{
-					peerAddress = future.getResponse().getSender();
-					bootstrapTo = new ArrayList<PeerAddress>(1);
-					bootstrapTo.add(peerAddress);
-					result.setBootstrapTo(bootstrapTo);
-					result.waitFor(bootstrap());
-				}
-				else
-				{
-					result.setFailed("could not reach anyone with bootstrap");
-				}
-			}
-		});
-		return result;
-	}
-	
-	private FutureWrappedBootstrap<FutureBootstrap> broadcast()
-	{
-		final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-		// limit after
-		@SuppressWarnings("unchecked")
-		final FutureLateJoin<FutureResponse> tmp = (FutureLateJoin<FutureResponse>) peer.ping().setBroadcast().setPort(portUDP).start();
-		tmp.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
-		{
-			@Override
-			public void operationComplete(final FutureLateJoin<FutureResponse> future)
-					throws Exception
-			{
-				if (future.isSuccess())
-				{
-					FutureResponse futureResponse = future.getLastSuceessFuture();
-					if(futureResponse==null)
-					{
-						result.setFailed("no futures found", future);
-						return;
-					}
-					if(bootstrapTo!=null && bootstrapTo.size() > 0)
-					{
-						logger.info("you added peers to bootstrapTo. However with broadcast we found our own peers.");
-					}
-					peerAddress = futureResponse.getResponse().getSender();
-					bootstrapTo = new ArrayList<PeerAddress>(1);
-					bootstrapTo.add(peerAddress);
-					result.setBootstrapTo(bootstrapTo);
-					result.waitFor(bootstrap());
-				}
-				else
-				{
-					result.setFailed("could not reach anyone with the broadcast", future);
-				}
-			}
-		});
-		return result;
-	}	
+    public BootstrapBuilder setPeerAddress( PeerAddress peerAddress )
+    {
+        this.peerAddress = peerAddress;
+        return this;
+    }
+
+    public InetAddress getInetAddress()
+    {
+        return inetAddress;
+    }
+
+    public BootstrapBuilder setInetAddress( InetAddress inetAddress )
+    {
+        this.inetAddress = inetAddress;
+        return this;
+    }
+
+    public int getPortUDP()
+    {
+        return portUDP;
+    }
+
+    public BootstrapBuilder setPortUDP( int portUDP )
+    {
+        this.portUDP = portUDP;
+        return this;
+    }
+
+    public int getPortTCP()
+    {
+        return portTCP;
+    }
+
+    public BootstrapBuilder setPortTCP( int portTCP )
+    {
+        this.portTCP = portTCP;
+        return this;
+    }
+
+    public BootstrapBuilder setPorts( int port )
+    {
+        this.portTCP = port;
+        this.portUDP = port;
+        return this;
+    }
+
+    public RoutingConfiguration getRoutingConfiguration()
+    {
+        return routingConfiguration;
+    }
+
+    public BootstrapBuilder setRoutingConfiguration( RoutingConfiguration routingConfiguration )
+    {
+        this.routingConfiguration = routingConfiguration;
+        return this;
+    }
+
+    public RequestP2PConfiguration getRequestP2PConfiguration()
+    {
+        return requestP2PConfiguration;
+    }
+
+    public BootstrapBuilder setRequestP2PConfiguration( RequestP2PConfiguration requestP2PConfiguration )
+    {
+        this.requestP2PConfiguration = requestP2PConfiguration;
+        return this;
+    }
+
+    public boolean isForceRoutingOnlyToSelf()
+    {
+        return forceRoutingOnlyToSelf;
+    }
+
+    public BootstrapBuilder setForceRoutingOnlyToSelf()
+    {
+        this.forceRoutingOnlyToSelf = true;
+        return this;
+    }
+
+    public BootstrapBuilder setForceRoutingOnlyToSelf( boolean forceRoutingOnlyToSelf )
+    {
+        this.forceRoutingOnlyToSelf = forceRoutingOnlyToSelf;
+        return this;
+    }
+
+    public boolean isBroadcast()
+    {
+        return broadcast;
+    }
+
+    public BootstrapBuilder setBroadcast()
+    {
+        this.broadcast = true;
+        return this;
+    }
+
+    public BootstrapBuilder setBroadcast( boolean broadcast )
+    {
+        this.broadcast = broadcast;
+        return this;
+    }
+
+    public FutureBootstrap start()
+    {
+        if ( peer.isShutdown() )
+        {
+            return FUTURE_BOOTSTRAP_SHUTDOWN;
+        }
+
+        if ( routingConfiguration == null )
+        {
+            routingConfiguration = new RoutingConfiguration( 5, 10, 2 );
+        }
+        if ( requestP2PConfiguration == null )
+        {
+            int size = peer.getPeerBean().getPeerMap().size() + 1;
+            requestP2PConfiguration = new RequestP2PConfiguration( Math.min( size, 3 ), 5, 3 );
+        }
+        //
+        if ( broadcast )
+        {
+            return broadcast();
+        }
+        if ( peerAddress == null && inetAddress != null && bootstrapTo == null )
+        {
+            peerAddress = new PeerAddress( Number160.ZERO, inetAddress, portTCP, portUDP );
+            return bootstrapPing( peerAddress );
+
+        }
+        else if ( peerAddress != null && bootstrapTo == null )
+        {
+            bootstrapTo = new ArrayList<PeerAddress>( 1 );
+            bootstrapTo.add( peerAddress );
+            return bootstrap();
+        }
+        else if ( bootstrapTo != null )
+        {
+            return bootstrap();
+        }
+        else
+        {
+            throw new IllegalArgumentException( "need to set an address to bootstrap to" );
+        }
+    }
+
+    private FutureBootstrap bootstrap()
+    {
+        final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result =
+            new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
+        result.setBootstrapTo( bootstrapTo );
+        int conn = Math.max( routingConfiguration.getParallel(), requestP2PConfiguration.getParallel() );
+        peer.getConnectionBean().getConnectionReservation().reserve( conn ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
+                                                                                         {
+                                                                                             @Override
+                                                                                             public void operationComplete( final FutureChannelCreator futureChannelCreator )
+                                                                                                 throws Exception
+                                                                                             {
+                                                                                                 if ( futureChannelCreator.isSuccess() )
+                                                                                                 {
+                                                                                                     FutureWrapper<FutureRouting> futureBootstrap =
+                                                                                                         peer.getDistributedRouting().bootstrap( bootstrapTo,
+                                                                                                                                                 routingConfiguration.getMaxNoNewInfo( requestP2PConfiguration.getMinimumResults() ),
+                                                                                                                                                 routingConfiguration.getMaxFailures(),
+                                                                                                                                                 routingConfiguration.getMaxSuccess(),
+                                                                                                                                                 routingConfiguration.getParallel(),
+                                                                                                                                                 false,
+                                                                                                                                                 forceRoutingOnlyToSelf,
+                                                                                                                                                 futureChannelCreator.getChannelCreator() );
+                                                                                                     Utils.addReleaseListenerAll( futureBootstrap,
+                                                                                                                                  peer.getConnectionBean().getConnectionReservation(),
+                                                                                                                                  futureChannelCreator.getChannelCreator() );
+                                                                                                     result.waitFor( futureBootstrap );
+                                                                                                 }
+                                                                                                 else
+                                                                                                 {
+                                                                                                     result.setFailed( futureChannelCreator );
+                                                                                                 }
+                                                                                             }
+                                                                                         } );
+        return result;
+    }
+
+    private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing( PeerAddress address )
+    {
+        final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
+        final FutureResponse tmp = (FutureResponse) peer.ping().setPeerAddress( address ).setTcpPing().start();
+        tmp.addListener( new BaseFutureAdapter<FutureResponse>()
+        {
+            @Override
+            public void operationComplete( final FutureResponse future )
+                throws Exception
+            {
+                if ( future.isSuccess() )
+                {
+                    peerAddress = future.getResponse().getSender();
+                    bootstrapTo = new ArrayList<PeerAddress>( 1 );
+                    bootstrapTo.add( peerAddress );
+                    result.setBootstrapTo( bootstrapTo );
+                    result.waitFor( bootstrap() );
+                }
+                else
+                {
+                    result.setFailed( "could not reach anyone with bootstrap" );
+                }
+            }
+        } );
+        return result;
+    }
+
+    private FutureWrappedBootstrap<FutureBootstrap> broadcast()
+    {
+        final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
+        // limit after
+        @SuppressWarnings( "unchecked" )
+        final FutureLateJoin<FutureResponse> tmp =
+            (FutureLateJoin<FutureResponse>) peer.ping().setBroadcast().setPort( portUDP ).start();
+        tmp.addListener( new BaseFutureAdapter<FutureLateJoin<FutureResponse>>()
+        {
+            @Override
+            public void operationComplete( final FutureLateJoin<FutureResponse> future )
+                throws Exception
+            {
+                if ( future.isSuccess() )
+                {
+                    FutureResponse futureResponse = future.getLastSuceessFuture();
+                    if ( futureResponse == null )
+                    {
+                        result.setFailed( "no futures found", future );
+                        return;
+                    }
+                    if ( bootstrapTo != null && bootstrapTo.size() > 0 )
+                    {
+                        logger.info( "you added peers to bootstrapTo. However with broadcast we found our own peers." );
+                    }
+                    peerAddress = futureResponse.getResponse().getSender();
+                    bootstrapTo = new ArrayList<PeerAddress>( 1 );
+                    bootstrapTo.add( peerAddress );
+                    result.setBootstrapTo( bootstrapTo );
+                    result.waitFor( bootstrap() );
+                }
+                else
+                {
+                    result.setFailed( "could not reach anyone with the broadcast", future );
+                }
+            }
+        } );
+        return result;
+    }
 }

@@ -18,27 +18,26 @@
 package net.tomp2p.natpmp;
 
 /**
- * This enumeration enumerates the types of messages that can be sent. This is
- * used mostly my the {@link Message} class.
+ * This enumeration enumerates the types of messages that can be sent. This is used mostly my the {@link Message} class.
+ * 
  * @author flszen
  */
-enum MessageType {
+enum MessageType
+{
     /**
      * Requests the external address of the NAT-PMP device.
      */
     ExternalAddress,
 
     /**
-     * Requests a TCP port map on the NAT-PMP device. To remove a mapping, set
-     * the lifetime and external port set to 0. If the internal port is also set
-     * to zero, than all mappings are removed.
+     * Requests a TCP port map on the NAT-PMP device. To remove a mapping, set the lifetime and external port set to 0.
+     * If the internal port is also set to zero, than all mappings are removed.
      */
     MapTCP,
 
     /**
-     * Requests a UDP port map on the NAT-PMP device. To remove a mapping, set
-     * the lifetime and external port set to 0. If the internal port is also set
-     * to zero, than all mappings are removed.
+     * Requests a UDP port map on the NAT-PMP device. To remove a mapping, set the lifetime and external port set to 0.
+     * If the internal port is also set to zero, than all mappings are removed.
      */
     MapUDP
 }

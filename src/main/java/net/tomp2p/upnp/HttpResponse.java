@@ -56,114 +56,113 @@ import java.util.StringTokenizer;
 class HttpResponse
 {
 
-	private String header;
+    private String header;
 
-	private Map<String, String> fields;
+    private Map<String, String> fields;
 
-	private String body;
+    private String body;
 
-	/**
-	 * Constructor of the response, will try to parse the raw response
-	 * data
-	 * 
-	 * @param rawHttpResponse
-	 *           the raw response data
-	 * @throws IllegalArgumentException
-	 *            if some error occurs during parsing
-	 */
-	protected HttpResponse( String rawHttpResponse ) throws IllegalArgumentException
-	{
-		if( rawHttpResponse == null || rawHttpResponse.trim().length() == 0 )
-		{
-			throw new IllegalArgumentException( "Empty HTTP response message" );
-		}
-		boolean bodyParsing = false;
-		StringBuilder bodyParsed = new StringBuilder();
-		fields = new HashMap<String, String>();
-		String[] lines = rawHttpResponse.split( "\\r\\n" );
-		header = lines[ 0 ].trim();
+    /**
+     * Constructor of the response, will try to parse the raw response data
+     * 
+     * @param rawHttpResponse the raw response data
+     * @throws IllegalArgumentException if some error occurs during parsing
+     */
+    protected HttpResponse( String rawHttpResponse )
+        throws IllegalArgumentException
+    {
+        if ( rawHttpResponse == null || rawHttpResponse.trim().length() == 0 )
+        {
+            throw new IllegalArgumentException( "Empty HTTP response message" );
+        }
+        boolean bodyParsing = false;
+        StringBuilder bodyParsed = new StringBuilder();
+        fields = new HashMap<String, String>();
+        String[] lines = rawHttpResponse.split( "\\r\\n" );
+        header = lines[0].trim();
 
-		for( int i = 1; i < lines.length; i++ )
-		{
+        for ( int i = 1; i < lines.length; i++ )
+        {
 
-			String line = lines[ i ];
-			if( line.length() == 0 )
-			{
-				// line break before body
-				bodyParsing = true;
-			}
-			else if( bodyParsing )
-			{
-				// we parse the message body
-				bodyParsed.append( line ).append( "\r\n" );
-			}
-			else
-			{
-				// we parse the header
-				if( line.length() > 0 )
-				{
-					int delim = line.indexOf( ':' );
-					if( delim != -1 )
-					{
-						String key = line.substring( 0, delim ).toUpperCase();
-						String value = line.substring( delim + 1 ).trim();
-						fields.put( key, value );
-					}
-					else
-					{
-						throw new IllegalArgumentException( "Invalid HTTP message header :" + line );
-					}
-				}
-			}
-		}
-		if( bodyParsing )
-		{
-			body = bodyParsed.toString();
-		}
-	}
+            String line = lines[i];
+            if ( line.length() == 0 )
+            {
+                // line break before body
+                bodyParsing = true;
+            }
+            else if ( bodyParsing )
+            {
+                // we parse the message body
+                bodyParsed.append( line ).append( "\r\n" );
+            }
+            else
+            {
+                // we parse the header
+                if ( line.length() > 0 )
+                {
+                    int delim = line.indexOf( ':' );
+                    if ( delim != -1 )
+                    {
+                        String key = line.substring( 0, delim ).toUpperCase();
+                        String value = line.substring( delim + 1 ).trim();
+                        fields.put( key, value );
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( "Invalid HTTP message header :" + line );
+                    }
+                }
+            }
+        }
+        if ( bodyParsing )
+        {
+            body = bodyParsed.toString();
+        }
+    }
 
-	public String getHeader()
-	{
-		return header;
-	}
+    public String getHeader()
+    {
+        return header;
+    }
 
-	public String getBody()
-	{
-		return body;
-	}
+    public String getBody()
+    {
+        return body;
+    }
 
-	public String getHTTPFieldElement( String fieldName, String elementName )
-			throws IllegalArgumentException
-	{
-		String fieldNameValue = getHTTPHeaderField( fieldName );
-		if( fieldName != null )
-		{
+    public String getHTTPFieldElement( String fieldName, String elementName )
+        throws IllegalArgumentException
+    {
+        String fieldNameValue = getHTTPHeaderField( fieldName );
+        if ( fieldName != null )
+        {
 
-			StringTokenizer tokenizer = new StringTokenizer( fieldNameValue.trim(), "," );
-			while( tokenizer.countTokens() > 0 )
-			{
-				String nextToken = tokenizer.nextToken().trim();
-				if( nextToken.startsWith( elementName ) )
-				{
-					int index = nextToken.indexOf( "=" );
-					if( index != -1 )
-					{
-						return nextToken.substring( index + 1 ).trim();
-					}
-				}
-			}
-		}
-		throw new IllegalArgumentException( "HTTP element field " + elementName + " is not present" );
-	}
+            StringTokenizer tokenizer = new StringTokenizer( fieldNameValue.trim(), "," );
+            while ( tokenizer.countTokens() > 0 )
+            {
+                String nextToken = tokenizer.nextToken().trim();
+                if ( nextToken.startsWith( elementName ) )
+                {
+                    int index = nextToken.indexOf( "=" );
+                    if ( index != -1 )
+                    {
+                        return nextToken.substring( index + 1 ).trim();
+                    }
+                }
+            }
+        }
+        throw new IllegalArgumentException( "HTTP element field " + elementName + " is not present" );
+    }
 
-	public String getHTTPHeaderField( String fieldName ) throws IllegalArgumentException
-	{
-		String field = fields.get( fieldName.toUpperCase() );
-		if( field == null )
-		{
-			throw new IllegalArgumentException( "HTTP field " + fieldName + " is not present" );
-		}
-		return field;
-	}
+    public String getHTTPHeaderField( String fieldName )
+        throws IllegalArgumentException
+    {
+        String field = fields.get( fieldName.toUpperCase() );
+        if ( field == null )
+        {
+            throw new IllegalArgumentException( "HTTP field " + fieldName + " is not present" );
+        }
+        return field;
+    }
 
 }

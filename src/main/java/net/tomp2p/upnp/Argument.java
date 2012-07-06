@@ -45,7 +45,6 @@ package net.tomp2p.upnp;
 
 import javax.xml.xpath.XPathExpressionException;
 
-
 import org.w3c.dom.Node;
 
 /**
@@ -56,51 +55,50 @@ import org.w3c.dom.Node;
  */
 public class Argument
 {
-	/**
-	 * @author ryanm
-	 */
-	public enum Direction
-	{
-		/***/
-		in,
-		/***/
-		out
-	};
+    /**
+     * @author ryanm
+     */
+    public enum Direction
+    {
+        /***/
+        in,
+        /***/
+        out
+    };
 
-	StateVariable relatedStateVariable;
+    StateVariable relatedStateVariable;
 
-	/***/
-	public final String name;
+    /***/
+    public final String name;
 
-	/***/
-	public final Direction direction;
+    /***/
+    public final Direction direction;
 
-	/***/
-	public final String relatedStateVariableName;
+    /***/
+    public final String relatedStateVariableName;
 
-	Argument( Node xml ) throws XPathExpressionException
-	{
-		name = XMLUtil.xpath.evaluate( "name", xml );
-		direction = Direction.valueOf( XMLUtil.xpath.evaluate( "direction", xml ) );
-		relatedStateVariableName = XMLUtil.xpath.evaluate( "relatedStateVariable", xml );
-	}
+    Argument( Node xml )
+        throws XPathExpressionException
+    {
+        name = XMLUtil.xpath.evaluate( "name", xml );
+        direction = Direction.valueOf( XMLUtil.xpath.evaluate( "direction", xml ) );
+        relatedStateVariableName = XMLUtil.xpath.evaluate( "relatedStateVariable", xml );
+    }
 
-	/**
-	 * The related service state variable for this
-	 * ServiceActionArgument
-	 * 
-	 * @return The related service state variable for this
-	 *         ServiceActionArgument
-	 */
-	public StateVariable getRelatedStateVariable()
-	{
-		return relatedStateVariable;
-	}
+    /**
+     * The related service state variable for this ServiceActionArgument
+     * 
+     * @return The related service state variable for this ServiceActionArgument
+     */
+    public StateVariable getRelatedStateVariable()
+    {
+        return relatedStateVariable;
+    }
 
-	@Override
-	public String toString()
-	{
-		return direction + ":" + name + " - " + relatedStateVariableName;
-	}
+    @Override
+    public String toString()
+    {
+        return direction + ":" + name + " - " + relatedStateVariableName;
+    }
 
 }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.p2p.builder;
 
 import java.net.InetAddress;
@@ -19,229 +35,271 @@ import net.tomp2p.utils.Utils;
 
 public class PingBuilder
 {
-	final private static BaseFuture FUTURE_PING_SHUTDOWN = new FutureWrapper<BaseFuture>().setFailed("Peer is shutting down");
-	final private Peer peer;
-	private PeerAddress peerAddress;
-	private InetAddress inetAddress;
-	private int port = Bindings.DEFAULT_PORT;
-	private boolean broadcast = false;
-	private boolean tcpPing = false;
-	public PingBuilder(Peer peer)
-	{
-		this.peer = peer;
-	}
-	
-	public PeerAddress getPeerAddress()
-	{
-		return peerAddress;
-	}
+    final private static BaseFuture FUTURE_PING_SHUTDOWN =
+        new FutureWrapper<BaseFuture>().setFailed( "Peer is shutting down" );
 
-	public PingBuilder setPeerAddress(PeerAddress peerAddress)
-	{
-		this.peerAddress = peerAddress;
-		return this;
-	}
+    final private Peer peer;
 
-	public InetAddress getInetAddress()
-	{
-		return inetAddress;
-	}
+    private PeerAddress peerAddress;
 
-	public PingBuilder setInetAddress(InetAddress inetAddress)
-	{
-		this.inetAddress = inetAddress;
-		return this;
-	}
+    private InetAddress inetAddress;
 
-	public int getPort()
-	{
-		return port;
-	}
+    private int port = Bindings.DEFAULT_PORT;
 
-	public PingBuilder setPort(int port)
-	{
-		this.port = port;
-		return this;
-	}
+    private boolean broadcast = false;
 
-	public boolean isBroadcast()
-	{
-		return broadcast;
-	}
-	
-	public PingBuilder setBroadcast()
-	{
-		this.broadcast = true;
-		return this;
-	}
+    private boolean tcpPing = false;
 
-	public PingBuilder setBroadcast(boolean broadcast)
-	{
-		this.broadcast = broadcast;
-		return this;
-	}
+    public PingBuilder( Peer peer )
+    {
+        this.peer = peer;
+    }
 
-	public boolean isTcpPing()
-	{
-		return tcpPing;
-	}
-	
-	public PingBuilder setTcpPing()
-	{
-		this.tcpPing = true;
-		return this;
-	}
+    public PeerAddress getPeerAddress()
+    {
+        return peerAddress;
+    }
 
-	public PingBuilder setTcpPing(boolean tcpPing)
-	{
-		this.tcpPing = tcpPing;
-		return this;
-	}
-	
-	public BaseFuture start()
-	{
-		if(peer.isShutdown())
-		{
-			return FUTURE_PING_SHUTDOWN;
-		}
-		
-		if(broadcast)
-		{
-			return pingBroadcast(port);
-		}
-		else
-		{
-			if(peerAddress != null)
-			{
-				if(tcpPing)
-				{
-					return ping(peerAddress.createSocketTCP(), true);
-				}
-				else
-				{
-					return ping(peerAddress.createSocketUDP(), false);
-				}
-			}
-			else if(inetAddress!=null)
-			{
-				if(tcpPing)
-				{
-					return ping(new InetSocketAddress(inetAddress, port), true);
-				}
-				else
-				{
-					return ping(new InetSocketAddress(inetAddress, port), false);
-				}
-			}
-			else
-			{
-				throw new IllegalArgumentException("cannot ping, need to know peer address or inet address");
-			}
-		}
-	}
-	
-	FutureLateJoin<FutureResponse> pingBroadcast(final int port)
-	{
-		final int size = peer.getBindings().getBroadcastAddresses().size();
-		final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
-		if (size > 0)
-		{
-			peer.getConnectionBean().getConnectionReservation().reserve(size).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if(future.isSuccess())
-					{
-						for (int i = 0; i < size ; i++)
-						{
-							final InetAddress broadcastAddress = peer.getBindings().getBroadcastAddresses().get(i);
-							final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
-									port, port);
-							FutureResponse validBroadcast = peer.getHandshakeRPC().pingBroadcastUDP(peerAddress, future.getChannelCreator());
-							Utils.addReleaseListener(validBroadcast, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-							if(!futureLateJoin.add(validBroadcast))
-							{
-								//the late join future is fininshed if the add returns false
-								break;
-							}
-						}
-					}
-					else
-					{
-						futureLateJoin.setFailed(future);
-					}				
-				}
-			});
-		}
-		else
-		{
-			futureLateJoin.setFailed("No broadcast address found. Cannot ping nothing");
-		}
-		return futureLateJoin;
-	}
-	
-	/**
-	 * Pings a peer. Default is to use UDP
-	 * 
-	 * @param address The address of the remote peer.
-	 * @return The future response
-	 */
-	public FutureResponse ping(final InetSocketAddress address)
-	{
-		return ping(address, true);
-	}
+    public PingBuilder setPeerAddress( PeerAddress peerAddress )
+    {
+        this.peerAddress = peerAddress;
+        return this;
+    }
 
-	/**
-	 * Pings a peer.
-	 * 
-	 * @param address The address of the remote peer.
-	 * @param isUDP Set to true if UDP should be used, false for TCP.
-	 * @return The future response
-	 */
-	public FutureResponse ping(final InetSocketAddress address, boolean isUDP)
-	{
-		if (isUDP)
-		{
-			final RequestHandlerUDP<FutureResponse> request = peer.getHandshakeRPC().pingUDP(new PeerAddress(Number160.ZERO, address));
-			peer.getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if (future.isSuccess())
-					{
-						FutureResponse futureResponse = request.sendUDP(future.getChannelCreator());
-						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-					}
-					else
-					{
-						request.getFutureResponse().setFailed(future);
-					}
-				}
-			});
-			return request.getFutureResponse();
-		}
-		else
-		{
-			final RequestHandlerTCP<FutureResponse> request = peer.getHandshakeRPC().pingTCP(new PeerAddress(Number160.ZERO, address));
-			peer.getConnectionBean().getConnectionReservation().reserve(1).addListener(new BaseFutureAdapter<FutureChannelCreator>()
-			{
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception
-				{
-					if (future.isSuccess())
-					{
-						FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
-						Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(), future.getChannelCreator(), 1);
-					}
-					else
-					{
-						request.getFutureResponse().setFailed(future);
-					}
-				}
-			});
-			return request.getFutureResponse();
-		}
-	}	
+    public InetAddress getInetAddress()
+    {
+        return inetAddress;
+    }
+
+    public PingBuilder setInetAddress( InetAddress inetAddress )
+    {
+        this.inetAddress = inetAddress;
+        return this;
+    }
+
+    public int getPort()
+    {
+        return port;
+    }
+
+    public PingBuilder setPort( int port )
+    {
+        this.port = port;
+        return this;
+    }
+
+    public boolean isBroadcast()
+    {
+        return broadcast;
+    }
+
+    public PingBuilder setBroadcast()
+    {
+        this.broadcast = true;
+        return this;
+    }
+
+    public PingBuilder setBroadcast( boolean broadcast )
+    {
+        this.broadcast = broadcast;
+        return this;
+    }
+
+    public boolean isTcpPing()
+    {
+        return tcpPing;
+    }
+
+    public PingBuilder setTcpPing()
+    {
+        this.tcpPing = true;
+        return this;
+    }
+
+    public PingBuilder setTcpPing( boolean tcpPing )
+    {
+        this.tcpPing = tcpPing;
+        return this;
+    }
+
+    public BaseFuture start()
+    {
+        if ( peer.isShutdown() )
+        {
+            return FUTURE_PING_SHUTDOWN;
+        }
+
+        if ( broadcast )
+        {
+            return pingBroadcast( port );
+        }
+        else
+        {
+            if ( peerAddress != null )
+            {
+                if ( tcpPing )
+                {
+                    return ping( peerAddress.createSocketTCP(), true );
+                }
+                else
+                {
+                    return ping( peerAddress.createSocketUDP(), false );
+                }
+            }
+            else if ( inetAddress != null )
+            {
+                if ( tcpPing )
+                {
+                    return ping( new InetSocketAddress( inetAddress, port ), true );
+                }
+                else
+                {
+                    return ping( new InetSocketAddress( inetAddress, port ), false );
+                }
+            }
+            else
+            {
+                throw new IllegalArgumentException( "cannot ping, need to know peer address or inet address" );
+            }
+        }
+    }
+
+    FutureLateJoin<FutureResponse> pingBroadcast( final int port )
+    {
+        final int size = peer.getBindings().getBroadcastAddresses().size();
+        final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>( size, 1 );
+        if ( size > 0 )
+        {
+            peer.getConnectionBean().getConnectionReservation().reserve( size ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
+                                                                                             {
+                                                                                                 @Override
+                                                                                                 public void operationComplete( FutureChannelCreator future )
+                                                                                                     throws Exception
+                                                                                                 {
+                                                                                                     if ( future.isSuccess() )
+                                                                                                     {
+                                                                                                         for ( int i =
+                                                                                                             0; i < size; i++ )
+                                                                                                         {
+                                                                                                             final InetAddress broadcastAddress =
+                                                                                                                 peer.getBindings().getBroadcastAddresses().get( i );
+                                                                                                             final PeerAddress peerAddress =
+                                                                                                                 new PeerAddress(
+                                                                                                                                  Number160.ZERO,
+                                                                                                                                  broadcastAddress,
+                                                                                                                                  port,
+                                                                                                                                  port );
+                                                                                                             FutureResponse validBroadcast =
+                                                                                                                 peer.getHandshakeRPC().pingBroadcastUDP( peerAddress,
+                                                                                                                                                          future.getChannelCreator() );
+                                                                                                             Utils.addReleaseListener( validBroadcast,
+                                                                                                                                       peer.getConnectionBean().getConnectionReservation(),
+                                                                                                                                       future.getChannelCreator(),
+                                                                                                                                       1 );
+                                                                                                             if ( !futureLateJoin.add( validBroadcast ) )
+                                                                                                             {
+                                                                                                                 // the
+                                                                                                                 // late
+                                                                                                                 // join
+                                                                                                                 // future
+                                                                                                                 // is
+                                                                                                                 // fininshed
+                                                                                                                 // if
+                                                                                                                 // the
+                                                                                                                 // add
+                                                                                                                 // returns
+                                                                                                                 // false
+                                                                                                                 break;
+                                                                                                             }
+                                                                                                         }
+                                                                                                     }
+                                                                                                     else
+                                                                                                     {
+                                                                                                         futureLateJoin.setFailed( future );
+                                                                                                     }
+                                                                                                 }
+                                                                                             } );
+        }
+        else
+        {
+            futureLateJoin.setFailed( "No broadcast address found. Cannot ping nothing" );
+        }
+        return futureLateJoin;
+    }
+
+    /**
+     * Pings a peer. Default is to use UDP
+     * 
+     * @param address The address of the remote peer.
+     * @return The future response
+     */
+    public FutureResponse ping( final InetSocketAddress address )
+    {
+        return ping( address, true );
+    }
+
+    /**
+     * Pings a peer.
+     * 
+     * @param address The address of the remote peer.
+     * @param isUDP Set to true if UDP should be used, false for TCP.
+     * @return The future response
+     */
+    public FutureResponse ping( final InetSocketAddress address, boolean isUDP )
+    {
+        if ( isUDP )
+        {
+            final RequestHandlerUDP<FutureResponse> request =
+                peer.getHandshakeRPC().pingUDP( new PeerAddress( Number160.ZERO, address ) );
+            peer.getConnectionBean().getConnectionReservation().reserve( 1 ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
+                                                                                          {
+                                                                                              @Override
+                                                                                              public void operationComplete( FutureChannelCreator future )
+                                                                                                  throws Exception
+                                                                                              {
+                                                                                                  if ( future.isSuccess() )
+                                                                                                  {
+                                                                                                      FutureResponse futureResponse =
+                                                                                                          request.sendUDP( future.getChannelCreator() );
+                                                                                                      Utils.addReleaseListener( futureResponse,
+                                                                                                                                peer.getConnectionBean().getConnectionReservation(),
+                                                                                                                                future.getChannelCreator(),
+                                                                                                                                1 );
+                                                                                                  }
+                                                                                                  else
+                                                                                                  {
+                                                                                                      request.getFutureResponse().setFailed( future );
+                                                                                                  }
+                                                                                              }
+                                                                                          } );
+            return request.getFutureResponse();
+        }
+        else
+        {
+            final RequestHandlerTCP<FutureResponse> request =
+                peer.getHandshakeRPC().pingTCP( new PeerAddress( Number160.ZERO, address ) );
+            peer.getConnectionBean().getConnectionReservation().reserve( 1 ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
+                                                                                          {
+                                                                                              @Override
+                                                                                              public void operationComplete( FutureChannelCreator future )
+                                                                                                  throws Exception
+                                                                                              {
+                                                                                                  if ( future.isSuccess() )
+                                                                                                  {
+                                                                                                      FutureResponse futureResponse =
+                                                                                                          request.sendTCP( future.getChannelCreator() );
+                                                                                                      Utils.addReleaseListener( futureResponse,
+                                                                                                                                peer.getConnectionBean().getConnectionReservation(),
+                                                                                                                                future.getChannelCreator(),
+                                                                                                                                1 );
+                                                                                                  }
+                                                                                                  else
+                                                                                                  {
+                                                                                                      request.getFutureResponse().setFailed( future );
+                                                                                                  }
+                                                                                              }
+                                                                                          } );
+            return request.getFutureResponse();
+        }
+    }
 }

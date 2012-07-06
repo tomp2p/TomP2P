@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.examples;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
@@ -24,120 +25,125 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
 /**
- * This example shows how TomP2P can be used to have Objects instead of
- * Number160. While Number160 are deeply integrated in TomP2P, a wrapper around
- * the {@link Data} object can store the Object for the locationKey and
- * domainKey.
+ * This example shows how TomP2P can be used to have Objects instead of Number160. While Number160 are deeply integrated
+ * in TomP2P, a wrapper around the {@link Data} object can store the Object for the locationKey and domainKey.
  * 
  * @author Thomas Bocek
- * 
  */
 public class ExampleHashMap
 {
-	public static void main(String[] args) throws Exception
-	{
-		Peer master = null;
-		try
-		{
-			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
-			master = peers[0];
-			MyPeer myPeer = new MyPeer(master);
-			ExampleUtils.bootstrap(peers);
-			myPeer.put("This is my location key", "This is my domain", "This is my content key",
-					"And here comes the data").awaitUninterruptibly();
-			FutureDHT futureDHT = myPeer.get("This is my location key", "This is my domain",
-					"This is my content key");
-			futureDHT.awaitUninterruptibly();
-			System.err.println(futureDHT.getFailedReason());
-			Map<Number160, Data> map = futureDHT.getDataMap();
-			for (Data data : map.values())
-			{
-				MyData myData = (MyData) data.getObject();
-				System.out.println("key: " + myData.getKey() + ", domain: " + myData.getDomain()
-						+ ", content: " + myData.getContent() + ", data: " + myData.getData());
-			}
-		}
-		finally
-		{
-			master.shutdown();
-		}
-	}
-	private static class MyPeer
-	{
-		final private Peer peer;
-		private MyPeer(Peer peer)
-		{
-			this.peer = peer;
-		}
+    public static void main( String[] args )
+        throws Exception
+    {
+        Peer master = null;
+        try
+        {
+            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
+            master = peers[0];
+            MyPeer myPeer = new MyPeer( master );
+            ExampleUtils.bootstrap( peers );
+            myPeer.put( "This is my location key", "This is my domain", "This is my content key",
+                        "And here comes the data" ).awaitUninterruptibly();
+            FutureDHT futureDHT = myPeer.get( "This is my location key", "This is my domain", "This is my content key" );
+            futureDHT.awaitUninterruptibly();
+            System.err.println( futureDHT.getFailedReason() );
+            Map<Number160, Data> map = futureDHT.getDataMap();
+            for ( Data data : map.values() )
+            {
+                MyData myData = (MyData) data.getObject();
+                System.out.println( "key: " + myData.getKey() + ", domain: " + myData.getDomain() + ", content: "
+                    + myData.getContent() + ", data: " + myData.getData() );
+            }
+        }
+        finally
+        {
+            master.shutdown();
+        }
+    }
 
-		private FutureDHT get(String key, String domain, String content)
-		{
-			Number160 locationKey = Number160.createHash(key);
-			Number160 domainKey = Number160.createHash(domain);
-			Number160 contentKey = Number160.createHash(content);
-			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).start();
-		}
+    private static class MyPeer
+    {
+        final private Peer peer;
 
-		private FutureDHT put(String key, String domain, String content, String data)
-				throws IOException
-		{
-			Number160 locationKey = Number160.createHash(key);
-			Number160 domainKey = Number160.createHash(domain);
-			Number160 contentKey = Number160.createHash(content);
-			MyData myData = new MyData();
-			myData.setKey(key);
-			myData.setDomain(domain);
-			myData.setContent(content);
-			myData.setData(data);
-			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).start();
-		}
-	}
-	private static class MyData implements Serializable
-	{
-		private static final long serialVersionUID = 2098774660703812030L;
-		private Object key;
-		private Object domain;
-		private Object content;
-		private Object data;
+        private MyPeer( Peer peer )
+        {
+            this.peer = peer;
+        }
 
-		public Object getKey()
-		{
-			return key;
-		}
+        private FutureDHT get( String key, String domain, String content )
+        {
+            Number160 locationKey = Number160.createHash( key );
+            Number160 domainKey = Number160.createHash( domain );
+            Number160 contentKey = Number160.createHash( content );
+            return peer.get( locationKey ).setDomainKey( domainKey ).setContentKey( contentKey ).start();
+        }
 
-		public void setKey(Object key)
-		{
-			this.key = key;
-		}
+        private FutureDHT put( String key, String domain, String content, String data )
+            throws IOException
+        {
+            Number160 locationKey = Number160.createHash( key );
+            Number160 domainKey = Number160.createHash( domain );
+            Number160 contentKey = Number160.createHash( content );
+            MyData myData = new MyData();
+            myData.setKey( key );
+            myData.setDomain( domain );
+            myData.setContent( content );
+            myData.setData( data );
+            return peer.put( locationKey ).setDomainKey( domainKey ).setData( contentKey, new Data( myData ) ).start();
+        }
+    }
 
-		public Object getDomain()
-		{
-			return domain;
-		}
+    private static class MyData
+        implements Serializable
+    {
+        private static final long serialVersionUID = 2098774660703812030L;
 
-		public void setDomain(Object domain)
-		{
-			this.domain = domain;
-		}
+        private Object key;
 
-		public Object getContent()
-		{
-			return content;
-		}
+        private Object domain;
 
-		public void setContent(Object content)
-		{
-			this.content = content;
-		}
+        private Object content;
 
-		public Object getData()
-		{
-			return data;
-		}
+        private Object data;
 
-		public void setData(Object data)
-		{
-			this.data = data;
-		}
-	}
+        public Object getKey()
+        {
+            return key;
+        }
+
+        public void setKey( Object key )
+        {
+            this.key = key;
+        }
+
+        public Object getDomain()
+        {
+            return domain;
+        }
+
+        public void setDomain( Object domain )
+        {
+            this.domain = domain;
+        }
+
+        public Object getContent()
+        {
+            return content;
+        }
+
+        public void setContent( Object content )
+        {
+            this.content = content;
+        }
+
+        public Object getData()
+        {
+            return data;
+        }
+
+        public void setData( Object data )
+        {
+            this.data = data;
+        }
+    }
 }

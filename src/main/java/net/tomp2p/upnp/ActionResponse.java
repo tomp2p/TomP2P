@@ -48,7 +48,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-
 /**
  * An action response container Object
  * 
@@ -57,67 +56,64 @@ import java.util.Set;
  */
 public class ActionResponse
 {
-	private Map<String, Argument> outArguments = new HashMap<String, Argument>();
+    private Map<String, Argument> outArguments = new HashMap<String, Argument>();
 
-	private Map<String, String> outArgumentsVals = new HashMap<String, String>();
+    private Map<String, String> outArgumentsVals = new HashMap<String, String>();
 
-	/**
-	 * @param actionArgumentName
-	 * @return The named {@link Argument}
-	 */
-	public Argument getOutActionArgument( String actionArgumentName )
-	{
-		return outArguments.get( actionArgumentName );
-	}
+    /**
+     * @param actionArgumentName
+     * @return The named {@link Argument}
+     */
+    public Argument getOutActionArgument( String actionArgumentName )
+    {
+        return outArguments.get( actionArgumentName );
+    }
 
-	/**
-	 * @param actionArgumentName
-	 * @return The named {@link Argument}'s value
-	 */
-	public String getOutActionArgumentValue( String actionArgumentName )
-	{
-		return outArgumentsVals.get( actionArgumentName );
-	}
+    /**
+     * @param actionArgumentName
+     * @return The named {@link Argument}'s value
+     */
+    public String getOutActionArgumentValue( String actionArgumentName )
+    {
+        return outArgumentsVals.get( actionArgumentName );
+    }
 
-	/**
-	 * @return {@link Argument} names
-	 */
-	public Set<String> getOutActionArgumentNames()
-	{
-		return outArguments.keySet();
-	}
+    /**
+     * @return {@link Argument} names
+     */
+    public Set<String> getOutActionArgumentNames()
+    {
+        return outArguments.keySet();
+    }
 
-	/**
-	 * Adds a result to the response, adding an existing result
-	 * ServiceActionArgument will override the ServiceActionArgument
-	 * value
-	 * 
-	 * @param arg
-	 *           the service action argument
-	 * @param value
-	 *           the arg value
-	 */
-	void addResult( Argument arg, String value )
-	{
-		outArguments.put( arg.name, arg );
-		outArgumentsVals.put( arg.name, value );
-	}
+    /**
+     * Adds a result to the response, adding an existing result ServiceActionArgument will override the
+     * ServiceActionArgument value
+     * 
+     * @param arg the service action argument
+     * @param value the arg value
+     */
+    void addResult( Argument arg, String value )
+    {
+        outArguments.put( arg.name, arg );
+        outArgumentsVals.put( arg.name, value );
+    }
 
-	@Override
-	public String toString()
-	{
-		StringBuilder rtrVal = new StringBuilder();
-		for( Iterator<String> i = outArguments.keySet().iterator(); i.hasNext(); )
-		{
-			String name = i.next();
-			String value = outArgumentsVals.get( name );
-			rtrVal.append( name ).append( "=" ).append( value );
-			if( i.hasNext() )
-			{
-				rtrVal.append( "\n" );
-			}
-		}
-		return rtrVal.toString();
-	}
+    @Override
+    public String toString()
+    {
+        StringBuilder rtrVal = new StringBuilder();
+        for ( Iterator<String> i = outArguments.keySet().iterator(); i.hasNext(); )
+        {
+            String name = i.next();
+            String value = outArgumentsVals.get( name );
+            rtrVal.append( name ).append( "=" ).append( value );
+            if ( i.hasNext() )
+            {
+                rtrVal.append( "\n" );
+            }
+        }
+        return rtrVal.toString();
+    }
 
 }

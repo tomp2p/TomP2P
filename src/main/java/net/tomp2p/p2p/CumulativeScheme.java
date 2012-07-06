@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.p2p;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,42 +28,42 @@ import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-
-public class CumulativeScheme implements EvaluatingSchemeDHT
+public class CumulativeScheme
+    implements EvaluatingSchemeDHT
 {
-	@Override
-	public Collection<Number160> evaluate1(Map<PeerAddress, Collection<Number160>> rawKeys)
-	{
-		Set<Number160> result = new HashSet<Number160>();
-		for (Collection<Number160> tmp : rawKeys.values())
-			result.addAll(tmp);
-		return result;
-	}
+    @Override
+    public Collection<Number160> evaluate1( Map<PeerAddress, Collection<Number160>> rawKeys )
+    {
+        Set<Number160> result = new HashSet<Number160>();
+        for ( Collection<Number160> tmp : rawKeys.values() )
+            result.addAll( tmp );
+        return result;
+    }
 
-	@Override
-	public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawKeys)
-	{
-		Map<Number160, Data> result = new HashMap<Number160, Data>();
-		for (Map<Number160, Data> tmp : rawKeys.values())
-			result.putAll(tmp);
-		return result;
-	}
+    @Override
+    public Map<Number160, Data> evaluate2( Map<PeerAddress, Map<Number160, Data>> rawKeys )
+    {
+        Map<Number160, Data> result = new HashMap<Number160, Data>();
+        for ( Map<Number160, Data> tmp : rawKeys.values() )
+            result.putAll( tmp );
+        return result;
+    }
 
-	@Override
-	public Object evaluate3(Map<PeerAddress, Object> rawKeys)
-	{
-		throw new UnsupportedOperationException("cannot cumulate");
-	}
+    @Override
+    public Object evaluate3( Map<PeerAddress, Object> rawKeys )
+    {
+        throw new UnsupportedOperationException( "cannot cumulate" );
+    }
 
-	@Override
-	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawKeys)
-	{
-		throw new UnsupportedOperationException("cannot cumulate");
-	}
+    @Override
+    public ChannelBuffer evaluate4( Map<PeerAddress, ChannelBuffer> rawKeys )
+    {
+        throw new UnsupportedOperationException( "cannot cumulate" );
+    }
 
-	@Override
-	public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest)
-	{
-		throw new UnsupportedOperationException("cannot cumulate");
-	}
+    @Override
+    public DigestResult evaluate5( Map<PeerAddress, DigestResult> rawDigest )
+    {
+        throw new UnsupportedOperationException( "cannot cumulate" );
+    }
 }

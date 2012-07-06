@@ -14,24 +14,24 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import java.util.Collection;
 
 import net.tomp2p.peers.PeerAddress;
 
 /**
- * Used for bootstrapping. One important information in bootstrapping is to get
- * the nodes that we bootstrapped to. We may not know this in advance as we
- * might bootstrap via broadcast.
+ * Used for bootstrapping. One important information in bootstrapping is to get the nodes that we bootstrapped to. We
+ * may not know this in advance as we might bootstrap via broadcast.
  * 
  * @author Thomas Bocek
- * 
  */
-public interface FutureBootstrap extends BaseFuture
+public interface FutureBootstrap
+    extends BaseFuture
 {
-	/**
-	 * Returns the Peers we bootstrapped in no particular order.
-	 * 
-	 * @return the peers we bootstrapped to.
-	 */
-	public abstract Collection<PeerAddress> getBootstrapTo();
+    /**
+     * Returns the Peers we bootstrapped in no particular order.
+     * 
+     * @return the peers we bootstrapped to.
+     */
+    public abstract Collection<PeerAddress> getBootstrapTo();
 }

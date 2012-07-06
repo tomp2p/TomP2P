@@ -14,68 +14,74 @@
  * the License.
  */
 package net.tomp2p.p2p;
+
 /**
  * This name was chosen over P2PConfiguration, as it already exists
+ * 
  * @author draft
- *
  */
 public class RequestP2PConfiguration
 {
-	final private int minimumResults;
-	final private int maxFailure;
-	final private int parallelDiff;
-	//set to force either UDP or TCP
-	final private boolean forceUPD;
-	final private boolean forceTCP;
-	
-	public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff)
-	{
-		this(minimumResults, maxFailure, parallelDiff, false, false);
-	}
+    final private int minimumResults;
 
-	public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD, boolean forceTCP)
-	{
-		if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0)
-			throw new IllegalArgumentException("need to be larger or equals zero");
-		this.minimumResults = minimumResults;
-		this.maxFailure = maxFailure;
-		this.parallelDiff = parallelDiff;
-		this.forceUPD = forceUPD;
-		this.forceTCP = forceTCP;
-	}
-	
-	public RequestP2PConfiguration adjustMinimumResult(int minimumResultsLow)
-	{
-		return new RequestP2PConfiguration(Math.min(minimumResultsLow, minimumResults), maxFailure, parallelDiff);
-	}
+    final private int maxFailure;
 
-	public int getMinimumResults()
-	{
-		return minimumResults;
-	}
+    final private int parallelDiff;
 
-	public int getMaxFailure()
-	{
-		return maxFailure;
-	}
+    // set to force either UDP or TCP
+    final private boolean forceUPD;
 
-	public int getParallelDiff()
-	{
-		return parallelDiff;
-	}
-	
-	public int getParallel()
-	{
-		return minimumResults+parallelDiff;
-	}
+    final private boolean forceTCP;
 
-	public boolean isForceUPD()
-	{
-		return forceUPD;
-	}
+    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff )
+    {
+        this( minimumResults, maxFailure, parallelDiff, false, false );
+    }
 
-	public boolean isForceTCP()
-	{
-		return forceTCP;
-	}
+    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
+                                    boolean forceTCP )
+    {
+        if ( minimumResults < 0 || maxFailure < 0 || parallelDiff < 0 )
+            throw new IllegalArgumentException( "need to be larger or equals zero" );
+        this.minimumResults = minimumResults;
+        this.maxFailure = maxFailure;
+        this.parallelDiff = parallelDiff;
+        this.forceUPD = forceUPD;
+        this.forceTCP = forceTCP;
+    }
+
+    public RequestP2PConfiguration adjustMinimumResult( int minimumResultsLow )
+    {
+        return new RequestP2PConfiguration( Math.min( minimumResultsLow, minimumResults ), maxFailure, parallelDiff );
+    }
+
+    public int getMinimumResults()
+    {
+        return minimumResults;
+    }
+
+    public int getMaxFailure()
+    {
+        return maxFailure;
+    }
+
+    public int getParallelDiff()
+    {
+        return parallelDiff;
+    }
+
+    public int getParallel()
+    {
+        return minimumResults + parallelDiff;
+    }
+
+    public boolean isForceUPD()
+    {
+        return forceUPD;
+    }
+
+    public boolean isForceTCP()
+    {
+        return forceTCP;
+    }
 }

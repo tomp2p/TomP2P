@@ -25,116 +25,118 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
-
 /**
- * This simple example creates 10 nodes, bootstraps to the first and put and get
- * data from those 10 nodes.
+ * This simple example creates 10 nodes, bootstraps to the first and put and get data from those 10 nodes.
  * 
  * @author draft
- * 
  */
 public class ExamplePutGet
 {
-	final private static Random rnd = new Random(42L);
+    final private static Random rnd = new Random( 42L );
 
-	public static void main(String[] args) throws Exception
-	{
-		Peer master = null;
-		try
-		{
-			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
-			ExampleUtils.bootstrap(peers);
-			master = peers[0];
-			Number160 nr = new Number160(rnd);
-			examplePutGet(peers, nr);
-			examplePutGetConfig(peers, nr);
-			exampleGetBlocking(peers, nr);
-			exampleGetNonBlocking(peers, nr);
-			Thread.sleep(250);
-			exampleAddGet(peers);
-		}
-		finally
-		{
-			master.shutdown();
-		}
-	}
-
-	public static void examplePutGet(Peer[] peers, Number160 nr) throws IOException, ClassNotFoundException
-	{
-		FutureDHT futureDHT = peers[30].put(nr).setData(new Data("hallo")).start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
-		futureDHT = peers[77].get(nr).start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
-		// the output should look like this:
-		// peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
-		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
-	}
-	
-	public static void examplePutGetConfig(Peer[] peers, Number160 nr2) throws IOException, ClassNotFoundException
-	{
-		Number160 nr = new Number160(rnd);
-		FutureDHT futureDHT = peers[30].put(nr).setData(new Number160(11), new Data("hallo")).setDomainKey(Number160.createHash("my_domain")).start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("peer 30 stored [key: "+nr+", value: \"hallo\"]");
-		//this will fail, since we did not specify the domain
-		futureDHT = peers[77].get(nr).setAll().start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("peer 77 got: \"" + futureDHT.getData() + "\" for the key "+nr);
-		//this will succeed, since we specify the domain
-		futureDHT = peers[77].get(nr).setAll().setDomainKey(Number160.createHash("my_domain")).start().awaitUninterruptibly();
-		System.out.println("peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key "+nr);
-		// the output should look like this:
-		// peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
-		// peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
-	}
-
-	private static void exampleAddGet(Peer[] peers) throws IOException, ClassNotFoundException
-	{
-		Number160 nr = new Number160(rnd);
-		String toStore1 = "hallo1";
-		String toStore2 = "hallo2";
-		Data data1 = new Data(toStore1);
-		Data data2 = new Data(toStore2);
-		FutureDHT futureDHT = peers[30].add(nr).setData(data1).start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("added: " + toStore1 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = peers[50].add(nr).setData(data2).start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("added: " + toStore2 + " (" + futureDHT.isSuccess() + ")");
-		futureDHT = peers[77].get(nr).setAll().start();
-		futureDHT.awaitUninterruptibly();
-		System.out.println("size" + futureDHT.getDataMap().size());
-		Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
-		System.out.println("got: " + iterator.next().getObject() + " ("
-				+ futureDHT.isSuccess() + ")");
-		System.out.println("got: " + iterator.next().getObject() + " ("
-				+ futureDHT.isSuccess() + ")");
-	}
-	
-	public static void exampleGetBlocking(Peer[] peers,  Number160 nr) throws ClassNotFoundException, IOException
+    public static void main( String[] args )
+        throws Exception
     {
-		FutureDHT futureDHT = peers[77].get(nr).start();
-		//blocking operation
-        futureDHT.awaitUninterruptibly();
-        System.out.println("result: "+futureDHT.getData().getObject());
-        System.out.println("this may *not* happen before printing the result");
-    }
-	
-	public static void exampleGetNonBlocking(Peer[] peers,  Number160 nr)
-	{
-		FutureDHT futureDHT = peers[77].get(nr).start();
-        //non-blocking operation
-        futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() 
+        Peer master = null;
+        try
         {
-        	@Override
-            public void operationComplete(FutureDHT future) throws Exception 
+            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
+            ExampleUtils.bootstrap( peers );
+            master = peers[0];
+            Number160 nr = new Number160( rnd );
+            examplePutGet( peers, nr );
+            examplePutGetConfig( peers, nr );
+            exampleGetBlocking( peers, nr );
+            exampleGetNonBlocking( peers, nr );
+            Thread.sleep( 250 );
+            exampleAddGet( peers );
+        }
+        finally
+        {
+            master.shutdown();
+        }
+    }
+
+    public static void examplePutGet( Peer[] peers, Number160 nr )
+        throws IOException, ClassNotFoundException
+    {
+        FutureDHT futureDHT = peers[30].put( nr ).setData( new Data( "hallo" ) ).start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "peer 30 stored [key: " + nr + ", value: \"hallo\"]" );
+        futureDHT = peers[77].get( nr ).start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key " + nr );
+        // the output should look like this:
+        // peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
+        // peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
+    }
+
+    public static void examplePutGetConfig( Peer[] peers, Number160 nr2 )
+        throws IOException, ClassNotFoundException
+    {
+        Number160 nr = new Number160( rnd );
+        FutureDHT futureDHT =
+            peers[30].put( nr ).setData( new Number160( 11 ), new Data( "hallo" ) ).setDomainKey( Number160.createHash( "my_domain" ) ).start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "peer 30 stored [key: " + nr + ", value: \"hallo\"]" );
+        // this will fail, since we did not specify the domain
+        futureDHT = peers[77].get( nr ).setAll().start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "peer 77 got: \"" + futureDHT.getData() + "\" for the key " + nr );
+        // this will succeed, since we specify the domain
+        futureDHT =
+            peers[77].get( nr ).setAll().setDomainKey( Number160.createHash( "my_domain" ) ).start().awaitUninterruptibly();
+        System.out.println( "peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key " + nr );
+        // the output should look like this:
+        // peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
+        // peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
+    }
+
+    private static void exampleAddGet( Peer[] peers )
+        throws IOException, ClassNotFoundException
+    {
+        Number160 nr = new Number160( rnd );
+        String toStore1 = "hallo1";
+        String toStore2 = "hallo2";
+        Data data1 = new Data( toStore1 );
+        Data data2 = new Data( toStore2 );
+        FutureDHT futureDHT = peers[30].add( nr ).setData( data1 ).start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "added: " + toStore1 + " (" + futureDHT.isSuccess() + ")" );
+        futureDHT = peers[50].add( nr ).setData( data2 ).start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "added: " + toStore2 + " (" + futureDHT.isSuccess() + ")" );
+        futureDHT = peers[77].get( nr ).setAll().start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "size" + futureDHT.getDataMap().size() );
+        Iterator<Data> iterator = futureDHT.getDataMap().values().iterator();
+        System.out.println( "got: " + iterator.next().getObject() + " (" + futureDHT.isSuccess() + ")" );
+        System.out.println( "got: " + iterator.next().getObject() + " (" + futureDHT.isSuccess() + ")" );
+    }
+
+    public static void exampleGetBlocking( Peer[] peers, Number160 nr )
+        throws ClassNotFoundException, IOException
+    {
+        FutureDHT futureDHT = peers[77].get( nr ).start();
+        // blocking operation
+        futureDHT.awaitUninterruptibly();
+        System.out.println( "result: " + futureDHT.getData().getObject() );
+        System.out.println( "this may *not* happen before printing the result" );
+    }
+
+    public static void exampleGetNonBlocking( Peer[] peers, Number160 nr )
+    {
+        FutureDHT futureDHT = peers[77].get( nr ).start();
+        // non-blocking operation
+        futureDHT.addListener( new BaseFutureAdapter<FutureDHT>()
+        {
+            @Override
+            public void operationComplete( FutureDHT future )
+                throws Exception
             {
-        		System.out.println("result: "+future.getData().getObject());
+                System.out.println( "result: " + future.getData().getObject() );
             }
-        });
-        System.out.println("this may happen before printing the result");
+        } );
+        System.out.println( "this may happen before printing the result" );
     }
 }
-

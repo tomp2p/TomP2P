@@ -14,24 +14,23 @@
  * the License.
  */
 package net.tomp2p.futures;
+
 import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 
 /**
- * The communication future success evaluator returns OK if the communication was
- * successful, otherwise it returns FAILED. This evaluation does not care if
- * e.g. an object was not found on an other peer. This is because the peer
- * successfully reported that the element is not present. If an other evaluation
- * scheme is necessary, provide your own.
+ * The communication future success evaluator returns OK if the communication was successful, otherwise it returns
+ * FAILED. This evaluation does not care if e.g. an object was not found on an other peer. This is because the peer
+ * successfully reported that the element is not present. If an other evaluation scheme is necessary, provide your own.
  * 
  * @author Thomas Bocek
  */
-public class FutureSuccessEvaluatorCommunication implements FutureSuccessEvaluator
+public class FutureSuccessEvaluatorCommunication
+    implements FutureSuccessEvaluator
 {
-	@Override
-	public FutureType evaluate(Message requestMessage, Message responseMessage)
-	{
-		return (responseMessage.isOk() || responseMessage.isNotOk()) ? FutureType.OK
-				: FutureType.FAILED;
-	}
+    @Override
+    public FutureType evaluate( Message requestMessage, Message responseMessage )
+    {
+        return ( responseMessage.isOk() || responseMessage.isNotOk() ) ? FutureType.OK : FutureType.FAILED;
+    }
 }

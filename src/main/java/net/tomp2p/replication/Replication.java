@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Thomas Bocek
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.replication;
 
 import java.util.ArrayList;
@@ -12,142 +28,145 @@ import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.storage.ReplicationStorage;
 
 /**
- * This class has 3 methods that are called from outside eventes: check,
- * peerInsert, peerRemoved.
+ * This class has 3 methods that are called from outside eventes: check, peerInsert, peerRemoved.
  */
-public class Replication implements PeerMapChangeListener
+public class Replication
+    implements PeerMapChangeListener
 {
-	final private List<ResponsibilityListener> listeners = new ArrayList<ResponsibilityListener>();
-	final private PeerMap peerMap;
-	final private PeerAddress selfAddress;
-	final private ReplicationStorage replicationStorage;
+    final private List<ResponsibilityListener> listeners = new ArrayList<ResponsibilityListener>();
 
-	public Replication(ReplicationStorage replicationStorage, PeerAddress selfAddress, PeerMap peerMap)
-	{
-		this.replicationStorage = replicationStorage;
-		this.selfAddress = selfAddress;
-		this.peerMap = peerMap;
-		peerMap.addPeerMapChangeListener(this);
-	}
+    final private PeerMap peerMap;
 
-	public boolean isReplicationEnabled()
-	{
-		return peerMap != null && selfAddress != null;
-	}
+    final private PeerAddress selfAddress;
 
-	public void addResponsibilityListener(ResponsibilityListener responsibilityListener)
-	{
-		listeners.add(responsibilityListener);
-	}
+    final private ReplicationStorage replicationStorage;
 
-	public void removeResponsibilityListener(ResponsibilityListener responsibilityListener)
-	{
-		listeners.remove(responsibilityListener);
-	}
+    public Replication( ReplicationStorage replicationStorage, PeerAddress selfAddress, PeerMap peerMap )
+    {
+        this.replicationStorage = replicationStorage;
+        this.selfAddress = selfAddress;
+        this.peerMap = peerMap;
+        peerMap.addPeerMapChangeListener( this );
+    }
 
-	public void checkResponsibility(Number160 locationKey)
-	{
-		if (!isReplicationEnabled())
-			return;
-		PeerAddress closest = closest(locationKey);
-		if (closest.getID().equals(selfAddress.getID()))
-		{
-			// if(peerMap.isCloser(locationKey, key1, key2)
+    public boolean isReplicationEnabled()
+    {
+        return peerMap != null && selfAddress != null;
+    }
 
-			if (replicationStorage.updateResponsibilities(locationKey, closest.getID()))
-				notifyMeResponsible(locationKey);
-		}
-		else
-		{
-			if (replicationStorage.updateResponsibilities(locationKey, closest.getID()))
-				// notify that someone else is now responsible for the
-				// content with key responsibleLocations
-				notifyOtherResponsible(locationKey, closest);
-		}
-	}
+    public void addResponsibilityListener( ResponsibilityListener responsibilityListener )
+    {
+        listeners.add( responsibilityListener );
+    }
 
-	public void updatePeerMapIfCloser(Number160 locationKey, Number160 current)
-	{
-		// we need to exclude ourselfs to get the "I'm responsible" notification
-		if (!isReplicationEnabled() || current.equals(selfAddress.getID()))
-			return;
-		Number160 test = replicationStorage.findPeerIDForResponsibleContent(locationKey);
-		if (test == null || peerMap.isCloser(locationKey, current, test) == -1)
-		{
-			replicationStorage.updateResponsibilities(locationKey, current);
-		}
-	}
+    public void removeResponsibilityListener( ResponsibilityListener responsibilityListener )
+    {
+        listeners.remove( responsibilityListener );
+    }
 
-	@Override
-	public void peerInserted(PeerAddress peerAddress)
-	{
-		if (!isReplicationEnabled())
-			return;
-		// check if we should change responibility.
-		Collection<Number160> myResponsibleLocations = replicationStorage.findContentForResponsiblePeerID(selfAddress
-				.getID());
-		for (Number160 myResponsibleLocation : myResponsibleLocations)
-		{
-			PeerAddress closest = closest(myResponsibleLocation);
-			if (!closest.getID().equals(selfAddress.getID()))
-			{
-				if (replicationStorage.updateResponsibilities(myResponsibleLocation, closest.getID()))
-					// notify that someone else is now responsible for the
-					// content with key responsibleLocations
-					notifyOtherResponsible(myResponsibleLocation, closest);
-			}
-		}
-	}
+    public void checkResponsibility( Number160 locationKey )
+    {
+        if ( !isReplicationEnabled() )
+            return;
+        PeerAddress closest = closest( locationKey );
+        if ( closest.getID().equals( selfAddress.getID() ) )
+        {
+            // if(peerMap.isCloser(locationKey, key1, key2)
 
-	@Override
-	public void peerRemoved(PeerAddress peerAddress)
-	{
-		if (!isReplicationEnabled())
-			return;
-		// check if we should change responibility.
-		Collection<Number160> otherResponsibleLocations = replicationStorage.findContentForResponsiblePeerID(peerAddress
-				.getID());
-		if (otherResponsibleLocations == null)
-			return;
-		for (Number160 otherResponsibleLocation : otherResponsibleLocations)
-		{
-			PeerAddress closest = closest(otherResponsibleLocation);
-			if (closest.getID().equals(selfAddress.getID()))
-			{
-				if (replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getID()))
-					// notify that someone I'm now responsible for the
-					// content
-					// with key responsibleLocations
-					notifyMeResponsible(otherResponsibleLocation);
-			}
-		}
-	}
+            if ( replicationStorage.updateResponsibilities( locationKey, closest.getID() ) )
+                notifyMeResponsible( locationKey );
+        }
+        else
+        {
+            if ( replicationStorage.updateResponsibilities( locationKey, closest.getID() ) )
+                // notify that someone else is now responsible for the
+                // content with key responsibleLocations
+                notifyOtherResponsible( locationKey, closest );
+        }
+    }
 
-	@Override
-	public void peerUpdated(PeerAddress peerAddress)
-	{
-	}
+    public void updatePeerMapIfCloser( Number160 locationKey, Number160 current )
+    {
+        // we need to exclude ourselfs to get the "I'm responsible" notification
+        if ( !isReplicationEnabled() || current.equals( selfAddress.getID() ) )
+            return;
+        Number160 test = replicationStorage.findPeerIDForResponsibleContent( locationKey );
+        if ( test == null || peerMap.isCloser( locationKey, current, test ) == -1 )
+        {
+            replicationStorage.updateResponsibilities( locationKey, current );
+        }
+    }
 
-	private void notifyMeResponsible(Number160 locationKey)
-	{
-		for (ResponsibilityListener responsibilityListener : listeners)
-		{
-			responsibilityListener.meResponsible(locationKey);
-		}
-	}
+    @Override
+    public void peerInserted( PeerAddress peerAddress )
+    {
+        if ( !isReplicationEnabled() )
+            return;
+        // check if we should change responibility.
+        Collection<Number160> myResponsibleLocations =
+            replicationStorage.findContentForResponsiblePeerID( selfAddress.getID() );
+        for ( Number160 myResponsibleLocation : myResponsibleLocations )
+        {
+            PeerAddress closest = closest( myResponsibleLocation );
+            if ( !closest.getID().equals( selfAddress.getID() ) )
+            {
+                if ( replicationStorage.updateResponsibilities( myResponsibleLocation, closest.getID() ) )
+                    // notify that someone else is now responsible for the
+                    // content with key responsibleLocations
+                    notifyOtherResponsible( myResponsibleLocation, closest );
+            }
+        }
+    }
 
-	private void notifyOtherResponsible(Number160 locationKey, PeerAddress other)
-	{
-		for (ResponsibilityListener responsibilityListener : listeners)
-		{
-			responsibilityListener.otherResponsible(locationKey, other);
-		}
-	}
+    @Override
+    public void peerRemoved( PeerAddress peerAddress )
+    {
+        if ( !isReplicationEnabled() )
+            return;
+        // check if we should change responibility.
+        Collection<Number160> otherResponsibleLocations =
+            replicationStorage.findContentForResponsiblePeerID( peerAddress.getID() );
+        if ( otherResponsibleLocations == null )
+            return;
+        for ( Number160 otherResponsibleLocation : otherResponsibleLocations )
+        {
+            PeerAddress closest = closest( otherResponsibleLocation );
+            if ( closest.getID().equals( selfAddress.getID() ) )
+            {
+                if ( replicationStorage.updateResponsibilities( otherResponsibleLocation, closest.getID() ) )
+                    // notify that someone I'm now responsible for the
+                    // content
+                    // with key responsibleLocations
+                    notifyMeResponsible( otherResponsibleLocation );
+            }
+        }
+    }
 
-	private PeerAddress closest(Number160 locationKey)
-	{
-		SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, 1);
-		tmp.add(selfAddress);
-		return tmp.iterator().next();
-	}
+    @Override
+    public void peerUpdated( PeerAddress peerAddress )
+    {
+    }
+
+    private void notifyMeResponsible( Number160 locationKey )
+    {
+        for ( ResponsibilityListener responsibilityListener : listeners )
+        {
+            responsibilityListener.meResponsible( locationKey );
+        }
+    }
+
+    private void notifyOtherResponsible( Number160 locationKey, PeerAddress other )
+    {
+        for ( ResponsibilityListener responsibilityListener : listeners )
+        {
+            responsibilityListener.otherResponsible( locationKey, other );
+        }
+    }
+
+    private PeerAddress closest( Number160 locationKey )
+    {
+        SortedSet<PeerAddress> tmp = peerMap.closePeers( locationKey, 1 );
+        tmp.add( selfAddress );
+        return tmp.iterator().next();
+    }
 }

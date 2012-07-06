@@ -14,6 +14,7 @@
  * the License.
  */
 package net.tomp2p.p2p;
+
 import java.util.Collection;
 import java.util.Map;
 
@@ -24,16 +25,15 @@ import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-
 public interface EvaluatingSchemeDHT
 {
-	public Collection<Number160> evaluate1(Map<PeerAddress, Collection<Number160>> rawKeys);
+    public Collection<Number160> evaluate1( Map<PeerAddress, Collection<Number160>> rawKeys );
 
-	public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawData);
+    public Map<Number160, Data> evaluate2( Map<PeerAddress, Map<Number160, Data>> rawData );
 
-	public Object evaluate3(Map<PeerAddress, Object> rawObjects);
+    public Object evaluate3( Map<PeerAddress, Object> rawObjects );
 
-	public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawChannels);
-	
-	public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest);
+    public ChannelBuffer evaluate4( Map<PeerAddress, ChannelBuffer> rawChannels );
+
+    public DigestResult evaluate5( Map<PeerAddress, DigestResult> rawDigest );
 }

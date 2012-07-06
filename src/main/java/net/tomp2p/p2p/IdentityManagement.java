@@ -22,77 +22,80 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
-public class IdentityManagement implements PeerStatusListener
+public class IdentityManagement
+    implements PeerStatusListener
 {
-	final private ConcurrentHashMap<Number160, PublicKey> peerIdentity = new ConcurrentHashMap<Number160, PublicKey>();
-	final private PeerAddress self;
+    final private ConcurrentHashMap<Number160, PublicKey> peerIdentity = new ConcurrentHashMap<Number160, PublicKey>();
 
-	public IdentityManagement(PeerAddress self)
-	{
-		this.self=self;
-	}
+    final private PeerAddress self;
 
-	public boolean checkIdentity(Number160 peerId, PublicKey publicKey)
-	{
-		// check permission
-		final PublicKey storedIdentity = peerIdentity.get(peerId);
-		if (storedIdentity != null)
-		{
-			if (storedIdentity.equals(publicKey))
-			{
-				// the identity stored on first contact matches
-				return true;
-			}
-			else
-			{
-				// the peer is not one we met the first time.
-				return false;
-			}
-		}
-		else if (publicKey != null)
-		{
-			// first contact, store this identity
-			if(peerIdentity.putIfAbsent(peerId, publicKey)!=null) {
-				//if someone in the meantime already added something to this map, then go again
-				return checkIdentity(peerId, publicKey);
-			}
-			return true;
-		}
-		else
-		{
-			// no public key provided, so assuming its ok. For strong
-			// security, return false here
-			return true;
-		}
-	}
+    public IdentityManagement( PeerAddress self )
+    {
+        this.self = self;
+    }
 
-	@Override
-	public void peerOffline(PeerAddress peerAddress, Reason reason)
-	{
-		// don't care, peer can come online again
+    public boolean checkIdentity( Number160 peerId, PublicKey publicKey )
+    {
+        // check permission
+        final PublicKey storedIdentity = peerIdentity.get( peerId );
+        if ( storedIdentity != null )
+        {
+            if ( storedIdentity.equals( publicKey ) )
+            {
+                // the identity stored on first contact matches
+                return true;
+            }
+            else
+            {
+                // the peer is not one we met the first time.
+                return false;
+            }
+        }
+        else if ( publicKey != null )
+        {
+            // first contact, store this identity
+            if ( peerIdentity.putIfAbsent( peerId, publicKey ) != null )
+            {
+                // if someone in the meantime already added something to this map, then go again
+                return checkIdentity( peerId, publicKey );
+            }
+            return true;
+        }
+        else
+        {
+            // no public key provided, so assuming its ok. For strong
+            // security, return false here
+            return true;
+        }
+    }
 
-	}
+    @Override
+    public void peerOffline( PeerAddress peerAddress, Reason reason )
+    {
+        // don't care, peer can come online again
 
-	@Override
-	public void peerFail(PeerAddress peerAddress, boolean force)
-	{
-		// don't care, peer can come online again
+    }
 
-	}
+    @Override
+    public void peerFail( PeerAddress peerAddress, boolean force )
+    {
+        // don't care, peer can come online again
 
-	@Override
-	public void peerOnline(PeerAddress peerAddress)
-	{
-		// TODO refresh timeout
-	}
-	
-	public Number160 getSelf()
-	{
-		return self.getID();
-	}
+    }
 
-	public PeerAddress getPeerAddress()
-	{
-		return self;
-	}
+    @Override
+    public void peerOnline( PeerAddress peerAddress )
+    {
+        // TODO refresh timeout
+    }
+
+    public Number160 getSelf()
+    {
+        return self.getID();
+    }
+
+    public PeerAddress getPeerAddress()
+    {
+        return self;
+    }
 }

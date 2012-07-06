@@ -24,48 +24,50 @@ import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 
-public class QuitRPC extends ReplyHandler
+public class QuitRPC
+    extends ReplyHandler
 {
-	public QuitRPC(PeerBean peerBean, ConnectionBean connectionBean)
-	{
-		super(peerBean, connectionBean);
-		registerIoHandler(Command.QUIT);
-	}
+    public QuitRPC( PeerBean peerBean, ConnectionBean connectionBean )
+    {
+        super( peerBean, connectionBean );
+        registerIoHandler( Command.QUIT );
+    }
 
-	/**
-	 * Sends a message that indicates this peer is about to quit. This is an
-	 * RPC.
-	 * 
-	 * @param remotePeer The remote peer to send this request
-	 * @param channelCreator The channel creator that creates connections
-	 * @param forceTCP Set to true if the communication should be TCP, default
-	 *        is UDP
-	 * @return The future response to keep track of future events
-	 */
-	public FutureResponse quit(final PeerAddress remotePeer, ChannelCreator channelCreator, boolean forceTCP)
-	{
-		final Message message = createMessage(remotePeer, Command.QUIT, Type.REQUEST_FF_1);
-		FutureResponse futureResponse = new FutureResponse(message);
-		if(!forceTCP)
-		{
-			final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.fireAndForgetUDP(channelCreator);
-		}
-		else
-		{
-			final RequestHandlerTCP<FutureResponse> requestHandler = new RequestHandlerTCP<FutureResponse>(futureResponse, getPeerBean(), getConnectionBean(), message);
-			return requestHandler.fireAndForgetTCP(channelCreator);
-		}
-	}
+    /**
+     * Sends a message that indicates this peer is about to quit. This is an RPC.
+     * 
+     * @param remotePeer The remote peer to send this request
+     * @param channelCreator The channel creator that creates connections
+     * @param forceTCP Set to true if the communication should be TCP, default is UDP
+     * @return The future response to keep track of future events
+     */
+    public FutureResponse quit( final PeerAddress remotePeer, ChannelCreator channelCreator, boolean forceTCP )
+    {
+        final Message message = createMessage( remotePeer, Command.QUIT, Type.REQUEST_FF_1 );
+        FutureResponse futureResponse = new FutureResponse( message );
+        if ( !forceTCP )
+        {
+            final RequestHandlerUDP<FutureResponse> requestHandler =
+                new RequestHandlerUDP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.fireAndForgetUDP( channelCreator );
+        }
+        else
+        {
+            final RequestHandlerTCP<FutureResponse> requestHandler =
+                new RequestHandlerTCP<FutureResponse>( futureResponse, getPeerBean(), getConnectionBean(), message );
+            return requestHandler.fireAndForgetTCP( channelCreator );
+        }
+    }
 
-	@Override
-	public Message handleResponse(final Message message, boolean sign) throws Exception
-	{
-		if(!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT))
-		{
-			throw new IllegalArgumentException("Message content is wrong");
-		}
-		getPeerBean().getPeerMap().peerOffline(message.getSender(), true);
-		return message;
-	}
+    @Override
+    public Message handleResponse( final Message message, boolean sign )
+        throws Exception
+    {
+        if ( !( message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT ) )
+        {
+            throw new IllegalArgumentException( "Message content is wrong" );
+        }
+        getPeerBean().getPeerMap().peerOffline( message.getSender(), true );
+        return message;
+    }
 }

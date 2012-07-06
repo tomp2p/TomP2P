@@ -37,7 +37,7 @@ public interface BaseFuture
      * @return this
      * @throws InterruptedException if thread is interrupted
      */
-    public abstract BaseFuture await()
+    BaseFuture await()
         throws InterruptedException;
 
     /**
@@ -47,7 +47,7 @@ public interface BaseFuture
      * @return true if the operation is finished.
      * @throws InterruptedException if thread is interrupted
      */
-    public abstract boolean await( long timeoutMillis )
+    boolean await( long timeoutMillis )
         throws InterruptedException;
 
     /**
@@ -55,22 +55,22 @@ public interface BaseFuture
      * 
      * @return this
      */
-    public abstract BaseFuture awaitUninterruptibly();
+    BaseFuture awaitUninterruptibly();
 
     /**
      * Wait for the asynchronous operation to end with the specified timeout without interruption.
      * 
-     * @param me to wait at most
+     * @param timeoutMillis to wait at most
      * @return true if the operation is finished.
      */
-    public abstract boolean awaitUninterruptibly( long timeoutMillis );
+    boolean awaitUninterruptibly( long timeoutMillis );
 
     /**
      * Checks if the asynchronous operation is finished.
      * 
      * @return true if operation is finished
      */
-    public abstract boolean isCompleted();
+    boolean isCompleted();
 
     /**
      * Returns the opposite of isFailed (returns !isFailed). Use this method if you are an optimist ;) otherwise use
@@ -78,7 +78,7 @@ public interface BaseFuture
      * 
      * @return true if operation succeeded, false if there was no reply
      */
-    public abstract boolean isSuccess();
+    boolean isSuccess();
 
     /**
      * Checks if operation has failed. As this is a P2P network, where peers can fail at any time, a failure is seen as
@@ -87,7 +87,7 @@ public interface BaseFuture
      * @return true if operation failed, which means the node did not reply. A get(key) operation on a node that does
      *         not have the key, returns false with this method as a response has been send.
      */
-    public abstract boolean isFailed();
+    boolean isFailed();
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason
@@ -95,7 +95,7 @@ public interface BaseFuture
      * @param reason The reason of failure
      * @return this
      */
-    public abstract BaseFuture setFailed( String reason );
+    BaseFuture setFailed( String reason );
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason based
@@ -104,7 +104,7 @@ public interface BaseFuture
      * @param origin The origin of failure
      * @return this
      */
-    public abstract BaseFuture setFailed( BaseFuture origin );
+    BaseFuture setFailed( BaseFuture origin );
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -114,7 +114,7 @@ public interface BaseFuture
      * @param origin The origin of failure
      * @return this
      */
-    public abstract BaseFuture setFailed( String reason, BaseFuture origin );
+    BaseFuture setFailed( String reason, BaseFuture origin );
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -123,7 +123,7 @@ public interface BaseFuture
      * @param t The stack trace where the failure happened
      * @return this
      */
-    public abstract BaseFuture setFailed( final Throwable t );
+    BaseFuture setFailed( final Throwable t );
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -133,21 +133,21 @@ public interface BaseFuture
      * @param t The stack trace where the failure happened
      * @return this
      */
-    public abstract BaseFuture setFailed( final String reason, final Throwable t );
+    BaseFuture setFailed( final String reason, final Throwable t );
 
     /**
      * The default failed reason is Unknown.
      * 
      * @return Returns the reason why a future failed.
      */
-    public abstract String getFailedReason();
+    String getFailedReason();
 
     /**
      * If the type is not OK, then something unexpected happened.
      * 
      * @return The fail type
      */
-    public abstract FutureType getType();
+    FutureType getType();
 
     /**
      * Waits until all the listener finished. This may include the release of resources.
@@ -155,7 +155,7 @@ public interface BaseFuture
      * @return this
      * @throws InterruptedException
      */
-    public abstract BaseFuture awaitListeners()
+    BaseFuture awaitListeners()
         throws InterruptedException;
 
     /**
@@ -167,7 +167,7 @@ public interface BaseFuture
      * @param listener The listener extends the BaseFuture
      * @return this
      */
-    public abstract BaseFuture addListener( BaseFutureListener<? extends BaseFuture> listener );
+    BaseFuture addListener( BaseFutureListener<? extends BaseFuture> listener );
 
     /**
      * Adds a listener which is notified when the state of this future changes. All notifications are performed in a
@@ -179,7 +179,7 @@ public interface BaseFuture
      * @param last Set to true if the listener should be added at the end of the list, true if it should be added first
      * @return this
      */
-    public abstract BaseFuture addListener( BaseFutureListener<? extends BaseFuture> listener, boolean last );
+    BaseFuture addListener( BaseFutureListener<? extends BaseFuture> listener, boolean last );
 
     /**
      * Removes a listener which is notified when the state of this future changes. If a future is complete, then all
@@ -190,7 +190,7 @@ public interface BaseFuture
      * @param listener The listener extends the BaseFuture
      * @return this
      */
-    public abstract BaseFuture removeListener( BaseFutureListener<? extends BaseFuture> listener );
+    BaseFuture removeListener( BaseFutureListener<? extends BaseFuture> listener );
 
     /**
      * Adds a cancel listener to this future, which is called when cancel is executed. There is no need to call
@@ -199,8 +199,9 @@ public interface BaseFuture
      * down the peer.
      * 
      * @param cancellable A cancellable class
+     * @return this
      */
-    public abstract BaseFuture addCancellation( Cancellable cancellable );
+    BaseFuture addCancellation( Cancellable cancellable );
 
     /**
      * Remove a listener. After a future is completed, all cancellables are removed. There is no need to call
@@ -208,6 +209,7 @@ public interface BaseFuture
      * been completed anyway.
      * 
      * @param cancellable A cancellable class
+     * @return this
      */
-    public abstract BaseFuture removeCancellation( Cancellable cancellable );
+    BaseFuture removeCancellation( Cancellable cancellable );
 }

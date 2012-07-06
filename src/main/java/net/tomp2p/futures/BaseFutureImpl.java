@@ -31,24 +31,26 @@ import org.slf4j.LoggerFactory;
  * The base for all BaseFuture implementations. Be aware of possible deadlocks. Never await from a listener. This class
  * is heavily inspired by MINA and Netty.
  * 
+ * @param <K> The class that extends BaseFuture and is used to return back the type for method calls. E.g, if K is
+ *            FutureDHT await() returns FutureDHT.
  * @author Thomas Bocek
  */
 public abstract class BaseFutureImpl<K extends BaseFuture>
     implements BaseFuture
 {
-    final private static Logger logger = LoggerFactory.getLogger( BaseFutureImpl.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( BaseFutureImpl.class );
 
     // Listeners that gets notified if the future finished
-    final private List<BaseFutureListener<? extends BaseFuture>> listeners =
+    private final List<BaseFutureListener<? extends BaseFuture>> listeners =
         new ArrayList<BaseFutureListener<? extends BaseFuture>>( 1 );
 
     // While a future is running, the process may add cancellations for faster
     // cancel operations, e.g. cancel connection attempt
-    final private List<Cancellable> cancellables = new ArrayList<Cancellable>( 1 );
+    private final List<Cancellable> cancellables = new ArrayList<Cancellable>( 1 );
 
-    final private CountDownLatch listenersFinished = new CountDownLatch( 1 );
+    private final CountDownLatch listenersFinished = new CountDownLatch( 1 );
 
-    final protected Object lock;
+    protected final Object lock;
 
     // set the ready flag if operation completed
     protected boolean completed = false;
@@ -61,14 +63,21 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
 
     private K self;
 
-    protected void self( K self )
-    {
-        this.self = self;
-    }
-
+    /**
+     * Default constructor that sets the lock object, which is used for synchronization to this instance.
+     */
     public BaseFutureImpl()
     {
         this.lock = this;
+    }
+
+    /**
+     * @param self2 Set the type so that we are able to return it to the user. This is for making the API much more
+     *            usable.
+     */
+    protected void self( K self2 )
+    {
+        this.self = self2;
     }
 
     @Override
@@ -100,6 +109,10 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
                 }
                 catch ( final InterruptedException e )
                 {
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "interrupted, but ignoring" );
+                    }
                 }
             }
             return self;
@@ -214,9 +227,9 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public K setFailed( final String reason, final BaseFuture origin )
+    public K setFailed( final String failed, final BaseFuture origin )
     {
-        StringBuilder sb = new StringBuilder( reason );
+        StringBuilder sb = new StringBuilder( failed );
         return setFailed( sb.append( " <-> " ).append( origin.getFailedReason() ).toString() );
     }
 
@@ -230,9 +243,9 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public K setFailed( final String reason, final Throwable t )
+    public K setFailed( final String failed, final Throwable t )
     {
-        StringBuilder sb = new StringBuilder( reason );
+        StringBuilder sb = new StringBuilder( failed );
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter( stringWriter );
         t.printStackTrace( printWriter );
@@ -240,7 +253,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public K setFailed( final String reason )
+    public K setFailed( final String failed )
     {
         synchronized ( lock )
         {
@@ -248,11 +261,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
             {
                 return self;
             }
-            if ( logger.isWarnEnabled() )
-            {
-                logger.warn( "set failed reason: " + reason );
-            }
-            this.reason = reason;
+            this.reason = failed;
             this.type = FutureType.FAILED;
         }
         notifyListerenrs();
@@ -303,6 +312,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
         }
     }
 
+    @Override
     public K awaitListeners()
         throws InterruptedException
     {
@@ -361,9 +371,9 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
             }
             catch ( final Exception e1 )
             {
-                if ( logger.isErrorEnabled() )
+                if ( LOGGER.isErrorEnabled() )
                 {
-                    logger.error( "Unexcpected exception in exceptionCaught()", e1 );
+                    LOGGER.error( "Unexcpected exception in exceptionCaught()", e1 );
                 }
                 e1.printStackTrace();
             }

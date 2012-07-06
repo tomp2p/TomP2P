@@ -81,6 +81,7 @@ under the License.
         <module name="JavadocMethod">
           <property name="severity" value="warning"/>
           <property name="scope" value="protected"/>
+          <property name="allowMissingPropertyJavadoc" value="true"/>
         </module>
         <module name="JavadocType">
           <property name="scope" value="protected"/>

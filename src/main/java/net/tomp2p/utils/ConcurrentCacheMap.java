@@ -36,16 +36,27 @@ import org.slf4j.LoggerFactory;
  * size of 1024, this map has a size of 967 if 1024 items are inserted. This is due to the segmentation and hashing.
  * 
  * @author Thomas Bocek
+ * @param <K> the type of the key
+ * @param <V> the type of the value
  */
 public class ConcurrentCacheMap<K, V>
     implements ConcurrentMap<K, V>
 {
-    final private static Logger logger = LoggerFactory.getLogger( ConcurrentCacheMap.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ConcurrentCacheMap.class );
 
+    /**
+     * Number of segments that can be accessed concurrently
+     */
     public static final int SEGMENT_NR = 16;
 
+    /**
+     * Max. number of entries that the map can hold until the least recently used gets replaced
+     */
     public static final int MAX_ENTRIES = 1024;
 
+    /**
+     * Time to live for a value. The value may stay longer in the map, but it is considered invalid.
+     */
     public static final int DEFAULT_TIME_TO_LIVE = 60;
 
     private final CacheMap<K, ExpiringObject>[] segments;
@@ -54,7 +65,7 @@ public class ConcurrentCacheMap<K, V>
 
     private final boolean refreshTimeout;
 
-    private final AtomicInteger removed = new AtomicInteger();
+    private final AtomicInteger removedCounter = new AtomicInteger();
 
     /**
      * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
@@ -70,6 +81,7 @@ public class ConcurrentCacheMap<K, V>
      * data structure.
      * 
      * @param timeToLive The time-to-live value (seconds)
+     * @param maxEntries Set the maximum number of entries until items gets replaced with LRU
      */
     public ConcurrentCacheMap( int timeToLive, int maxEntries )
     {
@@ -120,10 +132,10 @@ public class ConcurrentCacheMap<K, V>
         return oldValue.getValue();
     }
 
+    @Override
     /**
      * This does not reset the timer!
      */
-    @Override
     public V putIfAbsent( K key, V value )
     {
         final CacheMap<K, ExpiringObject> segment = segment( key );
@@ -174,16 +186,16 @@ public class ConcurrentCacheMap<K, V>
             }
             else
             {
-                if ( logger.isDebugEnabled() )
+                if ( LOGGER.isDebugEnabled() )
                 {
-                    logger.debug( "get: " + key + ";" + oldValue.getValue() );
+                    LOGGER.debug( "get: " + key + ";" + oldValue.getValue() );
                 }
                 return oldValue.getValue();
             }
         }
-        if ( logger.isDebugEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            logger.debug( "get not found: " + key );
+            LOGGER.debug( "get not found: " + key );
         }
         return null;
     }
@@ -227,6 +239,7 @@ public class ConcurrentCacheMap<K, V>
     }
 
     @SuppressWarnings( "unchecked" )
+    @Override
     public boolean containsKey( Object key )
     {
         CacheMap<K, ExpiringObject> segment = segment( key );
@@ -237,11 +250,7 @@ public class ConcurrentCacheMap<K, V>
         }
         if ( oldValue != null )
         {
-            if ( expire( segment, (K) key, oldValue ) )
-            {
-                return false;
-            }
-            else
+            if ( ! expire( segment, (K) key, oldValue ) )
             {
                 return true;
             }
@@ -249,6 +258,7 @@ public class ConcurrentCacheMap<K, V>
         return false;
     }
 
+    @Override
     public boolean containsValue( Object value )
     {
         for ( CacheMap<K, ExpiringObject> segment : segments )
@@ -265,6 +275,7 @@ public class ConcurrentCacheMap<K, V>
         return false;
     }
 
+    @Override
     public int size()
     {
         int size = 0;
@@ -279,6 +290,7 @@ public class ConcurrentCacheMap<K, V>
         return size;
     }
 
+    @Override
     public boolean isEmpty()
     {
         for ( CacheMap<K, ExpiringObject> segment : segments )
@@ -295,6 +307,7 @@ public class ConcurrentCacheMap<K, V>
         return true;
     }
 
+    @Override
     public void clear()
     {
         for ( CacheMap<K, ExpiringObject> segment : segments )
@@ -322,6 +335,7 @@ public class ConcurrentCacheMap<K, V>
         return hashCode;
     }
 
+    @Override
     public Set<K> keySet()
     {
         Set<K> retVal = new HashSet<K>();
@@ -337,11 +351,6 @@ public class ConcurrentCacheMap<K, V>
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        throw new UnsupportedOperationException( "not supported" );
-    }
-
     public void putAll( Map<? extends K, ? extends V> inMap )
     {
         for ( Entry<? extends K, ? extends V> e : inMap.entrySet() )
@@ -350,6 +359,7 @@ public class ConcurrentCacheMap<K, V>
         }
     }
 
+    @Override
     public Collection<V> values()
     {
         Collection<V> retVal = new ArrayList<V>();
@@ -364,11 +374,11 @@ public class ConcurrentCacheMap<K, V>
                     if ( expiringObject.isExpired() )
                     {
                         iterator.remove();
-                        if ( logger.isDebugEnabled() )
+                        if ( LOGGER.isDebugEnabled() )
                         {
-                            logger.debug( "remove in entrySet " + expiringObject.getValue() );
+                            LOGGER.debug( "remove in entrySet " + expiringObject.getValue() );
                         }
-                        removed.incrementAndGet();
+                        removedCounter.incrementAndGet();
                     }
                     else
                     {
@@ -380,6 +390,7 @@ public class ConcurrentCacheMap<K, V>
         return retVal;
     }
 
+    @Override
     public Set<Map.Entry<K, V>> entrySet()
     {
         Set<Map.Entry<K, V>> retVal = new HashSet<Map.Entry<K, V>>();
@@ -394,11 +405,11 @@ public class ConcurrentCacheMap<K, V>
                     if ( entry.getValue().isExpired() )
                     {
                         iterator.remove();
-                        if ( logger.isDebugEnabled() )
+                        if ( LOGGER.isDebugEnabled() )
                         {
-                            logger.debug( "remove in entrySet " + entry.getValue().getValue() );
+                            LOGGER.debug( "remove in entrySet " + entry.getValue().getValue() );
                         }
-                        removed.incrementAndGet();
+                        removedCounter.incrementAndGet();
                     }
                     else
                     {
@@ -488,11 +499,11 @@ public class ConcurrentCacheMap<K, V>
                 if ( tmp != null && tmp.equals( value ) )
                 {
                     segment.remove( key );
-                    if ( logger.isDebugEnabled() )
+                    if ( LOGGER.isDebugEnabled() )
                     {
-                        logger.debug( "remove in expire " + value.getValue() );
+                        LOGGER.debug( "remove in expire " + value.getValue() );
                     }
-                    removed.incrementAndGet();
+                    removedCounter.incrementAndGet();
                 }
             }
             return true;
@@ -512,11 +523,11 @@ public class ConcurrentCacheMap<K, V>
             if ( expiringObject.isExpired() )
             {
                 iterator.remove();
-                if ( logger.isDebugEnabled() )
+                if ( LOGGER.isDebugEnabled() )
                 {
-                    logger.debug( "remove in expireAll " + expiringObject.getValue() );
+                    LOGGER.debug( "remove in expireAll " + expiringObject.getValue() );
                 }
-                removed.incrementAndGet();
+                removedCounter.incrementAndGet();
             }
             else
             {
@@ -530,7 +541,7 @@ public class ConcurrentCacheMap<K, V>
      */
     public int expiredCounter()
     {
-        return removed.get();
+        return removedCounter.get();
     }
 
     private class ExpiringObject

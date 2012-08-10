@@ -41,13 +41,13 @@ import org.slf4j.LoggerFactory;
  */
 public class NATUtils
 {
-    final private static Logger logger = LoggerFactory.getLogger( NATUtils.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( NATUtils.class );
 
     // UPNP
-    final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP =
+    private final Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP =
         new HashMap<InternetGatewayDevice, Integer>();
 
-    final private Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP =
+    private final Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP =
         new HashMap<InternetGatewayDevice, Integer>();
 
     // NAT-PMP
@@ -57,6 +57,9 @@ public class NATUtils
 
     private boolean runOnce = false;
 
+    /**
+     * Constructor.
+     */
     public NATUtils()
     {
         setShutdownHookEnabled();
@@ -92,7 +95,7 @@ public class NATUtils
 
     /**
      * Maps with UPNP protocol (http://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol). Since this uses
-     * broadcasting to discover routern, no calling the external program netstat is necessary.
+     * broadcasting to discover routers, no calling the external program netstat is necessary.
      * 
      * @param internalHost The internal host to map the ports to
      * @param internalPortUDP The UDP internal port
@@ -100,26 +103,29 @@ public class NATUtils
      * @param externalPortUDP The UDP external port
      * @param externalPortTCP The TCP external port
      * @return True, if at least one mapping was successful (i.e. the router supports UPNP)
-     * @throws IOException
+     * @throws IOException Exception
      */
     public boolean mapUPNP( String internalHost, int internalPortUDP, int internalPortTCP, int externalPortUDP,
                             int externalPortTCP )
         throws IOException
     {
         // -1 sets the default timeout to 1500 ms
-        Collection<InternetGatewayDevice> IGDs = InternetGatewayDevice.getDevices( -1 );
-        if ( IGDs == null )
-            return false;
-        boolean once = false;
-        for ( InternetGatewayDevice igd : IGDs )
+        Collection<InternetGatewayDevice> internetGDs = InternetGatewayDevice.getDevices( -1 );
+        if ( internetGDs == null )
         {
-            logger.info( "Found device " + igd );
+            return false;
+        }
+        boolean once = false;
+        for ( InternetGatewayDevice igd : internetGDs )
+        {
+            LOGGER.info( "Found device " + igd );
             try
             {
                 if ( externalPortUDP != -1 )
                 {
                     boolean mappedUDP =
-                        igd.addPortMapping( "TomP2P mapping UDP", "UDP", internalHost, externalPortUDP, internalPortUDP );
+                        igd.addPortMapping( "TomP2P mapping UDP", "UDP", 
+                                            internalHost, externalPortUDP, internalPortUDP );
                     if ( mappedUDP )
                     {
                         internetGatewayDevicesUDP.put( igd, externalPortUDP );
@@ -128,13 +134,13 @@ public class NATUtils
             }
             catch ( IOException e )
             {
-                logger.warn( "error in mapping UPD UPNP " + e );
+                LOGGER.warn( "error in mapping UPD UPNP " + e );
                 continue;
 
             }
             catch ( UPNPResponseException e )
             {
-                logger.warn( "error in mapping UDP UPNP " + e );
+                LOGGER.warn( "error in mapping UDP UPNP " + e );
                 continue;
             }
             try
@@ -142,25 +148,28 @@ public class NATUtils
                 if ( externalPortTCP != -1 )
                 {
                     boolean mappedTCP =
-                        igd.addPortMapping( "TomP2P mapping TCP", "TCP", internalHost, externalPortTCP, internalPortTCP );
+                        igd.addPortMapping( "TomP2P mapping TCP", "TCP", 
+                                            internalHost, externalPortTCP, internalPortTCP );
                     if ( mappedTCP )
+                    {
                         internetGatewayDevicesTCP.put( igd, externalPortTCP );
+                    }
                 }
             }
             catch ( IOException e )
             {
-                logger.warn( "error in mapping TCP UPNP " + e );
+                LOGGER.warn( "error in mapping TCP UPNP " + e );
                 continue;
 
             }
             catch ( UPNPResponseException e )
             {
-                logger.warn( "error in mapping TCP UPNP " + e );
+                LOGGER.warn( "error in mapping TCP UPNP " + e );
                 continue;
             }
             once = true;
         }
-        return once == true;
+        return once;
     }
 
     /**
@@ -176,13 +185,13 @@ public class NATUtils
             }
             catch ( IOException e )
             {
-                logger.warn( "not removed TCP mapping " + entry.toString() + e );
+                LOGGER.warn( "not removed TCP mapping " + entry.toString() + e );
             }
             catch ( UPNPResponseException e )
             {
-                logger.warn( "not removed TCP mapping " + entry.toString() + e );
+                LOGGER.warn( "not removed TCP mapping " + entry.toString() + e );
             }
-            logger.info( "removed TCP mapping " + entry.toString() );
+            LOGGER.info( "removed TCP mapping " + entry.toString() );
         }
         for ( Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesUDP.entrySet() )
         {
@@ -192,13 +201,13 @@ public class NATUtils
             }
             catch ( IOException e )
             {
-                logger.warn( "not removed UDP mapping " + entry.toString() + e );
+                LOGGER.warn( "not removed UDP mapping " + entry.toString() + e );
             }
             catch ( UPNPResponseException e )
             {
-                logger.warn( "not removed UDP mapping " + entry.toString() + e );
+                LOGGER.warn( "not removed UDP mapping " + entry.toString() + e );
             }
-            logger.info( "removed UDP mapping " + entry.toString() );
+            LOGGER.info( "removed UDP mapping " + entry.toString() );
         }
     }
 

@@ -101,5 +101,6 @@ public class TestRealNetwork
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress) data.getObject();
         System.err.println( "returned " + inetSocketAddress );
+        myPeer.shutdown();
     }
 }

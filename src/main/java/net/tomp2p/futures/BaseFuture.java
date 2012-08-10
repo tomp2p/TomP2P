@@ -153,7 +153,7 @@ public interface BaseFuture
      * Waits until all the listener finished. This may include the release of resources.
      * 
      * @return this
-     * @throws InterruptedException
+     * @throws InterruptedException If interrupted from outside
      */
     BaseFuture awaitListeners()
         throws InterruptedException;

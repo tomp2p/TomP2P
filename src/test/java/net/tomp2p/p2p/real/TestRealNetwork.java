@@ -65,6 +65,7 @@ public class TestRealNetwork
      * @throws InterruptedException 
      */
     @Test
+    @Ignore
     public void startClient2()
         throws ClassNotFoundException, IOException, InterruptedException
     {
@@ -87,7 +88,8 @@ public class TestRealNetwork
         throws IOException, ClassNotFoundException, InterruptedException
     {
         Peer myPeer =
-            new PeerMaker( Number160.createHash( "client peer" ) ).setPorts( port ).setEnableMaintenance( false ).makeAndListen();
+            new PeerMaker( Number160.createHash( "client peer" ) ).setPorts( port ).
+            setEnableMaintenance( false ).makeAndListen();
         PeerAddress bootstrapServerPeerAddress =
             new PeerAddress( Number160.ZERO, new InetSocketAddress( InetAddress.getByName( ipSuperPeer ), port ) );
         myPeer.getConfiguration().setBehindFirewall( true );

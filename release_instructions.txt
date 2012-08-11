@@ -24,10 +24,23 @@ Adding 3rd party libraries to repository
 E.g. upload snapshot of Netty using scp from the TomP2P working directory
 
 mvn deploy:deploy-file \
- -DgroupId=org.jboss.netty \
+ -DgroupId=io.netty \
  -DartifactId=netty \
- -Dversion=3.3.0.Patched \
+ -Dversion=3.5.x.Patched \
  -Dpackaging=jar \
- -Dfile=netty-3.3.0.Patched.jar \
+ -Dfile=netty-3.5.x.Patched.jar \
  -DrepositoryId=ssh-tomp2p \
  -Durl=scp://tomp2p.net/home/##username##/maven
+ 
+Netty Patches
+=============
+
+These are the patches against 3.5.x.
+
+In src/main/java/org/jboss/netty/channel/socket/nio/AbstractNioWorker.java:
+ 
+if (selector.keys().isEmpty()) { ->
+if (selector.keys().isEmpty() || thread.isInterrupted()) {
+
+if (registerTaskQueue.isEmpty() && selector.keys().isEmpty()) { ->
+if (registerTaskQueue.isEmpty() && (selector.keys().isEmpty() || thread.isInterrupted())) {

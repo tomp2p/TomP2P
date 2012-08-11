@@ -439,7 +439,6 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
         {
             if ( !cancel )
             {
-                System.err.println("add thread "+Thread.currentThread());
                 cancellables.add( cancellable );
             }
         }
@@ -454,7 +453,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
         boolean notifyCancel = false;
         synchronized ( lock )
         {
-            if(!cancel)
+            if ( !cancel )
             {
                 cancel = true;
                 notifyCancel = true;
@@ -464,7 +463,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
                 return;
             }
         }
-        if(notifyCancel)
+        if ( notifyCancel )
         {
             notifyCancelation();
         }

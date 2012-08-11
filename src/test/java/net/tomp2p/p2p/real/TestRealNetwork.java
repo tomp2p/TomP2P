@@ -40,19 +40,38 @@ public class TestRealNetwork
 {
     private final int port = 4000;
 
-    private final String ipSuperPeer = "192.168.1.x";
+    private final String ipSuperPeer = "192.168.1.187";
 
     /**
      * Starts the super peer.
      * 
      * @throws IOException PeerMaker may throw and IOException
+     * @throws InterruptedException
      */
     @Test
     @Ignore
     public void startSuperPeer()
-        throws IOException
+        throws IOException, InterruptedException
     {
         new PeerMaker( Number160.createHash( "super peer" ) ).setPorts( port ).makeAndListen();
+        Thread.sleep( Long.MAX_VALUE );
+    }
+
+    /**
+     * Tests multiple connect and disconnects
+     * 
+     * @throws ClassNotFoundException 
+     * @throws IOException 
+     * @throws InterruptedException 
+     */
+    @Test
+    public void startClient2()
+        throws ClassNotFoundException, IOException, InterruptedException
+    {
+        for ( int i = 0; i < 1000; i++ )
+        {
+            startClient();
+        }
     }
 
     /**
@@ -60,13 +79,15 @@ public class TestRealNetwork
      * 
      * @throws IOException PeerMaker may throw and IOException
      * @throws ClassNotFoundException If the data object contained a class we did not expect
+     * @throws InterruptedException
      */
     @Test
     @Ignore
     public void startClient()
-        throws IOException, ClassNotFoundException
+        throws IOException, ClassNotFoundException, InterruptedException
     {
-        Peer myPeer = new PeerMaker( Number160.createHash( "client peer" ) ).setPorts( port ).makeAndListen();
+        Peer myPeer =
+            new PeerMaker( Number160.createHash( "client peer" ) ).setPorts( port ).setEnableMaintenance( false ).makeAndListen();
         PeerAddress bootstrapServerPeerAddress =
             new PeerAddress( Number160.ZERO, new InetSocketAddress( InetAddress.getByName( ipSuperPeer ), port ) );
         myPeer.getConfiguration().setBehindFirewall( true );
@@ -94,6 +115,7 @@ public class TestRealNetwork
         putFuture.awaitUninterruptibly();
         FutureDHT futureDHT = myPeer.get( Number160.createHash( "key" ) ).start();
         futureDHT.awaitUninterruptibly();
+        futureDHT.getFutureRequests().awaitUninterruptibly();
         Data data = futureDHT.getData();
         if ( data == null )
         {
@@ -102,5 +124,6 @@ public class TestRealNetwork
         InetSocketAddress inetSocketAddress = (InetSocketAddress) data.getObject();
         System.err.println( "returned " + inetSocketAddress );
         myPeer.shutdown();
+        // Thread.sleep( Long.MAX_VALUE );
     }
 }

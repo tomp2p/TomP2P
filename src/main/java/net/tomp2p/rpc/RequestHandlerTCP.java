@@ -271,7 +271,7 @@ public class RequestHandlerTCP<K extends FutureResponse>
             {
                 if ( logger.isDebugEnabled() )
                 {
-                    logger.debug( "channel close, set failure for request message: " + message );
+                    logger.debug( "channel close 1, set failure for request message: " + message );
                 }
                 futureResponse.setFailed( "Channel closed event" );
             }
@@ -294,6 +294,10 @@ public class RequestHandlerTCP<K extends FutureResponse>
             public void operationComplete( ChannelFuture arg0 )
                 throws Exception
             {
+                if ( logger.isDebugEnabled() )
+                {
+                    logger.debug( "channel close 2, set failure for request message: " + message );
+                }
                 futureResponse.setFailed( cause );
             }
         } );
@@ -319,6 +323,10 @@ public class RequestHandlerTCP<K extends FutureResponse>
                 public void operationComplete( ChannelFuture arg0 )
                     throws Exception
                 {
+                    if ( logger.isDebugEnabled() )
+                    {
+                        logger.debug( "channel close 3, set failure for request message: " + message );
+                    }
                     futureResponse.setResponse( responseMessage );
                 }
             } );

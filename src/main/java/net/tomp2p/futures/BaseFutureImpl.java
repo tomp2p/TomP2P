@@ -62,6 +62,8 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     protected String reason = "unknown";
 
     private K self;
+    
+    private boolean cancel = false;
 
     /**
      * Default constructor that sets the lock object, which is used for synchronization to this instance.
@@ -245,6 +247,10 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     @Override
     public K setFailed( final String failed, final Throwable t )
     {
+        if ( t == null )
+        {
+            return setFailed( "n/a" );
+        }
         StringBuilder sb = new StringBuilder( failed );
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter( stringWriter );
@@ -413,17 +419,8 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
         // notified twice
     }
 
-    private void notifyCancelation()
-    {
-        for ( final Cancellable cancellable : cancellables )
-        {
-            cancellable.cancel();
-        }
-        cancellables.clear();
-    }
-
     @Override
-    public BaseFuture removeListener( final BaseFutureListener<? extends BaseFuture> listener )
+    public K removeListener( final BaseFutureListener<? extends BaseFuture> listener )
     {
         synchronized ( lock )
         {
@@ -432,49 +429,53 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
                 listeners.remove( listener );
             }
         }
-        return this;
+        return self;
     }
 
     @Override
-    public BaseFuture addCancellation( final Cancellable cancellable )
+    public K addCancellation( final Cancellable cancellable )
     {
         synchronized ( lock )
         {
-            if ( !completed )
+            if ( !cancel )
             {
+                System.err.println("add thread "+Thread.currentThread());
                 cancellables.add( cancellable );
             }
         }
-        return this;
+        return self;
     }
-
-    @Override
-    public BaseFuture removeCancellation( final Cancellable cancellable )
-    {
-        synchronized ( lock )
-        {
-            if ( !completed )
-            {
-                cancellables.remove( cancellable );
-            }
-        }
-        return this;
-    }
+    
+    
 
     @Override
     public void cancel()
     {
+        boolean notifyCancel = false;
         synchronized ( lock )
         {
-            if ( !setCompletedAndNotify() )
+            if(!cancel)
+            {
+                cancel = true;
+                notifyCancel = true;
+            }
+            else
             {
                 return;
             }
-            this.type = FutureType.CANCEL;
-            this.reason = "canceled";
         }
-        // only run once
-        notifyCancelation();
-        notifyListerenrs();
+        if(notifyCancel)
+        {
+            notifyCancelation();
+        }
+    }
+    
+    private void notifyCancelation()
+    {
+        for ( final Cancellable cancellable : cancellables )
+        {
+            cancellable.cancel();
+        }
+        cancellables.clear();
     }
 }

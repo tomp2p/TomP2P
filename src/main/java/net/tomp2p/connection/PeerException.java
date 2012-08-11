@@ -25,17 +25,19 @@ public class PeerException
 {
     private static final long serialVersionUID = 3710790196087629945L;
 
+    /**
+     * USER_ABORT means that this peer aborts the communication. PEER_ERROR means that the other peer did not react as
+     * expected (e.g., no reply). PEER_ABORT means that the other peer found an error on our side (e.g., if this peer
+     * thinks the other peer is someone else)
+     * 
+     * @author Thomas Bocek
+     */
     public enum AbortCause
     {
-        /*
-         * USEL_ABORT means that this peer aborts the communication. PEER_ERROR means that the other peer did not react
-         * as expected (e.g., no reply). PEER_ABORT means that the other peer found an error on our side (e.g., if this
-         * peer thinks the other peer is someone else)
-         */
         USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
     }
 
-    final private AbortCause abortCause;
+    private final AbortCause abortCause;
 
     /**
      * Specified error with custom message

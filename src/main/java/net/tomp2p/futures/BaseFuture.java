@@ -28,7 +28,7 @@ public interface BaseFuture
      */
     public enum FutureType
     {
-        INIT, OK, FAILED, CANCEL
+        INIT, OK, FAILED
     };
 
     /**
@@ -153,7 +153,7 @@ public interface BaseFuture
      * Waits until all the listener finished. This may include the release of resources.
      * 
      * @return this
-     * @throws InterruptedException
+     * @throws InterruptedException If interrupted from outside
      */
     BaseFuture awaitListeners()
         throws InterruptedException;
@@ -202,14 +202,4 @@ public interface BaseFuture
      * @return this
      */
     BaseFuture addCancellation( Cancellable cancellable );
-
-    /**
-     * Remove a listener. After a future is completed, all cancellables are removed. There is no need to call
-     * removeCancellation if a future has been completed, because the cancellable list is cleared after the future has
-     * been completed anyway.
-     * 
-     * @param cancellable A cancellable class
-     * @return this
-     */
-    BaseFuture removeCancellation( Cancellable cancellable );
 }

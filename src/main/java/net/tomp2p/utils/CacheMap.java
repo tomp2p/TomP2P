@@ -33,9 +33,9 @@ public class CacheMap<K, V>
 {
     private static final long serialVersionUID = 5937613180687142367L;
 
-    final private int maxEntries;
+    private final int maxEntries;
 
-    final private boolean updateEntryOnInsert;
+    private final boolean updateEntryOnInsert;
 
     /**
      * Creates a new CacheMap with a fixed capacity

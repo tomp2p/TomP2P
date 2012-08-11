@@ -17,6 +17,7 @@
 package net.tomp2p.futures;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 
 /**
  * Keeps track of the creation of a UDP or TCP channel. Since this may take a while, we return a future, and the user
@@ -30,7 +31,12 @@ public class FutureChannel
     private Channel channel;
 
     private boolean semaphoreAcquired;
+    
+    private ChannelFuture channelFuture;
 
+    /**
+     * Constructor.
+     */
     public FutureChannel()
     {
         self( this );
@@ -70,13 +76,13 @@ public class FutureChannel
      * Set a flag if a semaphore has been acquired for this channel. If it is not set, and we cannot create new channel,
      * the creation of this channel will be put in a queue and executed later.
      * 
-     * @param semaphoreAcquired True if we already could acquire a semaphore
+     * @param semaphoreAcquired2 True if we already could acquire a semaphore
      */
-    public void setAcquired( boolean semaphoreAcquired )
+    public void setAcquired( boolean semaphoreAcquired2 )
     {
         synchronized ( lock )
         {
-            this.semaphoreAcquired = semaphoreAcquired;
+            this.semaphoreAcquired = semaphoreAcquired2;
         }
     }
 
@@ -88,6 +94,30 @@ public class FutureChannel
         synchronized ( lock )
         {
             return semaphoreAcquired;
+        }
+    }
+
+    /**
+     * Set the channel future. This is set immediately.
+     * 
+     * @param channelFuture2 The future of the channel that will be connected
+     */
+    public void setChannelFuture( ChannelFuture channelFuture2 )
+    {
+        synchronized ( lock )
+        {
+            this.channelFuture = channelFuture2;
+        }
+    }
+    
+    /**
+     * @return The channel future
+     */
+    public ChannelFuture getChannelFuture()
+    {
+        synchronized ( lock )
+        {
+            return channelFuture;
         }
     }
 }

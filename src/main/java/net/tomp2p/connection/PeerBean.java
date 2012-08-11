@@ -57,6 +57,11 @@ public class PeerBean
 
     private TaskManager taskManager;
 
+    /**
+     * Creates a bean with a key pair.
+     * 
+     * @param keyPair The key pair that holds private public key,
+     */
     public PeerBean( KeyPair keyPair )
     {
         this.keyPair = keyPair;

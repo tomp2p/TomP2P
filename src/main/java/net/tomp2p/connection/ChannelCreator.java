@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Thomas Bocek
- *
+ * 
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- *
+ * 
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24,6 +24,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -70,7 +71,7 @@ public class ChannelCreator
 
     private final ChannelGroup channelsUDP = new DefaultChannelGroup( "TomP2P ConnectionPool UDP" );
 
-    private final String name;
+    private final String channelCreatorName;
 
     private final long creatorThread;
 
@@ -126,7 +127,7 @@ public class ChannelCreator
         this.udpChannelFactory = udpClientChannelFactory;
         this.keepAliveAndReuse = keepAliveAndReuse;
         this.statistics = statistics;
-        this.name = name;
+        this.channelCreatorName = name;
         this.creatorThread = creatorThread;
         this.permits = permits;
         this.scheduler = scheduler;
@@ -201,7 +202,6 @@ public class ChannelCreator
      * 
      * @param timeoutHandler The handler that deals with timeouts
      * @param requestHandler The handler that deals with incoming replies
-     * @param futureResponse The future object that takes care of future events
      * @param connectTimeoutMillis The timeout after which a connection attempt is considered a failure
      * @param recipient The recipient to create the connection. If the recipient is already open, the connection will be
      *            reused.
@@ -224,7 +224,7 @@ public class ChannelCreator
     }
 
     private void createTCPChannel( final FutureChannel futureChannelCreation, ReplyTimeoutHandler timeoutHandler,
-                                   RequestHandlerTCP<? extends BaseFuture> requestHandler, int connectTimeoutMillis,
+                                   final RequestHandlerTCP<? extends BaseFuture> requestHandler, int connectTimeoutMillis,
                                    final InetSocketAddress recipient )
     {
 
@@ -254,10 +254,11 @@ public class ChannelCreator
                     channelFuture =
                         createChannelTCP( timeoutHandler, requestHandler, recipient, new InetSocketAddress( 0 ),
                                           connectTimeoutMillis );
+                    futureChannelCreation.setChannelFuture(channelFuture);
                     channelFuture.addListener( new ChannelFutureListener()
                     {
                         @Override
-                        public void operationComplete( ChannelFuture future )
+                        public void operationComplete( final ChannelFuture future )
                             throws Exception
                         {
                             if ( future.isSuccess() )
@@ -284,6 +285,7 @@ public class ChannelCreator
             }
             else
             {
+                futureChannelCreation.setChannelFuture(channelFuture);
                 newConnection = false;
                 Channel channel = channelFuture.getChannel();
                 // we can keep our old timeouthandler since for keep-alive connections, this is still valid.
@@ -309,10 +311,11 @@ public class ChannelCreator
                 channelFuture =
                     createChannelTCP( timeoutHandler, requestHandler, recipient, new InetSocketAddress( 0 ),
                                       connectTimeoutMillis );
+                futureChannelCreation.setChannelFuture(channelFuture);
                 channelFuture.addListener( new ChannelFutureListener()
                 {
                     @Override
-                    public void operationComplete( ChannelFuture future )
+                    public void operationComplete( final ChannelFuture future )
                         throws Exception
                     {
                         if ( future.isSuccess() )
@@ -345,6 +348,10 @@ public class ChannelCreator
                 public void operationComplete( ChannelFuture future )
                     throws Exception
                 {
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "channel close X, set failure for request message: "+requestHandler.getFutureResponse().getFailedReason());
+                    } 
                     connectionSemaphore.release();
                     statistics.decrementTCPChannelCreation();
                     if ( keepAliveAndReuse )
@@ -506,11 +513,15 @@ public class ChannelCreator
     {
         ChannelPipeline pipe = bootstrap.getPipeline();
         if ( timeoutHandler != null )
+        {
             pipe.addLast( "timeout", timeoutHandler );
+        }
         pipe.addLast( "encoder", encoder );
         pipe.addLast( "decoder", decoder );
         if ( messageLoggerFilter != null )
+        {
             pipe.addLast( "loggerUpstream", messageLoggerFilter );
+        }
         if ( requestHandler != null )
         {
             pipe.addLast( "request", requestHandler );
@@ -552,9 +563,9 @@ public class ChannelCreator
      * @param permits The number of permits to be released
      * @return Returns true if the channel creator has no permits anymore
      */
-    boolean release( int permits )
+    boolean release( int freedPermits )
     {
-        int result = permitsCount.addAndGet( -permits );
+        int result = permitsCount.addAndGet( -freedPermits );
         if ( result < 0 )
         {
             throw new RuntimeException( "Cannot release more than I acquired" );
@@ -600,7 +611,7 @@ public class ChannelCreator
      */
     public String getName()
     {
-        return name;
+        return channelCreatorName;
     }
 
     public long getCreatorThread()

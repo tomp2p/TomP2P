@@ -122,6 +122,8 @@ public class Scheduler
             FutureRunnable futureRunnable = (FutureRunnable) runner;
             futureRunnable.failed( "Shutting down..." );
         }
+        await(executor);
+        
         if ( maintenance != null )
         {
             maintenance.shutdown();
@@ -135,6 +137,7 @@ public class Scheduler
             delayedChannelCreator.shutdown();
         }
         timeoutExecutor.shutdownNow();
+        await( timeoutExecutor );
         if ( getScheduledExecutorServiceMaintenance() != null )
         {
             getScheduledExecutorServiceMaintenance().shutdown();
@@ -142,6 +145,18 @@ public class Scheduler
         if ( getScheduledExecutorServiceReplication() != null )
         {
             getScheduledExecutorServiceReplication().shutdown();
+        }
+    }
+    
+    private static void await(ExecutorService executor)
+    {
+        try
+        {
+            executor.awaitTermination( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+            e.printStackTrace();
         }
     }
 

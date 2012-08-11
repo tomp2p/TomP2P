@@ -18,7 +18,6 @@ package net.tomp2p.connection;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.connection.PeerException.AbortCause;
-import net.tomp2p.futures.Cancellable;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Timings;
 
@@ -42,7 +41,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ReplyTimeoutHandler
     extends SimpleChannelHandler
-    implements Cancellable
 {
     final private static Logger logger = LoggerFactory.getLogger( ReplyTimeoutHandler.class );
 
@@ -141,6 +139,14 @@ public class ReplyTimeoutHandler
         public void run( Timeout timeout )
             throws Exception
         {
+            if (timeout == null)
+            {
+                ctx.sendUpstream( new DefaultExceptionEvent( ctx.getChannel(),
+                                                             new PeerException( AbortCause.PEER_ABORT,
+                                                                                "Shutting down "
+                                                                                    + remotePeer ) ) );
+                return;
+            }
             if ( timeout.isCancelled() || !ctx.getChannel().isOpen() )
             {
                 return;
@@ -175,7 +181,6 @@ public class ReplyTimeoutHandler
         }
     }
 
-    @Override
     public void cancel()
     {
         if ( allIdleTimeout != null )

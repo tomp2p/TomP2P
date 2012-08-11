@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,7 @@ import net.tomp2p.task.Worker;
 import net.tomp2p.utils.CacheMap;
 
 import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timeout;
 import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,11 +241,25 @@ public class Peer
             getConnectionBean().getSender().shutdown();
             getPeerBean().getTaskManager().shutdown();
         }
-        getConnectionHandler().shutdown();
+        
         if ( masterFlag && timer != null )
         {
-            timer.stop();
+            Set<Timeout> timeouts = timer.stop();
+            for ( Timeout timeout : timeouts )
+            {
+                try
+                {
+                    timeout.getTask().run( null );
+                }
+                catch ( Exception e )
+                {
+                    logger.error( "unable to stop timertask" );
+                    e.printStackTrace( );
+                }
+            }
         }
+        //timer must be stopped before, or there will be still connections that are running
+        getConnectionHandler().shutdown();
 
         // listeners may be called from other threads
         synchronized ( listeners )

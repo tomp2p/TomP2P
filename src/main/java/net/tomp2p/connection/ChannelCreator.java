@@ -24,6 +24,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.Cancellable;
 import net.tomp2p.futures.FutureChannel;
 import net.tomp2p.message.TomP2PDecoderTCP;
 import net.tomp2p.message.TomP2PDecoderUDP;
@@ -201,7 +202,6 @@ public class ChannelCreator
      * 
      * @param timeoutHandler The handler that deals with timeouts
      * @param requestHandler The handler that deals with incoming replies
-     * @param futureResponse The future object that takes care of future events
      * @param connectTimeoutMillis The timeout after which a connection attempt is considered a failure
      * @param recipient The recipient to create the connection. If the recipient is already open, the connection will be
      *            reused.
@@ -224,7 +224,7 @@ public class ChannelCreator
     }
 
     private void createTCPChannel( final FutureChannel futureChannelCreation, ReplyTimeoutHandler timeoutHandler,
-                                   RequestHandlerTCP<? extends BaseFuture> requestHandler, int connectTimeoutMillis,
+                                   final RequestHandlerTCP<? extends BaseFuture> requestHandler, int connectTimeoutMillis,
                                    final InetSocketAddress recipient )
     {
 
@@ -254,10 +254,11 @@ public class ChannelCreator
                     channelFuture =
                         createChannelTCP( timeoutHandler, requestHandler, recipient, new InetSocketAddress( 0 ),
                                           connectTimeoutMillis );
+                    futureChannelCreation.setChannelFuture(channelFuture);
                     channelFuture.addListener( new ChannelFutureListener()
                     {
                         @Override
-                        public void operationComplete( ChannelFuture future )
+                        public void operationComplete( final ChannelFuture future )
                             throws Exception
                         {
                             if ( future.isSuccess() )
@@ -284,6 +285,7 @@ public class ChannelCreator
             }
             else
             {
+                futureChannelCreation.setChannelFuture(channelFuture);
                 newConnection = false;
                 Channel channel = channelFuture.getChannel();
                 // we can keep our old timeouthandler since for keep-alive connections, this is still valid.
@@ -309,10 +311,11 @@ public class ChannelCreator
                 channelFuture =
                     createChannelTCP( timeoutHandler, requestHandler, recipient, new InetSocketAddress( 0 ),
                                       connectTimeoutMillis );
+                futureChannelCreation.setChannelFuture(channelFuture);
                 channelFuture.addListener( new ChannelFutureListener()
                 {
                     @Override
-                    public void operationComplete( ChannelFuture future )
+                    public void operationComplete( final ChannelFuture future )
                         throws Exception
                     {
                         if ( future.isSuccess() )
@@ -345,6 +348,10 @@ public class ChannelCreator
                 public void operationComplete( ChannelFuture future )
                     throws Exception
                 {
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "channel close X, set failure for request message: "+requestHandler.getFutureResponse().getFailedReason());
+                    } 
                     connectionSemaphore.release();
                     statistics.decrementTCPChannelCreation();
                     if ( keepAliveAndReuse )

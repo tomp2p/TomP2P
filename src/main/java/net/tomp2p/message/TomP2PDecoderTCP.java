@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
 public class TomP2PDecoderTCP
     extends FrameDecoder
 {
-    final private static Logger logger = LoggerFactory.getLogger( TomP2PDecoderTCP.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( TomP2PDecoderTCP.class );
 
-    final private int maxMessageSize;
+    private final int maxMessageSize;
 
     // This var keeps the state of the decoding. If null, header not complete,
     // if not null, header is complete
@@ -51,11 +51,19 @@ public class TomP2PDecoderTCP
 
     private volatile int step = 0;
 
+    /**
+     * Default constructor with no message size limit.
+     */
     public TomP2PDecoderTCP()
     {
         this( Integer.MAX_VALUE );
     }
 
+    /**
+     * Limits the message size 
+     * 
+     * @param maxMessageSize The limit of a message size.
+     */
     public TomP2PDecoderTCP( int maxMessageSize )
     {
         this.maxMessageSize = maxMessageSize;
@@ -78,8 +86,10 @@ public class TomP2PDecoderTCP
             final InetSocketAddress remoteSocket = (InetSocketAddress) channel.getRemoteAddress();
             final InetSocketAddress localSocket = (InetSocketAddress) channel.getLocalAddress();
             message = MessageCodec.decodeHeader( buffer, localSocket, remoteSocket );
-            if ( logger.isDebugEnabled() )
-                logger.debug( "got header in decoder " + message );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "got header in decoder " + message );
+            }
             // set that we did not read data, otherwise it gets lost.
             if ( !message.hasContent() )
             {
@@ -203,7 +213,7 @@ public class TomP2PDecoderTCP
     public void exceptionCaught( final ChannelHandlerContext ctx, final ExceptionEvent e )
         throws Exception
     {
-        if ( logger.isDebugEnabled() )
+        if ( LOGGER.isDebugEnabled() )
         {
             e.getCause().printStackTrace();
         }
@@ -234,8 +244,10 @@ public class TomP2PDecoderTCP
         signature = null;
         // set finished time at the end since the sender starts its timer after
         // sending the last packet
-        if ( logger.isDebugEnabled() )
-            logger.debug( "cleanupAndReturnMessage " + tmp );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "cleanupAndReturnMessage " + tmp );
+        }
         tmp.setTCP();
         tmp.finished();
         return tmp;

@@ -171,17 +171,22 @@ public class SenderNetty
                 @Override
                 public void cancel()
                 {
-                    channelFutureConnect.cancel();
+                    if ( logger.isDebugEnabled() )
+                    {
+                        logger.debug( "cancel TCP connect" );
+                    }
+                    channelFutureConnect.getChannelFuture().getChannel().close();
+                    channelFutureConnect.getChannelFuture().cancel();
+                    futureResponse.setFailed( "cancelled" );
                 }
             };
             futureResponse.addCancellation( cancel );
             channelFutureConnect.addListener( new BaseFutureAdapter<FutureChannel>()
             {
                 @Override
-                public void operationComplete( FutureChannel future )
+                public void operationComplete( final FutureChannel future )
                     throws Exception
                 {
-                    futureResponse.removeCancellation( cancel );
                     if ( future.isSuccess() )
                     {
                         if ( logger.isDebugEnabled() )
@@ -196,7 +201,7 @@ public class SenderNetty
                         futureResponse.setFailed( future );
                         if ( logger.isWarnEnabled() )
                         {
-                            logger.warn( "Failed to connect channel:" + message );
+                            logger.warn( "Failed to connect TCP channel:" + message + "/" +futureResponse.getFailedReason() );
                         }
                     }
                 }
@@ -300,6 +305,8 @@ public class SenderNetty
             public void cancel()
             {
                 writeFuture.cancel();
+                writeFuture.getChannel().close();
+                futureResponse.setFailed( "canceled" );
             }
         };
         futureResponse.addCancellation( cancel );
@@ -308,23 +315,15 @@ public class SenderNetty
             @Override
             public void operationComplete( final ChannelFuture writeFuture )
             {
-                futureResponse.removeCancellation( cancel );
                 if ( !writeFuture.isSuccess() )
                 {
                     // most likely its closed, but just to be sure
                     writeFuture.getChannel().close();
-                    if ( writeFuture.isCancelled() )
+                    futureResponse.setFailed( "Write failed" );
+                    logger.warn( "Failed to write channel the request " + futureResponse.getRequest() );
+                    if ( logger.isWarnEnabled() && writeFuture.getCause() != null )
                     {
-                        futureResponse.cancel();
-                    }
-                    else
-                    {
-                        futureResponse.setFailed( "Write failed" );
-                        logger.warn( "Failed to write channel the request " + futureResponse.getRequest() );
-                        if ( logger.isWarnEnabled() && writeFuture.getCause() != null )
-                        {
-                            writeFuture.getCause().printStackTrace();
-                        }
+                        writeFuture.getCause().printStackTrace();
                     }
                 }
                 if ( isFireAndForget )

@@ -708,7 +708,13 @@ public class Peer
     {
         return new SendBuilder( this, locationKey );
     }
+    
+    public SendDirectBuilder sendDirect(PeerAddress recipient)
+    {
+        return new SendDirectBuilder( this, recipient );
+    }
 
+    @Deprecated
     public SendDirectBuilder sendDirect()
     {
         return new SendDirectBuilder( this );

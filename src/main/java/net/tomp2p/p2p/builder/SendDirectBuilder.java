@@ -37,7 +37,8 @@ public class SendDirectBuilder
 
     final private Peer peer;
 
-    private PeerAddress peerAddress;
+    //TODO: make this final once the @Deprecated is removed
+    private PeerAddress recipient;
 
     private ChannelBuffer buffer;
 
@@ -46,20 +47,40 @@ public class SendDirectBuilder
     private Object object;
 
     private FutureChannelCreator futureChannelCreator;
+    
+    public SendDirectBuilder( Peer peer, PeerAddress recipient )
+    {
+        this.peer = peer;
+        this.recipient = recipient;
+    }
+    
+    public PeerAddress getRecipient()
+    {
+        return recipient;
+    }
 
+    public SendDirectBuilder setRecipient( PeerAddress recipient )
+    {
+        this.recipient = recipient;
+        return this;
+    }
+
+    @Deprecated
     public SendDirectBuilder( Peer peer )
     {
         this.peer = peer;
     }
 
+    @Deprecated
     public PeerAddress getPeerAddress()
     {
-        return peerAddress;
+        return recipient;
     }
 
+    @Deprecated
     public SendDirectBuilder setPeerAddress( PeerAddress peerAddress )
     {
-        this.peerAddress = peerAddress;
+        this.recipient = peerAddress;
         return this;
     }
 
@@ -115,11 +136,11 @@ public class SendDirectBuilder
         }
 
         final boolean keepAlive;
-        if ( peerAddress != null && connection == null )
+        if ( recipient != null && connection == null )
         {
             keepAlive = false;
         }
-        else if ( peerAddress == null && connection != null )
+        else if ( recipient == null && connection != null )
         {
             keepAlive = true;
         }
@@ -200,7 +221,7 @@ public class SendDirectBuilder
     private FutureResponse sendDirectClose( final boolean raw )
     {
         final RequestHandlerTCP<FutureResponse> request =
-            peer.getDirectDataRPC().prepareSend( peerAddress, buffer.slice(), raw );
+            peer.getDirectDataRPC().prepareSend( recipient, buffer.slice(), raw );
         futureChannelCreator.addListener( new BaseFutureAdapter<FutureChannelCreator>()
         {
             @Override

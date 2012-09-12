@@ -38,30 +38,38 @@ public class SendDirectBuilder
     final private Peer peer;
 
     //TODO: make this final once the @Deprecated is removed
-    private PeerAddress recipient;
+    private PeerAddress recipientAddress;
 
     private ChannelBuffer buffer;
 
-    private PeerConnection connection;
+    private PeerConnection recipientConnection;
 
     private Object object;
 
     private FutureChannelCreator futureChannelCreator;
     
-    public SendDirectBuilder( Peer peer, PeerAddress recipient )
+    public SendDirectBuilder( Peer peer, PeerAddress recipientAddress )
     {
         this.peer = peer;
-        this.recipient = recipient;
+        this.recipientAddress = recipientAddress;
+        this.recipientConnection = null;
+    }
+    
+    public SendDirectBuilder( Peer peer, PeerConnection recipientConnection )
+    {
+        this.peer = peer;
+        this.recipientAddress = null;
+        this.recipientConnection = recipientConnection;
     }
     
     public PeerAddress getRecipient()
     {
-        return recipient;
+        return recipientAddress;
     }
 
     public SendDirectBuilder setRecipient( PeerAddress recipient )
     {
-        this.recipient = recipient;
+        this.recipientAddress = recipient;
         return this;
     }
 
@@ -74,13 +82,13 @@ public class SendDirectBuilder
     @Deprecated
     public PeerAddress getPeerAddress()
     {
-        return recipient;
+        return recipientAddress;
     }
 
     @Deprecated
     public SendDirectBuilder setPeerAddress( PeerAddress peerAddress )
     {
-        this.recipient = peerAddress;
+        this.recipientAddress = peerAddress;
         return this;
     }
 
@@ -97,12 +105,12 @@ public class SendDirectBuilder
 
     public PeerConnection getConnection()
     {
-        return connection;
+        return recipientConnection;
     }
 
     public SendDirectBuilder setConnection( PeerConnection connection )
     {
-        this.connection = connection;
+        this.recipientConnection = connection;
         return this;
     }
 
@@ -136,11 +144,11 @@ public class SendDirectBuilder
         }
 
         final boolean keepAlive;
-        if ( recipient != null && connection == null )
+        if ( recipientAddress != null && recipientConnection == null )
         {
             keepAlive = false;
         }
-        else if ( recipient == null && connection != null )
+        else if ( recipientAddress == null && recipientConnection != null )
         {
             keepAlive = true;
         }
@@ -193,26 +201,26 @@ public class SendDirectBuilder
     private FutureResponse sendDirectAlive( boolean raw )
     {
         RequestHandlerTCP<FutureResponse> request =
-            peer.getDirectDataRPC().prepareSend( connection.getDestination(), buffer.slice(), raw );
+            peer.getDirectDataRPC().prepareSend( recipientConnection.getDestination(), buffer.slice(), raw );
         request.setKeepAlive( true );
         // since we keep one connection open, we need to make sure that we do
         // not send anything in parallel.
         try
         {
-            connection.aquireSingleConnection();
+            recipientConnection.aquireSingleConnection();
         }
         catch ( InterruptedException e )
         {
             request.getFutureResponse().setFailed( "Interupted " + e );
         }
-        request.sendTCP( connection.getChannelCreator(), connection.getIdleTCPMillis() );
+        request.sendTCP( recipientConnection.getChannelCreator(), recipientConnection.getIdleTCPMillis() );
         request.getFutureResponse().addListener( new BaseFutureAdapter<FutureResponse>()
         {
             @Override
             public void operationComplete( FutureResponse future )
                 throws Exception
             {
-                connection.releaseSingleConnection();
+                recipientConnection.releaseSingleConnection();
             }
         } );
         return request.getFutureResponse();
@@ -221,7 +229,7 @@ public class SendDirectBuilder
     private FutureResponse sendDirectClose( final boolean raw )
     {
         final RequestHandlerTCP<FutureResponse> request =
-            peer.getDirectDataRPC().prepareSend( recipient, buffer.slice(), raw );
+            peer.getDirectDataRPC().prepareSend( recipientAddress, buffer.slice(), raw );
         futureChannelCreator.addListener( new BaseFutureAdapter<FutureChannelCreator>()
         {
             @Override

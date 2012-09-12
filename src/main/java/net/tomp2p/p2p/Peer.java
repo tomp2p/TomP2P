@@ -709,9 +709,14 @@ public class Peer
         return new SendBuilder( this, locationKey );
     }
     
-    public SendDirectBuilder sendDirect(PeerAddress recipient)
+    public SendDirectBuilder sendDirect(PeerAddress recipientAddress)
     {
-        return new SendDirectBuilder( this, recipient );
+        return new SendDirectBuilder( this, recipientAddress );
+    }
+    
+    public SendDirectBuilder sendDirect(PeerConnection recipientConnection)
+    {
+        return new SendDirectBuilder( this, recipientConnection );
     }
 
     @Deprecated

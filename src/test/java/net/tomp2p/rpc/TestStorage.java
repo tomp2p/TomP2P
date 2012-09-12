@@ -1003,6 +1003,10 @@ public class TestStorage
                 for ( FutureResponse fr : res )
                 {
                     fr.awaitUninterruptibly();
+                    if ( !fr.isSuccess() )
+                    {
+                        System.err.println( "failed: " + fr.getFailedReason() );
+                    }
                     Assert.assertEquals( true, fr.isSuccess() );
                 }
                 res.clear();

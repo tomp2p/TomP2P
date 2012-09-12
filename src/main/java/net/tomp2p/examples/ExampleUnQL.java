@@ -6,11 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+
 import net.tomp2p.examples.Query.QueryType;
 import net.tomp2p.examples.Query.ValueType;
-import net.tomp2p.examples.json.simple.JSONArray;
-import net.tomp2p.examples.json.simple.JSONObject;
-import net.tomp2p.examples.json.simple.JSONValue;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;

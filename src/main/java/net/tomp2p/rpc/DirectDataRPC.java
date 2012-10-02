@@ -27,10 +27,14 @@ import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DirectDataRPC
     extends ReplyHandler
 {
+    final private static Logger logger = LoggerFactory.getLogger( DirectDataRPC.class );
+    
     private volatile RawDataReply rawDataReply;
 
     private volatile ObjectDataReply objectDataReply;
@@ -149,6 +153,9 @@ public class DirectDataRPC
             // returned. Or an exception can be thrown
             if ( message.getType() == Type.REQUEST_1 )
             {
+                if(logger.isDebugEnabled()) {
+                    logger.debug( "handling requet1");
+                }
                 final ChannelBuffer replyBuffer = rawDataReply2.reply( message.getSender(), requestBuffer );
                 if ( replyBuffer == null )
                     responseMessage.setType( Type.NOT_FOUND );
@@ -160,6 +167,9 @@ public class DirectDataRPC
             else
             {
                 Object obj = Utils.decodeJavaObject( requestBuffer );
+                if(logger.isDebugEnabled()) {
+                    logger.debug( "handling " + obj);
+                }
                 Object reply = objectDataReply2.reply( message.getSender(), obj );
                 if ( reply == null )
                     responseMessage.setType( Type.NOT_FOUND );

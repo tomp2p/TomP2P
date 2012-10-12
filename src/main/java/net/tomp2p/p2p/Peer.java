@@ -704,6 +704,22 @@ public class Peer
         return new RemoveBuilder( this, locationKey );
     }
 
+    /**
+     * The send method works as follows:
+     * 
+     * <pre>
+     * 1. routing: find close peers to the content hash. 
+     *    You can control the routing behavior with 
+     *    setRoutingConfiguration() 
+     * 2. sending: send the data to the n closest peers. 
+     *    N is set via setRequestP2PConfiguration(). 
+     *    If you want to send it to the closest one, use 
+     *    setRequestP2PConfiguration(1, 5, 0)
+     * </pre>
+     * 
+     * @param locationKey The target hash to search for during the routing process
+     * @return The send builder that allows to set options
+     */
     public SendBuilder send( Number160 locationKey )
     {
         return new SendBuilder( this, locationKey );

@@ -84,6 +84,14 @@ public class DiscoverNetworks
         StringBuilder sb = new StringBuilder( "( " );
         for ( InterfaceAddress iface : networkInterface.getInterfaceAddresses() )
         {
+            // reported by Vasiliy:
+            // iface == null happens when connecting to the Internet through 
+            // my mobile operator. In this case additional dial-up connection 
+            // is created in Network Connections (on Windows)
+            if ( iface == null ) 
+            {
+                continue;
+            }
             InetAddress inet = iface.getAddress();
             if ( iface.getBroadcast() != null && !bindings.getBroadcastAddresses().contains( iface.getBroadcast() ) )
             {

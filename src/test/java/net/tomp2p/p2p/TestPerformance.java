@@ -69,7 +69,7 @@ public class TestPerformance
             {
                 int indexCur = i % 50;
                 FutureResponse response =
-                    peers[indexCur].sendDirect().setConnection( peerConnections[indexCur] ).setObject( buffer ).start();
+                    peers[indexCur].sendDirect(peerConnections[indexCur]).setObject( buffer ).start();
                 result.add( response );
             }
             for ( FutureResponse futureResponse : result )

@@ -2,24 +2,20 @@ package net.tomp2p.examples;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Bindings.Protocol;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Data;
 
 public class ExampleDiscover
 {
@@ -27,7 +23,6 @@ public class ExampleDiscover
     public static void main( String[] args )
         throws Exception
     {
-        // basicExample();
         if ( args.length > 0 )
             startClient( args[0] );
         else
@@ -48,6 +43,7 @@ public class ExampleDiscover
         {
             for ( PeerAddress pa : master.getPeerBean().getPeerMap().getAll() )
             {
+                System.out.println("PeerAddress: " + pa);
                 FutureChannelCreator fcc = master.getConnectionBean().getConnectionReservation().reserve( 1 );
                 fcc.awaitUninterruptibly();
 
@@ -89,6 +85,7 @@ public class ExampleDiscover
         int masterPort = 4000;
         PeerAddress pa = new PeerAddress( Number160.ZERO, address, masterPort, masterPort );
 
+        System.out.println("PeerAddress: " + pa);
         // Creates a connetion before we discover
         // client.createPeerConnection(pa, 10000);
 

@@ -19,6 +19,7 @@ import java.net.UnknownHostException;
 import java.util.Random;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.peers.DefaultMapHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -34,7 +35,7 @@ public class TestStatistics
     {
         Random rnd = new Random( 42L );
         Number160 n = new Number160( rnd );
-        PeerMap peerMapKadImpl = new PeerMap( n, 20, 50, 10, new int[0], 100, false );
+        PeerMap peerMapKadImpl = new PeerMap( n, 20, 50, 10, new int[0], 100, new DefaultMapHandler( false ) );
         Statistics statistics = peerMapKadImpl.getStatistics();
         for ( int i = 0; i < 100; i++ )
         {
@@ -50,7 +51,7 @@ public class TestStatistics
     {
         Random rnd = new Random( 42L );
         Number160 n = new Number160( rnd );
-        PeerMap peerMapKadImpl = new PeerMap( n, 20, 50, 10, new int[0], 100, false );
+        PeerMap peerMapKadImpl = new PeerMap( n, 20, 50, 10, new int[0], 100, new DefaultMapHandler( false ) );
         Statistics statistics = peerMapKadImpl.getStatistics();
         for ( int i = 0; i < 100; i++ )
         {
@@ -69,7 +70,7 @@ public class TestStatistics
             int maxNr = 10000 * j;
             Random rnd = new Random( 42L );
             Number160 id = new Number160( rnd );
-            PeerMap kadRouting = new PeerMap( id, 20, 0, 0, new int[0], 0, false );
+            PeerMap kadRouting = new PeerMap( id, 20, 0, 0, new int[0], 0, new DefaultMapHandler( false ) );
             Statistics statistics = kadRouting.getStatistics();
             for ( int i = 0; i < maxNr; i++ )
             {

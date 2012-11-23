@@ -83,7 +83,7 @@ public class ExampleFastSS
                 PeerAddress peerAddress = futureTracker.getTrackers().iterator().next().getPeerAddress();
                 // download
                 FutureResponse futureData =
-                    peers[20].sendDirect().setPeerAddress( peerAddress ).setObject( key1 ).start();
+                    peers[20].sendDirect(peerAddress).setObject( key1 ).start();
                 futureData.awaitUninterruptibly();
                 System.out.println( "we searched for \"greet\", and found [" + tmp[2] + "], ed(" + tmp[1] + ",greet)="
                     + LD( (String) tmp[1], "greet" ) + ". After downloading we get [" + futureData.getObject() + "]" );

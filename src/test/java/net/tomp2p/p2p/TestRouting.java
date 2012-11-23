@@ -21,6 +21,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.peers.DefaultMapHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -39,7 +40,7 @@ public class TestRouting
         throws UnknownHostException
     {
         // setup
-        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, false );
+        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, new DefaultMapHandler( false ) );
         Collection<PeerAddress> newC = new ArrayList<PeerAddress>();
         newC.add( Utils2.createAddress( 12 ) );
         newC.add( Utils2.createAddress( 15 ) );
@@ -62,7 +63,7 @@ public class TestRouting
         throws UnknownHostException
     {
         // setup
-        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, false );
+        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, new DefaultMapHandler( false ) );
         SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );
         SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );
         SortedSet<PeerAddress> already = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );
@@ -91,7 +92,7 @@ public class TestRouting
         throws UnknownHostException
     {
         // setup
-        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, false );
+        PeerMap test = new PeerMap( new Number160( 77 ), 2, 60 * 1000, 3, new int[0], 100, new DefaultMapHandler( false ) );
         SortedSet<PeerAddress> queue = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );
         SortedSet<PeerAddress> neighbors = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );
         SortedSet<PeerAddress> already = new TreeSet<PeerAddress>( test.createPeerComparator( new Number160( 88 ) ) );

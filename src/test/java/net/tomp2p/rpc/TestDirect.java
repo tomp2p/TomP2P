@@ -34,7 +34,7 @@ public class TestDirect
                 }
             } );
             FutureResponse fd =
-                sender.sendDirect().setPeerAddress( recv1.getPeerAddress() ).setObject( "test" ).start();
+                sender.sendDirect(recv1.getPeerAddress()).setObject( "test" ).start();
             fd.awaitUninterruptibly();
             System.err.println( fd.getFailedReason() );
             Assert.assertEquals( true, fd.isSuccess() );
@@ -68,9 +68,9 @@ public class TestDirect
                 }
             } );
             FutureResponse fd1 =
-                sender.sendDirect().setPeerAddress( recv1.getPeerAddress() ).setObject( "test" ).start();
+                sender.sendDirect(recv1.getPeerAddress()).setObject( "test" ).start();
             FutureResponse fd2 =
-                sender.sendDirect().setPeerAddress( recv1.getPeerAddress() ).setObject( "test" ).start();
+                sender.sendDirect(recv1.getPeerAddress()).setObject( "test" ).start();
             fd1.awaitUninterruptibly();
             fd2.awaitUninterruptibly();
             System.err.println( fd1.getFailedReason() );
@@ -110,13 +110,13 @@ public class TestDirect
             PeerConnection peerConnection = sender.createPeerConnection( recv1.getPeerAddress(), 10 * 1000 );
             Assert.assertEquals( 0, sender.getPeerBean().getStatistics().getTCPChannelCreationCount() );
             Assert.assertEquals( 0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount() );
-            FutureResponse fd1 = sender.sendDirect().setConnection( peerConnection ).setObject( "test" ).start();
+            FutureResponse fd1 = sender.sendDirect(peerConnection).setObject( "test" ).start();
             Assert.assertEquals( 1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount() );
             Assert.assertEquals( 0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount() );
             fd1.awaitUninterruptibly();
             Timings.sleep( 2000 );
             System.err.println( "send second with the same connection" );
-            FutureResponse fd2 = sender.sendDirect().setConnection( peerConnection ).setObject( "test" ).start();
+            FutureResponse fd2 = sender.sendDirect(peerConnection).setObject( "test" ).start();
             fd2.awaitUninterruptibly();
             Assert.assertEquals( 1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount() );
             Assert.assertEquals( 0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount() );
@@ -157,7 +157,7 @@ public class TestDirect
                 }
             } );
             PeerConnection peerConnection = sender.createPeerConnection( recv1.getPeerAddress(), 5 * 1000 );
-            FutureResponse fd1 = sender.sendDirect().setConnection( peerConnection ).setObject( "test" ).start();
+            FutureResponse fd1 = sender.sendDirect(peerConnection).setObject( "test" ).start();
             fd1.awaitUninterruptibly();
 
             Assert.assertEquals( 1.0d, sender.getPeerBean().getStatistics().getTCPChannelCount(), 0.0d );
@@ -169,7 +169,7 @@ public class TestDirect
             Assert.assertEquals( 1.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(), 0.0d );
             System.out.println( "#TCP=" + sender.getPeerBean().getStatistics().getTCPChannelCount() + "/"
                 + sender.getPeerBean().getStatistics().getTCPChannelCreationCount() );
-            FutureResponse fd2 = sender.sendDirect().setConnection( peerConnection ).setObject( "test" ).start();
+            FutureResponse fd2 = sender.sendDirect(peerConnection).setObject( "test" ).start();
             fd2.awaitUninterruptibly();
             peerConnection.close();
             System.out.println( "done" );
@@ -212,7 +212,7 @@ public class TestDirect
             FutureResponse fd[] = new FutureResponse[len];
             for ( int i = 0; i < len; i++ )
             {
-                fd[i] = sender.sendDirect().setConnection( peerConnection ).setObject( "test" ).start();
+                fd[i] = sender.sendDirect(peerConnection).setObject( "test" ).start();
             }
             Assert.assertEquals( 1, sender.getPeerBean().getStatistics().getTCPChannelCreationCount() );
             Assert.assertEquals( 0, sender.getPeerBean().getStatistics().getUDPChannelCreationCount() );
@@ -257,7 +257,7 @@ public class TestDirect
             for ( int i = 0; i < 500; i++ )
             {
                 FutureResponse futureData =
-                    sender.sendDirect().setPeerAddress( recv1.getPeerAddress() ).setObject( (Object) Integer.valueOf( i ) ).start();
+                    sender.sendDirect(recv1.getPeerAddress()).setObject( (Object) Integer.valueOf( i ) ).start();
 
                 futureData.addListener( new BaseFutureAdapter<FutureResponse>()
                 {

@@ -120,7 +120,7 @@ public class ExampleTracker
             System.out.println( "Tracker reports that " + trackerDatas.size() + " peer(s) have this song" );
             // here we download
             FutureResponse futureData =
-                peer.sendDirect().setPeerAddress( trackerDatas.iterator().next().getPeerAddress() ).setObject( key ).start();
+                peer.sendDirect(trackerDatas.iterator().next().getPeerAddress()).setObject( key ).start();
             futureData.awaitUninterruptibly();
             String downloaded = (String) futureData.getObject();
             // we need to announce that we have this piece now

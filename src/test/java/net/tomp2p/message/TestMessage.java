@@ -14,6 +14,7 @@ import java.util.TreeSet;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.message.Message.Command;
+import net.tomp2p.peers.DefaultMapHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -341,7 +342,7 @@ public class TestMessage
         PeerAddress n2 = new PeerAddress( b2 );
         PeerAddress n3 = new PeerAddress( b3 );
         PeerAddress n4 = new PeerAddress( b4 );
-        PeerMap routingMap = new PeerMap( b1, 2, 60 * 1000, 3, new int[0], 100, false );
+        PeerMap routingMap = new PeerMap( b1, 2, 60 * 1000, 3, new int[0], 100, new DefaultMapHandler( false ) );
         final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>( routingMap.createPeerComparator( b3 ) );
         queue.add( n1 );
         queue.add( n2 );

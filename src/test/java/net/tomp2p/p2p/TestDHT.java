@@ -99,7 +99,7 @@ public class TestDHT
             {
                 final byte[] b = new byte[10000];
                 PeerConnection pc = master.createPeerConnection( slave.getPeerAddress(), 5000 );
-                list1.add( master.sendDirect().setConnection( pc ).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
+                list1.add( master.sendDirect(pc).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
                 list3.add( pc );
                 // pc.close();
             }
@@ -109,7 +109,7 @@ public class TestDHT
                 final byte[] b = new byte[10000];
                 byte[] me = Utils.intToByteArray( i );
                 System.arraycopy( me, 0, b, 0, 4 );
-                list2.add( master.sendDirect().setPeerAddress( slave.getPeerAddress() ).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
+                list2.add( master.sendDirect(slave.getPeerAddress()).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
             }
             for ( BaseFuture bf : list1 )
             {
@@ -188,7 +188,7 @@ public class TestDHT
             {
                 final byte[] b = new byte[10000];
                 PeerConnection pc = master.createPeerConnection( slave.getPeerAddress(), 5000 );
-                list1.add( master.sendDirect().setConnection( pc ).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
+                list1.add( master.sendDirect(pc).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
                 list3.add( pc );
                 pc.close();
             }
@@ -198,7 +198,7 @@ public class TestDHT
                 final byte[] b = new byte[10000];
                 byte[] me = Utils.intToByteArray( i );
                 System.arraycopy( me, 0, b, 0, 4 );
-                list2.add( master.sendDirect().setPeerAddress( slave.getPeerAddress() ).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
+                list2.add( master.sendDirect(slave.getPeerAddress()).setBuffer( ChannelBuffers.wrappedBuffer( b ) ).start() );
             }
             for ( BaseFuture bf : list2 )
             {
@@ -1000,7 +1000,7 @@ public class TestDHT
                     return c;
                 }
             } );
-            FutureResponse fd = master.sendDirect().setPeerAddress( peers[50].getPeerAddress() ).setBuffer( c ).start();
+            FutureResponse fd = master.sendDirect(peers[50].getPeerAddress()).setBuffer( c ).start();
             fd.await();
             if ( fd.getBuffer() == null )
                 System.err.println( "damm" );
@@ -1039,7 +1039,7 @@ public class TestDHT
                     return requestBuffer;
                 }
             } );
-            FutureResponse fd = master.sendDirect().setPeerAddress( peers[50].getPeerAddress() ).setBuffer( c ).start();
+            FutureResponse fd = master.sendDirect(peers[50].getPeerAddress()).setBuffer( c ).start();
             fd.await();
             System.err.println( "done1" );
             Assert.assertEquals( true, fd.isSuccess() );
@@ -1302,7 +1302,7 @@ public class TestDHT
                 }
             } );
             FutureResponse futureData =
-                p1.sendDirect().setPeerAddress( p2.getPeerAddress() ).setObject( "hello" ).start();
+                p1.sendDirect(p2.getPeerAddress()).setObject( "hello" ).start();
             futureData.awaitUninterruptibly();
             System.out.println( "reply [" + futureData.getObject() + "]" );
         }
@@ -1963,7 +1963,7 @@ public class TestDHT
             System.err.println( "failed miserably" );
             return;
         }
-        FutureResponse fd = p1.sendDirect().setPeerAddress( p2.getPeerAddress() ).setBuffer( toStore1 ).start();
+        FutureResponse fd = p1.sendDirect(p2.getPeerAddress()).setBuffer( toStore1 ).start();
         fd.addListener( new BaseFutureAdapter<FutureResponse>()
         {
             @Override
@@ -1987,7 +1987,7 @@ public class TestDHT
             System.err.println( "failed miserably" );
             return;
         }
-        FutureResponse fd = p1.sendDirect().setPeerAddress( p2.getPeerAddress() ).setObject( toStore1 ).start();
+        FutureResponse fd = p1.sendDirect(p2.getPeerAddress()).setObject( toStore1 ).start();
         fd.addListener( new BaseFutureAdapter<FutureResponse>()
         {
             @Override

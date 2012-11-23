@@ -87,7 +87,7 @@ public class PeerMap
 
     final private Statistics statistics;
 
-    final private boolean assumeBehindFirewall;
+    final private MapHandler mapHandler;
 
     class Log
     {
@@ -117,6 +117,13 @@ public class PeerMap
             return lastOffline;
         }
     }
+    
+    @Deprecated
+    public PeerMap( final Number160 self, int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
+                    int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, boolean acceptFirstClassOnly )
+    {
+        this( self, bagSize, cacheTimeoutMillis, maxNrBeforeExclude, waitingTimeBetweenNodeMaintenenceSeconds, cachSize, new DefaultMapHandler( acceptFirstClassOnly ) );
+    }
 
     /**
      * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
@@ -127,7 +134,7 @@ public class PeerMap
      * @param configuration Configuration settings for this map
      */
     public PeerMap( final Number160 self, int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
-                    int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, boolean isBehindFirewall )
+                    int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, MapHandler mapHandler )
     {
         if ( self == null || self.isZero() )
             throw new IllegalArgumentException( "Zero or null are not a valid IDs" );
@@ -146,7 +153,7 @@ public class PeerMap
         // The size of the cache of removed peers
         this.peerOfflineLogs = new CacheMap<PeerAddress, Log>( cachSize, false );
         this.statistics = new Statistics( peerMap, self, maxPeers, bagSize );
-        this.assumeBehindFirewall = isBehindFirewall;
+        this.mapHandler = mapHandler;
         for ( int i = 0; i < Number160.BITS; i++ )
         {
             // I made some experiments here and concurrent sets are not
@@ -286,7 +293,7 @@ public class PeerMap
      * @param node The node that should be added
      * @param firstHand If we had direct contact and we know for sure that this node is online, we set firsthand to
      *            true. Information from 3rd party peers are always second hand and treated as such
-     * @return True if the neighbor could be added, otherwise false.
+     * @return True if the neighbor could be added or updated, otherwise false.
      */
     public boolean peerFound( final PeerAddress remotePeer, final PeerAddress referrer )
     {
@@ -304,23 +311,21 @@ public class PeerMap
         // nodes marked as bad
         if ( remotePeer.getID().isZero() || self().equals( remotePeer.getID() ) || isPeerRemovedTemporarly( remotePeer )
             || filteredAddresses.contains( remotePeer.getInetAddress() ) )
+        {
             return false;
+        }
         // the peer might have a new port
-        updateExistingPeerAddress( remotePeer );
-        if ( !firstHand && !contains( remotePeer ) && assumeBehindFirewall )
+        if (updateExistingPeerAddress( remotePeer )) 
         {
-            // TODO: put peers that come from a referrer in a list, which will
-            // be verified, once these peers are verified, having referrer null,
-            // they should go into this map. Make this optional, since for
-            // Intranet its not required but for Internet it is.
+            //we update the peer, so we can exit here and report that we have updated it.
+            return true;
+        }
+        
+        if (!mapHandler.acceptPeer(firstHand, contains( remotePeer ), remotePeer)) 
+        {
             return false;
         }
-        if ( firstHand && assumeBehindFirewall && remotePeer.isFirewalledTCP() )
-        {
-            // We contacted a peer directly and the peer told us, that it is not
-            // reachable. Thus, we ignore this peer.
-            return false;
-        }
+        
         final int classMember = classMember( remotePeer.getID() );
         final Map<Number160, PeerAddress> map = peerMap.get( classMember );
         if ( size() < maxPeers )
@@ -603,12 +608,23 @@ public class PeerMap
         return false;
     }
 
-    public void updateExistingPeerAddress( PeerAddress peerAddress )
+    /**
+     * Checks if a peer already existis in this map and if it does, it will update the entry becaues the peer address
+     * (e.g. port) may have changed.
+     * 
+     * @param peerAddress The address of the peer that may have been changed.
+     * @return True if we have updated the peer, false otherwise
+     */
+    public boolean updateExistingPeerAddress( PeerAddress peerAddress )
     {
         final int classMember = classMember( peerAddress.getID() );
         Map<Number160, PeerAddress> tmp = peerMap.get( classMember );
         if ( tmp.containsKey( peerAddress.getID() ) )
+        {
             tmp.put( peerAddress.getID(), peerAddress );
+            return true;
+        }
+        return false;
     }
 
     public boolean contains( PeerAddress peerAddress )

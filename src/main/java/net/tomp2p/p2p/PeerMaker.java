@@ -26,6 +26,8 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionHandler;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.peers.DefaultMapHandler;
+import net.tomp2p.peers.MapHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -100,8 +102,6 @@ public class PeerMaker
 
     private int cacheSize = 100;
 
-    private boolean isBehindFirewallPeerMap = false;
-
     // enable / disable
     private boolean enableHandShakeRPC = true;
 
@@ -135,6 +135,8 @@ public class PeerMaker
     private boolean enableBroadcast = true;
 
     private Random rnd;
+    
+    private MapHandler mapHandler;
 
     public PeerMaker( final Number160 peerId )
     {
@@ -154,9 +156,13 @@ public class PeerMaker
         {
             configuration = new ConnectionConfiguration();
         }
+        if ( mapHandler == null)
+        {
+            mapHandler = new DefaultMapHandler( false );
+        }
         final PeerMap peerMap =
             new PeerMap( peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
-                         getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), isBehindFirewallPeerMap() );
+                         getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), mapHandler );
         final Peer peer =
             new Peer( getP2PId(), peerId, keyPair, getMaintenanceThreads(), getReplicationThreads(), configuration,
                       peerMap, getMaxMessageSize() );
@@ -316,17 +322,25 @@ public class PeerMaker
         }
         connectionBean.getScheduler().startDelayedChannelCreator();
     }
-
+    
+    @Deprecated
     public PeerMaker setPeerMapConfiguration( int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
                                               int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize,
                                               boolean isBehindFirewall )
+    {
+        return setPeerMapConfiguration( bagSize, cacheTimeoutMillis, maxNrBeforeExclude, waitingTimeBetweenNodeMaintenenceSeconds, cacheSize, new DefaultMapHandler( isBehindFirewall ) );                
+    }
+
+    public PeerMaker setPeerMapConfiguration( int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
+                                              int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize,
+                                              MapHandler mapHandler )
     {
         this.setBagSize( bagSize );
         this.setCacheTimeoutMillis( cacheTimeoutMillis );
         this.setMaxNrBeforeExclude( maxNrBeforeExclude );
         this.setWaitingTimeBetweenNodeMaintenenceSeconds( waitingTimeBetweenNodeMaintenenceSeconds );
         this.setCacheSize( cacheSize );
-        this.setBehindFirewallPeerMap( isBehindFirewall );
+        this.setMapHandler( mapHandler );
         return this;
     }
 
@@ -523,15 +537,40 @@ public class PeerMaker
         this.cacheSize = cacheSize;
         return this;
     }
-
+    
+    @Deprecated
+    public PeerMaker setBehindFirewallPeerMap(boolean acceptFirstClassOnly)
+    {
+        this.mapHandler = new DefaultMapHandler( acceptFirstClassOnly );
+        return this;
+    }
+    
+    @Deprecated
     public boolean isBehindFirewallPeerMap()
     {
-        return isBehindFirewallPeerMap;
+        if(mapHandler == null) 
+        {
+            //default
+            return false;
+        }
+        if (mapHandler instanceof DefaultMapHandler)
+        {
+            return ((DefaultMapHandler)mapHandler).acceptFirstClassOnly();
+        }
+        else
+        {
+            throw new RuntimeException( "please don't use this deprecated method anymore." );
+        }
     }
 
-    public PeerMaker setBehindFirewallPeerMap( boolean isBehindFirewallPeerMap )
+    public MapHandler getMapHandler()
     {
-        this.isBehindFirewallPeerMap = isBehindFirewallPeerMap;
+        return mapHandler;
+    }
+
+    public PeerMaker setMapHandler( MapHandler mapHandler )
+    {
+        this.mapHandler = mapHandler;
         return this;
     }
 

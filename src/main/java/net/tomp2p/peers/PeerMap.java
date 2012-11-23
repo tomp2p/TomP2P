@@ -87,7 +87,7 @@ public class PeerMap
 
     final private Statistics statistics;
 
-    final private MapHandler mapHandler;
+    final private MapAcceptHandler mapHandler;
 
     class Log
     {
@@ -122,7 +122,7 @@ public class PeerMap
     public PeerMap( final Number160 self, int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
                     int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, boolean acceptFirstClassOnly )
     {
-        this( self, bagSize, cacheTimeoutMillis, maxNrBeforeExclude, waitingTimeBetweenNodeMaintenenceSeconds, cachSize, new DefaultMapHandler( acceptFirstClassOnly ) );
+        this( self, bagSize, cacheTimeoutMillis, maxNrBeforeExclude, waitingTimeBetweenNodeMaintenenceSeconds, cachSize, new DefaultMapAcceptHandler( acceptFirstClassOnly ) );
     }
 
     /**
@@ -134,7 +134,7 @@ public class PeerMap
      * @param configuration Configuration settings for this map
      */
     public PeerMap( final Number160 self, int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
-                    int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, MapHandler mapHandler )
+                    int[] waitingTimeBetweenNodeMaintenenceSeconds, int cachSize, MapAcceptHandler mapHandler )
     {
         if ( self == null || self.isZero() )
             throw new IllegalArgumentException( "Zero or null are not a valid IDs" );
@@ -320,8 +320,8 @@ public class PeerMap
             //we update the peer, so we can exit here and report that we have updated it.
             return true;
         }
-        
-        if (!mapHandler.acceptPeer(firstHand, contains( remotePeer ), remotePeer)) 
+        // check if we have should accept this peer in our peer map.
+        if (!mapHandler.acceptPeer(firstHand, remotePeer)) 
         {
             return false;
         }

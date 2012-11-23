@@ -1,11 +1,11 @@
 package net.tomp2p.peers;
 
-public class DefaultMapHandler implements MapHandler
+public class DefaultMapAcceptHandler implements MapAcceptHandler
 {
     
     private final boolean acceptFirstClassOnly; 
     
-    public DefaultMapHandler(boolean acceptFirstClassOnly)
+    public DefaultMapAcceptHandler(boolean acceptFirstClassOnly)
     {
         this.acceptFirstClassOnly = acceptFirstClassOnly;
     }
@@ -16,13 +16,8 @@ public class DefaultMapHandler implements MapHandler
     }
     
     @Override
-    public boolean acceptPeer( boolean firstHand, boolean isInPeerMap, PeerAddress remotePeer )
+    public boolean acceptPeer( boolean firstHand, PeerAddress remotePeer )
     {
-        if (isInPeerMap)
-        {
-            //we already have this peer, 
-            return false;
-        }
         if ( !firstHand && acceptFirstClassOnly )
         {
             // TODO: put peers that come from a referrer in a list, which will

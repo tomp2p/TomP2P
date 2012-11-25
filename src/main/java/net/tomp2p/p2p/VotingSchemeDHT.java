@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
@@ -32,28 +33,59 @@ public class VotingSchemeDHT
     implements EvaluatingSchemeDHT
 {
     @Override
-    public Collection<Number160> evaluate1( Map<PeerAddress, Collection<Number160>> rawKeys )
+    public Collection<Number480> evaluate1( Number160 locationKey, Number160 domainKey,
+                                            Map<PeerAddress, Collection<Number160>> rawKeys,
+                                            Map<PeerAddress, Collection<Number480>> rawKeys480 )
     {
-        if ( rawKeys == null )
-            throw new IllegalArgumentException( "cannot evaluate, as no result provided" );
-        Map<Number160, Integer> counter = new HashMap<Number160, Integer>();
-        Set<Number160> result = new HashSet<Number160>();
-        int size = rawKeys.size();
+        Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
+        Set<Number480> result = new HashSet<Number480>();
+        
+        int size = (rawKeys == null ? 0: rawKeys.size()) + (rawKeys480 == null ? 0: rawKeys480.size());
         int majority = ( size + 1 ) / 2;
-        for ( PeerAddress address : rawKeys.keySet() )
+        
+        if ( rawKeys != null )
         {
-            Collection<Number160> keys = rawKeys.get( address );
-            for ( Number160 key : keys )
+            for ( PeerAddress address : rawKeys.keySet() )
             {
-                int c = 1;
-                Integer count = counter.get( key );
-                if ( count != null )
-                    c = count + 1;
-                counter.put( key, c );
-                if ( c >= majority )
-                    result.add( key );
+                Collection<Number160> keys = rawKeys.get( address );
+                if ( keys != null )
+                {
+                    for ( Number160 contentKey : keys )
+                    {
+                        int c = 1;
+                        Number480 key = new Number480( locationKey, domainKey, contentKey );
+                        Integer count = counter.get( key );
+                        if ( count != null )
+                            c = count + 1;
+                        counter.put( key, c );
+                        if ( c >= majority )
+                            result.add( key );
+                    }
+                }
             }
         }
+        
+        if ( rawKeys480 != null )
+        {
+            for ( PeerAddress address : rawKeys480.keySet() )
+            {
+                Collection<Number480> keys480 = rawKeys480.get( address );
+                if ( keys480 != null )
+                {
+                    for ( Number480 key : keys480 )
+                    {
+                        int c = 1;
+                        Integer count = counter.get( key );
+                        if ( count != null )
+                            c = count + 1;
+                        counter.put( key, c );
+                        if ( c >= majority )
+                            result.add( key );
+                    }
+                }
+            }
+        }
+        
         return result;
     }
 

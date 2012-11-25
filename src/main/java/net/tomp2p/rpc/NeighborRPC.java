@@ -30,6 +30,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -75,7 +76,7 @@ public class NeighborRPC
                                           Collection<Number160> contentKeys, Type type, ChannelCreator channelCreator,
                                           boolean forceTCP )
     {
-        nullCheck( remotePeer, locationKey );
+        Utils.nullCheck( remotePeer, locationKey );
         Message message = createMessage( remotePeer, Command.NEIGHBORS, type );
         if ( !message.isRequest() )
         {
@@ -104,9 +105,9 @@ public class NeighborRPC
     public Message handleResponse( Message message, boolean sign )
         throws IOException
     {
-        nullCheck( message.getKeyKey1(), message.getKeyKey2() );
+        Utils.nullCheck( message.getKeyKey1(), message.getKeyKey2() );
         if ( !( message.getContentType1() == Content.KEY_KEY
-            && ( message.getContentType2() == Content.EMPTY || message.getContentType2() == Content.SET_KEYS )
+            && ( message.getContentType2() == Content.EMPTY || message.getContentType2() == Content.SET_KEY160 )
             && ( message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2
                 || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4 ) && ( message.getCommand() == Command.NEIGHBORS ) ) )
         {

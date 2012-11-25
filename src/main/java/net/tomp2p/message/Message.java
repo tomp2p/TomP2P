@@ -54,19 +54,19 @@ public class Message
         EMPTY,
         KEY,
         KEY_KEY,
-        MAP_KEY_DATA,
+        MAP_KEY160_DATA,
+        MAP_KEY480_DATA,
         MAP_KEY_COMPARE_DATA,
         MAP_KEY_KEY,
-        SET_KEYS,
+        SET_KEY160,
+        SET_KEY480,
         SET_NEIGHBORS,
         CHANNEL_BUFFER,
         LONG,
         INTEGER,
         PUBLIC_KEY_SIGNATURE,
-        PUBLIC_KEY,
         SET_TRACKER_DATA,
-        TWO_BLOOM_FILTER,
-        RESERVED1
+        TWO_BLOOM_FILTER
     };
 
     // 1 x 4 bit
@@ -155,7 +155,7 @@ public class Message
 
     private volatile Map<Number160, Data> dataMap = null;
 
-    private volatile Map<Number480, Data> dataMapConvert = null;
+    private volatile Map<Number480, Data> dataMap480 = null;
 
     private volatile Map<Number160, HashData> hashDataMap = null;
 
@@ -170,13 +170,15 @@ public class Message
 
     private volatile Map<Number160, Number160> keyMap = null;
 
-    private volatile Collection<Number160> keys = null;
+    private volatile Collection<Number160> keys160 = null;
 
-    private volatile Collection<Number480> keysConvert = null;
+    private volatile Collection<Number480> keys480 = null;
 
     private volatile ChannelBuffer payload1 = null;
 
     private volatile ChannelBuffer payload2 = null;
+    
+    private volatile int payloadCounter = 0;
 
     private volatile long long_number = 0;
 
@@ -485,6 +487,21 @@ public class Message
             throw new IllegalArgumentException( "Both content types already set. Cannot set content type!" );
         return this;
     }
+    
+    private Message replaceContentType( Content oldContent, Content newContent )
+    {
+        if ( contentType1 == oldContent )
+            contentType1 = newContent;
+        else if ( contentType2 == oldContent )
+            contentType2 = newContent;
+        else if ( contentType3 == oldContent )
+            contentType3 = newContent;
+        else if ( contentType4 == oldContent )
+            contentType4 = newContent;
+        else
+            throw new IllegalArgumentException( "Both content types already set. Cannot set content type!" );
+        return this;
+    }
 
     public boolean isRequest()
     {
@@ -555,14 +572,23 @@ public class Message
     {
         return useAtMostNeighbors;
     }
-
-    public Message setKeysConvert( final Collection<Number480> keysConvert )
+    
+    public Message setKeys480( final Collection<Number480> keys480 )
     {
-        if ( keysConvert == null )
+        if ( keys480 == null )
+            throw new IllegalArgumentException( "key cannot add null" );
+        this.keys480 = keys480;
+        setContentType( Content.SET_KEY480 );
+        return this;
+    }
+
+    public Message setKeysConvert( final Collection<Number480> keys480 )
+    {
+        if ( keys480 == null )
             throw new IllegalArgumentException( "key cannot add null" );
         setConvertNumber480to160( true );
-        this.keysConvert = keysConvert;
-        setContentType( Content.SET_KEYS );
+        this.keys480 = keys480;
+        setContentType( Content.SET_KEY160 );
         return this;
     }
 
@@ -570,34 +596,59 @@ public class Message
     {
         if ( keys == null )
             throw new IllegalArgumentException( "key cannot add null" );
-        this.keys = keys;
-        setContentType( Content.SET_KEYS );
+        this.keys160 = keys;
+        setContentType( Content.SET_KEY160 );
         return this;
+    }
+    
+    void setKeys0480( final Collection<Number480> keys480 )
+    {
+        this.keys480 = keys480;
     }
 
     void setKeys0( final Collection<Number160> keys )
     {
-        this.keys = keys;
+        this.keys160 = keys;
     }
 
     public Collection<Number160> getKeys()
     {
-        return keys;
+        return keys160;
     }
 
-    public Collection<Number480> getKeysConvert()
+    public Collection<Number480> getKeys480()
     {
-        return keysConvert;
+        return keys480;
     }
 
     // /////////////////////////////////////////////
-    public Message setDataMapConvert( final Map<Number480, Data> dataMap )
+    
+    public Message replaceDataMap( Map<Number480, Data> dataMap480 )
     {
-        if ( dataMap == null )
+        if ( dataMap480 == null )
+            throw new IllegalArgumentException( "key cannot add null" );
+        this.dataMap480 = dataMap480;
+        this.dataMap = null;
+        replaceContentType( Content.MAP_KEY160_DATA, Content.MAP_KEY480_DATA );
+        return this;
+    }
+
+    public Message setDataMap480( final Map<Number480, Data> dataMap480 )
+    {
+        if ( dataMap480 == null )
+            throw new IllegalArgumentException( "key cannot add null" );
+        this.dataMap480 = dataMap480;
+        setContentType( Content.MAP_KEY480_DATA );
+        return this;
+    }
+    
+    public Message setDataMapConvert( final Map<Number480, Data> dataMap480 )
+    {
+        if ( dataMap480 == null )
             throw new IllegalArgumentException( "key cannot add null" );
         setConvertNumber480to160( true );
-        this.dataMapConvert = dataMap;
-        setContentType( Content.MAP_KEY_DATA );
+        this.dataMap480 = dataMap480;
+        setContentType( Content.MAP_KEY160_DATA );
         return this;
     }
 
@@ -606,8 +657,13 @@ public class Message
         if ( dataMap == null )
             throw new IllegalArgumentException( "key cannot add null" );
         this.dataMap = dataMap;
-        setContentType( Content.MAP_KEY_DATA );
+        setContentType( Content.MAP_KEY160_DATA );
         return this;
+    }
+    
+    void setDataMap0480( final Map<Number480, Data> dataMap480 )
+    {
+        this.dataMap480 = dataMap480;
     }
 
     void setDataMap0( final Map<Number160, Data> dataMap )
@@ -620,14 +676,9 @@ public class Message
         return dataMap;
     }
 
-    /**
-     * Only used internally, we convert the Number480 to 160 before sending.
-     * 
-     * @return The data map that will be converted in MessageCodec.
-     */
-    Map<Number480, Data> getDataMapConvert()
+    public Map<Number480, Data> getDataMap480()
     {
-        return dataMapConvert;
+        return dataMap480;
     }
 
     // /////////////////////////////////////////////
@@ -745,6 +796,19 @@ public class Message
     void setPayload2( final ChannelBuffer payload )
     {
         this.payload2 = payload;
+    }
+    
+    ChannelBuffer getPayload()
+    {
+        if (payloadCounter == 0 )
+        {
+            payloadCounter++;
+            return payload1;
+        }
+        else
+        {
+            return payload2;
+        }
     }
 
     public ChannelBuffer getPayload1()
@@ -949,4 +1013,5 @@ public class Message
     {
         return bloomFilter2;
     }
+
 }

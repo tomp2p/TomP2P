@@ -35,6 +35,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DigestResult;
@@ -103,6 +104,9 @@ public class DistributedHashTable
                                                   {
                                                       Map<PeerAddress, Collection<Number160>> rawData =
                                                           new HashMap<PeerAddress, Collection<Number160>>();
+                                                      
+                                                      Map<PeerAddress, Collection<Number480>> rawData480 =
+                                                                      new HashMap<PeerAddress, Collection<Number480>>();
 
                                                       @Override
                                                       public FutureResponse create( ChannelCreator channelCreator,
@@ -111,13 +115,14 @@ public class DistributedHashTable
                                                           return storeRCP.add( address, locationKey, domainKey,
                                                                                dataSet, protectDomain, signMessage,
                                                                                list, channelCreator,
-                                                                               p2pConfiguration.isForceUPD() );
+                                                                               p2pConfiguration.isForceUPD(),
+                                                                               p2pConfiguration.getSenderCacheStrategy());
                                                       }
 
                                                       @Override
                                                       public void response( FutureDHT futureDHT )
                                                       {
-                                                          futureDHT.setStoredKeys( rawData );
+                                                          futureDHT.setStoredKeys( locationKey, domainKey, rawData, rawData480 );
                                                       }
 
                                                       @Override
@@ -129,9 +134,15 @@ public class DistributedHashTable
                                                           {
                                                               rawData.put( future.getRequest().getRecipient(),
                                                                            future.getResponse().getKeys() );
+                                                              rawData480.put( future.getRequest().getRecipient(),
+                                                                           future.getResponse().getKeys480() );
                                                           }
                                                       }
                                                   } );
+                                if(futureDHT.isReleaseEarly())
+                                {
+                                    Utils.addReleaseListenerAll( futureDHT, connectionReservation, future.getChannelCreator() );
+                                }
                             }
                             else
                             {
@@ -140,7 +151,7 @@ public class DistributedHashTable
                         }
                     } );
 
-                    if ( !isManualCleanup )
+                    if ( !isManualCleanup && !futureDHT.isReleaseEarly())
                     {
                         Utils.addReleaseListenerAll( futureDHT, connectionReservation, future.getChannelCreator() );
                     }
@@ -293,6 +304,9 @@ public class DistributedHashTable
                                                   {
                                                       Map<PeerAddress, Collection<Number160>> rawData =
                                                           new HashMap<PeerAddress, Collection<Number160>>();
+                                                      
+                                                      Map<PeerAddress, Collection<Number480>> rawData480 =
+                                                                      new HashMap<PeerAddress, Collection<Number480>>();
 
                                                       @Override
                                                       public FutureResponse create( ChannelCreator channelCreator,
@@ -307,18 +321,20 @@ public class DistributedHashTable
                                                                                                      protectEntry,
                                                                                                      signMessage,
                                                                                                      channelCreator,
-                                                                                                     p2pConfiguration.isForceUPD() )
+                                                                                                     p2pConfiguration.isForceUPD(),
+                                                                                                     p2pConfiguration.getSenderCacheStrategy() )
                                                                           : storeRCP.put( address, locationKey,
                                                                                           domainKey, dataMap,
                                                                                           protectDomain, protectEntry,
                                                                                           signMessage, channelCreator,
-                                                                                          p2pConfiguration.isForceUPD() );
+                                                                                          p2pConfiguration.isForceUPD(),
+                                                                                          p2pConfiguration.getSenderCacheStrategy() );
                                                       }
 
                                                       @Override
                                                       public void response( FutureDHT futureDHT )
                                                       {
-                                                          futureDHT.setStoredKeys( rawData );
+                                                          futureDHT.setStoredKeys( locationKey, domainKey, rawData, rawData480 );
                                                       }
 
                                                       @Override
@@ -330,9 +346,15 @@ public class DistributedHashTable
                                                           {
                                                               rawData.put( future.getRequest().getRecipient(),
                                                                            future.getResponse().getKeys() );
+                                                              rawData480.put( future.getRequest().getRecipient(),
+                                                                           future.getResponse().getKeys480() );
                                                           }
                                                       }
                                                   } );
+                                if(futureDHT.isReleaseEarly())
+                                {
+                                    connectionReservation.release( future.getChannelCreator() );
+                                }
                             }
                             else
                             {
@@ -340,7 +362,7 @@ public class DistributedHashTable
                             }
                         }
                     } );
-                    if ( !isManualCleanup )
+                    if ( !isManualCleanup ) //&& !futureDHT.isReleaseEarly())
                     {
                         Utils.addReleaseListenerAll( futureDHT, connectionReservation, future.getChannelCreator() );
                     }
@@ -476,7 +498,7 @@ public class DistributedHashTable
                             }
                         }
                     } );
-                    if ( !isManualCleanup )
+                    if ( !isManualCleanup)
                     {
                         Utils.addReleaseListenerAll( futureDHT, connectionReservation, future.getChannelCreator() );
                     }
@@ -654,6 +676,7 @@ public class DistributedHashTable
     {
         // final int parallel=min+parallelDiff;
         int active = 0;
+        int shared = 0;
         for ( int i = 0; i < min + parallelDiff; i++ )
         {
             if ( futures[i] == null )
@@ -664,10 +687,21 @@ public class DistributedHashTable
                     active++;
                     futures[i] = operation.create( channelCreator, next );
                     futureDHT.addRequests( futures[i] );
+                    if(futures[i].isShared())
+                    {
+                        shared ++;
+                    }
                 }
             }
             else
+            {
                 active++;
+            }
+        }
+        //special case, where we know that we won't have further requests
+        if (maxFailure == 0 && shared == min + parallelDiff)
+        {
+            futureDHT.releaseEarly();
         }
         if ( active == 0 )
         {

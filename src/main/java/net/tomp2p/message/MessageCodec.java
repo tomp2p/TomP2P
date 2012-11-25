@@ -140,6 +140,7 @@ public class MessageCodec
     {
         final int size;
         final byte[] data;
+        final Map<Number480, Data> dataMap480;
         int count;
         switch ( content )
         {
@@ -150,13 +151,28 @@ public class MessageCodec
                 input.copyToCurrent( message.getKeyKey1().toByteArray() );
                 input.copyToCurrent( message.getKeyKey2().toByteArray() );
                 return 40;
-            case MAP_KEY_DATA:
+            case MAP_KEY480_DATA:
+                count = 4;
+                dataMap480 = message.getDataMap480();
+                input.copyToCurrent( dataMap480.size() );
+                for ( Map.Entry<Number480, Data> entry : dataMap480.entrySet() )
+                {
+                    input.copyToCurrent( entry.getKey().getLocationKey().toByteArray() );
+                    count += 20;
+                    input.copyToCurrent( entry.getKey().getDomainKey().toByteArray() );
+                    count += 20;
+                    input.copyToCurrent( entry.getKey().getContentKey().toByteArray() );
+                    count += 20;
+                    count += DataCodec.encodeData( input, entry.getValue() );
+                }
+                return count;
+            case MAP_KEY160_DATA:
                 count = 4;
                 if ( message.isConvertNumber480to160() )
                 {
-                    Map<Number480, Data> dataMap = message.getDataMapConvert();
-                    input.copyToCurrent( dataMap.size() );
-                    for ( Map.Entry<Number480, Data> entry : dataMap.entrySet() )
+                    dataMap480 = message.getDataMap480();
+                    input.copyToCurrent( dataMap480.size() );
+                    for ( Map.Entry<Number480, Data> entry : dataMap480.entrySet() )
                     {
                         input.copyToCurrent( entry.getKey().getContentKey().toByteArray() );
                         count += 20;
@@ -197,10 +213,22 @@ public class MessageCodec
                     input.copyToCurrent( entry.getValue().toByteArray() );
                 }
                 return 4 + ( size * ( 20 + 20 ) );
-            case SET_KEYS:
+                
+            case SET_KEY480:
+                Collection<Number480> keys480 = message.getKeys480();
+                size = keys480.size();
+                input.copyToCurrent( size );
+                for ( Number480 key : keys480 )
+                {
+                    input.copyToCurrent( key.getLocationKey().toByteArray() );
+                    input.copyToCurrent( key.getDomainKey().toByteArray() );
+                    input.copyToCurrent( key.getContentKey().toByteArray() );
+                }
+                return 4 + ( size * (20 * 3) );
+            case SET_KEY160:
                 if ( message.isConvertNumber480to160() )
                 {
-                    Collection<Number480> keys = message.getKeysConvert();
+                    Collection<Number480> keys = message.getKeys480();
                     size = keys.size();
                     input.copyToCurrent( size );
                     for ( Number480 key : keys )
@@ -253,11 +281,7 @@ public class MessageCodec
                 }
                 return count;
             case CHANNEL_BUFFER:
-                ChannelBuffer tmpBuffer = message.getPayload1();
-                if ( tmpBuffer == null )
-                    tmpBuffer = message.getPayload2();
-                else
-                    message.setPayload1( null );
+                ChannelBuffer tmpBuffer = message.getPayload();
                 size = tmpBuffer.writerIndex();
                 input.copyToCurrent( size );
                 input.copyToCurrent( tmpBuffer.slice() );
@@ -268,12 +292,12 @@ public class MessageCodec
             case INTEGER:
                 input.copyToCurrent( message.getInteger() );
                 return 4;
-            case PUBLIC_KEY:
-                data = message.getPublicKey().getEncoded();
-                size = data.length;
-                input.copyToCurrent( (short) size );
-                input.copyToCurrent( data );
-                return 2 + size;
+            //case PUBLIC_KEY:
+            //    data = message.getPublicKey().getEncoded();
+            //    size = data.length;
+            //    input.copyToCurrent( (short) size );
+            //    input.copyToCurrent( data );
+            //    return 2 + size;
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 data = message.getPublicKey().getEncoded();
@@ -317,7 +341,6 @@ public class MessageCodec
                 }
                 return 8 + size1 + size2;
             case EMPTY:
-            case RESERVED1:
             default:
                 return 0;
         }
@@ -396,11 +419,37 @@ public class MessageCodec
                     return false;
                 message.setKeyKey0( readID( buffer ), readID( buffer ) );
                 return true;
-            case MAP_KEY_DATA:
+            case MAP_KEY480_DATA:
                 if ( buffer.readableBytes() < 4 )
                     return false;
                 len = buffer.readInt();
-                Map<Number160, Data> result = new HashMap<Number160, Data>( len );
+                Map<Number480, Data> result480 = new HashMap<Number480, Data>( len );
+                for ( int i = 0; i < len; i++ )
+                {
+                    if ( buffer.readableBytes() < (3 * 20) )
+                        return false;
+                    Number160 locationKey = readID( buffer );
+                    Number160 domainKey = readID( buffer );
+                    Number160 contentKey = readID( buffer );
+                    final Data data = DataCodec.decodeData( buffer, message.getSender() );
+                    if ( data == null )
+                        return false;
+                    if ( message.isRequest() )
+                    {
+                        if ( data.isProtectedEntry() && message.getPublicKey() == null )
+                            throw new DecoderException(
+                                                        "You indicated that you want to protect the data, but you did not provide or provided too late a public key." );
+                        data.setPublicKey( message.getPublicKey() );
+                    }
+                    result480.put( new Number480( locationKey, domainKey, contentKey ), data );
+                }
+                message.setDataMap0480( result480 );
+                return true;
+            case MAP_KEY160_DATA:
+                if ( buffer.readableBytes() < 4 )
+                    return false;
+                len = buffer.readInt();
+                Map<Number160, Data> result160 = new HashMap<Number160, Data>( len );
                 for ( int i = 0; i < len; i++ )
                 {
                     if ( buffer.readableBytes() < 20 )
@@ -416,15 +465,15 @@ public class MessageCodec
                                                         "You indicated that you want to protect the data, but you did not provide or provided too late a public key." );
                         data.setPublicKey( message.getPublicKey() );
                     }
-                    result.put( key, data );
+                    result160.put( key, data );
                 }
-                message.setDataMap0( result );
+                message.setDataMap0( result160 );
                 return true;
             case MAP_KEY_COMPARE_DATA:
                 if ( buffer.readableBytes() < 4 )
                     return false;
                 len = buffer.readInt();
-                Map<Number160, HashData> result2 = new HashMap<Number160, HashData>( len );
+                Map<Number160, HashData> resultHash = new HashMap<Number160, HashData>( len );
                 for ( int i = 0; i < len; i++ )
                 {
                     if ( buffer.readableBytes() < 20 )
@@ -443,9 +492,9 @@ public class MessageCodec
                                                         "You indicated that you want to protect the data, but you did not provide or provided too late a public key." );
                         data.setPublicKey( message.getPublicKey() );
                     }
-                    result2.put( key, new HashData( hash, data ) );
+                    resultHash.put( key, new HashData( hash, data ) );
                 }
-                message.setHashDataMap0( result2 );
+                message.setHashDataMap0( resultHash );
                 return true;
             case MAP_KEY_KEY:
                 if ( buffer.readableBytes() < 4 )
@@ -462,20 +511,37 @@ public class MessageCodec
                 }
                 message.setKeyMap0( keyMap );
                 return true;
-            case SET_KEYS:
+            case SET_KEY480:
+                // can be 31bit long ~ 2GB
+                if ( buffer.readableBytes() < 4 )
+                    return false;
+                len = buffer.readInt();
+                if ( buffer.readableBytes() < ( 3 * 20 * len ) )
+                    return false;
+                final Collection<Number480> tmp480 = new ArrayList<Number480>( len );
+                for ( int i = 0; i < len; i++ )
+                {
+                    Number160 locationKey = readID( buffer );
+                    Number160 domainKey = readID( buffer );
+                    Number160 conentKey = readID( buffer );
+                    tmp480.add( new Number480( locationKey,  domainKey, conentKey ) );
+                }
+                message.setKeys0480( tmp480 );
+                return true;
+            case SET_KEY160:
                 // can be 31bit long ~ 2GB
                 if ( buffer.readableBytes() < 4 )
                     return false;
                 len = buffer.readInt();
                 if ( buffer.readableBytes() < ( 20 * len ) )
                     return false;
-                final Collection<Number160> tmp = new ArrayList<Number160>( len );
+                final Collection<Number160> tmp160 = new ArrayList<Number160>( len );
                 for ( int i = 0; i < len; i++ )
                 {
                     Number160 key = readID( buffer );
-                    tmp.add( key );
+                    tmp160.add( key );
                 }
-                message.setKeys0( tmp );
+                message.setKeys0( tmp160 );
                 return true;
             case SET_NEIGHBORS:
                 if ( buffer.readableBytes() < 1 )
@@ -553,7 +619,7 @@ public class MessageCodec
                     return false;
                 message.setInteger0( buffer.readInt() );
                 return true;
-            case PUBLIC_KEY:
+            //case PUBLIC_KEY:
             case PUBLIC_KEY_SIGNATURE:
                 if ( buffer.readableBytes() < 2 )
                     return false;
@@ -598,7 +664,6 @@ public class MessageCodec
                 message.setTwoBloomFilter0( sbf1, sbf2 );
                 return true;
             case EMPTY:
-            case RESERVED1:
             default:
                 return true;
         }

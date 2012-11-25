@@ -105,41 +105,31 @@ public class DefaultStorageReplication
     private void send( final PeerAddress other, final Number160 locationKey, final Number160 domainKey,
                        final Map<Number160, Data> dataMapConverted )
     {
-        peer.getConnectionBean().getConnectionReservation().reserve( 1 ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
-                                                                                      {
-                                                                                          @Override
-                                                                                          public void operationComplete( FutureChannelCreator future )
-                                                                                              throws Exception
-                                                                                          {
-                                                                                              if ( future.isSuccess() )
-                                                                                              {
-                                                                                                  FutureResponse futureResponse =
-                                                                                                      storageRPC.put( other,
-                                                                                                                      locationKey,
-                                                                                                                      domainKey,
-                                                                                                                      dataMapConverted,
-                                                                                                                      false,
-                                                                                                                      false,
-                                                                                                                      false,
-                                                                                                                      future.getChannelCreator(),
-                                                                                                                      forceUDP );
-                                                                                                  Utils.addReleaseListener( futureResponse,
-                                                                                                                            peer.getConnectionBean().getConnectionReservation(),
-                                                                                                                            future.getChannelCreator(),
-                                                                                                                            1 );
-                                                                                                  pendingFutures.put( futureResponse,
-                                                                                                                      Timings.currentTimeMillis() );
-                                                                                              }
-                                                                                              else
-                                                                                              {
-                                                                                                  if ( logger.isErrorEnabled() )
-                                                                                                  {
-                                                                                                      logger.error( "otherResponsible failed "
-                                                                                                          + future.getFailedReason() );
-                                                                                                  }
-                                                                                              }
-                                                                                          }
-                                                                                      } );
+        FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation().reserve( 1 );
+        futureChannelCreator.addListener( new BaseFutureAdapter<FutureChannelCreator>()
+        {
+            @Override
+            public void operationComplete( FutureChannelCreator future )
+                throws Exception
+            {
+                if ( future.isSuccess() )
+                {
+                    FutureResponse futureResponse =
+                        storageRPC.put( other, locationKey, domainKey, dataMapConverted, false, false, false,
+                                        future.getChannelCreator(), forceUDP, null );
+                    Utils.addReleaseListener( futureResponse, peer.getConnectionBean().getConnectionReservation(),
+                                              future.getChannelCreator(), 1 );
+                    pendingFutures.put( futureResponse, Timings.currentTimeMillis() );
+                }
+                else
+                {
+                    if ( logger.isErrorEnabled() )
+                    {
+                        logger.error( "otherResponsible failed " + future.getFailedReason() );
+                    }
+                }
+            }
+        } );
     }
 
     @Override

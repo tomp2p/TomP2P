@@ -120,13 +120,6 @@ public abstract class ReplyHandler
     public abstract Message handleResponse( Message message, boolean sign )
         throws Exception;
 
-    void nullCheck( Object... objs )
-    {
-        for ( Object obj : objs )
-            if ( obj == null )
-                throw new IllegalArgumentException( "Object cannot be null" );
-    }
-
     public void setSignReply( boolean sign )
     {
         this.sign = sign;

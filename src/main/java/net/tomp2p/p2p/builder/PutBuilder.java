@@ -81,7 +81,7 @@ public class PutBuilder
         return this;
     }
 
-    public PutBuilder setObject( Data data )
+    public PutBuilder setObject( Object data )
         throws IOException
     {
         return setData( new Data( data ) );

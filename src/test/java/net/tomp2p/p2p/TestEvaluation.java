@@ -10,6 +10,7 @@ import junit.framework.Assert;
 import net.tomp2p.Utils2;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -43,11 +44,11 @@ public class TestEvaluation
         test3.add( new Number160( 14 ) );
         rawKeys.put( pa3, test3 );
         VotingSchemeDHT evs = new VotingSchemeDHT();
-        Collection<Number160> tmp = evs.evaluate1( rawKeys );
-        Assert.assertEquals( false, tmp.contains( new Number160( 11 ) ) );
-        Assert.assertEquals( true, tmp.contains( new Number160( 12 ) ) );
-        Assert.assertEquals( true, tmp.contains( new Number160( 13 ) ) );
-        Assert.assertEquals( true, tmp.contains( new Number160( 14 ) ) );
+        Collection<Number480> tmp = evs.evaluate1( new Number160( 4 ), new Number160( 5 ), rawKeys, null );
+        Assert.assertEquals( false, tmp.contains( new Number480( new Number160( 4 ), new Number160( 5 ), new Number160( 11 ) )  ) );
+        Assert.assertEquals( true, tmp.contains( new Number480( new Number160( 4 ), new Number160( 5 ), new Number160( 12 ) )  ) );
+        Assert.assertEquals( true, tmp.contains( new Number480( new Number160( 4 ), new Number160( 5 ), new Number160( 13 ) )  ) );
+        Assert.assertEquals( true, tmp.contains( new Number480( new Number160( 4 ), new Number160( 5 ), new Number160( 14 ) )  ) );
     }
 
     @Test

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
@@ -32,11 +33,28 @@ public class CumulativeScheme
     implements EvaluatingSchemeDHT
 {
     @Override
-    public Collection<Number160> evaluate1( Map<PeerAddress, Collection<Number160>> rawKeys )
+    public Collection<Number480> evaluate1( Number160 locationKey, Number160 domainKey,
+                                            Map<PeerAddress, Collection<Number160>> rawKeys,
+                                            Map<PeerAddress, Collection<Number480>> rawKeys480 )
     {
-        Set<Number160> result = new HashSet<Number160>();
-        for ( Collection<Number160> tmp : rawKeys.values() )
-            result.addAll( tmp );
+        Set<Number480> result = new HashSet<Number480>();
+        if ( rawKeys != null )
+        {
+            for ( Collection<Number160> tmp : rawKeys.values() )
+            {
+                for ( Number160 contentKey : tmp )
+                {
+                    result.add( new Number480( locationKey, domainKey, contentKey ) );
+                }
+            }
+        }
+        if ( rawKeys480 != null )
+        {
+            for ( Collection<Number480> tmp : rawKeys480.values() )
+            {
+                result.addAll( tmp );
+            }
+        }
         return result;
     }
 

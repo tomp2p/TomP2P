@@ -15,10 +15,12 @@
  */
 package net.tomp2p.p2p;
 
+import net.tomp2p.rpc.SenderCacheStrategy;
+
 /**
  * This name was chosen over P2PConfiguration, as it already exists
  * 
- * @author draft
+ * @author Thomas Bocek
  */
 public class RequestP2PConfiguration
 {
@@ -32,14 +34,22 @@ public class RequestP2PConfiguration
     final private boolean forceUPD;
 
     final private boolean forceTCP;
+    
+    final private SenderCacheStrategy senderCacheStrategy;
 
     public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff )
     {
         this( minimumResults, maxFailure, parallelDiff, false, false );
     }
-
+    
     public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
                                     boolean forceTCP )
+    {
+        this( minimumResults, maxFailure, parallelDiff, forceUPD, forceTCP, null );
+    }
+
+    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
+                                    boolean forceTCP, SenderCacheStrategy senderCacheStrategy )
     {
         if ( minimumResults < 0 || maxFailure < 0 || parallelDiff < 0 )
             throw new IllegalArgumentException( "need to be larger or equals zero" );
@@ -48,11 +58,12 @@ public class RequestP2PConfiguration
         this.parallelDiff = parallelDiff;
         this.forceUPD = forceUPD;
         this.forceTCP = forceTCP;
+        this.senderCacheStrategy = senderCacheStrategy;
     }
 
     public RequestP2PConfiguration adjustMinimumResult( int minimumResultsLow )
     {
-        return new RequestP2PConfiguration( Math.min( minimumResultsLow, minimumResults ), maxFailure, parallelDiff );
+        return new RequestP2PConfiguration( Math.min( minimumResultsLow, minimumResults ), maxFailure, parallelDiff, forceUPD, forceTCP, senderCacheStrategy );
     }
 
     public int getMinimumResults()
@@ -83,5 +94,10 @@ public class RequestP2PConfiguration
     public boolean isForceTCP()
     {
         return forceTCP;
+    }
+    
+    public SenderCacheStrategy getSenderCacheStrategy()
+    {
+        return senderCacheStrategy;
     }
 }

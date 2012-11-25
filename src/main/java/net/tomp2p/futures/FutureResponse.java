@@ -43,6 +43,8 @@ public class FutureResponse
     // if set to raw, we expose the user directly to the Netty buffer, otherwise
     // we are converting byte[] arrays to objecs
     final private boolean raw;
+    
+    private int shared = 0;
 
     /**
      * Create the future and set the request message
@@ -221,5 +223,21 @@ public class FutureResponse
                 replyTimeoutHandler.cancel();
             }
         } );
+    }
+    
+    public void share()
+    {
+        synchronized ( lock )
+        {
+            shared ++;
+        }
+    }
+
+    public boolean isShared()
+    {
+        synchronized ( lock )
+        {
+            return shared > 0;
+        }
     }
 }

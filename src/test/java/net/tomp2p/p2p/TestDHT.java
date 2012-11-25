@@ -43,6 +43,7 @@ import net.tomp2p.peers.ShortString;
 import net.tomp2p.rpc.HashData;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
+import net.tomp2p.rpc.SenderCacheStrategy;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageMemory;
@@ -1945,6 +1946,47 @@ public class TestDHT
             master.shutdown();
         }
     }
+    
+    @Test
+    public void testBulk()
+        throws Exception
+    {
+        final Random rnd = new Random( 42L );
+        Peer p1 = null;
+        Peer p2 = null;
+        try
+        {
+            // setup (step 1)
+            p1 = new PeerMaker( new Number160( rnd ) ).setPorts( 4001 ).makeAndListen();
+            p2 = new PeerMaker( new Number160( rnd ) ).setPorts( 4002 ).makeAndListen();
+            p2.bootstrap().setPeerAddress( p1.getPeerAddress() ).start().awaitUninterruptibly();
+            p1.bootstrap().setPeerAddress( p2.getPeerAddress() ).start().awaitUninterruptibly();
+            // test (step 2)
+            SenderCacheStrategy senderCacheStrategy = new SenderCacheStrategy( 250, 10000 );
+            List<FutureDHT> list = new ArrayList<FutureDHT>();
+            for(int i=0;i<1000;i++)
+            {
+                RequestP2PConfiguration r = new RequestP2PConfiguration( 1, 0, 0, false, false, senderCacheStrategy);
+                list.add( p1.put( new Number160( rnd ) ).setObject( "test"+i ).setRequestP2PConfiguration( r ).start() );
+            }
+            for(FutureDHT futureDHT:list)
+            {
+                futureDHT.awaitUninterruptibly();
+                //System.out.println(futureDHT.isSuccess());
+            }
+            Assert.assertEquals( 1, p1.getPeerBean().getStatistics().getTCPChannelCreationCount());
+        }
+        catch (Throwable t)
+        {
+            t.printStackTrace( );
+        }
+        finally
+        {
+            p1.shutdown();
+            p2.shutdown();
+        }
+    }
+
 
     private void setData( Peer peer, String location, String domain, String content, Data data )
         throws IOException

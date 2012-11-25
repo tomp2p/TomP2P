@@ -101,7 +101,7 @@ public class TrackerRPC
                                         boolean signMessage, boolean primary, Set<Number160> knownPeers,
                                         ChannelCreator channelCreator, boolean forceUDP, boolean forceTCP )
     {
-        nullCheck( remotePeer, locationKey, domainKey );
+        Utils.nullCheck( remotePeer, locationKey, domainKey );
         final Message message =
             createMessage( remotePeer, Command.TRACKER_ADD, primary ? Type.REQUEST_3 : Type.REQUEST_1 );
         if ( signMessage )
@@ -146,7 +146,7 @@ public class TrackerRPC
                                           Set<Number160> knownPeers, ChannelCreator channelCreator, boolean forceUDP,
                                           boolean forceTCP )
     {
-        nullCheck( remotePeer, locationKey, domainKey );
+        Utils.nullCheck( remotePeer, locationKey, domainKey );
         final Message message = createMessage( remotePeer, Command.TRACKER_GET, Type.REQUEST_1 );
         if ( signMessage )
         {

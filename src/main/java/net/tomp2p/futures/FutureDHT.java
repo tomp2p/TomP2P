@@ -23,9 +23,11 @@ import java.util.Map;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Utils;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
@@ -60,6 +62,12 @@ public class FutureDHT
 
     // Storage of results
     private Map<PeerAddress, Collection<Number160>> rawKeys;
+    
+    private Map<PeerAddress, Collection<Number480>> rawKeys480;    
+
+    private Number160 locationKey;
+    
+    private Number160 domainKey;
 
     private Map<PeerAddress, Map<Number160, Data>> rawData;
 
@@ -74,6 +82,8 @@ public class FutureDHT
 
     // used for general purpose setDone()
     private Object attachement;
+    
+    private boolean releaseEarly = false;
 
     public FutureDHT()
     {
@@ -150,11 +160,14 @@ public class FutureDHT
      * was successful. This means that we need to further check if the other peers have denied the storage (e.g., due to
      * no storage space, no security permissions). Further evaluation can be retrieved with {@link #getAvgStoredKeys()}
      * or if the evaluation should be done by the user, use {@link #getRawKeys()}.
+     * @param domainKey 
+     * @param locationKey 
      * 
      * @param rawKeys The keys that have been stored with information on which peer it has been stored
+     * @param rawData480 
      * @param ifAbsent Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys( final Map<PeerAddress, Collection<Number160>> rawKeys )
+    public void setStoredKeys( Number160 locationKey, Number160 domainKey, final Map<PeerAddress, Collection<Number160>> rawKeys, Map<PeerAddress, Collection<Number480>> rawKeys480 )
     {
         synchronized ( lock )
         {
@@ -163,7 +176,10 @@ public class FutureDHT
                 return;
             }
             this.rawKeys = rawKeys;
-            final int size = rawKeys.size();
+            this.rawKeys480 = rawKeys480;
+            this.locationKey = locationKey;
+            this.domainKey = domainKey;
+            final int size = (rawKeys == null ? 0 : rawKeys.size()) + (rawKeys480 == null ? 0 : rawKeys480.size());
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
             this.reason =
@@ -358,15 +374,31 @@ public class FutureDHT
 
     /**
      * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
-     * information, by either a majority vote or cumulation.
+     * information, by either a majority vote or cumulation. Use {@link FutureDHT#getEvalKeys()} instead of this method. 
      * 
      * @return The keys that have been stored or removed
      */
+    @Deprecated
     public Collection<Number160> getKeys()
     {
         synchronized ( lock )
         {
-            return evaluationScheme.evaluate1( rawKeys );
+            Collection<Number480> result = evaluationScheme.evaluate1( locationKey, domainKey, rawKeys, rawKeys480 );
+            return Utils.extractContentKeys(result);
+        }
+    }
+    
+    /**
+     * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
+     * information, by either a majority vote or cumulation. Use {@link FutureDHT#getEvalKeys()} instead of this method. 
+     * 
+     * @return The keys that have been stored or removed
+     */
+    public Collection<Number480> getEvalKeys()
+    {
+        synchronized ( lock )
+        {
+            return evaluationScheme.evaluate1( locationKey, domainKey, rawKeys, rawKeys480 );
         }
     }
 
@@ -436,6 +468,30 @@ public class FutureDHT
         synchronized ( lock )
         {
             return this.evaluationScheme.evaluate4( rawChannels );
+        }
+    }
+    
+    public Map<PeerAddress, Collection<Number480>> getRawKeys480()
+    {
+        synchronized ( lock )
+        {
+            return rawKeys480;
+        }
+    }
+
+    public Number160 getLocationKey()
+    {
+        synchronized ( lock )
+        {
+            return locationKey;
+        }
+    }
+    
+    public Number160 getDomainKey()
+    {
+        synchronized ( lock )
+        {
+            return domainKey;
         }
     }
 
@@ -546,6 +602,22 @@ public class FutureDHT
             {
                 cancellable.cancel();
             }
+        }
+    }
+
+    public void releaseEarly()
+    {
+        synchronized ( lock )
+        {
+            releaseEarly = true;
+        }
+    }
+    
+    public boolean isReleaseEarly()
+    {
+        synchronized ( lock )
+        {
+            return releaseEarly;
         }
     }
 }

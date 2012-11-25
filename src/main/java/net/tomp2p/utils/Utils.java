@@ -51,7 +51,9 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerData;
 
@@ -529,7 +531,17 @@ public class Utils
             public void operationComplete( BaseFuture future )
                 throws Exception
             {
-                connectionReservation.release( channelCreator );
+                if(future instanceof FutureDHT)
+                {
+                    if(!((FutureDHT)future).isReleaseEarly())
+                    {
+                        connectionReservation.release( channelCreator );
+                    }
+                }
+                else
+                {
+                    connectionReservation.release( channelCreator );
+                }
             }
         }, false );
     }
@@ -635,5 +647,41 @@ public class Utils
             throw new IOException( "Could not create temp directory: " + temp.getAbsolutePath() );
         }
         return ( temp );
+    }
+
+    public static void nullCheck( Object... objects )
+    {
+        int counter = 0;
+        for ( Object object : objects )
+        {
+            if ( object == null )
+            {
+                throw new IllegalArgumentException( "Null not allowed in paramenetr nr. " + counter );
+            }
+            counter ++;
+        }
+
+    }
+    
+    public static boolean nullCheckRetVal( Object... objects )
+    {
+        for ( Object object : objects )
+        {
+            if ( object == null )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Collection<Number160> extractContentKeys( Collection<Number480> collection )
+    {
+        Collection<Number160> result = new ArrayList<Number160>(collection.size());
+        for(Number480 number480 : collection)
+        {
+            result.add( number480.getContentKey() );
+        }
+        return result;
     }
 }

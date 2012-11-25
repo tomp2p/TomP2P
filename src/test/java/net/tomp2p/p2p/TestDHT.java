@@ -1974,11 +1974,7 @@ public class TestDHT
                 futureDHT.awaitUninterruptibly();
                 //System.out.println(futureDHT.isSuccess());
             }
-            Assert.assertEquals( 1, p1.getPeerBean().getStatistics().getTCPChannelCreationCount());
-        }
-        catch (Throwable t)
-        {
-            t.printStackTrace( );
+            Assert.assertEquals( 2, p1.getPeerBean().getStatistics().getTCPChannelCreationCount());
         }
         finally
         {

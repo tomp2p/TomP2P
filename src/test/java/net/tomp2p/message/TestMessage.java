@@ -283,7 +283,7 @@ public class TestMessage
         KeyPairGenerator gen = KeyPairGenerator.getInstance( "DSA" );
         KeyPair pair1 = gen.generateKeyPair();
         m1.setPublicKeyAndSign( pair1 );
-        Map<Number480, Data> dataMap = new HashMap<Number480, Data>();
+        Map<Number480, Data> dataMap = new HashMap<Number480, Data>(1000);
         Random rnd = new Random( 42l );
         for ( int i = 0; i < 1000; i++ )
         {
@@ -386,12 +386,10 @@ public class TestMessage
             Assert.assertNotNull( m2.getKeys() );
             Assert.assertEquals( m1.getKeys().size(), m2.getKeys().size() );
             Iterator<Number160> it1 = m1.getKeys().iterator();
-            Iterator<Number160> it2 = m2.getKeys().iterator();
-            while ( it1.hasNext() && it2.hasNext() )
+            while ( it1.hasNext()  )
             {
                 Number160 key1 = it1.next();
-                Number160 key2 = it2.next();
-                Assert.assertEquals( key1, key2 );
+                Assert.assertEquals( true, m2.getKeys().contains( key1 ) );
             }
         }
         
@@ -401,12 +399,10 @@ public class TestMessage
             Assert.assertNotNull( m2.getKeys480() );
             Assert.assertEquals( m1.getKeys480().size(), m2.getKeys480().size() );
             Iterator<Number480> it1 = m1.getKeys480().iterator();
-            Iterator<Number480> it2 = m2.getKeys480().iterator();
-            while ( it1.hasNext() && it2.hasNext() )
+            while ( it1.hasNext() )
             {
                 Number480 key1 = it1.next();
-                Number480 key2 = it2.next();
-                Assert.assertEquals( key1, key2 );
+                Assert.assertEquals( true, m2.getKeys480().contains( key1 ) );
             }
         }
         
@@ -417,15 +413,13 @@ public class TestMessage
             Assert.assertNotNull( m2.getDataMap() );
             Assert.assertEquals( m1.getDataMap().size(), m2.getDataMap().size() );
             Iterator<Number160> it1 = m1.getDataMap().keySet().iterator();
-            Iterator<Number160> it2 = m2.getDataMap().keySet().iterator();
-            while ( it1.hasNext() && it2.hasNext() )
+            while ( it1.hasNext() )
             {
                 Number160 key1 = it1.next();
-                Number160 key2 = it2.next();
-                Assert.assertEquals( key1, key2 );
-                Assert.assertEquals( m1.getDataMap().get( key1 ).getLength(), m2.getDataMap().get( key2 ).getLength() );
+                Assert.assertEquals( true, m2.getDataMap().containsKey( key1 ) );
+                Assert.assertEquals( m1.getDataMap().get( key1 ).getLength(), m2.getDataMap().get( key1 ).getLength() );
                 Data d1 = m1.getDataMap().get( key1 );
-                Data d2 = m2.getDataMap().get( key2 );
+                Data d2 = m2.getDataMap().get( key1 );
                 Assert.assertArrayEquals( d1.getData(), d2.getData() );
             }
         }
@@ -436,16 +430,14 @@ public class TestMessage
             Assert.assertNotNull( m2.getDataMap480() );
             Assert.assertEquals( m1.getDataMap480().size(), m2.getDataMap480().size() );
             Iterator<Number480> it1 = m1.getDataMap480().keySet().iterator();
-            Iterator<Number480> it2 = m2.getDataMap480().keySet().iterator();
-            while ( it1.hasNext() && it2.hasNext() )
+            while ( it1.hasNext() )
             {
                 Number480 key1 = it1.next();
-                Number480 key2 = it2.next();
-                Assert.assertEquals( key1, key2 );
+                Assert.assertEquals( true, m2.getDataMap480().containsKey( key1 ) );
                 Assert.assertEquals( m1.getDataMap480().get( key1 ).getLength(),
-                                     m2.getDataMap480().get( key2 ).getLength() );
+                                     m2.getDataMap480().get( key1 ).getLength() );
                 Data d1 = m1.getDataMap480().get( key1 );
-                Data d2 = m2.getDataMap480().get( key2 );
+                Data d2 = m2.getDataMap480().get( key1 );
                 Assert.assertArrayEquals( d1.getData(), d2.getData() );
             }
         }
@@ -456,13 +448,11 @@ public class TestMessage
             Assert.assertNotNull( m2.getKeyMap() );
             Assert.assertEquals( m1.getKeyMap().size(), m2.getKeyMap().size() );
             Iterator<Number160> it1 = m1.getKeyMap().keySet().iterator();
-            Iterator<Number160> it2 = m2.getKeyMap().keySet().iterator();
-            while ( it1.hasNext() && it2.hasNext() )
+            while ( it1.hasNext())
             {
                 Number160 key1 = it1.next();
-                Number160 key2 = it2.next();
-                Assert.assertEquals( key1, key2 );
-                Assert.assertEquals( m1.getKeyMap().get( key1 ), m2.getKeyMap().get( key2 ) );
+                Assert.assertEquals( true, m2.getKeyMap().containsKey( key1 ) );
+                Assert.assertEquals( m1.getKeyMap().get( key1 ), m2.getKeyMap().get( key1 ) );
             }
         }
 

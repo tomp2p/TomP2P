@@ -81,16 +81,16 @@ public class PutBuilder
         return this;
     }
 
-    public PutBuilder setObject( Object data )
+    public PutBuilder setObject( Object object )
         throws IOException
     {
-        return setData( new Data( data ) );
+        return setData( new Data( object ) );
     }
 
-    public PutBuilder setKeyObject( Number160 contentKey, Data data )
+    public PutBuilder setKeyObject( Number160 contentKey, Object object )
         throws IOException
     {
-        return setData( contentKey, new Data( data ) );
+        return setData( contentKey, new Data( object ) );
     }
 
     public Map<Number160, Data> getDataMap()

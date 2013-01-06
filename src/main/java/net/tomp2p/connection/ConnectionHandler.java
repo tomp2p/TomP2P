@@ -339,6 +339,7 @@ public class ConnectionHandler
         // as suggested by
         // http://stackoverflow.com/questions/8655973/latency-in-netty-due-to-passing-requests-from-boss-thread-to-worker-thread
         bootstrap.setOption( "child.tcpNoDelay", true );
+        bootstrap.setOption( "child.keepAlive" ,true);
         Channel channel = bootstrap.bind( listenAddressesTCP );
         connectionBean.getChannelGroup().add( channel );
         logger.info( "Listening on TCP socket: " + listenAddressesTCP );

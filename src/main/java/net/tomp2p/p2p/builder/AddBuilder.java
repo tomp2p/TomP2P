@@ -66,10 +66,10 @@ public class AddBuilder
         return this;
     }
 
-    public AddBuilder setObject( Data data )
+    public AddBuilder setObject( Object object )
         throws IOException
     {
-        return setData( new Data( data ) );
+        return setData( new Data( object ) );
     }
 
     public boolean isList()

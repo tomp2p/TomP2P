@@ -19,30 +19,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The {@link BaseFuture} always completes either successfully or failed. In either case a {@link BaseFutureListener} is
- * called. If this future fails, then exception is caught. Since this should never happen in this framework, we use an
- * adapter where we only have to define BaseFutureListener#operationComplete(BaseFuture). Since the future is exposed to
- * the application, that may have exceptions in the listener, developers should rather use
- * BaseFutureListener#operationComplete(BaseFuture).
+ * The {@link BaseFuture} always completes either successfully or failed. In
+ * either case a {@link BaseFutureListener} is called. If this future fails,
+ * then exception is caught. Since this should never happen in this framework,
+ * we use an adapter where we only have to define
+ * BaseFutureListener#operationComplete(BaseFuture). Since the future is exposed
+ * to the application, that may have exceptions in the listener, developers
+ * should rather use BaseFutureListener#operationComplete(BaseFuture).
  * 
  * @author Thomas Bocek
  * @param <F>
  */
-public abstract class BaseFutureAdapter<F extends BaseFuture>
-    implements BaseFutureListener<F>
-{
-    final private static Logger logger = LoggerFactory.getLogger( BaseFutureAdapter.class );
+public abstract class BaseFutureAdapter<F extends BaseFuture> implements BaseFutureListener<F> {
+    final private static Logger logger = LoggerFactory.getLogger(BaseFutureAdapter.class);
 
     /**
      * Prints out the error using the logger and System.err.
      */
     @Override
-    public void exceptionCaught( final Throwable t )
-        throws Exception
-    {
-        if ( logger.isErrorEnabled() )
-        {
-            logger.error( "BaseFutureAdapter exceptionCaught()", t );
+    public void exceptionCaught(final Throwable t) throws Exception {
+        if (logger.isErrorEnabled()) {
+            logger.error("BaseFutureAdapter exceptionCaught()", t);
         }
         t.printStackTrace();
     }

@@ -16,19 +16,20 @@
 package net.tomp2p.futures;
 
 /**
- * A future runnable is used for running futures in the background (in a different thread)
+ * A future runnable is used for running futures in the background (in a
+ * different thread)
  * 
  * @author Thomas Bocek
  */
-public interface FutureRunnable
-    extends Runnable
-{
+public interface FutureRunnable extends Runnable {
 
     /**
-     * A run() method that fails is very silent, thus we provide failed, which can be used to set a future to fail.
+     * A run() method that fails is very silent, thus we provide failed, which
+     * can be used to set a future to fail.
      * 
-     * @param reason The reason why something failed.
+     * @param reason
+     *            The reason why something failed.
      */
-    public abstract void failed( String reason );
+    public abstract void failed(String reason);
 
 }

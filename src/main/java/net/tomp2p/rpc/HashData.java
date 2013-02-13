@@ -24,25 +24,21 @@ import net.tomp2p.storage.Data;
  * 
  * @author Thomas Bocek
  */
-public class HashData
-{
+public class HashData {
     final private Number160 hash;
 
     final private Data data;
 
-    public HashData( Number160 hash, Data data )
-    {
+    public HashData(Number160 hash, Data data) {
         this.hash = hash;
         this.data = data;
     }
 
-    public Number160 getHash()
-    {
+    public Number160 getHash() {
         return hash;
     }
 
-    public Data getData()
-    {
+    public Data getData() {
         return data;
     }
 }

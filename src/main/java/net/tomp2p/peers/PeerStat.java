@@ -15,54 +15,43 @@
  */
 package net.tomp2p.peers;
 
-public class PeerStat
-{
+public class PeerStat {
     private volatile long lastSeenOnline = 0;
 
     private volatile int checked = 0;
 
     private volatile long created = 0;
 
-    public void setLastSeenOnline( long lastSeenOnline )
-    {
+    public void setLastSeenOnline(long lastSeenOnline) {
         this.lastSeenOnline = lastSeenOnline;
     }
 
-    public long getLastSeenOnline()
-    {
+    public long getLastSeenOnline() {
         return lastSeenOnline;
     }
 
-    public void incChecked()
-    {
-        synchronized ( this )
-        {
+    public void incChecked() {
+        synchronized (this) {
             this.checked++;
         }
     }
 
-    public int getChecked()
-    {
-        synchronized ( this )
-        {
+    public int getChecked() {
+        synchronized (this) {
             return checked;
         }
     }
 
-    public void setCreated( long created )
-    {
+    public void setCreated(long created) {
         this.created = created;
     }
 
-    public long getCreated()
-    {
+    public long getCreated() {
         return created;
     }
 
-    public long onlineTime()
-    {
-        synchronized ( this )
-        {
+    public long onlineTime() {
+        synchronized (this) {
             return lastSeenOnline - created;
         }
     }

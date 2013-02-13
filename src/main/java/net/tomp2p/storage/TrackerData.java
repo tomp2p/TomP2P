@@ -17,9 +17,7 @@ package net.tomp2p.storage;
 
 import net.tomp2p.peers.PeerAddress;
 
-public class TrackerData
-    implements Comparable<TrackerData>
-{
+public class TrackerData implements Comparable<TrackerData> {
     final private PeerAddress peerAddress;
 
     final private PeerAddress referrer;
@@ -32,14 +30,12 @@ public class TrackerData
 
     final private boolean couldProvideMoreData;
 
-    public TrackerData( PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length )
-    {
-        this( peerAddress, referrer, attachement, offset, length, false );
+    public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length) {
+        this(peerAddress, referrer, attachement, offset, length, false);
     }
 
-    public TrackerData( PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length,
-                        boolean couldProvideMoreData )
-    {
+    public TrackerData(PeerAddress peerAddress, PeerAddress referrer, byte[] attachement, int offset, int length,
+            boolean couldProvideMoreData) {
         this.peerAddress = peerAddress;
         this.referrer = referrer;
         this.attachement = attachement;
@@ -48,64 +44,53 @@ public class TrackerData
         this.couldProvideMoreData = couldProvideMoreData;
     }
 
-    public PeerAddress getPeerAddress()
-    {
+    public PeerAddress getPeerAddress() {
         return peerAddress;
     }
 
-    public PeerAddress getReferrer()
-    {
+    public PeerAddress getReferrer() {
         return referrer;
     }
 
-    public byte[] getAttachement()
-    {
+    public byte[] getAttachement() {
         return attachement;
     }
 
-    public int getOffset()
-    {
+    public int getOffset() {
         return offset;
     }
 
-    public int getLength()
-    {
+    public int getLength() {
         return length;
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !( obj instanceof TrackerData ) )
-        {
+    public boolean equals(Object obj) {
+        if (!(obj instanceof TrackerData)) {
             return false;
         }
         TrackerData trackerData = (TrackerData) obj;
-        return trackerData.getPeerAddress().getID().equals( getPeerAddress().getID() );
+        return trackerData.getPeerAddress().getID().equals(getPeerAddress().getID());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return getPeerAddress().getID().hashCode();
     }
 
     @Override
-    public int compareTo( TrackerData o )
-    {
-        return getPeerAddress().getID().compareTo( o.getPeerAddress().getID() );
+    public int compareTo(TrackerData o) {
+        return getPeerAddress().getID().compareTo(o.getPeerAddress().getID());
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append( "p:" ).append( peerAddress ).append( ",l:" ).append( length );
+        sb.append("p:").append(peerAddress).append(",l:").append(length);
         return sb.toString();
     }
 
-    public boolean couldProvideMoreData()
-    {
+    public boolean couldProvideMoreData() {
         return couldProvideMoreData;
     }
 }

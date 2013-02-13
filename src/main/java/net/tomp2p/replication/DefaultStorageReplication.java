@@ -37,10 +37,8 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultStorageReplication
-    implements ResponsibilityListener, Runnable
-{
-    final private static Logger logger = LoggerFactory.getLogger( DefaultStorageReplication.class );
+public class DefaultStorageReplication implements ResponsibilityListener, Runnable {
+    final private static Logger logger = LoggerFactory.getLogger(DefaultStorageReplication.class);
 
     private final StorageGeneric storage;
 
@@ -52,9 +50,8 @@ public class DefaultStorageReplication
 
     private final boolean forceUDP;
 
-    public DefaultStorageReplication( Peer peer, StorageGeneric storage, StorageRPC storageRPC,
-                                      Map<BaseFuture, Long> pendingFutures, boolean forceUDP )
-    {
+    public DefaultStorageReplication(Peer peer, StorageGeneric storage, StorageRPC storageRPC,
+            Map<BaseFuture, Long> pendingFutures, boolean forceUDP) {
         this.peer = peer;
         this.storage = storage;
         this.storageRPC = storageRPC;
@@ -63,127 +60,101 @@ public class DefaultStorageReplication
     }
 
     @Override
-    public void otherResponsible( final Number160 locationKey, final PeerAddress other )
-    {
-        if ( logger.isDebugEnabled() )
-        {
-            logger.debug( "[storage] Other peer " + other + " is responsible for " + locationKey + " I'm "
-                + storageRPC.getPeerAddress() );
+    public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("[storage] Other peer " + other + " is responsible for " + locationKey + " I'm "
+                    + storageRPC.getPeerAddress());
         }
-        final Map<Number480, Data> dataMap = storage.subMap( locationKey );
+        final Map<Number480, Data> dataMap = storage.subMap(locationKey);
         Number160 domainKeyOld = null;
         Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
-        for ( Map.Entry<Number480, Data> entry : dataMap.entrySet() )
-        {
+        for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
             final Number160 domainKey = entry.getKey().getDomainKey();
             final Number160 contentKey = entry.getKey().getContentKey();
             final Data data = entry.getValue();
-            if ( logger.isDebugEnabled() )
-            {
-                logger.debug( "transfer from " + storageRPC.getPeerAddress() + " to " + other + " for key "
-                    + locationKey );
+            if (logger.isDebugEnabled()) {
+                logger.debug("transfer from " + storageRPC.getPeerAddress() + " to " + other + " for key "
+                        + locationKey);
             }
 
-            if ( domainKeyOld == null || domainKeyOld.equals( domainKey ) )
-            {
-                dataMapConverted.put( contentKey, data );
-            }
-            else
-            {
-                final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>( dataMapConverted );
-                send( other, locationKey, domainKey, dataMapConverted1 );
+            if (domainKeyOld == null || domainKeyOld.equals(domainKey)) {
+                dataMapConverted.put(contentKey, data);
+            } else {
+                final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
+                send(other, locationKey, domainKey, dataMapConverted1);
                 dataMapConverted.clear();
             }
             domainKeyOld = domainKey;
         }
-        if ( !dataMapConverted.isEmpty() )
-        {
-            send( other, locationKey, domainKeyOld, dataMapConverted );
+        if (!dataMapConverted.isEmpty()) {
+            send(other, locationKey, domainKeyOld, dataMapConverted);
         }
     }
 
-    private void send( final PeerAddress other, final Number160 locationKey, final Number160 domainKey,
-                       final Map<Number160, Data> dataMapConverted )
-    {
-        FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation().reserve( 1 );
-        futureChannelCreator.addListener( new BaseFutureAdapter<FutureChannelCreator>()
-        {
+    private void send(final PeerAddress other, final Number160 locationKey, final Number160 domainKey,
+            final Map<Number160, Data> dataMapConverted) {
+        FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation().reserve(1);
+        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
-            public void operationComplete( FutureChannelCreator future )
-                throws Exception
-            {
-                if ( future.isSuccess() )
-                {
-                    FutureResponse futureResponse =
-                        storageRPC.put( other, locationKey, domainKey, dataMapConverted, false, false, false,
-                                        future.getChannelCreator(), forceUDP, null );
-                    Utils.addReleaseListener( futureResponse, peer.getConnectionBean().getConnectionReservation(),
-                                              future.getChannelCreator(), 1 );
-                    pendingFutures.put( futureResponse, Timings.currentTimeMillis() );
-                }
-                else
-                {
-                    if ( logger.isErrorEnabled() )
-                    {
-                        logger.error( "otherResponsible failed " + future.getFailedReason() );
+            public void operationComplete(FutureChannelCreator future) throws Exception {
+                if (future.isSuccess()) {
+                    FutureResponse futureResponse = storageRPC.put(other, locationKey, domainKey, dataMapConverted,
+                            false, false, false, future.getChannelCreator(), forceUDP, null);
+                    Utils.addReleaseListener(futureResponse, peer.getConnectionBean().getConnectionReservation(),
+                            future.getChannelCreator(), 1);
+                    pendingFutures.put(futureResponse, Timings.currentTimeMillis());
+                } else {
+                    if (logger.isErrorEnabled()) {
+                        logger.error("otherResponsible failed " + future.getFailedReason());
                     }
                 }
             }
-        } );
+        });
     }
 
     @Override
-    public void meResponsible( Number160 locationKey )
-    {
-        if ( logger.isDebugEnabled() )
-            logger.debug( "[storage] I (" + storageRPC.getPeerAddress() + ") now responsible for " + locationKey );
-        // TODO: we could speed this up a little and trigger the maintenance right away
+    public void meResponsible(Number160 locationKey) {
+        if (logger.isDebugEnabled())
+            logger.debug("[storage] I (" + storageRPC.getPeerAddress() + ") now responsible for " + locationKey);
+        // TODO: we could speed this up a little and trigger the maintenance
+        // right away
     }
 
     @Override
-    public void run()
-    {
+    public void run() {
         // we get called every x seconds for content we are responsible for. So
         // we need to make sure that there are enough copies. The easy way is to
         // publish it again... The good way is to do a diff
-        Collection<Number160> locationKeys = storage.findContentForResponsiblePeerID( peer.getPeerID() );
-        if ( locationKeys == null )
-        {
+        Collection<Number160> locationKeys = storage.findContentForResponsiblePeerID(peer.getPeerID());
+        if (locationKeys == null) {
             return;
         }
 
-        for ( Number160 locationKey : locationKeys )
-        {
-            final Map<Number480, Data> dataMap = storage.subMap( locationKey );
+        for (Number160 locationKey : locationKeys) {
+            final Map<Number480, Data> dataMap = storage.subMap(locationKey);
             Number160 domainKeyOld = null;
             Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
-            for ( Map.Entry<Number480, Data> entry : dataMap.entrySet() )
-            {
+            for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
                 final Number160 domainKey = entry.getKey().getDomainKey();
                 final Number160 contentKey = entry.getKey().getContentKey();
                 final Data data = entry.getValue();
-                if ( logger.isDebugEnabled() )
-                {
-                    logger.debug( "[storage refresh] I (" + storageRPC.getPeerAddress() + ") restore " + locationKey );
+                if (logger.isDebugEnabled()) {
+                    logger.debug("[storage refresh] I (" + storageRPC.getPeerAddress() + ") restore " + locationKey);
                 }
-                if ( domainKeyOld == null || domainKeyOld.equals( domainKey ) )
-                {
-                    dataMapConverted.put( contentKey, data );
-                }
-                else
-                {
-                    final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>( dataMapConverted );
-                    pendingFutures.put( peer.put( locationKey ).setDataMap( dataMapConverted1 ).setDomainKey( domainKey ).setPutIfAbsent( true ).start(),
-                                        System.currentTimeMillis() );
+                if (domainKeyOld == null || domainKeyOld.equals(domainKey)) {
+                    dataMapConverted.put(contentKey, data);
+                } else {
+                    final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
+                    pendingFutures.put(peer.put(locationKey).setDataMap(dataMapConverted1).setDomainKey(domainKey)
+                            .setPutIfAbsent(true).start(), System.currentTimeMillis());
                     dataMapConverted.clear();
-                    dataMapConverted.put( contentKey, data );
+                    dataMapConverted.put(contentKey, data);
                 }
                 domainKeyOld = domainKey;
             }
-            if ( !dataMapConverted.isEmpty() && domainKeyOld != null )
-            {
-                pendingFutures.put( peer.put( locationKey ).setDataMap( dataMapConverted ).setDomainKey( domainKeyOld ).setPutIfAbsent( true ).start(),
-                                    System.currentTimeMillis() );
+            if (!dataMapConverted.isEmpty() && domainKeyOld != null) {
+                pendingFutures.put(peer.put(locationKey).setDataMap(dataMapConverted).setDomainKey(domainKeyOld)
+                        .setPutIfAbsent(true).start(), System.currentTimeMillis());
             }
         }
     }

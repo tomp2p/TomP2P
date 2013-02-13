@@ -22,8 +22,7 @@ import net.tomp2p.rpc.SenderCacheStrategy;
  * 
  * @author Thomas Bocek
  */
-public class RequestP2PConfiguration
-{
+public class RequestP2PConfiguration {
     final private int minimumResults;
 
     final private int maxFailure;
@@ -34,25 +33,22 @@ public class RequestP2PConfiguration
     final private boolean forceUPD;
 
     final private boolean forceTCP;
-    
+
     final private SenderCacheStrategy senderCacheStrategy;
 
-    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff )
-    {
-        this( minimumResults, maxFailure, parallelDiff, false, false );
-    }
-    
-    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
-                                    boolean forceTCP )
-    {
-        this( minimumResults, maxFailure, parallelDiff, forceUPD, forceTCP, null );
+    public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff) {
+        this(minimumResults, maxFailure, parallelDiff, false, false);
     }
 
-    public RequestP2PConfiguration( int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
-                                    boolean forceTCP, SenderCacheStrategy senderCacheStrategy )
-    {
-        if ( minimumResults < 0 || maxFailure < 0 || parallelDiff < 0 )
-            throw new IllegalArgumentException( "need to be larger or equals zero" );
+    public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
+            boolean forceTCP) {
+        this(minimumResults, maxFailure, parallelDiff, forceUPD, forceTCP, null);
+    }
+
+    public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
+            boolean forceTCP, SenderCacheStrategy senderCacheStrategy) {
+        if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0)
+            throw new IllegalArgumentException("need to be larger or equals zero");
         this.minimumResults = minimumResults;
         this.maxFailure = maxFailure;
         this.parallelDiff = parallelDiff;
@@ -61,43 +57,36 @@ public class RequestP2PConfiguration
         this.senderCacheStrategy = senderCacheStrategy;
     }
 
-    public RequestP2PConfiguration adjustMinimumResult( int minimumResultsLow )
-    {
-        return new RequestP2PConfiguration( Math.min( minimumResultsLow, minimumResults ), maxFailure, parallelDiff, forceUPD, forceTCP, senderCacheStrategy );
+    public RequestP2PConfiguration adjustMinimumResult(int minimumResultsLow) {
+        return new RequestP2PConfiguration(Math.min(minimumResultsLow, minimumResults), maxFailure, parallelDiff,
+                forceUPD, forceTCP, senderCacheStrategy);
     }
 
-    public int getMinimumResults()
-    {
+    public int getMinimumResults() {
         return minimumResults;
     }
 
-    public int getMaxFailure()
-    {
+    public int getMaxFailure() {
         return maxFailure;
     }
 
-    public int getParallelDiff()
-    {
+    public int getParallelDiff() {
         return parallelDiff;
     }
 
-    public int getParallel()
-    {
+    public int getParallel() {
         return minimumResults + parallelDiff;
     }
 
-    public boolean isForceUPD()
-    {
+    public boolean isForceUPD() {
         return forceUPD;
     }
 
-    public boolean isForceTCP()
-    {
+    public boolean isForceTCP() {
         return forceTCP;
     }
-    
-    public SenderCacheStrategy getSenderCacheStrategy()
-    {
+
+    public SenderCacheStrategy getSenderCacheStrategy() {
         return senderCacheStrategy;
     }
 }

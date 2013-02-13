@@ -50,9 +50,8 @@ import net.tomp2p.task.AsyncTask;
 import net.tomp2p.task.TaskManager;
 import net.tomp2p.utils.Utils;
 
-public class PeerMaker
-{
-    final private static KeyPair EMPTY_KEYPAIR = new KeyPair( null, null );
+public class PeerMaker {
+    final private static KeyPair EMPTY_KEYPAIR = new KeyPair(null, null);
 
     // required
     final private Number160 peerId;
@@ -135,650 +134,539 @@ public class PeerMaker
     private boolean enableBroadcast = true;
 
     private Random rnd;
-    
+
     private MapAcceptHandler mapAcceptHandler;
 
-    public PeerMaker( final Number160 peerId )
-    {
+    public PeerMaker(final Number160 peerId) {
         this.peerId = peerId;
     }
 
-    public PeerMaker( final KeyPair keyPair )
-    {
-        this.peerId = Utils.makeSHAHash( keyPair.getPublic().getEncoded() );
+    public PeerMaker(final KeyPair keyPair) {
+        this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
         this.keyPair = keyPair;
     }
 
-    public Peer makeAndListen()
-        throws IOException
-    {
-        if ( configuration == null )
-        {
+    public Peer makeAndListen() throws IOException {
+        if (configuration == null) {
             configuration = new ConnectionConfiguration();
         }
-        if ( mapAcceptHandler == null)
-        {
-            mapAcceptHandler = new DefaultMapAcceptHandler( false );
+        if (mapAcceptHandler == null) {
+            mapAcceptHandler = new DefaultMapAcceptHandler(false);
         }
-        final PeerMap peerMap =
-            new PeerMap( peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
-                         getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), mapAcceptHandler );
-        final Peer peer =
-            new Peer( getP2PId(), peerId, keyPair, getMaintenanceThreads(), getReplicationThreads(), configuration,
-                      peerMap, getMaxMessageSize() );
+        final PeerMap peerMap = new PeerMap(peerId, getBagSize(), getCacheTimeoutMillis(), getMaxNrBeforeExclude(),
+                getWaitingTimeBetweenNodeMaintenenceSeconds(), getCacheSize(), mapAcceptHandler);
+        final Peer peer = new Peer(getP2PId(), peerId, keyPair, getMaintenanceThreads(), getReplicationThreads(),
+                configuration, peerMap, getMaxMessageSize());
 
         final ConnectionHandler connectionHandler;
-        if ( getMasterPeer() != null )
-        {
-            connectionHandler = peer.listen( getMasterPeer() );
+        if (getMasterPeer() != null) {
+            connectionHandler = peer.listen(getMasterPeer());
+        } else {
+            connectionHandler = peer.listen(udpPort, tcpPort, bindings, fileMessageLogger, workerThreads);
         }
-        else
-        {
-            connectionHandler = peer.listen( udpPort, tcpPort, bindings, fileMessageLogger, workerThreads );
-        }
-        init( peer, connectionHandler, peerMap.getStatistics() );
+        init(peer, connectionHandler, peerMap.getStatistics());
         return peer;
     }
 
-    private void init( final Peer peer, final ConnectionHandler connectionHandler, final Statistics statistics )
-    {
-        if ( rnd == null )
-        {
+    private void init(final Peer peer, final ConnectionHandler connectionHandler, final Statistics statistics) {
+        if (rnd == null) {
             rnd = new Random();
         }
         PeerBean peerBean = connectionHandler.getPeerBean();
-        peerBean.setPeer( peer );
-        peerBean.setStatistics( statistics );
+        peerBean.setPeer(peer);
+        peerBean.setStatistics(statistics);
         ConnectionBean connectionBean = connectionHandler.getConnectionBean();
         PeerAddress selfAddress = peerBean.getServerPeerAddress();
         PeerMap peerMap = peerBean.getPeerMap();
-        peerBean.setStorage( getStorage() );
-        Replication replicationStorage = new Replication( getStorage(), selfAddress, peerMap );
-        peerBean.setReplicationStorage( replicationStorage );
+        peerBean.setStorage(getStorage());
+        Replication replicationStorage = new Replication(getStorage(), selfAddress, peerMap);
+        peerBean.setReplicationStorage(replicationStorage);
         // create tracker and add replication feature
-        IdentityManagement identityManagement = new IdentityManagement( selfAddress );
+        IdentityManagement identityManagement = new IdentityManagement(selfAddress);
         Maintenance maintenance = new Maintenance();
-        // use the memory for tracker storage, no need to store the reference on disk
+        // use the memory for tracker storage, no need to store the reference on
+        // disk
 
-        TrackerStorage storageTracker =
-            new TrackerStorage( identityManagement, configuration.getTrackerTimoutSeconds(), peerBean, maintenance );
-        peerBean.setTrackerStorage( storageTracker );
-        Replication replicationTracker = new Replication( storageTracker, selfAddress, peerMap );
-        peerBean.setReplicationTracker( replicationTracker );
+        TrackerStorage storageTracker = new TrackerStorage(identityManagement, configuration.getTrackerTimoutSeconds(),
+                peerBean, maintenance);
+        peerBean.setTrackerStorage(storageTracker);
+        Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
+        peerBean.setReplicationTracker(replicationTracker);
 
-        peerMap.addPeerOfflineListener( storageTracker );
+        peerMap.addPeerOfflineListener(storageTracker);
 
-        TaskManager taskManager = new TaskManager( connectionBean, workerThreads );
-        peerBean.setTaskManager( taskManager );
+        TaskManager taskManager = new TaskManager(connectionBean, workerThreads);
+        peerBean.setTaskManager(taskManager);
 
         // RPC communication
-        if ( isEnableHandShakeRPC() )
-        {
-            HandshakeRPC handshakeRCP = new HandshakeRPC( peerBean, connectionBean, peer.getListeners() );
-            peer.setHandshakeRPC( handshakeRCP );
+        if (isEnableHandShakeRPC()) {
+            HandshakeRPC handshakeRCP = new HandshakeRPC(peerBean, connectionBean, peer.getListeners());
+            peer.setHandshakeRPC(handshakeRCP);
         }
-        if ( isEnableStorageRPC() )
-        {
-            StorageRPC storageRPC = new StorageRPC( peerBean, connectionBean );
-            peer.setStorageRPC( storageRPC );
+        if (isEnableStorageRPC()) {
+            StorageRPC storageRPC = new StorageRPC(peerBean, connectionBean);
+            peer.setStorageRPC(storageRPC);
         }
-        if ( isEnableNeighborRPC() )
-        {
-            NeighborRPC neighborRPC = new NeighborRPC( peerBean, connectionBean );
-            peer.setNeighborRPC( neighborRPC );
+        if (isEnableNeighborRPC()) {
+            NeighborRPC neighborRPC = new NeighborRPC(peerBean, connectionBean);
+            peer.setNeighborRPC(neighborRPC);
         }
-        if ( isEnableQuitRPC() )
-        {
-            QuitRPC quitRCP = new QuitRPC( peerBean, connectionBean );
-            peer.setQuitRPC( quitRCP );
+        if (isEnableQuitRPC()) {
+            QuitRPC quitRCP = new QuitRPC(peerBean, connectionBean);
+            peer.setQuitRPC(quitRCP);
         }
-        if ( isEnablePeerExchangeRPC() )
-        {
-            PeerExchangeRPC peerExchangeRPC = new PeerExchangeRPC( peerBean, connectionBean );
-            peer.setPeerExchangeRPC( peerExchangeRPC );
+        if (isEnablePeerExchangeRPC()) {
+            PeerExchangeRPC peerExchangeRPC = new PeerExchangeRPC(peerBean, connectionBean);
+            peer.setPeerExchangeRPC(peerExchangeRPC);
         }
-        if ( isEnableDirectDataRPC() )
-        {
-            DirectDataRPC directDataRPC = new DirectDataRPC( peerBean, connectionBean );
-            peer.setDirectDataRPC( directDataRPC );
+        if (isEnableDirectDataRPC()) {
+            DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
+            peer.setDirectDataRPC(directDataRPC);
         }
-        if ( isEnableTrackerRPC() )
-        {
-            TrackerRPC trackerRPC = new TrackerRPC( peerBean, connectionBean, configuration );
-            peer.setTrackerRPC( trackerRPC );
+        if (isEnableTrackerRPC()) {
+            TrackerRPC trackerRPC = new TrackerRPC(peerBean, connectionBean, configuration);
+            peer.setTrackerRPC(trackerRPC);
         }
-        if ( isEnableTaskRPC() )
-        {
+        if (isEnableTaskRPC()) {
             // create task manager, which is needed by the task RPC
-            TaskRPC taskRPC = new TaskRPC( peerBean, connectionBean );
-            peer.setTaskRPC( taskRPC );
+            TaskRPC taskRPC = new TaskRPC(peerBean, connectionBean);
+            peer.setTaskRPC(taskRPC);
         }
-        if ( isEnablePeerExchangeRPC() )
-        {
+        if (isEnablePeerExchangeRPC()) {
             // replication for trackers, which needs PEX
-            TrackerStorageReplication trackerStorageReplication =
-                new TrackerStorageReplication( peer, peer.getPeerExchangeRPC(), peer.getPendingFutures(),
-                                               storageTracker, configuration.isForceTrackerTCP() );
-            replicationTracker.addResponsibilityListener( trackerStorageReplication );
+            TrackerStorageReplication trackerStorageReplication = new TrackerStorageReplication(peer,
+                    peer.getPeerExchangeRPC(), peer.getPendingFutures(), storageTracker,
+                    configuration.isForceTrackerTCP());
+            replicationTracker.addResponsibilityListener(trackerStorageReplication);
         }
-        if ( isEnableBroadcast() )
-        {
-            if ( broadcastHandler == null )
-            {
-                broadcastHandler = new DefaultBroadcastHandler( peer, rnd );
+        if (isEnableBroadcast()) {
+            if (broadcastHandler == null) {
+                broadcastHandler = new DefaultBroadcastHandler(peer, rnd);
             }
-            BroadcastRPC broadcastRPC = new BroadcastRPC( peerBean, connectionBean, broadcastHandler );
-            peer.setBroadcastRPC( broadcastRPC );
+            BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
+            peer.setBroadcastRPC(broadcastRPC);
         }
         // distributed communication
-        if ( isEnableRouting() && isEnableNeighborRPC() )
-        {
-            DistributedRouting routing = new DistributedRouting( peerBean, peer.getNeighborRPC() );
-            peer.setDistributedRouting( routing );
+        if (isEnableRouting() && isEnableNeighborRPC()) {
+            DistributedRouting routing = new DistributedRouting(peerBean, peer.getNeighborRPC());
+            peer.setDistributedRouting(routing);
         }
-        if ( isEnableRouting() && isEnableStorageRPC() && isEnableDirectDataRPC() )
-        {
-            DistributedHashTable dht =
-                new DistributedHashTable( peer.getDistributedRouting(), peer.getStoreRPC(), peer.getDirectDataRPC() );
-            peer.setDistributedHashMap( dht );
+        if (isEnableRouting() && isEnableStorageRPC() && isEnableDirectDataRPC()) {
+            DistributedHashTable dht = new DistributedHashTable(peer.getDistributedRouting(), peer.getStoreRPC(),
+                    peer.getDirectDataRPC());
+            peer.setDistributedHashMap(dht);
         }
-        if ( isEnableRouting() && isEnableTrackerRPC() && isEnablePeerExchangeRPC() )
-        {
-            DistributedTracker tracker =
-                new DistributedTracker( peerBean, peer.getDistributedRouting(), peer.getTrackerRPC(),
-                                        peer.getPeerExchangeRPC() );
-            peer.setDistributedTracker( tracker );
+        if (isEnableRouting() && isEnableTrackerRPC() && isEnablePeerExchangeRPC()) {
+            DistributedTracker tracker = new DistributedTracker(peerBean, peer.getDistributedRouting(),
+                    peer.getTrackerRPC(), peer.getPeerExchangeRPC());
+            peer.setDistributedTracker(tracker);
         }
-        if ( isEnableTaskRPC() && isEnableTask() && isEnableRouting() )
-        {
+        if (isEnableTaskRPC() && isEnableTask() && isEnableRouting()) {
             // the task manager needs to use the rpc to send the result back.
-            peerBean.getTaskManager().init( peer.getTaskRPC() );
-            AsyncTask asyncTask = new AsyncTask( peer.getTaskRPC(), connectionBean.getScheduler(), peerBean );
-            peer.setAsyncTask( asyncTask );
-            peerBean.getTaskManager().addListener( asyncTask );
-            connectionBean.getScheduler().startTracking( peer.getTaskRPC(), connectionBean.getConnectionReservation() );
-            DistributedTask distributedTask = new DistributedTask( peer.getDistributedRouting(), peer.getAsyncTask() );
-            peer.setDistributedTask( distributedTask );
+            peerBean.getTaskManager().init(peer.getTaskRPC());
+            AsyncTask asyncTask = new AsyncTask(peer.getTaskRPC(), connectionBean.getScheduler(), peerBean);
+            peer.setAsyncTask(asyncTask);
+            peerBean.getTaskManager().addListener(asyncTask);
+            connectionBean.getScheduler().startTracking(peer.getTaskRPC(), connectionBean.getConnectionReservation());
+            DistributedTask distributedTask = new DistributedTask(peer.getDistributedRouting(), peer.getAsyncTask());
+            peer.setDistributedTask(distributedTask);
         }
         // maintenance
-        if ( isEnableMaintenance() )
-        {
-            connectionHandler.getConnectionBean().getScheduler().startMaintainance( peerBean.getPeerMap(),
-                                                                                    peer.getHandshakeRPC(),
-                                                                                    connectionBean.getConnectionReservation(),
-                                                                                    5 );
+        if (isEnableMaintenance()) {
+            connectionHandler
+                    .getConnectionBean()
+                    .getScheduler()
+                    .startMaintainance(peerBean.getPeerMap(), peer.getHandshakeRPC(),
+                            connectionBean.getConnectionReservation(), 5);
         }
         // indirect replication
-        if ( isEnableIndirectReplication() && isEnableStorageRPC() )
-        {
-            DefaultStorageReplication defaultStorageReplication =
-                new DefaultStorageReplication( peer, peerBean.getStorage(), peer.getStoreRPC(),
-                                               peer.getPendingFutures(), configuration.isForceStorageUDP() );
-            peer.getScheduledFutures().add( connectionBean.getScheduler().getScheduledExecutorServiceReplication().scheduleWithFixedDelay( defaultStorageReplication,
-                                                                                                                                           replicationRefreshMillis,
-                                                                                                                                           replicationRefreshMillis,
-                                                                                                                                           TimeUnit.MILLISECONDS ) );
-            replicationStorage.addResponsibilityListener( defaultStorageReplication );
+        if (isEnableIndirectReplication() && isEnableStorageRPC()) {
+            DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(peer,
+                    peerBean.getStorage(), peer.getStoreRPC(), peer.getPendingFutures(),
+                    configuration.isForceStorageUDP());
+            peer.getScheduledFutures().add(
+                    connectionBean
+                            .getScheduler()
+                            .getScheduledExecutorServiceReplication()
+                            .scheduleWithFixedDelay(defaultStorageReplication, replicationRefreshMillis,
+                                    replicationRefreshMillis, TimeUnit.MILLISECONDS));
+            replicationStorage.addResponsibilityListener(defaultStorageReplication);
         }
         connectionBean.getScheduler().startDelayedChannelCreator();
     }
-    
+
     @Deprecated
-    public PeerMaker setPeerMapConfiguration( int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
-                                              int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize,
-                                              boolean isBehindFirewall )
-    {
-        return setPeerMapConfiguration( bagSize, cacheTimeoutMillis, maxNrBeforeExclude, waitingTimeBetweenNodeMaintenenceSeconds, cacheSize, new DefaultMapAcceptHandler( isBehindFirewall ) );                
+    public PeerMaker setPeerMapConfiguration(int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
+            int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize, boolean isBehindFirewall) {
+        return setPeerMapConfiguration(bagSize, cacheTimeoutMillis, maxNrBeforeExclude,
+                waitingTimeBetweenNodeMaintenenceSeconds, cacheSize, new DefaultMapAcceptHandler(isBehindFirewall));
     }
 
-    public PeerMaker setPeerMapConfiguration( int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
-                                              int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize,
-                                              MapAcceptHandler mapAcceptHandler )
-    {
-        this.setBagSize( bagSize );
-        this.setCacheTimeoutMillis( cacheTimeoutMillis );
-        this.setMaxNrBeforeExclude( maxNrBeforeExclude );
-        this.setWaitingTimeBetweenNodeMaintenenceSeconds( waitingTimeBetweenNodeMaintenenceSeconds );
-        this.setCacheSize( cacheSize );
-        this.setMapAcceptHandler( mapAcceptHandler );
+    public PeerMaker setPeerMapConfiguration(int bagSize, int cacheTimeoutMillis, int maxNrBeforeExclude,
+            int[] waitingTimeBetweenNodeMaintenenceSeconds, int cacheSize, MapAcceptHandler mapAcceptHandler) {
+        this.setBagSize(bagSize);
+        this.setCacheTimeoutMillis(cacheTimeoutMillis);
+        this.setMaxNrBeforeExclude(maxNrBeforeExclude);
+        this.setWaitingTimeBetweenNodeMaintenenceSeconds(waitingTimeBetweenNodeMaintenenceSeconds);
+        this.setCacheSize(cacheSize);
+        this.setMapAcceptHandler(mapAcceptHandler);
         return this;
     }
 
-    public PeerMaker setP2PId( int p2pID )
-    {
+    public PeerMaker setP2PId(int p2pID) {
         this.p2pID = p2pID;
         return this;
     }
 
-    public int getP2PId()
-    {
+    public int getP2PId() {
         return p2pID;
     }
 
-    public PeerMaker setKeyPair( KeyPair keyPair )
-    {
+    public PeerMaker setKeyPair(KeyPair keyPair) {
         this.keyPair = keyPair;
         return this;
     }
 
-    public KeyPair getKeyPair()
-    {
+    public KeyPair getKeyPair() {
         return keyPair;
     }
 
-    public int getWorkerThreads()
-    {
+    public int getWorkerThreads() {
         return workerThreads;
     }
 
-    public PeerMaker setWorkerThreads( int workerThreads )
-    {
+    public PeerMaker setWorkerThreads(int workerThreads) {
         this.workerThreads = workerThreads;
         return this;
     }
 
-    public int getMaintenanceThreads()
-    {
+    public int getMaintenanceThreads() {
         return maintenanceThreads;
     }
 
-    public PeerMaker setMaintenanceThreads( int maintenanceThreads )
-    {
+    public PeerMaker setMaintenanceThreads(int maintenanceThreads) {
         this.maintenanceThreads = maintenanceThreads;
         return this;
     }
 
-    public int getReplicationThreads()
-    {
+    public int getReplicationThreads() {
         return replicationThreads;
     }
 
-    public PeerMaker setReplicationThreads( int replicationThreads )
-    {
+    public PeerMaker setReplicationThreads(int replicationThreads) {
         this.replicationThreads = replicationThreads;
         return this;
     }
 
-    public int getReplicationRefreshMillis()
-    {
+    public int getReplicationRefreshMillis() {
         return replicationRefreshMillis;
     }
 
-    public PeerMaker setReplicationRefreshMillis( int replicationRefreshMillis )
-    {
+    public PeerMaker setReplicationRefreshMillis(int replicationRefreshMillis) {
         this.replicationRefreshMillis = replicationRefreshMillis;
         return this;
     }
 
-    public int getTcpPort()
-    {
+    public int getTcpPort() {
         return tcpPort;
     }
 
-    public PeerMaker setTcpPort( int tcpPort )
-    {
+    public PeerMaker setTcpPort(int tcpPort) {
         this.tcpPort = tcpPort;
         return this;
     }
 
-    public int getUdpPort()
-    {
+    public int getUdpPort() {
         return udpPort;
     }
 
-    public PeerMaker setUdpPort( int udpPort )
-    {
+    public PeerMaker setUdpPort(int udpPort) {
         this.udpPort = udpPort;
         return this;
     }
 
-    public PeerMaker setPorts( int port )
-    {
+    public PeerMaker setPorts(int port) {
         this.udpPort = port;
         this.tcpPort = port;
         return this;
     }
 
-    public Bindings getBindings()
-    {
+    public Bindings getBindings() {
         return bindings;
     }
 
-    public PeerMaker setBindings( Bindings bindings )
-    {
+    public PeerMaker setBindings(Bindings bindings) {
         this.bindings = bindings;
         return this;
     }
 
-    public File getFileMessageLogger()
-    {
+    public File getFileMessageLogger() {
         return fileMessageLogger;
     }
 
-    public PeerMaker setFileMessageLogger( File fileMessageLogger )
-    {
+    public PeerMaker setFileMessageLogger(File fileMessageLogger) {
         this.fileMessageLogger = fileMessageLogger;
         return this;
     }
 
-    public ConnectionConfiguration getConfiguration()
-    {
+    public ConnectionConfiguration getConfiguration() {
         return configuration;
     }
 
-    public PeerMaker setConfiguration( ConnectionConfiguration configuration )
-    {
+    public PeerMaker setConfiguration(ConnectionConfiguration configuration) {
         this.configuration = configuration;
         return this;
     }
 
-    public StorageGeneric getStorage()
-    {
+    public StorageGeneric getStorage() {
         return storage;
     }
 
-    public PeerMaker setStorage( StorageGeneric storage )
-    {
+    public PeerMaker setStorage(StorageGeneric storage) {
         this.storage = storage;
         return this;
     }
 
-    public int getBagSize()
-    {
+    public int getBagSize() {
         return bagSize;
     }
 
-    public PeerMaker setBagSize( int bagSize )
-    {
+    public PeerMaker setBagSize(int bagSize) {
         this.bagSize = bagSize;
         return this;
     }
 
-    public int getCacheTimeoutMillis()
-    {
+    public int getCacheTimeoutMillis() {
         return cacheTimeoutMillis;
     }
 
-    public PeerMaker setCacheTimeoutMillis( int cacheTimeoutMillis )
-    {
+    public PeerMaker setCacheTimeoutMillis(int cacheTimeoutMillis) {
         this.cacheTimeoutMillis = cacheTimeoutMillis;
         return this;
     }
 
-    public int getMaxNrBeforeExclude()
-    {
+    public int getMaxNrBeforeExclude() {
         return maxNrBeforeExclude;
     }
 
-    public PeerMaker setMaxNrBeforeExclude( int maxNrBeforeExclude )
-    {
+    public PeerMaker setMaxNrBeforeExclude(int maxNrBeforeExclude) {
         this.maxNrBeforeExclude = maxNrBeforeExclude;
         return this;
     }
 
-    public int[] getWaitingTimeBetweenNodeMaintenenceSeconds()
-    {
+    public int[] getWaitingTimeBetweenNodeMaintenenceSeconds() {
         return waitingTimeBetweenNodeMaintenenceSeconds;
     }
 
-    public PeerMaker setWaitingTimeBetweenNodeMaintenenceSeconds( int[] waitingTimeBetweenNodeMaintenenceSeconds )
-    {
+    public PeerMaker setWaitingTimeBetweenNodeMaintenenceSeconds(int[] waitingTimeBetweenNodeMaintenenceSeconds) {
         this.waitingTimeBetweenNodeMaintenenceSeconds = waitingTimeBetweenNodeMaintenenceSeconds;
         return this;
     }
 
-    public int getCacheSize()
-    {
+    public int getCacheSize() {
         return cacheSize;
     }
 
-    public PeerMaker setCacheSize( int cacheSize )
-    {
+    public PeerMaker setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
         return this;
     }
-    
+
     @Deprecated
-    public PeerMaker setBehindFirewallPeerMap(boolean acceptFirstClassOnly)
-    {
-        this.mapAcceptHandler = new DefaultMapAcceptHandler( acceptFirstClassOnly );
+    public PeerMaker setBehindFirewallPeerMap(boolean acceptFirstClassOnly) {
+        this.mapAcceptHandler = new DefaultMapAcceptHandler(acceptFirstClassOnly);
         return this;
     }
-    
+
     @Deprecated
-    public boolean isBehindFirewallPeerMap()
-    {
-        if(mapAcceptHandler == null) 
-        {
-            //default
+    public boolean isBehindFirewallPeerMap() {
+        if (mapAcceptHandler == null) {
+            // default
             return false;
         }
-        if (mapAcceptHandler instanceof DefaultMapAcceptHandler)
-        {
-            return ((DefaultMapAcceptHandler)mapAcceptHandler).acceptFirstClassOnly();
-        }
-        else
-        {
-            throw new RuntimeException( "please don't use this deprecated method anymore." );
+        if (mapAcceptHandler instanceof DefaultMapAcceptHandler) {
+            return ((DefaultMapAcceptHandler) mapAcceptHandler).acceptFirstClassOnly();
+        } else {
+            throw new RuntimeException("please don't use this deprecated method anymore.");
         }
     }
 
-    public MapAcceptHandler getMapAcceptHandler()
-    {
+    public MapAcceptHandler getMapAcceptHandler() {
         return mapAcceptHandler;
     }
 
-    public PeerMaker setMapAcceptHandler( MapAcceptHandler mapAcceptHandler )
-    {
+    public PeerMaker setMapAcceptHandler(MapAcceptHandler mapAcceptHandler) {
         this.mapAcceptHandler = mapAcceptHandler;
         return this;
     }
 
-    public boolean isEnableHandShakeRPC()
-    {
+    public boolean isEnableHandShakeRPC() {
         return enableHandShakeRPC;
     }
 
-    public PeerMaker setEnableHandShakeRPC( boolean enableHandShakeRPC )
-    {
+    public PeerMaker setEnableHandShakeRPC(boolean enableHandShakeRPC) {
         this.enableHandShakeRPC = enableHandShakeRPC;
         return this;
     }
 
-    public boolean isEnableStorageRPC()
-    {
+    public boolean isEnableStorageRPC() {
         return enableStorageRPC;
     }
 
-    public PeerMaker setEnableStorageRPC( boolean enableStorageRPC )
-    {
+    public PeerMaker setEnableStorageRPC(boolean enableStorageRPC) {
         this.enableStorageRPC = enableStorageRPC;
         return this;
     }
 
-    public boolean isEnableNeighborRPC()
-    {
+    public boolean isEnableNeighborRPC() {
         return enableNeighborRPC;
     }
 
-    public PeerMaker setEnableNeighborRPC( boolean enableNeighborRPC )
-    {
+    public PeerMaker setEnableNeighborRPC(boolean enableNeighborRPC) {
         this.enableNeighborRPC = enableNeighborRPC;
         return this;
     }
 
-    public boolean isEnableQuitRPC()
-    {
+    public boolean isEnableQuitRPC() {
         return enableQuitRPC;
     }
 
-    public PeerMaker setEnableQuitRPC( boolean enableQuitRPC )
-    {
+    public PeerMaker setEnableQuitRPC(boolean enableQuitRPC) {
         this.enableQuitRPC = enableQuitRPC;
         return this;
     }
 
-    public boolean isEnablePeerExchangeRPC()
-    {
+    public boolean isEnablePeerExchangeRPC() {
         return enablePeerExchangeRPC;
     }
 
-    public PeerMaker setEnablePeerExchangeRPC( boolean enablePeerExchangeRPC )
-    {
+    public PeerMaker setEnablePeerExchangeRPC(boolean enablePeerExchangeRPC) {
         this.enablePeerExchangeRPC = enablePeerExchangeRPC;
         return this;
     }
 
-    public boolean isEnableDirectDataRPC()
-    {
+    public boolean isEnableDirectDataRPC() {
         return enableDirectDataRPC;
     }
 
-    public PeerMaker setEnableDirectDataRPC( boolean enableDirectDataRPC )
-    {
+    public PeerMaker setEnableDirectDataRPC(boolean enableDirectDataRPC) {
         this.enableDirectDataRPC = enableDirectDataRPC;
         return this;
     }
 
-    public boolean isEnableTrackerRPC()
-    {
+    public boolean isEnableTrackerRPC() {
         return enableTrackerRPC;
     }
 
-    public PeerMaker setEnableTrackerRPC( boolean enableTrackerRPC )
-    {
+    public PeerMaker setEnableTrackerRPC(boolean enableTrackerRPC) {
         this.enableTrackerRPC = enableTrackerRPC;
         return this;
     }
 
-    public boolean isEnableTaskRPC()
-    {
+    public boolean isEnableTaskRPC() {
         return enableTaskRPC;
     }
 
-    public PeerMaker setEnableTaskRPC( boolean enableTaskRPC )
-    {
+    public PeerMaker setEnableTaskRPC(boolean enableTaskRPC) {
         this.enableTaskRPC = enableTaskRPC;
         return this;
     }
 
-    public boolean isEnableRouting()
-    {
+    public boolean isEnableRouting() {
         return enableRouting;
     }
 
-    public PeerMaker setEnableRouting( boolean enableRouting )
-    {
+    public PeerMaker setEnableRouting(boolean enableRouting) {
         this.enableRouting = enableRouting;
         return this;
     }
 
-    public boolean isEnableDHT()
-    {
+    public boolean isEnableDHT() {
         return enableDHT;
     }
 
-    public PeerMaker setEnableDHT( boolean enableDHT )
-    {
+    public PeerMaker setEnableDHT(boolean enableDHT) {
         this.enableDHT = enableDHT;
         return this;
     }
 
-    public boolean isEnableTracker()
-    {
+    public boolean isEnableTracker() {
         return enableTracker;
     }
 
-    public PeerMaker setEnableTracker( boolean enableTracker )
-    {
+    public PeerMaker setEnableTracker(boolean enableTracker) {
         this.enableTracker = enableTracker;
         return this;
     }
 
-    public boolean isEnableTask()
-    {
+    public boolean isEnableTask() {
         return enableTask;
     }
 
-    public PeerMaker setEnableTask( boolean enableTask )
-    {
+    public PeerMaker setEnableTask(boolean enableTask) {
         this.enableTask = enableTask;
         return this;
     }
 
-    public boolean isEnableMaintenance()
-    {
+    public boolean isEnableMaintenance() {
         return enableMaintenance;
     }
 
-    public PeerMaker setEnableMaintenance( boolean enableMaintenance )
-    {
+    public PeerMaker setEnableMaintenance(boolean enableMaintenance) {
         this.enableMaintenance = enableMaintenance;
         return this;
     }
 
-    public Peer getMasterPeer()
-    {
+    public Peer getMasterPeer() {
         return masterPeer;
     }
 
-    public PeerMaker setMasterPeer( Peer masterPeer )
-    {
+    public PeerMaker setMasterPeer(Peer masterPeer) {
         this.masterPeer = masterPeer;
         return this;
     }
 
-    public int getMaxMessageSize()
-    {
+    public int getMaxMessageSize() {
         return maxMessageSize;
     }
 
-    public PeerMaker setMaxMessageSize( int maxMessageSize )
-    {
+    public PeerMaker setMaxMessageSize(int maxMessageSize) {
         this.maxMessageSize = maxMessageSize;
         return this;
     }
 
-    public boolean isEnableIndirectReplication()
-    {
+    public boolean isEnableIndirectReplication() {
         return enableIndirectReplication;
     }
 
-    public PeerMaker setEnableIndirectReplication( boolean enableIndirectReplication )
-    {
+    public PeerMaker setEnableIndirectReplication(boolean enableIndirectReplication) {
         this.enableIndirectReplication = enableIndirectReplication;
         return this;
     }
 
-    public BroadcastHandler getBroadcastHandler()
-    {
+    public BroadcastHandler getBroadcastHandler() {
         return broadcastHandler;
     }
 
-    public PeerMaker setBroadcastHandler( BroadcastHandler broadcastHandler )
-    {
+    public PeerMaker setBroadcastHandler(BroadcastHandler broadcastHandler) {
         this.broadcastHandler = broadcastHandler;
         return this;
     }
 
-    public boolean isEnableBroadcast()
-    {
+    public boolean isEnableBroadcast() {
         return enableBroadcast;
     }
 
-    public PeerMaker setEnableBroadcast( boolean enableBroadcast )
-    {
+    public PeerMaker setEnableBroadcast(boolean enableBroadcast) {
         this.enableBroadcast = enableBroadcast;
         return this;
     }
 
-    public Random getRandom()
-    {
+    public Random getRandom() {
         return rnd;
     }
 
-    public PeerMaker setRandom( Random rnd )
-    {
+    public PeerMaker setRandom(Random rnd) {
         this.rnd = rnd;
         return this;
     }

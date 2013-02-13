@@ -61,19 +61,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Class to discover an UPNP device on the network.</br> A multicast socket will be created to discover devices, the
- * binding port for this socket is set to 1901, if this is causing a problem you can use the
- * net.sbbi.upnp.Discovery.bindPort system property to specify another port. The discovery methods only accept matching
- * device description and broadcast message response IP to avoid a security flaw with the protocol. If you are not happy
- * with such behaviour you can set the net.sbbi.upnp.ddos.matchip system property to false to avoid this check.
+ * Class to discover an UPNP device on the network.</br> A multicast socket will
+ * be created to discover devices, the binding port for this socket is set to
+ * 1901, if this is causing a problem you can use the
+ * net.sbbi.upnp.Discovery.bindPort system property to specify another port. The
+ * discovery methods only accept matching device description and broadcast
+ * message response IP to avoid a security flaw with the protocol. If you are
+ * not happy with such behaviour you can set the net.sbbi.upnp.ddos.matchip
+ * system property to false to avoid this check.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
 
-public class Discovery
-{
-    final private static Logger logger = LoggerFactory.getLogger( Discovery.class );
+public class Discovery {
+    final private static Logger logger = LoggerFactory.getLogger(Discovery.class);
 
     /***/
     public final static String ROOT_DEVICES = "upnp:rootdevice";
@@ -103,119 +105,130 @@ public class Discovery
     public final static int SSDP_PORT = 1900;
 
     /**
-     * Devices discovering on all network interfaces with default values, all root devices will be searched
+     * Devices discovering on all network interfaces with default values, all
+     * root devices will be searched
      * 
-     * @return an array of UPNP Root device or null if nothing found with the default timeout. Null does NOT means that
-     *         no UPNP device is available on the network. It only means that for this default timeout no devices
-     *         responded or that effectively no devices are available at all.
-     * @throws IOException if some IOException occurs during discovering
+     * @return an array of UPNP Root device or null if nothing found with the
+     *         default timeout. Null does NOT means that no UPNP device is
+     *         available on the network. It only means that for this default
+     *         timeout no devices responded or that effectively no devices are
+     *         available at all.
+     * @throws IOException
+     *             if some IOException occurs during discovering
      */
-    public static Collection<RootDevice> discover()
-        throws IOException
-    {
-        return discover( DEFAULT_TIMEOUT, DEFAULT_TTL, DEFAULT_MX, DEFAULT_SEARCH );
+    public static Collection<RootDevice> discover() throws IOException {
+        return discover(DEFAULT_TIMEOUT, DEFAULT_TTL, DEFAULT_MX, DEFAULT_SEARCH);
     }
 
     /**
-     * Devices discovering on all network interfaces with a given root device to search
+     * Devices discovering on all network interfaces with a given root device to
+     * search
      * 
-     * @param searchTarget the device URI to search
-     * @return an array of UPNP Root device that matches the search or null if nothing found with the default timeout.
-     *         Null does NOT means that no UPNP device is available on the network. It only means that for this given
-     *         timeout no devices responded or that effectively no devices are available at all.
-     * @throws IOException if some IOException occurs during discovering
+     * @param searchTarget
+     *            the device URI to search
+     * @return an array of UPNP Root device that matches the search or null if
+     *         nothing found with the default timeout. Null does NOT means that
+     *         no UPNP device is available on the network. It only means that
+     *         for this given timeout no devices responded or that effectively
+     *         no devices are available at all.
+     * @throws IOException
+     *             if some IOException occurs during discovering
      */
-    public static Collection<RootDevice> discover( String searchTarget )
-        throws IOException
-    {
-        return discover( DEFAULT_TIMEOUT, DEFAULT_TTL, DEFAULT_MX, searchTarget );
+    public static Collection<RootDevice> discover(String searchTarget) throws IOException {
+        return discover(DEFAULT_TIMEOUT, DEFAULT_TTL, DEFAULT_MX, searchTarget);
     }
 
     /**
-     * Devices discovering on all network interfaces with a given timeout and a given root device to search
+     * Devices discovering on all network interfaces with a given timeout and a
+     * given root device to search
      * 
-     * @param timeOut the time allowed for a device to give a response
-     * @param searchTarget the device URI to search
-     * @return an array of UPNP Root device that matches the search or null if nothing found with the given timeout.
-     *         Null does NOT means that no UPNP device is available on the network. It only means that for this given
-     *         timeout no devices responded or that effectively no devices are available at all.
-     * @throws IOException if some IOException occurs during discovering
+     * @param timeOut
+     *            the time allowed for a device to give a response
+     * @param searchTarget
+     *            the device URI to search
+     * @return an array of UPNP Root device that matches the search or null if
+     *         nothing found with the given timeout. Null does NOT means that no
+     *         UPNP device is available on the network. It only means that for
+     *         this given timeout no devices responded or that effectively no
+     *         devices are available at all.
+     * @throws IOException
+     *             if some IOException occurs during discovering
      */
-    public static Collection<RootDevice> discover( int timeOut, String searchTarget )
-        throws IOException
-    {
-        return discover( timeOut, DEFAULT_TTL, DEFAULT_MX, searchTarget );
+    public static Collection<RootDevice> discover(int timeOut, String searchTarget) throws IOException {
+        return discover(timeOut, DEFAULT_TTL, DEFAULT_MX, searchTarget);
     }
 
     /**
-     * Devices discovering on all network interfaces with a given timeout and a given root device to search, as well as
-     * a ttl and mx param
+     * Devices discovering on all network interfaces with a given timeout and a
+     * given root device to search, as well as a ttl and mx param
      * 
-     * @param timeOut the timeout for the a device to give a reponse
-     * @param ttl the UDP socket packets time to live
-     * @param mx discovery message mx http header field value
-     * @param searchTarget the device URI to search
-     * @return an array of UPNP Root device that matches the search or null if nothing found within the given timeout.
-     *         Null return does NOT means that no UPNP device is available on the network. It only means that for this
-     *         given timeout no devices responded or that effectively no devices are available at all.
-     * @throws IOException if some IOException occurs during discovering
+     * @param timeOut
+     *            the timeout for the a device to give a reponse
+     * @param ttl
+     *            the UDP socket packets time to live
+     * @param mx
+     *            discovery message mx http header field value
+     * @param searchTarget
+     *            the device URI to search
+     * @return an array of UPNP Root device that matches the search or null if
+     *         nothing found within the given timeout. Null return does NOT
+     *         means that no UPNP device is available on the network. It only
+     *         means that for this given timeout no devices responded or that
+     *         effectively no devices are available at all.
+     * @throws IOException
+     *             if some IOException occurs during discovering
      */
-    public static Collection<RootDevice> discover( int timeOut, int ttl, int mx, String searchTarget )
-        throws IOException
-    {
-        return discoverDevices( timeOut, ttl, mx, searchTarget, null );
+    public static Collection<RootDevice> discover(int timeOut, int ttl, int mx, String searchTarget) throws IOException {
+        return discoverDevices(timeOut, ttl, mx, searchTarget, null);
     }
 
     /**
-     * Devices discovering with a given timeout and a given root device to search on an given network interface, as well
-     * as a ttl and mx param
+     * Devices discovering with a given timeout and a given root device to
+     * search on an given network interface, as well as a ttl and mx param
      * 
-     * @param timeOut the timeout for the a device to give a reponse
-     * @param ttl the UDP socket packets time to live
-     * @param mx discovery message mx http header field value
-     * @param searchTarget the device URI to search
-     * @param ni the networkInterface where to search devices, null to lookup all interfaces
-     * @return an array of UPNP Root device that matches the search or null if nothing found within the given timeout.
-     *         Null return does NOT means that no UPNP device is available on the network. It only means that for this
-     *         given timeout no devices responded or that effectively no devices are available at all.
-     * @throws IOException if some IOException occurs during discovering
+     * @param timeOut
+     *            the timeout for the a device to give a reponse
+     * @param ttl
+     *            the UDP socket packets time to live
+     * @param mx
+     *            discovery message mx http header field value
+     * @param searchTarget
+     *            the device URI to search
+     * @param ni
+     *            the networkInterface where to search devices, null to lookup
+     *            all interfaces
+     * @return an array of UPNP Root device that matches the search or null if
+     *         nothing found within the given timeout. Null return does NOT
+     *         means that no UPNP device is available on the network. It only
+     *         means that for this given timeout no devices responded or that
+     *         effectively no devices are available at all.
+     * @throws IOException
+     *             if some IOException occurs during discovering
      */
-    public static Collection<RootDevice> discover( int timeOut, int ttl, int mx, String searchTarget,
-                                                   NetworkInterface ni )
-        throws IOException
-    {
-        return discoverDevices( timeOut, ttl, mx, searchTarget, ni );
+    public static Collection<RootDevice> discover(int timeOut, int ttl, int mx, String searchTarget, NetworkInterface ni)
+            throws IOException {
+        return discoverDevices(timeOut, ttl, mx, searchTarget, ni);
     }
 
-    private static Collection<RootDevice> discoverDevices( int timeOut, int ttl, int mx, String searchTarget,
-                                                           NetworkInterface ni )
-        throws IOException
-    {
-        if ( searchTarget == null || searchTarget.trim().length() == 0 )
-        {
-            throw new IllegalArgumentException( "Illegal searchTarget" );
+    private static Collection<RootDevice> discoverDevices(int timeOut, int ttl, int mx, String searchTarget,
+            NetworkInterface ni) throws IOException {
+        if (searchTarget == null || searchTarget.trim().length() == 0) {
+            throw new IllegalArgumentException("Illegal searchTarget");
         }
 
         final Map<String, RootDevice> devices = new HashMap<String, RootDevice>();
 
-        DiscoveryResultsHandler handler = new DiscoveryResultsHandler()
-        {
+        DiscoveryResultsHandler handler = new DiscoveryResultsHandler() {
 
             @Override
-            public void discoveredDevice( String usn, String udn, String nt, String maxAge, URL location,
-                                          String firmware, InetAddress localIP )
-            {
-                synchronized ( devices )
-                {
-                    if ( !devices.containsKey( usn ) )
-                    {
-                        try
-                        {
-                            RootDevice device = RootDevice.build( location, maxAge, firmware, usn, udn, localIP );
-                            devices.put( usn, device );
-                        }
-                        catch ( Exception ex )
-                        {
+            public void discoveredDevice(String usn, String udn, String nt, String maxAge, URL location,
+                    String firmware, InetAddress localIP) {
+                synchronized (devices) {
+                    if (!devices.containsKey(usn)) {
+                        try {
+                            RootDevice device = RootDevice.build(location, maxAge, firmware, usn, udn, localIP);
+                            devices.put(usn, device);
+                        } catch (Exception ex) {
                             // log.error(
                             // "Error occured during upnp root device object creation from location "
                             // + location, ex );
@@ -226,52 +239,38 @@ public class Discovery
             }
         };
 
-        DiscoveryListener.getInstance().registerResultsHandler( handler, searchTarget );
-        if ( ni == null )
-        {
-            for ( Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements(); )
-            {
+        DiscoveryListener.getInstance().registerResultsHandler(handler, searchTarget);
+        if (ni == null) {
+            for (Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces(); e.hasMoreElements();) {
                 NetworkInterface intf = e.nextElement();
-                sendViaInterface( ttl, mx, searchTarget, intf );
+                sendViaInterface(ttl, mx, searchTarget, intf);
             }
-        }
-        else
-        {
-            sendViaInterface( ttl, mx, searchTarget, ni );
+        } else {
+            sendViaInterface(ttl, mx, searchTarget, ni);
         }
 
-        try
-        {
-            Timings.sleep( timeOut );
-        }
-        catch ( InterruptedException ex )
-        {
+        try {
+            Timings.sleep(timeOut);
+        } catch (InterruptedException ex) {
             // don't care
         }
 
-        DiscoveryListener.getInstance().unRegisterResultsHandler( handler, searchTarget );
+        DiscoveryListener.getInstance().unRegisterResultsHandler(handler, searchTarget);
 
-        if ( devices.size() == 0 )
-        {
+        if (devices.size() == 0) {
             return null;
         }
         return devices.values();
     }
 
-    private static void sendViaInterface( int ttl, int mx, String searchTarget, NetworkInterface intf )
-    {
-        for ( Enumeration<InetAddress> adrs = intf.getInetAddresses(); adrs.hasMoreElements(); )
-        {
+    private static void sendViaInterface(int ttl, int mx, String searchTarget, NetworkInterface intf) {
+        for (Enumeration<InetAddress> adrs = intf.getInetAddresses(); adrs.hasMoreElements();) {
             InetAddress adr = adrs.nextElement();
-            if ( adr instanceof Inet4Address && !adr.isLoopbackAddress() )
-            {
-                try
-                {
-                    sendSearchMessage( adr, ttl, mx, searchTarget );
-                }
-                catch ( IOException ex )
-                {
-                    logger.warn( "error sending message" + ex );
+            if (adr instanceof Inet4Address && !adr.isLoopbackAddress()) {
+                try {
+                    sendSearchMessage(adr, ttl, mx, searchTarget);
+                } catch (IOException ex) {
+                    logger.warn("error sending message" + ex);
                 }
             }
         }
@@ -280,37 +279,39 @@ public class Discovery
     /**
      * Sends an SSDP search message on the network
      * 
-     * @param src the sender ip
-     * @param ttl the time to live
-     * @param mx the mx field
-     * @param searchTarget the search target
-     * @throws IOException if some IO errors occurs during search
+     * @param src
+     *            the sender ip
+     * @param ttl
+     *            the time to live
+     * @param mx
+     *            the mx field
+     * @param searchTarget
+     *            the search target
+     * @throws IOException
+     *             if some IO errors occurs during search
      */
-    public static void sendSearchMessage( InetAddress src, int ttl, int mx, String searchTarget )
-        throws IOException
-    {
+    public static void sendSearchMessage(InetAddress src, int ttl, int mx, String searchTarget) throws IOException {
 
         int bindPort = DEFAULT_SSDP_SEARCH_PORT;
-        String port = System.getProperty( "net.sbbi.upnp.Discovery.bindPort" );
-        if ( port != null )
-        {
-            bindPort = Integer.parseInt( port );
+        String port = System.getProperty("net.sbbi.upnp.Discovery.bindPort");
+        if (port != null) {
+            bindPort = Integer.parseInt(port);
         }
-        InetSocketAddress adr = new InetSocketAddress( InetAddress.getByName( Discovery.SSDP_IP ), Discovery.SSDP_PORT );
+        InetSocketAddress adr = new InetSocketAddress(InetAddress.getByName(Discovery.SSDP_IP), Discovery.SSDP_PORT);
 
-        java.net.MulticastSocket skt = new java.net.MulticastSocket( null );
-        skt.bind( new InetSocketAddress( src, bindPort ) );
-        skt.setTimeToLive( ttl );
+        java.net.MulticastSocket skt = new java.net.MulticastSocket(null);
+        skt.bind(new InetSocketAddress(src, bindPort));
+        skt.setTimeToLive(ttl);
         StringBuilder packet = new StringBuilder();
-        packet.append( "M-SEARCH * HTTP/1.1\r\n" );
-        packet.append( "HOST: 239.255.255.250:1900\r\n" );
-        packet.append( "MAN: \"ssdp:discover\"\r\n" );
-        packet.append( "MX: " ).append( mx ).append( "\r\n" );
-        packet.append( "ST: " ).append( searchTarget ).append( "\r\n" ).append( "\r\n" );
+        packet.append("M-SEARCH * HTTP/1.1\r\n");
+        packet.append("HOST: 239.255.255.250:1900\r\n");
+        packet.append("MAN: \"ssdp:discover\"\r\n");
+        packet.append("MX: ").append(mx).append("\r\n");
+        packet.append("ST: ").append(searchTarget).append("\r\n").append("\r\n");
 
         String toSend = packet.toString();
         byte[] pk = toSend.getBytes();
-        skt.send( new DatagramPacket( pk, pk.length, adr ) );
+        skt.send(new DatagramPacket(pk, pk.length, adr));
         skt.disconnect();
         skt.close();
     }

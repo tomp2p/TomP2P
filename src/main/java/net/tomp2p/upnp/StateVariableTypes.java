@@ -49,8 +49,7 @@ package net.tomp2p.upnp;
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public interface StateVariableTypes
-{
+public interface StateVariableTypes {
 
     /**
      * Unsigned 1 Byte int. Same format as int without leading sign.
@@ -83,20 +82,23 @@ public interface StateVariableTypes
     public final static String I4 = "i4";
 
     /**
-     * Fixed point, integer number. May have leading sign. May have leading zeros. (No currency symbol.) (No grouping of
-     * digits to the left of the decimal, e.g., no commas.)
+     * Fixed point, integer number. May have leading sign. May have leading
+     * zeros. (No currency symbol.) (No grouping of digits to the left of the
+     * decimal, e.g., no commas.)
      */
     public final static String INT = "int";
 
     /**
-     * 4 Byte float. Same format as float. Must be between 3.40282347E+38 to 1.17549435E-38.
+     * 4 Byte float. Same format as float. Must be between 3.40282347E+38 to
+     * 1.17549435E-38.
      */
     public final static String R4 = "r4";
 
     /**
-     * 8 Byte float. Same format as float. Must be between -1.79769313486232E308 and -4.94065645841247E-324 for negative
-     * values, and between 4.94065645841247E-324 and 1.79769313486232E308 for positive values, i.e., IEEE 64-bit
-     * (8-Byte) double.
+     * 8 Byte float. Same format as float. Must be between -1.79769313486232E308
+     * and -4.94065645841247E-324 for negative values, and between
+     * 4.94065645841247E-324 and 1.79769313486232E308 for positive values, i.e.,
+     * IEEE 64-bit (8-Byte) double.
      */
     public final static String R8 = "r8";
 
@@ -106,15 +108,18 @@ public interface StateVariableTypes
     public final static String NUMBER = "number";
 
     /**
-     * Same as r8 but no more than 14 digits to the left of the decimal point and no more than 4 to the right.
+     * Same as r8 but no more than 14 digits to the left of the decimal point
+     * and no more than 4 to the right.
      */
     public final static String FIXED_14_4 = "fixed.14.4";
 
     /**
-     * Floating point number. Mantissa (left of the decimal) and/or exponent may have a leading sign. Mantissa and/or
-     * exponent may have leading zeros. Decimal character in mantissa is a period, i.e., whole digits in mantissa
-     * separated from fractional digits by period. Mantissa separated from exponent by E. (No currency symbol.) (No
-     * grouping of digits in the mantissa, e.g., no commas.)
+     * Floating point number. Mantissa (left of the decimal) and/or exponent may
+     * have a leading sign. Mantissa and/or exponent may have leading zeros.
+     * Decimal character in mantissa is a period, i.e., whole digits in mantissa
+     * separated from fractional digits by period. Mantissa separated from
+     * exponent by E. (No currency symbol.) (No grouping of digits in the
+     * mantissa, e.g., no commas.)
      */
     public final static String FLOAT = "float";
 
@@ -159,14 +164,16 @@ public interface StateVariableTypes
     public final static String BOOLEAN = "boolean";
 
     /**
-     * MIME-style Base64 encoded binary BLOB. Takes 3 Bytes, splits them into 4 parts, and maps each 6 bit piece to an
-     * octet. (3 octets are encoded as 4.) No limit on size.
+     * MIME-style Base64 encoded binary BLOB. Takes 3 Bytes, splits them into 4
+     * parts, and maps each 6 bit piece to an octet. (3 octets are encoded as
+     * 4.) No limit on size.
      */
     public final static String BIN_BASE64 = "bin.base64";
 
     /**
-     * Hexadecimal digits representing octets. Treats each nibble as a hex digit and encodes as a separate Byte. (1
-     * octet is encoded as 2.) No limit on size.
+     * Hexadecimal digits representing octets. Treats each nibble as a hex digit
+     * and encodes as a separate Byte. (1 octet is encoded as 2.) No limit on
+     * size.
      */
     public final static String BIN_HEX = "bin.hex";
 
@@ -176,7 +183,8 @@ public interface StateVariableTypes
     public final static String URI = "uri";
 
     /**
-     * Universally Unique ID. Hexadecimal digits representing octets. Optional embedded hyphens are ignored.
+     * Universally Unique ID. Hexadecimal digits representing octets. Optional
+     * embedded hyphens are ignored.
      */
     public final static String UUID = "uuid";
 

@@ -32,10 +32,8 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TrackerStorageReplication
-    implements ResponsibilityListener
-{
-    final private static Logger logger = LoggerFactory.getLogger( TrackerStorageReplication.class );
+public class TrackerStorageReplication implements ResponsibilityListener {
+    final private static Logger logger = LoggerFactory.getLogger(TrackerStorageReplication.class);
 
     final private PeerExchangeRPC peerExchangeRPC;
 
@@ -47,9 +45,8 @@ public class TrackerStorageReplication
 
     final private boolean forceTCP;
 
-    public TrackerStorageReplication( Peer peer, PeerExchangeRPC peerExchangeRPC, Map<BaseFuture, Long> pendingFutures,
-                                      TrackerStorage trackerStorage, boolean forceTCP )
-    {
+    public TrackerStorageReplication(Peer peer, PeerExchangeRPC peerExchangeRPC, Map<BaseFuture, Long> pendingFutures,
+            TrackerStorage trackerStorage, boolean forceTCP) {
         this.peer = peer;
         this.peerExchangeRPC = peerExchangeRPC;
         this.pendingFutures = pendingFutures;
@@ -58,53 +55,34 @@ public class TrackerStorageReplication
     }
 
     @Override
-    public void meResponsible( Number160 locationKey )
-    {
+    public void meResponsible(Number160 locationKey) {
         // the other has to send us the data, so do nothing
     }
 
     @Override
-    public void otherResponsible( final Number160 locationKey, final PeerAddress other )
-    {
+    public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
         // do pex here, but with mesh peers!
-        if ( logger.isDebugEnabled() )
-        {
-            logger.debug( "other peer became responsibel and we thought we were responsible, so move the data to this peer" );
+        if (logger.isDebugEnabled()) {
+            logger.debug("other peer became responsibel and we thought we were responsible, so move the data to this peer");
         }
-        for ( final Number160 domainKey : trackerStorage.responsibleDomains( locationKey ) )
-        {
-            peer.getConnectionBean().getConnectionReservation().reserve( 1 ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
-                                                                                          {
-                                                                                              @Override
-                                                                                              public void operationComplete( FutureChannelCreator future )
-                                                                                                  throws Exception
-                                                                                              {
-                                                                                                  if ( future.isSuccess() )
-                                                                                                  {
-                                                                                                      FutureResponse futureResponse =
-                                                                                                          peerExchangeRPC.peerExchange( other,
-                                                                                                                                        locationKey,
-                                                                                                                                        domainKey,
-                                                                                                                                        true,
-                                                                                                                                        future.getChannelCreator(),
-                                                                                                                                        forceTCP );
-                                                                                                      Utils.addReleaseListener( futureResponse,
-                                                                                                                                peer.getConnectionBean().getConnectionReservation(),
-                                                                                                                                future.getChannelCreator(),
-                                                                                                                                1 );
-                                                                                                      pendingFutures.put( futureResponse,
-                                                                                                                          Timings.currentTimeMillis() );
-                                                                                                  }
-                                                                                                  else
-                                                                                                  {
-                                                                                                      if ( logger.isErrorEnabled() )
-                                                                                                      {
-                                                                                                          logger.error( "otherResponsible failed "
-                                                                                                              + future.getFailedReason() );
-                                                                                                      }
-                                                                                                  }
-                                                                                              }
-                                                                                          } );
+        for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey)) {
+            peer.getConnectionBean().getConnectionReservation().reserve(1)
+                    .addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                        @Override
+                        public void operationComplete(FutureChannelCreator future) throws Exception {
+                            if (future.isSuccess()) {
+                                FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey,
+                                        domainKey, true, future.getChannelCreator(), forceTCP);
+                                Utils.addReleaseListener(futureResponse, peer.getConnectionBean()
+                                        .getConnectionReservation(), future.getChannelCreator(), 1);
+                                pendingFutures.put(futureResponse, Timings.currentTimeMillis());
+                            } else {
+                                if (logger.isErrorEnabled()) {
+                                    logger.error("otherResponsible failed " + future.getFailedReason());
+                                }
+                            }
+                        }
+                    });
         }
     }
 }

@@ -18,17 +18,16 @@
 package net.tomp2p.natpmp;
 
 /**
- * This class manages an External Address message. This class is thread-safe. After instantiation, this class may be
- * added to the message queue on the {@link NatPmpDevice}. It is important to remove the mapping before shutdown of the
- * {@link NatPmpDevice}. Refer to the parameters of
- * {@link #MapRequestMessage(boolean, int, int, long, com.hoodcomputing.natpmp.MessageResponseInterface) } for details of
- * how to perform this.
+ * This class manages an External Address message. This class is thread-safe.
+ * After instantiation, this class may be added to the message queue on the
+ * {@link NatPmpDevice}. It is important to remove the mapping before shutdown
+ * of the {@link NatPmpDevice}. Refer to the parameters of
+ * {@link #MapRequestMessage(boolean, int, int, long, com.hoodcomputing.natpmp.MessageResponseInterface) }
+ * for details of how to perform this.
  * 
  * @author flszen
  */
-public class MapRequestMessage
-    extends Message
-{
+public class MapRequestMessage extends Message {
     private int internalPort;
 
     private int requestedExternalPort;
@@ -40,29 +39,40 @@ public class MapRequestMessage
     private Integer portMappingLifetime;
 
     /**
-     * Constructs a new {@link MapRequestMessage}. If requestedPortMappingLifetime is zero, an existing port mapping is
-     * removed. If both internalPort and requestedPortMappingLifetime are zero, then all mappings for this host are
-     * removed.
+     * Constructs a new {@link MapRequestMessage}. If
+     * requestedPortMappingLifetime is zero, an existing port mapping is
+     * removed. If both internalPort and requestedPortMappingLifetime are zero,
+     * then all mappings for this host are removed.
      * 
-     * @param isTCP A value of true indicates that this is a TCP mapping. A value of false indicates that this is a UDP
-     *            mapping.
-     * @param internalPort The port on which this client is listening. A value of zero, along with a lifetime of zero
-     *            indicates that all port mappings for this client are to be removed.
-     * @param requestedExternalPort The external port to request. This port may not be available. Always check the
-     *            result of the Message to determine which external port is assigned. A value of zero indicates that the
+     * @param isTCP
+     *            A value of true indicates that this is a TCP mapping. A value
+     *            of false indicates that this is a UDP mapping.
+     * @param internalPort
+     *            The port on which this client is listening. A value of zero,
+     *            along with a lifetime of zero indicates that all port mappings
+     *            for this client are to be removed.
+     * @param requestedExternalPort
+     *            The external port to request. This port may not be available.
+     *            Always check the result of the Message to determine which
+     *            external port is assigned. A value of zero indicates that the
      *            NAT-PMP Gateway should choose a port on its own.
-     * @param requestedPortMappingLifetime The time, in seconds, to request the mapping for. A value of zero requests
-     *            that this mapping is removed. Always check the result of the Message to determine the actual lifetime
-     *            that was assigned, as it may be different than the requested. The recommended port mapping lifetime is
-     *            3600 seconds. The protocol specifies an unsigned integer for this parameter, however Java will not
-     *            support that as a data type. Therefore, the parameter is given as a long. Do not assign values larger
+     * @param requestedPortMappingLifetime
+     *            The time, in seconds, to request the mapping for. A value of
+     *            zero requests that this mapping is removed. Always check the
+     *            result of the Message to determine the actual lifetime that
+     *            was assigned, as it may be different than the requested. The
+     *            recommended port mapping lifetime is 3600 seconds. The
+     *            protocol specifies an unsigned integer for this parameter,
+     *            however Java will not support that as a data type. Therefore,
+     *            the parameter is given as a long. Do not assign values larger
      *            than an unsigned int can handle to this parameter.
-     * @param listener The {@link MessageResponseInterface} that will respond to the message result.
+     * @param listener
+     *            The {@link MessageResponseInterface} that will respond to the
+     *            message result.
      */
-    public MapRequestMessage( boolean isTCP, int internalPort, int requestedExternalPort,
-                              int requestedPortMappingLifetime, MessageResponseInterface listener )
-    {
-        super( isTCP ? MessageType.MapTCP : MessageType.MapUDP, listener );
+    public MapRequestMessage(boolean isTCP, int internalPort, int requestedExternalPort,
+            int requestedPortMappingLifetime, MessageResponseInterface listener) {
+        super(isTCP ? MessageType.MapTCP : MessageType.MapUDP, listener);
 
         // Localize.
         this.internalPort = internalPort;
@@ -70,34 +80,36 @@ public class MapRequestMessage
         this.requestedPortMappingLifetime = requestedPortMappingLifetime;
     }
 
-    byte[] getRequestPayload()
-    {
+    byte[] getRequestPayload() {
         byte[] request = new byte[12];
         request[2] = 0; // Reserved
         request[3] = 0; // Reserved
-        shortToByteArray( getInternalPort(), request, 4 ); // Internal Port
-        shortToByteArray( getRequestedExternalPort(), request, 6 ); // Requested External Port
-        intToByteArray( getRequestedPortMappingLifetime(), request, 8 ); // Request Port Mapping Lifetime in Seconds
+        shortToByteArray(getInternalPort(), request, 4); // Internal Port
+        shortToByteArray(getRequestedExternalPort(), request, 6); // Requested
+                                                                  // External
+                                                                  // Port
+        intToByteArray(getRequestedPortMappingLifetime(), request, 8); // Request
+                                                                       // Port
+                                                                       // Mapping
+                                                                       // Lifetime
+                                                                       // in
+                                                                       // Seconds
 
         return request;
     }
 
-    void parseResponse( byte[] response )
-        throws NatPmpException
-    {
-        int returnedInternalPort = shortFromByteArray( response, 8 );
-        if ( returnedInternalPort != internalPort )
-        {
-            throw new NatPmpException( "The internal port returned from the gateway was not the same as the one sent." );
+    void parseResponse(byte[] response) throws NatPmpException {
+        int returnedInternalPort = shortFromByteArray(response, 8);
+        if (returnedInternalPort != internalPort) {
+            throw new NatPmpException("The internal port returned from the gateway was not the same as the one sent.");
         }
         internalPort = returnedInternalPort;
 
-        externalPort = shortFromByteArray( response, 10 );
-        portMappingLifetime = intFromByteArray( response, 12 );
+        externalPort = shortFromByteArray(response, 10);
+        portMappingLifetime = intFromByteArray(response, 12);
     }
 
-    byte getOpcode()
-    {
+    byte getOpcode() {
         return getMessageType() == MessageType.MapUDP ? (byte) 1 : (byte) 2;
     }
 
@@ -106,8 +118,7 @@ public class MapRequestMessage
      * 
      * @return The port on this host that is listening.
      */
-    public int getInternalPort()
-    {
+    public int getInternalPort() {
         return internalPort;
     }
 
@@ -116,8 +127,7 @@ public class MapRequestMessage
      * 
      * @return The requested external port.
      */
-    public int getRequestedExternalPort()
-    {
+    public int getRequestedExternalPort() {
         return requestedExternalPort;
     }
 
@@ -125,11 +135,11 @@ public class MapRequestMessage
      * Gets the external port that was assigned.
      * 
      * @return The external port that was assigned.
-     * @throws NatPmpException Thrown if there was an exception generated during the parsing of the respnse.
+     * @throws NatPmpException
+     *             Thrown if there was an exception generated during the parsing
+     *             of the respnse.
      */
-    public Integer getExternalPort()
-        throws NatPmpException
-    {
+    public Integer getExternalPort() throws NatPmpException {
         return externalPort;
     }
 
@@ -138,8 +148,7 @@ public class MapRequestMessage
      * 
      * @return The requested port mapping lifetime, in seconds.
      */
-    public int getRequestedPortMappingLifetime()
-    {
+    public int getRequestedPortMappingLifetime() {
         return requestedPortMappingLifetime;
     }
 
@@ -147,11 +156,11 @@ public class MapRequestMessage
      * Gets the assigned port mapping lifetime.
      * 
      * @return The assigned port mapping lifetime, in seconds.
-     * @throws NatPmpException Thrown if there was an exception generated during the parsing of the respnse.
+     * @throws NatPmpException
+     *             Thrown if there was an exception generated during the parsing
+     *             of the respnse.
      */
-    public Integer getPortMappingLifetime()
-        throws NatPmpException
-    {
+    public Integer getPortMappingLifetime() throws NatPmpException {
         return portMappingLifetime;
     }
 }

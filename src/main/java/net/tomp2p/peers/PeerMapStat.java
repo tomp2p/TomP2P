@@ -20,67 +20,55 @@ import java.util.Map;
 
 import net.tomp2p.utils.Timings;
 
-public class PeerMapStat
-{
+public class PeerMapStat {
     private final Map<PeerAddress, PeerStat> mapStat = new HashMap<PeerAddress, PeerStat>();
 
-    public void removeStat( PeerAddress peerAddress )
-    {
-        synchronized ( mapStat )
-        {
-            mapStat.remove( peerAddress );
+    public void removeStat(PeerAddress peerAddress) {
+        synchronized (mapStat) {
+            mapStat.remove(peerAddress);
         }
     }
 
-    public void setSeenOnlineTime( PeerAddress peerAddress )
-    {
-        PeerStat peerStat = getOrCreate( peerAddress );
-        peerStat.setLastSeenOnline( Timings.currentTimeMillis() );
+    public void setSeenOnlineTime(PeerAddress peerAddress) {
+        PeerStat peerStat = getOrCreate(peerAddress);
+        peerStat.setLastSeenOnline(Timings.currentTimeMillis());
     }
 
-    public long getLastSeenOnlineTime( PeerAddress peerAddress )
-    {
-        PeerStat peerStat = getOrCreate( peerAddress );
+    public long getLastSeenOnlineTime(PeerAddress peerAddress) {
+        PeerStat peerStat = getOrCreate(peerAddress);
         return peerStat.getLastSeenOnline();
     }
 
-    public void incChecked( PeerAddress peerAddress )
-    {
-        PeerStat peerStat = getOrCreate( peerAddress );
+    public void incChecked(PeerAddress peerAddress) {
+        PeerStat peerStat = getOrCreate(peerAddress);
         peerStat.incChecked();
     }
 
-    private PeerStat getOrCreate( PeerAddress peerAddress )
-    {
+    private PeerStat getOrCreate(PeerAddress peerAddress) {
         PeerStat peerStat;
-        synchronized ( mapStat )
-        {
-            peerStat = mapStat.get( peerAddress );
-            if ( peerStat == null )
-            {
+        synchronized (mapStat) {
+            peerStat = mapStat.get(peerAddress);
+            if (peerStat == null) {
                 peerStat = new PeerStat();
-                peerStat.setCreated( Timings.currentTimeMillis() );
-                mapStat.put( peerAddress, peerStat );
+                peerStat.setCreated(Timings.currentTimeMillis());
+                mapStat.put(peerAddress, peerStat);
             }
         }
         return peerStat;
     }
 
-    public int getChecked( PeerAddress peerAddress )
-    {
+    public int getChecked(PeerAddress peerAddress) {
         PeerStat peerStat;
-        synchronized ( mapStat )
-        {
-            peerStat = mapStat.get( peerAddress );
+        synchronized (mapStat) {
+            peerStat = mapStat.get(peerAddress);
         }
-        if ( peerStat == null )
+        if (peerStat == null)
             return 0;
         return peerStat.getChecked();
     }
 
-    public long online( PeerAddress peerAddress )
-    {
-        PeerStat peerStat = getOrCreate( peerAddress );
+    public long online(PeerAddress peerAddress) {
+        PeerStat peerStat = getOrCreate(peerAddress);
         return peerStat.onlineTime();
     }
 }

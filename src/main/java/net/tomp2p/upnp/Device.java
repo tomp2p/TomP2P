@@ -54,15 +54,14 @@ import javax.xml.xpath.XPathExpressionException;
 import org.w3c.dom.Node;
 
 /**
- * This class represents an UPNP device, this device contains a set of services that will be needed to access the device
- * functionalities.
+ * This class represents an UPNP device, this device contains a set of services
+ * that will be needed to access the device functionalities.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
 
-public class Device
-{
+public class Device {
     /***/
     public final String deviceType;
 
@@ -116,53 +115,42 @@ public class Device
      * @param parent
      * @param urlBase
      */
-    public Device( Node deviceCtx, Device parent, URL urlBase )
-    {
-        deviceType = getMandatoryData( deviceCtx, "deviceType" );
+    public Device(Node deviceCtx, Device parent, URL urlBase) {
+        deviceType = getMandatoryData(deviceCtx, "deviceType");
 
-        friendlyName = getMandatoryData( deviceCtx, "friendlyName" );
-        manufacturer = getNonMandatoryData( deviceCtx, "manufacturer" );
+        friendlyName = getMandatoryData(deviceCtx, "friendlyName");
+        manufacturer = getNonMandatoryData(deviceCtx, "manufacturer");
 
         URL url = null;
-        try
-        {
-            url = new URL( getNonMandatoryData( deviceCtx, "manufacturerURL" ) );
-        }
-        catch ( java.net.MalformedURLException ex )
-        {
+        try {
+            url = new URL(getNonMandatoryData(deviceCtx, "manufacturerURL"));
+        } catch (java.net.MalformedURLException ex) {
             // crappy data provided, keep the field null
         }
         manufacturerURL = url;
 
         url = null;
-        try
-        {
-            url = getURL( getNonMandatoryData( deviceCtx, "presentationURL" ), urlBase );
-        }
-        catch ( java.net.MalformedURLException ex )
-        {
+        try {
+            url = getURL(getNonMandatoryData(deviceCtx, "presentationURL"), urlBase);
+        } catch (java.net.MalformedURLException ex) {
             // crappy data provided, keep the field null
         }
         presentationURL = url;
 
-        modelDescription = getNonMandatoryData( deviceCtx, "modelDescription" );
-        modelName = getMandatoryData( deviceCtx, "modelName" );
-        modelNumber = getNonMandatoryData( deviceCtx, "modelNumber" );
-        modelURL = getNonMandatoryData( deviceCtx, "modelURL" );
-        serialNumber = getNonMandatoryData( deviceCtx, "serialNumber" );
-        UDN = getMandatoryData( deviceCtx, "UDN" );
-        USN = UDN.concat( "::" ).concat( deviceType );
+        modelDescription = getNonMandatoryData(deviceCtx, "modelDescription");
+        modelName = getMandatoryData(deviceCtx, "modelName");
+        modelNumber = getNonMandatoryData(deviceCtx, "modelNumber");
+        modelURL = getNonMandatoryData(deviceCtx, "modelURL");
+        serialNumber = getNonMandatoryData(deviceCtx, "serialNumber");
+        UDN = getMandatoryData(deviceCtx, "UDN");
+        USN = UDN.concat("::").concat(deviceType);
 
-        String tmp = getNonMandatoryData( deviceCtx, "UPC" );
+        String tmp = getNonMandatoryData(deviceCtx, "UPC");
         long l = -1;
-        if ( tmp != null )
-        {
-            try
-            {
-                l = Long.parseLong( tmp );
-            }
-            catch ( Exception ex )
-            {
+        if (tmp != null) {
+            try {
+                l = Long.parseLong(tmp);
+            } catch (Exception ex) {
                 // non all numeric field provided, non upnp compliant
                 // device
             }
@@ -173,93 +161,71 @@ public class Device
 
         // service list
         List<Service> sList = new ArrayList<Service>();
-        try
-        {
-            Node serviceList = (Node) XMLUtil.xpath.evaluate( "serviceList", deviceCtx, XPathConstants.NODE );
+        try {
+            Node serviceList = (Node) XMLUtil.xpath.evaluate("serviceList", deviceCtx, XPathConstants.NODE);
 
-            int serviceCount = Integer.parseInt( XMLUtil.xpath.evaluate( "count( service )", serviceList ) );
+            int serviceCount = Integer.parseInt(XMLUtil.xpath.evaluate("count( service )", serviceList));
 
-            for ( int i = 1; i <= serviceCount; i++ )
-            {
-                Node serviceXML =
-                    (Node) XMLUtil.xpath.evaluate( "service[" + i + "]", serviceList, XPathConstants.NODE );
+            for (int i = 1; i <= serviceCount; i++) {
+                Node serviceXML = (Node) XMLUtil.xpath.evaluate("service[" + i + "]", serviceList, XPathConstants.NODE);
 
-                try
-                {
-                    sList.add( new Service( serviceXML, urlBase, this ) );
-                }
-                catch ( MalformedURLException e )
-                {
+                try {
+                    sList.add(new Service(serviceXML, urlBase, this));
+                } catch (MalformedURLException e) {
                     e.printStackTrace();
                 }
             }
-        }
-        catch ( XPathExpressionException e )
-        {
+        } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
 
-        services = sList.toArray( new Service[sList.size()] );
+        services = sList.toArray(new Service[sList.size()]);
 
         // child devices
         List<Device> children = new ArrayList<Device>();
-        try
-        {
-            Node devList = (Node) XMLUtil.xpath.evaluate( "deviceList", deviceCtx, XPathConstants.NODE );
+        try {
+            Node devList = (Node) XMLUtil.xpath.evaluate("deviceList", deviceCtx, XPathConstants.NODE);
 
-            int devCount = Integer.parseInt( XMLUtil.xpath.evaluate( "count( device )", devList ) );
+            int devCount = Integer.parseInt(XMLUtil.xpath.evaluate("count( device )", devList));
 
-            for ( int i = 1; i <= devCount; i++ )
-            {
-                Node devXML = (Node) XMLUtil.xpath.evaluate( "device[" + i + "]", devList, XPathConstants.NODE );
+            for (int i = 1; i <= devCount; i++) {
+                Node devXML = (Node) XMLUtil.xpath.evaluate("device[" + i + "]", devList, XPathConstants.NODE);
 
-                Device d = new Device( devXML, this, urlBase );
-                children.add( d );
+                Device d = new Device(devXML, this, urlBase);
+                children.add(d);
             }
-        }
-        catch ( XPathExpressionException e )
-        {
+        } catch (XPathExpressionException e) {
             // no sub-devices
         }
 
-        childDevices = children.toArray( new Device[children.size()] );
+        childDevices = children.toArray(new Device[children.size()]);
     }
 
-    private String getNonMandatoryData( Node ctx, String ctxFieldName )
-    {
+    private String getNonMandatoryData(Node ctx, String ctxFieldName) {
         String value = null;
-        try
-        {
-            value = XMLUtil.xpath.evaluate( ctxFieldName, ctx );
-        }
-        catch ( XPathExpressionException e )
-        {
+        try {
+            value = XMLUtil.xpath.evaluate(ctxFieldName, ctx);
+        } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
 
-        if ( value != null && value.length() == 0 )
-        {
+        if (value != null && value.length() == 0) {
             value = null;
         }
 
         return value;
     }
 
-    private static String getMandatoryData( Node ctx, String ctxFieldName )
-    {
+    private static String getMandatoryData(Node ctx, String ctxFieldName) {
         String value = null;
-        try
-        {
-            value = XMLUtil.xpath.evaluate( ctxFieldName, ctx );
-        }
-        catch ( XPathExpressionException e )
-        {
+        try {
+            value = XMLUtil.xpath.evaluate(ctxFieldName, ctx);
+        } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
 
-        if ( value != null && value.length() == 0 )
-        {
-            throw new RuntimeException( "Mandatory field " + ctxFieldName + " not provided, uncompliant UPNP device !!" );
+        if (value != null && value.length() == 0) {
+            throw new RuntimeException("Mandatory field " + ctxFieldName + " not provided, uncompliant UPNP device !!");
         }
 
         return value;
@@ -268,52 +234,42 @@ public class Device
     /**
      * Parsing an URL from the descriptionXML file
      * 
-     * @param url the string representation fo the URL
-     * @param baseURL the base device URL, needed if the url param is relative
+     * @param url
+     *            the string representation fo the URL
+     * @param baseURL
+     *            the base device URL, needed if the url param is relative
      * @return an URL object defining the url param
-     * @throws MalformedURLException if the url param or baseURL.toExternalForm() + url cannot be parsed to create an
-     *             URL object
+     * @throws MalformedURLException
+     *             if the url param or baseURL.toExternalForm() + url cannot be
+     *             parsed to create an URL object
      */
-    public final static URL getURL( String url, URL baseURL )
-        throws MalformedURLException
-    {
+    public final static URL getURL(String url, URL baseURL) throws MalformedURLException {
         URL rtrVal;
-        if ( url == null || url.trim().length() == 0 )
-        {
+        if (url == null || url.trim().length() == 0) {
             return null;
         }
-        try
-        {
-            rtrVal = new URL( url );
-        }
-        catch ( MalformedURLException malEx )
-        {
+        try {
+            rtrVal = new URL(url);
+        } catch (MalformedURLException malEx) {
             // maybe that the url is relative, we add the baseURL and
             // reparse it
             // if relative then we take the device baser url root and add
             // the url
-            if ( baseURL != null )
-            {
-                url = url.replace( '\\', '/' );
-                if ( url.charAt( 0 ) != '/' )
-                {
+            if (baseURL != null) {
+                url = url.replace('\\', '/');
+                if (url.charAt(0) != '/') {
                     // the path is relative to the device baseURL
                     String externalForm = baseURL.toExternalForm();
-                    if ( !externalForm.endsWith( "/" ) )
-                    {
+                    if (!externalForm.endsWith("/")) {
                         externalForm += "/";
                     }
-                    rtrVal = new URL( externalForm + url );
-                }
-                else
-                {
+                    rtrVal = new URL(externalForm + url);
+                } else {
                     // the path is not relative
                     String URLRoot = baseURL.getProtocol() + "://" + baseURL.getHost() + ":" + baseURL.getPort();
-                    rtrVal = new URL( URLRoot + url );
+                    rtrVal = new URL(URLRoot + url);
                 }
-            }
-            else
-            {
+            } else {
                 throw malEx;
             }
         }
@@ -321,25 +277,21 @@ public class Device
     }
 
     /**
-     * Generates a list of all the child ( not only top level, full childrens hierarchy included ) UPNPDevice objects
-     * for this device.
+     * Generates a list of all the child ( not only top level, full childrens
+     * hierarchy included ) UPNPDevice objects for this device.
      * 
      * @return the generated list or null if no child devices bound
      */
-    public List<Device> getChildDevices()
-    {
-        if ( childDevices == null )
-        {
+    public List<Device> getChildDevices() {
+        if (childDevices == null) {
             return null;
         }
         List<Device> rtrVal = new ArrayList<Device>();
-        for ( Device device : childDevices )
-        {
-            rtrVal.add( device );
+        for (Device device : childDevices) {
+            rtrVal.add(device);
             List<Device> found = device.getChildDevices();
-            if ( found != null )
-            {
-                rtrVal.addAll( found );
+            if (found != null) {
+                rtrVal.addAll(found);
             }
         }
         return rtrVal;
@@ -351,33 +303,28 @@ public class Device
      * 
      * @return the parent device instance
      */
-    public Device getDirectParent()
-    {
+    public Device getDirectParent() {
         return parent;
     }
 
     /**
-     * Looks for a child UPNP device definition file, the whole devices tree will be searched, starting from the current
-     * device node.
+     * Looks for a child UPNP device definition file, the whole devices tree
+     * will be searched, starting from the current device node.
      * 
-     * @param deviceURI the device URI to search
+     * @param deviceURI
+     *            the device URI to search
      * @return An UPNPDevice if anything matches or null
      */
-    public Device getChildDevice( String deviceURI )
-    {
-        if ( deviceType.equals( deviceURI ) )
-        {
+    public Device getChildDevice(String deviceURI) {
+        if (deviceType.equals(deviceURI)) {
             return this;
         }
-        if ( childDevices == null )
-        {
+        if (childDevices == null) {
             return null;
         }
-        for ( Device device : childDevices )
-        {
-            Device found = device.getChildDevice( deviceURI );
-            if ( found != null )
-            {
+        for (Device device : childDevices) {
+            Device found = device.getChildDevice(deviceURI);
+            if (found != null) {
                 return found;
             }
         }
@@ -385,22 +332,20 @@ public class Device
     }
 
     /**
-     * Looks for a UPNP device service definition object for the given service URI (Type)
+     * Looks for a UPNP device service definition object for the given service
+     * URI (Type)
      * 
-     * @param serviceURI the URI of the service
+     * @param serviceURI
+     *            the URI of the service
      * @return A matching UPNPService object or null
      */
-    public Service getService( String serviceURI )
-    {
-        if ( services == null )
-        {
+    public Service getService(String serviceURI) {
+        if (services == null) {
             return null;
         }
 
-        for ( Service service : services )
-        {
-            if ( service.serviceType.equals( serviceURI ) )
-            {
+        for (Service service : services) {
+            if (service.serviceType.equals(serviceURI)) {
                 return service;
             }
         }
@@ -408,22 +353,20 @@ public class Device
     }
 
     /**
-     * Looks for a UPNP device service definition object for the given service ID
+     * Looks for a UPNP device service definition object for the given service
+     * ID
      * 
-     * @param serviceID the ID of the service
+     * @param serviceID
+     *            the ID of the service
      * @return A matching UPNPService object or null
      */
-    public Service getServiceByID( String serviceID )
-    {
-        if ( services == null )
-        {
+    public Service getServiceByID(String serviceID) {
+        if (services == null) {
             return null;
         }
 
-        for ( Service service : services )
-        {
-            if ( service.serviceId.equals( serviceID ) )
-            {
+        for (Service service : services) {
+            if (service.serviceId.equals(serviceID)) {
                 return service;
             }
         }
@@ -431,64 +374,59 @@ public class Device
     }
 
     /**
-     * Looks for the all the UPNP device service definition object for the current UPNP device object. This method can
-     * be used to retrieve multiple same kind ( same service type ) of services with different services id on a device
+     * Looks for the all the UPNP device service definition object for the
+     * current UPNP device object. This method can be used to retrieve multiple
+     * same kind ( same service type ) of services with different services id on
+     * a device
      * 
-     * @param serviceURI the URI of the service
+     * @param serviceURI
+     *            the URI of the service
      * @return A matching List of UPNPService objects or null
      */
-    public List<Service> getServices( String serviceURI )
-    {
-        if ( services == null )
-        {
+    public List<Service> getServices(String serviceURI) {
+        if (services == null) {
             return null;
         }
         List<Service> rtrVal = new ArrayList<Service>();
 
-        for ( Service service : services )
-        {
-            if ( service.serviceType.equals( serviceURI ) )
-            {
-                rtrVal.add( service );
+        for (Service service : services) {
+            if (service.serviceType.equals(serviceURI)) {
+                rtrVal.add(service);
             }
         }
-        if ( rtrVal.size() == 0 )
-        {
+        if (rtrVal.size() == 0) {
             return null;
         }
         return rtrVal;
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder b = new StringBuilder( "UPNP device " ).append( deviceType );
-        b.append( " " ).append( friendlyName );
-        b.append( "\n\t" ).append( manufacturer );
-        b.append( " " ).append( manufacturerURL );
-        b.append( " " ).append( presentationURL );
-        b.append( "\n\t" ).append( modelName );
-        b.append( " " ).append( modelNumber );
-        b.append( " " ).append( modelDescription );
-        b.append( " " ).append( modelURL );
-        b.append( "\n\t" ).append( serialNumber );
+    public String toString() {
+        StringBuilder b = new StringBuilder("UPNP device ").append(deviceType);
+        b.append(" ").append(friendlyName);
+        b.append("\n\t").append(manufacturer);
+        b.append(" ").append(manufacturerURL);
+        b.append(" ").append(presentationURL);
+        b.append("\n\t").append(modelName);
+        b.append(" ").append(modelNumber);
+        b.append(" ").append(modelDescription);
+        b.append(" ").append(modelURL);
+        b.append("\n\t").append(serialNumber);
 
-        b.append( "\n\tServices:\n\t\t" );
-        for ( int i = 0; i < services.length; i++ )
-        {
+        b.append("\n\tServices:\n\t\t");
+        for (int i = 0; i < services.length; i++) {
             String s = services[i].toString();
-            s = s.replaceAll( "\n", "\n\t\t" );
-            b.append( s );
-            b.append( "\n\t\t" );
+            s = s.replaceAll("\n", "\n\t\t");
+            b.append(s);
+            b.append("\n\t\t");
         }
 
-        b.append( "\n\tDevices:\n\t\t" );
-        for ( int i = 0; i < childDevices.length; i++ )
-        {
+        b.append("\n\tDevices:\n\t\t");
+        for (int i = 0; i < childDevices.length; i++) {
             String s = childDevices[i].toString();
-            s = s.replaceAll( "\n", "\n\t" );
-            b.append( s );
-            b.append( "\n\t\t" );
+            s = s.replaceAll("\n", "\n\t");
+            b.append(s);
+            b.append("\n\t\t");
         }
 
         return b.toString();

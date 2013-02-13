@@ -22,44 +22,54 @@ import net.tomp2p.message.Message;
 import net.tomp2p.rpc.RequestHandlerTCP;
 import net.tomp2p.rpc.RequestHandlerUDP;
 
-public interface Sender
-{
+public interface Sender {
     /**
      * Sent the message via TCP. Keep the future state.
      * 
-     * @param handler RequestHandlerTCP
-     * @param futureResponse FutureResponse
-     * @param message Message
-     * @param channelCreator ChannelCreator
-     * @param idleTCPMillis Timeout
+     * @param handler
+     *            RequestHandlerTCP
+     * @param futureResponse
+     *            FutureResponse
+     * @param message
+     *            Message
+     * @param channelCreator
+     *            ChannelCreator
+     * @param idleTCPMillis
+     *            Timeout
      */
-    public abstract void sendTCP( final RequestHandlerTCP<? extends BaseFuture> handler,
-                                  final FutureResponse futureResponse, final Message message,
-                                  final ChannelCreator channelCreator, final int idleTCPMillis );
+    public abstract void sendTCP(final RequestHandlerTCP<? extends BaseFuture> handler,
+            final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
+            final int idleTCPMillis);
 
     /**
      * Sent the message via UDP. Keep the future state.
      * 
-     * @param handler RequestHandlerUDP
-     * @param futureResponse FutureResponse
-     * @param message Message
-     * @param channelCreator ChannelCreator
+     * @param handler
+     *            RequestHandlerUDP
+     * @param futureResponse
+     *            FutureResponse
+     * @param message
+     *            Message
+     * @param channelCreator
+     *            ChannelCreator
      */
-    public abstract void sendUDP( final RequestHandlerUDP<? extends BaseFuture> handler,
-                                  final FutureResponse futureResponse, final Message message,
-                                  final ChannelCreator channelCreator );
+    public abstract void sendUDP(final RequestHandlerUDP<? extends BaseFuture> handler,
+            final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator);
 
     /**
      * Sent the message via UDP broadcast. Keep the future state.
      * 
-     * @param handler RequestHandlerUDP
-     * @param futureResponse FutureResponse
-     * @param message Message
-     * @param channelCreator ChannelCreator
+     * @param handler
+     *            RequestHandlerUDP
+     * @param futureResponse
+     *            FutureResponse
+     * @param message
+     *            Message
+     * @param channelCreator
+     *            ChannelCreator
      */
-    public abstract void sendBroadcastUDP( final RequestHandlerUDP<? extends BaseFuture> handler,
-                                           final FutureResponse futureResponse, final Message message,
-                                           final ChannelCreator channelCreator );
+    public abstract void sendBroadcastUDP(final RequestHandlerUDP<? extends BaseFuture> handler,
+            final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator);
 
     /**
      * Shuts down the sender. After this the sender cannot be used again.

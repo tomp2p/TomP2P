@@ -30,14 +30,13 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 
-public class SendDirectBuilder
-{
-    final private static FutureResponse FUTURE_REQUEST_SHUTDOWN =
-        new FutureResponse( null ).setFailed( "Peer is shutting down" );
+public class SendDirectBuilder {
+    final private static FutureResponse FUTURE_REQUEST_SHUTDOWN = new FutureResponse(null)
+            .setFailed("Peer is shutting down");
 
     final private Peer peer;
 
-    //TODO: make this final once the @Deprecated is removed
+    // TODO: make this final once the @Deprecated is removed
     private PeerAddress recipientAddress;
 
     private ChannelBuffer buffer;
@@ -47,207 +46,158 @@ public class SendDirectBuilder
     private Object object;
 
     private FutureChannelCreator futureChannelCreator;
-    
-    public SendDirectBuilder( Peer peer, PeerAddress recipientAddress )
-    {
+
+    public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
         this.peer = peer;
         this.recipientAddress = recipientAddress;
         this.recipientConnection = null;
     }
-    
-    public SendDirectBuilder( Peer peer, PeerConnection recipientConnection )
-    {
+
+    public SendDirectBuilder(Peer peer, PeerConnection recipientConnection) {
         this.peer = peer;
         this.recipientAddress = null;
         this.recipientConnection = recipientConnection;
     }
-    
-    public PeerAddress getRecipient()
-    {
+
+    public PeerAddress getRecipient() {
         return recipientAddress;
     }
 
-    public SendDirectBuilder setRecipient( PeerAddress recipient )
-    {
+    public SendDirectBuilder setRecipient(PeerAddress recipient) {
         this.recipientAddress = recipient;
         return this;
     }
 
     @Deprecated
-    public SendDirectBuilder( Peer peer )
-    {
+    public SendDirectBuilder(Peer peer) {
         this.peer = peer;
     }
 
     @Deprecated
-    public PeerAddress getPeerAddress()
-    {
+    public PeerAddress getPeerAddress() {
         return recipientAddress;
     }
 
     @Deprecated
-    public SendDirectBuilder setPeerAddress( PeerAddress peerAddress )
-    {
+    public SendDirectBuilder setPeerAddress(PeerAddress peerAddress) {
         this.recipientAddress = peerAddress;
         return this;
     }
 
-    public ChannelBuffer getBuffer()
-    {
+    public ChannelBuffer getBuffer() {
         return buffer;
     }
 
-    public SendDirectBuilder setBuffer( ChannelBuffer buffer )
-    {
+    public SendDirectBuilder setBuffer(ChannelBuffer buffer) {
         this.buffer = buffer;
         return this;
     }
 
-    public PeerConnection getConnection()
-    {
+    public PeerConnection getConnection() {
         return recipientConnection;
     }
 
-    public SendDirectBuilder setConnection( PeerConnection connection )
-    {
+    public SendDirectBuilder setConnection(PeerConnection connection) {
         this.recipientConnection = connection;
         return this;
     }
 
-    public Object getObject()
-    {
+    public Object getObject() {
         return object;
     }
 
-    public SendDirectBuilder setObject( Object object )
-    {
+    public SendDirectBuilder setObject(Object object) {
         this.object = object;
         return this;
     }
 
-    public FutureChannelCreator getFutureChannelCreator()
-    {
+    public FutureChannelCreator getFutureChannelCreator() {
         return futureChannelCreator;
     }
 
-    public SendDirectBuilder setFutureChannelCreator( FutureChannelCreator futureChannelCreator )
-    {
+    public SendDirectBuilder setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
         this.futureChannelCreator = futureChannelCreator;
         return this;
     }
 
-    public FutureResponse start()
-    {
-        if ( peer.isShutdown() )
-        {
+    public FutureResponse start() {
+        if (peer.isShutdown()) {
             return FUTURE_REQUEST_SHUTDOWN;
         }
 
         final boolean keepAlive;
-        if ( recipientAddress != null && recipientConnection == null )
-        {
+        if (recipientAddress != null && recipientConnection == null) {
             keepAlive = false;
-        }
-        else if ( recipientAddress == null && recipientConnection != null )
-        {
+        } else if (recipientAddress == null && recipientConnection != null) {
             keepAlive = true;
-        }
-        else
-        {
-            throw new IllegalArgumentException( "either remotePeer or connection has to be set" );
+        } else {
+            throw new IllegalArgumentException("either remotePeer or connection has to be set");
         }
         final boolean raw;
-        if ( object != null && buffer == null )
-        {
+        if (object != null && buffer == null) {
             byte[] me;
-            try
-            {
-                me = Utils.encodeJavaObject( object );
+            try {
+                me = Utils.encodeJavaObject(object);
+            } catch (IOException e) {
+                FutureResponse futureResponse = new FutureResponse(null);
+                return futureResponse.setFailed("cannot serialize object: " + e);
             }
-            catch ( IOException e )
-            {
-                FutureResponse futureResponse = new FutureResponse( null );
-                return futureResponse.setFailed( "cannot serialize object: " + e );
-            }
-            buffer = ChannelBuffers.wrappedBuffer( me );
+            buffer = ChannelBuffers.wrappedBuffer(me);
             raw = false;
-        }
-        else
-        {
+        } else {
             raw = true;
         }
-        if ( buffer != null )
-        {
-            if ( keepAlive )
-            {
-                return sendDirectAlive( raw );
-            }
-            else
-            {
-                if ( futureChannelCreator == null )
-                {
-                    futureChannelCreator =
-                        peer.getConnectionBean().getConnectionReservation().reserve( 1, "send-direct-builder" );
+        if (buffer != null) {
+            if (keepAlive) {
+                return sendDirectAlive(raw);
+            } else {
+                if (futureChannelCreator == null) {
+                    futureChannelCreator = peer.getConnectionBean().getConnectionReservation()
+                            .reserve(1, "send-direct-builder");
                 }
-                return sendDirectClose( raw );
+                return sendDirectClose(raw);
             }
-        }
-        else
-        {
-            throw new IllegalArgumentException( "either object or requestBuffer has to be set" );
+        } else {
+            throw new IllegalArgumentException("either object or requestBuffer has to be set");
         }
     }
 
-    private FutureResponse sendDirectAlive( boolean raw )
-    {
-        RequestHandlerTCP<FutureResponse> request =
-            peer.getDirectDataRPC().prepareSend( recipientConnection.getDestination(), buffer.slice(), raw );
-        request.setKeepAlive( true );
+    private FutureResponse sendDirectAlive(boolean raw) {
+        RequestHandlerTCP<FutureResponse> request = peer.getDirectDataRPC().prepareSend(
+                recipientConnection.getDestination(), buffer.slice(), raw);
+        request.setKeepAlive(true);
         // since we keep one connection open, we need to make sure that we do
         // not send anything in parallel.
-        try
-        {
+        try {
             recipientConnection.aquireSingleConnection();
+        } catch (InterruptedException e) {
+            request.getFutureResponse().setFailed("Interupted " + e);
         }
-        catch ( InterruptedException e )
-        {
-            request.getFutureResponse().setFailed( "Interupted " + e );
-        }
-        request.sendTCP( recipientConnection.getChannelCreator(), recipientConnection.getIdleTCPMillis() );
-        request.getFutureResponse().addListener( new BaseFutureAdapter<FutureResponse>()
-        {
+        request.sendTCP(recipientConnection.getChannelCreator(), recipientConnection.getIdleTCPMillis());
+        request.getFutureResponse().addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
-            public void operationComplete( FutureResponse future )
-                throws Exception
-            {
+            public void operationComplete(FutureResponse future) throws Exception {
                 recipientConnection.releaseSingleConnection();
             }
-        } );
+        });
         return request.getFutureResponse();
     }
 
-    private FutureResponse sendDirectClose( final boolean raw )
-    {
-        final RequestHandlerTCP<FutureResponse> request =
-            peer.getDirectDataRPC().prepareSend( recipientAddress, buffer.slice(), raw );
-        futureChannelCreator.addListener( new BaseFutureAdapter<FutureChannelCreator>()
-        {
+    private FutureResponse sendDirectClose(final boolean raw) {
+        final RequestHandlerTCP<FutureResponse> request = peer.getDirectDataRPC().prepareSend(recipientAddress,
+                buffer.slice(), raw);
+        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
-            public void operationComplete( FutureChannelCreator future )
-                throws Exception
-            {
-                if ( future.isSuccess() )
-                {
-                    FutureResponse futureResponse = request.sendTCP( future.getChannelCreator() );
-                    Utils.addReleaseListenerAll( futureResponse, peer.getConnectionBean().getConnectionReservation(),
-                                                 future.getChannelCreator() );
-                }
-                else
-                {
-                    request.getFutureResponse().setFailed( future );
+            public void operationComplete(FutureChannelCreator future) throws Exception {
+                if (future.isSuccess()) {
+                    FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
+                    Utils.addReleaseListenerAll(futureResponse, peer.getConnectionBean().getConnectionReservation(),
+                            future.getChannelCreator());
+                } else {
+                    request.getFutureResponse().setFailed(future);
                 }
             }
-        } );
+        });
         return request.getFutureResponse();
     }
 

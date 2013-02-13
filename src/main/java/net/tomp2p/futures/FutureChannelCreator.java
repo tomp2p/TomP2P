@@ -18,30 +18,28 @@ package net.tomp2p.futures;
 import net.tomp2p.connection.ChannelCreator;
 
 /**
- * This future is used for the connection reservation. If notifies the user when a connection could have been reserved.
+ * This future is used for the connection reservation. If notifies the user when
+ * a connection could have been reserved.
  * 
  * @author Thomas Bocek
  */
-public class FutureChannelCreator
-    extends BaseFutureImpl<FutureChannelCreator>
-{
+public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
     private ChannelCreator channelCreator;
 
-    public FutureChannelCreator()
-    {
-        self( this );
+    public FutureChannelCreator() {
+        self(this);
     }
 
     /**
-     * Called if a channel creator could be created. With this channel creator connections can be created.
+     * Called if a channel creator could be created. With this channel creator
+     * connections can be created.
      * 
-     * @param channelCreator The newly created ChannelCreator
+     * @param channelCreator
+     *            The newly created ChannelCreator
      */
-    public void reserved( ChannelCreator channelCreator )
-    {
-        synchronized ( lock )
-        {
-            if ( !setCompletedAndNotify() )
+    public void reserved(ChannelCreator channelCreator) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify())
                 return;
             this.type = FutureType.OK;
             this.channelCreator = channelCreator;
@@ -52,10 +50,8 @@ public class FutureChannelCreator
     /**
      * @return The ChannelCreator
      */
-    public ChannelCreator getChannelCreator()
-    {
-        synchronized ( lock )
-        {
+    public ChannelCreator getChannelCreator() {
+        synchronized (lock) {
             return channelCreator;
         }
     }

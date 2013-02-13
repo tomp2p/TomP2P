@@ -36,76 +36,67 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 /**
- * This class is not suitable for automated integration testing, since it requires a setup with a IPv6, which has to be
- * set up manually.
+ * This class is not suitable for automated integration testing, since it
+ * requires a setup with a IPv6, which has to be set up manually.
  * 
  * @author draft
  */
-public class TestIPv6
-{
+public class TestIPv6 {
     private final int port = 4000;
     private final String ipSuperPeer = "2001:620:10:10c1:201:6cff:feca:426d";
 
     /**
      * Starts the server (super peer).
      * 
-     * @throws IOException PeerMaker may throw and IOException
+     * @throws IOException
+     *             PeerMaker may throw and IOException
      */
     @Test
     @Ignore
-    public void startServer()
-        throws IOException
-    {
-        Random r = new Random( Utils2.THE_ANSWER );
-        Bindings b = new Bindings( Protocol.IPv6 );
-        Peer peer = new PeerMaker( new Number160( r ) ).setBindings( b ).setPorts( port ).makeAndListen();
-        for ( int i = 0; i < Integer.MAX_VALUE; i++ )
-        {
-            for ( PeerAddress pa : peer.getPeerBean().getPeerMap().getAll() )
-            {
-                FutureChannelCreator fcc = peer.getConnectionBean().getConnectionReservation().reserve( 1 );
+    public void startServer() throws IOException {
+        Random r = new Random(Utils2.THE_ANSWER);
+        Bindings b = new Bindings(Protocol.IPv6);
+        Peer peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(port).makeAndListen();
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+            for (PeerAddress pa : peer.getPeerBean().getPeerMap().getAll()) {
+                FutureChannelCreator fcc = peer.getConnectionBean().getConnectionReservation().reserve(1);
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.getChannelCreator();
-                FutureResponse fr1 = peer.getHandshakeRPC().pingTCP( pa, cc );
+                FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc);
                 fr1.awaitUninterruptibly();
 
-                if ( fr1.isSuccess() )
-                {
-                    System.out.println( "peer online TCP:" + pa );
+                if (fr1.isSuccess()) {
+                    System.out.println("peer online TCP:" + pa);
+                } else {
+                    System.out.println("offline " + pa);
                 }
-                else
-                {
-                    System.out.println( "offline " + pa );
-                }
-                FutureResponse fr2 = peer.getHandshakeRPC().pingUDP( pa, cc );
+                FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc);
                 fr2.awaitUninterruptibly();
-                peer.getConnectionBean().getConnectionReservation().release( cc );
-                if ( fr2.isSuccess() )
-                {
-                    System.out.println( "peer online UDP:" + pa );
-                }
-                else
-                {
-                    System.out.println( "offline " + pa );
+                peer.getConnectionBean().getConnectionReservation().release(cc);
+                if (fr2.isSuccess()) {
+                    System.out.println("peer online UDP:" + pa);
+                } else {
+                    System.out.println("offline " + pa);
                 }
             }
         }
     }
 
     /**
-     * Start the client that bootstraps to the super peer. Make sure you set the right IP address for the super peer.
-     * @throws IOException PeerMaker may throw and IOException
+     * Start the client that bootstraps to the super peer. Make sure you set the
+     * right IP address for the super peer.
+     * 
+     * @throws IOException
+     *             PeerMaker may throw and IOException
      */
     @Test
     @Ignore
-    public void startClient() throws IOException
-    {
-        Random r = new Random( Utils2.THE_ANSWER2 );
-        Bindings b = new Bindings( Protocol.IPv6 );
-        Peer peer = new PeerMaker( new Number160( r ) ).setBindings( b ).setPorts( port ).makeAndListen();
-        FutureBootstrap fb =
-            peer.bootstrap().setInetAddress( InetAddress.getByName( ipSuperPeer ) ).setPorts( port ).start();
+    public void startClient() throws IOException {
+        Random r = new Random(Utils2.THE_ANSWER2);
+        Bindings b = new Bindings(Protocol.IPv6);
+        Peer peer = new PeerMaker(new Number160(r)).setBindings(b).setPorts(port).makeAndListen();
+        FutureBootstrap fb = peer.bootstrap().setInetAddress(InetAddress.getByName(ipSuperPeer)).setPorts(port).start();
         fb.awaitUninterruptibly();
-        System.out.println( "Got it: " + fb.isSuccess() );
+        System.out.println("Got it: " + fb.isSuccess());
     }
 }

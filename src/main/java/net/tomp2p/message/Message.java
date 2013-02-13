@@ -36,55 +36,41 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The message is in binary format in TomP2P. It is defined as follows and has several header and payload fields. Since
- * we do the serialization manually, we do not need a serialization field.
+ * The message is in binary format in TomP2P. It is defined as follows and has
+ * several header and payload fields. Since we do the serialization manually, we
+ * do not need a serialization field.
  * 
  * @author Thomas Bocek
  */
-public class Message
-{
-    final private static Logger logger = LoggerFactory.getLogger( Message.class );
+public class Message {
+    final private static Logger logger = LoggerFactory.getLogger(Message.class);
 
     // used for creating random message id
     final transient private static Random random = new Random();
 
     // 2 x 4 bit -> 8 bit
-    public enum Content
-    {
-        EMPTY,
-        KEY,
-        KEY_KEY,
-        MAP_KEY160_DATA,
-        MAP_KEY480_DATA,
-        MAP_KEY_COMPARE_DATA,
-        MAP_KEY_KEY,
-        SET_KEY160,
-        SET_KEY480,
-        SET_NEIGHBORS,
-        CHANNEL_BUFFER,
-        LONG,
-        INTEGER,
-        PUBLIC_KEY_SIGNATURE,
-        SET_TRACKER_DATA,
-        TWO_BLOOM_FILTER
+    public enum Content {
+        EMPTY, KEY, KEY_KEY, MAP_KEY160_DATA, MAP_KEY480_DATA, MAP_KEY_COMPARE_DATA, MAP_KEY_KEY, SET_KEY160, SET_KEY480, SET_NEIGHBORS, CHANNEL_BUFFER, LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, TWO_BLOOM_FILTER
     };
 
     // 1 x 4 bit
-    public enum Type
-    {
+    public enum Type {
         // REQUEST_1 is the normal request
-        // REQUEST_2 for GET returns the extended digest (hashes of all stored data)
+        // REQUEST_2 for GET returns the extended digest (hashes of all stored
+        // data)
         // REQUEST_3 for GET returns a Bloom filter
         // REQUEST_4 for GET returns a range (min/max)
         // REQUEST_2 for PUT/ADD/COMPARE_PUT means protect domain
         // REQUEST_3 for PUT means put if absent
-        // REQUEST_3 for COMPARE_PUT means partial (partial means that put those data that match compare, ignore others)
+        // REQUEST_3 for COMPARE_PUT means partial (partial means that put those
+        // data that match compare, ignore others)
         // REQUEST_4 for PUT means protect domain and put if absent
         // REQUEST_4 for COMPARE_PUT means partial and protect domain
         // REQUEST_2 for REMOVE means send back results
         // REQUEST_2 for RAW_DATA means serialize object
         // *** NEIGHBORS has four different cases
-        // REQUEST_1 for NEIGHBORS means check for put (no digest) for tracker and storage
+        // REQUEST_1 for NEIGHBORS means check for put (no digest) for tracker
+        // and storage
         // REQUEST_2 for NEIGHBORS means check for get (with digest) for storage
         // REQUEST_3 for NEIGHBORS means check for get (with digest) for tracker
         // REQUEST_4 for NEIGHBORS means check for put (with digest) for task
@@ -93,42 +79,12 @@ public class Message
         // REQUEST_1 for TASK is submit new task
         // REQUEST_2 for TASK is status
         // REQUEST_3 for TASK is send back result
-        REQUEST_1,
-        REQUEST_2,
-        REQUEST_3,
-        REQUEST_4,
-        REQUEST_FF_1,
-        REQUEST_FF_2,
-        OK,
-        PARTIALLY_OK,
-        NOT_FOUND,
-        DENIED,
-        UNKNOWN_ID,
-        EXCEPTION,
-        CANCEL,
-        USER1,
-        USER2
+        REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, REQUEST_FF_1, REQUEST_FF_2, OK, PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2
     };
 
     // 1 x 4 bit
-    public enum Command
-    {
-        PING,
-        PUT,
-        COMPARE_PUT,
-        GET,
-        ADD,
-        REMOVE,
-        NEIGHBORS,
-        QUIT,
-        DIRECT_DATA,
-        TRACKER_ADD,
-        TRACKER_GET,
-        PEX,
-        TASK,
-        BROADCAST_DATA,
-        USER1,
-        USER2
+    public enum Command {
+        PING, PUT, COMPARE_PUT, GET, ADD, REMOVE, NEIGHBORS, QUIT, DIRECT_DATA, TRACKER_ADD, TRACKER_GET, PEX, TASK, BROADCAST_DATA, USER1, USER2
     };
 
     // header
@@ -177,7 +133,7 @@ public class Message
     private volatile ChannelBuffer payload1 = null;
 
     private volatile ChannelBuffer payload2 = null;
-    
+
     private volatile int payloadCounter = 0;
 
     private volatile long long_number = 0;
@@ -214,9 +170,8 @@ public class Message
     /**
      * Creates message with a random ID
      */
-    public Message()
-    {
-        setMessageId( random.nextInt() );
+    public Message() {
+        setMessageId(random.nextInt());
     }
 
     // KeyPair getKeyPair()
@@ -240,88 +195,82 @@ public class Message
      * 
      * @return message Id
      */
-    public int getMessageId()
-    {
+    public int getMessageId() {
         return messageId;
     }
 
     /**
      * For deserialization, we need to set the id
      * 
-     * @param messageId The message Id
+     * @param messageId
+     *            The message Id
      */
-    public Message setMessageId( final int messageId )
-    {
+    public Message setMessageId(final int messageId) {
         this.messageId = messageId;
         return this;
     }
 
-    public void setUDP()
-    {
+    public void setUDP() {
         isUDP = true;
     }
 
-    public void setTCP()
-    {
+    public void setTCP() {
         isUDP = false;
     }
 
-    public boolean isUDP()
-    {
+    public boolean isUDP() {
         return isUDP;
     }
 
-    public void finished()
-    {
+    public void finished() {
         this.finished = Timings.currentTimeMillis();
     }
 
-    public long getFinished()
-    {
-        if ( finished == 0 )
-            throw new RuntimeException( "Need to set finished before!" );
+    public long getFinished() {
+        if (finished == 0)
+            throw new RuntimeException("Need to set finished before!");
         return finished;
     }
 
     /**
-     * Returns the version, which is 32bit. Each application can choose and version to not intefere with other
-     * applications
+     * Returns the version, which is 32bit. Each application can choose and
+     * version to not intefere with other applications
      * 
      * @return The application version that uses this P2P framework
      */
-    public int getVersion()
-    {
+    public int getVersion() {
         return version;
     }
 
     /**
      * For deserialization
      * 
-     * @param version The 24bit version
+     * @param version
+     *            The 24bit version
      */
-    public Message setVersion( final int version )
-    {
+    public Message setVersion(final int version) {
         this.version = version;
         return this;
     }
 
     /**
-     * Determines if its a request oCommandr reply, and what kind of reply (error, warning states)
+     * Determines if its a request oCommandr reply, and what kind of reply
+     * (error, warning states)
      * 
      * @return Type of the message
      */
-    public Type getType()
-    {
+    public Type getType() {
         return type;
     }
 
     /**
-     * Set the message type. Either its a request or reply (with error and warning codes)
+     * Set the message type. Either its a request or reply (with error and
+     * warning codes)
      * 
-     * @param type Type of the message
+     * @param type
+     *            Type of the message
      */
-    public Message setType( final Type type )
-    {
+    public Message setType(final Type type) {
         this.type = type;
         return this;
     }
@@ -331,18 +280,17 @@ public class Message
      * 
      * @return Command
      */
-    public Command getCommand()
-    {
+    public Command getCommand() {
         return command;
     }
 
     /**
      * Command of the message, such as GET, PING, etc.
      * 
-     * @param command Command
+     * @param command
+     *            Command
      */
-    public Message setCommand( final Command command )
-    {
+    public Message setCommand(final Command command) {
         this.command = command;
         return this;
     }
@@ -352,18 +300,18 @@ public class Message
      * 
      * @returnThe ID of the sender.
      */
-    public PeerAddress getSender()
-    {
+    public PeerAddress getSender() {
         return sender;
     }
 
     /**
-     * The ID of the sender. The IP of the sender will *not* be transferred, as this information is in the IP packet.
+     * The ID of the sender. The IP of the sender will *not* be transferred, as
+     * this information is in the IP packet.
      * 
-     * @param sender The ID of the sender.
+     * @param sender
+     *            The ID of the sender.
      */
-    public Message setSender( final PeerAddress sender )
-    {
+    public Message setSender(final PeerAddress sender) {
         this.sender = sender;
         return this;
     }
@@ -373,18 +321,18 @@ public class Message
      * 
      * @return The ID of the recipient
      */
-    public PeerAddress getRecipient()
-    {
+    public PeerAddress getRecipient() {
         return recipient;
     }
 
     /**
-     * Set the ID of the recipient. The IP is used to connect to the recipient, but the IP is *not* transferred.
+     * Set the ID of the recipient. The IP is used to connect to the recipient,
+     * but the IP is *not* transferred.
      * 
-     * @param recipient The ID of the recipient
+     * @param recipient
+     *            The ID of the recipient
      */
-    public Message setRecipient( final PeerAddress recipient )
-    {
+    public Message setRecipient(final PeerAddress recipient) {
         this.recipient = recipient;
         return this;
     }
@@ -394,33 +342,34 @@ public class Message
      * 
      * @return Length of the payload, if no payload set, returns 0.
      */
-    public long getLength()
-    {
+    public long getLength() {
         return length;
     }
 
     /**
-     * Set payload length. This can also be used to not transfer payload even if payload has been set. If contentlength
-     * is set to 0, no payload will be transferred.
+     * Set payload length. This can also be used to not transfer payload even if
+     * payload has been set. If contentlength is set to 0, no payload will be
+     * transferred.
      * 
-     * @param contentLength The length of the payload
+     * @param contentLength
+     *            The length of the payload
      */
-    public Message setLength( final long length )
-    {
+    public Message setLength(final long length) {
         this.length = length;
         return this;
     }
 
     /**
-     * Set two content types. The contentypes itself could also be combined. As not all combinations are used, these two
-     * fields are engouh.
+     * Set two content types. The contentypes itself could also be combined. As
+     * not all combinations are used, these two fields are engouh.
      * 
-     * @param contentType1 Content type 1
-     * @param contentType2 Content type 2
+     * @param contentType1
+     *            Content type 1
+     * @param contentType2
+     *            Content type 2
      */
-    void setContentType( final Content contentType1, final Content contentType2, final Content contentType3,
-                         final Content contentType4 )
-    {
+    void setContentType(final Content contentType1, final Content contentType2, final Content contentType3,
+            final Content contentType4) {
         this.contentType1 = contentType1;
         this.contentType2 = contentType2;
         this.contentType3 = contentType3;
@@ -432,8 +381,7 @@ public class Message
      * 
      * @return Content type 1
      */
-    public Content getContentType1()
-    {
+    public Content getContentType1() {
         return contentType1;
     }
 
@@ -442,8 +390,7 @@ public class Message
      * 
      * @return Content type 2
      */
-    public Content getContentType2()
-    {
+    public Content getContentType2() {
         return contentType2;
     }
 
@@ -452,8 +399,7 @@ public class Message
      * 
      * @return Content type 2
      */
-    public Content getContentType3()
-    {
+    public Content getContentType3() {
         return contentType3;
     }
 
@@ -462,98 +408,86 @@ public class Message
      * 
      * @return Content type 2
      */
-    public Content getContentType4()
-    {
+    public Content getContentType4() {
         return contentType4;
     }
 
     /**
-     * Convient method to set content type. Set first content type 1, if this is set (not empty), then set the second
-     * one.
+     * Convient method to set content type. Set first content type 1, if this is
+     * set (not empty), then set the second one.
      * 
      * @param contentType
      */
-    public Message setContentType( final Content contentType )
-    {
-        if ( contentType1 == Content.EMPTY )
+    public Message setContentType(final Content contentType) {
+        if (contentType1 == Content.EMPTY)
             contentType1 = contentType;
-        else if ( contentType2 == Content.EMPTY )
+        else if (contentType2 == Content.EMPTY)
             contentType2 = contentType;
-        else if ( contentType3 == Content.EMPTY )
+        else if (contentType3 == Content.EMPTY)
             contentType3 = contentType;
-        else if ( contentType4 == Content.EMPTY )
+        else if (contentType4 == Content.EMPTY)
             contentType4 = contentType;
         else
-            throw new IllegalArgumentException( "Both content types already set. Cannot set content type!" );
+            throw new IllegalArgumentException("Both content types already set. Cannot set content type!");
         return this;
     }
-    
-    private Message replaceContentType( Content oldContent, Content newContent )
-    {
-        if ( contentType1 == oldContent )
+
+    private Message replaceContentType(Content oldContent, Content newContent) {
+        if (contentType1 == oldContent)
             contentType1 = newContent;
-        else if ( contentType2 == oldContent )
+        else if (contentType2 == oldContent)
             contentType2 = newContent;
-        else if ( contentType3 == oldContent )
+        else if (contentType3 == oldContent)
             contentType3 = newContent;
-        else if ( contentType4 == oldContent )
+        else if (contentType4 == oldContent)
             contentType4 = newContent;
         else
-            throw new IllegalArgumentException( "Both content types already set. Cannot set content type!" );
+            throw new IllegalArgumentException("Both content types already set. Cannot set content type!");
         return this;
     }
 
-    public boolean isRequest()
-    {
+    public boolean isRequest() {
         return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
-            || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+                || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
     }
 
-    public boolean isFireAndForget()
-    {
+    public boolean isFireAndForget() {
         return type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
     }
 
-    public boolean isOk()
-    {
+    public boolean isOk() {
         return type == Type.OK || type == Type.PARTIALLY_OK;
     }
 
-    public boolean isNotOk()
-    {
+    public boolean isNotOk() {
         return type == Type.NOT_FOUND || type == Type.DENIED;
     }
 
-    public boolean isError()
-    {
-        return isError( type );
+    public boolean isError() {
+        return isError(type);
     }
 
-    public static boolean isError( Type type )
-    {
+    public static boolean isError(Type type) {
         return type == Type.UNKNOWN_ID || type == Type.EXCEPTION || type == Type.CANCEL;
     }
 
     // Here begins the payload part
-    public Message setNeighbors( final Collection<PeerAddress> neighbors )
-    {
-        return setNeighbors( neighbors, neighbors.size() );
+    public Message setNeighbors(final Collection<PeerAddress> neighbors) {
+        return setNeighbors(neighbors, neighbors.size());
     }
 
-    public Message setNeighbors( final Collection<PeerAddress> neighbors, final int useAtMostNeighbors )
-    {
-        if ( neighbors == null )
-            throw new IllegalArgumentException( "neighbors cannot add null" );
-        else if ( useAtMostNeighbors < 0 )
-            throw new IllegalArgumentException( "neigbor size is negative" );
+    public Message setNeighbors(final Collection<PeerAddress> neighbors, final int useAtMostNeighbors) {
+        if (neighbors == null)
+            throw new IllegalArgumentException("neighbors cannot add null");
+        else if (useAtMostNeighbors < 0)
+            throw new IllegalArgumentException("neigbor size is negative");
         this.neighbors = neighbors;
         this.useAtMostNeighbors = useAtMostNeighbors;
-        setContentType( Content.SET_NEIGHBORS );
+        setContentType(Content.SET_NEIGHBORS);
         return this;
     }
 
-    void setNeighbors0( final Collection<PeerAddress> neighbors )
-    {
+    void setNeighbors0(final Collection<PeerAddress> neighbors) {
         this.neighbors = neighbors;
         this.useAtMostNeighbors = -1;
     }
@@ -563,454 +497,385 @@ public class Message
      * 
      * @return Null if no neighbors set or the list of neighbors
      */
-    public Collection<PeerAddress> getNeighbors()
-    {
+    public Collection<PeerAddress> getNeighbors() {
         return neighbors;
     }
 
-    int getUseAtMostNeighbors()
-    {
+    int getUseAtMostNeighbors() {
         return useAtMostNeighbors;
     }
-    
-    public Message setKeys480( final Collection<Number480> keys480 )
-    {
-        if ( keys480 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+
+    public Message setKeys480(final Collection<Number480> keys480) {
+        if (keys480 == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.keys480 = keys480;
-        setContentType( Content.SET_KEY480 );
+        setContentType(Content.SET_KEY480);
         return this;
     }
 
-    public Message setKeysConvert( final Collection<Number480> keys480 )
-    {
-        if ( keys480 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
-        setConvertNumber480to160( true );
+    public Message setKeysConvert(final Collection<Number480> keys480) {
+        if (keys480 == null)
+            throw new IllegalArgumentException("key cannot add null");
+        setConvertNumber480to160(true);
         this.keys480 = keys480;
-        setContentType( Content.SET_KEY160 );
+        setContentType(Content.SET_KEY160);
         return this;
     }
 
-    public Message setKeys( final Collection<Number160> keys )
-    {
-        if ( keys == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setKeys(final Collection<Number160> keys) {
+        if (keys == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.keys160 = keys;
-        setContentType( Content.SET_KEY160 );
+        setContentType(Content.SET_KEY160);
         return this;
     }
-    
-    void setKeys0480( final Collection<Number480> keys480 )
-    {
+
+    void setKeys0480(final Collection<Number480> keys480) {
         this.keys480 = keys480;
     }
 
-    void setKeys0( final Collection<Number160> keys )
-    {
+    void setKeys0(final Collection<Number160> keys) {
         this.keys160 = keys;
     }
 
-    public Collection<Number160> getKeys()
-    {
+    public Collection<Number160> getKeys() {
         return keys160;
     }
 
-    public Collection<Number480> getKeys480()
-    {
+    public Collection<Number480> getKeys480() {
         return keys480;
     }
 
     // /////////////////////////////////////////////
-    
-    public Message replaceDataMap( Map<Number480, Data> dataMap480 )
-    {
-        if ( dataMap480 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+
+    public Message replaceDataMap(Map<Number480, Data> dataMap480) {
+        if (dataMap480 == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.dataMap480 = dataMap480;
         this.dataMap = null;
-        replaceContentType( Content.MAP_KEY160_DATA, Content.MAP_KEY480_DATA );
+        replaceContentType(Content.MAP_KEY160_DATA, Content.MAP_KEY480_DATA);
         return this;
     }
 
-    public Message setDataMap480( final Map<Number480, Data> dataMap480 )
-    {
-        if ( dataMap480 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setDataMap480(final Map<Number480, Data> dataMap480) {
+        if (dataMap480 == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.dataMap480 = dataMap480;
-        setContentType( Content.MAP_KEY480_DATA );
-        return this;
-    }
-    
-    public Message setDataMapConvert( final Map<Number480, Data> dataMap480 )
-    {
-        if ( dataMap480 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
-        setConvertNumber480to160( true );
-        this.dataMap480 = dataMap480;
-        setContentType( Content.MAP_KEY160_DATA );
+        setContentType(Content.MAP_KEY480_DATA);
         return this;
     }
 
-    public Message setDataMap( final Map<Number160, Data> dataMap )
-    {
-        if ( dataMap == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setDataMapConvert(final Map<Number480, Data> dataMap480) {
+        if (dataMap480 == null)
+            throw new IllegalArgumentException("key cannot add null");
+        setConvertNumber480to160(true);
+        this.dataMap480 = dataMap480;
+        setContentType(Content.MAP_KEY160_DATA);
+        return this;
+    }
+
+    public Message setDataMap(final Map<Number160, Data> dataMap) {
+        if (dataMap == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.dataMap = dataMap;
-        setContentType( Content.MAP_KEY160_DATA );
+        setContentType(Content.MAP_KEY160_DATA);
         return this;
     }
-    
-    void setDataMap0480( final Map<Number480, Data> dataMap480 )
-    {
+
+    void setDataMap0480(final Map<Number480, Data> dataMap480) {
         this.dataMap480 = dataMap480;
     }
 
-    void setDataMap0( final Map<Number160, Data> dataMap )
-    {
+    void setDataMap0(final Map<Number160, Data> dataMap) {
         this.dataMap = dataMap;
     }
 
-    public Map<Number160, Data> getDataMap()
-    {
+    public Map<Number160, Data> getDataMap() {
         return dataMap;
     }
 
-    public Map<Number480, Data> getDataMap480()
-    {
+    public Map<Number480, Data> getDataMap480() {
         return dataMap480;
     }
 
     // /////////////////////////////////////////////
-    public Message setKey( final Number160 key3 )
-    {
-        if ( key3 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setKey(final Number160 key3) {
+        if (key3 == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.key3 = key3;
-        setContentType( Content.KEY );
+        setContentType(Content.KEY);
         return this;
     }
 
-    void setKey0( final Number160 key3 )
-    {
+    void setKey0(final Number160 key3) {
         this.key3 = key3;
     }
 
-    public Message setKeyKey( final Number160 key1, final Number160 key2 )
-    {
-        if ( key1 == null || key2 == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setKeyKey(final Number160 key1, final Number160 key2) {
+        if (key1 == null || key2 == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.key1 = key1;
         this.key2 = key2;
-        setContentType( Content.KEY_KEY );
+        setContentType(Content.KEY_KEY);
         return this;
     }
 
-    void setKeyKey0( final Number160 key1, final Number160 key2 )
-    {
+    void setKeyKey0(final Number160 key1, final Number160 key2) {
         this.key1 = key1;
         this.key2 = key2;
     }
 
-    public Number160 getKeyKey1()
-    {
+    public Number160 getKeyKey1() {
         return key1;
     }
 
-    public Number160 getKeyKey2()
-    {
+    public Number160 getKeyKey2() {
         return key2;
     }
 
-    public Number160 getKey()
-    {
+    public Number160 getKey() {
         return key3;
     }
 
     // /////////////////////////////////////////////
-    public Message setKeyMap( final Map<Number160, Number160> keyMap )
-    {
-        if ( keyMap == null )
-            throw new IllegalArgumentException( "key cannot add null" );
+    public Message setKeyMap(final Map<Number160, Number160> keyMap) {
+        if (keyMap == null)
+            throw new IllegalArgumentException("key cannot add null");
         this.keyMap = keyMap;
-        setContentType( Content.MAP_KEY_KEY );
+        setContentType(Content.MAP_KEY_KEY);
         return this;
     }
 
-    void setKeyMap0( final Map<Number160, Number160> keyMap )
-    {
+    void setKeyMap0(final Map<Number160, Number160> keyMap) {
         this.keyMap = keyMap;
     }
 
-    public Map<Number160, Number160> getKeyMap()
-    {
+    public Map<Number160, Number160> getKeyMap() {
         return keyMap;
     }
 
     // /////////////////////////////////////////////
-    public Message setLong( final long long_number )
-    {
+    public Message setLong(final long long_number) {
         this.long_number = long_number;
-        setContentType( Content.LONG );
+        setContentType(Content.LONG);
         return this;
     }
 
-    void setLong0( final long long_number )
-    {
+    void setLong0(final long long_number) {
         this.long_number = long_number;
     }
 
-    public long getLong()
-    {
+    public long getLong() {
         return long_number;
     }
 
     // /////////////////////////////////////////////
-    public Message setPayload( final ChannelBuffer payload )
-    {
-        if ( payload == null )
-            throw new RuntimeException( "payload cannot add null" );
-        if ( this.payload1 == null )
+    public Message setPayload(final ChannelBuffer payload) {
+        if (payload == null)
+            throw new RuntimeException("payload cannot add null");
+        if (this.payload1 == null)
             this.payload1 = payload;
-        else if ( this.payload2 == null )
+        else if (this.payload2 == null)
             this.payload2 = payload;
         else
-            throw new RuntimeException( "cannot store three times a payload" );
-        setContentType( Content.CHANNEL_BUFFER );
+            throw new RuntimeException("cannot store three times a payload");
+        setContentType(Content.CHANNEL_BUFFER);
         return this;
     }
 
-    void setPayload0( final ChannelBuffer payload )
-    {
-        if ( this.payload1 == null )
+    void setPayload0(final ChannelBuffer payload) {
+        if (this.payload1 == null)
             this.payload1 = payload;
-        else if ( this.payload2 == null )
+        else if (this.payload2 == null)
             this.payload2 = payload;
     }
 
-    void setPayload1( final ChannelBuffer payload )
-    {
+    void setPayload1(final ChannelBuffer payload) {
         this.payload1 = payload;
     }
 
-    void setPayload2( final ChannelBuffer payload )
-    {
+    void setPayload2(final ChannelBuffer payload) {
         this.payload2 = payload;
     }
-    
-    ChannelBuffer getPayload()
-    {
-        if (payloadCounter == 0 )
-        {
+
+    ChannelBuffer getPayload() {
+        if (payloadCounter == 0) {
             payloadCounter++;
             return payload1;
-        }
-        else
-        {
+        } else {
             return payload2;
         }
     }
 
-    public ChannelBuffer getPayload1()
-    {
+    public ChannelBuffer getPayload1() {
         return payload1;
     }
 
-    public ChannelBuffer getPayload2()
-    {
+    public ChannelBuffer getPayload2() {
         return payload2;
     }
 
     // ///////////////////////////////
-    public Message setInteger( final int int_number )
-    {
+    public Message setInteger(final int int_number) {
         this.int_number = int_number;
-        setContentType( Content.INTEGER );
+        setContentType(Content.INTEGER);
         return this;
     }
 
-    void setInteger0( final int int_number )
-    {
+    void setInteger0(final int int_number) {
         this.int_number = int_number;
     }
 
-    public int getInteger()
-    {
+    public int getInteger() {
         return int_number;
     }
 
     // for internal use only
-    void setPublicKey0( PublicKey publicKey )
-    {
+    void setPublicKey0(PublicKey publicKey) {
         this.publicKey = publicKey;
     }
 
-    public PublicKey getPublicKey()
-    {
+    public PublicKey getPublicKey() {
         return publicKey;
     }
 
-    PrivateKey getPrivateKey()
-    {
+    PrivateKey getPrivateKey() {
         return privateKey;
     }
 
-    public Message setPublicKey( PublicKey publicKey )
-    {
-        setContentType( Content.PUBLIC_KEY_SIGNATURE );
+    public Message setPublicKey(PublicKey publicKey) {
+        setContentType(Content.PUBLIC_KEY_SIGNATURE);
         this.publicKey = publicKey;
         return this;
     }
 
-    public Message setPublicKeyAndSign( KeyPair keyPair )
-    {
-        setContentType( Content.PUBLIC_KEY_SIGNATURE );
+    public Message setPublicKeyAndSign(KeyPair keyPair) {
+        setContentType(Content.PUBLIC_KEY_SIGNATURE);
         this.publicKey = keyPair.getPublic();
         this.privateKey = keyPair.getPrivate();
         return this;
     }
 
-    public void setHintSign( boolean hintSign )
-    {
+    public void setHintSign(boolean hintSign) {
         this.hintSign = hintSign;
     }
 
-    public boolean isHintSign()
-    {
+    public boolean isHintSign() {
         return hintSign;
     }
 
     // /////////////////////////////////////////
-    public Message setTrackerData( final Collection<TrackerData> trackerData )
-    {
-        if ( trackerData == null )
-            throw new IllegalArgumentException( "trackerData cannot add null" );
+    public Message setTrackerData(final Collection<TrackerData> trackerData) {
+        if (trackerData == null)
+            throw new IllegalArgumentException("trackerData cannot add null");
         this.trackerData = trackerData;
-        setContentType( Content.SET_TRACKER_DATA );
+        setContentType(Content.SET_TRACKER_DATA);
         return this;
     }
 
-    void setTrackerData0( final Collection<TrackerData> trackerData )
-    {
+    void setTrackerData0(final Collection<TrackerData> trackerData) {
         this.trackerData = trackerData;
     }
 
-    public Collection<TrackerData> getTrackerData()
-    {
+    public Collection<TrackerData> getTrackerData() {
         return trackerData;
     }
 
-    public void setConvertNumber480to160( boolean convertNumber480to160 )
-    {
+    public void setConvertNumber480to160(boolean convertNumber480to160) {
         this.convertNumber480to160 = convertNumber480to160;
     }
 
-    public boolean isConvertNumber480to160()
-    {
+    public boolean isConvertNumber480to160() {
         return convertNumber480to160;
     }
 
-    public boolean hasContent()
-    {
+    public boolean hasContent() {
         return contentType1 != Content.EMPTY;
     }
 
-    public void setOptions( int options )
-    {
+    public void setOptions(int options) {
         this.options = options;
     }
 
-    public int getOptions()
-    {
+    public int getOptions() {
         return options;
     }
 
-    public void setKeepAlive( boolean isKeepAlive )
-    {
+    public void setKeepAlive(boolean isKeepAlive) {
         options = isKeepAlive ? 1 : 0;
     }
 
-    public boolean isKeepAlive()
-    {
+    public boolean isKeepAlive() {
         return options == 1;
     }
 
     /*
-     * public void checkForSignature() { if(contentType1 == Content.PUBLIC_KEY_SIGNATURE || contentType2 ==
-     * Content.PUBLIC_KEY_SIGNATURE ||contentType3 == Content.PUBLIC_KEY_SIGNATURE ||contentType4 ==
+     * public void checkForSignature() { if(contentType1 ==
+     * Content.PUBLIC_KEY_SIGNATURE || contentType2 ==
+     * Content.PUBLIC_KEY_SIGNATURE ||contentType3 ==
+     * Content.PUBLIC_KEY_SIGNATURE ||contentType4 ==
      * Content.PUBLIC_KEY_SIGNATURE ) { setHintSign(true); } }
      */
 
     @Override
-    public String toString()
-    {
-        final StringBuilder sb = new StringBuilder( "Message:id=" );
-        sb.append( getMessageId() );
-        sb.append( ",c=" ).append( getCommand().toString() ).append( ",t=" ).append( type.toString() ).append( ",l=" ).append( getLength()
-                                                                                                                                   + MessageCodec.HEADER_SIZE ).append( ",s=" ).append( getSender() ).append( ",r=" ).append( getRecipient() );
-        if ( logger.isDebugEnabled() )
-        {
-            if ( dataMap != null )
-            {
-                sb.append( ",m={" );
-                for ( Map.Entry<Number160, Data> entry : dataMap.entrySet() )
-                {
-                    sb.append( "k:" );
-                    sb.append( entry.getKey() );
-                    sb.append( "v:" );
-                    sb.append( entry.getValue().getHash() );
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Message:id=");
+        sb.append(getMessageId());
+        sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString()).append(",l=")
+                .append(getLength() + MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(",r=")
+                .append(getRecipient());
+        if (logger.isDebugEnabled()) {
+            if (dataMap != null) {
+                sb.append(",m={");
+                for (Map.Entry<Number160, Data> entry : dataMap.entrySet()) {
+                    sb.append("k:");
+                    sb.append(entry.getKey());
+                    sb.append("v:");
+                    sb.append(entry.getValue().getHash());
                 }
-                sb.append( "}" );
+                sb.append("}");
             }
         }
         return sb.toString();
     }
 
-    public Message setHashDataMap( Map<Number160, HashData> hashDataMap )
-    {
-        if ( hashDataMap == null )
-            throw new IllegalArgumentException( "dataDataMap cannot add null" );
+    public Message setHashDataMap(Map<Number160, HashData> hashDataMap) {
+        if (hashDataMap == null)
+            throw new IllegalArgumentException("dataDataMap cannot add null");
         this.hashDataMap = hashDataMap;
-        setContentType( Content.MAP_KEY_COMPARE_DATA );
+        setContentType(Content.MAP_KEY_COMPARE_DATA);
         return this;
     }
 
-    void setHashDataMap0( Map<Number160, HashData> hashDataMap )
-    {
+    void setHashDataMap0(Map<Number160, HashData> hashDataMap) {
         this.hashDataMap = hashDataMap;
     }
 
-    public Map<Number160, HashData> getHashDataMap()
-    {
+    public Map<Number160, HashData> getHashDataMap() {
         return hashDataMap;
     }
 
-    public Message setTwoBloomFilter( SimpleBloomFilter<Number160> bloomFilter1,
-                                      SimpleBloomFilter<Number160> bloomFilter2 )
-    {
-        if ( bloomFilter1 == null && bloomFilter2 == null )
-        {
-            throw new IllegalArgumentException( "databloomFilterDataMap cannot add null" );
+    public Message setTwoBloomFilter(SimpleBloomFilter<Number160> bloomFilter1,
+            SimpleBloomFilter<Number160> bloomFilter2) {
+        if (bloomFilter1 == null && bloomFilter2 == null) {
+            throw new IllegalArgumentException("databloomFilterDataMap cannot add null");
         }
         this.bloomFilter1 = bloomFilter1;
         this.bloomFilter2 = bloomFilter2;
-        setContentType( Content.TWO_BLOOM_FILTER );
+        setContentType(Content.TWO_BLOOM_FILTER);
         return this;
     }
 
-    void setTwoBloomFilter0( SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2 )
-    {
+    void setTwoBloomFilter0(SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2) {
         this.bloomFilter1 = bloomFilter1;
         this.bloomFilter2 = bloomFilter2;
     }
 
-    public SimpleBloomFilter<Number160> getBloomFilter1()
-    {
+    public SimpleBloomFilter<Number160> getBloomFilter1() {
         return bloomFilter1;
     }
 
-    public SimpleBloomFilter<Number160> getBloomFilter2()
-    {
+    public SimpleBloomFilter<Number160> getBloomFilter2() {
         return bloomFilter2;
     }
 

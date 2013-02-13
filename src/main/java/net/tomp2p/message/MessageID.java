@@ -18,14 +18,12 @@ package net.tomp2p.message;
 import net.tomp2p.peers.PeerAddress;
 
 /**
- * A message ID consists of the message id, which is created randomly and the nodeaddress. I'm not sure if we need this
- * class with Netty... We'll see
+ * A message ID consists of the message id, which is created randomly and the
+ * nodeaddress. I'm not sure if we need this class with Netty... We'll see
  * 
  * @author Thomas Bocek
  */
-public class MessageID
-    implements Comparable<MessageID>
-{
+public class MessageID implements Comparable<MessageID> {
     // the message id, which is together with the nodeAddress unique. However,
     // we do not check this and collisions will cause a message to fail.
     final private int id;
@@ -35,26 +33,27 @@ public class MessageID
     final private PeerAddress peerAddress;
 
     /**
-     * Creates a message Id. If the message is a request, the peer address is the sender, otherwise its the recipient.
-     * This is due to the fact that depending on the direction, peer address may change, but its still considered the
-     * same message.
+     * Creates a message Id. If the message is a request, the peer address is
+     * the sender, otherwise its the recipient. This is due to the fact that
+     * depending on the direction, peer address may change, but its still
+     * considered the same message.
      * 
      * @param message
      * @return
      */
-    public MessageID( final Message message )
-    {
-        this( message.getMessageId(), message.isRequest() ? message.getSender() : message.getRecipient() );
+    public MessageID(final Message message) {
+        this(message.getMessageId(), message.isRequest() ? message.getSender() : message.getRecipient());
     }
 
     /**
      * Private constructor of this class
      * 
-     * @param id The message id
-     * @param nodeAddress The node address
+     * @param id
+     *            The message id
+     * @param nodeAddress
+     *            The node address
      */
-    private MessageID( final int id, final PeerAddress nodeAddress )
-    {
+    private MessageID(final int id, final PeerAddress nodeAddress) {
         this.id = id;
         this.peerAddress = nodeAddress;
     }
@@ -64,8 +63,7 @@ public class MessageID
      * 
      * @return the message id
      */
-    public int getId()
-    {
+    public int getId() {
         return id;
     }
 
@@ -74,37 +72,32 @@ public class MessageID
      * 
      * @return node address
      */
-    public PeerAddress getNodeAddress()
-    {
+    public PeerAddress getNodeAddress() {
         return peerAddress;
     }
 
     @Override
-    public int compareTo( final MessageID o )
-    {
+    public int compareTo(final MessageID o) {
         final int diff = id - o.id;
-        if ( diff == 0 )
-            return peerAddress.compareTo( o.peerAddress );
+        if (diff == 0)
+            return peerAddress.compareTo(o.peerAddress);
         return diff;
     }
 
     @Override
-    public boolean equals( final Object obj )
-    {
-        if ( !( obj instanceof MessageID ) )
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof MessageID))
             return false;
-        return compareTo( (MessageID) obj ) == 0;
+        return compareTo((MessageID) obj) == 0;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return id ^ peerAddress.hashCode();
     }
 
     @Override
-    public String toString()
-    {
-        return new StringBuilder( "MessageId:" ).append( id ).append( "/" ).append( peerAddress ).toString();
+    public String toString() {
+        return new StringBuilder("MessageId:").append(id).append("/").append(peerAddress).toString();
     }
 }

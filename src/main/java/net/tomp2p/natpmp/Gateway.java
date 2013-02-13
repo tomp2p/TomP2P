@@ -28,66 +28,53 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Gateway
-{
-    final private static Logger logger = LoggerFactory.getLogger( Gateway.class );
+public class Gateway {
+    final private static Logger logger = LoggerFactory.getLogger(Gateway.class);
 
-    final private static Pattern IP_PATTERN =
-        Pattern.compile( "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" );
+    final private static Pattern IP_PATTERN = Pattern
+            .compile("(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)");
 
-    public static InetAddress getIP()
-    {
+    public static InetAddress getIP() {
 
         // Try to determine the gateway.
-        try
-        {
+        try {
             // Run netstat. This gets the table of routes.
-            Process proc = Runtime.getRuntime().exec( "netstat -rn" );
+            Process proc = Runtime.getRuntime().exec("netstat -rn");
 
             InputStream inputstream = proc.getInputStream();
-            InputStreamReader inputstreamreader = new InputStreamReader( inputstream );
-            BufferedReader bufferedreader = new BufferedReader( inputstreamreader );
+            InputStreamReader inputstreamreader = new InputStreamReader(inputstream);
+            BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
 
             // Parse the result.
-            InetAddress inet = parse( bufferedreader );
+            InetAddress inet = parse(bufferedreader);
             bufferedreader.close();
             return inet;
-        }
-        catch ( IOException ex )
-        {
-            logger.error( "Unable to determine gateway.", ex );
+        } catch (IOException ex) {
+            logger.error("Unable to determine gateway.", ex);
         }
         return null;
     }
 
-    static InetAddress parse( BufferedReader bufferedreader )
-        throws IOException, UnknownHostException
-    {
+    static InetAddress parse(BufferedReader bufferedreader) throws IOException, UnknownHostException {
         String line;
-        while ( ( line = bufferedreader.readLine() ) != null )
-        {
+        while ((line = bufferedreader.readLine()) != null) {
             boolean gatewayLine = false;
-            if ( line.indexOf( "default" ) == 0 || line.indexOf( "0.0.0.0" ) >= 0 )
-            {
+            if (line.indexOf("default") == 0 || line.indexOf("0.0.0.0") >= 0) {
                 // MacOSX
-                if ( line.indexOf( "default" ) == 0 )
-                {
+                if (line.indexOf("default") == 0) {
                     gatewayLine = true;
                 }
-                // this is the line with the gateway IP, search for the first good entry.
-                Matcher m = IP_PATTERN.matcher( line );
+                // this is the line with the gateway IP, search for the first
+                // good entry.
+                Matcher m = IP_PATTERN.matcher(line);
                 int start = 0;
-                while ( m.find( start ) )
-                {
+                while (m.find(start)) {
                     String tmp = m.group();
                     // first entry
-                    if ( start == 0 && tmp.equals( "0.0.0.0" ) )
-                    {
+                    if (start == 0 && tmp.equals("0.0.0.0")) {
                         gatewayLine = true;
-                    }
-                    else if ( !tmp.equals( "0.0.0.0" ) && gatewayLine )
-                    {
-                        return InetAddress.getByName( tmp );
+                    } else if (!tmp.equals("0.0.0.0") && gatewayLine) {
+                        return InetAddress.getByName(tmp);
                     }
                     start = m.end() + 1;
                 }

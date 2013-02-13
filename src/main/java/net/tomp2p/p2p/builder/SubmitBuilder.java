@@ -28,9 +28,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 import net.tomp2p.task.Worker;
 
-public class SubmitBuilder
-{
-    private final static FutureTask FUTURE_TASK_SHUTDOWN = new FutureTask().setFailed( "Peer is shutting down" );
+public class SubmitBuilder {
+    private final static FutureTask FUTURE_TASK_SHUTDOWN = new FutureTask().setFailed("Peer is shutting down");
 
     private final static Map<Number160, Data> EMPTY_MAP = new HashMap<Number160, Data>();
 
@@ -54,115 +53,94 @@ public class SubmitBuilder
     private boolean isManualCleanup = false;
 
     //
-    public SubmitBuilder( Peer peer, Number160 locationKey, Worker worker )
-    {
+    public SubmitBuilder(Peer peer, Number160 locationKey, Worker worker) {
         this.peer = peer;
         this.locationKey = locationKey;
         this.worker = worker;
     }
 
-    public Map<Number160, Data> getDataMap()
-    {
+    public Map<Number160, Data> getDataMap() {
         return dataMap;
     }
 
-    public SubmitBuilder setDataMap( Map<Number160, Data> dataMap )
-    {
+    public SubmitBuilder setDataMap(Map<Number160, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
     }
 
-    public RoutingConfiguration getRoutingConfiguration()
-    {
+    public RoutingConfiguration getRoutingConfiguration() {
         return routingConfiguration;
     }
 
-    public SubmitBuilder setRoutingConfiguration( RoutingConfiguration routingConfiguration )
-    {
+    public SubmitBuilder setRoutingConfiguration(RoutingConfiguration routingConfiguration) {
         this.routingConfiguration = routingConfiguration;
         return this;
     }
 
-    public RequestP2PConfiguration getRequestP2PConfiguration()
-    {
+    public RequestP2PConfiguration getRequestP2PConfiguration() {
         return requestP2PConfiguration;
     }
 
-    public SubmitBuilder setRequestP2PConfiguration( RequestP2PConfiguration requestP2PConfiguration )
-    {
+    public SubmitBuilder setRequestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration) {
         this.requestP2PConfiguration = requestP2PConfiguration;
         return this;
     }
 
-    public FutureChannelCreator getFutureChannelCreator()
-    {
+    public FutureChannelCreator getFutureChannelCreator() {
         return futureChannelCreator;
     }
 
-    public SubmitBuilder setFutureChannelCreator( FutureChannelCreator futureChannelCreator )
-    {
+    public SubmitBuilder setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
         this.futureChannelCreator = futureChannelCreator;
         return this;
     }
 
-    public boolean isSignMessage()
-    {
+    public boolean isSignMessage() {
         return signMessage;
     }
 
-    public SubmitBuilder setSignMessage( boolean signMessage )
-    {
+    public SubmitBuilder setSignMessage(boolean signMessage) {
         this.signMessage = signMessage;
         return this;
     }
 
-    public SubmitBuilder signMessage()
-    {
+    public SubmitBuilder signMessage() {
         this.signMessage = true;
         return this;
     }
 
-    public boolean isManualCleanup()
-    {
+    public boolean isManualCleanup() {
         return isManualCleanup;
     }
 
-    public SubmitBuilder setManualCleanup( boolean isManualCleanup )
-    {
+    public SubmitBuilder setManualCleanup(boolean isManualCleanup) {
         this.isManualCleanup = isManualCleanup;
         return this;
     }
 
-    public SubmitBuilder manualCleanup()
-    {
+    public SubmitBuilder manualCleanup() {
         this.isManualCleanup = true;
         return this;
     }
 
-    public FutureTask start()
-    {
-        if ( peer.isShutdown() )
-        {
+    public FutureTask start() {
+        if (peer.isShutdown()) {
             return FUTURE_TASK_SHUTDOWN;
         }
-        if ( dataMap == null )
-        {
+        if (dataMap == null) {
             dataMap = EMPTY_MAP;
         }
-        if ( routingConfiguration == null )
-        {
-            routingConfiguration = new RoutingConfiguration( 3, 5, 10, 2 );
+        if (routingConfiguration == null) {
+            routingConfiguration = new RoutingConfiguration(3, 5, 10, 2);
         }
-        if ( requestP2PConfiguration == null )
-        {
-            requestP2PConfiguration = new RequestP2PConfiguration( 1, 0, 1 );
+        if (requestP2PConfiguration == null) {
+            requestP2PConfiguration = new RequestP2PConfiguration(1, 0, 1);
         }
-        if ( futureChannelCreator == null )
-        {
-            futureChannelCreator = peer.reserve( routingConfiguration, requestP2PConfiguration, "submit-builder" );
+        if (futureChannelCreator == null) {
+            futureChannelCreator = peer.reserve(routingConfiguration, requestP2PConfiguration, "submit-builder");
         }
-        return peer.getDistributedTask().submit( locationKey, dataMap, worker, routingConfiguration,
-                                                 requestP2PConfiguration, futureChannelCreator, signMessage,
-                                                 isManualCleanup, peer.getConnectionBean().getConnectionReservation() );
+        return peer.getDistributedTask().submit(locationKey, dataMap, worker, routingConfiguration,
+                requestP2PConfiguration, futureChannelCreator, signMessage, isManualCleanup,
+                peer.getConnectionBean().getConnectionReservation());
     }
 }

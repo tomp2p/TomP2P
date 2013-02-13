@@ -19,14 +19,12 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerStorage;
 
-public class Maintenance
-{
+public class Maintenance {
 
-    public void addTrackerMaintenance( PeerAddress peerAddress, PeerAddress referrer, Number160 locationKey,
-                                       Number160 domainKey, TrackerStorage trackerStorage )
-    {
+    public void addTrackerMaintenance(PeerAddress peerAddress, PeerAddress referrer, Number160 locationKey,
+            Number160 domainKey, TrackerStorage trackerStorage) {
         // TODO: do real checks, for now, we trust the peers
-        trackerStorage.moveFromSecondaryToMesh( peerAddress, referrer, locationKey, domainKey, null );
+        trackerStorage.moveFromSecondaryToMesh(peerAddress, referrer, locationKey, domainKey, null);
     }
 
 }

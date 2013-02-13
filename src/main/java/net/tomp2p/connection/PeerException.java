@@ -16,24 +16,23 @@
 package net.tomp2p.connection;
 
 /**
- * This exception is used internally and passed over to the method exceptionCaught. A PeerException always has a cause
+ * This exception is used internally and passed over to the method
+ * exceptionCaught. A PeerException always has a cause
  * 
  * @author Thomas Bocek
  */
-public class PeerException
-    extends Exception
-{
+public class PeerException extends Exception {
     private static final long serialVersionUID = 3710790196087629945L;
 
     /**
-     * USER_ABORT means that this peer aborts the communication. PEER_ERROR means that the other peer did not react as
-     * expected (e.g., no reply). PEER_ABORT means that the other peer found an error on our side (e.g., if this peer
-     * thinks the other peer is someone else)
+     * USER_ABORT means that this peer aborts the communication. PEER_ERROR
+     * means that the other peer did not react as expected (e.g., no reply).
+     * PEER_ABORT means that the other peer found an error on our side (e.g., if
+     * this peer thinks the other peer is someone else)
      * 
      * @author Thomas Bocek
      */
-    public enum AbortCause
-    {
+    public enum AbortCause {
         USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
     }
 
@@ -42,26 +41,25 @@ public class PeerException
     /**
      * Specified error with custom message
      * 
-     * @param abortCause either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
-     * @param message Custom message
+     * @param abortCause
+     *            either USER_ABORT, PEER_ERROR, PEER_ABORT, or TIMEOUT.
+     * @param message
+     *            Custom message
      */
-    public PeerException( AbortCause abortCause, String message )
-    {
-        super( message );
+    public PeerException(AbortCause abortCause, String message) {
+        super(message);
         this.abortCause = abortCause;
     }
 
     /**
      * @return The cause of the error.
      */
-    public AbortCause getAbortCause()
-    {
+    public AbortCause getAbortCause() {
         return abortCause;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return "PeerException (" + abortCause.toString() + "): " + getMessage();
     }
 }

@@ -19,18 +19,16 @@ import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 
 /**
- * The operation future success evaluator returns OK if the operation was successful, otherwise it returns FAILED. This
- * evaluation does care if e.g. an object was not found on an other peer. If an other evaluation scheme is necessary,
- * provide your own.
+ * The operation future success evaluator returns OK if the operation was
+ * successful, otherwise it returns FAILED. This evaluation does care if e.g. an
+ * object was not found on an other peer. If an other evaluation scheme is
+ * necessary, provide your own.
  * 
  * @author Thomas Bocek
  */
-public class FutureSuccessEvaluatorOperation
-    implements FutureSuccessEvaluator
-{
+public class FutureSuccessEvaluatorOperation implements FutureSuccessEvaluator {
     @Override
-    public FutureType evaluate( Message requestMessage, Message responseMessage )
-    {
+    public FutureType evaluate(Message requestMessage, Message responseMessage) {
         return responseMessage.isOk() ? FutureType.OK : FutureType.FAILED;
     }
 }

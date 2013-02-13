@@ -62,25 +62,20 @@ import org.xml.sax.SAXException;
  * 
  * @author ryanm
  */
-public class XMLUtil
-{
+public class XMLUtil {
     /** {@link XPath} instance */
     public static final XPath xpath = XPathFactory.newInstance().newXPath();
 
     private static final char buggyChar = (char) 0;
 
     private static final DocumentBuilder builder;
-    static
-    {
+    static {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware( false );
+        factory.setNamespaceAware(false);
         DocumentBuilder b = null;
-        try
-        {
+        try {
             b = factory.newDocumentBuilder();
-        }
-        catch ( ParserConfigurationException e )
-        {
+        } catch (ParserConfigurationException e) {
             e.printStackTrace();
         }
         builder = b;
@@ -90,31 +85,25 @@ public class XMLUtil
      * @param url
      * @return the xml string at that url
      */
-    public static String getXMLString( URL url )
-    {
-        try
-        {
+    public static String getXMLString(URL url) {
+        try {
             InputStream in = url.openStream();
 
             StringBuilder xml = new StringBuilder();
             byte[] buffer = new byte[512];
             int readen = 0;
-            while ( ( readen = in.read( buffer ) ) != -1 )
-            {
-                xml.append( new String( buffer, 0, readen ) );
+            while ((readen = in.read(buffer)) != -1) {
+                xml.append(new String(buffer, 0, readen));
             }
 
             String doc = xml.toString();
 
-            if ( doc.indexOf( buggyChar ) != -1 )
-            {
-                doc = doc.replace( buggyChar, ' ' );
+            if (doc.indexOf(buggyChar) != -1) {
+                doc = doc.replace(buggyChar, ' ');
             }
 
             return doc;
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -127,21 +116,15 @@ public class XMLUtil
      * @param url
      * @return The xml {@link Document}
      */
-    public synchronized static Document getXML( URL url )
-    {
-        try
-        {
-            String doc = getXMLString( url );
-            ByteArrayInputStream in2 = new ByteArrayInputStream( doc.getBytes() );
+    public synchronized static Document getXML(URL url) {
+        try {
+            String doc = getXMLString(url);
+            ByteArrayInputStream in2 = new ByteArrayInputStream(doc.getBytes());
 
-            return builder.parse( in2 );
-        }
-        catch ( SAXException e )
-        {
+            return builder.parse(in2);
+        } catch (SAXException e) {
             e.printStackTrace();
-        }
-        catch ( IOException e )
-        {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 

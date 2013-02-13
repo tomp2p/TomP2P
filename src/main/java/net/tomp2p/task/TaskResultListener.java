@@ -22,9 +22,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.storage.Data;
 
-public interface TaskResultListener
-{
-    public abstract void taskReceived( Number320 taskId, Map<Number160, Data> dataMap );
+public interface TaskResultListener {
+    public abstract void taskReceived(Number320 taskId, Map<Number160, Data> dataMap);
 
-    public abstract void taskFailed( Number320 taskId );
+    public abstract void taskFailed(Number320 taskId);
 }

@@ -18,35 +18,34 @@
 package net.tomp2p.natpmp;
 
 /**
- * This class is used for exceptions specific to jNAT-PMPlib. Refer to the message and stack trace for information
- * specific to the exception.
+ * This class is used for exceptions specific to jNAT-PMPlib. Refer to the
+ * message and stack trace for information specific to the exception.
  * 
  * @author flszen
  */
-public class NatPmpException
-    extends Exception
-{
+public class NatPmpException extends Exception {
 
     private static final long serialVersionUID = 6619242406146562923L;
 
     /**
      * Constructs a new NatPmpException with a specific message.
      * 
-     * @param message The message of the exception.
+     * @param message
+     *            The message of the exception.
      */
-    NatPmpException( String message )
-    {
-        super( message );
+    NatPmpException(String message) {
+        super(message);
     }
 
     /**
      * Constructs a new NatPmpException with a specific message and cause.
      * 
-     * @param message The message of the exception.
-     * @param cause The cause of the exception.
+     * @param message
+     *            The message of the exception.
+     * @param cause
+     *            The cause of the exception.
      */
-    NatPmpException( String message, Throwable cause )
-    {
-        super( message, cause );
+    NatPmpException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -17,11 +17,10 @@ package net.tomp2p.p2p;
 
 import net.tomp2p.peers.PeerAddress;
 
-public interface PeerListener
-{
+public interface PeerListener {
     public void notifyOnShutdown();
 
     public void notifyOnStart();
 
-    public void serverAddressChanged( PeerAddress peerAddress, PeerAddress reporter, boolean tcp );
+    public void serverAddressChanged(PeerAddress peerAddress, PeerAddress reporter, boolean tcp);
 }

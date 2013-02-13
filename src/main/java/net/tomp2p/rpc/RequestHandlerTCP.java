@@ -39,16 +39,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Is able to send TCP messages (as a request) and processes incoming replies. It is important that this class handles
- * close() because if we shutdown the connections, the we need to notify the futures. In case of error set the peer to
- * offline. A similar class is {@link RequestHandlerUDP}, which is used for UDP.
+ * Is able to send TCP messages (as a request) and processes incoming replies.
+ * It is important that this class handles close() because if we shutdown the
+ * connections, the we need to notify the futures. In case of error set the peer
+ * to offline. A similar class is {@link RequestHandlerUDP}, which is used for
+ * UDP.
  * 
  * @author Thomas Bocek
  */
-public class RequestHandlerTCP<K extends FutureResponse>
-    extends SimpleChannelHandler
-{
-    final private static Logger logger = LoggerFactory.getLogger( RequestHandlerTCP.class );
+public class RequestHandlerTCP<K extends FutureResponse> extends SimpleChannelHandler {
+    final private static Logger logger = LoggerFactory.getLogger(RequestHandlerTCP.class);
 
     // The future response which is currently be waited for
     final private K futureResponse;
@@ -62,73 +62,61 @@ public class RequestHandlerTCP<K extends FutureResponse>
 
     final private MessageID sendMessageID;
 
-    final private AtomicBoolean reported = new AtomicBoolean( false );
+    final private AtomicBoolean reported = new AtomicBoolean(false);
 
     /**
-     * @param objectHolder the bean representing the node this handler belongs to
+     * @param objectHolder
+     *            the bean representing the node this handler belongs to
      */
-    public RequestHandlerTCP( K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message )
-    {
+    public RequestHandlerTCP(K futureResponse, PeerBean peerBean, ConnectionBean connectionBean, Message message) {
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
         this.futureResponse = futureResponse;
         this.message = message;
-        this.sendMessageID = new MessageID( message );
+        this.sendMessageID = new MessageID(message);
     }
 
-    public K getFutureResponse()
-    {
+    public K getFutureResponse() {
         return futureResponse;
     }
 
-    public K sendTCP( ChannelCreator channelCreator )
-    {
-        return sendTCP( channelCreator, connectionBean.getConfiguration().getIdleTCPMillis() );
+    public K sendTCP(ChannelCreator channelCreator) {
+        return sendTCP(channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
     }
 
-    public K sendTCP( ChannelCreator channelCreator, int idleTCPMillis )
-    {
-        connectionBean.getSender().sendTCP( this, futureResponse, message, channelCreator, idleTCPMillis );
+    public K sendTCP(ChannelCreator channelCreator, int idleTCPMillis) {
+        connectionBean.getSender().sendTCP(this, futureResponse, message, channelCreator, idleTCPMillis);
         return futureResponse;
     }
 
-    public K fireAndForgetTCP( ChannelCreator channelCreator )
-    {
-        return fireAndForgetTCP( channelCreator, connectionBean.getConfiguration().getIdleTCPMillis() );
+    public K fireAndForgetTCP(ChannelCreator channelCreator) {
+        return fireAndForgetTCP(channelCreator, connectionBean.getConfiguration().getIdleTCPMillis());
     }
 
-    public K fireAndForgetTCP( ChannelCreator channelCreator, int idleTCPMillis )
-    {
-        connectionBean.getSender().sendTCP( null, futureResponse, message, channelCreator, idleTCPMillis );
+    public K fireAndForgetTCP(ChannelCreator channelCreator, int idleTCPMillis) {
+        connectionBean.getSender().sendTCP(null, futureResponse, message, channelCreator, idleTCPMillis);
         return futureResponse;
     }
 
-    protected PeerMap getPeerMap()
-    {
+    protected PeerMap getPeerMap() {
         return peerBean.getPeerMap();
     }
 
-    public void setKeepAlive( boolean isKeepAlive )
-    {
-        message.setKeepAlive( isKeepAlive );
+    public void setKeepAlive(boolean isKeepAlive) {
+        message.setKeepAlive(isKeepAlive);
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
-    {
-        if ( logger.isDebugEnabled() )
-        {
-            logger.debug( "Error originating from: " + futureResponse.getRequest() );
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Error originating from: " + futureResponse.getRequest());
             e.getCause().printStackTrace();
         }
-        if ( futureResponse.isCompleted() )
-        {
-            if ( e.getCause() instanceof PeerException )
-            {
+        if (futureResponse.isCompleted()) {
+            if (e.getCause() instanceof PeerException) {
                 PeerException pe = (PeerException) e.getCause();
                 // if we have a timeout, close connection.
-                if ( pe.getAbortCause() == PeerException.AbortCause.TIMEOUT )
-                {
+                if (pe.getAbortCause() == PeerException.AbortCause.TIMEOUT) {
                     // close connection because this may be a timeout from a
                     // keep-alive connection. After a request, the
                     // requesthandler stays in the pipeline of a connection
@@ -138,198 +126,143 @@ public class RequestHandlerTCP<K extends FutureResponse>
                     // close the connection.
                     ctx.getChannel().close();
                 }
-            }
-            else
-            {
-                logger.warn( "Got exception, but ignored " + "(future response completed): "
-                    + futureResponse.getFailedReason() );
-                if ( logger.isDebugEnabled() )
-                {
+            } else {
+                logger.warn("Got exception, but ignored " + "(future response completed): "
+                        + futureResponse.getFailedReason());
+                if (logger.isDebugEnabled()) {
                     e.getCause().printStackTrace();
                 }
             }
-        }
-        else
-        {
-            if ( logger.isDebugEnabled() )
-            {
-                logger.debug( "exception caugth, but handled properly: " + e.toString() );
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("exception caugth, but handled properly: " + e.toString());
             }
-            reportFail( e.toString(), ctx.getChannel(), futureResponse );
-            if ( e.getCause() instanceof PeerException )
-            {
+            reportFail(e.toString(), ctx.getChannel(), futureResponse);
+            if (e.getCause() instanceof PeerException) {
                 PeerException pe = (PeerException) e.getCause();
-                if ( pe.getAbortCause() != PeerException.AbortCause.USER_ABORT )
-                {
+                if (pe.getAbortCause() != PeerException.AbortCause.USER_ABORT) {
                     boolean force = pe.getAbortCause() != PeerException.AbortCause.TIMEOUT;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
-                    boolean added = getPeerMap().peerOffline( futureResponse.getRequest().getRecipient(), force );
-                    if ( added )
-                    {
-                        logger.warn( "removed from map, cause: " + pe.toString() + " msg: " + message );
+                    boolean added = getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), force);
+                    if (added) {
+                        logger.warn("removed from map, cause: " + pe.toString() + " msg: " + message);
+                    } else if (logger.isDebugEnabled()) {
+                        logger.debug(pe.toString() + " msg: " + message);
                     }
-                    else if ( logger.isDebugEnabled() )
-                    {
-                        logger.debug( pe.toString() + " msg: " + message );
-                    }
-                }
-                else if ( logger.isWarnEnabled() )
-                {
-                    logger.warn( "error in request " + e.toString() );
-                    if ( logger.isDebugEnabled() )
-                    {
+                } else if (logger.isWarnEnabled()) {
+                    logger.warn("error in request " + e.toString());
+                    if (logger.isDebugEnabled()) {
                         e.getCause().printStackTrace();
                     }
                 }
-            }
-            else
-            {
-                getPeerMap().peerOffline( futureResponse.getRequest().getRecipient(), true );
+            } else {
+                getPeerMap().peerOffline(futureResponse.getRequest().getRecipient(), true);
             }
         }
-        ctx.sendUpstream( e );
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void messageReceived( ChannelHandlerContext ctx, MessageEvent e )
-        throws Exception
-    {
-        if ( !( e.getMessage() instanceof Message ) )
-        {
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
+        if (!(e.getMessage() instanceof Message)) {
             String msg = "Message received, but not of type Message: " + e.getMessage();
-            exceptionCaught( ctx, new DefaultExceptionEvent( ctx.getChannel(),
-                                                             new PeerException( PeerException.AbortCause.PEER_ABORT,
-                                                                                msg ) ) );
+            exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+                    PeerException.AbortCause.PEER_ABORT, msg)));
             return;
         }
         final Message responseMessage = (Message) e.getMessage();
-        MessageID recvMessageID = new MessageID( responseMessage );
-        if ( responseMessage.getType() == Message.Type.UNKNOWN_ID )
-        {
+        MessageID recvMessageID = new MessageID(responseMessage);
+        if (responseMessage.getType() == Message.Type.UNKNOWN_ID) {
             String msg = "Message was not delivered successfully: " + this.message;
-            exceptionCaught( ctx, new DefaultExceptionEvent( ctx.getChannel(),
-                                                             new PeerException( PeerException.AbortCause.PEER_ABORT,
-                                                                                msg ) ) );
+            exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+                    PeerException.AbortCause.PEER_ABORT, msg)));
             return;
-        }
-        else if ( responseMessage.getType() == Message.Type.EXCEPTION )
-        {
+        } else if (responseMessage.getType() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: " + this.message;
-            exceptionCaught( ctx, new DefaultExceptionEvent( ctx.getChannel(),
-                                                             new PeerException( PeerException.AbortCause.PEER_ABORT,
-                                                                                msg ) ) );
+            exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+                    PeerException.AbortCause.PEER_ABORT, msg)));
             return;
-        }
-        else if ( !sendMessageID.equals( recvMessageID ) )
-        {
-            String msg =
-                "Message [" + responseMessage + "] sent to the node is not the same as we expect (TCP). We sent ["
-                    + this.message + "]";
-            if ( logger.isWarnEnabled() )
-            {
-                logger.warn( msg );
+        } else if (!sendMessageID.equals(recvMessageID)) {
+            String msg = "Message [" + responseMessage
+                    + "] sent to the node is not the same as we expect (TCP). We sent [" + this.message + "]";
+            if (logger.isWarnEnabled()) {
+                logger.warn(msg);
             }
-            exceptionCaught( ctx, new DefaultExceptionEvent( ctx.getChannel(),
-                                                             new PeerException( PeerException.AbortCause.PEER_ABORT,
-                                                                                msg ) ) );
+            exceptionCaught(ctx, new DefaultExceptionEvent(ctx.getChannel(), new PeerException(
+                    PeerException.AbortCause.PEER_ABORT, msg)));
             return;
         }
 
-        if ( logger.isDebugEnabled() )
-        {
-            logger.debug( "perfect: " + responseMessage );
+        if (logger.isDebugEnabled()) {
+            logger.debug("perfect: " + responseMessage);
         }
         // We got a good answer, let's mark the sender as alive
-        if ( responseMessage.isOk() || responseMessage.isNotOk() )
-        {
-            boolean retVal = getPeerMap().peerFound( responseMessage.getSender(), null );
-            if ( logger.isDebugEnabled() && !retVal )
-            {
-                logger.debug( responseMessage.getSender() + "not stored in peermap" );
+        if (responseMessage.isOk() || responseMessage.isNotOk()) {
+            boolean retVal = getPeerMap().peerFound(responseMessage.getSender(), null);
+            if (logger.isDebugEnabled() && !retVal) {
+                logger.debug(responseMessage.getSender() + "not stored in peermap");
             }
         }
         // connection is closed by other peer
-        reportResult( ctx.getChannel(), futureResponse, responseMessage );
-        ctx.sendUpstream( e );
+        reportResult(ctx.getChannel(), futureResponse, responseMessage);
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void channelClosed( ChannelHandlerContext ctx, ChannelStateEvent e )
-        throws Exception
-    {
-        if ( !reported.compareAndSet( false, true ) )
-        {
+    public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
+        if (!reported.compareAndSet(false, true)) {
             return;
         }
         // this needs to be the last listener added
-        ctx.getChannel().getCloseFuture().addListener( new ChannelFutureListener()
-        {
+        ctx.getChannel().getCloseFuture().addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete( ChannelFuture arg0 )
-                throws Exception
-            {
-                if ( logger.isDebugEnabled() )
-                {
-                    logger.debug( "channel close 1, set failure for request message: " + message );
+            public void operationComplete(ChannelFuture arg0) throws Exception {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("channel close 1, set failure for request message: " + message);
                 }
-                futureResponse.setFailed( "Channel closed event" );
+                futureResponse.setFailed("Channel closed event");
             }
-        } );
-        ctx.sendUpstream( e );
+        });
+        ctx.sendUpstream(e);
     }
 
-    private void reportFail( final String cause, final Channel channel, final FutureResponse futureResponse )
-    {
-        if ( !reported.compareAndSet( false, true ) )
-        {
+    private void reportFail(final String cause, final Channel channel, final FutureResponse futureResponse) {
+        if (!reported.compareAndSet(false, true)) {
             // close channel in case of an exception
             channel.close();
             return;
         }
         // this needs to be the last listener added
-        channel.close().addListener( new ChannelFutureListener()
-        {
+        channel.close().addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete( ChannelFuture arg0 )
-                throws Exception
-            {
-                if ( logger.isDebugEnabled() )
-                {
-                    logger.debug( "channel close 2, set failure for request message: " + message );
+            public void operationComplete(ChannelFuture arg0) throws Exception {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("channel close 2, set failure for request message: " + message);
                 }
-                futureResponse.setFailed( cause );
+                futureResponse.setFailed(cause);
             }
-        } );
+        });
     }
 
-    private void reportResult( final Channel channel, final K futureResponse, final Message responseMessage )
-    {
-        if ( !reported.compareAndSet( false, true ) )
-        {
+    private void reportResult(final Channel channel, final K futureResponse, final Message responseMessage) {
+        if (!reported.compareAndSet(false, true)) {
             return;
         }
-        if ( message.isKeepAlive() )
-        {
-            futureResponse.setResponse( responseMessage );
-        }
-        else
-        {
+        if (message.isKeepAlive()) {
+            futureResponse.setResponse(responseMessage);
+        } else {
             // the other side closes the channel
             // this needs to be the last listener added
-            channel.getCloseFuture().addListener( new ChannelFutureListener()
-            {
+            channel.getCloseFuture().addListener(new ChannelFutureListener() {
                 @Override
-                public void operationComplete( ChannelFuture arg0 )
-                    throws Exception
-                {
-                    if ( logger.isDebugEnabled() )
-                    {
-                        logger.debug( "channel close 3, set failure for request message: " + message );
+                public void operationComplete(ChannelFuture arg0) throws Exception {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("channel close 3, set failure for request message: " + message);
                     }
-                    futureResponse.setResponse( responseMessage );
+                    futureResponse.setResponse(responseMessage);
                 }
-            } );
+            });
         }
     }
 }

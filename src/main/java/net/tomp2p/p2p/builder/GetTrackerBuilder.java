@@ -24,9 +24,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
-public class GetTrackerBuilder
-    extends TrackerBuilder<GetTrackerBuilder>
-{
+public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
     private EvaluatingSchemeTracker evaluatingScheme;
 
     private Set<Number160> knownPeers;
@@ -37,103 +35,84 @@ public class GetTrackerBuilder
 
     private boolean useSecondaryTrackers = false;
 
-    public GetTrackerBuilder( Peer peer, Number160 locationKey )
-    {
-        super( peer, locationKey );
-        self( this );
+    public GetTrackerBuilder(Peer peer, Number160 locationKey) {
+        super(peer, locationKey);
+        self(this);
     }
 
-    public EvaluatingSchemeTracker getEvaluatingScheme()
-    {
+    public EvaluatingSchemeTracker getEvaluatingScheme() {
         return evaluatingScheme;
     }
 
-    public GetTrackerBuilder setEvaluatingScheme( EvaluatingSchemeTracker evaluatingScheme )
-    {
+    public GetTrackerBuilder setEvaluatingScheme(EvaluatingSchemeTracker evaluatingScheme) {
         this.evaluatingScheme = evaluatingScheme;
         return this;
     }
 
-    public Set<Number160> getKnownPeers()
-    {
+    public Set<Number160> getKnownPeers() {
         return knownPeers;
     }
 
-    public GetTrackerBuilder setKnownPeers( Set<Number160> knownPeers )
-    {
+    public GetTrackerBuilder setKnownPeers(Set<Number160> knownPeers) {
         this.knownPeers = knownPeers;
         return this;
     }
 
-    public boolean isExpectAttachement()
-    {
+    public boolean isExpectAttachement() {
         return expectAttachement;
     }
 
-    public GetTrackerBuilder setExpectAttachement()
-    {
+    public GetTrackerBuilder setExpectAttachement() {
         this.expectAttachement = true;
         return this;
     }
 
-    public GetTrackerBuilder setExpectAttachement( boolean expectAttachement )
-    {
+    public GetTrackerBuilder setExpectAttachement(boolean expectAttachement) {
         this.expectAttachement = expectAttachement;
         return this;
     }
 
-    public boolean isSignMessage()
-    {
+    public boolean isSignMessage() {
         return signMessage;
     }
 
-    public GetTrackerBuilder setSignMessage()
-    {
+    public GetTrackerBuilder setSignMessage() {
         this.signMessage = true;
         return this;
     }
 
-    public GetTrackerBuilder setSignMessage( boolean signMessage )
-    {
+    public GetTrackerBuilder setSignMessage(boolean signMessage) {
         this.signMessage = signMessage;
         return this;
     }
 
-    public boolean isUseSecondaryTrackers()
-    {
+    public boolean isUseSecondaryTrackers() {
         return useSecondaryTrackers;
     }
 
-    public GetTrackerBuilder setUseSecondaryTrackers()
-    {
+    public GetTrackerBuilder setUseSecondaryTrackers() {
         this.useSecondaryTrackers = true;
         return this;
     }
 
-    public GetTrackerBuilder setUseSecondaryTrackers( boolean useSecondaryTrackers )
-    {
+    public GetTrackerBuilder setUseSecondaryTrackers(boolean useSecondaryTrackers) {
         this.useSecondaryTrackers = useSecondaryTrackers;
         return this;
     }
 
-    public FutureTracker start()
-    {
-        if ( peer.isShutdown() )
-        {
+    public FutureTracker start() {
+        if (peer.isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
 
-        preBuild( "get-tracker-builder" );
+        preBuild("get-tracker-builder");
 
-        if ( knownPeers == null )
-        {
-            knownPeers = new SimpleBloomFilter<Number160>( 1024, 1024 );
+        if (knownPeers == null) {
+            knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
         }
 
-        return peer.getDistributedTracker().getFromTracker( locationKey, domainKey, routingConfiguration,
-                                                            trackerConfiguration, expectAttachement, evaluatingScheme,
-                                                            signMessage, useSecondaryTrackers, knownPeers,
-                                                            futureChannelCreator,
-                                                            peer.getConnectionBean().getConnectionReservation() );
+        return peer.getDistributedTracker().getFromTracker(locationKey, domainKey, routingConfiguration,
+                trackerConfiguration, expectAttachement, evaluatingScheme, signMessage, useSecondaryTrackers,
+                knownPeers, futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
     }
 }

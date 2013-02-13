@@ -21,7 +21,6 @@ import java.util.Map;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 
-public interface EvaluatingSchemeTracker
-{
-    public Collection<TrackerData> evaluateSingle( Map<PeerAddress, Collection<TrackerData>> rawData );
+public interface EvaluatingSchemeTracker {
+    public Collection<TrackerData> evaluateSingle(Map<PeerAddress, Collection<TrackerData>> rawData);
 }

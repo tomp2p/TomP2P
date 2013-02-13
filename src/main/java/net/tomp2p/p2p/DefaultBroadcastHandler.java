@@ -34,10 +34,8 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultBroadcastHandler
-    implements BroadcastHandler
-{
-    final private static Logger logger = LoggerFactory.getLogger( DefaultBroadcastHandler.class );
+public class DefaultBroadcastHandler implements BroadcastHandler {
+    final private static Logger logger = LoggerFactory.getLogger(DefaultBroadcastHandler.class);
 
     final private Peer peer;
 
@@ -51,134 +49,91 @@ public class DefaultBroadcastHandler
 
     final private static Set<Number160> counter = new HashSet<Number160>();
 
-    public DefaultBroadcastHandler( Peer peer, Random rnd )
-    {
+    public DefaultBroadcastHandler(Peer peer, Random rnd) {
         this.peer = peer;
         this.rnd = rnd;
     }
 
-    public int getBroadcastCounter()
-    {
-        synchronized ( counter )
-        {
+    public int getBroadcastCounter() {
+        synchronized (counter) {
             return counter.size();
         }
     }
 
     @Override
-    public void receive( final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
-                         final boolean isUDP )
-    {
-        if ( twiceSeen( messageKey ) )
-        {
+    public void receive(final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
+            final boolean isUDP) {
+        if (twiceSeen(messageKey)) {
             return;
         }
-        if ( logger.isDebugEnabled() )
-        {
-            logger.debug( "got broadcast map " + dataMap );
+        if (logger.isDebugEnabled()) {
+            logger.debug("got broadcast map " + dataMap);
         }
-        synchronized ( counter )
-        {
-            counter.add( peer.getPeerID() );
+        synchronized (counter) {
+            counter.add(peer.getPeerID());
         }
-        if ( hopCounter < MAX_HOP_COUNT )
-        {
-            if ( hopCounter == 0 )
-            {
-                firstPeer( messageKey, dataMap, hopCounter, isUDP );
-            }
-            else
-            {
-                otherPeer( messageKey, dataMap, hopCounter, isUDP );
+        if (hopCounter < MAX_HOP_COUNT) {
+            if (hopCounter == 0) {
+                firstPeer(messageKey, dataMap, hopCounter, isUDP);
+            } else {
+                otherPeer(messageKey, dataMap, hopCounter, isUDP);
             }
         }
     }
 
-    private boolean twiceSeen( final Number160 messageKey )
-    {
-        Boolean isInCache = cache.putIfAbsent( messageKey, Boolean.TRUE );
-        if ( isInCache != null )
-        {
-            if ( isInCache == true )
-            {
-                cache.put( messageKey, false );
-            }
-            else
-            {
+    private boolean twiceSeen(final Number160 messageKey) {
+        Boolean isInCache = cache.putIfAbsent(messageKey, Boolean.TRUE);
+        if (isInCache != null) {
+            if (isInCache == true) {
+                cache.put(messageKey, false);
+            } else {
                 return true;
             }
         }
         return false;
     }
 
-    private void firstPeer( final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
-                            final boolean isUDP )
-    {
+    private void firstPeer(final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
+            final boolean isUDP) {
         final List<PeerAddress> list = peer.getPeerBean().getPeerMap().getAll();
-        for ( final PeerAddress peerAddress : list )
-        {
-            peer.getConnectionBean().getConnectionReservation().reserve( 1 ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
-                                                                                          {
-                                                                                              @Override
-                                                                                              public void operationComplete( FutureChannelCreator future )
-                                                                                                  throws Exception
-                                                                                              {
-                                                                                                  FutureResponse futureResponse =
-                                                                                                      peer.getBroadcastRPC().send( peerAddress,
-                                                                                                                                   messageKey,
-                                                                                                                                   dataMap,
-                                                                                                                                   hopCounter + 1,
-                                                                                                                                   future.getChannelCreator(),
-                                                                                                                                   peer.getConnectionBean().getConfiguration().getIdleTCPMillis(),
-                                                                                                                                   isUDP );
-                                                                                                  if ( logger.isDebugEnabled() )
-                                                                                                  {
-                                                                                                      logger.debug( "broadcast to "
-                                                                                                          + peerAddress );
-                                                                                                  }
-                                                                                                  Utils.addReleaseListener( futureResponse,
-                                                                                                                            peer.getConnectionBean().getConnectionReservation(),
-                                                                                                                            future.getChannelCreator(),
-                                                                                                                            1 );
-                                                                                              }
-                                                                                          } );
+        for (final PeerAddress peerAddress : list) {
+            peer.getConnectionBean().getConnectionReservation().reserve(1)
+                    .addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                        @Override
+                        public void operationComplete(FutureChannelCreator future) throws Exception {
+                            FutureResponse futureResponse = peer.getBroadcastRPC().send(peerAddress, messageKey,
+                                    dataMap, hopCounter + 1, future.getChannelCreator(),
+                                    peer.getConnectionBean().getConfiguration().getIdleTCPMillis(), isUDP);
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("broadcast to " + peerAddress);
+                            }
+                            Utils.addReleaseListener(futureResponse, peer.getConnectionBean()
+                                    .getConnectionReservation(), future.getChannelCreator(), 1);
+                        }
+                    });
         }
     }
 
-    private void otherPeer( final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
-                            final boolean isUDP )
-    {
+    private void otherPeer(final Number160 messageKey, final Map<Number160, Data> dataMap, final int hopCounter,
+            final boolean isUDP) {
         final List<PeerAddress> list = peer.getPeerBean().getPeerMap().getAll();
-        final int max = Math.min( NR, list.size() );
-        peer.getConnectionBean().getConnectionReservation().reserve( max ).addListener( new BaseFutureAdapter<FutureChannelCreator>()
-                                                                                        {
-                                                                                            @Override
-                                                                                            public void operationComplete( FutureChannelCreator future )
-                                                                                                throws Exception
-                                                                                            {
-                                                                                                for ( int i = 0; i < max; i++ )
-                                                                                                {
-                                                                                                    PeerAddress randomAddress =
-                                                                                                        list.remove( rnd.nextInt( list.size() ) );
-                                                                                                    FutureResponse futureResponse =
-                                                                                                        peer.getBroadcastRPC().send( randomAddress,
-                                                                                                                                     messageKey,
-                                                                                                                                     dataMap,
-                                                                                                                                     hopCounter + 1,
-                                                                                                                                     future.getChannelCreator(),
-                                                                                                                                     peer.getConnectionBean().getConfiguration().getIdleTCPMillis(),
-                                                                                                                                     isUDP );
-                                                                                                    if ( logger.isDebugEnabled() )
-                                                                                                    {
-                                                                                                        logger.debug( "broadcast to "
-                                                                                                            + randomAddress );
-                                                                                                    }
-                                                                                                    Utils.addReleaseListener( futureResponse,
-                                                                                                                              peer.getConnectionBean().getConnectionReservation(),
-                                                                                                                              future.getChannelCreator(),
-                                                                                                                              1 );
-                                                                                                }
-                                                                                            }
-                                                                                        } );
+        final int max = Math.min(NR, list.size());
+        peer.getConnectionBean().getConnectionReservation().reserve(max)
+                .addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                    @Override
+                    public void operationComplete(FutureChannelCreator future) throws Exception {
+                        for (int i = 0; i < max; i++) {
+                            PeerAddress randomAddress = list.remove(rnd.nextInt(list.size()));
+                            FutureResponse futureResponse = peer.getBroadcastRPC().send(randomAddress, messageKey,
+                                    dataMap, hopCounter + 1, future.getChannelCreator(),
+                                    peer.getConnectionBean().getConfiguration().getIdleTCPMillis(), isUDP);
+                            if (logger.isDebugEnabled()) {
+                                logger.debug("broadcast to " + randomAddress);
+                            }
+                            Utils.addReleaseListener(futureResponse, peer.getConnectionBean()
+                                    .getConnectionReservation(), future.getChannelCreator(), 1);
+                        }
+                    }
+                });
     }
 }

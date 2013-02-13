@@ -16,13 +16,13 @@
 package net.tomp2p.utils;
 
 /**
- * The timing class for TomP2P. This class was introduced since SimGrid uses different timings. While the normal
- * operation uses System.currentTimeMillis and Thread.sleep, the SimGrid integration uses other implementations.
+ * The timing class for TomP2P. This class was introduced since SimGrid uses
+ * different timings. While the normal operation uses System.currentTimeMillis
+ * and Thread.sleep, the SimGrid integration uses other implementations.
  * 
  * @author Thomas Bocek
  */
-public interface Timing
-{
+public interface Timing {
     /**
      * @return the time in millis for this system
      */
@@ -31,16 +31,18 @@ public interface Timing
     /**
      * Sleeps with throwing an InterruptedException
      * 
-     * @param millis The time to sleep in milliseconds
-     * @throws InterruptedException If interrputed is called
+     * @param millis
+     *            The time to sleep in milliseconds
+     * @throws InterruptedException
+     *             If interrputed is called
      */
-    public abstract void sleep( int millis )
-        throws InterruptedException;
+    public abstract void sleep(int millis) throws InterruptedException;
 
     /**
      * Sleeps without throwing an InterruptedException
      * 
-     * @param millis The time to sleep in milliseconds
+     * @param millis
+     *            The time to sleep in milliseconds
      */
-    public abstract void sleepUninterruptibly( int millis );
+    public abstract void sleepUninterruptibly(int millis);
 }

@@ -74,7 +74,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TomP2P implements besides the following distributed hash table (DHT) operations:
+ * TomP2P implements besides the following distributed hash table (DHT)
+ * operations:
  * <ul>
  * <li>value=get(locationKey)</li>
  * <li>put(locationKey,value)</li>
@@ -86,15 +87,15 @@ import org.slf4j.LoggerFactory;
  * <li>put(locationKey,contentKey,value)</li>
  * <li>remove(locationKey,contentKey)</li>
  * </ul>
- * The advantage of TomP2P is that multiple values can be stored in one location. Furthermore, TomP2P also provides to
- * store keys in different domains to avoid key collisions.
+ * The advantage of TomP2P is that multiple values can be stored in one
+ * location. Furthermore, TomP2P also provides to store keys in different
+ * domains to avoid key collisions.
  * 
  * @author Thomas Bocek
  */
-public class Peer
-{
+public class Peer {
     // domain used if no domain provided
-    final private static Logger logger = LoggerFactory.getLogger( Peer.class );
+    final private static Logger logger = LoggerFactory.getLogger(Peer.class);
 
     // As soon as the user calls listen, this connection handler is set
     private ConnectionHandler connectionHandler;
@@ -144,13 +145,13 @@ public class Peer
     //
     final private ConnectionConfiguration configuration;
 
-    final private Map<BaseFuture, Long> pendingFutures =
-        Collections.synchronizedMap( new CacheMap<BaseFuture, Long>( 1000, true ) );
+    final private Map<BaseFuture, Long> pendingFutures = Collections.synchronizedMap(new CacheMap<BaseFuture, Long>(
+            1000, true));
 
     private boolean masterFlag = true;
 
-    private List<ScheduledFuture<?>> scheduledFutures =
-        Collections.synchronizedList( new ArrayList<ScheduledFuture<?>>() );
+    private List<ScheduledFuture<?>> scheduledFutures = Collections
+            .synchronizedList(new ArrayList<ScheduledFuture<?>>());
 
     final private List<PeerListener> listeners = new ArrayList<PeerListener>();
 
@@ -171,9 +172,8 @@ public class Peer
 
     private volatile boolean shutdown = false;
 
-    Peer( final int p2pID, final Number160 nodeId, final KeyPair keyPair, int maintenanceThreads,
-          int replicationThreads, ConnectionConfiguration configuration, PeerMap peerMap, int maxMessageSize )
-    {
+    Peer(final int p2pID, final Number160 nodeId, final KeyPair keyPair, int maintenanceThreads,
+            int replicationThreads, ConnectionConfiguration configuration, PeerMap peerMap, int maxMessageSize) {
         this.p2pID = p2pID;
         this.peerId = nodeId;
         this.configuration = configuration;
@@ -185,39 +185,36 @@ public class Peer
     }
 
     /**
-     * Adds a listener to peer events. The events being triggered are: startup, shutdown, change of peer address. The
-     * change of the peer address is due to the discovery process. Since this process runs in an other thread, this
-     * method is thread safe.
+     * Adds a listener to peer events. The events being triggered are: startup,
+     * shutdown, change of peer address. The change of the peer address is due
+     * to the discovery process. Since this process runs in an other thread,
+     * this method is thread safe.
      * 
-     * @param listener The listener
+     * @param listener
+     *            The listener
      */
-    public void addPeerListener( PeerListener listener )
-    {
-        if ( isRunning() )
-        {
+    public void addPeerListener(PeerListener listener) {
+        if (isRunning()) {
             listener.notifyOnStart();
         }
-        synchronized ( listeners )
-        {
-            listeners.add( listener );
+        synchronized (listeners) {
+            listeners.add(listener);
         }
     }
 
     /**
      * Removes a peer listener. This method is thread safe.
      * 
-     * @param listener The listener
+     * @param listener
+     *            The listener
      */
-    public void removePeerListener( PeerListener listener )
-    {
-        synchronized ( listeners )
-        {
-            listeners.remove( listener );
+    public void removePeerListener(PeerListener listener) {
+        synchronized (listeners) {
+            listeners.remove(listener);
         }
     }
 
-    public List<PeerListener> getListeners()
-    {
+    public List<PeerListener> getListeners() {
         return listeners;
     }
 
@@ -226,45 +223,37 @@ public class Peer
      * 
      * @throws InterruptedException
      */
-    public void shutdown()
-    {
+    public void shutdown() {
         shutdown = true;
-        logger.info( "begin shutdown in progres at " + System.nanoTime() );
-        synchronized ( scheduledFutures )
-        {
-            for ( ScheduledFuture<?> scheduledFuture : scheduledFutures )
-                scheduledFuture.cancel( true );
+        logger.info("begin shutdown in progres at " + System.nanoTime());
+        synchronized (scheduledFutures) {
+            for (ScheduledFuture<?> scheduledFuture : scheduledFutures)
+                scheduledFuture.cancel(true);
         }
         // don't send any new requests
-        if ( masterFlag )
-        {
+        if (masterFlag) {
             getConnectionBean().getSender().shutdown();
             getPeerBean().getTaskManager().shutdown();
         }
-        
-        if ( masterFlag && timer != null )
-        {
+
+        if (masterFlag && timer != null) {
             Set<Timeout> timeouts = timer.stop();
-            for ( Timeout timeout : timeouts )
-            {
-                try
-                {
-                    timeout.getTask().run( null );
-                }
-                catch ( Exception e )
-                {
-                    logger.error( "unable to stop timertask" );
-                    e.printStackTrace( );
+            for (Timeout timeout : timeouts) {
+                try {
+                    timeout.getTask().run(null);
+                } catch (Exception e) {
+                    logger.error("unable to stop timertask");
+                    e.printStackTrace();
                 }
             }
         }
-        //timer must be stopped before, or there will be still connections that are running
+        // timer must be stopped before, or there will be still connections that
+        // are running
         getConnectionHandler().shutdown();
 
         // listeners may be called from other threads
-        synchronized ( listeners )
-        {
-            for ( PeerListener listener : listeners )
+        synchronized (listeners) {
+            for (PeerListener listener : listeners)
                 listener.notifyOnShutdown();
         }
         getPeerBean().getStorage().close();
@@ -274,360 +263,303 @@ public class Peer
     /**
      * Lets this node listen on a port
      * 
-     * @param udpPort the UDP port to listen on
-     * @param tcpPort the TCP port to listen on
-     * @param bindInformation contains IP addresses to listen on
+     * @param udpPort
+     *            the UDP port to listen on
+     * @param tcpPort
+     *            the TCP port to listen on
+     * @param bindInformation
+     *            contains IP addresses to listen on
      * @param replication
      * @param statServer
      * @throws Exception
      */
-    ConnectionHandler listen( final int udpPort, final int tcpPort, final Bindings bindings,
-                              final File fileMessageLogger, int workerThreads )
-        throws IOException
-    {
+    ConnectionHandler listen(final int udpPort, final int tcpPort, final Bindings bindings,
+            final File fileMessageLogger, int workerThreads) throws IOException {
         // I'm the master
         masterFlag = true;
-        this.timer = new HashedWheelTimer( 10, TimeUnit.MILLISECONDS, 10 );
+        this.timer = new HashedWheelTimer(10, TimeUnit.MILLISECONDS, 10);
         this.bindings = bindings;
 
-        ConnectionHandler connectionHandler =
-            new ConnectionHandler( udpPort, tcpPort, peerId, bindings, getP2PID(), configuration, fileMessageLogger,
-                                   keyPair, peerMap, timer, maxMessageSize, maintenanceThreads, replicationThreads,
-                                   workerThreads );
-        logger.debug( "listen done" );
+        ConnectionHandler connectionHandler = new ConnectionHandler(udpPort, tcpPort, peerId, bindings, getP2PID(),
+                configuration, fileMessageLogger, keyPair, peerMap, timer, maxMessageSize, maintenanceThreads,
+                replicationThreads, workerThreads);
+        logger.debug("listen done");
         this.connectionHandler = connectionHandler;
         return connectionHandler;
     }
 
-    ConnectionHandler listen( final Peer master )
-        throws IOException
-    {
+    ConnectionHandler listen(final Peer master) throws IOException {
         // I'm a slave
         masterFlag = false;
         this.timer = master.timer;
         this.bindings = master.bindings;
         // listen to the masters peermap
-        ConnectionHandler connectionHandler =
-            new ConnectionHandler( master.getConnectionHandler(), peerId, keyPair, peerMap );
-        logger.debug( "listen done" );
+        ConnectionHandler connectionHandler = new ConnectionHandler(master.getConnectionHandler(), peerId, keyPair,
+                peerMap);
+        logger.debug("listen done");
         this.connectionHandler = connectionHandler;
         return connectionHandler;
     }
 
-    public Map<BaseFuture, Long> getPendingFutures()
-    {
+    public Map<BaseFuture, Long> getPendingFutures() {
         return pendingFutures;
     }
 
-    public boolean isRunning()
-    {
+    public boolean isRunning() {
         return connectionHandler != null;
     }
 
-    public boolean isListening()
-    {
-        if ( !isRunning() )
+    public boolean isListening() {
+        if (!isRunning())
             return false;
         return connectionHandler.isListening();
     }
 
-    public void customLoggerMessage( String customMessage )
-    {
-        getConnectionHandler().customLoggerMessage( customMessage );
+    public void customLoggerMessage(String customMessage) {
+        getConnectionHandler().customLoggerMessage(customMessage);
     }
 
-    public HandshakeRPC getHandshakeRPC()
-    {
-        if ( handshakeRCP == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public HandshakeRPC getHandshakeRPC() {
+        if (handshakeRCP == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return handshakeRCP;
     }
 
-    public void setHandshakeRPC( HandshakeRPC handshakeRPC )
-    {
+    public void setHandshakeRPC(HandshakeRPC handshakeRPC) {
         this.handshakeRCP = handshakeRPC;
     }
 
-    public StorageRPC getStoreRPC()
-    {
-        if ( storageRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public StorageRPC getStoreRPC() {
+        if (storageRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return storageRPC;
     }
 
-    public void setStorageRPC( StorageRPC storageRPC )
-    {
+    public void setStorageRPC(StorageRPC storageRPC) {
         this.storageRPC = storageRPC;
     }
 
-    public NeighborRPC getNeighborRPC()
-    {
-        if ( neighborRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public NeighborRPC getNeighborRPC() {
+        if (neighborRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return neighborRPC;
     }
 
-    public void setNeighborRPC( NeighborRPC neighborRPC )
-    {
+    public void setNeighborRPC(NeighborRPC neighborRPC) {
         this.neighborRPC = neighborRPC;
     }
 
-    public QuitRPC getQuitRPC()
-    {
-        if ( quitRCP == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public QuitRPC getQuitRPC() {
+        if (quitRCP == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return quitRCP;
     }
 
-    public void setQuitRPC( QuitRPC quitRCP )
-    {
+    public void setQuitRPC(QuitRPC quitRCP) {
         this.quitRCP = quitRCP;
     }
 
-    public PeerExchangeRPC getPeerExchangeRPC()
-    {
-        if ( peerExchangeRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public PeerExchangeRPC getPeerExchangeRPC() {
+        if (peerExchangeRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return peerExchangeRPC;
     }
 
-    public void setPeerExchangeRPC( PeerExchangeRPC peerExchangeRPC )
-    {
+    public void setPeerExchangeRPC(PeerExchangeRPC peerExchangeRPC) {
         this.peerExchangeRPC = peerExchangeRPC;
     }
 
-    public DirectDataRPC getDirectDataRPC()
-    {
-        if ( directDataRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public DirectDataRPC getDirectDataRPC() {
+        if (directDataRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return directDataRPC;
     }
 
-    public void setDirectDataRPC( DirectDataRPC directDataRPC )
-    {
+    public void setDirectDataRPC(DirectDataRPC directDataRPC) {
         this.directDataRPC = directDataRPC;
     }
 
-    public TrackerRPC getTrackerRPC()
-    {
-        if ( trackerRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public TrackerRPC getTrackerRPC() {
+        if (trackerRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return trackerRPC;
     }
 
-    public void setTrackerRPC( TrackerRPC trackerRPC )
-    {
+    public void setTrackerRPC(TrackerRPC trackerRPC) {
         this.trackerRPC = trackerRPC;
     }
 
-    public TaskRPC getTaskRPC()
-    {
-        if ( taskRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public TaskRPC getTaskRPC() {
+        if (taskRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return taskRPC;
     }
 
-    public void setTaskRPC( TaskRPC taskRPC )
-    {
+    public void setTaskRPC(TaskRPC taskRPC) {
         this.taskRPC = taskRPC;
     }
 
-    public void setBroadcastRPC( BroadcastRPC broadcastRPC )
-    {
+    public void setBroadcastRPC(BroadcastRPC broadcastRPC) {
         this.broadcastRPC = broadcastRPC;
 
     }
 
-    public BroadcastRPC getBroadcastRPC()
-    {
-        if ( broadcastRPC == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public BroadcastRPC getBroadcastRPC() {
+        if (broadcastRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return broadcastRPC;
     }
 
-    public DistributedRouting getDistributedRouting()
-    {
-        if ( distributedRouting == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public DistributedRouting getDistributedRouting() {
+        if (distributedRouting == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return distributedRouting;
     }
 
-    public void setDistributedRouting( DistributedRouting distributedRouting )
-    {
+    public void setDistributedRouting(DistributedRouting distributedRouting) {
         this.distributedRouting = distributedRouting;
     }
 
-    public DistributedHashTable getDistributedHashMap()
-    {
-        if ( distributedHashMap == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public DistributedHashTable getDistributedHashMap() {
+        if (distributedHashMap == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return distributedHashMap;
     }
 
-    public void setDistributedHashMap( DistributedHashTable distributedHashMap )
-    {
+    public void setDistributedHashMap(DistributedHashTable distributedHashMap) {
         this.distributedHashMap = distributedHashMap;
     }
 
-    public DistributedTracker getDistributedTracker()
-    {
-        if ( distributedTracker == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public DistributedTracker getDistributedTracker() {
+        if (distributedTracker == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return distributedTracker;
     }
 
-    public void setDistributedTracker( DistributedTracker distributedTracker )
-    {
+    public void setDistributedTracker(DistributedTracker distributedTracker) {
         this.distributedTracker = distributedTracker;
     }
 
-    public AsyncTask getAsyncTask()
-    {
-        if ( asyncTask == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public AsyncTask getAsyncTask() {
+        if (asyncTask == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return asyncTask;
     }
 
-    public void setAsyncTask( AsyncTask asyncTask )
-    {
+    public void setAsyncTask(AsyncTask asyncTask) {
         this.asyncTask = asyncTask;
     }
 
-    public DistributedTask getDistributedTask()
-    {
-        if ( distributedTask == null )
-        {
-            throw new RuntimeException( "Not enabled, please enable this RPC in PeerMaker" );
+    public DistributedTask getDistributedTask() {
+        if (distributedTask == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return distributedTask;
     }
 
-    public void setDistributedTask( DistributedTask task )
-    {
+    public void setDistributedTask(DistributedTask task) {
         this.distributedTask = task;
     }
 
-    public List<ScheduledFuture<?>> getScheduledFutures()
-    {
+    public List<ScheduledFuture<?>> getScheduledFutures() {
         return scheduledFutures;
     }
 
-    public ConnectionHandler getConnectionHandler()
-    {
-        if ( connectionHandler == null )
-            throw new RuntimeException( "Not listening to anything. Use the listen method first" );
+    public ConnectionHandler getConnectionHandler() {
+        if (connectionHandler == null)
+            throw new RuntimeException("Not listening to anything. Use the listen method first");
         else
             return connectionHandler;
     }
 
-    public Bindings getBindings()
-    {
-        if ( bindings == null )
-            throw new RuntimeException( "Not listening to anything. Use the listen method first" );
+    public Bindings getBindings() {
+        if (bindings == null)
+            throw new RuntimeException("Not listening to anything. Use the listen method first");
         else
             return bindings;
     }
 
-    public Timer getTimer()
-    {
-        if ( timer == null )
-            throw new RuntimeException( "Not listening to anything. Use the listen method first" );
+    public Timer getTimer() {
+        if (timer == null)
+            throw new RuntimeException("Not listening to anything. Use the listen method first");
         else
             return timer;
     }
 
-    public PeerBean getPeerBean()
-    {
+    public PeerBean getPeerBean() {
         return getConnectionHandler().getPeerBean();
     }
 
-    public ConnectionBean getConnectionBean()
-    {
+    public ConnectionBean getConnectionBean() {
         return getConnectionHandler().getConnectionBean();
     }
 
-    public Number160 getPeerID()
-    {
+    public Number160 getPeerID() {
         return peerId;
     }
 
-    public int getP2PID()
-    {
+    public int getP2PID() {
         return p2pID;
     }
 
-    public PeerAddress getPeerAddress()
-    {
+    public PeerAddress getPeerAddress() {
         return getPeerBean().getServerPeerAddress();
     }
 
-    public ConnectionConfiguration getConfiguration()
-    {
+    public ConnectionConfiguration getConfiguration() {
         return configuration;
     }
 
     // *********************************** DHT / Tracker operations start here
 
-    public void setRawDataReply( final RawDataReply rawDataReply )
-    {
-        getDirectDataRPC().setReply( rawDataReply );
+    public void setRawDataReply(final RawDataReply rawDataReply) {
+        getDirectDataRPC().setReply(rawDataReply);
     }
 
-    public void setObjectDataReply( final ObjectDataReply objectDataReply )
-    {
-        getDirectDataRPC().setReply( objectDataReply );
+    public void setObjectDataReply(final ObjectDataReply objectDataReply) {
+        getDirectDataRPC().setReply(objectDataReply);
     }
 
     /**
-     * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
-     * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
-     * inactivity), further requests with this connections reopens the connection. This methods blocks until a
-     * connection can be reserver.
+     * Opens a TCP connection and keeps it open. The user can provide the idle
+     * timeout, which means that the connection gets closed after that time of
+     * inactivity. If the other peer goes offline or closes the connection (due
+     * to inactivity), further requests with this connections reopens the
+     * connection. This methods blocks until a connection can be reserver.
      * 
-     * @param destination The end-point to connect to
-     * @param idleSeconds time in seconds after a connection gets closed if idle, -1 if it should remain always open
-     *            until the user closes the connection manually.
-     * @return A class that needs to be passed to those methods that should use the already open connection. If the
-     *         connection could not be reserved, maybe due to a shutdown, null is returned.
+     * @param destination
+     *            The end-point to connect to
+     * @param idleSeconds
+     *            time in seconds after a connection gets closed if idle, -1 if
+     *            it should remain always open until the user closes the
+     *            connection manually.
+     * @return A class that needs to be passed to those methods that should use
+     *         the already open connection. If the connection could not be
+     *         reserved, maybe due to a shutdown, null is returned.
      */
-    public PeerConnection createPeerConnection( PeerAddress destination, int idleTCPMillis )
-    {
-        final FutureChannelCreator fcc =
-            getConnectionBean().getConnectionReservation().reserve( 1, true, "PeerConnection" );
+    public PeerConnection createPeerConnection(PeerAddress destination, int idleTCPMillis) {
+        final FutureChannelCreator fcc = getConnectionBean().getConnectionReservation().reserve(1, true,
+                "PeerConnection");
         fcc.awaitUninterruptibly();
-        if ( fcc.isFailed() )
-        {
+        if (fcc.isFailed()) {
             return null;
         }
         final ChannelCreator cc = fcc.getChannelCreator();
-        final PeerConnection peerConnection =
-            new PeerConnection( destination, getConnectionBean().getConnectionReservation(), cc, idleTCPMillis );
+        final PeerConnection peerConnection = new PeerConnection(destination, getConnectionBean()
+                .getConnectionReservation(), cc, idleTCPMillis);
         return peerConnection;
     }
 
@@ -639,69 +571,54 @@ public class Peer
      * @param port
      * @return
      */
-    public boolean setupPortForwanding( String internalHost )
-    {
+    public boolean setupPortForwanding(String internalHost) {
         int portUDP = bindings.getOutsideUDPPort();
         int portTCP = bindings.getOutsideTCPPort();
         boolean success;
 
-        try
-        {
-            success =
-                connectionHandler.getNATUtils().mapUPNP( internalHost, getPeerAddress().portUDP(),
-                                                         getPeerAddress().portTCP(), portUDP, portTCP );
-        }
-        catch ( IOException e )
-        {
+        try {
+            success = connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),
+                    getPeerAddress().portTCP(), portUDP, portTCP);
+        } catch (IOException e) {
             success = false;
         }
 
-        if ( !success )
-        {
-            logger.warn( "cannot find UPNP devices" );
-            try
-            {
-                success =
-                    connectionHandler.getNATUtils().mapPMP( getPeerAddress().portUDP(), getPeerAddress().portTCP(),
-                                                            portUDP, portTCP );
-                if ( !success )
-                {
-                    logger.warn( "cannot find NAT-PMP devices" );
+        if (!success) {
+            logger.warn("cannot find UPNP devices");
+            try {
+                success = connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
+                        getPeerAddress().portTCP(), portUDP, portTCP);
+                if (!success) {
+                    logger.warn("cannot find NAT-PMP devices");
                 }
-            }
-            catch ( NatPmpException e1 )
-            {
-                logger.warn( "cannot find NAT-PMP devices " + e1 );
+            } catch (NatPmpException e1) {
+                logger.warn("cannot find NAT-PMP devices " + e1);
             }
         }
         return success;
     }
 
-    // New API - builder pattern --------------------------------------------------
+    // New API - builder pattern
+    // --------------------------------------------------
 
-    public SubmitBuilder submit( Number160 locationKey, Worker worker )
-    {
-        return new SubmitBuilder( this, locationKey, worker );
+    public SubmitBuilder submit(Number160 locationKey, Worker worker) {
+        return new SubmitBuilder(this, locationKey, worker);
     }
 
-    public AddBuilder add( Number160 locationKey )
-    {
-        return new AddBuilder( this, locationKey );
+    public AddBuilder add(Number160 locationKey) {
+        return new AddBuilder(this, locationKey);
     }
 
-    public PutBuilder put( Number160 locationKey )
-    {
-        return new PutBuilder( this, locationKey );
+    public PutBuilder put(Number160 locationKey) {
+        return new PutBuilder(this, locationKey);
     }
 
-    public GetBuilder get( Number160 locationKey )
-    {
-        return new GetBuilder( this, locationKey );
+    public GetBuilder get(Number160 locationKey) {
+        return new GetBuilder(this, locationKey);
     }
 
-    public RemoveBuilder remove( Number160 locationKey )
-    {
-        return new RemoveBuilder( this, locationKey );
+    public RemoveBuilder remove(Number160 locationKey) {
+        return new RemoveBuilder(this, locationKey);
     }
 
     /**
@@ -717,128 +634,122 @@ public class Peer
      *    setRequestP2PConfiguration(1, 5, 0)
      * </pre>
      * 
-     * @param locationKey The target hash to search for during the routing process
+     * @param locationKey
+     *            The target hash to search for during the routing process
      * @return The send builder that allows to set options
      */
-    public SendBuilder send( Number160 locationKey )
-    {
-        return new SendBuilder( this, locationKey );
+    public SendBuilder send(Number160 locationKey) {
+        return new SendBuilder(this, locationKey);
     }
-    
-    public SendDirectBuilder sendDirect(PeerAddress recipientAddress)
-    {
-        return new SendDirectBuilder( this, recipientAddress );
+
+    public SendDirectBuilder sendDirect(PeerAddress recipientAddress) {
+        return new SendDirectBuilder(this, recipientAddress);
     }
-    
-    public SendDirectBuilder sendDirect(PeerConnection recipientConnection)
-    {
-        return new SendDirectBuilder( this, recipientConnection );
+
+    public SendDirectBuilder sendDirect(PeerConnection recipientConnection) {
+        return new SendDirectBuilder(this, recipientConnection);
     }
 
     @Deprecated
-    public SendDirectBuilder sendDirect()
-    {
-        return new SendDirectBuilder( this );
+    public SendDirectBuilder sendDirect() {
+        return new SendDirectBuilder(this);
     }
 
-    public BootstrapBuilder bootstrap()
-    {
-        return new BootstrapBuilder( this );
+    public BootstrapBuilder bootstrap() {
+        return new BootstrapBuilder(this);
     }
 
-    public PingBuilder ping()
-    {
-        return new PingBuilder( this );
+    public PingBuilder ping() {
+        return new PingBuilder(this);
     }
 
-    public DiscoverBuilder discover()
-    {
-        return new DiscoverBuilder( this );
+    public DiscoverBuilder discover() {
+        return new DiscoverBuilder(this);
     }
 
-    public AddTrackerBuilder addTracker( Number160 locationKey )
-    {
-        return new AddTrackerBuilder( this, locationKey );
+    public AddTrackerBuilder addTracker(Number160 locationKey) {
+        return new AddTrackerBuilder(this, locationKey);
     }
 
-    public GetTrackerBuilder getTracker( Number160 locationKey )
-    {
-        return new GetTrackerBuilder( this, locationKey );
+    public GetTrackerBuilder getTracker(Number160 locationKey) {
+        return new GetTrackerBuilder(this, locationKey);
     }
 
-    public ParallelRequestBuilder parallelRequest( Number160 locationKey )
-    {
-        return new ParallelRequestBuilder( this, locationKey );
+    public ParallelRequestBuilder parallelRequest(Number160 locationKey) {
+        return new ParallelRequestBuilder(this, locationKey);
     }
 
-    public BroadcastBuilder broadcast( Number160 messageKey )
-    {
-        return new BroadcastBuilder( this, messageKey );
+    public BroadcastBuilder broadcast(Number160 messageKey) {
+        return new BroadcastBuilder(this, messageKey);
     }
 
-    // *************************** Connection Reservation ************************
+    // *************************** Connection Reservation
+    // ************************
 
     /**
-     * Reserves a connection for a routing and DHT operation. This call does not blocks. At least one of the arguments
-     * routingConfiguration or requestP2PConfiguration must not be null.
+     * Reserves a connection for a routing and DHT operation. This call does not
+     * blocks. At least one of the arguments routingConfiguration or
+     * requestP2PConfiguration must not be null.
      * 
-     * @param routingConfiguration The information about the routing
-     * @param requestP2PConfiguration The information about the DHT operation
-     * @param name The name of the ChannelCreator, used for easier debugging
-     * @return A ChannelCreator that can create channel according to routingConfiguration and requestP2PConfiguration
-     * @throws IllegalArgumentException If both arguments routingConfiguration and requestP2PConfiguration are null
+     * @param routingConfiguration
+     *            The information about the routing
+     * @param requestP2PConfiguration
+     *            The information about the DHT operation
+     * @param name
+     *            The name of the ChannelCreator, used for easier debugging
+     * @return A ChannelCreator that can create channel according to
+     *         routingConfiguration and requestP2PConfiguration
+     * @throws IllegalArgumentException
+     *             If both arguments routingConfiguration and
+     *             requestP2PConfiguration are null
      */
-    public FutureChannelCreator reserve( final RoutingConfiguration routingConfiguration,
-                                         RequestP2PConfiguration requestP2PConfiguration, String name )
-    {
-        if ( routingConfiguration == null && requestP2PConfiguration == null )
-        {
-            throw new IllegalArgumentException( "Both routingConfiguration and requestP2PConfiguration cannot be null" );
+    public FutureChannelCreator reserve(final RoutingConfiguration routingConfiguration,
+            RequestP2PConfiguration requestP2PConfiguration, String name) {
+        if (routingConfiguration == null && requestP2PConfiguration == null) {
+            throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
         }
         final int nrConnections;
-        if ( routingConfiguration == null )
-        {
+        if (routingConfiguration == null) {
             nrConnections = requestP2PConfiguration.getParallel();
-        }
-        else if ( requestP2PConfiguration == null )
-        {
+        } else if (requestP2PConfiguration == null) {
             nrConnections = routingConfiguration.getParallel();
+        } else {
+            nrConnections = Math.max(routingConfiguration.getParallel(), requestP2PConfiguration.getParallel());
         }
-        else
-        {
-            nrConnections = Math.max( routingConfiguration.getParallel(), requestP2PConfiguration.getParallel() );
-        }
-        return getConnectionBean().getConnectionReservation().reserve( nrConnections, name );
+        return getConnectionBean().getConnectionReservation().reserve(nrConnections, name);
     }
 
     /**
-     * Release a ChannelCreator. The permits will be returned so that they can be used again. This is a wrapper for
-     * ConnectionReservation.
+     * Release a ChannelCreator. The permits will be returned so that they can
+     * be used again. This is a wrapper for ConnectionReservation.
      * 
-     * @param channelCreator The ChannelCreator that is not used anymore
+     * @param channelCreator
+     *            The ChannelCreator that is not used anymore
      */
-    public void release( ChannelCreator channelCreator )
-    {
-        getConnectionBean().getConnectionReservation().release( channelCreator );
+    public void release(ChannelCreator channelCreator) {
+        getConnectionBean().getConnectionReservation().release(channelCreator);
     }
 
     /**
-     * Sets a timeout for this future. If the timeout passes, the future fails with the reason provided
+     * Sets a timeout for this future. If the timeout passes, the future fails
+     * with the reason provided
      * 
-     * @param baseFuture The future to set the timeout
-     * @param millis The time in milliseconds until this future is considered a failure.
-     * @param reason The reason why this future failed
+     * @param baseFuture
+     *            The future to set the timeout
+     * @param millis
+     *            The time in milliseconds until this future is considered a
+     *            failure.
+     * @param reason
+     *            The reason why this future failed
      */
-    public void setFutureTimeout( BaseFuture baseFuture, int millis, String reason )
-    {
-        getConnectionBean().getScheduler().scheduleTimeout( baseFuture, millis, reason );
+    public void setFutureTimeout(BaseFuture baseFuture, int millis, String reason) {
+        getConnectionBean().getScheduler().scheduleTimeout(baseFuture, millis, reason);
     }
 
     /**
      * Returns true if shutdown has been initiated
      */
-    public boolean isShutdown()
-    {
+    public boolean isShutdown() {
         return shutdown;
     }
 

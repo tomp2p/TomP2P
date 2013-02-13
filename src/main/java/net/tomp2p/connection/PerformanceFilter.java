@@ -27,62 +27,54 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Measures the number of outgoing and incoming packets. This is used to test the performance. The logger is set to
- * debug and will only output if the msg/s is larger than 1. To enable the performance, set in tomp2plog.properties
+ * Measures the number of outgoing and incoming packets. This is used to test
+ * the performance. The logger is set to debug and will only output if the msg/s
+ * is larger than 1. To enable the performance, set in tomp2plog.properties
  * "net.tomp2p.connection.PerformanceFilter.level = FINE"
  * 
  * @author Thomas Bocek
  */
 @Sharable
-public class PerformanceFilter
-    extends SimpleChannelHandler
-{
-    final private static Logger logger = LoggerFactory.getLogger( PerformanceFilter.class );
+public class PerformanceFilter extends SimpleChannelHandler {
+    final private static Logger logger = LoggerFactory.getLogger(PerformanceFilter.class);
 
     final private static int DISPLAY_EVERY_MS = 250;
 
-    private static AtomicLong startSend = new AtomicLong( Timings.currentTimeMillis() );
+    private static AtomicLong startSend = new AtomicLong(Timings.currentTimeMillis());
 
-    private static AtomicLong startReceive = new AtomicLong( Timings.currentTimeMillis() );
+    private static AtomicLong startReceive = new AtomicLong(Timings.currentTimeMillis());
 
-    private static AtomicLong messagesCountReceive = new AtomicLong( 0 );
+    private static AtomicLong messagesCountReceive = new AtomicLong(0);
 
-    private static AtomicLong messagesCountSend = new AtomicLong( 0 );
+    private static AtomicLong messagesCountSend = new AtomicLong(0);
 
     @Override
-    public void messageReceived( ChannelHandlerContext ctx, MessageEvent e )
-    {
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
         messagesCountReceive.incrementAndGet();
         final long time = Timings.currentTimeMillis() - startReceive.get();
-        if ( time > DISPLAY_EVERY_MS )
-        {
-            double throughput = messagesCountReceive.doubleValue() / ( time / 1000d );
-            if ( throughput > 1 && logger.isDebugEnabled() )
-            {
-                logger.debug( "Incoming throughput=" + throughput + "msg/s" );
+        if (time > DISPLAY_EVERY_MS) {
+            double throughput = messagesCountReceive.doubleValue() / (time / 1000d);
+            if (throughput > 1 && logger.isDebugEnabled()) {
+                logger.debug("Incoming throughput=" + throughput + "msg/s");
             }
-            startReceive.set( Timings.currentTimeMillis() );
-            messagesCountReceive.set( 0 );
+            startReceive.set(Timings.currentTimeMillis());
+            messagesCountReceive.set(0);
         }
-        ctx.sendUpstream( e );
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void writeRequested( ChannelHandlerContext ctx, MessageEvent e )
-        throws Exception
-    {
+    public void writeRequested(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         messagesCountSend.incrementAndGet();
         long time = Timings.currentTimeMillis() - startSend.get();
-        if ( time > DISPLAY_EVERY_MS )
-        {
-            double throughput = messagesCountSend.doubleValue() / ( time / 1000d );
-            if ( throughput > 1 && logger.isDebugEnabled() )
-            {
-                logger.debug( "Outgoing throughput=" + throughput + "msg/s" );
+        if (time > DISPLAY_EVERY_MS) {
+            double throughput = messagesCountSend.doubleValue() / (time / 1000d);
+            if (throughput > 1 && logger.isDebugEnabled()) {
+                logger.debug("Outgoing throughput=" + throughput + "msg/s");
             }
-            startSend.set( Timings.currentTimeMillis() );
-            messagesCountSend.set( 0 );
+            startSend.set(Timings.currentTimeMillis());
+            messagesCountSend.set(0);
         }
-        ctx.sendDownstream( e );
+        ctx.sendDownstream(e);
     }
 }

@@ -49,23 +49,20 @@ package net.tomp2p.upnp;
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class StateVariableResponse
-{
+public class StateVariableResponse {
     /***/
     public final StateVariable stateVar;
 
     String stateVariableValue;
 
-    StateVariableResponse( StateVariable var )
-    {
+    StateVariableResponse(StateVariable var) {
         stateVar = var;
     }
 
     /**
      * @return the variable's value
      */
-    public String getStateVariableValue()
-    {
+    public String getStateVariableValue() {
         return stateVariableValue;
     }
 

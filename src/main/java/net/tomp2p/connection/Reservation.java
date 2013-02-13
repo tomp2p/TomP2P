@@ -19,15 +19,14 @@ import java.util.concurrent.Semaphore;
 
 import net.tomp2p.futures.FutureRunnable;
 
-public interface Reservation
-{
+public interface Reservation {
     public abstract void shutdown();
 
-    public abstract boolean acquire( Semaphore semaphore, int permits );
+    public abstract boolean acquire(Semaphore semaphore, int permits);
 
-    public abstract void runDeadLockProof( Scheduler scheduler, FutureRunnable futureRunnable );
+    public abstract void runDeadLockProof(Scheduler scheduler, FutureRunnable futureRunnable);
 
     public abstract void prepareDeadLockCheck();
 
-    public abstract void removeDeadLockCheck( long creatorThread );
+    public abstract void removeDeadLockCheck(long creatorThread);
 }

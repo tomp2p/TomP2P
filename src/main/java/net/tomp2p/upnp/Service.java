@@ -64,8 +64,7 @@ import org.w3c.dom.Node;
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class Service
-{
+public class Service {
 
     /***/
     public final String serviceType;
@@ -107,25 +106,23 @@ public class Service
      * @throws MalformedURLException
      * @throws XPathExpressionException
      */
-    public Service( Node serviceCtx, URL baseDeviceURL, Device serviceOwnerDevice )
-        throws MalformedURLException, XPathExpressionException
-    {
+    public Service(Node serviceCtx, URL baseDeviceURL, Device serviceOwnerDevice) throws MalformedURLException,
+            XPathExpressionException {
         this.serviceOwnerDevice = serviceOwnerDevice;
 
-        serviceType = XMLUtil.xpath.evaluate( "serviceType", serviceCtx );
-        serviceId = XMLUtil.xpath.evaluate( "serviceId", serviceCtx );
-        SCPDURL = Device.getURL( XMLUtil.xpath.evaluate( "SCPDURL", serviceCtx ), baseDeviceURL );
-        controlURL = Device.getURL( XMLUtil.xpath.evaluate( "controlURL", serviceCtx ), baseDeviceURL );
-        eventSubURL = Device.getURL( XMLUtil.xpath.evaluate( "eventSubURL", serviceCtx ), baseDeviceURL );
+        serviceType = XMLUtil.xpath.evaluate("serviceType", serviceCtx);
+        serviceId = XMLUtil.xpath.evaluate("serviceId", serviceCtx);
+        SCPDURL = Device.getURL(XMLUtil.xpath.evaluate("SCPDURL", serviceCtx), baseDeviceURL);
+        controlURL = Device.getURL(XMLUtil.xpath.evaluate("controlURL", serviceCtx), baseDeviceURL);
+        eventSubURL = Device.getURL(XMLUtil.xpath.evaluate("eventSubURL", serviceCtx), baseDeviceURL);
 
-        USN = serviceOwnerDevice.UDN.concat( "::" ).concat( serviceType );
+        USN = serviceOwnerDevice.UDN.concat("::").concat(serviceType);
     }
 
     /**
      * @return major version
      */
-    public int getSpecVersionMajor()
-    {
+    public int getSpecVersionMajor() {
         lazyInitiate();
         return specVersionMajor;
     }
@@ -133,8 +130,7 @@ public class Service
     /**
      * @return minor version
      */
-    public int getSpecVersionMinor()
-    {
+    public int getSpecVersionMinor() {
         lazyInitiate();
         return specVersionMinor;
     }
@@ -142,32 +138,33 @@ public class Service
     /**
      * Retrieves a service action for its given name
      * 
-     * @param actionName the service action name
-     * @return a ServiceAction object or null if no matching action for this service has been found
+     * @param actionName
+     *            the service action name
+     * @return a ServiceAction object or null if no matching action for this
+     *         service has been found
      */
-    public Action getUPNPServiceAction( String actionName )
-    {
+    public Action getUPNPServiceAction(String actionName) {
         lazyInitiate();
-        return UPNPServiceActions.get( actionName );
+        return UPNPServiceActions.get(actionName);
     }
 
     /**
      * Retrieves a service state variable for its given name
      * 
-     * @param stateVariableName the state variable name
-     * @return a ServiceStateVariable object or null if no matching state variable has been found
+     * @param stateVariableName
+     *            the state variable name
+     * @return a ServiceStateVariable object or null if no matching state
+     *         variable has been found
      */
-    public StateVariable getUPNPServiceStateVariable( String stateVariableName )
-    {
+    public StateVariable getUPNPServiceStateVariable(String stateVariableName) {
         lazyInitiate();
-        return UPNPServiceStateVariables.get( stateVariableName );
+        return UPNPServiceStateVariables.get(stateVariableName);
     }
 
     /**
      * @return action names
      */
-    public Iterator<String> getAvailableActionsName()
-    {
+    public Iterator<String> getAvailableActionsName() {
         lazyInitiate();
         return UPNPServiceActions.keySet().iterator();
     }
@@ -175,8 +172,7 @@ public class Service
     /**
      * @return action count
      */
-    public int getAvailableActionsSize()
-    {
+    public int getAvailableActionsSize() {
         lazyInitiate();
         return UPNPServiceActions.keySet().size();
     }
@@ -184,8 +180,7 @@ public class Service
     /**
      * @return state variable names
      */
-    public Iterator<String> getAvailableStateVariableName()
-    {
+    public Iterator<String> getAvailableStateVariableName() {
         lazyInitiate();
         return UPNPServiceStateVariables.keySet().iterator();
     }
@@ -193,66 +188,54 @@ public class Service
     /**
      * @return state variable count
      */
-    public int getAvailableStateVariableSize()
-    {
+    public int getAvailableStateVariableSize() {
         lazyInitiate();
         return UPNPServiceStateVariables.keySet().size();
     }
 
-    private void parseSCPD()
-    {
-        try
-        {
-            Document doc = XMLUtil.getXML( SCPDURL );
+    private void parseSCPD() {
+        try {
+            Document doc = XMLUtil.getXML(SCPDURL);
             XPath xpath = XMLUtil.xpath;
 
-            specVersionMajor = Integer.parseInt( xpath.evaluate( "scpd/specVersion/major", doc ) );
-            specVersionMinor = Integer.parseInt( xpath.evaluate( "scpd/specVersion/major", doc ) );
+            specVersionMajor = Integer.parseInt(xpath.evaluate("scpd/specVersion/major", doc));
+            specVersionMinor = Integer.parseInt(xpath.evaluate("scpd/specVersion/major", doc));
 
-            Node varList = (Node) xpath.evaluate( "scpd/serviceStateTable", doc, XPathConstants.NODE );
-            int varCount = Integer.parseInt( xpath.evaluate( "count( stateVariable )", varList ) );
+            Node varList = (Node) xpath.evaluate("scpd/serviceStateTable", doc, XPathConstants.NODE);
+            int varCount = Integer.parseInt(xpath.evaluate("count( stateVariable )", varList));
             UPNPServiceStateVariables = new HashMap<String, StateVariable>();
-            for ( int i = 1; i <= varCount; i++ )
-            {
-                Node stateVarXML = (Node) xpath.evaluate( "stateVariable[ " + i + " ]", varList, XPathConstants.NODE );
-                StateVariable var = new StateVariable( this, stateVarXML );
-                UPNPServiceStateVariables.put( var.name, var );
+            for (int i = 1; i <= varCount; i++) {
+                Node stateVarXML = (Node) xpath.evaluate("stateVariable[ " + i + " ]", varList, XPathConstants.NODE);
+                StateVariable var = new StateVariable(this, stateVarXML);
+                UPNPServiceStateVariables.put(var.name, var);
             }
 
-            Node actionList = (Node) xpath.evaluate( "scpd/actionList", doc, XPathConstants.NODE );
-            int actionCount = Integer.parseInt( xpath.evaluate( "count( action )", actionList ) );
+            Node actionList = (Node) xpath.evaluate("scpd/actionList", doc, XPathConstants.NODE);
+            int actionCount = Integer.parseInt(xpath.evaluate("count( action )", actionList));
             UPNPServiceActions = new HashMap<String, Action>();
-            for ( int i = 1; i <= actionCount; i++ )
-            {
-                Node actionXML = (Node) xpath.evaluate( "action[ " + i + " ]", actionList, XPathConstants.NODE );
-                Action action = new Action( this, actionXML );
+            for (int i = 1; i <= actionCount; i++) {
+                Node actionXML = (Node) xpath.evaluate("action[ " + i + " ]", actionList, XPathConstants.NODE);
+                Action action = new Action(this, actionXML);
 
                 // hook up the state variables
-                for ( Argument arg : action.arguments )
-                {
-                    arg.relatedStateVariable = UPNPServiceStateVariables.get( arg.relatedStateVariableName );
+                for (Argument arg : action.arguments) {
+                    arg.relatedStateVariable = UPNPServiceStateVariables.get(arg.relatedStateVariableName);
                 }
 
-                UPNPServiceActions.put( action.getName(), action );
+                UPNPServiceActions.put(action.getName(), action);
             }
             parsedSCPD = true;
-        }
-        catch ( Throwable t )
-        {
-            System.out.println( XMLUtil.getXMLString( SCPDURL ) );
+        } catch (Throwable t) {
+            System.out.println(XMLUtil.getXMLString(SCPDURL));
 
-            throw new RuntimeException( "Error during lazy SCDP file parsing at " + SCPDURL, t );
+            throw new RuntimeException("Error during lazy SCDP file parsing at " + SCPDURL, t);
         }
     }
 
-    private void lazyInitiate()
-    {
-        if ( !parsedSCPD )
-        {
-            synchronized ( this )
-            {
-                if ( !parsedSCPD )
-                {
+    private void lazyInitiate() {
+        if (!parsedSCPD) {
+            synchronized (this) {
+                if (!parsedSCPD) {
                     parseSCPD();
                 }
             }
@@ -262,25 +245,19 @@ public class Service
     /**
      * @return definition xml
      */
-    public String getSCDPData()
-    {
-        if ( SCPDURLData == null )
-        {
-            try
-            {
+    public String getSCDPData() {
+        if (SCPDURLData == null) {
+            try {
                 java.io.InputStream in = SCPDURL.openConnection().getInputStream();
                 int readen = 0;
                 byte[] buff = new byte[512];
                 StringBuilder strBuff = new StringBuilder();
-                while ( ( readen = in.read( buff ) ) != -1 )
-                {
-                    strBuff.append( new String( buff, 0, readen ) );
+                while ((readen = in.read(buff)) != -1) {
+                    strBuff.append(new String(buff, 0, readen));
                 }
                 in.close();
                 SCPDURLData = strBuff.toString();
-            }
-            catch ( IOException ioEx )
-            {
+            } catch (IOException ioEx) {
                 return null;
             }
         }
@@ -288,31 +265,28 @@ public class Service
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         lazyInitiate();
 
         StringBuilder b = new StringBuilder();
 
-        b.append( "type = " ).append( serviceType );
-        b.append( "\nid = " ).append( serviceId );
-        b.append( "\nurl = " ).append( SCPDURL );
-        b.append( "\ncontrol = " ).append( controlURL );
-        b.append( "\nevent = " ).append( eventSubURL );
+        b.append("type = ").append(serviceType);
+        b.append("\nid = ").append(serviceId);
+        b.append("\nurl = ").append(SCPDURL);
+        b.append("\ncontrol = ").append(controlURL);
+        b.append("\nevent = ").append(eventSubURL);
 
-        b.append( "\nActions:" );
-        for ( Action action : UPNPServiceActions.values() )
-        {
+        b.append("\nActions:");
+        for (Action action : UPNPServiceActions.values()) {
             String s = "\n\t" + action.toString();
-            s = s.replaceAll( "\n", "\n\t" );
-            b.append( s );
+            s = s.replaceAll("\n", "\n\t");
+            b.append(s);
         }
-        b.append( "\nVariables:" );
-        for ( StateVariable v : UPNPServiceStateVariables.values() )
-        {
+        b.append("\nVariables:");
+        for (StateVariable v : UPNPServiceStateVariables.values()) {
             String s = "\n\t" + v.toString();
-            s = s.replaceAll( "\n", "\n\t" );
-            b.append( s );
+            s = s.replaceAll("\n", "\n\t");
+            b.append(s);
         }
 
         return b.toString();

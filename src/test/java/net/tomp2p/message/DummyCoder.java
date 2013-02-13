@@ -11,174 +11,142 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.MessageEvent;
 
-public class DummyCoder
-{
-    final private SocketAddress sockRemote = new InetSocketAddress( 2000 );
+public class DummyCoder {
+    final private SocketAddress sockRemote = new InetSocketAddress(2000);
 
-    final private SocketAddress sockLocal = new InetSocketAddress( 1000 );
+    final private SocketAddress sockLocal = new InetSocketAddress(1000);
 
-    final private DummyChannel dc = new DummyChannel( sockRemote, sockLocal );
+    final private DummyChannel dc = new DummyChannel(sockRemote, sockLocal);
 
-    final private DummyChannelHandlerContext dchc = new DummyChannelHandlerContext( dc );
+    final private DummyChannelHandlerContext dchc = new DummyChannelHandlerContext(dc);
 
     final private boolean tcp;
 
-    public DummyCoder( boolean tcp )
-    {
+    public DummyCoder(boolean tcp) {
         this.tcp = tcp;
     }
 
-    public ChannelBuffer encode( final Message m1 )
-        throws Exception
-    {
-        MessageEvent e = new MessageEvent()
-        {
+    public ChannelBuffer encode(final Message m1) throws Exception {
+        MessageEvent e = new MessageEvent() {
 
             @Override
-            public ChannelFuture getFuture()
-            {
-                return new ChannelFuture()
-                {
+            public ChannelFuture getFuture() {
+                return new ChannelFuture() {
 
                     @Override
-                    public boolean setSuccess()
-                    {
+                    public boolean setSuccess() {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public boolean setProgress( long amount, long current, long total )
-                    {
+                    public boolean setProgress(long amount, long current, long total) {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public boolean setFailure( Throwable cause )
-                    {
+                    public boolean setFailure(Throwable cause) {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public void removeListener( ChannelFutureListener listener )
-                    {
+                    public void removeListener(ChannelFutureListener listener) {
                         // TODO Auto-generated method stub
 
                     }
 
                     @Override
-                    public boolean isSuccess()
-                    {
+                    public boolean isSuccess() {
                         return true;
                     }
 
                     @Override
-                    public boolean isDone()
-                    {
+                    public boolean isDone() {
                         return true;
                     }
 
                     @Override
-                    public boolean isCancelled()
-                    {
+                    public boolean isCancelled() {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public Channel getChannel()
-                    {
+                    public Channel getChannel() {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public Throwable getCause()
-                    {
+                    public Throwable getCause() {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public boolean cancel()
-                    {
+                    public boolean cancel() {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public boolean awaitUninterruptibly( long timeout, TimeUnit unit )
-                    {
+                    public boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public boolean awaitUninterruptibly( long timeoutMillis )
-                    {
+                    public boolean awaitUninterruptibly(long timeoutMillis) {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public ChannelFuture awaitUninterruptibly()
-                    {
+                    public ChannelFuture awaitUninterruptibly() {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public boolean await( long timeout, TimeUnit unit )
-                        throws InterruptedException
-                    {
+                    public boolean await(long timeout, TimeUnit unit) throws InterruptedException {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public boolean await( long timeoutMillis )
-                        throws InterruptedException
-                    {
+                    public boolean await(long timeoutMillis) throws InterruptedException {
                         // TODO Auto-generated method stub
                         return false;
                     }
 
                     @Override
-                    public ChannelFuture await()
-                        throws InterruptedException
-                    {
+                    public ChannelFuture await() throws InterruptedException {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public void addListener( ChannelFutureListener listener )
-                    {
+                    public void addListener(ChannelFutureListener listener) {
                         // TODO Auto-generated method stub
 
                     }
 
                     @Override
-                    public ChannelFuture rethrowIfFailed()
-                        throws Exception
-                    {
+                    public ChannelFuture rethrowIfFailed() throws Exception {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public ChannelFuture sync()
-                        throws InterruptedException
-                    {
+                    public ChannelFuture sync() throws InterruptedException {
                         // TODO Auto-generated method stub
                         return null;
                     }
 
                     @Override
-                    public ChannelFuture syncUninterruptibly()
-                    {
+                    public ChannelFuture syncUninterruptibly() {
                         // TODO Auto-generated method stub
                         return null;
                     }
@@ -186,47 +154,39 @@ public class DummyCoder
             }
 
             @Override
-            public Channel getChannel()
-            {
+            public Channel getChannel() {
                 return null;
             }
 
             @Override
-            public SocketAddress getRemoteAddress()
-            {
+            public SocketAddress getRemoteAddress() {
                 return null;
             }
 
             @Override
-            public Object getMessage()
-            {
+            public Object getMessage() {
                 return m1;
             }
         };
-        new TomP2PEncoderTCP().handleDownstream( dchc, e );
+        new TomP2PEncoderTCP().handleDownstream(dchc, e);
 
         // decode
         ChannelBuffer flat = ChannelBuffers.dynamicBuffer();
         Object obj = dchc.getInput();
-        if ( obj instanceof ProtocolChunkedInput )
-        {
+        if (obj instanceof ProtocolChunkedInput) {
             ProtocolChunkedInput p = (ProtocolChunkedInput) obj;
-            while ( p.hasNextChunk() )
-            {
-                flat.writeBytes( (ChannelBuffer) p.nextChunk() );
+            while (p.hasNextChunk()) {
+                flat.writeBytes((ChannelBuffer) p.nextChunk());
             }
             return flat;
-        }
-        else
+        } else
             return (ChannelBuffer) obj;
     }
 
-    public Message decode( ChannelBuffer buffer )
-        throws Exception
-    {
-        if ( tcp )
-            return (Message) new TomP2PDecoderTCP().decode( null, dc, buffer );
+    public Message decode(ChannelBuffer buffer) throws Exception {
+        if (tcp)
+            return (Message) new TomP2PDecoderTCP().decode(null, dc, buffer);
         else
-            return (Message) new TomP2PDecoderUDP().decode( null, dc, buffer, new InetSocketAddress( "127.0.0.1", 1111 ) );
+            return (Message) new TomP2PDecoderUDP().decode(null, dc, buffer, new InetSocketAddress("127.0.0.1", 1111));
     }
 }

@@ -19,7 +19,6 @@ package net.tomp2p.futures;
 import net.tomp2p.futures.BaseFuture.FutureType;
 import net.tomp2p.message.Message;
 
-public interface FutureSuccessEvaluator
-{
-    public abstract FutureType evaluate( Message requestMessage, Message responseMessage );
+public interface FutureSuccessEvaluator {
+    public abstract FutureType evaluate(Message requestMessage, Message responseMessage);
 }

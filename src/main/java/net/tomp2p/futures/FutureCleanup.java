@@ -16,18 +16,20 @@
 package net.tomp2p.futures;
 
 /**
- * Some futures have a longer life span than others. Typically, a future sets completed to true and thats it, but
- * FutureTracker and FutureDHT may keep track of futures created based on an initial future. To shutdown / cleanup those
- * up, we use this interface.
+ * Some futures have a longer life span than others. Typically, a future sets
+ * completed to true and thats it, but FutureTracker and FutureDHT may keep
+ * track of futures created based on an initial future. To shutdown / cleanup
+ * those up, we use this interface.
  * 
  * @author Thomas Bocek
  */
-public interface FutureCleanup
-{
+public interface FutureCleanup {
     /**
-     * Call to add cleanup classes for the future e.g. to stop creating more scheduled futures.
+     * Call to add cleanup classes for the future e.g. to stop creating more
+     * scheduled futures.
      * 
-     * @param cancellable The cleanup classes
+     * @param cancellable
+     *            The cleanup classes
      */
-    public abstract void addCleanup( Cancellable cancellable );
+    public abstract void addCleanup(Cancellable cancellable);
 }

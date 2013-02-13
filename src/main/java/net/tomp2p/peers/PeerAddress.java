@@ -28,15 +28,14 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 
 /**
- * A PeerAddress contains the node ID and how to contact this node using both TCP and UDP. This class is thread safe (or
- * it does not matter if its not). The serialized size of this class is for IPv4 (20 + 4 + 1 + 4=29), for IPv6 (20 + 4 +
- * 1 + 16=41)
+ * A PeerAddress contains the node ID and how to contact this node using both
+ * TCP and UDP. This class is thread safe (or it does not matter if its not).
+ * The serialized size of this class is for IPv4 (20 + 4 + 1 + 4=29), for IPv6
+ * (20 + 4 + 1 + 16=41)
  * 
  * @author Thomas Bocek
  */
-public final class PeerAddress
-    implements Comparable<PeerAddress>, Serializable
-{
+public final class PeerAddress implements Comparable<PeerAddress>, Serializable {
     final private static int NET6 = 1;
 
     final private static int FIREWALL_UDP = 2;
@@ -85,88 +84,86 @@ public final class PeerAddress
 
     final public static int SIZE_IPv4 = SIZE_IP_SOCKv4 + Number160.BYTE_ARRAY_SIZE;
 
-    final public static PeerAddress EMPTY_IPv4 = new PeerAddress( new byte[SIZE_IPv4] );
+    final public static PeerAddress EMPTY_IPv4 = new PeerAddress(new byte[SIZE_IPv4]);
 
     /**
-     * Creates a new peeraddress, where the byte array has to be in the rigth format and in the right size. The new
-     * offset can be accessed with offset().
+     * Creates a new peeraddress, where the byte array has to be in the rigth
+     * format and in the right size. The new offset can be accessed with
+     * offset().
      * 
-     * @param me The serialized array
-     * @throws UnknownHostException Using InetXAddress.getByAddress creates this exception.
+     * @param me
+     *            The serialized array
+     * @throws UnknownHostException
+     *             Using InetXAddress.getByAddress creates this exception.
      */
-    public PeerAddress( final byte[] me )
-    {
-        this( me, 0 );
+    public PeerAddress(final byte[] me) {
+        this(me, 0);
     }
 
     /**
-     * Creates a PeerAddress from a continuous byte array. This is useful if you don't know the size beforehand. The new
-     * offset can be accessed with offset().
+     * Creates a PeerAddress from a continuous byte array. This is useful if you
+     * don't know the size beforehand. The new offset can be accessed with
+     * offset().
      * 
-     * @param me The serialized array
-     * @param offset the offset, where to start
-     * @throws UnknownHostException Using InetXAddress.getByAddress creates this exception.
+     * @param me
+     *            The serialized array
+     * @param offset
+     *            the offset, where to start
+     * @throws UnknownHostException
+     *             Using InetXAddress.getByAddress creates this exception.
      */
-    public PeerAddress( final byte[] me, int offset )
-    {
+    public PeerAddress(final byte[] me, int offset) {
         // get the peer ID, this is independent of the type
         final int offsetOld = offset;
         final byte tmp[] = new byte[Number160.BYTE_ARRAY_SIZE];
-        System.arraycopy( me, offset, tmp, 0, Number160.BYTE_ARRAY_SIZE );
-        this.id = new Number160( tmp );
+        System.arraycopy(me, offset, tmp, 0, Number160.BYTE_ARRAY_SIZE);
+        this.id = new Number160(tmp);
         offset += Number160.BYTE_ARRAY_SIZE;
         // get the type
         final int options = me[offset] & 0xff;
-        this.net6 = ( options & NET6 ) > 0;
-        this.firewalledUDP = ( options & FIREWALL_UDP ) > 0;
-        this.firewalledTCP = ( options & FIREWALL_TCP ) > 0;
+        this.net6 = (options & NET6) > 0;
+        this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+        this.firewalledTCP = (options & FIREWALL_TCP) > 0;
         offset++;
         // get the port for UDP and TCP
-        this.portTCP = ( ( me[offset] & 0xff ) << 8 ) + ( me[offset + 1] & 0xff );
-        this.portUDP = ( ( me[offset + 2] & 0xff ) << 8 ) + ( me[offset + 3] & 0xff );
+        this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
+        this.portUDP = ((me[offset + 2] & 0xff) << 8) + (me[offset + 3] & 0xff);
         offset += 4;
         //
         final byte tmp2[];
-        if ( isIPv4() )
-        {
+        if (isIPv4()) {
             // IPv4 is 32 bit
             tmp2 = new byte[4];
-            System.arraycopy( me, offset, tmp2, 0, 4 );
-            Utils.fromInteger( 22 );
-            try
-            {
-                this.address = Inet4Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            System.arraycopy(me, offset, tmp2, 0, 4);
+            Utils.fromInteger(22);
+            try {
+                this.address = Inet4Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 4;
-        }
-        else
-        {
+        } else {
             // IPv6 is 128 bit
             tmp2 = new byte[16];
-            System.arraycopy( me, offset, tmp2, 0, 16 );
-            try
-            {
-                this.address = Inet6Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            System.arraycopy(me, offset, tmp2, 0, 16);
+            try {
+                this.address = Inet6Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 16;
         }
@@ -175,59 +172,51 @@ public final class PeerAddress
         this.hashCode = id.hashCode();
     }
 
-    public PeerAddress( Number160 id, ChannelBuffer channelBuffer )
-    {
+    public PeerAddress(Number160 id, ChannelBuffer channelBuffer) {
         // get the peer ID, this is independent of the type
         this.id = id;
         // get the type
         final int options = channelBuffer.readUnsignedByte();
-        this.net6 = ( options & NET6 ) > 0;
-        this.firewalledUDP = ( options & FIREWALL_UDP ) > 0;
-        this.firewalledTCP = ( options & FIREWALL_TCP ) > 0;
+        this.net6 = (options & NET6) > 0;
+        this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+        this.firewalledTCP = (options & FIREWALL_TCP) > 0;
         int offset = 1;
         this.portTCP = channelBuffer.readUnsignedShort();
         this.portUDP = channelBuffer.readUnsignedShort();
         offset += 4;
         byte[] tmp2;
-        if ( isIPv4() )
-        {
+        if (isIPv4()) {
             // IPv4 is 32 bit
             tmp2 = new byte[4];
-            channelBuffer.readBytes( tmp2 );
-            try
-            {
-                this.address = Inet4Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            channelBuffer.readBytes(tmp2);
+            try {
+                this.address = Inet4Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 4;
-        }
-        else
-        {
+        } else {
             // IPv6 is 128 bit
             tmp2 = new byte[16];
-            channelBuffer.readBytes( tmp2 );
-            try
-            {
-                this.address = Inet6Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            channelBuffer.readBytes(tmp2);
+            try {
+                this.address = Inet6Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 16;
         }
@@ -236,62 +225,54 @@ public final class PeerAddress
         this.hashCode = id.hashCode();
     }
 
-    public PeerAddress( Number160 id, final byte[] me, int offset )
-    {
+    public PeerAddress(Number160 id, final byte[] me, int offset) {
         final int offsetOld = offset;
         // get the peer ID, this is independent of the type
         this.id = id;
         // get the type
         final int options = me[offset] & 0xff;
-        this.net6 = ( options & NET6 ) > 0;
-        this.firewalledUDP = ( options & FIREWALL_UDP ) > 0;
-        this.firewalledTCP = ( options & FIREWALL_TCP ) > 0;
+        this.net6 = (options & NET6) > 0;
+        this.firewalledUDP = (options & FIREWALL_UDP) > 0;
+        this.firewalledTCP = (options & FIREWALL_TCP) > 0;
         offset++;
         // get the port for UDP and TCP
-        this.portTCP = ( ( me[offset] & 0xff ) << 8 ) + ( me[offset + 1] & 0xff );
-        this.portUDP = ( ( me[offset + 2] & 0xff ) << 8 ) + ( me[offset + 3] & 0xff );
+        this.portTCP = ((me[offset] & 0xff) << 8) + (me[offset + 1] & 0xff);
+        this.portUDP = ((me[offset + 2] & 0xff) << 8) + (me[offset + 3] & 0xff);
         offset += 4;
         //
         final byte tmp2[];
-        if ( isIPv4() )
-        {
+        if (isIPv4()) {
             // IPv4 is 32 bit
             tmp2 = new byte[4];
-            System.arraycopy( me, offset, tmp2, 0, 4 );
-            try
-            {
-                this.address = Inet4Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            System.arraycopy(me, offset, tmp2, 0, 4);
+            try {
+                this.address = Inet4Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 4;
-        }
-        else
-        {
+        } else {
             // IPv6 is 128 bit
             tmp2 = new byte[16];
-            System.arraycopy( me, offset, tmp2, 0, 16 );
-            try
-            {
-                this.address = Inet6Address.getByAddress( tmp2 );
-            }
-            catch ( UnknownHostException e )
-            {
+            System.arraycopy(me, offset, tmp2, 0, 16);
+            try {
+                this.address = Inet6Address.getByAddress(tmp2);
+            } catch (UnknownHostException e) {
                 /*
-                 * This really shouldn't happen in practice since all our byte sequences have the right length. However
-                 * {@link InetAddress#getByAddress} is documented as potentially throwing this
-                 * "if IP address is of illegal length".
+                 * This really shouldn't happen in practice since all our byte
+                 * sequences have the right length. However {@link
+                 * InetAddress#getByAddress} is documented as potentially
+                 * throwing this "if IP address is of illegal length".
                  */
-                throw new IllegalArgumentException( String.format( "Host address '%s' is not a valid IPv4 address.",
-                                                                   Arrays.toString( tmp2 ) ), e );
+                throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
+                        Arrays.toString(tmp2)), e);
             }
             offset += 16;
         }
@@ -303,47 +284,52 @@ public final class PeerAddress
     /**
      * The format of the peer address can also be split.
      * 
-     * @param peerAddress The 160bit number for the peer ID
-     * @param socketAddress The socket address with type port and IP
+     * @param peerAddress
+     *            The 160bit number for the peer ID
+     * @param socketAddress
+     *            The socket address with type port and IP
      * @throws UnknownHostException
      */
-    public PeerAddress( byte[] peerAddress, byte[] socketAddress )
-    {
-        this( new Number160( peerAddress ), socketAddress, 0 );
+    public PeerAddress(byte[] peerAddress, byte[] socketAddress) {
+        this(new Number160(peerAddress), socketAddress, 0);
     }
 
     /**
      * If you only need to know the id
      * 
-     * @param id The id of the peer
+     * @param id
+     *            The id of the peer
      */
-    public PeerAddress( Number160 id )
-    {
-        this( id, (InetAddress) null, -1, -1 );
+    public PeerAddress(Number160 id) {
+        this(id, (InetAddress) null, -1, -1);
     }
 
     /**
      * If you only need to know the id and InetAddress
      * 
-     * @param id The id of the peer
-     * @param address The InetAddress of the peer
+     * @param id
+     *            The id of the peer
+     * @param address
+     *            The InetAddress of the peer
      */
-    public PeerAddress( Number160 id, InetAddress address )
-    {
-        this( id, address, -1, -1 );
+    public PeerAddress(Number160 id, InetAddress address) {
+        this(id, address, -1, -1);
     }
 
     /**
      * Creates a PeerAddress
      * 
-     * @param id The id of the peer
-     * @param address The address of the peer, how to reach this peer
-     * @param portTCP The tcp port how to reach the peer
-     * @param portUDP The udp port how to reach the peer
+     * @param id
+     *            The id of the peer
+     * @param address
+     *            The address of the peer, how to reach this peer
+     * @param portTCP
+     *            The tcp port how to reach the peer
+     * @param portUDP
+     *            The udp port how to reach the peer
      */
-    public PeerAddress( Number160 id, InetAddress address, int portTCP, int portUDP, boolean firewalledUDP,
-                        boolean firewalledTCP )
-    {
+    public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP, boolean firewalledUDP,
+            boolean firewalledTCP) {
         this.id = id;
         this.address = address;
         this.portTCP = portTCP;
@@ -357,44 +343,37 @@ public final class PeerAddress
         this.readBytes = -1;
     }
 
-    public PeerAddress( Number160 id, InetAddress address, int portTCP, int portUDP )
-    {
-        this( id, address, portTCP, portUDP, false, false );
+    public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP) {
+        this(id, address, portTCP, portUDP, false, false);
     }
 
-    public PeerAddress( Number160 id, String address, int portTCP, int portUDP )
-        throws UnknownHostException
-    {
-        this( id, InetAddress.getByName( address ), portTCP, portUDP, false, false );
+    public PeerAddress(Number160 id, String address, int portTCP, int portUDP) throws UnknownHostException {
+        this(id, InetAddress.getByName(address), portTCP, portUDP, false, false);
     }
 
-    public PeerAddress( Number160 id, InetSocketAddress inetSocketAddress )
-    {
-        this( id, inetSocketAddress.getAddress(), inetSocketAddress.getPort(), inetSocketAddress.getPort() );
+    public PeerAddress(Number160 id, InetSocketAddress inetSocketAddress) {
+        this(id, inetSocketAddress.getAddress(), inetSocketAddress.getPort(), inetSocketAddress.getPort());
     }
 
-    public PeerAddress( Number160 id, PeerAddress parent )
-    {
-        this( id, parent.address, parent.portTCP, parent.portUDP );
+    public PeerAddress(Number160 id, PeerAddress parent) {
+        this(id, parent.address, parent.portTCP, parent.portUDP);
     }
 
-    public PeerAddress( Number160 id, InetAddress address, int portTCP, int portUDP, int options )
-    {
-        this( id, address, portTCP, portUDP, isFirewalledUDP( options ), isFirewalledTCP( options ) );
+    public PeerAddress(Number160 id, InetAddress address, int portTCP, int portUDP, int options) {
+        this(id, address, portTCP, portUDP, isFirewalledUDP(options), isFirewalledTCP(options));
     }
 
     /**
-     * When deserializing, we need to know how much we deserialized from the constructor call.
+     * When deserializing, we need to know how much we deserialized from the
+     * constructor call.
      * 
      * @return The new offset
      */
-    public int offset()
-    {
+    public int offset() {
         return offset;
     }
 
-    public int readBytes()
-    {
+    public int readBytes() {
         return readBytes;
     }
 
@@ -403,59 +382,54 @@ public final class PeerAddress
      * 
      * @return The serialized representation.
      */
-    public byte[] toByteArray()
-    {
+    public byte[] toByteArray() {
         byte[] me;
-        if ( address instanceof Inet4Address )
+        if (address instanceof Inet4Address)
             me = new byte[SIZE_IPv4];
         else
             me = new byte[SIZE_IPv6];
-        toByteArray( me, 0 );
+        toByteArray(me, 0);
         return me;
     }
 
     /**
      * Serializes to an existing array.
      * 
-     * @param me The array where the result should be stored
-     * @param offset The offset where to start to save the result in the byte array
+     * @param me
+     *            The array where the result should be stored
+     * @param offset
+     *            The offset where to start to save the result in the byte array
      * @return The new offest.
      */
-    public int toByteArray( byte[] me, int offset )
-    {
+    public int toByteArray(byte[] me, int offset) {
         // save the peer id
-        int newOffset = id.toByteArray( me, offset );
-        return toByteArraySocketAddress( me, newOffset );
+        int newOffset = id.toByteArray(me, offset);
+        return toByteArraySocketAddress(me, newOffset);
     }
 
-    public byte[] toByteArraySocketAddress()
-    {
+    public byte[] toByteArraySocketAddress() {
         byte[] me = new byte[getSocketAddressSize()];
-        toByteArraySocketAddress( me, 0 );
+        toByteArraySocketAddress(me, 0);
         return me;
     }
 
-    public int toByteArraySocketAddress( byte[] me, int offset )
-    {
+    public int toByteArraySocketAddress(byte[] me, int offset) {
         // save the type
         me[offset] = getOptions();
         int delta = 1;
         // save ports tcp
         int tmp = offset + delta;
-        me[tmp + 0] = (byte) ( portTCP >>> 8 );
+        me[tmp + 0] = (byte) (portTCP >>> 8);
         me[tmp + 1] = (byte) portTCP;
-        me[tmp + 2] = (byte) ( portUDP >>> 8 );
+        me[tmp + 2] = (byte) (portUDP >>> 8);
         me[tmp + 3] = (byte) portUDP;
         delta += 4;
         // save the ip address
-        if ( address instanceof Inet4Address )
-        {
-            System.arraycopy( address.getAddress(), 0, me, offset + delta, 4 );
+        if (address instanceof Inet4Address) {
+            System.arraycopy(address.getAddress(), 0, me, offset + delta, 4);
             delta += 4;
-        }
-        else
-        {
-            System.arraycopy( address.getAddress(), 0, me, offset + delta, 16 );
+        } else {
+            System.arraycopy(address.getAddress(), 0, me, offset + delta, 16);
             delta += 16;
         }
         return offset + delta;
@@ -466,29 +440,28 @@ public final class PeerAddress
      * 
      * @return The address of this peer
      */
-    public InetAddress getInetAddress()
-    {
+    public InetAddress getInetAddress() {
         return address;
     }
 
     /**
-     * Returns the socket address. The socket address will be created if necessary.
+     * Returns the socket address. The socket address will be created if
+     * necessary.
      * 
      * @return The socket address how to reach this peer
      */
-    public InetSocketAddress createSocketTCP()
-    {
-        return new InetSocketAddress( address, portTCP );
+    public InetSocketAddress createSocketTCP() {
+        return new InetSocketAddress(address, portTCP);
     }
 
     /**
-     * Returns the socket address. The socket address will be created if necessary.
+     * Returns the socket address. The socket address will be created if
+     * necessary.
      * 
      * @return The socket address how to reach this peer
      */
-    public InetSocketAddress createSocketUDP()
-    {
-        return new InetSocketAddress( address, portUDP );
+    public InetSocketAddress createSocketUDP() {
+        return new InetSocketAddress(address, portUDP);
     }
 
     /**
@@ -496,87 +469,76 @@ public final class PeerAddress
      * 
      * @return Id of the peer
      */
-    public Number160 getID()
-    {
+    public Number160 getID() {
         return id;
     }
 
-    public byte getOptions()
-    {
+    public byte getOptions() {
         byte result = 0;
-        if ( net6 )
+        if (net6)
             result |= NET6;
-        if ( firewalledUDP )
+        if (firewalledUDP)
             result |= FIREWALL_UDP;
-        if ( firewalledTCP )
+        if (firewalledTCP)
             result |= FIREWALL_TCP;
         return result;
     }
 
-    public static boolean isNet6( int options )
-    {
-        return ( ( options & 0xff ) & NET6 ) > 0;
+    public static boolean isNet6(int options) {
+        return ((options & 0xff) & NET6) > 0;
     }
 
-    public static boolean isFirewalledTCP( int options )
-    {
-        return ( ( options & 0xff ) & FIREWALL_TCP ) > 0;
+    public static boolean isFirewalledTCP(int options) {
+        return ((options & 0xff) & FIREWALL_TCP) > 0;
     }
 
-    public static boolean isFirewalledUDP( int options )
-    {
-        return ( ( options & 0xff ) & FIREWALL_UDP ) > 0;
+    public static boolean isFirewalledUDP(int options) {
+        return ((options & 0xff) & FIREWALL_UDP) > 0;
     }
 
-    public static int expectedLength( int options )
-    {
-        if ( isNet6( options ) )
+    public static int expectedLength(int options) {
+        if (isNet6(options))
             return SIZE_IPv6;
         else
             return SIZE_IPv4;
     }
 
-    public static int expectedSocketLength( int options )
-    {
-        if ( isNet6( options ) )
+    public static int expectedSocketLength(int options) {
+        if (isNet6(options))
             return SIZE_IP_SOCKv6;
         else
             return SIZE_IP_SOCKv4;
     }
 
-    public int expectedLength()
-    {
+    public int expectedLength() {
         return isIPv6() ? SIZE_IPv6 : SIZE_IPv4;
     }
 
     @Override
-    public String toString()
-    {
-        StringBuilder sb = new StringBuilder( "PeerAddr[" );
-        return sb.append( address ).append( ",udp:" ).append( portUDP ).append( ",tcp:" ).append( portTCP ).append( ",ID:" ).append( id.toString() ).append( "]" ).toString();
+    public String toString() {
+        StringBuilder sb = new StringBuilder("PeerAddr[");
+        return sb.append(address).append(",udp:").append(portUDP).append(",tcp:").append(portTCP).append(",ID:")
+                .append(id.toString()).append("]").toString();
     }
 
     @Override
-    public int compareTo( PeerAddress nodeAddress )
-    {
+    public int compareTo(PeerAddress nodeAddress) {
         // the id determines if two peer are equal, the address does not matter
-        return id.compareTo( nodeAddress.id );
+        return id.compareTo(nodeAddress.id);
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( this == obj )
+    public boolean equals(Object obj) {
+        if (this == obj)
             return true;
-        if ( obj instanceof PeerAddress )
-            return id.equals( ( (PeerAddress) obj ).id );
+        if (obj instanceof PeerAddress)
+            return id.equals(((PeerAddress) obj).id);
         else
             return false;
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         // dont calculate all the time, only once.
         return this.hashCode;
     }
@@ -584,66 +546,54 @@ public final class PeerAddress
     /**
      * @return TCP port
      */
-    public int portTCP()
-    {
+    public int portTCP() {
         return portTCP;
     }
 
     /**
      * @return UDP port
      */
-    public int portUDP()
-    {
+    public int portUDP() {
         return portUDP;
     }
 
-    public boolean isFirewalledUDP()
-    {
+    public boolean isFirewalledUDP() {
         return firewalledUDP;
     }
 
-    public boolean isFirewalledTCP()
-    {
+    public boolean isFirewalledTCP() {
         return firewalledTCP;
     }
 
-    public boolean isIPv6()
-    {
+    public boolean isIPv6() {
         return net6;
     }
 
-    public boolean isIPv4()
-    {
+    public boolean isIPv4() {
         return !net6;
     }
 
-    public PeerAddress changeFirewalledUDP( boolean status )
-    {
-        return new PeerAddress( id, address, portTCP, portUDP, status, firewalledTCP );
+    public PeerAddress changeFirewalledUDP(boolean status) {
+        return new PeerAddress(id, address, portTCP, portUDP, status, firewalledTCP);
     }
 
-    public PeerAddress changeFirewalledTCP( boolean status )
-    {
-        return new PeerAddress( id, address, portTCP, portUDP, firewalledUDP, status );
+    public PeerAddress changeFirewalledTCP(boolean status) {
+        return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, status);
     }
 
-    public PeerAddress changePorts( int portUDP, int portTCP )
-    {
-        return new PeerAddress( id, address, portTCP, portUDP, firewalledUDP, firewalledTCP );
+    public PeerAddress changePorts(int portUDP, int portTCP) {
+        return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP);
     }
 
-    public PeerAddress changeAddress( InetAddress address )
-    {
-        return new PeerAddress( id, address, portTCP, portUDP, firewalledUDP, firewalledTCP );
+    public PeerAddress changeAddress(InetAddress address) {
+        return new PeerAddress(id, address, portTCP, portUDP, firewalledUDP, firewalledTCP);
     }
 
-    public PeerAddress changePeerId( Number160 id2 )
-    {
-        return new PeerAddress( id2, address, portTCP, portUDP, firewalledUDP, firewalledTCP );
+    public PeerAddress changePeerId(Number160 id2) {
+        return new PeerAddress(id2, address, portTCP, portUDP, firewalledUDP, firewalledTCP);
     }
 
-    public int getSocketAddressSize()
-    {
-        return ( address instanceof Inet4Address ) ? SIZE_IP_SOCKv4 : SIZE_IP_SOCKv6;
+    public int getSocketAddressSize() {
+        return (address instanceof Inet4Address) ? SIZE_IP_SOCKv4 : SIZE_IP_SOCKv6;
     }
 }

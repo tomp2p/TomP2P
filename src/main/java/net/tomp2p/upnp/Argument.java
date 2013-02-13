@@ -53,13 +53,11 @@ import org.w3c.dom.Node;
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
-public class Argument
-{
+public class Argument {
     /**
      * @author ryanm
      */
-    public enum Direction
-    {
+    public enum Direction {
         /***/
         in,
         /***/
@@ -77,12 +75,10 @@ public class Argument
     /***/
     public final String relatedStateVariableName;
 
-    Argument( Node xml )
-        throws XPathExpressionException
-    {
-        name = XMLUtil.xpath.evaluate( "name", xml );
-        direction = Direction.valueOf( XMLUtil.xpath.evaluate( "direction", xml ) );
-        relatedStateVariableName = XMLUtil.xpath.evaluate( "relatedStateVariable", xml );
+    Argument(Node xml) throws XPathExpressionException {
+        name = XMLUtil.xpath.evaluate("name", xml);
+        direction = Direction.valueOf(XMLUtil.xpath.evaluate("direction", xml));
+        relatedStateVariableName = XMLUtil.xpath.evaluate("relatedStateVariable", xml);
     }
 
     /**
@@ -90,14 +86,12 @@ public class Argument
      * 
      * @return The related service state variable for this ServiceActionArgument
      */
-    public StateVariable getRelatedStateVariable()
-    {
+    public StateVariable getRelatedStateVariable() {
         return relatedStateVariable;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return direction + ":" + name + " - " + relatedStateVariableName;
     }
 

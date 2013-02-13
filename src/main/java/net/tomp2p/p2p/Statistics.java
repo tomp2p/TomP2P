@@ -26,11 +26,10 @@ import net.tomp2p.peers.PeerAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Statistics
-{
-    final private static Logger logger = LoggerFactory.getLogger( Statistics.class );
+public class Statistics {
+    final private static Logger logger = LoggerFactory.getLogger(Statistics.class);
 
-    private final static double MAX = Math.pow( 2, Number160.BITS );
+    private final static double MAX = Math.pow(2, Number160.BITS);
 
     private double estimatedNumberOfPeers = 1;
 
@@ -55,8 +54,7 @@ public class Statistics
 
     private long udpCount = 0;
 
-    public Statistics( List<Map<Number160, PeerAddress>> peerMap, Number160 remotePeer, int maxSize, int bagSize )
-    {
+    public Statistics(List<Map<Number160, PeerAddress>> peerMap, Number160 remotePeer, int maxSize, int bagSize) {
         this.peerMap = peerMap;
         // this.remotePeer = remotePeer;
         this.maxSize = maxSize;
@@ -64,16 +62,13 @@ public class Statistics
     }
 
     // TODO: with increasing number of peers, the diff gets lower and lower
-    public void triggerStatUpdate( boolean insert, int currentSize )
-    {
+    public void triggerStatUpdate(boolean insert, int currentSize) {
         this.currentSize = currentSize;
     }
 
-    public double getEstimatedNumberOfNodes()
-    {
+    public double getEstimatedNumberOfNodes() {
         // we know it exactly
-        if ( currentSize < maxSize )
-        {
+        if (currentSize < maxSize) {
             estimatedNumberOfPeers = currentSize;
             return estimatedNumberOfPeers;
         }
@@ -81,111 +76,87 @@ public class Statistics
         double gap = 0D;
         int gapCount = 0;
         int oldNumPeers = 0;
-        for ( int i = Number160.BITS - 1; i >= 0; i-- )
-        {
-            Map<Number160, PeerAddress> peers = peerMap.get( i );
+        for (int i = Number160.BITS - 1; i >= 0; i--) {
+            Map<Number160, PeerAddress> peers = peerMap.get(i);
             int numPeers = peers.size();
             // System.out.print(numPeers);
             // System.out.print(",");
-            if ( numPeers > 0 && ( numPeers < bagSize || numPeers < oldNumPeers ) )
-            {
-                double currentGap = Math.pow( 2, i ) / numPeers;
+            if (numPeers > 0 && (numPeers < bagSize || numPeers < oldNumPeers)) {
+                double currentGap = Math.pow(2, i) / numPeers;
                 // System.out.print("gap("+i+"):"+currentGap+";");
                 gap += currentGap * numPeers;
                 gapCount += numPeers;
-            }
-            else
-            {
+            } else {
                 // System.out.print("ignoring "+i+";");
             }
             oldNumPeers = numPeers;
         }
         // System.out.print("\n");
         avgGap = gap / gapCount;
-        estimatedNumberOfPeers = ( MAX / avgGap );
+        estimatedNumberOfPeers = (MAX / avgGap);
         return estimatedNumberOfPeers;
     }
 
-    public double getAvgGap()
-    {
+    public double getAvgGap() {
         return avgGap;
     }
 
-    public static void tooClose( Collection<PeerAddress> collection )
-    {
+    public static void tooClose(Collection<PeerAddress> collection) {
 
     }
 
-    public void incrementTCPChannelCreation()
-    {
-        synchronized ( this )
-        {
+    public void incrementTCPChannelCreation() {
+        synchronized (this) {
             tcpCreationCount++;
             tcpCount++;
         }
     }
 
-    public void incrementUDPChannelCreation()
-    {
-        synchronized ( this )
-        {
+    public void incrementUDPChannelCreation() {
+        synchronized (this) {
             udpCreationCount++;
             udpCount++;
         }
     }
 
-    public void decrementTCPChannelCreation()
-    {
-        synchronized ( this )
-        {
+    public void decrementTCPChannelCreation() {
+        synchronized (this) {
             tcpCount--;
-            if ( logger.isDebugEnabled() )
-            {
-                logger.debug( "TCP channel count is " + tcpCount );
+            if (logger.isDebugEnabled()) {
+                logger.debug("TCP channel count is " + tcpCount);
             }
         }
     }
 
-    public void decrementUDPChannelCreation()
-    {
-        synchronized ( this )
-        {
+    public void decrementUDPChannelCreation() {
+        synchronized (this) {
             udpCount--;
-            if ( logger.isDebugEnabled() )
-            {
-                logger.debug( "UDP channel count is " + udpCount );
+            if (logger.isDebugEnabled()) {
+                logger.debug("UDP channel count is " + udpCount);
             }
         }
     }
 
-    public long getTCPChannelCreationCount()
-    {
-        synchronized ( this )
-        {
+    public long getTCPChannelCreationCount() {
+        synchronized (this) {
             return tcpCreationCount;
         }
     }
 
-    public long getUDPChannelCreationCount()
-    {
-        synchronized ( this )
-        {
+    public long getUDPChannelCreationCount() {
+        synchronized (this) {
             return udpCreationCount;
         }
     }
 
-    public long getTCPChannelCount()
-    {
-        synchronized ( this )
-        {
+    public long getTCPChannelCount() {
+        synchronized (this) {
             return tcpCount;
         }
     }
 
-    public long getUDPChannelCount()
-    {
-        synchronized ( this )
-        {
+    public long getUDPChannelCount() {
+        synchronized (this) {
             return udpCount;
         }
     }

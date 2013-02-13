@@ -18,32 +18,35 @@
 package net.tomp2p.natpmp;
 
 /**
- * This interface defines methods that are used for message responses. This interface is implemented by objects that
- * listen for message responses.
+ * This interface defines methods that are used for message responses. This
+ * interface is implemented by objects that listen for message responses.
  * 
  * @author flszen
  */
-public interface MessageResponseInterface
-{
+public interface MessageResponseInterface {
     /**
      * A response was received.
      * 
-     * @param message The {@link Message} that this notification pertains to.
+     * @param message
+     *            The {@link Message} that this notification pertains to.
      */
-    void responseReceived( Message message );
+    void responseReceived(Message message);
 
     /**
      * No response was received.
      * 
-     * @param message The {@link Message} that this notification pertains to.
+     * @param message
+     *            The {@link Message} that this notification pertains to.
      */
-    void noResponseReceived( Message message );
+    void noResponseReceived(Message message);
 
     /**
      * An exception was generated during the message sending process.
      * 
-     * @param message The {@link Message} that this notification pertains to.
-     * @param ex The {@link NatPmpException} that was generated.
+     * @param message
+     *            The {@link Message} that this notification pertains to.
+     * @param ex
+     *            The {@link NatPmpException} that was generated.
      */
-    void exceptionGenerated( Message message, NatPmpException ex );
+    void exceptionGenerated(Message message, NatPmpException ex);
 }

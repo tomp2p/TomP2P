@@ -20,13 +20,12 @@ import net.tomp2p.p2p.ConnectionConfiguration;
 import org.jboss.netty.channel.group.ChannelGroup;
 
 /**
- * A bean that holds sharable configuration settings for the peer. The non-sharable configurations are stored in
- * {@link PeerBean}.
+ * A bean that holds sharable configuration settings for the peer. The
+ * non-sharable configurations are stored in {@link PeerBean}.
  * 
  * @author Thomas Bocek
  */
-public class ConnectionBean
-{
+public class ConnectionBean {
     private final int p2pID;
 
     private final ChannelGroup channelGroup;
@@ -41,10 +40,8 @@ public class ConnectionBean
 
     private Sender sender;
 
-    public ConnectionBean( int p2pID, DispatcherReply dispatcherRequest, Sender sender, ChannelGroup channelGroup,
-                           ConnectionReservation connectionReservation, ConnectionConfiguration configuration,
-                           Scheduler scheduler )
-    {
+    public ConnectionBean(int p2pID, DispatcherReply dispatcherRequest, Sender sender, ChannelGroup channelGroup,
+            ConnectionReservation connectionReservation, ConnectionConfiguration configuration, Scheduler scheduler) {
         this.p2pID = p2pID;
         this.channelGroup = channelGroup;
         this.dispatcherRequest = dispatcherRequest;
@@ -54,43 +51,35 @@ public class ConnectionBean
         this.scheduler = scheduler;
     }
 
-    public DispatcherReply getDispatcherRequest()
-    {
+    public DispatcherReply getDispatcherRequest() {
         return dispatcherRequest;
     }
 
-    public int getP2PID()
-    {
+    public int getP2PID() {
         return p2pID;
     }
 
-    public ChannelGroup getChannelGroup()
-    {
+    public ChannelGroup getChannelGroup() {
         return channelGroup;
     }
 
-    public ConnectionReservation getConnectionReservation()
-    {
+    public ConnectionReservation getConnectionReservation() {
         return connectionReservation;
     }
 
-    public ConnectionConfiguration getConfiguration()
-    {
+    public ConnectionConfiguration getConfiguration() {
         return configuration;
     }
 
-    public Scheduler getScheduler()
-    {
+    public Scheduler getScheduler() {
         return scheduler;
     }
 
-    public Sender getSender()
-    {
+    public Sender getSender() {
         return sender;
     }
 
-    public void setSender( Sender sender )
-    {
+    public void setSender(Sender sender) {
         this.sender = sender;
     }
 }

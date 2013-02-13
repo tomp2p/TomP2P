@@ -1,8 +1,7 @@
 package net.tomp2p.peers;
 
-public interface MapAcceptHandler
-{
+public interface MapAcceptHandler {
 
-    boolean acceptPeer( boolean firstHand, PeerAddress remotePeer );
+    boolean acceptPeer(boolean firstHand, PeerAddress remotePeer);
 
 }

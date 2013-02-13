@@ -22,17 +22,14 @@ import java.util.Map;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.TrackerData;
 
-public class VotingSchemeTracker
-    implements EvaluatingSchemeTracker
-{
+public class VotingSchemeTracker implements EvaluatingSchemeTracker {
     @Override
-    public Collection<TrackerData> evaluateSingle( Map<PeerAddress, Collection<TrackerData>> rawData )
-    {
-        if ( rawData == null )
-            throw new IllegalArgumentException( "cannot evaluate, as no result provided" );
+    public Collection<TrackerData> evaluateSingle(Map<PeerAddress, Collection<TrackerData>> rawData) {
+        if (rawData == null)
+            throw new IllegalArgumentException("cannot evaluate, as no result provided");
         Collection<TrackerData> result = new HashSet<TrackerData>();
-        for ( Collection<TrackerData> trackerDatas : rawData.values() )
-            result.addAll( trackerDatas );
+        for (Collection<TrackerData> trackerDatas : rawData.values())
+            result.addAll(trackerDatas);
         return result;
     }
 

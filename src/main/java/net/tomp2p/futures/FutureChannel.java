@@ -20,39 +20,34 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 /**
- * Keeps track of the creation of a UDP or TCP channel. Since this may take a while, we return a future, and the user
- * gets notified when its finished.
+ * Keeps track of the creation of a UDP or TCP channel. Since this may take a
+ * while, we return a future, and the user gets notified when its finished.
  * 
  * @author Thomas Bocek
  */
-public class FutureChannel
-    extends BaseFutureImpl<FutureChannel>
-{
+public class FutureChannel extends BaseFutureImpl<FutureChannel> {
     private Channel channel;
 
     private boolean semaphoreAcquired;
-    
+
     private ChannelFuture channelFuture;
 
     /**
      * Constructor.
      */
-    public FutureChannel()
-    {
-        self( this );
+    public FutureChannel() {
+        self(this);
     }
 
     /**
      * Finishes this future.
      * 
-     * @param channel The created UDP or TCP Netty channel
+     * @param channel
+     *            The created UDP or TCP Netty channel
      */
-    public void setChannel( Channel channel )
-    {
-        synchronized ( lock )
-        {
-            if ( !setCompletedAndNotify() )
-            {
+    public void setChannel(Channel channel) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify()) {
                 return;
             }
             this.channel = channel;
@@ -64,24 +59,22 @@ public class FutureChannel
     /**
      * @return The created UDP or TCP Netty channel
      */
-    public Channel getChannel()
-    {
-        synchronized ( lock )
-        {
+    public Channel getChannel() {
+        synchronized (lock) {
             return channel;
         }
     }
 
     /**
-     * Set a flag if a semaphore has been acquired for this channel. If it is not set, and we cannot create new channel,
-     * the creation of this channel will be put in a queue and executed later.
+     * Set a flag if a semaphore has been acquired for this channel. If it is
+     * not set, and we cannot create new channel, the creation of this channel
+     * will be put in a queue and executed later.
      * 
-     * @param semaphoreAcquired2 True if we already could acquire a semaphore
+     * @param semaphoreAcquired2
+     *            True if we already could acquire a semaphore
      */
-    public void setAcquired( boolean semaphoreAcquired2 )
-    {
-        synchronized ( lock )
-        {
+    public void setAcquired(boolean semaphoreAcquired2) {
+        synchronized (lock) {
             this.semaphoreAcquired = semaphoreAcquired2;
         }
     }
@@ -89,10 +82,8 @@ public class FutureChannel
     /**
      * @return The state if the channel has acquired a semaphore
      */
-    public boolean isAcquired()
-    {
-        synchronized ( lock )
-        {
+    public boolean isAcquired() {
+        synchronized (lock) {
             return semaphoreAcquired;
         }
     }
@@ -100,23 +91,20 @@ public class FutureChannel
     /**
      * Set the channel future. This is set immediately.
      * 
-     * @param channelFuture2 The future of the channel that will be connected
+     * @param channelFuture2
+     *            The future of the channel that will be connected
      */
-    public void setChannelFuture( ChannelFuture channelFuture2 )
-    {
-        synchronized ( lock )
-        {
+    public void setChannelFuture(ChannelFuture channelFuture2) {
+        synchronized (lock) {
             this.channelFuture = channelFuture2;
         }
     }
-    
+
     /**
      * @return The channel future
      */
-    public ChannelFuture getChannelFuture()
-    {
-        synchronized ( lock )
-        {
+    public ChannelFuture getChannelFuture() {
+        synchronized (lock) {
             return channelFuture;
         }
     }

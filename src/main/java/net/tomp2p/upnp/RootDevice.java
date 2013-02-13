@@ -57,16 +57,15 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
- * Root UPNP device that is contained in a device definition file. Slightly differs from a simple UPNPDevice object.
- * This object will contains all the child devices, this is the top objet in the UPNP device devices hierarchy.
+ * Root UPNP device that is contained in a device definition file. Slightly
+ * differs from a simple UPNPDevice object. This object will contains all the
+ * child devices, this is the top objet in the UPNP device devices hierarchy.
  * 
  * @author <a href="mailto:superbonbon@sbbi.net">SuperBonBon</a>
  * @version 1.0
  */
 
-public class RootDevice
-    extends Device
-{
+public class RootDevice extends Device {
 
     private final int specVersionMajor;
 
@@ -96,26 +95,20 @@ public class RootDevice
      * @param discoveryUDN
      * @return a new {@link RootDevice}, or <code>null</code>
      */
-    public static RootDevice build( URL deviceDef, String maxAge, String vendorFirmware, String discoveryUSN,
-                                    String discoveryUDN, InetAddress localIP )
-    {
-        Document xml = XMLUtil.getXML( deviceDef );
+    public static RootDevice build(URL deviceDef, String maxAge, String vendorFirmware, String discoveryUSN,
+            String discoveryUDN, InetAddress localIP) {
+        Document xml = XMLUtil.getXML(deviceDef);
 
         URL baseURL = null;
 
-        try
-        {
-            String base = XMLUtil.xpath.evaluate( "/root/URLBase", xml );
+        try {
+            String base = XMLUtil.xpath.evaluate("/root/URLBase", xml);
 
-            try
-            {
-                if ( base != null && base.trim().length() > 0 )
-                {
-                    baseURL = new URL( base );
+            try {
+                if (base != null && base.trim().length() > 0) {
+                    baseURL = new URL(base);
                 }
-            }
-            catch ( MalformedURLException malformedEx )
-            {
+            } catch (MalformedURLException malformedEx) {
                 // crappy urlbase provided
                 // log.warn( "Error occured during device baseURL " + base
                 // + " parsing, building it from device default location",
@@ -123,32 +116,24 @@ public class RootDevice
                 malformedEx.printStackTrace();
             }
 
-            if ( baseURL == null )
-            {
+            if (baseURL == null) {
                 String URL = deviceDef.getProtocol() + "://" + deviceDef.getHost() + ":" + deviceDef.getPort();
                 String path = deviceDef.getPath();
-                if ( path != null )
-                {
-                    int lastSlash = path.lastIndexOf( '/' );
-                    if ( lastSlash != -1 )
-                    {
-                        URL += path.substring( 0, lastSlash );
+                if (path != null) {
+                    int lastSlash = path.lastIndexOf('/');
+                    if (lastSlash != -1) {
+                        URL += path.substring(0, lastSlash);
                     }
                 }
-                try
-                {
-                    baseURL = new URL( URL );
-                }
-                catch ( MalformedURLException e )
-                {
+                try {
+                    baseURL = new URL(URL);
+                } catch (MalformedURLException e) {
                     e.printStackTrace();
                 }
             }
 
-            return new RootDevice( xml, baseURL, maxAge, deviceDef, vendorFirmware, discoveryUSN, discoveryUDN, localIP );
-        }
-        catch ( XPathExpressionException e )
-        {
+            return new RootDevice(xml, baseURL, maxAge, deviceDef, vendorFirmware, discoveryUSN, discoveryUDN, localIP);
+        } catch (XPathExpressionException e) {
             e.printStackTrace();
         }
 
@@ -166,15 +151,14 @@ public class RootDevice
      * @throws IllegalStateException
      * @throws XPathExpressionException
      */
-    public RootDevice( Document doc, URL urlBase, String maxAge, URL deviceDefinition, String vendorFirmware,
-                       String discoveryUSN, String discoveryUDN, InetAddress localIP )
-        throws IllegalStateException, XPathExpressionException
-    {
-        super( (Node) XMLUtil.xpath.evaluate( "root/device", doc, XPathConstants.NODE ), null, urlBase );
+    public RootDevice(Document doc, URL urlBase, String maxAge, URL deviceDefinition, String vendorFirmware,
+            String discoveryUSN, String discoveryUDN, InetAddress localIP) throws IllegalStateException,
+            XPathExpressionException {
+        super((Node) XMLUtil.xpath.evaluate("root/device", doc, XPathConstants.NODE), null, urlBase);
 
         deviceDefLoc = deviceDefinition;
 
-        validityTime = Integer.parseInt( maxAge ) * 1000;
+        validityTime = Integer.parseInt(maxAge) * 1000;
         creationTime = Timings.currentTimeMillis();
 
         this.vendorFirmware = vendorFirmware;
@@ -183,18 +167,14 @@ public class RootDevice
         this.localIP = localIP;
 
         int svmaj = 0, svmin = 0;
-        try
-        {
-            svmaj = Integer.parseInt( XMLUtil.xpath.evaluate( "root/specVersion/major", doc ) );
-            svmin = Integer.parseInt( XMLUtil.xpath.evaluate( "root/specVersion/minor", doc ) );
+        try {
+            svmaj = Integer.parseInt(XMLUtil.xpath.evaluate("root/specVersion/major", doc));
+            svmin = Integer.parseInt(XMLUtil.xpath.evaluate("root/specVersion/minor", doc));
 
-            if ( !( svmaj == 1 && svmin == 0 ) )
-            {
-                throw new IllegalStateException( "Unsupported device version (" + svmaj + "." + svmin + ")" );
+            if (!(svmaj == 1 && svmin == 0)) {
+                throw new IllegalStateException("Unsupported device version (" + svmaj + "." + svmin + ")");
             }
-        }
-        catch ( Exception e )
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -205,12 +185,12 @@ public class RootDevice
     /**
      * The validity time for this device in milliseconds,
      * 
-     * @return the number of milliseconds remaining before the device object that has been build is considered to be
-     *         outdated, after this delay the UPNP device should resend an advertisement message or a negative value if
-     *         the device is outdated
+     * @return the number of milliseconds remaining before the device object
+     *         that has been build is considered to be outdated, after this
+     *         delay the UPNP device should resend an advertisement message or a
+     *         negative value if the device is outdated
      */
-    public long getValidityTime()
-    {
+    public long getValidityTime() {
         long elapsed = Timings.currentTimeMillis() - creationTime;
         return validityTime - elapsed;
     }
@@ -218,11 +198,12 @@ public class RootDevice
     /**
      * Resets the device validity time
      * 
-     * @param newMaxAge the maximum age in secs of this UPNP device before considered to be outdated
+     * @param newMaxAge
+     *            the maximum age in secs of this UPNP device before considered
+     *            to be outdated
      */
-    public void resetValidityTime( String newMaxAge )
-    {
-        validityTime = Integer.parseInt( newMaxAge ) * 1000;
+    public void resetValidityTime(String newMaxAge) {
+        validityTime = Integer.parseInt(newMaxAge) * 1000;
         creationTime = Timings.currentTimeMillis();
     }
 
@@ -231,58 +212,46 @@ public class RootDevice
      * 
      * @return the device definition XML data as a String
      */
-    public String getDeviceDefinitionXML()
-    {
-        if ( deviceDefLocData == null )
-        {
-            try
-            {
+    public String getDeviceDefinitionXML() {
+        if (deviceDefLocData == null) {
+            try {
                 java.io.InputStream in = deviceDefLoc.openConnection().getInputStream();
                 int readen = 0;
                 byte[] buff = new byte[512];
                 StringBuilder strBuff = new StringBuilder();
-                while ( ( readen = in.read( buff ) ) != -1 )
-                {
-                    strBuff.append( new String( buff, 0, readen ) );
+                while ((readen = in.read(buff)) != -1) {
+                    strBuff.append(new String(buff, 0, readen));
                 }
                 in.close();
                 deviceDefLocData = strBuff.toString();
-            }
-            catch ( IOException ioEx )
-            {
+            } catch (IOException ioEx) {
                 return null;
             }
         }
         return deviceDefLocData;
     }
 
-    public int getSpecVersionMajor()
-    {
+    public int getSpecVersionMajor() {
         return specVersionMajor;
     }
 
-    public int getSpecVersionMinor()
-    {
+    public int getSpecVersionMinor() {
         return specVersionMinor;
     }
 
-    public String getVendorFirmware()
-    {
+    public String getVendorFirmware() {
         return vendorFirmware;
     }
 
-    public String getDiscoveryUSN()
-    {
+    public String getDiscoveryUSN() {
         return discoveryUSN;
     }
 
-    public String getDiscoveryUDN()
-    {
+    public String getDiscoveryUDN() {
         return discoveryUDN;
     }
 
-    public InetAddress getLocalIP()
-    {
+    public InetAddress getLocalIP() {
         return localIP;
     }
 }

@@ -23,20 +23,21 @@ package net.tomp2p.natpmp;
  * @see Message
  * @author flszen
  */
-public enum ResultCode
-{
+public enum ResultCode {
     /**
      * Success: Successful message.
      */
     Success,
 
     /**
-     * Unsupported Version: The version of this client library (which is 0) is not supported by the NAT-PMP gateway.
+     * Unsupported Version: The version of this client library (which is 0) is
+     * not supported by the NAT-PMP gateway.
      */
     UnsupportedVersion,
 
     /**
-     * Not Authorized/Refused: e.g.: Gateway supports mapping, but user has turned feature off.
+     * Not Authorized/Refused: e.g.: Gateway supports mapping, but user has
+     * turned feature off.
      */
     NotAuthorizedRefused,
 

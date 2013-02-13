@@ -15,8 +15,7 @@
  */
 package net.tomp2p.p2p;
 
-public class TrackerConfiguration
-{
+public class TrackerConfiguration {
     final private int maxFailure;
 
     final private int parallel;
@@ -35,25 +34,22 @@ public class TrackerConfiguration
 
     final private boolean forceTCP;
 
-    public TrackerConfiguration( int maxFailure, int parallel, int atLeastSuccessfulRequests,
-                                 int atLeastEntriesFromTrackers )
-    {
-        this( maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, 20, 5 );
+    public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
+            int atLeastEntriesFromTrackers) {
+        this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, 20, 5);
     }
 
-    public TrackerConfiguration( int maxFailure, int parallel, int atLeastSuccessfulRequests,
-                                 int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers )
-    {
-        this( maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, maxFullTrackers,
-              maxPrimaryTrackers, false, false );
+    public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
+            int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers) {
+        this(maxFailure, parallel, atLeastSuccessfulRequests, atLeastEntriesFromTrackers, maxFullTrackers,
+                maxPrimaryTrackers, false, false);
     }
 
-    public TrackerConfiguration( int maxFailure, int parallel, int atLeastSuccessfulRequests,
-                                 int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers,
-                                 boolean forceUDP, boolean forceTCP )
-    {
-        if ( maxFailure < 0 || parallel < 0 || atLeastSuccessfulRequests < 0 || atLeastEntriesFromTrackers < 0 )
-            throw new IllegalArgumentException( "need to be larger or equals zero" );
+    public TrackerConfiguration(int maxFailure, int parallel, int atLeastSuccessfulRequests,
+            int atLeastEntriesFromTrackers, int maxFullTrackers, int maxPrimaryTrackers, boolean forceUDP,
+            boolean forceTCP) {
+        if (maxFailure < 0 || parallel < 0 || atLeastSuccessfulRequests < 0 || atLeastEntriesFromTrackers < 0)
+            throw new IllegalArgumentException("need to be larger or equals zero");
         this.maxFailure = maxFailure;
         this.parallel = parallel;
         this.atLeastSuccessfulRequests = atLeastSuccessfulRequests;
@@ -64,43 +60,35 @@ public class TrackerConfiguration
         this.forceTCP = forceTCP;
     }
 
-    public int getMaxFailure()
-    {
+    public int getMaxFailure() {
         return maxFailure;
     }
 
-    public int getParallel()
-    {
+    public int getParallel() {
         return parallel;
     }
 
-    public int getAtLeastSucessfulRequestes()
-    {
+    public int getAtLeastSucessfulRequestes() {
         return atLeastSuccessfulRequests;
     }
 
-    public int getAtLeastEntriesFromTrackers()
-    {
+    public int getAtLeastEntriesFromTrackers() {
         return atLeastEntriesFromTrackers;
     }
 
-    public int getMaxFullTrackers()
-    {
+    public int getMaxFullTrackers() {
         return maxFullTrackers;
     }
 
-    public int getMaxPrimaryTrackers()
-    {
+    public int getMaxPrimaryTrackers() {
         return maxPrimaryTrackers;
     }
 
-    public boolean isForceUPD()
-    {
+    public boolean isForceUPD() {
         return forceUPD;
     }
 
-    public boolean isForceTCP()
-    {
+    public boolean isForceTCP() {
         return forceTCP;
     }
 }

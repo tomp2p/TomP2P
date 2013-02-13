@@ -20,16 +20,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * FutureLateJoin is similar to FutureForkJoin. The main difference is that with this class you don't need to specify
- * all the futures in advance. You can just tell how many futures you expect and add them later on.
+ * FutureLateJoin is similar to FutureForkJoin. The main difference is that with
+ * this class you don't need to specify all the futures in advance. You can just
+ * tell how many futures you expect and add them later on.
  * 
  * @author Thomas Bocek
  * @param <K>
  */
-public class FutureLateJoin<K extends BaseFuture>
-    extends BaseFutureImpl<FutureLateJoin<K>>
-    implements BaseFuture
-{
+public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl<FutureLateJoin<K>> implements BaseFuture {
     final private int nrMaxFutures;
 
     final private int minSuccess;
@@ -41,70 +39,64 @@ public class FutureLateJoin<K extends BaseFuture>
     private int successCount = 0;
 
     /**
-     * Create this future and set the minSuccess to the number of expected futures.
+     * Create this future and set the minSuccess to the number of expected
+     * futures.
      * 
-     * @param nrMaxFutures The number of expected futures.
+     * @param nrMaxFutures
+     *            The number of expected futures.
      */
-    public FutureLateJoin( int nrMaxFutures )
-    {
-        this( nrMaxFutures, nrMaxFutures );
+    public FutureLateJoin(int nrMaxFutures) {
+        this(nrMaxFutures, nrMaxFutures);
     }
 
     /**
      * Create this future.
      * 
-     * @param nrMaxFutures The number of expected futures.
-     * @param minSuccess The number of expected successful futures.
+     * @param nrMaxFutures
+     *            The number of expected futures.
+     * @param minSuccess
+     *            The number of expected successful futures.
      */
-    public FutureLateJoin( int nrMaxFutures, int minSuccess )
-    {
+    public FutureLateJoin(int nrMaxFutures, int minSuccess) {
         this.nrMaxFutures = nrMaxFutures;
         this.minSuccess = minSuccess;
-        this.futuresDone = new ArrayList<K>( nrMaxFutures );
-        self( this );
+        this.futuresDone = new ArrayList<K>(nrMaxFutures);
+        self(this);
     }
 
     /**
-     * Add a future when ready. This is why its called FutureLateJoin, since you can add futures later on.
+     * Add a future when ready. This is why its called FutureLateJoin, since you
+     * can add futures later on.
      * 
-     * @param future The future to be added.
-     * @return True if the future was added to the futurelist, false if the latejoin future is already finished and the
-     *         future was not added.
+     * @param future
+     *            The future to be added.
+     * @return True if the future was added to the futurelist, false if the
+     *         latejoin future is already finished and the future was not added.
      */
-    public boolean add( final K future )
-    {
-        synchronized ( lock )
-        {
-            if ( completed )
-            {
+    public boolean add(final K future) {
+        synchronized (lock) {
+            if (completed) {
                 return false;
             }
-            future.addListener( new BaseFutureAdapter<K>()
-            {
+            future.addListener(new BaseFutureAdapter<K>() {
                 @Override
-                public void operationComplete( K future )
-                    throws Exception
-                {
+                public void operationComplete(K future) throws Exception {
                     boolean done = false;
-                    synchronized ( lock )
-                    {
-                        if ( !completed )
-                        {
-                            if ( future.isSuccess() )
-                            {
+                    synchronized (lock) {
+                        if (!completed) {
+                            if (future.isSuccess()) {
                                 successCount++;
                                 lastSuceessFuture = future;
                             }
-                            futuresDone.add( future );
+                            futuresDone.add(future);
                             done = checkDone();
                         }
                     }
-                    if ( done )
-                    {
+                    if (done) {
                         notifyListerenrs();
                     }
                 }
-            } );
+            });
             return true;
         }
     }
@@ -114,18 +106,14 @@ public class FutureLateJoin<K extends BaseFuture>
      * 
      * @return True if we are done.
      */
-    private boolean checkDone()
-    {
-        if ( futuresDone.size() >= nrMaxFutures || successCount >= minSuccess )
-        {
-            if ( !setCompletedAndNotify() )
-            {
+    private boolean checkDone() {
+        if (futuresDone.size() >= nrMaxFutures || successCount >= minSuccess) {
+            if (!setCompletedAndNotify()) {
                 return false;
             }
             boolean isSuccess = successCount >= minSuccess;
             type = isSuccess ? FutureType.OK : FutureType.FAILED;
-            reason =
-                isSuccess ? "Minimal number of futures received" : "Minimal number of futures *not* received ("
+            reason = isSuccess ? "Minimal number of futures received" : "Minimal number of futures *not* received ("
                     + successCount + " of " + minSuccess + " reached)";
             return true;
         }
@@ -137,10 +125,8 @@ public class FutureLateJoin<K extends BaseFuture>
      * 
      * @return All the futures that are done.
      */
-    public List<K> getFuturesDone()
-    {
-        synchronized ( lock )
-        {
+    public List<K> getFuturesDone() {
+        synchronized (lock) {
             return futuresDone;
         }
     }
@@ -148,10 +134,8 @@ public class FutureLateJoin<K extends BaseFuture>
     /**
      * @return the last successful finished future.
      */
-    public K getLastSuceessFuture()
-    {
-        synchronized ( lock )
-        {
+    public K getLastSuceessFuture() {
+        synchronized (lock) {
             return lastSuceessFuture;
         }
     }

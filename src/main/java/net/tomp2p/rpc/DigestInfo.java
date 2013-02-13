@@ -21,14 +21,14 @@ import java.util.Map;
 import net.tomp2p.peers.Number160;
 
 /**
- * Calculates or sets a global hash. The digest is used in two places: for routing, where a message needs to have a
- * predictable size. Thus in this case a global hash is calculated. The second usage is get() for getting a list of
+ * Calculates or sets a global hash. The digest is used in two places: for
+ * routing, where a message needs to have a predictable size. Thus in this case
+ * a global hash is calculated. The second usage is get() for getting a list of
  * hashes from peers. Here we don't need to restrict ourself, since we use TCP.
  * 
  * @author Thomas Bocek
  */
-public class DigestInfo
-{
+public class DigestInfo {
     private volatile Number160 keyDigest = null;
 
     private volatile Number160 contentDigest = null;
@@ -40,8 +40,7 @@ public class DigestInfo
     /**
      * Empty constructor is used to add the hashes to the list.
      */
-    public DigestInfo()
-    {
+    public DigestInfo() {
     }
 
     /**
@@ -49,82 +48,71 @@ public class DigestInfo
      * 
      * @param size
      */
-    public DigestInfo( int size )
-    {
+    public DigestInfo(int size) {
         this.size = size;
     }
 
     /**
-     * If a global hash has already been calculated, then this constructor is used to store those. Note that once a
-     * global hash is set it cannot be unset.
+     * If a global hash has already been calculated, then this constructor is
+     * used to store those. Note that once a global hash is set it cannot be
+     * unset.
      * 
      * @param keyDigest
      * @param contentDigest
      * @param size
      */
-    public DigestInfo( Number160 keyDigest, Number160 contentDigest, int size )
-    {
+    public DigestInfo(Number160 keyDigest, Number160 contentDigest, int size) {
         this.keyDigest = keyDigest;
         this.contentDigest = contentDigest;
         this.size = size;
     }
 
     /**
-     * @return Returns or calculates the global key hash. The global key hash will be calculated if the empty
-     *         constructor is used.
+     * @return Returns or calculates the global key hash. The global key hash
+     *         will be calculated if the empty constructor is used.
      */
-    public Number160 getKeyDigest()
-    {
-        if ( keyDigest == null )
-        {
+    public Number160 getKeyDigest() {
+        if (keyDigest == null) {
             process();
         }
         return keyDigest;
     }
 
     /**
-     * @return Returns or calculates the global content hash. The global content hash will be calculated if the empty
-     *         constructor is used.
+     * @return Returns or calculates the global content hash. The global content
+     *         hash will be calculated if the empty constructor is used.
      */
-    public Number160 getContentDigest()
-    {
-        if ( contentDigest == null )
-        {
+    public Number160 getContentDigest() {
+        if (contentDigest == null) {
             process();
         }
         return contentDigest;
     }
 
-    private void process()
-    {
+    private void process() {
         Number160 hashKey = Number160.ZERO;
         Number160 hashContent = Number160.ZERO;
-        for ( Map.Entry<Number160, Number160> entry : mapDigests.entrySet() )
-        {
-            hashKey = hashKey.xor( entry.getKey() );
-            hashContent = hashContent.xor( entry.getValue() );
+        for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet()) {
+            hashKey = hashKey.xor(entry.getKey());
+            hashContent = hashContent.xor(entry.getValue());
         }
         keyDigest = hashKey;
         contentDigest = hashContent;
     }
 
-    public SimpleBloomFilter<Number160> getKeyBloomFilter( int bitArraySize, int expectedElements )
-    {
+    public SimpleBloomFilter<Number160> getKeyBloomFilter(int bitArraySize, int expectedElements) {
 
-        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>( bitArraySize, expectedElements );
-        for ( Map.Entry<Number160, Number160> entry : mapDigests.entrySet() )
-        {
-            sbf.add( entry.getKey() );
+        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(bitArraySize, expectedElements);
+        for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet()) {
+            sbf.add(entry.getKey());
         }
         return sbf;
     }
 
-    public SimpleBloomFilter<Number160> getContentBloomFilter( int bitArraySize, int expectedElements )
-    {
-        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>( bitArraySize, expectedElements );
-        for ( Map.Entry<Number160, Number160> entry : mapDigests.entrySet() )
-        {
-            sbf.add( entry.getValue() );
+    public SimpleBloomFilter<Number160> getContentBloomFilter(int bitArraySize, int expectedElements) {
+        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(bitArraySize, expectedElements);
+        for (Map.Entry<Number160, Number160> entry : mapDigests.entrySet()) {
+            sbf.add(entry.getValue());
         }
         return sbf;
     }
@@ -132,29 +120,27 @@ public class DigestInfo
     /**
      * Stores a key and the hash of the content for further processing
      * 
-     * @param key The key of the content
-     * @param content The hash of the content
+     * @param key
+     *            The key of the content
+     * @param content
+     *            The hash of the content
      */
-    public void put( Number160 key, Number160 content )
-    {
-        mapDigests.put( key, content );
+    public void put(Number160 key, Number160 content) {
+        mapDigests.put(key, content);
     }
 
     /**
      * @return The list of hashes
      */
-    public Map<Number160, Number160> getDigests()
-    {
+    public Map<Number160, Number160> getDigests() {
         return mapDigests;
     }
 
     /**
      * @return The number of hashes
      */
-    public int getSize()
-    {
-        if ( size == -1 )
-        {
+    public int getSize() {
+        if (size == -1) {
             size = mapDigests.size();
         }
         return size;
@@ -163,26 +149,22 @@ public class DigestInfo
     /**
      * @return True is the digest information has not been provided.
      */
-    public boolean isEmpty()
-    {
+    public boolean isEmpty() {
         return size <= 0;
     }
 
     @Override
-    public boolean equals( Object obj )
-    {
-        if ( !( obj instanceof DigestInfo ) )
-        {
+    public boolean equals(Object obj) {
+        if (!(obj instanceof DigestInfo)) {
             return false;
         }
         DigestInfo other = (DigestInfo) obj;
-        return getKeyDigest().equals( other.getKeyDigest() ) && getSize() == other.getSize()
-            && getContentDigest().equals( other.getContentDigest() );
+        return getKeyDigest().equals(other.getKeyDigest()) && getSize() == other.getSize()
+                && getContentDigest().equals(other.getContentDigest());
     }
 
     @Override
-    public int hashCode()
-    {
+    public int hashCode() {
         return getKeyDigest().hashCode() ^ getSize() ^ getContentDigest().hashCode();
     }
 }

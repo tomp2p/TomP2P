@@ -22,29 +22,27 @@ import org.junit.Test;
 /**
  * @author Thomas Bocek
  */
-public class TestCountingBloomFilter
-{
+public class TestCountingBloomFilter {
     private final int bfSize = 40;
     private final int bfSizeLarge = 200;
-    
+
     /**
      * Test with a small set of additions.
      */
     @Test
-    public void testCountingBloomFilter()
-    {
+    public void testCountingBloomFilter() {
         int[] counting = new int[10];
-        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>( bfSize, counting );
+        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>(bfSize, counting);
 
-        cbs.add( "abc" );
-        cbs.add( "abc" );
-        cbs.add( "abc" );
-        cbs.add( "abd" );
-        cbs.add( "abe" );
+        cbs.add("abc");
+        cbs.add("abc");
+        cbs.add("abc");
+        cbs.add("abd");
+        cbs.add("abe");
 
-        Assert.assertEquals( 3, cbs.approximateCount( "abc" ) );
-        Assert.assertEquals( 1, cbs.approximateCount( "abd" ) );
-        Assert.assertEquals( 0, cbs.approximateCount( "abg" ) );
+        Assert.assertEquals(3, cbs.approximateCount("abc"));
+        Assert.assertEquals(1, cbs.approximateCount("abd"));
+        Assert.assertEquals(0, cbs.approximateCount("abg"));
 
     }
 
@@ -52,25 +50,23 @@ public class TestCountingBloomFilter
      * Test with a large set of additions.
      */
     @Test
-    public void testCountingBloomFilter2()
-    {
+    public void testCountingBloomFilter2() {
         int[] counting = new int[2 * 10];
-        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>( bfSizeLarge, counting );
+        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>(bfSizeLarge, counting);
 
-        System.out.println( cbs.expectedFalsePositiveProbability() );
+        System.out.println(cbs.expectedFalsePositiveProbability());
 
-        for ( int i = 0; i < 100; i++ )
-        {
-            cbs.add( "abc" );
+        for (int i = 0; i < 100; i++) {
+            cbs.add("abc");
         }
-        for ( int i = 0; i < 100; i++ )
-        {
-            cbs.add( "abc" + i );
+        for (int i = 0; i < 100; i++) {
+            cbs.add("abc" + i);
         }
 
-        // here we show the false negatives. Actually, we should get 100, but since we inserted also other stuff, we get
+        // here we show the false negatives. Actually, we should get 100, but
+        // since we inserted also other stuff, we get
         // more.
-        Assert.assertEquals( 100 + 8, cbs.approximateCount( "abc" ) );
+        Assert.assertEquals(100 + 8, cbs.approximateCount("abc"));
 
     }
 
@@ -78,17 +74,16 @@ public class TestCountingBloomFilter
      * Test with a small set of additions.
      */
     @Test
-    public void testCountingBloomFilter3()
-    {
+    public void testCountingBloomFilter3() {
         int[] counting = new int[10];
-        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>( bfSize, counting );
+        CountingBloomFilter<String> cbs = new CountingBloomFilter<String>(bfSize, counting);
 
-        cbs.add( "abc" );
-        cbs.add( "abc" );
-        cbs.add( "abc" );
-        cbs.add( "abd" );
-        cbs.add( "abe" );
+        cbs.add("abc");
+        cbs.add("abc");
+        cbs.add("abc");
+        cbs.add("abd");
+        cbs.add("abe");
 
-        Assert.assertEquals( true, cbs.contains( "abc" ) );
+        Assert.assertEquals(true, cbs.contains("abc"));
     }
 }

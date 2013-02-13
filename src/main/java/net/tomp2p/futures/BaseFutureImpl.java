@@ -28,27 +28,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The base for all BaseFuture implementations. Be aware of possible deadlocks. Never await from a listener. This class
- * is heavily inspired by MINA and Netty.
+ * The base for all BaseFuture implementations. Be aware of possible deadlocks.
+ * Never await from a listener. This class is heavily inspired by MINA and
+ * Netty.
  * 
- * @param <K> The class that extends BaseFuture and is used to return back the type for method calls. E.g, if K is
- *            FutureDHT await() returns FutureDHT.
+ * @param <K>
+ *            The class that extends BaseFuture and is used to return back the
+ *            type for method calls. E.g, if K is FutureDHT await() returns
+ *            FutureDHT.
  * @author Thomas Bocek
  */
-public abstract class BaseFutureImpl<K extends BaseFuture>
-    implements BaseFuture
-{
-    private static final Logger LOGGER = LoggerFactory.getLogger( BaseFutureImpl.class );
+public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture {
+    private static final Logger LOGGER = LoggerFactory.getLogger(BaseFutureImpl.class);
 
     // Listeners that gets notified if the future finished
-    private final List<BaseFutureListener<? extends BaseFuture>> listeners =
-        new ArrayList<BaseFutureListener<? extends BaseFuture>>( 1 );
+    private final List<BaseFutureListener<? extends BaseFuture>> listeners = new ArrayList<BaseFutureListener<? extends BaseFuture>>(
+            1);
 
     // While a future is running, the process may add cancellations for faster
     // cancel operations, e.g. cancel connection attempt
-    private final List<Cancellable> cancellables = new ArrayList<Cancellable>( 1 );
+    private final List<Cancellable> cancellables = new ArrayList<Cancellable>(1);
 
-    private final CountDownLatch listenersFinished = new CountDownLatch( 1 );
+    private final CountDownLatch listenersFinished = new CountDownLatch(1);
 
     protected final Object lock;
 
@@ -62,35 +63,31 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     protected String reason = "unknown";
 
     private K self;
-    
+
     private boolean cancel = false;
 
     /**
-     * Default constructor that sets the lock object, which is used for synchronization to this instance.
+     * Default constructor that sets the lock object, which is used for
+     * synchronization to this instance.
      */
-    public BaseFutureImpl()
-    {
+    public BaseFutureImpl() {
         this.lock = this;
     }
 
     /**
-     * @param self2 Set the type so that we are able to return it to the user. This is for making the API much more
-     *            usable.
+     * @param self2
+     *            Set the type so that we are able to return it to the user.
+     *            This is for making the API much more usable.
      */
-    protected void self( K self2 )
-    {
+    protected void self(K self2) {
         this.self = self2;
     }
 
     @Override
-    public K await()
-        throws InterruptedException
-    {
-        synchronized ( lock )
-        {
+    public K await() throws InterruptedException {
+        synchronized (lock) {
             checkDeadlock();
-            while ( !completed )
-            {
+            while (!completed) {
                 lock.wait();
             }
             return self;
@@ -98,22 +95,15 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public K awaitUninterruptibly()
-    {
-        synchronized ( lock )
-        {
+    public K awaitUninterruptibly() {
+        synchronized (lock) {
             checkDeadlock();
-            while ( !completed )
-            {
-                try
-                {
+            while (!completed) {
+                try {
                     lock.wait();
-                }
-                catch ( final InterruptedException e )
-                {
-                    if ( LOGGER.isDebugEnabled() )
-                    {
-                        LOGGER.debug( "interrupted, but ignoring" );
+                } catch (final InterruptedException e) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("interrupted, but ignoring");
                     }
                 }
             }
@@ -122,71 +112,56 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public boolean await( final long timeoutMillis )
-        throws InterruptedException
-    {
-        return await0( timeoutMillis, true );
+    public boolean await(final long timeoutMillis) throws InterruptedException {
+        return await0(timeoutMillis, true);
     }
 
     @Override
-    public boolean awaitUninterruptibly( final long timeoutMillis )
-    {
-        try
-        {
-            return await0( timeoutMillis, false );
-        }
-        catch ( final InterruptedException e )
-        {
-            throw new RuntimeException( "This should never ever happen." );
+    public boolean awaitUninterruptibly(final long timeoutMillis) {
+        try {
+            return await0(timeoutMillis, false);
+        } catch (final InterruptedException e) {
+            throw new RuntimeException("This should never ever happen.");
         }
     }
 
     /**
      * Internal await operation that also checks for potential deadlocks.
      * 
-     * @param timeoutMillis The time to wait
-     * @param interrupt Flag to indicate if the method can throw an InterruptedException
-     * @return True if this future has finished in timeoutMillis time, false otherwise
-     * @throws InterruptedException If the flag interrupt is true and this thread has been interrupted.
+     * @param timeoutMillis
+     *            The time to wait
+     * @param interrupt
+     *            Flag to indicate if the method can throw an
+     *            InterruptedException
+     * @return True if this future has finished in timeoutMillis time, false
+     *         otherwise
+     * @throws InterruptedException
+     *             If the flag interrupt is true and this thread has been
+     *             interrupted.
      */
-    private boolean await0( final long timeoutMillis, final boolean interrupt )
-        throws InterruptedException
-    {
-        final long startTime = ( timeoutMillis <= 0 ) ? 0 : Timings.currentTimeMillis();
+    private boolean await0(final long timeoutMillis, final boolean interrupt) throws InterruptedException {
+        final long startTime = (timeoutMillis <= 0) ? 0 : Timings.currentTimeMillis();
         long waitTime = timeoutMillis;
-        synchronized ( lock )
-        {
-            if ( completed )
-            {
+        synchronized (lock) {
+            if (completed) {
                 return completed;
-            }
-            else if ( waitTime <= 0 )
-            {
+            } else if (waitTime <= 0) {
                 return completed;
             }
             checkDeadlock();
-            while ( true )
-            {
-                try
-                {
-                    lock.wait( waitTime );
-                }
-                catch ( final InterruptedException e )
-                {
-                    if ( interrupt )
-                    {
+            while (true) {
+                try {
+                    lock.wait(waitTime);
+                } catch (final InterruptedException e) {
+                    if (interrupt) {
                         throw e;
                     }
                 }
-                if ( completed )
-                {
+                if (completed) {
                     return true;
-                }
-                else
-                {
-                    waitTime = timeoutMillis - ( Timings.currentTimeMillis() - startTime );
-                    if ( waitTime <= 0 )
-                    {
+                } else {
+                    waitTime = timeoutMillis - (Timings.currentTimeMillis() - startTime);
+                    if (waitTime <= 0) {
                         return completed;
                     }
                 }
@@ -195,76 +170,62 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public boolean isCompleted()
-    {
-        synchronized ( lock )
-        {
+    public boolean isCompleted() {
+        synchronized (lock) {
             return completed;
         }
     }
 
     @Override
-    public boolean isSuccess()
-    {
-        synchronized ( lock )
-        {
-            return completed && ( type == FutureType.OK );
+    public boolean isSuccess() {
+        synchronized (lock) {
+            return completed && (type == FutureType.OK);
         }
     }
 
     @Override
-    public boolean isFailed()
-    {
-        synchronized ( lock )
-        {
+    public boolean isFailed() {
+        synchronized (lock) {
             // failed means failed or canceled
-            return completed && ( type != FutureType.OK );
+            return completed && (type != FutureType.OK);
         }
     }
 
     @Override
-    public K setFailed( final BaseFuture origin )
-    {
-        return setFailed( origin.getFailedReason() );
+    public K setFailed(final BaseFuture origin) {
+        return setFailed(origin.getFailedReason());
     }
 
     @Override
-    public K setFailed( final String failed, final BaseFuture origin )
-    {
-        StringBuilder sb = new StringBuilder( failed );
-        return setFailed( sb.append( " <-> " ).append( origin.getFailedReason() ).toString() );
+    public K setFailed(final String failed, final BaseFuture origin) {
+        StringBuilder sb = new StringBuilder(failed);
+        return setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
     }
 
     @Override
-    public K setFailed( final Throwable t )
-    {
+    public K setFailed(final Throwable t) {
         StringWriter stringWriter = new StringWriter();
-        PrintWriter printWriter = new PrintWriter( stringWriter );
-        t.printStackTrace( printWriter );
-        return setFailed( stringWriter.toString() );
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        t.printStackTrace(printWriter);
+        return setFailed(stringWriter.toString());
     }
 
     @Override
-    public K setFailed( final String failed, final Throwable t )
-    {
-        if ( t == null )
-        {
-            return setFailed( "n/a" );
+    public K setFailed(final String failed, final Throwable t) {
+        if (t == null) {
+            return setFailed("n/a");
         }
-        StringBuilder sb = new StringBuilder( failed );
+        StringBuilder sb = new StringBuilder(failed);
         StringWriter stringWriter = new StringWriter();
-        PrintWriter printWriter = new PrintWriter( stringWriter );
-        t.printStackTrace( printWriter );
-        return setFailed( sb.append( " <-> " ).append( stringWriter.toString() ).toString() );
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        t.printStackTrace(printWriter);
+        return setFailed(sb.append(" <-> ").append(stringWriter.toString()).toString());
     }
 
     @Override
-    public K setFailed( final String failed )
-    {
-        synchronized ( lock )
-        {
-            if ( !setCompletedAndNotify() )
-            {
+    public K setFailed(final String failed) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify()) {
                 return self;
             }
             this.reason = failed;
@@ -275,26 +236,22 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public String getFailedReason()
-    {
-        StringBuffer sb = new StringBuffer( "BaseFuture Status=(isComplete:" );
-        synchronized ( lock )
-        {
-            sb.append( completed );
-            sb.append( ", reason:" );
-            sb.append( reason );
-            sb.append( ", type:" );
-            sb.append( type );
-            sb.append( ")" );
+    public String getFailedReason() {
+        StringBuffer sb = new StringBuffer("BaseFuture Status=(isComplete:");
+        synchronized (lock) {
+            sb.append(completed);
+            sb.append(", reason:");
+            sb.append(reason);
+            sb.append(", type:");
+            sb.append(type);
+            sb.append(")");
             return sb.toString();
         }
     }
 
     @Override
-    public FutureType getType()
-    {
-        synchronized ( lock )
-        {
+    public FutureType getType() {
+        synchronized (lock) {
             return type;
         }
     }
@@ -304,82 +261,58 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
      * 
      * @return True if notified. It will notify if completed is not set yet.
      */
-    protected boolean setCompletedAndNotify()
-    {
-        if ( !completed )
-        {
+    protected boolean setCompletedAndNotify() {
+        if (!completed) {
             completed = true;
             lock.notifyAll();
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }
 
     @Override
-    public K awaitListeners()
-        throws InterruptedException
-    {
+    public K awaitListeners() throws InterruptedException {
         listenersFinished.await();
         return self;
     }
 
     @Override
-    public K addListener( final BaseFutureListener<? extends BaseFuture> listener )
-    {
-        return addListener( listener, true );
+    public K addListener(final BaseFutureListener<? extends BaseFuture> listener) {
+        return addListener(listener, true);
     }
 
     @Override
-    public K addListener( final BaseFutureListener<? extends BaseFuture> listener, boolean last )
-    {
+    public K addListener(final BaseFutureListener<? extends BaseFuture> listener, boolean last) {
         boolean notifyNow = false;
-        synchronized ( lock )
-        {
-            if ( completed )
-            {
+        synchronized (lock) {
+            if (completed) {
                 notifyNow = true;
-            }
-            else
-            {
-                if ( last )
-                {
-                    listeners.add( listener );
-                }
-                else
-                {
-                    listeners.add( 0, listener );
+            } else {
+                if (last) {
+                    listeners.add(listener);
+                } else {
+                    listeners.add(0, listener);
                 }
             }
         }
         // called only once
-        if ( notifyNow )
-        {
-            callOperationComplete( listener );
+        if (notifyNow) {
+            callOperationComplete(listener);
         }
         return self;
     }
 
-    @SuppressWarnings( { "rawtypes", "unchecked" } )
-    private void callOperationComplete( final BaseFutureListener listener )
-    {
-        try
-        {
-            listener.operationComplete( this );
-        }
-        catch ( final Exception e )
-        {
-            try
-            {
-                listener.exceptionCaught( e );
-            }
-            catch ( final Exception e1 )
-            {
-                if ( LOGGER.isErrorEnabled() )
-                {
-                    LOGGER.error( "Unexcpected exception in exceptionCaught()", e1 );
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void callOperationComplete(final BaseFutureListener listener) {
+        try {
+            listener.operationComplete(this);
+        } catch (final Exception e) {
+            try {
+                listener.exceptionCaught(e);
+            } catch (final Exception e1) {
+                if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Unexcpected exception in exceptionCaught()", e1);
                 }
                 e1.printStackTrace();
             }
@@ -387,31 +320,28 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     /**
-     * If we block from a Netty thread, then the Netty thread won't receive any IO operations, thus make the user aware
-     * of this situation.
+     * If we block from a Netty thread, then the Netty thread won't receive any
+     * IO operations, thus make the user aware of this situation.
      */
-    private void checkDeadlock()
-    {
+    private void checkDeadlock() {
         String currentName = Thread.currentThread().getName();
-        if ( currentName.startsWith( ConnectionHandler.THREAD_NAME ) )
-        {
-            throw new IllegalStateException( "await*() in Netty I/O thread causes a dead lock or "
-                + "sudden performance drop. Use addListener() instead or " + "call await*() from a different thread." );
+        if (currentName.startsWith(ConnectionHandler.THREAD_NAME)) {
+            throw new IllegalStateException("await*() in Netty I/O thread causes a dead lock or "
+                    + "sudden performance drop. Use addListener() instead or "
+                    + "call await*() from a different thread.");
         }
     }
 
     /**
      * Always call this from outside synchronized(lock)!
      */
-    protected void notifyListerenrs()
-    {
+    protected void notifyListerenrs() {
         // if this is synchronized, it will deadlock, so do not lock this!
         // There won't be any visibility problem or concurrent modification
         // because 'ready' flag will be checked against both addListener and
         // removeListener calls.
-        for ( final BaseFutureListener<? extends BaseFuture> listener : listeners )
-        {
-            callOperationComplete( listener );
+        for (final BaseFutureListener<? extends BaseFuture> listener : listeners) {
+            callOperationComplete(listener);
         }
         listenersFinished.countDown();
         listeners.clear();
@@ -420,59 +350,43 @@ public abstract class BaseFutureImpl<K extends BaseFuture>
     }
 
     @Override
-    public K removeListener( final BaseFutureListener<? extends BaseFuture> listener )
-    {
-        synchronized ( lock )
-        {
-            if ( !completed )
-            {
-                listeners.remove( listener );
+    public K removeListener(final BaseFutureListener<? extends BaseFuture> listener) {
+        synchronized (lock) {
+            if (!completed) {
+                listeners.remove(listener);
             }
         }
         return self;
     }
 
     @Override
-    public K addCancellation( final Cancellable cancellable )
-    {
-        synchronized ( lock )
-        {
-            if ( !cancel )
-            {
-                cancellables.add( cancellable );
+    public K addCancellation(final Cancellable cancellable) {
+        synchronized (lock) {
+            if (!cancel) {
+                cancellables.add(cancellable);
             }
         }
         return self;
     }
-    
-    
 
     @Override
-    public void cancel()
-    {
+    public void cancel() {
         boolean notifyCancel = false;
-        synchronized ( lock )
-        {
-            if ( !cancel )
-            {
+        synchronized (lock) {
+            if (!cancel) {
                 cancel = true;
                 notifyCancel = true;
-            }
-            else
-            {
+            } else {
                 return;
             }
         }
-        if ( notifyCancel )
-        {
+        if (notifyCancel) {
             notifyCancelation();
         }
     }
-    
-    private void notifyCancelation()
-    {
-        for ( final Cancellable cancellable : cancellables )
-        {
+
+    private void notifyCancelation() {
+        for (final Cancellable cancellable : cancellables) {
             cancellable.cancel();
         }
         cancellables.clear();

@@ -26,38 +26,29 @@ import org.jboss.netty.channel.MessageEvent;
 import static org.jboss.netty.channel.Channels.write;
 
 @Sharable
-public class TomP2PEncoderTCP
-    implements ChannelDownstreamHandler
-{
+public class TomP2PEncoderTCP implements ChannelDownstreamHandler {
     @Override
-    public void handleDownstream( ChannelHandlerContext ctx, ChannelEvent e )
-        throws Exception
-    {
-        if ( !( e instanceof MessageEvent ) )
-        {
-            ctx.sendDownstream( e );
+    public void handleDownstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+        if (!(e instanceof MessageEvent)) {
+            ctx.sendDownstream(e);
             return;
         }
         MessageEvent evt = (MessageEvent) e;
         Object msg = evt.getMessage();
-        if ( !( msg instanceof Message ) )
-        {
-            ctx.sendDownstream( evt );
+        if (!(msg instanceof Message)) {
+            ctx.sendDownstream(evt);
             return;
         }
         Message message = (Message) msg;
-        final ChannelBuffer headerBuffer = ChannelBuffers.buffer( MessageCodec.HEADER_SIZE );
-        MessageCodec.encodeHeader( headerBuffer, message );
-        if ( message.hasContent() )
-        {
-            ProtocolChunkedInput input = new ProtocolChunkedInput( ctx, message.getPrivateKey() );
-            input.copyToCurrent( headerBuffer );
-            MessageCodec.encodePayload( message, input );
-            write( ctx, e.getFuture(), input, evt.getRemoteAddress() );
-        }
-        else
-        {
-            write( ctx, e.getFuture(), headerBuffer, evt.getRemoteAddress() );
+        final ChannelBuffer headerBuffer = ChannelBuffers.buffer(MessageCodec.HEADER_SIZE);
+        MessageCodec.encodeHeader(headerBuffer, message);
+        if (message.hasContent()) {
+            ProtocolChunkedInput input = new ProtocolChunkedInput(ctx, message.getPrivateKey());
+            input.copyToCurrent(headerBuffer);
+            MessageCodec.encodePayload(message, input);
+            write(ctx, e.getFuture(), input, evt.getRemoteAddress());
+        } else {
+            write(ctx, e.getFuture(), headerBuffer, evt.getRemoteAddress());
         }
     }
 }

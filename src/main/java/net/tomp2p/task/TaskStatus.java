@@ -18,13 +18,10 @@ package net.tomp2p.task;
 
 import java.io.Serializable;
 
-public class TaskStatus
-    implements Serializable
-{
+public class TaskStatus implements Serializable {
     private static final long serialVersionUID = 566212788378552194L;
 
-    enum Status
-    {
+    enum Status {
         QUEUE, STARTED, SUCCESS_RESULT_NOT_SENT, SUCCESS_RESULT_SENT, FAILED
     }
 
@@ -34,33 +31,27 @@ public class TaskStatus
 
     private int queuePosition;
 
-    public String getFaildeReason()
-    {
+    public String getFaildeReason() {
         return faildeReason;
     }
 
-    public void setFaildeReason( String faildeReason )
-    {
+    public void setFaildeReason(String faildeReason) {
         this.faildeReason = faildeReason;
     }
 
-    public Status getStatus()
-    {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus( Status status )
-    {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
-    public int getQueuePosition()
-    {
+    public int getQueuePosition() {
         return queuePosition;
     }
 
-    public void setQueuePosition( int queuePosition )
-    {
+    public void setQueuePosition(int queuePosition) {
         this.queuePosition = queuePosition;
     }
 }

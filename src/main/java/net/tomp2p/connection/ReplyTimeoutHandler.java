@@ -35,14 +35,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Code inspired by Netty's TimeoutHandlers from Trustin Lee and adapted/extended to a reply timeout handler. Timer
- * starts if write has been called and is reset if a read occurs afterwards. Since we initialize if the channel is open,
- * a TCP timeout will also include the connection attempt.
+ * Code inspired by Netty's TimeoutHandlers from Trustin Lee and
+ * adapted/extended to a reply timeout handler. Timer starts if write has been
+ * called and is reset if a read occurs afterwards. Since we initialize if the
+ * channel is open, a TCP timeout will also include the connection attempt.
  */
-public class ReplyTimeoutHandler
-    extends SimpleChannelHandler
-{
-    final private static Logger logger = LoggerFactory.getLogger( ReplyTimeoutHandler.class );
+public class ReplyTimeoutHandler extends SimpleChannelHandler {
+    final private static Logger logger = LoggerFactory.getLogger(ReplyTimeoutHandler.class);
 
     private final Timer timer;
 
@@ -56,135 +55,105 @@ public class ReplyTimeoutHandler
 
     private volatile long lastWriteTime;
 
-    public ReplyTimeoutHandler( Timer timer, long timeoutMillis, PeerAddress remotePeer )
-    {
-        if ( timer == null )
-            throw new NullPointerException( "timer" );
-        if ( timeoutMillis < 0 )
-            throw new IllegalArgumentException( "timout need to be larger than 0" );
+    public ReplyTimeoutHandler(Timer timer, long timeoutMillis, PeerAddress remotePeer) {
+        if (timer == null)
+            throw new NullPointerException("timer");
+        if (timeoutMillis < 0)
+            throw new IllegalArgumentException("timout need to be larger than 0");
         this.timer = timer;
         this.allIdleTimeMillis = timeoutMillis;
         this.remotePeer = remotePeer;
     }
 
     @Override
-    public void channelOpen( ChannelHandlerContext ctx, ChannelStateEvent e )
-        throws Exception
-    {
+    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
         // set read and wirte time to current time
-        initialize( ctx );
-        ctx.sendUpstream( e );
+        initialize(ctx);
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void messageReceived( ChannelHandlerContext ctx, MessageEvent e )
-        throws Exception
-    {
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) throws Exception {
         // time read update now
         lastReadTime = Timings.currentTimeMillis();
-        ctx.sendUpstream( e );
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void writeComplete( ChannelHandlerContext ctx, WriteCompletionEvent e )
-        throws Exception
-    {
-        if ( e.getWrittenAmount() > 0 )
-        {
+    public void writeComplete(ChannelHandlerContext ctx, WriteCompletionEvent e) throws Exception {
+        if (e.getWrittenAmount() > 0) {
             // time wirte update now
             lastWriteTime = Timings.currentTimeMillis();
         }
-        ctx.sendUpstream( e );
+        ctx.sendUpstream(e);
     }
 
     @Override
-    public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e )
-        throws Exception
-    {
-        logger.equals( "error in timeout " + e.toString() );
-        if ( logger.isDebugEnabled() )
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) throws Exception {
+        logger.equals("error in timeout " + e.toString());
+        if (logger.isDebugEnabled())
             e.getCause().printStackTrace();
-        ctx.sendUpstream( e );
+        ctx.sendUpstream(e);
     }
 
     /**
      * Set read and write time to current and initialize the timeout.
      * 
-     * @param ctx ChannelHandlerContext
+     * @param ctx
+     *            ChannelHandlerContext
      */
-    private void initialize( ChannelHandlerContext ctx )
-    {
+    private void initialize(ChannelHandlerContext ctx) {
         lastReadTime = lastWriteTime = Timings.currentTimeMillis();
-        if ( allIdleTimeMillis > 0 )
-        {
-            allIdleTimeout = timer.newTimeout( new AllIdleTimeoutTask( ctx ), allIdleTimeMillis, TimeUnit.MILLISECONDS );
+        if (allIdleTimeMillis > 0) {
+            allIdleTimeout = timer.newTimeout(new AllIdleTimeoutTask(ctx), allIdleTimeMillis, TimeUnit.MILLISECONDS);
         }
     }
 
     /**
-     * The timertask to take care of timeouts. If a timeout occurs, it is sent to upstream.
+     * The timertask to take care of timeouts. If a timeout occurs, it is sent
+     * to upstream.
      * 
      * @author Thomas Bocek
      */
-    private final class AllIdleTimeoutTask
-        implements TimerTask
-    {
+    private final class AllIdleTimeoutTask implements TimerTask {
         private final ChannelHandlerContext ctx;
 
-        private AllIdleTimeoutTask( ChannelHandlerContext ctx )
-        {
+        private AllIdleTimeoutTask(ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 
-        public void run( Timeout timeout )
-            throws Exception
-        {
-            if (timeout == null)
-            {
-                ctx.sendUpstream( new DefaultExceptionEvent( ctx.getChannel(),
-                                                             new PeerException( AbortCause.PEER_ABORT,
-                                                                                "Shutting down "
-                                                                                    + remotePeer ) ) );
+        public void run(Timeout timeout) throws Exception {
+            if (timeout == null) {
+                ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), new PeerException(AbortCause.PEER_ABORT,
+                        "Shutting down " + remotePeer)));
                 return;
             }
-            if ( timeout.isCancelled() || !ctx.getChannel().isOpen() )
-            {
+            if (timeout.isCancelled() || !ctx.getChannel().isOpen()) {
                 return;
             }
             long currentTime = Timings.currentTimeMillis();
-            long lastIoTime = Math.max( lastReadTime, lastWriteTime );
-            long nextDelay = allIdleTimeMillis - ( currentTime - lastIoTime );
-            if ( nextDelay <= 0 )
-            {
-                try
-                {
-                    if ( logger.isDebugEnabled() )
-                    {
-                        logger.debug( "Timeout exception for peer " + remotePeer );
+            long lastIoTime = Math.max(lastReadTime, lastWriteTime);
+            long nextDelay = allIdleTimeMillis - (currentTime - lastIoTime);
+            if (nextDelay <= 0) {
+                try {
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("Timeout exception for peer " + remotePeer);
                     }
-                    ctx.sendUpstream( new DefaultExceptionEvent( ctx.getChannel(),
-                                                                 new PeerException( AbortCause.TIMEOUT,
-                                                                                    "Timeout exception for peer "
-                                                                                        + remotePeer ) ) );
+                    ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), new PeerException(AbortCause.TIMEOUT,
+                            "Timeout exception for peer " + remotePeer)));
+                } catch (Throwable t) {
+                    ctx.sendUpstream(new DefaultExceptionEvent(ctx.getChannel(), t));
                 }
-                catch ( Throwable t )
-                {
-                    ctx.sendUpstream( new DefaultExceptionEvent( ctx.getChannel(), t ) );
-                }
-            }
-            else
-            {
+            } else {
                 // Either read or write occurred before the timeout - set a new
                 // timeout with shorter delay.
-                allIdleTimeout = timer.newTimeout( this, nextDelay, TimeUnit.MILLISECONDS );
+                allIdleTimeout = timer.newTimeout(this, nextDelay, TimeUnit.MILLISECONDS);
             }
         }
     }
 
-    public void cancel()
-    {
-        if ( allIdleTimeout != null )
-        {
+    public void cancel() {
+        if (allIdleTimeout != null) {
             allIdleTimeout.cancel();
         }
         allIdleTimeout = null;

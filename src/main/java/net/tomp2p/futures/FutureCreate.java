@@ -16,19 +16,21 @@
 package net.tomp2p.futures;
 
 /**
- * DHT and Tracker operations may occur repeatedly. For example a put may be configured to be called every 60 seconds.
- * These futures generated out of those repetitions are stored in {@link FutureDHT} and {@link FutureTracker}.
- * Typically, those are backed by a caching map with a fixed size and an LRU eviction policy.
+ * DHT and Tracker operations may occur repeatedly. For example a put may be
+ * configured to be called every 60 seconds. These futures generated out of
+ * those repetitions are stored in {@link FutureDHT} and {@link FutureTracker}.
+ * Typically, those are backed by a caching map with a fixed size and an LRU
+ * eviction policy.
  * 
  * @author Thomas Bocek
  * @param <K>
  */
-public interface FutureCreate<K extends BaseFuture>
-{
+public interface FutureCreate<K extends BaseFuture> {
     /**
      * Called if a future has been created without user interaction
      * 
-     * @param future The created future
+     * @param future
+     *            The created future
      */
-    public void repeated( K future );
+    public void repeated(K future);
 }

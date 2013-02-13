@@ -29,59 +29,46 @@ import net.tomp2p.storage.Data;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-public class CumulativeScheme
-    implements EvaluatingSchemeDHT
-{
+public class CumulativeScheme implements EvaluatingSchemeDHT {
     @Override
-    public Collection<Number480> evaluate1( Number160 locationKey, Number160 domainKey,
-                                            Map<PeerAddress, Collection<Number160>> rawKeys,
-                                            Map<PeerAddress, Collection<Number480>> rawKeys480 )
-    {
+    public Collection<Number480> evaluate1(Number160 locationKey, Number160 domainKey,
+            Map<PeerAddress, Collection<Number160>> rawKeys, Map<PeerAddress, Collection<Number480>> rawKeys480) {
         Set<Number480> result = new HashSet<Number480>();
-        if ( rawKeys != null )
-        {
-            for ( Collection<Number160> tmp : rawKeys.values() )
-            {
-                for ( Number160 contentKey : tmp )
-                {
-                    result.add( new Number480( locationKey, domainKey, contentKey ) );
+        if (rawKeys != null) {
+            for (Collection<Number160> tmp : rawKeys.values()) {
+                for (Number160 contentKey : tmp) {
+                    result.add(new Number480(locationKey, domainKey, contentKey));
                 }
             }
         }
-        if ( rawKeys480 != null )
-        {
-            for ( Collection<Number480> tmp : rawKeys480.values() )
-            {
-                result.addAll( tmp );
+        if (rawKeys480 != null) {
+            for (Collection<Number480> tmp : rawKeys480.values()) {
+                result.addAll(tmp);
             }
         }
         return result;
     }
 
     @Override
-    public Map<Number160, Data> evaluate2( Map<PeerAddress, Map<Number160, Data>> rawKeys )
-    {
+    public Map<Number160, Data> evaluate2(Map<PeerAddress, Map<Number160, Data>> rawKeys) {
         Map<Number160, Data> result = new HashMap<Number160, Data>();
-        for ( Map<Number160, Data> tmp : rawKeys.values() )
-            result.putAll( tmp );
+        for (Map<Number160, Data> tmp : rawKeys.values())
+            result.putAll(tmp);
         return result;
     }
 
     @Override
-    public Object evaluate3( Map<PeerAddress, Object> rawKeys )
-    {
-        throw new UnsupportedOperationException( "cannot cumulate" );
+    public Object evaluate3(Map<PeerAddress, Object> rawKeys) {
+        throw new UnsupportedOperationException("cannot cumulate");
     }
 
     @Override
-    public ChannelBuffer evaluate4( Map<PeerAddress, ChannelBuffer> rawKeys )
-    {
-        throw new UnsupportedOperationException( "cannot cumulate" );
+    public ChannelBuffer evaluate4(Map<PeerAddress, ChannelBuffer> rawKeys) {
+        throw new UnsupportedOperationException("cannot cumulate");
     }
 
     @Override
-    public DigestResult evaluate5( Map<PeerAddress, DigestResult> rawDigest )
-    {
-        throw new UnsupportedOperationException( "cannot cumulate" );
+    public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest) {
+        throw new UnsupportedOperationException("cannot cumulate");
     }
 }

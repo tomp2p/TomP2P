@@ -40,16 +40,16 @@ public class Bindings {
      */
     public enum Protocol {
         /**
-         * 32 bit IP version 4
+         * 32 bit IP version 4.
          */
         IPv4,
         /**
-         * 128 bit IP version 6
+         * 128 bit IP version 6.
          */
         IPv6,
         /**
          * This type indicates that the address to bind to can be either IPv4 or
-         * IPv6
+         * IPv6.
          */
         Any
     };
@@ -109,53 +109,53 @@ public class Bindings {
     }
 
     /**
-     * Creates a binding class that binds to a specified address
+     * Creates a binding class that binds to a specified address.
      * 
      * @param bind
      *            the address to bind to
      */
-    public Bindings(InetAddress bind) {
+    public Bindings(final InetAddress bind) {
         this(Protocol.Any, null, 0, 0);
         addAddress(bind);
     }
 
     /**
-     * Creates a Binding class that binds to a specified interface
+     * Creates a Binding class that binds to a specified interface.
      * 
      * @param iface
      *            The interface to bind to
      */
-    public Bindings(String iface) {
+    public Bindings(final String iface) {
         this(Protocol.Any, null, 0, 0);
         addInterface(iface);
     }
 
     /**
-     * Creates a Binding class that binds to a specified protocol
+     * Creates a Binding class that binds to a specified protocol.
      * 
      * @param protocol
      *            The protocol to bind to
      */
-    public Bindings(Protocol protocol) {
+    public Bindings(final Protocol protocol) {
         this(protocol, null, 0, 0);
     }
 
     /**
-     * Creates a Binding class that binds to a specified protocol and interface
+     * Creates a Binding class that binds to a specified protocol and interface.
      * 
      * @param protocol
      *            The protocol to bind to
      * @param iface
      *            The interface to bind to
      */
-    public Bindings(Protocol protocol, String iface) {
+    public Bindings(final Protocol protocol, final String iface) {
         this(protocol, null, 0, 0);
         addInterface(iface);
     }
 
     /**
      * Creates a Binding class that binds to a specified protocol and interface
-     * and address
+     * and address.
      * 
      * @param protocol
      *            The protocol to bind to
@@ -164,14 +164,14 @@ public class Bindings {
      * @param bind
      *            The address to bind to
      */
-    public Bindings(Protocol protocol, String iface, InetAddress bind) {
+    public Bindings(final Protocol protocol, final String iface, final InetAddress bind) {
         this(protocol, null, 0, 0);
         addInterface(iface);
     }
 
     /**
      * Creates a Binding class that binds to everything and provides information
-     * about manual port forwarding
+     * about manual port forwarding.
      * 
      * @param externalAddress
      *            The external address, how other peers will see us
@@ -180,13 +180,13 @@ public class Bindings {
      * @param externalUDPPort
      *            The external port, how other peers will see us
      */
-    public Bindings(InetAddress externalAddress, int externalTCPPort, int externalUDPPort) {
+    public Bindings(final InetAddress externalAddress, final int externalTCPPort, final int externalUDPPort) {
         this(Protocol.Any, externalAddress, externalTCPPort, externalUDPPort);
     }
 
     /**
      * Creates a Binding class that binds to a specified protocol and provides
-     * information about manual port forwarding
+     * information about manual port forwarding.
      * 
      * @param protocol
      *            The protocol to bind to
@@ -200,7 +200,8 @@ public class Bindings {
      *            The external port, how other peers will see us, if 0 is
      *            provided, a random port will be used
      */
-    public Bindings(Protocol protocol, InetAddress externalAddress, int externalTCPPort, int externalUDPPort) {
+    public Bindings(final Protocol protocol, final InetAddress externalAddress, 
+            final int externalTCPPort, final int externalUDPPort) {
         if (externalTCPPort < 0 || externalUDPPort < 0) {
             throw new IllegalArgumentException("port needs to be >= 0");
         }
@@ -220,8 +221,9 @@ public class Bindings {
      * 
      * @param address
      *            The current class
+     * @return The bindings (this)
      */
-    Bindings addFoundAddress(InetAddress address) {
+    Bindings addFoundAddress(final InetAddress address) {
         if (address == null) {
             throw new IllegalArgumentException("Cannot add null");
         }
@@ -258,7 +260,7 @@ public class Bindings {
      *            The current class
      * @return this instance
      */
-    public Bindings addAddress(InetAddress address) {
+    public Bindings addAddress(final InetAddress address) {
         listenAddresses.add(address);
         return this;
     }
@@ -285,7 +287,7 @@ public class Bindings {
      *            The interface, e.g. eth0
      * @return The same instance
      */
-    public Bindings addInterface(String interfaceHint) {
+    public Bindings addInterface(final String interfaceHint) {
         if (interfaceHint == null) {
             throw new IllegalArgumentException("Cannot add null");
         }
@@ -362,13 +364,13 @@ public class Bindings {
     }
 
     /**
-     * Checks if the user provided an interface hint
+     * Checks if the user provided an interface hint.
      * 
      * @param name
      *            The name of the interface reported by the system
      * @return True if the user added the interface
      */
-    public boolean containsInterface(String name) {
+    public boolean containsInterface(final String name) {
         return listenInterfaceHints.contains(name);
     }
 
@@ -411,7 +413,7 @@ public class Bindings {
      *            The other instance to get the results from
      * @return The same instance
      */
-    public Bindings add(Bindings other) {
+    public Bindings add(final Bindings other) {
         this.foundAddresses4.addAll(other.foundAddresses4);
         this.foundAddresses6.addAll(other.foundAddresses6);
         this.foundBroadcastAddresses.addAll(other.foundBroadcastAddresses);

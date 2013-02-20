@@ -311,8 +311,14 @@ public class ChannelCreator {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("channel close X, set failure for request message: "
-                                + requestHandler.getFutureResponse().getFailedReason());
+                        
+                        if(requestHandler.getFutureResponse() != null) {
+                            LOGGER.debug("channel close, set failure for request message: "
+                                    + requestHandler.getFutureResponse().getFailedReason());
+                        }
+                        else {
+                            LOGGER.debug("channel close");    
+                        }
                     }
                     connectionSemaphore.release();
                     statistics.decrementTCPChannelCreation();

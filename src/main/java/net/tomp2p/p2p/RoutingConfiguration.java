@@ -43,14 +43,22 @@ public class RoutingConfiguration {
     /**
      * Sets the routing configuration and its stop conditions.
      * 
-     * @param directHits Stops the routing process if we found the data we were looking for
-     * @param maxNoNewInfoDiff The number of times we did not get any closer to our destination
-     * @param maxFailures Stops if we have too many failures
-     * @param maxSuccess Stops if we have too many success
-     * @param parallel The number of parallel requests
-     * @param forceTCP Flag to indicate that routing should be done with TCP instead of UDP
+     * @param directHits
+     *            Number of direct hits (d): This is used for fetching data. If d peers have been contacted that have
+     *            the data stored, routing stops.
+     * @param maxNoNewInfoDiff
+     *            Number of no new information (n): This is mainly used for storing data. It searches the closest peers
+     *            and if n peers do not report any closer nodes, the routing stops.
+     * @param maxFailures
+     *            Number of failures (f): The routing stops if f peers fail to respond.
+     * @param maxSuccess
+     *            Number of success (s): The routing stops if s peers respond.
+     * @param parallel
+     *            Number of parallel requests (p): This tells the routing how many peers to contact in parallel.
+     * @param forceTCP
+     *            Flag to indicate that routing should be done with TCP instead of UDP
      */
-    public RoutingConfiguration(final int directHits, final int maxNoNewInfoDiff, final int maxFailures, 
+    public RoutingConfiguration(final int directHits, final int maxNoNewInfoDiff, final int maxFailures,
             final int maxSuccess, final int parallel, final boolean forceTCP) {
         if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0) {
             throw new IllegalArgumentException("need to be larger or equals zero");
@@ -68,10 +76,9 @@ public class RoutingConfiguration {
     }
 
     /**
-     * This returns the difference to the min value of P2P configuration. We
-     * need to have a difference, because we need to search at least for min
-     * peers in the routing, as otherwise if we find the closest node by chance,
-     * then we don't reach min.
+     * This returns the difference to the min value of P2P configuration. We need to have a difference, because we need
+     * to search at least for min peers in the routing, as otherwise if we find the closest node by chance, then we
+     * don't reach min.
      * 
      * @return
      */

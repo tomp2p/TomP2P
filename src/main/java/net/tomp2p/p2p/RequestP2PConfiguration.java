@@ -48,14 +48,20 @@ public class RequestP2PConfiguration {
     /**
      * Sets the P2P/DHT configuration and its stop conditions. Based on the message size, either UDP or TCP is used.
      * 
-     * @param minimumResults The number of minimum successful answers we want
-     * @param maxFailure Stop if we have too many failures
-     * @param parallelDiff Use parallelDiff+minimumResults parallel connections
-     * @param forceUPD Flag to indicate that routing should be done with UDP instead of TCP
-     * @param forceTCP Flag to indicate that routing should be done with TCP instead of UDP
-     * @param senderCacheStrategy Merge DHT/P2P messages to reuse existing connections
+     * @param minimumResults
+     *            Stops the direct calls if m peers have been contacted
+     * @param maxFailure
+     *            Stops the direct calls if f peers have failed
+     * @param parallelDiff
+     *            Use parallelDiff + minimumResults parallel connections for the P2P/DHT operation
+     * @param forceUPD
+     *            Flag to indicate that routing should be done with UDP instead of TCP
+     * @param forceTCP
+     *            Flag to indicate that routing should be done with TCP instead of UDP
+     * @param senderCacheStrategy
+     *            Merge DHT/P2P messages to reuse existing connections
      */
-    public RequestP2PConfiguration(final int minimumResults, final int maxFailure, final int parallelDiff, 
+    public RequestP2PConfiguration(final int minimumResults, final int maxFailure, final int parallelDiff,
             final boolean forceUPD, final boolean forceTCP, final SenderCacheStrategy senderCacheStrategy) {
         if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0) {
             throw new IllegalArgumentException("need to be larger or equals zero");

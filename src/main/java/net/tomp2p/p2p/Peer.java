@@ -240,7 +240,7 @@ public class Peer {
             Set<Timeout> timeouts = timer.stop();
             for (Timeout timeout : timeouts) {
                 try {
-                    timeout.getTask().run(null);
+                    timeout.cancel();
                 } catch (Exception e) {
                     logger.error("unable to stop timertask");
                     e.printStackTrace();

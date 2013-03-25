@@ -309,14 +309,13 @@ public class ChannelCreator {
         if (newConnection) {
             channel.getCloseFuture().addListener(new ChannelFutureListener() {
                 @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
+                public void operationComplete(final ChannelFuture future) throws Exception {
                     if (LOGGER.isDebugEnabled()) {
                         
-                        if(requestHandler.getFutureResponse() != null) {
+                        if (requestHandler.getFutureResponse() != null) {
                             LOGGER.debug("channel close, set failure for request message: "
                                     + requestHandler.getFutureResponse().getFailedReason());
-                        }
-                        else {
+                        } else {
                             LOGGER.debug("channel close");    
                         }
                     }

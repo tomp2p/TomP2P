@@ -51,7 +51,7 @@ public class ExampleBootstrap
             FutureBootstrap futureBootstrap2 = peers[2].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start();
             futureBootstrap2.awaitUninterruptibly();
             // list all the peers C knows by now:
-            System.out.println( "peer[3] knows: " + peers[2].getPeerBean().getPeerMap().getAll() );
+            System.out.println( "peer[2] knows: " + peers[2].getPeerBean().getPeerMap().getAll() );
         }
         finally
         {

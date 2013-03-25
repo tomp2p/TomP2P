@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25,56 +25,78 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 
-public class ExamplePersistentConnection
-{
-    final private static Random rnd = new Random( 42L );
+/**
+ * Example how to use persistent connection with Peer.sendDirect().
+ * 
+ * @author Thomas Bocek
+ * 
+ */
+public final class ExamplePersistentConnection {
 
-    public static void main( String[] args )
-        throws Exception
-    {
+    /**
+     * Empty constructor.
+     */
+    private ExamplePersistentConnection() {
+    }
+
+    private static final Random RND = new Random(42L);
+
+    /**
+     * Start the example with persistent connections.
+     * 
+     * @param args
+     *            Empty
+     * @throws Exception .
+     */
+    public static void main(final String[] args) throws Exception {
         examplePersistentConnection();
     }
 
-    private static void examplePersistentConnection()
-        throws Exception
-    {
+    /**
+     * Sends a message to a peer directly using peer connection. The peer remains the connection in an open state and
+     * sends a second request that uses the same connection.
+     * 
+     * @throws Exception .
+     */
+    private static void examplePersistentConnection() throws Exception {
         Peer peer1 = null;
         Peer peer2 = null;
-        try
-        {
-            peer1 = new PeerMaker( new Number160( rnd ) ).setPorts( 4001 ).makeAndListen();
-            peer2 = new PeerMaker( new Number160( rnd ) ).setPorts( 4002 ).makeAndListen();
+        try {
+            final int port1 = 4001;
+            final int port2 = 4002;
+            final int timeout = 20;
+            peer1 = new PeerMaker(new Number160(RND)).setPorts(port1).makeAndListen();
+            peer2 = new PeerMaker(new Number160(RND)).setPorts(port2).makeAndListen();
             //
-            peer2.setObjectDataReply( new ObjectDataReply()
-            {
+            peer2.setObjectDataReply(new ObjectDataReply() {
                 @Override
-                public Object reply( PeerAddress sender, Object request )
-                    throws Exception
-                {
+                public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     return "world!";
                 }
-            } );
+            });
             // keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
-            PeerConnection peerConnection = peer1.createPeerConnection( peer2.getPeerAddress(), 20 );
+            PeerConnection peerConnection = peer1.createPeerConnection(peer2.getPeerAddress(), timeout);
             String sentObject = "Hello";
-            FutureResponse fd = peer1.sendDirect(peerConnection).setObject( sentObject ).start();
-            System.out.println( "send " + sentObject );
+            FutureResponse fd = peer1.sendDirect(peerConnection).setObject(sentObject).start();
+            System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
-            System.out.println( "received " + fd.getObject() + " connections: "
-                + peer1.getPeerBean().getStatistics().getTCPChannelCreationCount() );
+            System.out.println("received " + fd.getObject() + " connections: "
+                    + peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
             // we reuse the connection
-            fd = peer1.sendDirect(peerConnection).setObject( sentObject ).start();
-            System.out.println( "send " + sentObject );
+            fd = peer1.sendDirect(peerConnection).setObject(sentObject).start();
+            System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
-            System.out.println( "received " + fd.getObject() + " connections: "
-                + peer1.getPeerBean().getStatistics().getTCPChannelCreationCount() );
+            System.out.println("received " + fd.getObject() + " connections: "
+                    + peer1.getPeerBean().getStatistics().getTCPChannelCreationCount());
             // now we don't want to keep the connection open anymore:
             peerConnection.close();
-        }
-        finally
-        {
-            peer1.shutdown();
-            peer2.shutdown();
+        } finally {
+            if (peer1 != null) {
+                peer1.shutdown();
+            }
+            if (peer2 != null) {
+                peer2.shutdown();
+            }
         }
     }
 

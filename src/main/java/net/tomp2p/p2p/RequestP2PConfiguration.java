@@ -18,7 +18,7 @@ package net.tomp2p.p2p;
 import net.tomp2p.rpc.SenderCacheStrategy;
 
 /**
- * This name was chosen over P2PConfiguration, as it already exists
+ * This name was chosen over P2PConfiguration, as it already exists.
  * 
  * @author Thomas Bocek
  */
@@ -45,10 +45,21 @@ public class RequestP2PConfiguration {
         this(minimumResults, maxFailure, parallelDiff, forceUPD, forceTCP, null);
     }
 
-    public RequestP2PConfiguration(int minimumResults, int maxFailure, int parallelDiff, boolean forceUPD,
-            boolean forceTCP, SenderCacheStrategy senderCacheStrategy) {
-        if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0)
+    /**
+     * Sets the P2P/DHT configuration and its stop conditions. Based on the message size, either UDP or TCP is used.
+     * 
+     * @param minimumResults The number of minimum successful answers we want
+     * @param maxFailure Stop if we have too many failures
+     * @param parallelDiff Use parallelDiff+minimumResults parallel connections
+     * @param forceUPD Flag to indicate that routing should be done with UDP instead of TCP
+     * @param forceTCP Flag to indicate that routing should be done with TCP instead of UDP
+     * @param senderCacheStrategy Merge DHT/P2P messages to reuse existing connections
+     */
+    public RequestP2PConfiguration(final int minimumResults, final int maxFailure, final int parallelDiff, 
+            final boolean forceUPD, final boolean forceTCP, final SenderCacheStrategy senderCacheStrategy) {
+        if (minimumResults < 0 || maxFailure < 0 || parallelDiff < 0) {
             throw new IllegalArgumentException("need to be larger or equals zero");
+        }
         this.minimumResults = minimumResults;
         this.maxFailure = maxFailure;
         this.parallelDiff = parallelDiff;

@@ -40,10 +40,21 @@ public class RoutingConfiguration {
         this(directHits, maxNoNewInfoDiff, maxFailures, maxSuccess, parallel, false);
     }
 
-    public RoutingConfiguration(int directHits, int maxNoNewInfoDiff, int maxFailures, int maxSuccess, int parallel,
-            boolean forceTCP) {
-        if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0)
+    /**
+     * Sets the routing configuration and its stop conditions.
+     * 
+     * @param directHits Stops the routing process if we found the data we were looking for
+     * @param maxNoNewInfoDiff The number of times we did not get any closer to our destination
+     * @param maxFailures Stops if we have too many failures
+     * @param maxSuccess Stops if we have too many success
+     * @param parallel The number of parallel requests
+     * @param forceTCP Flag to indicate that routing should be done with TCP instead of UDP
+     */
+    public RoutingConfiguration(final int directHits, final int maxNoNewInfoDiff, final int maxFailures, 
+            final int maxSuccess, final int parallel, final boolean forceTCP) {
+        if (directHits < 0 || maxNoNewInfoDiff < 0 || maxFailures < 0 || parallel < 0) {
             throw new IllegalArgumentException("need to be larger or equals zero");
+        }
         this.directHits = directHits;
         this.maxNoNewInfoDiff = maxNoNewInfoDiff;
         this.maxFailures = maxFailures;

@@ -55,7 +55,7 @@ public class MessageCodec {
 
     /**
      * The format looks as follows: 32bit p2p version - 32bit id - 4bit message
-     * type - 4bit message name - 160bit sender id - 16bit tcp port - 16bit udp
+     * type - 4bit message command - 160bit sender id - 16bit tcp port - 16bit udp
      * port - 160bit recipient id - 16bit (4x4)content type - 8bit network
      * address information. It total, the header is of size 56 bytes.
      * 

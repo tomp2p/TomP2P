@@ -1,20 +1,21 @@
-package net.tomp2p.examples;
-
 /*
  * Copyright 2009 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+package net.tomp2p.examples;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Random;
@@ -30,51 +31,69 @@ import net.tomp2p.storage.Data;
  * 
  * @author draft
  */
-public class ExamplePutGet
-{
-    final private static Random rnd = new Random( 42L );
+public final class ExamplePutGet {
+    private static final Random RND = new Random(42L);
+    private static final int PEER_NR_1 = 30;
+    private static final int PEER_NR_2 = 77;
+    
+    /**
+     * Empty constructor.
+     */
+    private ExamplePutGet() { }
 
-    public static void main( String[] args )
-        throws Exception
-    {
+    /**
+     * Starts to run the examples.
+     * @param args No arguments necessary
+     * @throws Exception .
+     */
+    public static void main(final String[] args) throws Exception {
         Peer master = null;
-        try
-        {
-            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
-            ExampleUtils.bootstrap( peers );
+        final int nrPeers = 100;
+        final int port = 4001;
+        final int waitingTime = 250;
+        try {
+            Peer[] peers = ExampleUtils.createAndAttachNodes(nrPeers, port);
+            ExampleUtils.bootstrap(peers);
             master = peers[0];
-            Number160 nr = new Number160( rnd );
-            examplePutGet( peers, nr );
-            examplePutGetConfig( peers, nr );
-            exampleGetBlocking( peers, nr );
-            exampleGetNonBlocking( peers, nr );
-            Thread.sleep( 250 );
-            exampleAddGet( peers );
-        }
-        finally
-        {
-            master.shutdown();
+            Number160 nr = new Number160(RND);
+            examplePutGet(peers, nr);
+            examplePutGetConfig(peers, nr);
+            exampleGetBlocking(peers, nr);
+            exampleGetNonBlocking(peers, nr);
+            Thread.sleep(waitingTime);
+            exampleAddGet(peers);
+        } finally {
+            if (master != null) {
+                master.shutdown();
+            }
         }
     }
 
-    public static void examplePutGet( Peer[] peers, Number160 nr )
-        throws IOException, ClassNotFoundException
-    {
-        FutureDHT futureDHT = peers[30].put( nr ).setData( new Data( "hallo" ) ).start();
+    /**
+     * Basic example for storing and retrieving content.
+     * 
+     * @param peers The peers in this P2P network
+     * @param nr The number where the data is stored
+     * @throws IOException e.
+     * @throws ClassNotFoundException .
+     */
+    private static void examplePutGet(final Peer[] peers, final Number160 nr) 
+            throws IOException, ClassNotFoundException {
+        FutureDHT futureDHT = peers[PEER_NR_1].put(nr).setData(new Data("hallo")).start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "peer 30 stored [key: " + nr + ", value: \"hallo\"]" );
-        futureDHT = peers[77].get( nr ).start();
+        System.out.println("peer " + PEER_NR_1 + " stored [key: " + nr + ", value: \"hallo\"]");
+        futureDHT = peers[PEER_NR_2].get(nr).start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "peer 77 got: \"" + futureDHT.getData().getObject() + "\" for the key " + nr );
+        System.out.println("peer " + PEER_NR_2 + " got: \"" + futureDHT.getData().getObject() + "\" for the key " + nr);
         // the output should look like this:
-        // peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]
-        // peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
+        // peer 30 stored [key: 0xba419d350dfe8af7aee7bbe10c45c0284f083ce4, value: "hallo"]
+        // peer 77 got: "hallo" for the key 0xba419d350dfe8af7aee7bbe10c45c0284f083ce4
     }
 
-    public static void examplePutGetConfig( Peer[] peers, Number160 nr2 )
+    private static void examplePutGetConfig( Peer[] peers, Number160 nr2 )
         throws IOException, ClassNotFoundException
     {
-        Number160 nr = new Number160( rnd );
+        Number160 nr = new Number160( RND );
         FutureDHT futureDHT =
             peers[30].put( nr ).setData( new Number160( 11 ), new Data( "hallo" ) ).setDomainKey( Number160.createHash( "my_domain" ) ).start();
         futureDHT.awaitUninterruptibly();
@@ -95,7 +114,7 @@ public class ExamplePutGet
     private static void exampleAddGet( Peer[] peers )
         throws IOException, ClassNotFoundException
     {
-        Number160 nr = new Number160( rnd );
+        Number160 nr = new Number160( RND );
         String toStore1 = "hallo1";
         String toStore2 = "hallo2";
         Data data1 = new Data( toStore1 );
@@ -114,29 +133,36 @@ public class ExamplePutGet
         System.out.println( "got: " + iterator.next().getObject() + " (" + futureDHT.isSuccess() + ")" );
     }
 
-    public static void exampleGetBlocking( Peer[] peers, Number160 nr )
-        throws ClassNotFoundException, IOException
-    {
-        FutureDHT futureDHT = peers[77].get( nr ).start();
+    /**
+     * Example of a blocking operation and what happens after.
+     * @param peers The peers in this P2P network
+     * @param nr The number where the data is stored
+     * @throws ClassNotFoundException .
+     * @throws IOException .
+     */
+    private static void exampleGetBlocking(final Peer[] peers, final Number160 nr)
+        throws ClassNotFoundException, IOException {
+        FutureDHT futureDHT = peers[PEER_NR_2].get(nr).start();
         // blocking operation
         futureDHT.awaitUninterruptibly();
-        System.out.println( "result: " + futureDHT.getData().getObject() );
-        System.out.println( "this may *not* happen before printing the result" );
+        System.out.println("result blocking: " + futureDHT.getData().getObject());
+        System.out.println("this may *not* happen before printing the result");
     }
 
-    public static void exampleGetNonBlocking( Peer[] peers, Number160 nr )
-    {
-        FutureDHT futureDHT = peers[77].get( nr ).start();
+    /**
+     * Example of a non-blocking operation and what happens after.
+     * @param peers The peers in this P2P network
+     * @param nr The number where the data is stored
+     */
+    private static void exampleGetNonBlocking(final Peer[] peers, final Number160 nr) {
+        FutureDHT futureDHT = peers[PEER_NR_2].get(nr).start();
         // non-blocking operation
-        futureDHT.addListener( new BaseFutureAdapter<FutureDHT>()
-        {
+        futureDHT.addListener(new BaseFutureAdapter<FutureDHT>() {
             @Override
-            public void operationComplete( FutureDHT future )
-                throws Exception
-            {
-                System.out.println( "result: " + future.getData().getObject() );
+            public void operationComplete(final FutureDHT future) throws Exception {
+                System.out.println("result non-blocking: " + future.getData().getObject());
             }
-        } );
-        System.out.println( "this may happen before printing the result" );
+        });
+        System.out.println("this may happen before printing the result");
     }
 }

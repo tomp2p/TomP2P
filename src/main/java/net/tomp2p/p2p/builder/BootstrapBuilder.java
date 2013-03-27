@@ -111,7 +111,7 @@ public class BootstrapBuilder {
      * @return this instance
      */
     public BootstrapBuilder setPeerAddress(final PeerAddress peerAddress) {
-        if (peerAddress.getID().equals(Number160.ZERO)) {
+        if (peerAddress != null && peerAddress.getID().equals(Number160.ZERO)) {
             logger.warn("You provided a peer address with peerID zero. " 
                     + "You won't be able to bootstrap since no peer can have a peerID set to zero");
             return this;

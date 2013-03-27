@@ -61,6 +61,10 @@ public class BootstrapBuilder {
 
     private final static FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>()
             .setFailed("Peer is shutting down");
+    
+    private static final FutureBootstrap FUTURE_BOOTSTRAP_NO_ADDRESS = new FutureWrappedBootstrap<FutureBootstrap>()
+            .setFailed("You did not provide information where to bootstrap to. "
+                    + "This could be also caused if you provided a peer address with a peer ID set to zero.");
 
     final private Peer peer;
 
@@ -99,7 +103,19 @@ public class BootstrapBuilder {
         return peerAddress;
     }
 
-    public BootstrapBuilder setPeerAddress(PeerAddress peerAddress) {
+    /**
+     * Set the peer address to bootstrap to. Please note that the peer address needs to know the peerID of the bootstrap
+     * peer. If this is not known, use {@link #setInetAddress(InetAddress)} instead.
+     * 
+     * @param peerAddress The full address of the peer to bootstrap to (including the peerID of the bootstrap peer).
+     * @return this instance
+     */
+    public BootstrapBuilder setPeerAddress(final PeerAddress peerAddress) {
+        if (peerAddress.getID().equals(Number160.ZERO)) {
+            logger.warn("You provided a peer address with peerID zero. " 
+                    + "You won't be able to bootstrap since no peer can have a peerID set to zero");
+            return this;
+        }
         this.peerAddress = peerAddress;
         return this;
     }
@@ -210,7 +226,7 @@ public class BootstrapBuilder {
         } else if (bootstrapTo != null) {
             return bootstrap();
         } else {
-            throw new IllegalArgumentException("need to set an address to bootstrap to");
+            return FUTURE_BOOTSTRAP_NO_ADDRESS;
         }
     }
 

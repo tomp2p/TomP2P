@@ -14,96 +14,95 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
-public class ExampleConsistency
-{
-    final private static Random rnd = new Random( 5467656537115L );
+public class ExampleConsistency {
+    final private static Random rnd = new Random(5467656537115L);
 
-    public static void main( String[] args )
-        throws Exception
-    {
+    public static void main(String[] args) throws Exception {
         Peer master = null;
-        try
-        {
-            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
+        try {
+            Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
             master = peers[0];
-            ExampleUtils.bootstrap( peers );
-            exampleConsistency( peers );
-        }
-        catch ( Throwable e )
-        {
+            ExampleUtils.bootstrap(peers);
+            exampleConsistency(peers);
+        } catch (Throwable e) {
             e.printStackTrace();
-        }
-        finally
-        {
+        } finally {
             master.shutdown();
         }
     }
 
-    private static <K> void exampleConsistency( Peer[] peers )
-        throws IOException, ClassNotFoundException
-    {
-        Number160 key1 = new Number160( rnd );
-        System.out.println( "key is " + key1 );
+    private static <K> void exampleConsistency(Peer[] peers) throws IOException, ClassNotFoundException {
+        Number160 key1 = new Number160(rnd);
+        System.out.println("key is " + key1);
         // find close peers
         // TreeSet<PeerAddress> set = new TreeSet<PeerAddress> (PeerMapKadImpl.createComparator(key1));
         // for(int i=0;i<peers.length;i++) System.out.println(i+ " / " +peers[i].getPeerAddress());
         // for(Peer peer:peers) set.add(peer.getPeerAddress());
         // for(PeerAddress peerAddress:set) System.out.println("close peers: "+peerAddress);
-        peers[22].put( key1 ).setData( new Data( "Test 1" ) ).start().awaitUninterruptibly();
+        peers[22].put(key1).setData(new Data("Test 1")).start().awaitUninterruptibly();
         // close peers go offline
         peers[67].shutdown();
         peers[40].shutdown();
         peers[39].shutdown();
-        peers[22].put( key1 ).setData( new Data( "Test 2" ) ).start().awaitUninterruptibly();
-        FutureDHT futureDHT = peers[33].get( key1 ).setAll().start();
+        peers[22].put(key1).setData(new Data("Test 2")).start().awaitUninterruptibly();
+        FutureDHT futureDHT = peers[33].get(key1).setAll().start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "got " + futureDHT.getData().getObject() );
+        System.out.println("got " + futureDHT.getData().getObject());
         // peer 11 and 8 joins again
-        peers[67] = new PeerMaker( peers[67].getPeerID() ).setMasterPeer( peers[0] ).makeAndListen();
-        peers[40] = new PeerMaker( peers[40].getPeerID() ).setMasterPeer( peers[0] ).makeAndListen();
-        peers[39] = new PeerMaker( peers[39].getPeerID() ).setMasterPeer( peers[0] ).makeAndListen();
-        peers[67].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
-        peers[40].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
-        peers[39].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
+        peers[67] = new PeerMaker(peers[67].getPeerID()).setMasterPeer(peers[0]).makeAndListen();
+        peers[40] = new PeerMaker(peers[40].getPeerID()).setMasterPeer(peers[0]).makeAndListen();
+        peers[39] = new PeerMaker(peers[39].getPeerID()).setMasterPeer(peers[0]).makeAndListen();
+        peers[67].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
+        peers[40].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
+        peers[39].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
         // load old data
-        peers[67].getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data( "Test 1" ) );
-        peers[40].getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data( "Test 1" ) );
-        peers[39].getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data( "Test 1" ) );
+        peers[67].getPeerBean().getStorage().put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("Test 1"));
+        peers[40].getPeerBean().getStorage().put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("Test 1"));
+        peers[39].getPeerBean().getStorage().put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("Test 1"));
         // we got Test 1
-        futureDHT = peers[0].get( key1 ).setAll().start();
+        futureDHT = peers[0].get(key1).setAll().start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "peer[0] got " + futureDHT.getData().getObject() );
+        System.out.println("peer[0] got " + futureDHT.getData().getObject());
         // we got Test 2!
-        futureDHT = peers[33].get( key1 ).setAll().start();
+        futureDHT = peers[33].get(key1).setAll().start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "peer[33] got " + futureDHT.getData().getObject() );
+        System.out.println("peer[33] got " + futureDHT.getData().getObject());
         // lets attack!
-        Peer mpeer1 =
-            new PeerMaker( new Number160( "0x4bca44fd09461db1981e387e99e41e7d22d06893" ) ).setMasterPeer( peers[0] ).makeAndListen();
-        Peer mpeer2 =
-            new PeerMaker( new Number160( "0x4bca44fd09461db1981e387e99e41e7d22d06894" ) ).setMasterPeer( peers[0] ).makeAndListen();
-        Peer mpeer3 =
-            new PeerMaker( new Number160( "0x4bca44fd09461db1981e387e99e41e7d22d06895" ) ).setMasterPeer( peers[0] ).makeAndListen();
-        mpeer1.bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
-        mpeer2.bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
-        mpeer3.bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start().awaitUninterruptibly();
+        Peer mpeer1 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
+                .setMasterPeer(peers[0]).makeAndListen();
+        Peer mpeer2 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06894"))
+                .setMasterPeer(peers[0]).makeAndListen();
+        Peer mpeer3 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
+                .setMasterPeer(peers[0]).makeAndListen();
+        mpeer1.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
+        mpeer2.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
+        mpeer3.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
         // load old data
-        mpeer1.getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO,
-                                               new Data( "attack, attack, attack!" ) );
-        mpeer2.getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO,
-                                               new Data( "attack, attack, attack!" ) );
-        mpeer3.getPeerBean().getStorage().put( key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO,
-                                               new Data( "attack, attack, attack!" ) );
+        mpeer1.getPeerBean().getStorage()
+                .put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
+        mpeer2.getPeerBean().getStorage()
+                .put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
+        mpeer3.getPeerBean().getStorage()
+                .put(key1, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, new Data("attack, attack, attack!"));
         // we got attack!
-        futureDHT =
-            peers[0].get( key1 ).setAll().setRequestP2PConfiguration( new RequestP2PConfiguration( 6, 0, 6 ) ).start();
+        futureDHT = peers[0].get(key1).setAll().setRequestP2PConfiguration(new RequestP2PConfiguration(4, 0, 4))
+                .start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "peer[0] got " + futureDHT.getData().getObject() );
+        System.out.println("peer[0] got " + futureDHT.getData().getObject());
+        for (Entry<PeerAddress, Map<Number160, Data>> entry : futureDHT.getRawData().entrySet()) {
+            System.out.print("got from (4,4)" + entry.getKey());
+            System.out.println(entry.getValue());
+        }
+        // increase the replicas we fetch
+        futureDHT = peers[0].get(key1).setAll().setRequestP2PConfiguration(new RequestP2PConfiguration(6, 0, 6))
+                .start();
+        futureDHT.awaitUninterruptibly();
+        System.out.println("peer[0] got " + futureDHT.getData().getObject());
+
         // countermeasure - statistics, pick not closest, but random peer that has the data - freshness vs. load
-        for ( Entry<PeerAddress, Map<Number160, Data>> entry : futureDHT.getRawData().entrySet() )
-        {
-            System.out.print( "got from " + entry.getKey() );
-            System.out.println( entry.getValue() );
+        for (Entry<PeerAddress, Map<Number160, Data>> entry : futureDHT.getRawData().entrySet()) {
+            System.out.print("got from (6,6)" + entry.getKey());
+            System.out.println(entry.getValue());
         }
     }
 }

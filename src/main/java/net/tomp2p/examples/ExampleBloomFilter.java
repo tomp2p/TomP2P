@@ -126,8 +126,8 @@ public final class ExampleBloomFilter {
         futureDHT.awaitUninterruptibly();
         // we have the bloom filter for the content keys:
         SimpleBloomFilter<Number160> keyBF = futureDHT.getDigest().getKeyBloomFilter();
-        System.out.println("We got bloomfilter for the first key. Test if bloomfilter contains 200: "
-                + keyBF.contains(new Number160(overlap)));
+        System.out.println("We got bloomfilter for the first key: " + keyBF);
+        //TODO: check keyBF.contains(new Number160(123));
         // query for nr2, but return only those that are in this bloom filter
         futureDHT = peers[peer10].get(nr2).setAll().setKeyBloomFilter(keyBF)
                 .setDomainKey(Number160.createHash("my_domain")).start();

@@ -90,7 +90,7 @@ public class Discovery {
     public static final int DEFAULT_TTL = 4;
 
     /***/
-    public static final int DEFAULT_TIMEOUT = 1500;
+    public static final int DEFAULT_TIMEOUT = 3000;
 
     /***/
     public static final String DEFAULT_SEARCH = ALL_DEVICES;

@@ -67,10 +67,7 @@ public class BroadcastRPC extends ReplyHandler {
         if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.BROADCAST_DATA)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        Number160 messageKey = message.getKey();
-        Map<Number160, Data> dataMap = message.getDataMap();
-        int hopCount = message.getInteger();
-        broadcastHandler.receive(messageKey, dataMap, hopCount, message.isUDP());
+        broadcastHandler.receive(message);
         return message;
     }
 

@@ -123,6 +123,7 @@ public class NATUtils {
         // -1 sets the default timeout to 1500 ms
         Collection<InternetGatewayDevice> internetGDs = InternetGatewayDevice.getDevices(-1);
         if (internetGDs == null) {
+            LOGGER.info("no UPNP device found");
             return false;
         }
         boolean once = false;

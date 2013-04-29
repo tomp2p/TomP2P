@@ -106,4 +106,16 @@ public class RequestP2PConfiguration {
     public SenderCacheStrategy getSenderCacheStrategy() {
         return senderCacheStrategy;
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("minRes=");
+        sb.append(minimumResults);
+        sb.append("maxFail=");
+        sb.append(maxFailure);
+        sb.append("pDiff=");
+        sb.append(parallelDiff);
+        return sb.toString();
+    }
 }

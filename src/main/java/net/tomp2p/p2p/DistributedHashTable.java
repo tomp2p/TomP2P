@@ -351,7 +351,6 @@ public class DistributedHashTable {
                                 // exactly what is going on
                                 RequestP2PConfiguration p2pConfiguration2 = digest || range ? p2pConfiguration
                                         : adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest());
-                                // TODO: make the range also
                                 // store in direct hits
                                 parallelRequests(p2pConfiguration2, range ? futureRouting.getPotentialHits()
                                         : futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
@@ -648,20 +647,15 @@ public class DistributedHashTable {
      *            The digest information from the routing process
      * @return The new RequestP2PConfiguration with the new minimum result
      */
-    public static RequestP2PConfiguration adjustConfiguration(RequestP2PConfiguration p2pConfiguration,
-            SortedMap<PeerAddress, DigestInfo> directHitsDigest) {
-        Set<DigestInfo> tmp = new HashSet<DigestInfo>();
-        for (DigestInfo digestBean : directHitsDigest.values()) {
-            if (!digestBean.isEmpty()) {
-                tmp.add(digestBean);
-            }
-        }
-        int unique = tmp.size();
+    public static RequestP2PConfiguration adjustConfiguration(final RequestP2PConfiguration p2pConfiguration,
+            final SortedMap<PeerAddress, DigestInfo> directHitsDigest) {
+        
+        int size = directHitsDigest.size();
         int requested = p2pConfiguration.getMinimumResults();
-        if (unique >= requested) {
+        if (size >= requested) {
             return p2pConfiguration;
         } else {
-            return new RequestP2PConfiguration(unique, p2pConfiguration.getMaxFailure(),
+            return new RequestP2PConfiguration(size, p2pConfiguration.getMaxFailure(),
                     p2pConfiguration.getParallelDiff());
         }
     }

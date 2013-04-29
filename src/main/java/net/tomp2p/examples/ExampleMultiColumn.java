@@ -1,3 +1,19 @@
+/*
+ * Copyright 2009 Thomas Bocek
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.examples;
 
 import java.io.IOException;
@@ -10,28 +26,52 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
-public class ExampleMultiColumn
-{
-    public static void main( String[] args )
-        throws Exception
-    {
+/**
+ * Example of storing data in a column.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
+public final class ExampleMultiColumn {
+
+    /**
+     * Empty constructor.
+     */
+    private ExampleMultiColumn() {
+    }
+
+    /**
+     * Start the examples.
+     * 
+     * @param args
+     *            Empty
+     * @throws Exception .
+     */
+    public static void main(final String[] args) throws Exception {
         Peer master = null;
-        try
-        {
-            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
+        try {
+            final int peerNr = 100;
+            final int port = 4001;
+            Peer[] peers = ExampleUtils.createAndAttachNodes(peerNr, port);
             master = peers[0];
-            ExampleUtils.bootstrap( peers );
-            exampleMultiColumn( peers );
-        }
-        finally
-        {
-            master.shutdown();
+            ExampleUtils.bootstrap(peers);
+            exampleMultiColumn(peers);
+        } finally {
+            if (master != null) {
+                master.shutdown();
+            }
         }
     }
 
-    private static <K, V> void exampleMultiColumn( Peer[] peers )
-        throws IOException, ClassNotFoundException
-    {
+    /**
+     * Show the example of multiple columns. At the moment only contentKey splitting is supported.
+     * 
+     * @param peers
+     *            All the peers.
+     * @throws IOException .
+     * @throws ClassNotFoundException .
+     */
+    private static void exampleMultiColumn(final Peer[] peers) throws IOException, ClassNotFoundException {
         // currently only contentKey splitting supported
         String rowKey1 = "tbocek";
         String rowKey2 = "fhecht";
@@ -44,89 +84,136 @@ public class ExampleMultiColumn
         String col3 = "loaction";
         String col4 = "nr";
 
-        multiAdd( peers[11], rowKey1, col1, "thomas" );
-        multiAdd( peers[11], rowKey1, col2, "bocek" );
-        multiAdd( peers[11], rowKey1, col3, "zuerich" );
-        multiAdd( peers[11], rowKey1, col4, "77" );
+        Number160 locationKey = Number160.createHash("users");
+        System.out.println("storing data in table (identified by locationKey) " + locationKey);
+        final int peerAdd = 11;
+        multiAdd(peers[peerAdd], rowKey1, col1, "thomas");
+        multiAdd(peers[peerAdd], rowKey1, col2, "bocek");
+        multiAdd(peers[peerAdd], rowKey1, col3, "zuerich");
+        multiAdd(peers[peerAdd], rowKey1, col4, "77");
         //
-        multiAdd( peers[11], rowKey2, col1, "fabio" );
-        multiAdd( peers[11], rowKey2, col2, "hecht" );
-        multiAdd( peers[11], rowKey2, col3, "zuerich" );
+        multiAdd(peers[peerAdd], rowKey2, col1, "fabio");
+        multiAdd(peers[peerAdd], rowKey2, col2, "hecht");
+        multiAdd(peers[peerAdd], rowKey2, col3, "zuerich");
         //
-        multiAdd( peers[11], rowKey3, col1, "guilherme" );
-        multiAdd( peers[11], rowKey3, col2, "machado" );
-        multiAdd( peers[11], rowKey3, col3, "zuerich" );
+        multiAdd(peers[peerAdd], rowKey3, col1, "guilherme");
+        multiAdd(peers[peerAdd], rowKey3, col2, "machado");
+        multiAdd(peers[peerAdd], rowKey3, col3, "zuerich");
         //
-        multiAdd( peers[11], rowKey4, col1, "christos" );
-        multiAdd( peers[11], rowKey4, col2, "tsiaras" );
-        multiAdd( peers[11], rowKey4, col3, "zuerich" );
+        multiAdd(peers[peerAdd], rowKey4, col1, "christos");
+        multiAdd(peers[peerAdd], rowKey4, col2, "tsiaras");
+        multiAdd(peers[peerAdd], rowKey4, col3, "zuerich");
         //
-        multiAdd( peers[11], rowKey5, col1, "burkhard" );
-        multiAdd( peers[11], rowKey5, col2, "stiller" );
-        multiAdd( peers[11], rowKey5, col3, "zuerich" );
+        multiAdd(peers[peerAdd], rowKey5, col1, "burkhard");
+        multiAdd(peers[peerAdd], rowKey5, col2, "stiller");
+        multiAdd(peers[peerAdd], rowKey5, col3, "zuerich");
         //
         // search
-        Number160 locationKey = Number160.createHash( "users" );
-        Number160 contentKey = combine( rowKey1, col1 );
+
+        Number160 contentKey = combine(rowKey1, col1);
         // get entry
-        FutureDHT futureDHT = peers[22].get( locationKey ).setContentKey( contentKey ).start();
+        final int peerGet = 22;
+        FutureDHT futureDHT = peers[peerGet].get(locationKey).setContentKey(contentKey).start();
         futureDHT.awaitUninterruptibly();
-        System.out.println( "single fetch: " + futureDHT.getData().getObject() );
+        System.out
+                .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureDHT.getData().getObject() + "]");
         // get list
         Set<Number160> range = new TreeSet<Number160>();
-        range.add( createNr( rowKey1, 0 ) );
-        range.add( createNr( rowKey1, -1 ) );
-        futureDHT = peers[22].get( locationKey ).setContentKeys( range ).setRange().start();
+        range.add(createNr(rowKey1, 0));
+        range.add(createNr(rowKey1, -1));
+        // get can also be used with ranges for content keys
+        futureDHT = peers[peerGet].get(locationKey).setContentKeys(range).setRange().start();
         futureDHT.awaitUninterruptibly();
-        for ( Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet() )
-        {
-            System.out.println( "multi fetch1: " + entry.getValue().getObject() );
+        System.out.println("row fetch [" + rowKey1 + "]");
+        for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
+            System.out.println("multi fetch: " + entry.getValue().getObject());
         }
-        System.out.println( "col get..." );
         // column get
+        String search = col1;
         range = new TreeSet<Number160>();
-        range.add( createNr( col1, 0 ) );
-        range.add( createNr( col1, -1 ) );
-        futureDHT = peers[22].get( locationKey ).setContentKeys( range ).setRange().start();
+        range.add(createNr(search, 0));
+        range.add(createNr(search, -1));
+        futureDHT = peers[peerGet].get(locationKey).setContentKeys(range).setRange().start();
         futureDHT.awaitUninterruptibly();
-        for ( Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet() )
-        {
-            System.out.println( "multi fetch2: " + entry.getValue().getObject() );
+        System.out.println("column fetch [" + search + "]");
+        for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
+            System.out.println("multi fetch: " + entry.getValue().getObject());
         }
     }
 
-    private static void multiAdd( Peer peer, String rowKey, String col, String string )
-        throws IOException
-    {
-        Number160 locationKey = Number160.createHash( "users" );
-        Number160 contentKey = combine( rowKey, col );
-        peer.put( locationKey ).setData( contentKey, new Data( string ) ).start().awaitUninterruptibly();
-        contentKey = combine( col, rowKey );
-        peer.put( locationKey ).setData( contentKey, new Data( string ) ).start().awaitUninterruptibly();
+    /**
+     * Add it twice, once to search for the column, once for the row.
+     * 
+     * @param peer
+     *            The peer that stores the data
+     * @param rowKey
+     *            The row key
+     * @param col
+     *            The col key
+     * @param string
+     *            The data to store
+     * @throws IOException .
+     */
+    private static void multiAdd(final Peer peer, final String rowKey, final String col, final String string)
+            throws IOException {
+        Number160 locationKey = Number160.createHash("users");
+        Number160 contentKey = combine(rowKey, col);
+        peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
+        contentKey = combine(col, rowKey);
+        peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
     }
 
-    private static Number160 createNr( String key1, int nr )
-    {
-        Number160 firstKey = Number160.createHash( key1 );
+    /**
+     * Create a partial key with the first 64bit and fills the last 96bit with nr.
+     * 
+     * @param key1
+     *            The key to fill the first 64bits
+     * @param nr
+     *            The number to fill the last 96bits
+     * @return The complete key
+     */
+    //CHECKSTYLE:OFF
+    private static Number160 createNr(final String key1, final int nr) {
+        Number160 firstKey = Number160.createHash(key1);
         int[] val = firstKey.toIntArray();
         val[0] = val[0] ^ val[4] ^ val[3] ^ val[2];
         val[1] = val[1] ^ val[4] ^ val[3] ^ val[2];
         val[2] = nr;
         val[3] = nr;
         val[4] = nr;
-        return new Number160( val );
+        return new Number160(val);
     }
 
-    private static Number160 combine( String key1, String key2 )
-    {
-        Number160 firstKey = Number160.createHash( key1 );
-        Number160 secondKey = Number160.createHash( key2 );
-        return combine( firstKey, secondKey );
+    //CHECKSTYLE:ON
+
+    /**
+     * Combines two keys into one.
+     * 
+     * @param key1
+     *            The first key
+     * @param key2
+     *            The second key
+     * @return the hash of the combined keys
+     */
+    private static Number160 combine(final String key1, final String key2) {
+        Number160 firstKey = Number160.createHash(key1);
+        Number160 secondKey = Number160.createHash(key2);
+        return combine(firstKey, secondKey);
     }
 
-    private static Number160 combine( Number160 firstKey, Number160 secondKey )
-    {
+    /**
+     * Combines two keys into one.
+     * 
+     * @param firstKey
+     *            The first key
+     * @param secondKey
+     *            The second key
+     * @return the hash of the combined keys
+     */
+    //CHECKSTYLE:OFF
+    private static Number160 combine(final Number160 firstKey, final Number160 secondKey) {
         int[] val1 = firstKey.toIntArray();
+
         val1[0] = val1[0] ^ val1[4] ^ val1[3] ^ val1[2];
         val1[1] = val1[1] ^ val1[4] ^ val1[3] ^ val1[2];
         int[] val2 = secondKey.toIntArray();
@@ -138,6 +225,7 @@ public class ExampleMultiColumn
         val2[0] = val1[0];
         val2[1] = val1[1];
 
-        return new Number160( val2 );
+        return new Number160(val2);
     }
+    //CHECKSTYLE:ON
 }

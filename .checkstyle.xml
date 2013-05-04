@@ -11,6 +11,7 @@ Checkstyle configuration that checks the sun coding conventions.
 -->
 <module name="Checker">
   <property name="severity" value="warning"/>
+  <module name="SuppressionCommentFilter"/>
   <module name="TreeWalker">
     <module name="JavadocMethod">
       <property name="suppressLoadErrors" value="true"/>

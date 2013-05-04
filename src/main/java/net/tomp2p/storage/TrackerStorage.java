@@ -214,7 +214,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
             if (storeData(peerAddress, attachement, offset, length, peerId, key, trackerDataMesh,
                     reverseTrackerDataMesh, getPrimanyFactor())) {
                 if (peerBean.getReplicationTracker() != null) {
-                    peerBean.getReplicationTracker().checkResponsibility(locationKey);
+                    peerBean.getReplicationTracker().updateAndNotifyResponsibilities(locationKey);
                 }
                 return true;
             }

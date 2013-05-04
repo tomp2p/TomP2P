@@ -28,7 +28,12 @@ import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.peers.Number160;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StorageMemoryReplication implements ReplicationStorage {
+
+    private static final Logger LOG = LoggerFactory.getLogger(StorageMemoryReplication.class);
     // Replication
     // maps content (locationKey) to peerid
     final private Map<Number160, Number160> responsibilityMap = new ConcurrentHashMap<Number160, Number160>();
@@ -57,6 +62,9 @@ public class StorageMemoryReplication implements ReplicationStorage {
     }
 
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("store responsibility for locationkey " + locationKey + " and peer " + peerId);
+        }
         boolean isNew = true;
         Number160 oldPeerId = responsibilityMap.put(locationKey, peerId);
         // add to the reverse map

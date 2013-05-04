@@ -31,7 +31,7 @@ import net.tomp2p.peers.MapAcceptHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.replication.DefaultStorageReplication;
+import net.tomp2p.replication.ReplicationExecutor;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.TrackerStorageReplication;
 import net.tomp2p.rpc.BroadcastRPC;
@@ -86,6 +86,8 @@ public class PeerMaker {
     private StorageGeneric storage = new StorageMemory();
 
     private BroadcastHandler broadcastHandler;
+
+    private ReplicationExecutor replicationExecutor;
 
     // max, message size to transmit
     private int maxMessageSize = 2 * 1024 * 1024;
@@ -179,7 +181,7 @@ public class PeerMaker {
         PeerAddress selfAddress = peerBean.getServerPeerAddress();
         PeerMap peerMap = peerBean.getPeerMap();
         peerBean.setStorage(getStorage());
-        Replication replicationStorage = new Replication(getStorage(), selfAddress, peerMap);
+        Replication replicationStorage = new Replication(getStorage(), selfAddress, peerMap, 5);
         peerBean.setReplicationStorage(replicationStorage);
         // create tracker and add replication feature
         IdentityManagement identityManagement = new IdentityManagement(selfAddress);
@@ -190,7 +192,7 @@ public class PeerMaker {
         TrackerStorage storageTracker = new TrackerStorage(identityManagement, configuration.getTrackerTimoutSeconds(),
                 peerBean, maintenance);
         peerBean.setTrackerStorage(storageTracker);
-        Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap);
+        Replication replicationTracker = new Replication(storageTracker, selfAddress, peerMap, 5);
         peerBean.setReplicationTracker(replicationTracker);
 
         peerMap.addPeerOfflineListener(storageTracker);
@@ -281,16 +283,15 @@ public class PeerMaker {
         }
         // indirect replication
         if (isEnableIndirectReplication() && isEnableStorageRPC()) {
-            DefaultStorageReplication defaultStorageReplication = new DefaultStorageReplication(peer,
-                    peerBean.getStorage(), peer.getStoreRPC(), peer.getPendingFutures(),
-                    configuration.isForceStorageUDP());
+            if (replicationExecutor == null) {
+                replicationExecutor = new ReplicationExecutor(peer);
+            }
             peer.getScheduledFutures().add(
                     connectionBean
                             .getScheduler()
                             .getScheduledExecutorServiceReplication()
-                            .scheduleWithFixedDelay(defaultStorageReplication, replicationRefreshMillis,
+                            .scheduleWithFixedDelay(replicationExecutor, replicationRefreshMillis,
                                     replicationRefreshMillis, TimeUnit.MILLISECONDS));
-            replicationStorage.addResponsibilityListener(defaultStorageReplication);
         }
         connectionBean.getScheduler().startDelayedChannelCreator();
     }
@@ -650,6 +651,15 @@ public class PeerMaker {
 
     public PeerMaker setBroadcastHandler(BroadcastHandler broadcastHandler) {
         this.broadcastHandler = broadcastHandler;
+        return this;
+    }
+
+    public ReplicationExecutor getReplicationExecutor() {
+        return replicationExecutor;
+    }
+
+    public PeerMaker setReplicationExecutor(ReplicationExecutor replicationExecutor) {
+        this.replicationExecutor = replicationExecutor;
         return this;
     }
 

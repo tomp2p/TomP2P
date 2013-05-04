@@ -529,16 +529,6 @@ public class StorageRPC extends ReplyHandler {
             final Map<Number480, Data> toStore = message.getDataMap480();
             dataSize = toStore.size();
             for (Map.Entry<Number480, Data> entry : toStore.entrySet()) {
-                // here we set the map with the close peers. If we get data by a
-                // sender
-                // and the sender is closer than us, we assume that the sender
-                // has the
-                // data and we don't need to transfer data to the closest
-                // (sender) peer.
-                if (getPeerBean().getReplicationStorage() != null) {
-                    getPeerBean().getReplicationStorage().updatePeerMapIfCloser(entry.getKey().getLocationKey(),
-                            message.getSender().getID());
-                }
 
                 if (doPut(putIfAbsent, protectDomain, publicKey, entry.getKey().getLocationKey(), entry.getKey()
                         .getDomainKey(), entry.getKey().getContentKey(), entry.getValue())) {
@@ -547,7 +537,7 @@ public class StorageRPC extends ReplyHandler {
                     // something
                     // (notify) if we are responsible
                     if (getPeerBean().getReplicationStorage() != null) {
-                        getPeerBean().getReplicationStorage().checkResponsibility(entry.getKey().getLocationKey());
+                        getPeerBean().getReplicationStorage().updateAndNotifyResponsibilities(entry.getKey().getLocationKey());
                     }
                 }
             }
@@ -572,15 +562,6 @@ public class StorageRPC extends ReplyHandler {
             final Map<Number160, Data> toStore = message.getDataMap();
             dataSize = toStore.size();
 
-            // here we set the map with the close peers. If we get data by a
-            // sender
-            // and the sender is closer than us, we assume that the sender has
-            // the
-            // data and we don't need to transfer data to the closest (sender)
-            // peer.
-            if (getPeerBean().getReplicationStorage() != null)
-                getPeerBean().getReplicationStorage().updatePeerMapIfCloser(locationKey, message.getSender().getID());
-
             for (Map.Entry<Number160, Data> entry : toStore.entrySet()) {
                 if (doPut(putIfAbsent, protectDomain, publicKey, locationKey, domainKey, entry.getKey(),
                         entry.getValue())) {
@@ -590,7 +571,7 @@ public class StorageRPC extends ReplyHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (result.size() > 0 && getPeerBean().getReplicationStorage() != null) {
-                getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
+                getPeerBean().getReplicationStorage().updateAndNotifyResponsibilities(locationKey);
             }
 
             if (result.size() == 0 && !putIfAbsent) {
@@ -641,10 +622,6 @@ public class StorageRPC extends ReplyHandler {
             // peer.
 
             for (Map.Entry<Number480, Data> entry : data480.entrySet()) {
-                if (getPeerBean().getReplicationStorage() != null) {
-                    getPeerBean().getReplicationStorage().updatePeerMapIfCloser(entry.getKey().getLocationKey(),
-                            message.getSender().getID());
-                }
                 Number160 contentKey = doAdd(protectDomain, entry.getKey().getLocationKey(), entry.getKey()
                         .getDomainKey(), entry.getKey().getContentKey(), entry.getValue(), publicKey, list,
                         getPeerBean());
@@ -655,7 +632,7 @@ public class StorageRPC extends ReplyHandler {
                 // something
                 // (notify) if we are responsible
                 if (result.size() > 0 && getPeerBean().getReplicationStorage() != null) {
-                    getPeerBean().getReplicationStorage().checkResponsibility(entry.getKey().getLocationKey());
+                    getPeerBean().getReplicationStorage().updateAndNotifyResponsibilities(entry.getKey().getLocationKey());
                 }
 
             }
@@ -666,15 +643,6 @@ public class StorageRPC extends ReplyHandler {
             final Map<Number160, Data> data = message.getDataMap();
             final PublicKey publicKey = message.getPublicKey();
             final boolean list = isList(message);
-            // here we set the map with the close peers. If we get data by a
-            // sender
-            // and the sender is closer than us, we assume that the sender has
-            // the
-            // data and we don't need to transfer data to the closest (sender)
-            // peer.
-            if (getPeerBean().getReplicationStorage() != null) {
-                getPeerBean().getReplicationStorage().updatePeerMapIfCloser(locationKey, message.getSender().getID());
-            }
             Collection<Number160> result = new HashSet<Number160>();
             for (Map.Entry<Number160, Data> entry : data.entrySet()) {
                 Number160 contentKey = doAdd(protectDomain, locationKey, domainKey, entry.getKey(), entry.getValue(),
@@ -686,7 +654,7 @@ public class StorageRPC extends ReplyHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (result.size() > 0 && getPeerBean().getReplicationStorage() != null) {
-                getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
+                getPeerBean().getReplicationStorage().updateAndNotifyResponsibilities(locationKey);
             }
             responseMessage.setKeys(result);
         }
@@ -840,7 +808,7 @@ public class StorageRPC extends ReplyHandler {
             logger.debug("stored " + result.size());
         }
         if (result.size() > 0 && getPeerBean().getReplicationStorage() != null)
-            getPeerBean().getReplicationStorage().checkResponsibility(locationKey);
+            getPeerBean().getReplicationStorage().updateAndNotifyResponsibilities(locationKey);
         responseMessage.setKeys(result);
         if (result.size() == 0) {
             responseMessage.setType(Type.NOT_FOUND);

@@ -865,12 +865,12 @@ public class TestStorage {
     }
 
     /**
-     * Test the responsability and the notifications.
+     * Test the responsibility and the notifications.
      * 
      * @throws Exception .
      */
     @Test
-    public void testResponsibility2() throws Exception {
+    public void testResponsibility() throws Exception {
         // Random rnd=new Random(42L);
         Peer master = null;
         Peer slave = null;
@@ -924,9 +924,15 @@ public class TestStorage {
         }
     }
 
+    /**
+     * Test the responsibility and the notifications.
+     * 
+     * @throws Exception .
+     */
     @Test
-    public void testResponsibility3() throws Exception {
-        Random rnd = new Random(42L);
+    public void testResponsibility2() throws Exception {
+        final Random rnd = new Random(42L);
+        final int port = 8000;
         Peer master = null;
         Peer slave1 = null;
         Peer slave2 = null;
@@ -936,16 +942,17 @@ public class TestStorage {
             contentMap.put(Number160.ZERO, new Data("string"));
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
-            master = new PeerMaker(new Number160(rnd)).setPorts(8000).makeAndListen();
+            master = new PeerMaker(new Number160(rnd)).setPorts(port).makeAndListen();
+            System.err.println("master is " + master.getPeerAddress());
             master.getPeerBean().getReplicationStorage().addResponsibilityListener(new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(Number160 locationKey, PeerAddress other) {
+                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
                 }
 
                 @Override
-                public void meResponsible(Number160 locationKey) {
+                public void meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey);
                     test2.incrementAndGet();
                 }
@@ -956,21 +963,33 @@ public class TestStorage {
             master.getStoreRPC()
                     .put(master.getPeerAddress(), loc, domainKey, contentMap, false, false, false, cc, false, null)
                     .awaitUninterruptibly();
-            slave1 = new PeerMaker(new Number160(rnd)).setPorts(8001).makeAndListen();
-            slave2 = new PeerMaker(new Number160(rnd)).setPorts(8002).makeAndListen();
+            slave1 = new PeerMaker(new Number160(rnd)).setPorts(port + 1).makeAndListen();
+            slave2 = new PeerMaker(new Number160(rnd)).setPorts(port + 2).makeAndListen();
+            System.err.println("slave1 is " + slave1.getPeerAddress());
+            System.err.println("slave2 is " + slave2.getPeerAddress());
             FutureBootstrap futureBootstrap = slave1.bootstrap().setPeerAddress(master.getPeerAddress()).start();
             futureBootstrap.awaitUninterruptibly();
             slave2.bootstrap().setPeerAddress(master.getPeerAddress()).start().awaitUninterruptibly();
-            master.getPeerBean().getPeerMap().peerOffline(slave2.getPeerAddress(), true);
+            System.err.println("both peers online");
+            PeerAddress slaveAddress1 = slave1.getPeerAddress();
+            slave1.shutdown();
+            master.getPeerBean().getPeerMap().peerOffline(slaveAddress1, true);
+
+            Assert.assertEquals(1, test1.get());
+            Assert.assertEquals(1, test2.get());
+
+            PeerAddress slaveAddress2 = slave2.getPeerAddress();
             slave2.shutdown();
+            master.getPeerBean().getPeerMap().peerOffline(slaveAddress2, true);
+
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
+
             master.getConnectionBean().getConnectionReservation().release(cc);
-        } catch (Throwable e) {
-            e.printStackTrace();
         } finally {
-            master.shutdown();
-            slave1.shutdown();
+            if (master != null) {
+                master.shutdown();
+            }
         }
 
     }

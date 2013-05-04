@@ -273,9 +273,9 @@ public class PeerMap {
      * Adds a neighbor to the neighbor list. If the bag is full, the id zero or
      * the same as our id, the neighbor is not added. This method is tread-safe
      * 
-     * @param node
+     * @param remotePeer
      *            The node that should be added
-     * @param firstHand
+     * @param referrer
      *            If we had direct contact and we know for sure that this node
      *            is online, we set firsthand to true. Information from 3rd
      *            party peers are always second hand and treated as such
@@ -459,12 +459,12 @@ public class PeerMap {
      * reported to the oversizebag. Furthermore, it notifies listeners about an
      * insert.
      * 
-     * @param set
+     * @param map
      *            The set to add the peer
      * @param remotePeer
      *            The remote peer to add
      * @param classMember
-     *            The class memeber, which is used to report oversize.
+     *            The class member, which is used to report oversize.
      * @return True if the peer could be added. If the peer is already in, it
      *         returns false
      */
@@ -582,9 +582,9 @@ public class PeerMap {
      * tread-safe. You can use the returned set as its a copy of the actual
      * PeerMap and changes in the return set do not affect PeerMap.
      * 
-     * @param key
+     * @param id
      *            The key that should be close to the keys in the map
-     * @param number
+     * @param atLeast
      *            The number we want to find at least
      * @return A navigable set with close peers first in this set.
      */

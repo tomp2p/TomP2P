@@ -864,6 +864,11 @@ public class TestStorage {
         }
     }
 
+    /**
+     * Test the responsability and the notifications.
+     * 
+     * @throws Exception .
+     */
     @Test
     public void testResponsibility2() throws Exception {
         // Random rnd=new Random(42L);
@@ -875,16 +880,18 @@ public class TestStorage {
             master.getPeerBean().setStorage(s1);
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
-            Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean().getPeerMap());
+            final int replicatioFactor = 5;
+            Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean().getPeerMap(),
+                    replicatioFactor);
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(Number160 locationKey, PeerAddress other) {
+                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
                 }
 
                 @Override
-                public void meResponsible(Number160 locationKey) {
+                public void meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey + " / ");
                     test2.incrementAndGet();
                 }
@@ -901,16 +908,19 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             Utils.addReleaseListenerAll(fr, master.getConnectionBean().getConnectionReservation(), cc);
             // s1.put(location, Number160.ZERO, null, dataMap, false, false);
-            slave = new PeerMaker(new Number160("0xfe")).setPorts(7701).makeAndListen();
+            final int slavePort = 7701;
+            slave = new PeerMaker(new Number160("0xfe")).setPorts(slavePort).makeAndListen();
             master.getPeerBean().getPeerMap().peerFound(slave.getPeerAddress(), null);
             master.getPeerBean().getPeerMap().peerOffline(slave.getPeerAddress(), true);
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
-        } catch (Throwable t) {
-            t.printStackTrace();
         } finally {
-            master.shutdown();
-            slave.shutdown();
+            if (master != null) {
+                master.shutdown();
+            }
+            if (slave != null) {
+                slave.shutdown();
+            }
         }
     }
 

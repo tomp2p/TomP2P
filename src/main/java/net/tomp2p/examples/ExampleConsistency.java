@@ -99,8 +99,7 @@ public final class ExampleConsistency {
             set.add(peer.getPeerAddress());
         }
         System.out.println("closest peer " + set.first());
-        System.out.println("closest peer " + set.first());
-
+        
         final int peerStore1 = 22;
         peers[peerStore1].put(key1).setRequestP2PConfiguration(REQUEST_3).setData(new Data("Test 1")).start()
                 .awaitUninterruptibly();

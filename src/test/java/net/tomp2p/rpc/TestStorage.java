@@ -807,11 +807,11 @@ public class TestStorage {
 
     @Test
     public void testConcurrentStoreAddGet() throws Exception {
-        // for(int i=0;i<1000;i++)
-        // {
+         for(int i=0;i<1000;i++)
+         {
         testConcurrentStoreAddGet(new StorageMemory(), new StorageMemory());
         testConcurrentStoreAddGet(new StorageDisk(DIR1), new StorageDisk(DIR2));
-        // }
+         }
     }
 
     private void testConcurrentStoreAddGet(StorageGeneric storeSender, StorageGeneric storeRecv) throws Exception {
@@ -836,7 +836,7 @@ public class TestStorage {
                 System.err.println("round " + i);
                 // final ChannelCreator
                 // cc1=sender.getConnectionBean().getReservation().reserve(50);
-                for (int j = 0; j < 50; j++) {
+                for (int j = 0; j < 10; j++) {
                     FutureChannelCreator fcc1 = sender.getConnectionBean().getConnectionReservation().reserve(1);
                     fcc1.awaitUninterruptibly();
                     ChannelCreator cc1 = fcc1.getChannelCreator();

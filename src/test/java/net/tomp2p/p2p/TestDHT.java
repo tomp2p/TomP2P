@@ -559,7 +559,7 @@ public class TestDHT {
                     .setContentKey(new Number160(5)).setRoutingConfiguration(rc).setRequestP2PConfiguration(pc).start();
             fdht.awaitUninterruptibly();
             Assert.assertEquals(true, fdht.isSuccess());
-            Assert.assertEquals(1, fdht.getRawData().size());
+            Assert.assertEquals(3, fdht.getRawData().size());
             Assert.assertEquals(false, fdht.isMinReached());
         } finally {
             master.shutdown();

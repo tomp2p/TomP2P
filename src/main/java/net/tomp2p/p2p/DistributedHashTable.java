@@ -371,9 +371,9 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureDHT futureDHT) {
                                                 if (digest) {
-                                                    futureDHT.setReceivedDigest(rawDigest);
+                                                    futureDHT.setReceivedDigest(locationKey, domainKey,rawDigest);
                                                 } else {
-                                                    futureDHT.setReceivedData(rawData);
+                                                    futureDHT.setReceivedData(locationKey, domainKey,rawData);
                                                 }
                                             }
 
@@ -465,9 +465,9 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureDHT futureDHT) {
                                                 if (returnResults)
-                                                    futureDHT.setReceivedData(rawDataResult);
+                                                    futureDHT.setReceivedData(locationKey, domainKey, rawDataResult);
                                                 else
-                                                    futureDHT.setRemovedKeys(rawDataNoResult);
+                                                    futureDHT.setRemovedKeys(locationKey, domainKey, rawDataNoResult);
                                             }
 
                                             @Override

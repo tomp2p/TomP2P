@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.utils.Timings;
 
@@ -201,32 +204,61 @@ public class TestKadRouting {
         Assert.assertEquals(100, kadRouting.size());
     }
 
+    /**
+     * Repeating test of testRandomAddRemove() to test for concurrency issues.
+     * 
+     * @throws InterruptedException .
+     */
+    @Test
+    public void testMultiRandomAddRemove() throws InterruptedException {
+        final int rounds = 100;
+        for (int i = 0; i < rounds; i++) {
+            testRandomAddRemove();
+        }
+    }
+
+    /**
+     * Tests the peermap and concurrent adds and puts. There will be two times 5000 inserts and 4989 removes. That means
+     * the resulting peer count needs to be 11.
+     * 
+     * @throws InterruptedException .
+     */
     @Test
     public void testRandomAddRemove() throws InterruptedException {
         final PeerMap kadRouting = new PeerMap(new Number160("0x1"), 2, 60 * 1000, 3, new int[] {}, 100,
                 new DefaultMapAcceptHandler(false));
-        new Thread(new Runnable() {
+        final CountDownLatch latch = new CountDownLatch(2);
+        final AtomicInteger add = new AtomicInteger();
+        final AtomicInteger del = new AtomicInteger();
+        final int rounds = 5000;
+        final int diff = 10;
+
+        Runnable runnable = new Runnable() {
             @Override
             public void run() {
-                for (int i = 1; i <= 5000; i++) {
-                    kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
-                    if (i - 10 > 1)
-                        kadRouting.peerOffline(new PeerAddress(new Number160(i - 10)), true);
+                for (int i = 1; i <= rounds; i++) {
+                    boolean retVal = kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
+                    if (retVal) {
+                        add.incrementAndGet();
+                    }
+                    if (i - diff > 1) {
+                        retVal = kadRouting.peerOffline(new PeerAddress(new Number160(i - diff)), true);
+                    }
+                    if (retVal) {
+                        del.incrementAndGet();
+                    }
                 }
+                latch.countDown();
             }
-        }).start();
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i = 1; i <= 5000; i++) {
-                    kadRouting.peerFound(new PeerAddress(new Number160(i + 1)), null);
-                    if (i - 10 > 1)
-                        kadRouting.peerOffline(new PeerAddress(new Number160(i - 10)), true);
-                }
-            }
-        }).start();
-        Timings.sleep(2000);
-        Assert.assertEquals(11, kadRouting.size());
+        };
+
+        new Thread(runnable).start();
+        new Thread(runnable).start();
+        final int wait = 10000;
+        boolean finished = latch.await(wait, TimeUnit.MILLISECONDS);
+        Assert.assertEquals(true, finished);
+        System.err.println("inserted: " + add.get() + ", removed: " + del.get());
+        Assert.assertEquals(diff + 1, kadRouting.size());
     }
 
     @Test

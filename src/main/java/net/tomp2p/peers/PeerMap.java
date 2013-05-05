@@ -39,9 +39,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This routing implementation uses is based on Kademlia. However, many changes
- * have been applied to make it faster and more flexible. This class is
- * partially thread-safe.
+ * This routing implementation uses is based on Kademlia. However, many changes have been applied to make it faster and
+ * more flexible. This class is partially thread-safe.
  * 
  * @author Thomas Bocek
  */
@@ -58,7 +57,7 @@ public class PeerMap {
     final private Number160 self;
 
     // go for variable bag size. Much more performance for small networks
-    final private List<Map<Number160, PeerAddress>> peerMap = new ArrayList<Map<Number160, PeerAddress>>();
+    final private List<Map<Number160, PeerAddress>> peerMap;
 
     // In this bag, peers are temporarily stored that have been removed in order
     // to not reappear again.
@@ -121,10 +120,9 @@ public class PeerMap {
     }
 
     /**
-     * Creates the bag for the peers. This peer knows a lot about close peers
-     * and the further away the peers are, the less known they are. Distance is
-     * measured with XOR of the peer ID. The distance of peer with ID 0x12 and
-     * peer with Id 0x28 is 0x3a.
+     * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
+     * less known they are. Distance is measured with XOR of the peer ID. The distance of peer with ID 0x12 and peer
+     * with Id 0x28 is 0x3a.
      * 
      * @param self
      *            The peer ID of this peer
@@ -149,8 +147,8 @@ public class PeerMap {
         this.maintenanceTimeoutsSeconds = waitingTimeBetweenNodeMaintenenceSeconds;
         // The size of the cache of removed peers
         this.peerOfflineLogs = new CacheMap<PeerAddress, Log>(cachSize, false);
-        this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
         this.mapHandler = mapHandler;
+        List<Map<Number160, PeerAddress>> tmp = new ArrayList<Map<Number160, PeerAddress>>();
         for (int i = 0; i < Number160.BITS; i++) {
             // I made some experiments here and concurrent sets are not
             // necessary, as we divide similar to segments aNonBlockingHashSets
@@ -159,8 +157,10 @@ public class PeerMap {
             // smaller we see around 3-4 segments, growing with the number of
             // peers. bags closer to 0 will see more read than write, and bags
             // closer to 160 will see more writes than reads.
-            peerMap.add(Collections.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
+            tmp.add(Collections.<Number160, PeerAddress> synchronizedMap(new HashMap<Number160, PeerAddress>()));
         }
+        this.peerMap = Collections.unmodifiableList(tmp);
+        this.statistics = new Statistics(peerMap, self, maxPeers, bagSize);
     }
 
     public void addPeerMapChangeListener(PeerMapChangeListener peerMapChangeListener) {
@@ -191,8 +191,7 @@ public class PeerMap {
     }
 
     /**
-     * Notifies on insert. Since listeners are never changed, this is thread
-     * safe.
+     * Notifies on insert. Since listeners are never changed, this is thread safe.
      * 
      * @param peerAddress
      *            The address of the inserted peers
@@ -204,8 +203,7 @@ public class PeerMap {
     }
 
     /**
-     * Notifies on remove. Since listeners are never changed, this is thread
-     * safe.
+     * Notifies on remove. Since listeners are never changed, this is thread safe.
      * 
      * @param peerAddress
      *            The address of the removed peers
@@ -260,8 +258,7 @@ public class PeerMap {
     }
 
     /**
-     * Each node that has a bag has an ID itself to define what is close. This
-     * method returns this ID.
+     * Each node that has a bag has an ID itself to define what is close. This method returns this ID.
      * 
      * @return The id of this node
      */
@@ -270,15 +267,14 @@ public class PeerMap {
     }
 
     /**
-     * Adds a neighbor to the neighbor list. If the bag is full, the id zero or
-     * the same as our id, the neighbor is not added. This method is tread-safe
+     * Adds a neighbor to the neighbor list. If the bag is full, the id zero or the same as our id, the neighbor is not
+     * added. This method is tread-safe
      * 
      * @param remotePeer
      *            The node that should be added
      * @param referrer
-     *            If we had direct contact and we know for sure that this node
-     *            is online, we set firsthand to true. Information from 3rd
-     *            party peers are always second hand and treated as such
+     *            If we had direct contact and we know for sure that this node is online, we set firsthand to true.
+     *            Information from 3rd party peers are always second hand and treated as such
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
@@ -331,22 +327,22 @@ public class PeerMap {
     }
 
     /**
-     * Remove a peer from the list. In order to not reappear, the node is put
-     * for a certain time in a cache list to keep the node removed. This method
-     * is thread-safe.
+     * Remove a peer from the list. In order to not reappear, the node is put for a certain time in a cache list to keep
+     * the node removed. This method is thread-safe.
      * 
-     * @param node
+     * @param remotePeer
      *            The node that should be removed
-     * @return True if the neighbor was removed and added to a cache list. False
-     *         if peer has not been removed or is already in the peer removed
-     *         temporarly list.
+     * @param force A flag that removes a peer immediately.
+     * @return True if the neighbor was removed and added to a cache list. False if peer has not been removed or is
+     *         already in the peer removed temporarly list.
      */
-    public boolean peerOffline(final PeerAddress remotePeer, boolean force) {
+    public boolean peerOffline(final PeerAddress remotePeer, final boolean force) {
         if (logger.isDebugEnabled()) {
             logger.debug("peer " + remotePeer + " is offline");
         }
-        if (remotePeer.getID().isZero() || self().equals(remotePeer.getID()))
+        if (remotePeer.getID().isZero() || self().equals(remotePeer.getID())) {
             return false;
+        }
         notifyPeerFail(remotePeer, force);
         Log log;
         synchronized (peerOfflineLogs) {
@@ -368,14 +364,24 @@ public class PeerMap {
                     addToMaintenanceQueue(remotePeer);
                     return false;
                 }
-            } else
+            } else {
                 log.set(maxFail);
+            }
         }
         remove(remotePeer, Reason.NOT_REACHABLE);
         return true;
     }
 
-    private boolean remove(PeerAddress remotePeer, Reason reason) {
+    /**
+     * Removes the peer from the neighbor list if present in the list. Notifies listeners that a peer is offline.
+     * 
+     * @param remotePeer
+     *            The peer that has gone offline.
+     * @param reason
+     *            The reason for going offline
+     * @return True if the peer was in our map and was removed.
+     */
+    private boolean remove(final PeerAddress remotePeer, final Reason reason) {
         final int classMember = classMember(remotePeer.getID());
         final Map<Number160, PeerAddress> map = peerMap.get(classMember);
         final boolean retVal = map.remove(remotePeer.getID()) != null;
@@ -455,9 +461,8 @@ public class PeerMap {
     }
 
     /**
-     * Adds a peer to the set. If a peer reaches the bag size, the class is
-     * reported to the oversizebag. Furthermore, it notifies listeners about an
-     * insert.
+     * Adds a peer to the set. If a peer reaches the bag size, the class is reported to the oversizebag. Furthermore, it
+     * notifies listeners about an insert.
      * 
      * @param map
      *            The set to add the peer
@@ -465,8 +470,7 @@ public class PeerMap {
      *            The remote peer to add
      * @param classMember
      *            The class member, which is used to report oversize.
-     * @return True if the peer could be added. If the peer is already in, it
-     *         returns false
+     * @return True if the peer could be added. If the peer is already in, it returns false
      */
     private boolean insertOrUpdate(final Map<Number160, PeerAddress> map, final PeerAddress remotePeer,
             final int classMember) {
@@ -485,8 +489,7 @@ public class PeerMap {
     }
 
     /**
-     * This method returns peers that are over sized. The peers that have been
-     * seen latest stay.
+     * This method returns peers that are over sized. The peers that have been seen latest stay.
      * 
      * @return True if we could remove an oversized peer
      */
@@ -522,8 +525,8 @@ public class PeerMap {
     }
 
     /**
-     * Checks if this peer has been removed. A peer that has been removed will
-     * be stored in a cache list for a certain time. This method is tread-safe
+     * Checks if this peer has been removed. A peer that has been removed will be stored in a cache list for a certain
+     * time. This method is tread-safe
      * 
      * @param node
      *            The node to check
@@ -550,8 +553,8 @@ public class PeerMap {
     }
 
     /**
-     * Checks if a peer already existis in this map and if it does, it will
-     * update the entry becaues the peer address (e.g. port) may have changed.
+     * Checks if a peer already existis in this map and if it does, it will update the entry becaues the peer address
+     * (e.g. port) may have changed.
      * 
      * @param peerAddress
      *            The address of the peer that may have been changed.
@@ -560,9 +563,11 @@ public class PeerMap {
     public boolean updateExistingPeerAddress(PeerAddress peerAddress) {
         final int classMember = classMember(peerAddress.getID());
         Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
-        if (tmp.containsKey(peerAddress.getID())) {
-            tmp.put(peerAddress.getID(), peerAddress);
-            return true;
+        synchronized (tmp) {
+            if (tmp.containsKey(peerAddress.getID())) {
+                tmp.put(peerAddress.getID(), peerAddress);
+                return true;
+            }
         }
         return false;
     }
@@ -578,9 +583,8 @@ public class PeerMap {
     }
 
     /**
-     * Returns close peer from the set to a given key. This method is
-     * tread-safe. You can use the returned set as its a copy of the actual
-     * PeerMap and changes in the return set do not affect PeerMap.
+     * Returns close peer from the set to a given key. This method is tread-safe. You can use the returned set as its a
+     * copy of the actual PeerMap and changes in the return set do not affect PeerMap.
      * 
      * @param id
      *            The key that should be close to the keys in the map
@@ -627,8 +631,8 @@ public class PeerMap {
     }
 
     /**
-     * Returns -1 if the first remote node is closer to the key, if the second
-     * is closer, then 1 is returned. If both are equal, 0 is returned
+     * Returns -1 if the first remote node is closer to the key, if the second is closer, then 1 is returned. If both
+     * are equal, 0 is returned
      * 
      * @param key
      *            The key to search for
@@ -636,16 +640,15 @@ public class PeerMap {
      *            The remote node on the routing path to node close to key
      * @param nodeAddress2
      *            An other remote node on the routing path to node close to key
-     * @return -1 if nodeAddress1 is closer to the key than nodeAddress2,
-     *         otherwise 1. 0 is returned if both are equal.
+     * @return -1 if nodeAddress1 is closer to the key than nodeAddress2, otherwise 1. 0 is returned if both are equal.
      */
     public int isCloser(Number160 id, PeerAddress rn, PeerAddress rn2) {
         return isKadCloser(id, rn, rn2);
     }
 
     /**
-     * Returns -1 if the first key is closer to the key, if the second is
-     * closer, then 1 is returned. If both are equal, 0 is returned
+     * Returns -1 if the first key is closer to the key, if the second is closer, then 1 is returned. If both are equal,
+     * 0 is returned
      * 
      * @param key
      *            The key to search for
@@ -653,16 +656,15 @@ public class PeerMap {
      *            The first key
      * @param key2
      *            The second key
-     * @return -1 if key1 is closer to key, otherwise 1. 0 is returned if both
-     *         are equal.
+     * @return -1 if key1 is closer to key, otherwise 1. 0 is returned if both are equal.
      */
     public int isCloser(Number160 id, Number160 rn, Number160 rn2) {
         return distance(id, rn).compareTo(distance(id, rn2));
     }
 
     /**
-     * @see PeerMap.routing.Routing#isCloser(java.math.BigInteger,
-     *      PeerAddress.routing.NodeAddress, PeerAddress.routing.NodeAddress)
+     * @see PeerMap.routing.Routing#isCloser(java.math.BigInteger, PeerAddress.routing.NodeAddress,
+     *      PeerAddress.routing.NodeAddress)
      * @param key
      *            The key to search for
      * @param rn2
@@ -672,9 +674,8 @@ public class PeerMap {
      * @return True if rn2 is closer or has the same distance to key as rn
      */
     /**
-     * Returns -1 if the first remote node is closer to the key, if the
-     * secondBITS is closer, then 1 is returned. If both are equal, 0 is
-     * returned
+     * Returns -1 if the first remote node is closer to the key, if the secondBITS is closer, then 1 is returned. If
+     * both are equal, 0 is returned
      * 
      * @param id
      *            The id as a distance reference
@@ -700,8 +701,8 @@ public class PeerMap {
     }
 
     /**
-     * Returns the difference in terms of bit counts of two ids, minus 1. So two
-     * IDs with one bit difference are in the class 0.
+     * Returns the difference in terms of bit counts of two ids, minus 1. So two IDs with one bit difference are in the
+     * class 0.
      * 
      * @param id1
      *            The first id
@@ -752,8 +753,7 @@ public class PeerMap {
     }
 
     /**
-     * Creates a comparator that orders to peers according to their distance to
-     * the specified id.
+     * Creates a comparator that orders to peers according to their distance to the specified id.
      * 
      * @param id
      *            The id that defines the metric
@@ -768,8 +768,7 @@ public class PeerMap {
     }
 
     /**
-     * Return all addresses from the neighbor list. The collection is partially
-     * sorted.
+     * Return all addresses from the neighbor list. The collection is partially sorted.
      * 
      * @return All neighbors
      */

@@ -145,13 +145,13 @@ public final class ExampleMapReduce {
         final int peerSubmit2 = 34;
         final int peerSubmit3 = 35;
         FutureTask ft1 = peers[peerSubmit1].submit(nr1, map)
-                .setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(TEXT_1))
+                .setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(TEXT_1))
                 .start();
         FutureTask ft2 = peers[peerSubmit2].submit(nr2, map)
-                .setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(TEXT_2))
+                .setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(TEXT_2))
                 .start();
         FutureTask ft3 = peers[peerSubmit3].submit(nr3, map)
-                .setRequestP2PConfiguration(new RequestP2PConfiguration(2, 0, 0)).setDataMap(createData(TEXT_3))
+                .setRequestP2PConfiguration(new RequestP2PConfiguration(1, 0, 0)).setDataMap(createData(TEXT_3))
                 .start();
         ft1.awaitUninterruptibly();
         ft2.awaitUninterruptibly();

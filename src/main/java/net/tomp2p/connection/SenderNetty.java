@@ -300,7 +300,6 @@ public class SenderNetty implements Sender {
                 }
                 if (isFireAndForget) {
                     futureResponse.setResponse(null);
-                    writeFuture.getChannel().close();
                 }
             }
         });

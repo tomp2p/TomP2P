@@ -44,19 +44,22 @@ public class TestRealPing {
 
     private static final String IP = "127.0.0.1";
     private static final int PORT = 5000;
+    private static final int WAIT = 1000000;
 
     /**
      * Test regular ping.
+     * 
+     * @throws InterruptedException .
      * 
      * @throws IOException .
      */
     @Ignore
     @Test
-    public void sendPingTCP() throws IOException {
+    public void sendPingTCP() throws IOException, InterruptedException {
         Peer sender = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).makeAndListen();
+            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).setEnableMaintenance(false).makeAndListen();
             HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean());
             final FutureChannelCreator fcc = sender.getConnectionBean().getConnectionReservation().reserve(1);
             fcc.awaitUninterruptibly();
@@ -65,6 +68,7 @@ public class TestRealPing {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             sender.getConnectionBean().getConnectionReservation().release(cc);
+            Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
                 sender.shutdown();
@@ -75,15 +79,17 @@ public class TestRealPing {
     /**
      * Test discover ping.
      * 
+     * @throws InterruptedException .
+     * 
      * @throws IOException .
      */
     @Ignore
     @Test
-    public void sendPingTCPDiscover() throws IOException {
+    public void sendPingTCPDiscover() throws IOException, InterruptedException {
         Peer sender = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).makeAndListen();
+            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).setEnableMaintenance(false).makeAndListen();
             HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean());
             final FutureChannelCreator fcc = sender.getConnectionBean().getConnectionReservation().reserve(1);
             fcc.awaitUninterruptibly();
@@ -92,6 +98,7 @@ public class TestRealPing {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             sender.getConnectionBean().getConnectionReservation().release(cc);
+            Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
                 sender.shutdown();
@@ -102,15 +109,17 @@ public class TestRealPing {
     /**
      * Test probe ping.
      * 
+     * @throws InterruptedException .
+     * 
      * @throws IOException .
      */
     @Ignore
     @Test
-    public void sendPingTCPProbe() throws IOException {
+    public void sendPingTCPProbe() throws IOException, InterruptedException {
         Peer sender = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).makeAndListen();
+            sender = new PeerMaker(new Number160("0x9876")).setPorts(PORT).setEnableMaintenance(false).makeAndListen();
             HandshakeRPC handshake = new HandshakeRPC(sender.getPeerBean(), sender.getConnectionBean());
             final FutureChannelCreator fcc = sender.getConnectionBean().getConnectionReservation().reserve(1);
             fcc.awaitUninterruptibly();
@@ -119,6 +128,7 @@ public class TestRealPing {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             sender.getConnectionBean().getConnectionReservation().release(cc);
+            Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
                 sender.shutdown();
@@ -129,14 +139,16 @@ public class TestRealPing {
     /**
      * The receiver.
      * 
+     * @throws InterruptedException .
+     * 
      * @throws IOException .
      */
     @Ignore
     @Test
-    public void receivePing() throws IOException {
+    public void receivePing() throws IOException, InterruptedException {
         Peer recv = null;
         try {
-            recv = new PeerMaker(new Number160("0x1234")).setPorts(PORT).makeAndListen();
+            recv = new PeerMaker(new Number160("0x1234")).setPorts(PORT).setEnableMaintenance(false).makeAndListen();
             /**
              * HandshakeRPC with custom debug output.
              * 
@@ -163,6 +175,7 @@ public class TestRealPing {
                 }
             }
             new MyHandshakeRPC(recv.getPeerBean(), recv.getConnectionBean());
+            Thread.sleep(WAIT);
         } finally {
             if (recv != null) {
                 recv.shutdown();

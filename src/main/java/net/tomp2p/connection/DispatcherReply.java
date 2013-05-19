@@ -235,6 +235,7 @@ public class DispatcherReply extends SimpleChannelHandler {
                     logger.debug("The reply handler was a fire-and-forget handler, we don't send any message back! "
                             + message);
                 }
+                close(ctx);
             } else {
                 response(ctx, e, responseMessage, message.isKeepAlive());
             }

@@ -29,6 +29,7 @@ import net.tomp2p.rpc.RequestHandlerUDP;
 
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.jboss.netty.channel.socket.DatagramChannel;
 import org.jboss.netty.util.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -299,7 +300,15 @@ public class SenderNetty implements Sender {
                     }
                 }
                 if (isFireAndForget) {
-                    futureResponse.setResponse(null);
+                    if (writeFuture.getChannel() instanceof DatagramChannel) {
+                        writeFuture.getChannel().close();
+                    }
+                    writeFuture.getChannel().getCloseFuture().addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(final ChannelFuture future) throws Exception {
+                            futureResponse.setResponse(null);
+                        }
+                    });
                 }
             }
         });

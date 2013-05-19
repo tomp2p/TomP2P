@@ -23,6 +23,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Command;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener.Reason;
 
 public class QuitRPC extends ReplyHandler {
     public QuitRPC(PeerBean peerBean, ConnectionBean connectionBean) {
@@ -62,6 +63,7 @@ public class QuitRPC extends ReplyHandler {
             throw new IllegalArgumentException("Message content is wrong");
         }
         getPeerBean().getPeerMap().peerOffline(message.getSender(), true);
+        getPeerBean().getTrackerStorage().peerOffline(message.getSender(), Reason.REMOVED_FROM_MAP);
         return message;
     }
 }

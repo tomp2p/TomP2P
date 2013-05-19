@@ -303,12 +303,7 @@ public class SenderNetty implements Sender {
                     if (writeFuture.getChannel() instanceof DatagramChannel) {
                         writeFuture.getChannel().close();
                     }
-                    writeFuture.getChannel().getCloseFuture().addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(final ChannelFuture future) throws Exception {
-                            futureResponse.setResponse(null);
-                        }
-                    });
+                    futureResponse.setResponse(null);
                 }
             }
         });

@@ -19,6 +19,7 @@ package net.tomp2p.p2p.builder;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -49,7 +50,12 @@ public class BroadcastBuilder {
         if (dataMap == null) {
             setDataMap(new HashMap<Number160, Data>());
         }
-        peer.getBroadcastRPC().getBroadcastHandler().receive(messageKey, dataMap, 0, isUDP);
+        Message message = new Message();
+        message.setKey(messageKey);
+        message.setDataMap(dataMap);
+        message.setInteger(0);
+        message.setUDP();
+        peer.getBroadcastRPC().getBroadcastHandler().receive(message);
     }
 
     public Map<Number160, Data> getDataMap() {

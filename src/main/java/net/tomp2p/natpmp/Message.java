@@ -354,7 +354,7 @@ public abstract class Message {
      */
     private void sendMessageInternal() throws NatPmpException {
         // Loop until all attempts have been made.
-        for (int attempts = 9; attempts > 0; attempts--) {
+        for (int attempts = 4; attempts > 0; attempts--) {
             // Send the packet.
             try {
                 byte[] payload = getRequestPayload();

@@ -53,6 +53,7 @@ import net.tomp2p.utils.Utils;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestDHT {
@@ -137,6 +138,7 @@ public class TestDHT {
         }
     }
 
+    @Ignore
     @Test
     public void testTooManyOpenFilesInSystem2() throws Exception {
         Peer master = null;

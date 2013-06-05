@@ -1,12 +1,12 @@
 /*
  * Copyright 2009 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -74,22 +74,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TomP2P implements besides the following distributed hash table (DHT)
- * operations:
+ * This is the main class to start DHT operations. This class makes use of the build pattern and for each DHT operation,
+ * a builder class is returned. The main operations can be initiated with {@link #put(Number160)},
+ * {@link #get(Number160)}, {@link #add(Number160)}, {@link #addTracker(Number160)}, {@link #getTracker(Number160)},
+ * {@link #remove(Number160)}, {@link #submit(Number160, Worker)}, {@link #send(Number160)}, {@link #sendDirect()},
+ * {@link #broadcast(Number160)}. Each of those operations return a builder that offers more options. One of the main
+ * difference to a "regular" DHT is that TomP2P can store a map (key-values) instead of just values. To distinguish 
+ * those, the keys are termed location key (for finding the right peer in the network), and content key (to store more 
+ * than one value on a peer). For the put builder e.g. the following options can be set: 
+ * 
  * <ul>
- * <li>value=get(locationKey)</li>
- * <li>put(locationKey,value)</li>
- * <li>remove(locationKey)</li>
+ * <li>{@link PutBuilder#setData(Number160, net.tomp2p.storage.Data)} - puts a content key with a value</li>
+ * <li>{@link PutBuilder#setDataMap(Map) - puts multiple content key / values at once</li>
+ * <li>{@link PutBuilder#setPutIfAbsent() - only puts data if its not already on the peers</li>
+ * <li>...</li>
  * </ul>
- * also the following operations:
- * <ul>
- * <li>value=get(locationKey,contentKey)</li>
- * <li>put(locationKey,contentKey,value)</li>
- * <li>remove(locationKey,contentKey)</li>
- * </ul>
- * The advantage of TomP2P is that multiple values can be stored in one
- * location. Furthermore, TomP2P also provides to store keys in different
- * domains to avoid key collisions.
+ * 
+ * Furthermore, TomP2P also provides to store keys in different domains to avoid key collisions 
+ * ({@link PutBuilder#setDomainKey(Number160)).
  * 
  * @author Thomas Bocek
  */
@@ -185,10 +187,9 @@ public class Peer {
     }
 
     /**
-     * Adds a listener to peer events. The events being triggered are: startup,
-     * shutdown, change of peer address. The change of the peer address is due
-     * to the discovery process. Since this process runs in an other thread,
-     * this method is thread safe.
+     * Adds a listener to peer events. The events being triggered are: startup, shutdown, change of peer address. The
+     * change of the peer address is due to the discovery process. Since this process runs in an other thread, this
+     * method is thread safe.
      * 
      * @param listener
      *            The listener
@@ -534,21 +535,18 @@ public class Peer {
     }
 
     /**
-     * Opens a TCP connection and keeps it open. The user can provide the idle
-     * timeout, which means that the connection gets closed after that time of
-     * inactivity. If the other peer goes offline or closes the connection (due
-     * to inactivity), further requests with this connections reopens the
-     * connection. This methods blocks until a connection can be reserver.
+     * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
+     * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
+     * inactivity), further requests with this connections reopens the connection. This methods blocks until a
+     * connection can be reserver.
      * 
      * @param destination
      *            The end-point to connect to
      * @param idleSeconds
-     *            time in seconds after a connection gets closed if idle, -1 if
-     *            it should remain always open until the user closes the
-     *            connection manually.
-     * @return A class that needs to be passed to those methods that should use
-     *         the already open connection. If the connection could not be
-     *         reserved, maybe due to a shutdown, null is returned.
+     *            time in seconds after a connection gets closed if idle, -1 if it should remain always open until the
+     *            user closes the connection manually.
+     * @return A class that needs to be passed to those methods that should use the already open connection. If the
+     *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
     public PeerConnection createPeerConnection(PeerAddress destination, int idleTCPMillis) {
         final FutureChannelCreator fcc = getConnectionBean().getConnectionReservation().reserve(1, true,
@@ -687,9 +685,8 @@ public class Peer {
     // ************************
 
     /**
-     * Reserves a connection for a routing and DHT operation. This call does not
-     * blocks. At least one of the arguments routingConfiguration or
-     * requestP2PConfiguration must not be null.
+     * Reserves a connection for a routing and DHT operation. This call does not blocks. At least one of the arguments
+     * routingConfiguration or requestP2PConfiguration must not be null.
      * 
      * @param routingConfiguration
      *            The information about the routing
@@ -697,11 +694,9 @@ public class Peer {
      *            The information about the DHT operation
      * @param name
      *            The name of the ChannelCreator, used for easier debugging
-     * @return A ChannelCreator that can create channel according to
-     *         routingConfiguration and requestP2PConfiguration
+     * @return A ChannelCreator that can create channel according to routingConfiguration and requestP2PConfiguration
      * @throws IllegalArgumentException
-     *             If both arguments routingConfiguration and
-     *             requestP2PConfiguration are null
+     *             If both arguments routingConfiguration and requestP2PConfiguration are null
      */
     public FutureChannelCreator reserve(final RoutingConfiguration routingConfiguration,
             RequestP2PConfiguration requestP2PConfiguration, String name) {
@@ -720,8 +715,8 @@ public class Peer {
     }
 
     /**
-     * Release a ChannelCreator. The permits will be returned so that they can
-     * be used again. This is a wrapper for ConnectionReservation.
+     * Release a ChannelCreator. The permits will be returned so that they can be used again. This is a wrapper for
+     * ConnectionReservation.
      * 
      * @param channelCreator
      *            The ChannelCreator that is not used anymore
@@ -731,14 +726,12 @@ public class Peer {
     }
 
     /**
-     * Sets a timeout for this future. If the timeout passes, the future fails
-     * with the reason provided
+     * Sets a timeout for this future. If the timeout passes, the future fails with the reason provided
      * 
      * @param baseFuture
      *            The future to set the timeout
      * @param millis
-     *            The time in milliseconds until this future is considered a
-     *            failure.
+     *            The time in milliseconds until this future is considered a failure.
      * @param reason
      *            The reason why this future failed
      */
@@ -752,5 +745,4 @@ public class Peer {
     public boolean isShutdown() {
         return shutdown;
     }
-
 }

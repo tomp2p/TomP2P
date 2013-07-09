@@ -212,8 +212,8 @@ public class HandshakeRPC extends ReplyHandler {
         else if (message.getType() == Type.REQUEST_1) {
             // test if this is a broadcast message to ourselfs. If it is, do not
             // reply.
-            if (message.getSender().getID().equals(getPeerBean().getServerPeerAddress().getID())
-                    && message.getRecipient().getID().equals(Number160.ZERO)) {
+            if (message.getSender().getPeerId().equals(getPeerBean().getServerPeerAddress().getPeerId())
+                    && message.getRecipient().getPeerId().equals(Number160.ZERO)) {
                 return message;
             }
             if (enable) {

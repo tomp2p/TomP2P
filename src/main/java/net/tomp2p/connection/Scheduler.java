@@ -380,7 +380,7 @@ public class Scheduler {
     }
 
     public void keepTrack(PeerAddress remotePeer, Number160 taskId, TaskResultListener taskResultListener) {
-        Number320 taskKey = new Number320(taskId, remotePeer.getID());
+        Number320 taskKey = new Number320(taskId, remotePeer.getPeerId());
         tracking.put(taskKey, new TrackingItem(remotePeer, taskResultListener));
 
     }

@@ -24,6 +24,7 @@ public class TestFindRouter {
         MAP.put("win7-de.txt", "/10.0.2.2");
         MAP.put("win7-en.txt", "/130.60.156.1");
         MAP.put("winxp-en.txt", "/10.0.2.2");
+        MAP.put("win8-de.txt", "/192.168.1.1");
     }
 
     @Test

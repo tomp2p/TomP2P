@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -47,7 +47,7 @@ public class TestRealNetwork {
      * 
      * @throws IOException
      *             PeerMaker may throw and IOException
-     * @throws InterruptedException
+     * @throws InterruptedException .
      */
     @Test
     @Ignore
@@ -57,16 +57,17 @@ public class TestRealNetwork {
     }
 
     /**
-     * Tests multiple connect and disconnects
+     * Tests multiple connect and disconnects.
      * 
-     * @throws ClassNotFoundException
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws ClassNotFoundException .
+     * @throws IOException . 
+     * @throws InterruptedException .
      */
     @Test
     @Ignore
     public void startClient2() throws ClassNotFoundException, IOException, InterruptedException {
-        for (int i = 0; i < 1000; i++) {
+        final int nrClients = 1000;
+        for (int i = 0; i < nrClients; i++) {
             startClient();
         }
     }
@@ -78,7 +79,7 @@ public class TestRealNetwork {
      *             PeerMaker may throw and IOException
      * @throws ClassNotFoundException
      *             If the data object contained a class we did not expect
-     * @throws InterruptedException
+     * @throws InterruptedException .
      */
     @Test
     @Ignore

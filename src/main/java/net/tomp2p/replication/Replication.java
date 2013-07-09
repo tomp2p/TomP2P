@@ -151,13 +151,13 @@ public class Replication implements PeerMapChangeListener {
             return;
         }
         PeerAddress closest = closest(locationKey);
-        if (closest.getID().equals(selfAddress.getID())) {
-            if (replicationStorage.updateResponsibilities(locationKey, closest.getID())) {
+        if (closest.getPeerId().equals(selfAddress.getPeerId())) {
+            if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
                 // I am responsible for this content
                 notifyMeResponsible(locationKey);
             }
         } else {
-            if (replicationStorage.updateResponsibilities(locationKey, closest.getID())) {
+            if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
                 // notify that someone else is now responsible for the
                 // content with key responsibleLocations
                 notifyOtherResponsible(locationKey, closest);
@@ -175,14 +175,14 @@ public class Replication implements PeerMapChangeListener {
         }
         // check if we should change responibility.
         Collection<Number160> myResponsibleLocations = replicationStorage.findContentForResponsiblePeerID(selfAddress
-                .getID());
+                .getPeerId());
         if (LOG.isDebugEnabled()) {
             LOG.debug("I (" + selfAddress + ") am currently responsibel for " + myResponsibleLocations);
         }
         for (Number160 myResponsibleLocation : myResponsibleLocations) {
             PeerAddress closest = closest(myResponsibleLocation);
-            if (!closest.getID().equals(selfAddress.getID())) {
-                if (replicationStorage.updateResponsibilities(myResponsibleLocation, closest.getID())) {
+            if (!closest.getPeerId().equals(selfAddress.getPeerId())) {
+                if (replicationStorage.updateResponsibilities(myResponsibleLocation, closest.getPeerId())) {
                     // notify that someone else is now responsible for the
                     // content with key responsibleLocations
                     notifyOtherResponsible(myResponsibleLocation, closest);
@@ -190,7 +190,7 @@ public class Replication implements PeerMapChangeListener {
             } else if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
                 // we are still responsible, but a new peer joined and if it is within the x close peers, we need to
                 // replicate
-                if (replicationStorage.updateResponsibilities(myResponsibleLocation, peerAddress.getID())) {
+                if (replicationStorage.updateResponsibilities(myResponsibleLocation, peerAddress.getPeerId())) {
                     notifyOtherResponsible(myResponsibleLocation, peerAddress);
                 }
             }
@@ -204,14 +204,14 @@ public class Replication implements PeerMapChangeListener {
         }
         // check if we should change responsibility.
         Collection<Number160> otherResponsibleLocations = replicationStorage
-                .findContentForResponsiblePeerID(peerAddress.getID());
+                .findContentForResponsiblePeerID(peerAddress.getPeerId());
         Collection<Number160> myResponsibleLocations = replicationStorage.findContentForResponsiblePeerID(selfAddress
-                .getID());
+                .getPeerId());
         // check if we are now responsible for content where the other peer was responsible
         for (Number160 otherResponsibleLocation : otherResponsibleLocations) {
             PeerAddress closest = closest(otherResponsibleLocation);
-            if (closest.getID().equals(selfAddress.getID())) {
-                if (replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getID())) {
+            if (closest.getPeerId().equals(selfAddress.getPeerId())) {
+                if (replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getPeerId())) {
                     // notify that someone I'm now responsible for the
                     // content
                     // with key responsibleLocations
@@ -220,7 +220,7 @@ public class Replication implements PeerMapChangeListener {
                     myResponsibleLocations.remove(otherResponsibleLocation);
                 }
             } else {
-                replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getID());
+                replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getPeerId());
             }
         }
         // now check for our responsibilities. If a peer is gone and it was in the replication range, we need make sure

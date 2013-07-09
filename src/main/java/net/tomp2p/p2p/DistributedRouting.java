@@ -63,7 +63,7 @@ public class DistributedRouting {
     public DistributedRouting(PeerBean peerBean, NeighborRPC neighbors) {
         this.neighbors = neighbors;
         this.peerBean = peerBean;
-        rnd = new Random(peerBean.getServerPeerAddress().getID().hashCode());
+        rnd = new Random(peerBean.getServerPeerAddress().getPeerId().hashCode());
     }
 
     /**
@@ -89,7 +89,7 @@ public class DistributedRouting {
         }
         final FutureWrapper<FutureRouting> futureWrapper = new FutureWrapper<FutureRouting>();
         // first we find close peers to us
-        FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getID(), null, null, 0,
+        FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getPeerId(), null, null, 0,
                 maxNoNewInfo, maxFailures, maxSuccess, parallel, Type.REQUEST_1, forceTCP, cc, true,
                 isForceRoutingOnlyToSelf);
         // to not become a Fachidiot (expert idiot), we need to know other peers
@@ -302,7 +302,7 @@ public class DistributedRouting {
                     active++;
                     // if we search for a random peer, then the peer should
                     // return the address farest away.
-                    final Number160 locationKey2 = randomSearch ? next.getID().xor(Number160.MAX_VALUE) : locationKey;
+                    final Number160 locationKey2 = randomSearch ? next.getPeerId().xor(Number160.MAX_VALUE) : locationKey;
                     futureResponses[i] = neighbors.closeNeighbors(next, locationKey2, domainKey, contentKeys, type,
                             channelCreator, forceTCP);
                     if (logger.isDebugEnabled()) {
@@ -360,6 +360,8 @@ public class DistributedRouting {
                         logger.debug("Routing finished " + finished + "/" + stopCreatingNewFutures);
                     }
                 } else {
+                    //if it failed but the failed is the closest one, its good to try again, since the peer might just be busy
+                    
                     finished = nrFailures.incrementAndGet() > maxFailures;
                     stopCreatingNewFutures = finished;
                 }

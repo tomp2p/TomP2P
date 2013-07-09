@@ -575,8 +575,8 @@ public class Peer {
         boolean success;
 
         try {
-            success = connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().portUDP(),
-                    getPeerAddress().portTCP(), portUDP, portTCP);
+            success = connectionHandler.getNATUtils().mapUPNP(internalHost, getPeerAddress().tcpPort(),
+                    getPeerAddress().udpPort(), portUDP, portTCP);
         } catch (IOException e) {
             success = false;
         }
@@ -584,8 +584,8 @@ public class Peer {
         if (!success) {
             logger.warn("cannot find UPNP devices");
             try {
-                success = connectionHandler.getNATUtils().mapPMP(getPeerAddress().portUDP(),
-                        getPeerAddress().portTCP(), portUDP, portTCP);
+                success = connectionHandler.getNATUtils().mapPMP(getPeerAddress().tcpPort(),
+                        getPeerAddress().udpPort(), portUDP, portTCP);
                 if (!success) {
                     logger.warn("cannot find NAT-PMP devices");
                 }

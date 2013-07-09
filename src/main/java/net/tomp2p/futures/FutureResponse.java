@@ -24,28 +24,28 @@ import net.tomp2p.message.Message;
 import net.tomp2p.utils.Utils;
 
 /**
- * Each response has one request messages. The corresponding response message is
- * set only if the request has been successful. This is indicated with isFailed.
+ * Each response has one request messages. The corresponding response message is set only if the request has been
+ * successful. This is indicated with isFailed.
  * 
  * @author Thomas Bocek
  */
 public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     // the message that was requested
-    final private Message requestMessage;
+    private final Message requestMessage;
 
-    final private FutureSuccessEvaluator futureSuccessEvaluator;
+    private final FutureSuccessEvaluator futureSuccessEvaluator;
 
     // the reply to this request
     private Message responseMessage;
 
     // if set to raw, we expose the user directly to the Netty buffer, otherwise
     // we are converting byte[] arrays to objecs
-    final private boolean raw;
+    private final boolean raw;
 
     private int shared = 0;
 
     /**
-     * Create the future and set the request message
+     * Create the future and set the request message.
      * 
      * @param requestMessage
      *            The request message that will be send over the wire.
@@ -63,14 +63,17 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * Create the future and set the request message
+     * Create the future and set the request message.
      * 
      * @param requestMessage
      *            The request message that will be send over the wire.
      * @param futureSuccessEvaluator
      *            Evaluates if the future was a success or failure
+     * @param raw
+     *            set if we expect a buffer or an object
      */
-    public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator, boolean raw) {
+    public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator,
+            final boolean raw) {
         this.requestMessage = requestMessage;
         this.futureSuccessEvaluator = futureSuccessEvaluator;
         this.raw = raw;
@@ -78,20 +81,18 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * If we don't get a reply message, which is the case for fire-and-forget
-     * messages, then set the reply to null and set this future to complete with
-     * the type Success.
+     * If we don't get a reply message, which is the case for fire-and-forget messages, then set the reply to null and
+     * set this future to complete with the type Success.
      */
     public void setResponse() {
         setResponse(null);
     }
 
     /**
-     * Gets called if a peer responds. Note that either this method or
-     * responseFailed() is always called. This does not notify any listeners.
-     * The listeners gets notified if channel is closed
+     * Gets called if a peer responds. Note that either this method or responseFailed() is always called. This does not
+     * notify any listeners. The listeners gets notified if channel is closed
      * 
-     * @param message
+     * @param responseMessage
      *            The received message
      */
     public void setResponse(final Message responseMessage) {
@@ -113,9 +114,21 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         notifyListerenrs();
     }
 
+    @Override
+    public FutureResponse setFailed(final String reason) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify()) {
+                return this;
+            }
+            this.reason = reason;
+            this.type = FutureType.FAILED;
+        }
+        notifyListerenrs();
+        return this;
+    }
+
     /**
-     * Returns the raw buffer or null if the answer was empty. This is used for
-     * direct messages.
+     * Returns the raw buffer or null if the answer was empty. This is used for direct messages.
      * 
      * @return The transferred buffer
      */
@@ -126,8 +139,8 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     /**
-     * Returns the object or null if the underlying buffer was raw or the answer
-     * was empty. This is used for direct messages.
+     * Returns the object or null if the underlying buffer was raw or the answer was empty. This is used for direct
+     * messages.
      * 
      * @return The transferred object
      */
@@ -148,23 +161,9 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         }
     }
 
-    @Override
-    public FutureResponse setFailed(String reason) {
-        synchronized (lock) {
-            if (!setCompletedAndNotify()) {
-                return this;
-            }
-            this.reason = reason;
-            this.type = FutureType.FAILED;
-        }
-        notifyListerenrs();
-        return this;
-    }
-
     /**
-     * Returns the response message. This is the same message as in
-     * response(Message message). If no response where send, then this will
-     * return null.
+     * Returns the response message. This is the same message as in response(Message message). If no response where
+     * send, then this will return null.
      * 
      * @return The successful response message or null if failed
      */
@@ -189,13 +188,12 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * Set the cancel operation for the timeout handler.
      * 
      * @param replyTimeoutHandler
-     *            The timeout that needs to be canceled if the future returns
-     *            successfully.
+     *            The timeout that needs to be canceled if the future returns successfully.
      */
     public void setReplyTimeoutHandler(final ReplyTimeoutHandler replyTimeoutHandler) {
         addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
-            public void operationComplete(FutureResponse future) throws Exception {
+            public void operationComplete(final FutureResponse future) throws Exception {
                 replyTimeoutHandler.cancel();
             }
         });

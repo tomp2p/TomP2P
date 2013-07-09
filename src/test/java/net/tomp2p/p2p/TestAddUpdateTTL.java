@@ -93,7 +93,7 @@ public class TestAddUpdateTTL {
             Assert.fail();
             return null;
         }
-        final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().portTCP()).start();
+        final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().udpPort()).start();
         fb.awaitUninterruptibly();
         peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).start();
         fb.addListener(new BaseFutureListener<BaseFuture>() {

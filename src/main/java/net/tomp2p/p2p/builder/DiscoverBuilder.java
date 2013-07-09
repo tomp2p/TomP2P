@@ -214,8 +214,8 @@ public class DiscoverBuilder {
                                 if (peer.getBindings().isSetExternalPortsManually()
                                         || peer.setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
                                                 .getInetAddress().getHostAddress())) {
-                                    serverAddress = serverAddress.changePorts(peer.getBindings().getOutsideUDPPort(),
-                                            peer.getBindings().getOutsideTCPPort());
+                                    serverAddress = serverAddress.changePorts(peer.getBindings().getOutsideTCPPort(), 
+                                            peer.getBindings().getOutsideUDPPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
                                     peer.getPeerBean().setServerPeerAddress(serverAddress);
                                 }

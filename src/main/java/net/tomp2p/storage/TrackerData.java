@@ -70,17 +70,17 @@ public class TrackerData implements Comparable<TrackerData> {
             return false;
         }
         TrackerData trackerData = (TrackerData) obj;
-        return trackerData.getPeerAddress().getID().equals(getPeerAddress().getID());
+        return trackerData.getPeerAddress().getPeerId().equals(getPeerAddress().getPeerId());
     }
 
     @Override
     public int hashCode() {
-        return getPeerAddress().getID().hashCode();
+        return getPeerAddress().getPeerId().hashCode();
     }
 
     @Override
     public int compareTo(TrackerData o) {
-        return getPeerAddress().getID().compareTo(o.getPeerAddress().getID());
+        return getPeerAddress().getPeerId().compareTo(o.getPeerAddress().getPeerId());
     }
 
     @Override

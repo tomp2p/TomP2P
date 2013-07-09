@@ -38,6 +38,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerSocketAddress;
 
 public class Utils2 {
     /**
@@ -80,7 +81,8 @@ public class Utils2 {
     public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender,
             int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
         InetAddress inetSend = InetAddress.getByName(inetSender);
-        PeerAddress n1 = new PeerAddress(idSender, inetSend, tcpPortSender, udpPortSender, firewallUDP, firewallTCP);
+        PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
+        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP,  false, new PeerSocketAddress[]{});
         return n1;
     }
 
@@ -268,8 +270,8 @@ public class Utils2 {
             while (queried.contains(next)) {
                 next = pa1.pollFirst();
             }
-            result = next.getID();
-            start = findNr(next.getID().toString(), peers);
+            result = next.getPeerId();
+            start = findNr(next.getPeerId().toString(), peers);
         }
     }
 

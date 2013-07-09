@@ -169,7 +169,7 @@ public class TaskRPC extends ReplyHandler {
             Collection<Number160> taskIDs = message.getKeys();
             Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
             for (Number160 taskId : taskIDs) {
-                Number320 taskKey = new Number320(taskId, message.getSender().getID());
+                Number320 taskKey = new Number320(taskId, message.getSender().getPeerId());
                 TaskStatus taskStatus = taskManager.taskStatus(taskKey);
                 Data data = new Data(taskStatus);
                 dataMap.put(taskId, data);
@@ -181,7 +181,7 @@ public class TaskRPC extends ReplyHandler {
         } else if (message.getType() == Type.REQUEST_3) {
             Number160 taskId = message.getKey();
             Map<Number160, Data> dataMap = message.getDataMap();
-            Number320 taskKey = new Number320(taskId, message.getSender().getID());
+            Number320 taskKey = new Number320(taskId, message.getSender().getPeerId());
             taskManager.notifyListeners(taskKey, dataMap);
         } else {
             responseMessage.setType(Type.NOT_FOUND);

@@ -1,0 +1,53 @@
+===========================================================================
+Schnittstellenliste
+ 24...08 00 27 00 a0 9a ......VirtualBox Host-Only Ethernet Adapter
+ 16...c8 f7 33 9e ca ba ......Virtueller Microsoft-Adapter für direktes WiFi
+ 14...c8 f7 33 9e ca bd ......Bluetooth-Gerät (PAN)
+ 12...c8 f7 33 9e ca b9 ......Intel(R) Centrino(R) Advanced-N 6235
+  1...........................Software Loopback Interface 1
+ 17...00 00 00 00 00 00 00 e0 Microsoft-ISATAP-Adapter
+ 19...00 00 00 00 00 00 00 e0 Teredo Tunneling Pseudo-Interface
+ 25...00 00 00 00 00 00 00 e0 Microsoft-ISATAP-Adapter #4
+===========================================================================
+
+IPv4-Routentabelle
+===========================================================================
+Aktive Routen:
+     Netzwerkziel    Netzwerkmaske          Gateway    Schnittstelle Metrik
+          0.0.0.0          0.0.0.0      192.168.1.1    192.168.1.146     25
+        127.0.0.0        255.0.0.0   Auf Verbindung         127.0.0.1    306
+        127.0.0.1  255.255.255.255   Auf Verbindung         127.0.0.1    306
+  127.255.255.255  255.255.255.255   Auf Verbindung         127.0.0.1    306
+      169.254.0.0      255.255.0.0   Auf Verbindung   169.254.230.195    276
+  169.254.230.195  255.255.255.255   Auf Verbindung   169.254.230.195    276
+  169.254.255.255  255.255.255.255   Auf Verbindung   169.254.230.195    276
+      192.168.1.0    255.255.255.0   Auf Verbindung     192.168.1.146    281
+    192.168.1.146  255.255.255.255   Auf Verbindung     192.168.1.146    281
+    192.168.1.255  255.255.255.255   Auf Verbindung     192.168.1.146    281
+        224.0.0.0        240.0.0.0   Auf Verbindung         127.0.0.1    306
+        224.0.0.0        240.0.0.0   Auf Verbindung   169.254.230.195    276
+        224.0.0.0        240.0.0.0   Auf Verbindung     192.168.1.146    281
+  255.255.255.255  255.255.255.255   Auf Verbindung         127.0.0.1    306
+  255.255.255.255  255.255.255.255   Auf Verbindung   169.254.230.195    276
+  255.255.255.255  255.255.255.255   Auf Verbindung     192.168.1.146    281
+===========================================================================
+Ständige Routen:
+  Keine
+
+IPv6-Routentabelle
+===========================================================================
+Aktive Routen:
+ If Metrik Netzwerkziel             Gateway
+  1    306 ::1/128                  Auf Verbindung
+ 24    276 fe80::/64                Auf Verbindung
+ 12    281 fe80::/64                Auf Verbindung
+ 24    276 fe80::4432:2bb5:7f3a:e6c3/128
+                                    Auf Verbindung
+ 12    281 fe80::ed12:828b:d2d8:a000/128
+                                    Auf Verbindung
+  1    306 ff00::/8                 Auf Verbindung
+ 24    276 ff00::/8                 Auf Verbindung
+ 12    281 ff00::/8                 Auf Verbindung
+===========================================================================
+Ständige Routen:
+  Keine

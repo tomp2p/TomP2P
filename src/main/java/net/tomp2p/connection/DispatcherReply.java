@@ -327,10 +327,10 @@ public class DispatcherReply extends SimpleChannelHandler {
             return null;
         PeerAddress recipient = message.getRecipient();
         // Search for handler
-        if (recipient.getID().isZero() && message.getCommand() == Command.PING)
-            return searchHandler(peerBean.getServerPeerAddress().getID(), Command.PING);
+        if (recipient.getPeerId().isZero() && message.getCommand() == Command.PING)
+            return searchHandler(peerBean.getServerPeerAddress().getPeerId(), Command.PING);
         else
-            return searchHandler(recipient.getID(), message.getCommand());
+            return searchHandler(recipient.getPeerId(), message.getCommand());
     }
 
     /**

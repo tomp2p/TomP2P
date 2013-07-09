@@ -370,7 +370,10 @@ public class TestStorage {
             Map<Number160, Data> stored = m.getDataMap();
             compare(tmp, stored);
             sender.getConnectionBean().getConnectionReservation().release(cc);
-        } finally {
+        } catch (Throwable t) {
+            t.printStackTrace();
+        }
+        finally {
             if (sender != null)
                 sender.shutdown();
             if (recv1 != null)
@@ -425,13 +428,11 @@ public class TestStorage {
     private void compare(Map<Number160, Data> tmp, Map<Number160, Data> stored) {
         Assert.assertEquals(tmp.size(), stored.size());
         Iterator<Number160> iterator1 = tmp.keySet().iterator();
-        Iterator<Number160> iterator2 = stored.keySet().iterator();
-        while (iterator1.hasNext() && iterator2.hasNext()) {
+        while (iterator1.hasNext()) {
             Number160 key1 = iterator1.next();
-            Number160 key2 = iterator2.next();
-            Assert.assertEquals(key1, key2);
+            Assert.assertEquals(true, stored.containsKey(key1));
             Data data1 = tmp.get(key1);
-            Data data2 = stored.get(key2);
+            Data data2 = stored.get(key1);
             Assert.assertEquals(data1.getLength(), data2.getLength());
             for (int i = 0; i < data1.getLength(); i++) {
                 Assert.assertEquals(data1.getData()[data1.getOffset() + i], data2.getData()[data2.getOffset() + i]);

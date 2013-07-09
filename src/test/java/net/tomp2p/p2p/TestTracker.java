@@ -206,8 +206,8 @@ public class TestTracker {
                         .setTrackerConfiguration(tc).start();
                 ft.awaitUninterruptibly();
                 System.err
-                        .println("added " + nodes[300 + i].getPeerAddress().getID() + " on " + ft.getDirectTrackers());
-                tmp.add(nodes[300 + i].getPeerAddress().getID());
+                        .println("added " + nodes[300 + i].getPeerAddress().getPeerId() + " on " + ft.getDirectTrackers());
+                tmp.add(nodes[300 + i].getPeerAddress().getPeerId());
                 Assert.assertEquals(true, ft.isSuccess());
                 // Assert.assertEquals(true, ft.getDirectTrackers().size() == 2
                 // || ft.getDirectTrackers().size() == 3);
@@ -218,8 +218,8 @@ public class TestTracker {
                         .setTrackerConfiguration(tc).start();
                 ft.awaitUninterruptibly();
                 System.err
-                        .println("added " + nodes[300 + i].getPeerAddress().getID() + " on " + ft.getDirectTrackers());
-                tmp.add(nodes[600 - i].getPeerAddress().getID());
+                        .println("added " + nodes[300 + i].getPeerAddress().getPeerId() + " on " + ft.getDirectTrackers());
+                tmp.add(nodes[600 - i].getPeerAddress().getPeerId());
                 Assert.assertEquals(true, ft.isSuccess());
                 // Assert.assertEquals(true, ft.getDirectTrackers().size() == 2
                 // || ft.getDirectTrackers().size() == 3);
@@ -245,8 +245,8 @@ public class TestTracker {
             ft1.awaitUninterruptibly();
             Assert.assertEquals(true, ft1.isSuccess());
             for (TrackerData pa : ft1.getTrackers()) {
-                System.err.println("found on DHT1: " + pa.getPeerAddress().getID());
-                tmp.remove(pa.getPeerAddress().getID());
+                System.err.println("found on DHT1: " + pa.getPeerAddress().getPeerId());
+                tmp.remove(pa.getPeerAddress().getPeerId());
             }
             // ctg.setUseSecondaryTrackers(true);
             FutureTracker ft2 = nodes[299].getTracker(trackerID).setDomainKey(new ShortString("test").toNumber160())
@@ -256,8 +256,8 @@ public class TestTracker {
             System.err.println("Reason: " + ft2.getFailedReason());
             Assert.assertEquals(true, ft2.isSuccess());
             for (TrackerData pa : ft2.getTrackers()) {
-                if (tmp.remove(pa.getPeerAddress().getID()))
-                    System.err.println("found on DHT2: " + pa.getPeerAddress().getID());
+                if (tmp.remove(pa.getPeerAddress().getPeerId()))
+                    System.err.println("found on DHT2: " + pa.getPeerAddress().getPeerId());
             }
             /*
              * for (Number480 n480 :

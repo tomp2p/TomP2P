@@ -786,6 +786,8 @@ public class TestRouting {
             tmp.awaitUninterruptibly();
             Assert.assertEquals(true, tmp.isSuccess());
             Assert.assertEquals(1, client.getPeerBean().getPeerMap().size());
+        } catch (Throwable t) {
+            t.printStackTrace();
         } finally {
             client.shutdown();
             master.shutdown();
@@ -841,7 +843,7 @@ public class TestRouting {
                     PeerAddress pa = ss.first();
                     PeerAddress pa2 = ss2.first();
                     System.err.println("test " + pa + " - " + pa2);
-                    Assert.assertEquals(pa.getID(), pa2.getID());
+                    Assert.assertEquals(pa.getPeerId(), pa2.getPeerId());
                     ss.remove(pa);
                     ss2.remove(pa2);
                 }

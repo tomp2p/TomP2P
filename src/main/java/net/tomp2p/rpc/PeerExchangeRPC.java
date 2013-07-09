@@ -80,10 +80,10 @@ public class PeerExchangeRPC extends ReplyHandler {
 
         // Can run concurrently
         synchronized (sentPeers) {
-            tmp1 = sentPeers.get(remotePeer.getID());
+            tmp1 = sentPeers.get(remotePeer.getPeerId());
             if (tmp1 == null) {
                 tmp1 = new HashSet<Number160>();
-                sentPeers.put(remotePeer.getID(), tmp1);
+                sentPeers.put(remotePeer.getPeerId(), tmp1);
             }
         }
 
@@ -117,7 +117,7 @@ public class PeerExchangeRPC extends ReplyHandler {
         if (peers.size() > 0) // || removed.size() > 0)
         {
             if (logger.isDebugEnabled())
-                logger.debug("sent (" + message.getSender().getID() + ") to " + remotePeer.getID() + " / "
+                logger.debug("sent (" + message.getSender().getPeerId() + ") to " + remotePeer.getPeerId() + " / "
                         + peers.size());
             FutureResponse futureResponse = new FutureResponse(message);
             if (!forceTCP) {

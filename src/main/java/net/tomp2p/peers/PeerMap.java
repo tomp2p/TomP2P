@@ -82,7 +82,7 @@ public class PeerMap {
 
     final private Collection<InetAddress> filteredAddresses = Collections.synchronizedSet(new HashSet<InetAddress>());
 
-    final private PeerMapStat peerMapStat;
+    final private PeerStatatistics peerMapStat;
 
     final private Statistics statistics;
 
@@ -134,7 +134,7 @@ public class PeerMap {
         if (self == null || self.isZero())
             throw new IllegalArgumentException("Zero or null are not a valid IDs");
         this.self = self;
-        this.peerMapStat = new PeerMapStat();
+        this.peerMapStat = new PeerStatatistics();
         // The original Kademlia suggests 20, butwe can go much lower, as we
         // dont have a fixed limit for a bag. The bagSize is a suggestion and if
         // maxpeers has not been reached, the peer is added even though it
@@ -288,7 +288,7 @@ public class PeerMap {
         }
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
-        if (remotePeer.getID().isZero() || self().equals(remotePeer.getID()) || isPeerRemovedTemporarly(remotePeer)
+        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId()) || isPeerRemovedTemporarly(remotePeer)
                 || filteredAddresses.contains(remotePeer.getInetAddress())) {
             return false;
         }
@@ -303,7 +303,7 @@ public class PeerMap {
             return false;
         }
 
-        final int classMember = classMember(remotePeer.getID());
+        final int classMember = classMember(remotePeer.getPeerId());
         final Map<Number160, PeerAddress> map = peerMap.get(classMember);
         if (size() < maxPeers) {
             // this updates stats and schedules peer for maintenance
@@ -315,7 +315,7 @@ public class PeerMap {
         } else {
             // the class is not full, remove other nodes!
             PeerAddress toRemove = removeLatestEntryExceedingBagSize();
-            if (classMember(toRemove.getID()) > classMember(remotePeer.getID())) {
+            if (classMember(toRemove.getPeerId()) > classMember(remotePeer.getPeerId())) {
                 if (remove(toRemove, Reason.REMOVED_FROM_MAP)) {
                     // this updates stats and schedules peer for maintenance
                     prepareInsertOrUpdate(remotePeer, firstHand);
@@ -340,7 +340,7 @@ public class PeerMap {
         if (logger.isDebugEnabled()) {
             logger.debug("peer " + remotePeer + " is offline");
         }
-        if (remotePeer.getID().isZero() || self().equals(remotePeer.getID())) {
+        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId())) {
             return false;
         }
         notifyPeerFail(remotePeer, force);
@@ -382,9 +382,9 @@ public class PeerMap {
      * @return True if the peer was in our map and was removed.
      */
     private boolean remove(final PeerAddress remotePeer, final Reason reason) {
-        final int classMember = classMember(remotePeer.getID());
+        final int classMember = classMember(remotePeer.getPeerId());
         final Map<Number160, PeerAddress> map = peerMap.get(classMember);
-        final boolean retVal = map.remove(remotePeer.getID()) != null;
+        final boolean retVal = map.remove(remotePeer.getPeerId()) != null;
         if (retVal) {
             removeFromMaintenance(remotePeer);
             peerCount.decrementAndGet();
@@ -476,8 +476,8 @@ public class PeerMap {
             final int classMember) {
         boolean retVal;
         synchronized (map) {
-            retVal = !map.containsKey(remotePeer.getID());
-            map.put(remotePeer.getID(), remotePeer);
+            retVal = !map.containsKey(remotePeer.getPeerId());
+            map.put(remotePeer.getPeerId(), remotePeer);
         }
         if (retVal) {
             peerCount.incrementAndGet();
@@ -561,11 +561,11 @@ public class PeerMap {
      * @return True if we have updated the peer, false otherwise
      */
     public boolean updateExistingPeerAddress(PeerAddress peerAddress) {
-        final int classMember = classMember(peerAddress.getID());
+        final int classMember = classMember(peerAddress.getPeerId());
         Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
         synchronized (tmp) {
-            if (tmp.containsKey(peerAddress.getID())) {
-                tmp.put(peerAddress.getID(), peerAddress);
+            if (tmp.containsKey(peerAddress.getPeerId())) {
+                tmp.put(peerAddress.getPeerId(), peerAddress);
                 return true;
             }
         }
@@ -573,13 +573,13 @@ public class PeerMap {
     }
 
     public boolean contains(PeerAddress peerAddress) {
-        final int classMember = classMember(peerAddress.getID());
+        final int classMember = classMember(peerAddress.getPeerId());
         if (classMember == -1) {
             // -1 means we searched for ourself and we never are our neighbor
             return false;
         }
         Map<Number160, PeerAddress> tmp = peerMap.get(classMember);
-        return tmp.containsKey(peerAddress.getID());
+        return tmp.containsKey(peerAddress.getPeerId());
     }
 
     /**
@@ -686,7 +686,7 @@ public class PeerMap {
      * @return -1 if first peer is closer, 1 otherwise, 0 if both are equal
      */
     public static int isKadCloser(Number160 id, PeerAddress rn, PeerAddress rn2) {
-        return distance(id, rn.getID()).compareTo(distance(id, rn2.getID()));
+        return distance(id, rn.getPeerId()).compareTo(distance(id, rn2.getPeerId()));
     }
 
     /**

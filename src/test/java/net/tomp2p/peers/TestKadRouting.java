@@ -50,15 +50,15 @@ public class TestKadRouting {
         SortedSet<PeerAddress> pa = kadRouting.closePeers(id, 2);
         Assert.assertEquals(2, pa.size());
         Iterator<PeerAddress> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().getID().toString());
-        Assert.assertEquals("0x2", iterator.next().getID().toString());
+        Assert.assertEquals("0x3", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x2", iterator.next().getPeerId().toString());
         pa = kadRouting.closePeers(id3, 3);
         Assert.assertEquals(4, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().getID().toString());
-        Assert.assertEquals("0x5", iterator.next().getID().toString());
-        Assert.assertEquals("0x6", iterator.next().getID().toString());
-        Assert.assertEquals("0x7", iterator.next().getID().toString());
+        Assert.assertEquals("0x4", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x5", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x6", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x7", iterator.next().getPeerId().toString());
     }
 
     @Test
@@ -89,8 +89,8 @@ public class TestKadRouting {
         rn1 = new PeerAddress(new Number160("0x10"));
         rn2 = new PeerAddress(new Number160("0x11"));
         key = new Number160("0xff");
-        System.err.println("rn1 " + rn1.getID().xor(key));
-        System.err.println("rn2 " + rn2.getID().xor(key));
+        System.err.println("rn1 " + rn1.getPeerId().xor(key));
+        System.err.println("rn2 " + rn2.getPeerId().xor(key));
         Assert.assertEquals(1, routing.isCloser(key, rn1, rn2));
     }
 

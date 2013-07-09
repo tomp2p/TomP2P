@@ -44,11 +44,15 @@ public class TestNeighbor {
             Assert.assertEquals(true, fr.isSuccess());
             Collection<PeerAddress> pas = fr.getResponse().getNeighbors();
             Assert.assertEquals(NeighborRPC.NEIGHBOR_SIZE, pas.size());
-            Assert.assertEquals(new Number160("0x30"), pas.iterator().next().getID());
-            Assert.assertEquals(PORT_TCP, pas.iterator().next().portTCP());
-            Assert.assertEquals(PORT_UDP, pas.iterator().next().portUDP());
+            Assert.assertEquals(new Number160("0x30"), pas.iterator().next().getPeerId());
+            Assert.assertEquals(PORT_TCP, pas.iterator().next().tcpPort());
+            Assert.assertEquals(PORT_UDP, pas.iterator().next().udpPort());
             recv1.getConnectionBean().getConnectionReservation().release(cc);
-        } finally {
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        
+        finally {
             if (sender != null)
                 sender.shutdown();
             if (recv1 != null)
@@ -76,7 +80,7 @@ public class TestNeighbor {
             System.err.println(pas.iterator().next());
             // I see only myself
             Assert.assertEquals(1, pas.size());
-            Assert.assertEquals(new Number160("0x20"), pas.iterator().next().getID());
+            Assert.assertEquals(new Number160("0x20"), pas.iterator().next().getPeerId());
             recv1.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)

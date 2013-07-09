@@ -67,7 +67,7 @@ public class ExampleSend
                 public Object reply( PeerAddress sender, Object request )
                     throws Exception
                 {                
-                    System.err.println("I'm "+peer.getPeerID()+" and I just got the message ["+request+"] from "+sender.getID());
+                    System.err.println("I'm "+peer.getPeerID()+" and I just got the message ["+request+"] from "+sender.getPeerId());
                     return "world";
                 }
             } );

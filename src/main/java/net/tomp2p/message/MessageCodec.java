@@ -69,10 +69,10 @@ public class MessageCodec {
         buffer.writeInt(message.getVersion()); // 4
         buffer.writeInt(message.getMessageId()); // 8
         buffer.writeByte((message.getType().ordinal() << 4) | message.getCommand().ordinal()); // 9
-        buffer.writeBytes(message.getSender().getID().toByteArray()); // 29
-        buffer.writeShort((short) message.getSender().portTCP()); // 31
-        buffer.writeShort((short) message.getSender().portUDP()); // 33
-        buffer.writeBytes(message.getRecipient().getID().toByteArray()); // 53
+        buffer.writeBytes(message.getSender().getPeerId().toByteArray()); // 29
+        buffer.writeShort((short) message.getSender().udpPort()); // 31
+        buffer.writeShort((short) message.getSender().tcpPort()); // 33
+        buffer.writeBytes(message.getRecipient().getPeerId().toByteArray()); // 53
         final int content = ((message.getContentType4().ordinal() << 12) | (message.getContentType3().ordinal() << 8)
                 | (message.getContentType2().ordinal() << 4) | message.getContentType1().ordinal());
         buffer.writeShort((short) content); // 55
@@ -515,8 +515,6 @@ public class MessageCodec {
             if (buffer.readableBytes() < 1)
                 return false;
             len = buffer.readUnsignedByte();
-            if (buffer.readableBytes() < (len * PeerAddress.SIZE_IPv4))
-                return false;
             final Collection<PeerAddress> neighbors = new ArrayList<PeerAddress>(len);
             for (int i = 0; i < len; i++) {
                 PeerAddress peerAddress = readPeerAddress(buffer);
@@ -530,8 +528,6 @@ public class MessageCodec {
             if (buffer.readableBytes() < 1)
                 return false;
             len = buffer.readUnsignedByte();
-            if (buffer.readableBytes() < (len * (PeerAddress.SIZE_IPv4 + 1)))
-                return false;
             final Collection<TrackerData> trackerDatas = new ArrayList<TrackerData>(len);
             for (int i = 0; i < len; i++) {
                 PeerAddress peerAddress = readPeerAddress(buffer);
@@ -658,15 +654,17 @@ public class MessageCodec {
      * @return A PeerAddress created from the buffer (deserialized)
      */
     private static PeerAddress readPeerAddress(final ChannelBuffer buffer) {
-        if (buffer.readableBytes() < 21)
+        if (buffer.readableBytes() < 22) {
             return null;
+        }
         Number160 id = readID(buffer);
         // peek
-        int type = buffer.getUnsignedByte(buffer.readerIndex());
+        int header = buffer.getUnsignedShort(buffer.readerIndex());
         // now we know the length
-        int len = PeerAddress.expectedSocketLength(type);
-        if (buffer.readableBytes() < len)
+        int len = PeerAddress.size(header);
+        if (buffer.readableBytes() < Number160.BYTE_ARRAY_SIZE - len) {
             return null;
+        }
         PeerAddress peerAddress = new PeerAddress(id, buffer);
         return peerAddress;
     }

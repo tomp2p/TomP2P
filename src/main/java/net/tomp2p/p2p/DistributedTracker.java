@@ -77,7 +77,7 @@ public class DistributedTracker {
         this.trackerRPC = trackerRPC;
         this.peerExchangeRPC = peerExchangeRPC;
         this.peerBean = peerBean;
-        this.rnd = new Random(peerBean.getServerPeerAddress().getID().hashCode());
+        this.rnd = new Random(peerBean.getServerPeerAddress().getPeerId().hashCode());
         this.stableRandom = new Number160(rnd);
 
     }
@@ -422,10 +422,10 @@ public class DistributedTracker {
      */
     private static void storeResult(Map<PeerAddress, Collection<TrackerData>> peerOnTracker,
             Collection<TrackerData> newDataMap, PeerAddress newDataProvider, Set<Number160> knownPeers) {
-        knownPeers.add(newDataProvider.getID());
+        knownPeers.add(newDataProvider.getPeerId());
         for (TrackerData data : newDataMap) {
             PeerAddress peer = data.getPeerAddress();
-            knownPeers.add(peer.getID());
+            knownPeers.add(peer.getPeerId());
             Collection<TrackerData> peerOnTrackerEntry = peerOnTracker.get(newDataProvider);
             if (peerOnTrackerEntry == null) {
                 peerOnTrackerEntry = new HashSet<TrackerData>();

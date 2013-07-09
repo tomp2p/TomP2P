@@ -32,6 +32,7 @@ import net.tomp2p.p2p.ConnectionConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerSocketAddress;
 
 import org.jboss.netty.bootstrap.ConnectionlessBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -157,11 +158,14 @@ public class ConnectionHandler {
                 throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
             }
             outsideAddress = bindings.getFoundAddresses().get(0);
-            self = new PeerAddress(id, outsideAddress, tcpPort, udpPort, configuration.isBehindFirewall(),
-                    configuration.isBehindFirewall());
+            PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, tcpPort, udpPort);
+            self = new PeerAddress(id, peerSocketAddress, configuration.isBehindFirewall(),
+                    configuration.isBehindFirewall(), false, new PeerSocketAddress[]{});
         } else {
-            self = new PeerAddress(id, outsideAddress, bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort(),
-                    configuration.isBehindFirewall(), configuration.isBehindFirewall());
+            PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, 
+                    bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort());
+            self = new PeerAddress(id, peerSocketAddress, configuration.isBehindFirewall(), 
+                    false, configuration.isBehindFirewall(), new PeerSocketAddress[]{});
         }
         peerBean = new PeerBean(keyPair);
         peerBean.setServerPeerAddress(self);
@@ -369,7 +373,7 @@ public class ConnectionHandler {
             }
         }
         // deregister in dispatcher
-        connectionBean.getDispatcherRequest().removeIoHandler(getPeerBean().getServerPeerAddress().getID());
+        connectionBean.getDispatcherRequest().removeIoHandler(getPeerBean().getServerPeerAddress().getPeerId());
         // shutdown all children
         for (ConnectionHandler handler : childConnections) {
             handler.shutdown();

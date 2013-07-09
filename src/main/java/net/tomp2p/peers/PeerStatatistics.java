@@ -1,12 +1,12 @@
 /*
  * Copyright 2009 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -20,8 +20,8 @@ import java.util.Map;
 
 import net.tomp2p.utils.Timings;
 
-public class PeerMapStat {
-    private final Map<PeerAddress, PeerStat> mapStat = new HashMap<PeerAddress, PeerStat>();
+public class PeerStatatistics {
+    private final Map<PeerAddress, PeerStatatistic> mapStat = new HashMap<PeerAddress, PeerStatatistic>();
 
     public void removeStat(PeerAddress peerAddress) {
         synchronized (mapStat) {
@@ -30,27 +30,26 @@ public class PeerMapStat {
     }
 
     public void setSeenOnlineTime(PeerAddress peerAddress) {
-        PeerStat peerStat = getOrCreate(peerAddress);
+        PeerStatatistic peerStat = getOrCreate(peerAddress);
         peerStat.setLastSeenOnline(Timings.currentTimeMillis());
     }
 
     public long getLastSeenOnlineTime(PeerAddress peerAddress) {
-        PeerStat peerStat = getOrCreate(peerAddress);
+        PeerStatatistic peerStat = getOrCreate(peerAddress);
         return peerStat.getLastSeenOnline();
     }
 
     public void incChecked(PeerAddress peerAddress) {
-        PeerStat peerStat = getOrCreate(peerAddress);
-        peerStat.incChecked();
+        PeerStatatistic peerStat = getOrCreate(peerAddress);
+        peerStat.successfullyChecked();
     }
 
-    private PeerStat getOrCreate(PeerAddress peerAddress) {
-        PeerStat peerStat;
+    private PeerStatatistic getOrCreate(PeerAddress peerAddress) {
+        PeerStatatistic peerStat;
         synchronized (mapStat) {
             peerStat = mapStat.get(peerAddress);
             if (peerStat == null) {
-                peerStat = new PeerStat();
-                peerStat.setCreated(Timings.currentTimeMillis());
+                peerStat = new PeerStatatistic();
                 mapStat.put(peerAddress, peerStat);
             }
         }
@@ -58,17 +57,33 @@ public class PeerMapStat {
     }
 
     public int getChecked(PeerAddress peerAddress) {
-        PeerStat peerStat;
+        PeerStatatistic peerStat;
         synchronized (mapStat) {
             peerStat = mapStat.get(peerAddress);
         }
         if (peerStat == null)
             return 0;
-        return peerStat.getChecked();
+        return peerStat.getSuccessfullyChecked();
     }
 
     public long online(PeerAddress peerAddress) {
-        PeerStat peerStat = getOrCreate(peerAddress);
+        PeerStatatistic peerStat = getOrCreate(peerAddress);
         return peerStat.onlineTime();
+    }
+    
+    public void addRTT(PeerAddress peerAddress, long rtt) {
+        PeerStatatistic peerStat = getOrCreate(peerAddress);
+        peerStat.addRTT(rtt);
+    }
+    
+    public long getMeanRTT(PeerAddress peerAddress) {
+        PeerStatatistic peerStat;
+        synchronized (mapStat) {
+            peerStat = mapStat.get(peerAddress);
+        }
+        if (peerStat == null) {
+            return 3*1000;
+        }
+        return peerStat.getMeanRTT();
     }
 }

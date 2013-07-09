@@ -165,7 +165,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         Map<Number160, TrackerData> data2 = trackerDataActive.putIfAbsent(key, data);
         data = data2 == null ? data : data2;
 
-        data.put(remotePeer.getID(), new TrackerData(remotePeer, identityManagement.getPeerAddress(), attachement,
+        data.put(remotePeer.getPeerId(), new TrackerData(remotePeer, identityManagement.getPeerAddress(), attachement,
                 offset, length));
     }
 
@@ -199,7 +199,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         if (logger.isDebugEnabled()) {
             logger.debug("try to store on tracker " + locationKey);
         }
-        Number160 peerId = peerAddress.getID();
+        Number160 peerId = peerAddress.getPeerId();
         // check if this guy is offline
         if (isOffline(peerAddress))
             return false;
@@ -226,14 +226,14 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 
     private boolean isOffline(PeerAddress peerAddress) {
         // TODO: always trust myself, do a majority voting for others
-        if (peerOffline.containsKey(peerAddress.getID()))
+        if (peerOffline.containsKey(peerAddress.getPeerId()))
             return true;
         return false;
     }
 
     public boolean putReferred(Number160 locationKey, Number160 domainKey, PeerAddress peerAddress,
             PeerAddress referrer, byte[] attachement, int offset, int length, ReferrerType type) {
-        Number160 peerId = peerAddress.getID();
+        Number160 peerId = peerAddress.getPeerId();
         // we cannot do public key check, because these data is referenced from
         // other peers and we don't know about the timeouts as well
         // store the data
@@ -260,11 +260,11 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         if (map == null)
             return false;
         synchronized (map) {
-            TrackerData data = map.remove(peerAddress.getID());
+            TrackerData data = map.remove(peerAddress.getPeerId());
             if (data != null) {
                 if (!put(locationKey, domainKey, data.getPeerAddress(), publicKey, data.getAttachement(),
                         data.getOffset(), data.getLength())) {
-                    map.put(peerAddress.getID(), data);
+                    map.put(peerAddress.getPeerId(), data);
                 }
             }
         }
@@ -348,7 +348,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
     @Override
     public void peerOffline(PeerAddress peerAddress, Reason reason) {
         if (reason == Reason.NOT_REACHABLE)
-            peerOffline(peerAddress.getID(), identityManagement.getSelf());
+            peerOffline(peerAddress.getPeerId(), identityManagement.getSelf());
     }
 
     private void peerOffline(Number160 peerId, Number160 referrerId) {
@@ -393,7 +393,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 
     @Override
     public void peerOnline(PeerAddress peerAddress) {
-        peerOffline.remove(peerAddress.getID());
+        peerOffline.remove(peerAddress.getPeerId());
     }
 
     private DigestInfo digest(Number160 locationKey, Number160 domainKey) {
@@ -433,7 +433,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
     }
 
     public void removeReferred(Number160 locationKey, Number160 domainKey, Number160 key, PeerAddress referrer) {
-        indicateOffline(key, referrer.getID());
+        indicateOffline(key, referrer.getPeerId());
     }
 
     public void setFillPrimaryStorageFast(boolean fillPrimaryStorageFast) {

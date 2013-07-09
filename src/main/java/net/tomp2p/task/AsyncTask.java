@@ -54,7 +54,7 @@ public class AsyncTask implements TaskResultListener {
 
     public FutureAsyncTask submit(final PeerAddress remotePeer, ChannelCreator channelCreator, final Number160 taskId,
             Map<Number160, Data> dataMap, Worker mapper, boolean forceUDP, boolean sign) {
-        final Number320 taskKey = new Number320(taskId, remotePeer.getID());
+        final Number320 taskKey = new Number320(taskId, remotePeer.getPeerId());
         final FutureAsyncTask futureAsyncTask = new FutureAsyncTask(remotePeer);
         futureAsyncTask.addCancellation(new Cancellable() {
             @Override

@@ -89,9 +89,9 @@ public class DataCodec {
         Data data;
         // length may be 0 if data is only used for expiration
         if (length == 0) {
-            data = new Data(MessageCodec.EMPTY_BYTE_ARRAY, originator.getID());
+            data = new Data(MessageCodec.EMPTY_BYTE_ARRAY, originator.getPeerId());
         } else {
-            data = new Data(byteBuffers, length, originator.getID());
+            data = new Data(byteBuffers, length, originator.getPeerId());
         }
         return data.setTTLSeconds(ttl).setProtectedEntry(protectedEntry).setFileReference(fileReference);
     }

@@ -130,7 +130,7 @@ public final class ExampleMapReduce {
                             .get(key, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO, Number160.MAX_VALUE).size();
                     System.out.println("reduce DHT call " + key + " found " + size + " on peer " + peer.getPeerID());
                     Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
-                    dataMap.put(peer.getPeerAddress().getID(), new Data(size));
+                    dataMap.put(peer.getPeerAddress().getPeerId(), new Data(size));
                     futures.put(key, peer.put(result).setDataMap(dataMap).start());
                 }
                 Map<Number160, Data> retVal = new HashMap<Number160, Data>();

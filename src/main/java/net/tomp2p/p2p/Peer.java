@@ -563,13 +563,12 @@ public class Peer {
 
     /**
      * The Dynamic and/or Private Ports are those from 49152 through 65535
-     * (http://www.iana.org/assignments/port-numbers)
+     * (http://www.iana.org/assignments/port-numbers).
      * 
-     * @param internalHost
-     * @param port
-     * @return
+     * @param internalHost The IP of the internal host
+     * @return True if port forwarding seemed to be successful
      */
-    public boolean setupPortForwanding(String internalHost) {
+    public boolean setupPortForwanding(final String internalHost) {
         int portUDP = bindings.getOutsideUDPPort();
         int portTCP = bindings.getOutsideTCPPort();
         boolean success;

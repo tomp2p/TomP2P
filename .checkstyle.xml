@@ -11,8 +11,8 @@ Checkstyle configuration that checks the sun coding conventions.
 -->
 <module name="Checker">
   <property name="severity" value="warning"/>
-  <module name="SuppressionCommentFilter"/>
   <module name="TreeWalker">
+    <module name="FileContentsHolder"/>
     <module name="JavadocMethod">
       <property name="suppressLoadErrors" value="true"/>
     </module>
@@ -96,6 +96,7 @@ Checkstyle configuration that checks the sun coding conventions.
       <property name="excludeScope" value="private"/>
     </module>
   </module>
+  <module name="SuppressionCommentFilter"/>
   <module name="JavadocPackage">
     <property name="severity" value="ignore"/>
     <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>

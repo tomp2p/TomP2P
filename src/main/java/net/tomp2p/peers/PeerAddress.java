@@ -467,7 +467,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public byte getRelays() {
         if (relaySize > 0) {
             byte result = (byte) (relaySize << TYPE_BIT_SIZE);
-            byte types = relayType.toByteArray()[0];
+            byte types = Utils.createByte(relayType);
             result |= (byte) (types & MASK_1F);
             return result;
         } else {

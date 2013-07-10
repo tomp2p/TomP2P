@@ -67,6 +67,7 @@ public class Utils {
     public static final int IPV6_BYTES = 16;
     public static final int BYTE_BITS = 8;
     public static final int MASK_FF = 0xff;
+    public static final int MASK_80 = 0x80;
 
     public static ByteBuffer loadFile(File file) throws IOException {
         FileInputStream fis = null;
@@ -653,16 +654,26 @@ public class Utils {
      */
     public static BitSet createBitSet(final byte b) {
         final BitSet bitSet = new BitSet(8);
-        //CHECKSTYLE:OFF
-        bitSet.set(0, (b & 0x01) != 0);
-        bitSet.set(1, (b & 0x02) != 0);
-        bitSet.set(2, (b & 0x04) != 0);
-        bitSet.set(3, (b & 0x08) != 0);
-        bitSet.set(4, (b & 0x10) != 0);
-        bitSet.set(5, (b & 0x20) != 0);
-        bitSet.set(6, (b & 0x40) != 0);
-        bitSet.set(7, (b & 0x80) != 0);
-        //CHECKSTYLE:ON
+        for (int i = 0; i < Utils.BYTE_BITS; i++) {
+            bitSet.set(i, (b & (1 << i)) != 0);
+        }
         return bitSet;
+    }
+
+    /**
+     * Convert a BitSet to a byte. Cannot use relayType.toByteArray()[0]; since its only available in 1.7
+     * 
+     * @param bitSet
+     *            The bit set
+     * @return The resulting byte
+     */
+    public static byte createByte(final BitSet bitSet) {
+        byte b = 0;
+        for (int i = 0; i < Utils.BYTE_BITS; i++) {
+            if (bitSet.get(i)) {
+                b |= 1 << i;
+            }
+        }
+        return b;
     }
 }

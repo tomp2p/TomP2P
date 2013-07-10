@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -123,16 +123,13 @@ public class DiscoverBuilder {
     }
 
     /**
-     * Discover attempts to find the external IP address of this peer. This is
-     * done by first trying to set UPNP with port forwarding (gives us the
-     * external address), query UPNP for the external address, and pinging a
-     * well known peer. The fallback is NAT-PMP.
+     * Discover attempts to find the external IP address of this peer. This is done by first trying to set UPNP with
+     * port forwarding (gives us the external address), query UPNP for the external address, and pinging a well known
+     * peer. The fallback is NAT-PMP.
      * 
      * @param peerAddress
-     *            The peer address. Since pings are used the peer ID can be
-     *            Number160.ZERO
-     * @return The future discover. This future holds also the real ID of the
-     *         peer we send the discover request
+     *            The peer address. Since pings are used the peer ID can be Number160.ZERO
+     * @return The future discover. This future holds also the real ID of the peer we send the discover request
      */
     private FutureDiscover discover(final PeerAddress peerAddress) {
         final FutureDiscover futureDiscover = new FutureDiscover();
@@ -151,8 +148,7 @@ public class DiscoverBuilder {
     }
 
     /**
-     * Needs 3 connections. Cleans up ChannelCreator, which means they will be
-     * released.
+     * Needs 3 connections. Cleans up ChannelCreator, which means they will be released.
      * 
      * @param peerAddress
      * @param cc
@@ -214,10 +210,16 @@ public class DiscoverBuilder {
                                 if (peer.getBindings().isSetExternalPortsManually()
                                         || peer.setupPortForwanding(futureResponseTCP.getResponse().getRecipient()
                                                 .getInetAddress().getHostAddress())) {
-                                    serverAddress = serverAddress.changePorts(peer.getBindings().getOutsideTCPPort(), 
+                                    serverAddress = serverAddress.changePorts(peer.getBindings().getOutsideTCPPort(),
                                             peer.getBindings().getOutsideUDPPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
                                     peer.getPeerBean().setServerPeerAddress(serverAddress);
+                                } else {
+                                    // we need to find a relay, because there is a NAT in the way.
+                                    futureDiscover.setFailedRelayPossible(
+                                            "UPNP, NATPMP could not be setup and the user did not provide any "
+                                                    + "port forwarded ports for " + peerAddress);
+                                    return;
                                 }
                             }
                         }

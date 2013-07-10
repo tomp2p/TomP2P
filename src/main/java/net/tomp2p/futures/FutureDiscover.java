@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25,9 +25,8 @@ import org.jboss.netty.util.Timer;
 import org.jboss.netty.util.TimerTask;
 
 /**
- * The future that keeps track of network discovery such as discovery if its
- * behind a NAT, the status if UPNP or NAT-PMP could be established, if there is
- * portforwarding.
+ * The future that keeps track of network discovery such as discovery if its behind a NAT, the status if UPNP or NAT-PMP
+ * could be established, if there is portforwarding.
  * 
  * @author Thomas Bocek
  */
@@ -44,25 +43,29 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
 
     private boolean discoveredUDP = false;
 
+    private boolean setupRelay = false;
+
+    /**
+     * Constructor.
+     */
     public FutureDiscover() {
         self(this);
     }
 
     /**
-     * Creates a new future object and creates a timer that fires failed after a
-     * timeout.
+     * Creates a new future object and creates a timer that fires failed after a timeout.
      * 
      * @param timer
      *            The timer to use
      * @param delaySec
      *            The delay in seconds
      */
-    public void setTimeout(Timer timer, int delaySec) {
+    public void setTimeout(final Timer timer, final int delaySec) {
         synchronized (lock) {
             timeout = timer.newTimeout(new DiscoverTimeoutTask(), delaySec, TimeUnit.SECONDS);
             addListener(new BaseFutureAdapter<FutureDiscover>() {
                 @Override
-                public void operationComplete(FutureDiscover future) throws Exception {
+                public void operationComplete(final FutureDiscover future) throws Exception {
                     // cancel timeout if we are done.
                     synchronized (lock) {
                         if (timeout != null) {
@@ -75,19 +78,19 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Gets called if the discovery was a success and an other peer could ping
-     * us with TCP and UDP.
+     * Gets called if the discovery was a success and an other peer could ping us with TCP and UDP.
      * 
-     * @param peerAddress
+     * @param ourPeerAddress
      *            The peerAddress of our server
-     * @param peerAddress
+     * @param reporter
      *            The peerAddress of the peer that reported our address
      */
-    public void done(PeerAddress ourPeerAddress, PeerAddress reporter) {
+    public void done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
         // System.err.println("called done");
         synchronized (lock) {
-            if (!setCompletedAndNotify())
+            if (!setCompletedAndNotify()) {
                 return;
+            }
             this.type = FutureType.OK;
             this.ourPeerAddress = ourPeerAddress;
             this.reporter = reporter;
@@ -96,7 +99,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * The peerAddress where we are reachable
+     * The peerAddress where we are reachable.
      * 
      * @return The new un-firewalled peerAddress of this peer
      */
@@ -116,8 +119,8 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Intermediate result if TCP has been discovered. Set discoveredTCP True if
-     * other peer could reach us with a TCP ping.
+     * Intermediate result if TCP has been discovered. Set discoveredTCP True if other peer could reach us with a TCP
+     * ping.
      */
     public void setDiscoveredTCP() {
         synchronized (lock) {
@@ -126,8 +129,8 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Intermediate result if UDP has been discovered. Set discoveredUDP True if
-     * other peer could reach us with a UDP ping.
+     * Intermediate result if UDP has been discovered. Set discoveredUDP True if other peer could reach us with a UDP
+     * ping.
      */
     public void setDiscoveredUDP() {
         synchronized (lock) {
@@ -155,7 +158,18 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         synchronized (lock) {
             return discoveredUDP;
         }
+    }
 
+    /**
+     * Indicates if a relay could be established. It makes no sense to make a relay, if the peer e.g. is not connected
+     * to the Internet.
+     * 
+     * @return True if the user could try to establish a relay connection
+     */
+    public boolean isSetupRealy() {
+        synchronized (lock) {
+            return setupRelay;
+        }
     }
 
     /**
@@ -165,8 +179,28 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         private final long start = Timings.currentTimeMillis();
 
         @Override
-        public void run(Timeout timeout) throws Exception {
-            setFailed("Timeout in Discover: " + (Timings.currentTimeMillis() - start) + "ms");
+        public void run(final Timeout timeout) throws Exception {
+            setFailedRelayPossible("Timeout in Discover: " + (Timings.currentTimeMillis() - start) + "ms");
         }
+    }
+
+    /**
+     * Set failed but with a flag that indicates if it makes sense to try to setup a relay. See {@link #isSetupRelay()}
+     * 
+     * @param failed
+     *            The reason for failure
+     * @return this class
+     */
+    public FutureDiscover setFailedRelayPossible(final String failed) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify()) {
+                return this;
+            }
+            this.reason = failed;
+            this.type = FutureType.FAILED;
+            this.setupRelay = true;
+        }
+        notifyListerenrs();
+        return this;
     }
 }

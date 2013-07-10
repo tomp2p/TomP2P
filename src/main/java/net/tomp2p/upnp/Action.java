@@ -77,7 +77,8 @@ public class Action {
         this.parent = parent;
         XPath xpath = XMLUtil.xpath;
 
-        name = xpath.evaluate("name", xml);
+        //Some Belkin router include trailing slashes, thus, trim it!
+        name = xpath.evaluate("name", xml).trim();
 
         Node argList = (Node) xpath.evaluate("argumentList", xml, XPathConstants.NODE);
 

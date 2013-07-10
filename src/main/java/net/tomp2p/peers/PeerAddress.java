@@ -145,7 +145,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
         this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
         final byte b = (byte) (relays & MASK_1F);
-        this.relayType = BitSet.valueOf(new byte[] {b});
+        this.relayType = Utils.createBitSet(b);
 
         this.peerSocketAddress = PeerSocketAddress.create(me, isIPv4(), offset);
         offset = this.peerSocketAddress.getOffset();
@@ -194,7 +194,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
         this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
         final byte b = (byte) (relays & MASK_1F);
-        this.relayType = BitSet.valueOf(new byte[] {b});
+        this.relayType = Utils.createBitSet(b);
         this.peerSocketAddress = PeerSocketAddress.create(channelBuffer, isIPv4());
 
         if (relaySize > 0) {
@@ -348,7 +348,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress(final Number160 id, final InetAddress inetAddress, final int tcpPort, final int udpPort,
             final int options) {
-        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options), 
+        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options),
                 isFirewalledUDP(options), isRelay(options), EMPTY_PEER_SOCKET_ADDRESSES);
     }
 
@@ -695,9 +695,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             size += Utils.IPV4_BYTES;
         }
         // count the relays
-        int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        final int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
         final byte b = (byte) (relays & MASK_1F);
-        BitSet relayType = BitSet.valueOf(new byte[] {b});
+        final BitSet relayType = Utils.createBitSet(b);
         for (int i = 0; i < relaySize; i++) {
             size += PORTS_SIZE;
             if (relayType.get(i)) {
@@ -706,8 +706,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
                 size += Utils.IPV4_BYTES;
             }
         }
-
         return size;
     }
-
 }

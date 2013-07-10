@@ -37,6 +37,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -640,5 +641,28 @@ public class Utils {
             throw new IllegalArgumentException(String.format("Host address '%s' is not a valid IPv4 address.",
                     Arrays.toString(tmp2)), e);
         }
+    }
+
+    /**
+     * Convert a byte to a bit set. BitSet.valueOf(new byte[] {b}) is only available in 1.7, so we need to do this on
+     * our own.
+     * 
+     * @param b
+     *            The byte to be converted
+     * @return The resulting bit set
+     */
+    public static BitSet createBitSet(final byte b) {
+        final BitSet bitSet = new BitSet(8);
+        //CHECKSTYLE:OFF
+        bitSet.set(0, (b & 0x01) != 0);
+        bitSet.set(1, (b & 0x02) != 0);
+        bitSet.set(2, (b & 0x04) != 0);
+        bitSet.set(3, (b & 0x08) != 0);
+        bitSet.set(4, (b & 0x10) != 0);
+        bitSet.set(5, (b & 0x20) != 0);
+        bitSet.set(6, (b & 0x40) != 0);
+        bitSet.set(7, (b & 0x80) != 0);
+        //CHECKSTYLE:ON
+        return bitSet;
     }
 }

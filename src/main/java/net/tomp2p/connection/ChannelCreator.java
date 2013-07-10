@@ -312,7 +312,7 @@ public class ChannelCreator {
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (LOGGER.isDebugEnabled()) {
                         
-                        if (requestHandler.getFutureResponse() != null) {
+                        if (requestHandler != null && requestHandler.getFutureResponse() != null) {
                             LOGGER.debug("channel close, set failure for request message: "
                                     + requestHandler.getFutureResponse().getFailedReason());
                         } else {

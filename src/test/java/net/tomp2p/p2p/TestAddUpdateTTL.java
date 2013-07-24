@@ -80,8 +80,8 @@ public class TestAddUpdateTTL {
     public void cleanup() {
         timer1.cancel();
         timer2.cancel();
-        seed.shutdown();
-        peer.shutdown();
+        seed.halt();
+        peer.halt();
     }
 
     public Peer createAndAttachRemotePeer() {

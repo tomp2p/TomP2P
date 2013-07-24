@@ -72,7 +72,7 @@ public final class ExampleMapReduce {
             exampleMapReduce(peers);
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
     }

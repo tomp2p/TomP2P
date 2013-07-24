@@ -63,8 +63,8 @@ public class TestConnection {
             System.out.println("Send and get in s:" + duration);
             peerConnection.close();
         } finally {
-            peer1.shutdown();
-            peer2.shutdown();
+            peer1.halt();
+            peer2.halt();
         }
     }
 }

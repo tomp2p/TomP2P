@@ -54,9 +54,9 @@ public class TestNeighbor {
         
         finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -84,9 +84,9 @@ public class TestNeighbor {
             recv1.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -111,9 +111,9 @@ public class TestNeighbor {
             }
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 

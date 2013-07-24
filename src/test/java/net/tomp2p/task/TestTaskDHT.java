@@ -34,7 +34,7 @@ public class TestTaskDHT {
             Assert.assertEquals(1, ft.getRawDataMap().size());
         } finally {
             System.out.println("done");
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -55,7 +55,7 @@ public class TestTaskDHT {
             Assert.assertEquals(2, ft.getRawDataMap().size());
         } finally {
             System.out.println("done");
-            master.shutdown();
+            master.halt();
         }
     }
 }

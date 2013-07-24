@@ -71,7 +71,7 @@ public class TestRealPing {
             Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
-                sender.shutdown();
+                sender.halt();
             }
         }
     }
@@ -101,7 +101,7 @@ public class TestRealPing {
             Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
-                sender.shutdown();
+                sender.halt();
             }
         }
     }
@@ -131,7 +131,7 @@ public class TestRealPing {
             Thread.sleep(WAIT);
         } finally {
             if (sender != null) {
-                sender.shutdown();
+                sender.halt();
             }
         }
     }
@@ -178,7 +178,7 @@ public class TestRealPing {
             Thread.sleep(WAIT);
         } finally {
             if (recv != null) {
-                recv.shutdown();
+                recv.halt();
             }
         }
     }

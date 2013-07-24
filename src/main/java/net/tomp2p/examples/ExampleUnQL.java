@@ -41,7 +41,7 @@ public class ExampleUnQL {
             e.printStackTrace();
         }
         finally {
-            master.shutdown();
+            master.halt();
         }
     }
 

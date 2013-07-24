@@ -44,8 +44,8 @@ public class TestNestedCall {
 
     @After
     public void tearDown() {
-        seed.shutdown();
-        peer.shutdown();
+        seed.halt();
+        peer.halt();
     }
 
     @Test

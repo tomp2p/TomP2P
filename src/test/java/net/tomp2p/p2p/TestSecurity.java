@@ -65,8 +65,8 @@ public class TestSecurity {
                     .awaitUninterruptibly();
             Assert.assertEquals(false, gotPK.get());
         } finally {
-            master.shutdown();
-            slave1.shutdown();
+            master.halt();
+            slave1.halt();
         }
     }
 
@@ -103,7 +103,7 @@ public class TestSecurity {
                     .setDomainKey(Number160.ONE).start().awaitUninterruptibly();
             Assert.assertEquals(false, gotPK.get());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -170,9 +170,9 @@ public class TestSecurity {
             Assert.assertEquals(true, fdht4.isSuccess());
             Assert.assertEquals(2, fdht4.getDataMap().size());
         } finally {
-            master.shutdown();
-            slave1.shutdown();
-            slave2.shutdown();
+            master.halt();
+            slave1.halt();
+            slave2.halt();
         }
     }
 
@@ -229,9 +229,9 @@ public class TestSecurity {
             fdht3.awaitUninterruptibly();
             Assert.assertEquals(1, fdht3.getKeys().size());
         } finally {
-            master.shutdown();
-            slave1.shutdown();
-            slave2.shutdown();
+            master.halt();
+            slave1.halt();
+            slave2.halt();
         }
     }
 
@@ -289,8 +289,8 @@ public class TestSecurity {
             System.err.println(futureDHT.getFailedReason());
             Assert.assertEquals(false, futureDHT.isSuccess());
         } finally {
-            master.shutdown();
-            slave1.shutdown();
+            master.halt();
+            slave1.halt();
         }
     }
 
@@ -397,9 +397,9 @@ public class TestSecurity {
             Assert.assertEquals(true, fdht9.isSuccess());
         } finally {
             // Utils.sleep(1000000);
-            master.shutdown();
-            slave1.shutdown();
-            slave2.shutdown();
+            master.halt();
+            slave1.halt();
+            slave2.halt();
         }
     }
 }

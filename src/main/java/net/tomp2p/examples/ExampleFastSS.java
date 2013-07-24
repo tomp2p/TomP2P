@@ -39,7 +39,7 @@ public class ExampleFastSS {
             exampleFastSS(peers);
         } finally {
             // 0 is the master
-            peers[0].shutdown();
+            peers[0].halt();
         }
     }
 

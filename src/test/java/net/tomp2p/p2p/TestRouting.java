@@ -155,7 +155,7 @@ public class TestRouting {
             Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -187,7 +187,7 @@ public class TestRouting {
             Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -219,7 +219,7 @@ public class TestRouting {
             Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -251,7 +251,7 @@ public class TestRouting {
             Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -285,7 +285,7 @@ public class TestRouting {
             Assert.assertEquals(true, peers[4].getPeerAddress().equals(ns.first()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -319,7 +319,7 @@ public class TestRouting {
             Assert.assertEquals(true, peers[4].getPeerAddress().equals(ns.first()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -352,7 +352,7 @@ public class TestRouting {
             Assert.assertEquals(false, ns.contains(peers[4].getPeerAddress()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -385,7 +385,7 @@ public class TestRouting {
             Assert.assertEquals(false, ns.contains(peers[4].getPeerAddress()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -421,7 +421,7 @@ public class TestRouting {
             Assert.assertEquals(true, ns.contains(peers[4].getPeerAddress()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -454,7 +454,7 @@ public class TestRouting {
             Assert.assertEquals(true, ns.contains(peers[4].getPeerAddress()));
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -486,7 +486,7 @@ public class TestRouting {
             Assert.assertEquals(6, ns.size());
         } finally {
             for (Peer n : peers)
-                n.shutdown();
+                n.halt();
         }
     }
 
@@ -529,7 +529,7 @@ public class TestRouting {
             PeerAddress p1 = i.next();
             Assert.assertEquals(peers[262].getPeerAddress(), p1);
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -554,7 +554,7 @@ public class TestRouting {
             SortedSet<PeerAddress> ns = fr.getPotentialHits();
             Assert.assertEquals(peers[20].getPeerAddress(), ns.first());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -579,7 +579,7 @@ public class TestRouting {
             SortedSet<PeerAddress> ns = fr.getPotentialHits();
             Assert.assertEquals(peers[20].getPeerAddress(), ns.first());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -613,7 +613,7 @@ public class TestRouting {
             }
             System.err.println("done!");
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -648,7 +648,7 @@ public class TestRouting {
             }
             System.err.println("done!");
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -682,7 +682,7 @@ public class TestRouting {
             }
             System.err.println("done!");
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -717,7 +717,7 @@ public class TestRouting {
             }
             System.err.println("done! ");
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -744,7 +744,7 @@ public class TestRouting {
                 Assert.assertEquals(true, fm.isSuccess());
             }
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -771,7 +771,7 @@ public class TestRouting {
                 Assert.assertEquals(true, fm.isSuccess());
             }
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -789,8 +789,8 @@ public class TestRouting {
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {
-            client.shutdown();
-            master.shutdown();
+            client.halt();
+            master.halt();
         }
     }
 
@@ -806,8 +806,8 @@ public class TestRouting {
             Assert.assertEquals(false, tmp.isSuccess());
             Assert.assertEquals(0, client.getPeerBean().getPeerMap().size());
         } finally {
-            client.shutdown();
-            master.shutdown();
+            client.halt();
+            master.halt();
         }
     }
 
@@ -848,7 +848,7 @@ public class TestRouting {
                     ss2.remove(pa2);
                 }
             } finally {
-                master.shutdown();
+                master.halt();
             }
         }
     }
@@ -876,7 +876,7 @@ public class TestRouting {
             Assert.assertEquals(1, trackerDatas.size());
         } finally {
             // 0 is the master
-            peers[0].shutdown();
+            peers[0].halt();
         }
     }
 

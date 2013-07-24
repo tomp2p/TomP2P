@@ -32,9 +32,9 @@ public class TestDirect {
             Assert.assertEquals(true, fd.isSuccess());
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -61,9 +61,9 @@ public class TestDirect {
             Assert.assertEquals("yes", fd1.getObject());
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -100,9 +100,9 @@ public class TestDirect {
             System.err.println("done");
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -146,9 +146,9 @@ public class TestDirect {
             Assert.assertEquals(2.0d, sender.getPeerBean().getStatistics().getTCPChannelCreationCount(), 0.0d);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -181,9 +181,9 @@ public class TestDirect {
             System.err.println("done");
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -221,8 +221,8 @@ public class TestDirect {
             Timings.sleep(2000);
 
         } finally {
-            sender.shutdown();
-            recv1.shutdown();
+            sender.halt();
+            recv1.halt();
         }
     }
 }

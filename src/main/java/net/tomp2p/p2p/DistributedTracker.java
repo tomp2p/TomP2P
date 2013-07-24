@@ -25,6 +25,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
@@ -260,7 +261,8 @@ public class DistributedTracker {
                 new AtomicInteger(0), trackerConfiguration.getMaxFullTrackers(), new AtomicInteger(0),
                 trackerConfiguration.getAtLeastSucessfulRequestes(),
                 trackerConfiguration.getAtLeastEntriesFromTrackers(), new AtomicInteger(0),
-                trackerConfiguration.getMaxPrimaryTrackers(), futureResponses, futureTracker, knownPeers, isGet);
+                trackerConfiguration.getMaxPrimaryTrackers(),
+                new AtomicReferenceArray<FutureResponse>(futureResponses), futureTracker, knownPeers, isGet);
     }
 
     private void loopRec(final Number160 locationKey, final Number160 domainKey,
@@ -270,8 +272,8 @@ public class DistributedTracker {
             final int parallel, final AtomicInteger nrFailures, final int maxFailures, final AtomicInteger trackerFull,
             final int maxTrackerFull, final AtomicInteger successfulRequests, final int atLeastSuccessfullRequests,
             final int atLeastEntriesFromTrackers, final AtomicInteger primaryTracker, final int maxPrimaryTracker,
-            final FutureResponse[] futureResponses, final FutureTracker futureTracker, final Set<Number160> knownPeers,
-            final boolean isGet) {
+            final AtomicReferenceArray<FutureResponse> futureResponses, final FutureTracker futureTracker,
+            final Set<Number160> knownPeers, final boolean isGet) {
         // if its a get, we cancel connections, because we have what we want.
         // For a put, we want to store on many peers, thus there we don't
         // cancel.
@@ -280,7 +282,7 @@ public class DistributedTracker {
             logger.debug("we can ask " + queueToAsk.size() + " primary, and " + secondaryQueue.size() + " secondary.");
         int active = 0;
         for (int i = 0; i < parallel; i++) {
-            if (futureResponses[i] == null) {
+            if (futureResponses.get(i) == null) {
                 // TODO: make this more smart
                 boolean primary = true;
                 PeerAddress next = null;
@@ -303,9 +305,9 @@ public class DistributedTracker {
                     }
                     alreadyAsked.add(next);
                     active++;
-                    futureResponses[i] = operation.create(next, primary);
+                    futureResponses.set(i, operation.create(next, primary));
                 }
-            } else if (futureResponses[i] != null)
+            } else if (futureResponses.get(i) != null)
                 active++;
         }
         if (active == 0) {
@@ -404,21 +406,19 @@ public class DistributedTracker {
     }
 
     /**
-     * Stores the data we found on the tracker. The future stores there raw
-     * data, and the user can evaluate it in the future class.
+     * Stores the data we found on the tracker. The future stores there raw data, and the user can evaluate it in the
+     * future class.
      * 
      * @param peerOnTracker
-     *            We store the results per peer. The result of each peer is
-     *            stored in this map.
+     *            We store the results per peer. The result of each peer is stored in this map.
      * @param newDataMap
      *            The new data, we got from a peer
      * @param newDataProvider
      *            The peer we got the new data from
      * @param knownPeers
-     *            The list of known peers. The list of know peers will be
-     *            updated for every peer with get reports from and from its
-     *            entries. This set is a bloomfilter, so there is no problem
-     *            with growth, but it might result in false positives.
+     *            The list of known peers. The list of know peers will be updated for every peer with get reports from
+     *            and from its entries. This set is a bloomfilter, so there is no problem with growth, but it might
+     *            result in false positives.
      */
     private static void storeResult(Map<PeerAddress, Collection<TrackerData>> peerOnTracker,
             Collection<TrackerData> newDataMap, PeerAddress newDataProvider, Set<Number160> knownPeers) {
@@ -436,15 +436,14 @@ public class DistributedTracker {
     }
 
     /**
-     * Filters the collection of new peers from already known peers. The result
-     * of this operation is stored in queueToAsk, which will be queried next.
+     * Filters the collection of new peers from already known peers. The result of this operation is stored in
+     * queueToAsk, which will be queried next.
      * 
      * @param queueToAsk
      *            The queue where we store new peers we found
      * @param newPeers
-     *            New peers that were sent from other peers. Since the other
-     *            peers don't know what peers we know, we must filter this
-     *            collection.
+     *            New peers that were sent from other peers. Since the other peers don't know what peers we know, we
+     *            must filter this collection.
      * @param knownPeers1
      *            Those peer we have already asked or are already in the queue
      * @param knownPeers2
@@ -463,9 +462,8 @@ public class DistributedTracker {
     }
 
     /**
-     * Converts Collection<TrackerData> to Collection<PeerAddress>. The DHT
-     * returns TrackerData and for further evaluation its sometimes necessary to
-     * extract the PeerAddresses from it.
+     * Converts Collection<TrackerData> to Collection<PeerAddress>. The DHT returns TrackerData and for further
+     * evaluation its sometimes necessary to extract the PeerAddresses from it.
      * 
      * @param trackerData
      *            As returned from the DHT operation
@@ -480,19 +478,16 @@ public class DistributedTracker {
     }
 
     /**
-     * This interface is used for the RPC operations. It creates the calls to
-     * other peers
+     * This interface is used for the RPC operations. It creates the calls to other peers
      */
     public interface Operation {
         /**
-         * Creates an RPC. For the distributed thracker, this is either
-         * addToTracker or getFromTracker
+         * Creates an RPC. For the distributed thracker, this is either addToTracker or getFromTracker
          * 
          * @param address
          *            The address of the remote peer
          * @param primary
-         *            If the remote peer is a primary tracker, the flag is set
-         *            to true
+         *            If the remote peer is a primary tracker, the flag is set to true
          * @return The future reponse of the RPC
          */
         public abstract FutureResponse create(PeerAddress address, boolean primary);

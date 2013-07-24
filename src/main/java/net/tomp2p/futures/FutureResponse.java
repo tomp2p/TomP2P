@@ -21,6 +21,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
 
 import net.tomp2p.connection.ReplyTimeoutHandler;
 import net.tomp2p.message.Message;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
 /**

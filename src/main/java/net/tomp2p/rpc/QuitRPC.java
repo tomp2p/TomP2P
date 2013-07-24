@@ -1,12 +1,12 @@
 /*
  * Copyright 2009 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25,26 +25,47 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.Reason;
 
+/**
+ * This Quit RPC is used to send friendly shutdown messages by peers that are shutdown regularly.
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public class QuitRPC extends ReplyHandler {
-    public QuitRPC(PeerBean peerBean, ConnectionBean connectionBean) {
+
+    /**
+     * Constructor that registers this RPC with the message handler.
+     * 
+     * @param peerBean
+     *            The peer bean that contains data that is unique for each peer
+     * @param connectionBean
+     *            The connection bean that is unique per connection (multiple peers can share a single connection)
+     */
+    public QuitRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
         super(peerBean, connectionBean);
         registerIoHandler(Command.QUIT);
     }
 
     /**
-     * Sends a message that indicates this peer is about to quit. This is an
-     * RPC.
+     * Sends a message that indicates this peer is about to quit. This is an RPC.
      * 
      * @param remotePeer
      *            The remote peer to send this request
+     * @param sign
+     *            Set if the message should be signed
      * @param channelCreator
      *            The channel creator that creates connections
      * @param forceTCP
      *            Set to true if the communication should be TCP, default is UDP
      * @return The future response to keep track of future events
      */
-    public FutureResponse quit(final PeerAddress remotePeer, ChannelCreator channelCreator, boolean forceTCP) {
+    public FutureResponse quit(final PeerAddress remotePeer, final boolean sign, final ChannelCreator channelCreator,
+            final boolean forceTCP) {
         final Message message = createMessage(remotePeer, Command.QUIT, Type.REQUEST_FF_1);
+        if (sign) {
+            message.setPublicKeyAndSign(getPeerBean().getKeyPair());
+        }
+
         FutureResponse futureResponse = new FutureResponse(message);
         if (!forceTCP) {
             final RequestHandlerUDP<FutureResponse> requestHandler = new RequestHandlerUDP<FutureResponse>(
@@ -58,7 +79,7 @@ public class QuitRPC extends ReplyHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == Command.QUIT)) {
             throw new IllegalArgumentException("Message content is wrong");
         }

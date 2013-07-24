@@ -122,9 +122,9 @@ public class TestStorage {
             Assert.fail();
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -188,9 +188,9 @@ public class TestStorage {
             Assert.fail();
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -272,9 +272,9 @@ public class TestStorage {
             Assert.fail();
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -328,9 +328,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -375,9 +375,9 @@ public class TestStorage {
         }
         finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -419,9 +419,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -486,9 +486,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -538,9 +538,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -582,9 +582,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -619,9 +619,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -663,9 +663,9 @@ public class TestStorage {
             }
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -713,9 +713,9 @@ public class TestStorage {
             Assert.assertEquals(50 * 1024 * 1024, fr.getResponse().getDataMap().get(new Number160(77)).getData().length);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -750,9 +750,9 @@ public class TestStorage {
             System.err.println("good!");
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -800,9 +800,9 @@ public class TestStorage {
             Assert.assertEquals(false, fr.isSuccess());
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -859,9 +859,9 @@ public class TestStorage {
             System.err.println("done.");
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -917,10 +917,10 @@ public class TestStorage {
             Assert.assertEquals(2, test2.get());
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
             if (slave != null) {
-                slave.shutdown();
+                slave.halt();
             }
         }
     }
@@ -973,14 +973,14 @@ public class TestStorage {
             slave2.bootstrap().setPeerAddress(master.getPeerAddress()).start().awaitUninterruptibly();
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.getPeerAddress();
-            slave1.shutdown();
+            slave1.halt();
             master.getPeerBean().getPeerMap().peerOffline(slaveAddress1, true);
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(1, test2.get());
 
             PeerAddress slaveAddress2 = slave2.getPeerAddress();
-            slave2.shutdown();
+            slave2.halt();
             master.getPeerBean().getPeerMap().peerOffline(slaveAddress2, true);
 
             Assert.assertEquals(1, test1.get());
@@ -989,7 +989,7 @@ public class TestStorage {
             master.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
 
@@ -1051,9 +1051,9 @@ public class TestStorage {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -1102,9 +1102,9 @@ public class TestStorage {
 
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 }

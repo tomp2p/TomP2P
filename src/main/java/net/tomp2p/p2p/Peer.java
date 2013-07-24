@@ -48,6 +48,7 @@ import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
+import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.p2p.builder.SubmitBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -218,13 +219,13 @@ public class Peer {
     public List<PeerListener> getListeners() {
         return listeners;
     }
+    
+    
 
     /**
-     * Closes all connections of this node
-     * 
-     * @throws InterruptedException
+     * Closes all connections of this peer, shuts down executors and frees all resources.
      */
-    public void shutdown() {
+    public void halt() {
         shutdown = true;
         logger.info("begin shutdown in progres at " + System.nanoTime());
         synchronized (scheduledFutures) {
@@ -647,11 +648,6 @@ public class Peer {
         return new SendDirectBuilder(this, recipientConnection);
     }
 
-    @Deprecated
-    public SendDirectBuilder sendDirect() {
-        return new SendDirectBuilder(this);
-    }
-
     public BootstrapBuilder bootstrap() {
         return new BootstrapBuilder(this);
     }
@@ -678,6 +674,15 @@ public class Peer {
 
     public BroadcastBuilder broadcast(Number160 messageKey) {
         return new BroadcastBuilder(this, messageKey);
+    }
+    
+    /**
+     * Sends a friendly shutdown message to my close neighbors in the DHT.
+     * 
+     * @return A builder for shutdown that runs asynchronous.
+     */
+    public ShutdownBuilder shutdown() {
+        return new ShutdownBuilder(this);
     }
 
     // *************************** Connection Reservation

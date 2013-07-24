@@ -58,7 +58,7 @@ public final class ExampleDirectReplication {
             exmpleDirectReplication(peers);
         } finally {
             if (peers != null && peers[0] != null) {
-                peers[0].shutdown();
+                peers[0].halt();
             }
         }
     }

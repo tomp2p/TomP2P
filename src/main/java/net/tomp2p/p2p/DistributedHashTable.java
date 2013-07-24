@@ -1,12 +1,12 @@
 /*
  * Copyright 2011 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -23,23 +23,28 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureRequest;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.DirectDataRPC;
+import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
@@ -50,25 +55,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DistributedHashTable {
-    final private static Logger logger = LoggerFactory.getLogger(DistributedHashTable.class);
+    private static final Logger logger = LoggerFactory.getLogger(DistributedHashTable.class);
 
-    final private DistributedRouting routing;
+    private final DistributedRouting routing;
 
-    final private StorageRPC storeRCP;
+    private final StorageRPC storeRCP;
 
-    final private DirectDataRPC directDataRPC;
+    private final DirectDataRPC directDataRPC;
 
-    public DistributedHashTable(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC) {
+    private final QuitRPC quitRPC;
+
+    public DistributedHashTable(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC,
+            QuitRPC quitRPC) {
         this.routing = routing;
         this.storeRCP = storeRCP;
         this.directDataRPC = directDataRPC;
+        this.quitRPC = quitRPC;
     }
 
     public FutureDHT add(final Number160 locationKey, final Number160 domainKey, final Collection<Data> dataSet,
             final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration p2pConfiguration,
-            final boolean protectDomain, final boolean signMessage, final boolean isManualCleanup, final boolean list,
-            final FutureCreate<FutureDHT> futureCreate, final FutureChannelCreator futureChannelCreator,
-            final ConnectionReservation connectionReservation) {
+            final boolean protectDomain, final boolean signMessage, final boolean isManualCleanup,
+            final boolean list, final FutureCreate<FutureDHT> futureCreate,
+            final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation) {
         final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(),
                 futureCreate);
 
@@ -86,8 +95,8 @@ public class DistributedHashTable {
                                 if (logger.isDebugEnabled())
                                     logger.debug("adding lkey=" + locationKey + " on "
                                             + futureRouting.getPotentialHits());
-                                parallelRequests(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
-                                        future.getChannelCreator(), new Operation() {
+                                parallelRequests(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT,
+                                        false, future.getChannelCreator(), new OperationMapper<FutureDHT>() {
                                             Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
 
                                             Map<PeerAddress, Collection<Number480>> rawData480 = new HashMap<PeerAddress, Collection<Number480>>();
@@ -103,7 +112,8 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureDHT futureDHT) {
-                                                futureDHT.setStoredKeys(locationKey, domainKey, rawData, rawData480);
+                                                futureDHT
+                                                        .setStoredKeys(locationKey, domainKey, rawData, rawData480);
                                             }
 
                                             @Override
@@ -159,8 +169,8 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    final FutureRouting futureRouting = createRouting(locationKey, null, null, routingConfiguration,
-                            p2pConfiguration, Type.REQUEST_1, future.getChannelCreator());
+                    final FutureRouting futureRouting = createRouting(locationKey, null, null,
+                            routingConfiguration, p2pConfiguration, Type.REQUEST_1, future.getChannelCreator());
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
@@ -170,7 +180,8 @@ public class DistributedHashTable {
                                     logger.debug("storing lkey=" + locationKey + " on "
                                             + futureRouting.getPotentialHits());
                                 parallelRequests(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT,
-                                        cancelOnFinish, future.getChannelCreator(), new Operation() {
+                                        cancelOnFinish, future.getChannelCreator(),
+                                        new OperationMapper<FutureDHT>() {
                                             Map<PeerAddress, ChannelBuffer> rawChannels = new HashMap<PeerAddress, ChannelBuffer>();
 
                                             Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
@@ -231,10 +242,10 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
-    public FutureDHT put(final Number160 locationKey, final Number160 domainKey, final Map<Number160, Data> dataMap,
-            final RoutingConfiguration routingConfiguration, final RequestP2PConfiguration p2pConfiguration,
-            final boolean putIfAbsent, final boolean protectDomain, final boolean signMessage,
-            final boolean isManualCleanup, final FutureCreate<FutureDHT> futureCreate,
+    public FutureDHT put(final Number160 locationKey, final Number160 domainKey,
+            final Map<Number160, Data> dataMap, final RoutingConfiguration routingConfiguration,
+            final RequestP2PConfiguration p2pConfiguration, final boolean putIfAbsent, final boolean protectDomain,
+            final boolean signMessage, final boolean isManualCleanup, final FutureCreate<FutureDHT> futureCreate,
             final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation) {
         final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(),
                 futureCreate);
@@ -252,8 +263,8 @@ public class DistributedHashTable {
                                 if (logger.isDebugEnabled())
                                     logger.debug("storing lkey=" + locationKey + " on "
                                             + futureRouting.getPotentialHits());
-                                parallelRequests(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT, false,
-                                        future.getChannelCreator(), new Operation() {
+                                parallelRequests(p2pConfiguration, futureRouting.getPotentialHits(), futureDHT,
+                                        false, future.getChannelCreator(), new OperationMapper<FutureDHT>() {
                                             Map<PeerAddress, Collection<Number160>> rawData = new HashMap<PeerAddress, Collection<Number160>>();
 
                                             Map<PeerAddress, Collection<Number480>> rawData480 = new HashMap<PeerAddress, Collection<Number480>>();
@@ -263,8 +274,8 @@ public class DistributedHashTable {
                                                     PeerAddress address) {
                                                 boolean protectEntry = Utils.checkEntryProtection(dataMap);
                                                 return putIfAbsent ? storeRCP.putIfAbsent(address, locationKey,
-                                                        domainKey, dataMap, protectDomain, protectEntry, signMessage,
-                                                        channelCreator, p2pConfiguration.isForceUPD(),
+                                                        domainKey, dataMap, protectDomain, protectEntry,
+                                                        signMessage, channelCreator, p2pConfiguration.isForceUPD(),
                                                         p2pConfiguration.getSenderCacheStrategy()) : storeRCP.put(
                                                         address, locationKey, domainKey, dataMap, protectDomain,
                                                         protectEntry, signMessage, channelCreator,
@@ -274,7 +285,8 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureDHT futureDHT) {
-                                                futureDHT.setStoredKeys(locationKey, domainKey, rawData, rawData480);
+                                                futureDHT
+                                                        .setStoredKeys(locationKey, domainKey, rawData, rawData480);
                                             }
 
                                             @Override
@@ -353,64 +365,63 @@ public class DistributedHashTable {
                                         : adjustConfiguration(p2pConfiguration, futureRouting.getDirectHitsDigest());
                                 // store in direct hits
                                 parallelRequests(p2pConfiguration2, range ? futureRouting.getPotentialHits()
-                                        : futureRouting.getDirectHits(), futureDHT, true, future.getChannelCreator(),
-                                        new Operation() {
-                                            Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
+                                        : futureRouting.getDirectHits(), futureDHT, true, future
+                                        .getChannelCreator(), new OperationMapper<FutureDHT>() {
+                                    Map<PeerAddress, Map<Number160, Data>> rawData = new HashMap<PeerAddress, Map<Number160, Data>>();
 
-                                            Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
+                                    Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
 
-                                            @Override
-                                            public FutureResponse create(ChannelCreator channelCreator,
-                                                    PeerAddress address) {
-                                                return storeRCP.get(address, locationKey, domainKey, contentKeys,
-                                                        keyBloomFilter, contentBloomFilter, signMessage, digest,
-                                                        returnBloomFilter, range, channelCreator,
-                                                        p2pConfiguration.isForceUPD());
-                                            }
+                                    @Override
+                                    public FutureResponse create(ChannelCreator channelCreator, PeerAddress address) {
+                                        return storeRCP.get(address, locationKey, domainKey, contentKeys,
+                                                keyBloomFilter, contentBloomFilter, signMessage, digest,
+                                                returnBloomFilter, range, channelCreator,
+                                                p2pConfiguration.isForceUPD());
+                                    }
 
-                                            @Override
-                                            public void response(FutureDHT futureDHT) {
-                                                if (digest) {
-                                                    futureDHT.setReceivedDigest(locationKey, domainKey,rawDigest);
+                                    @Override
+                                    public void response(FutureDHT futureDHT) {
+                                        if (digest) {
+                                            futureDHT.setReceivedDigest(locationKey, domainKey, rawDigest);
+                                        } else {
+                                            futureDHT.setReceivedData(locationKey, domainKey, rawData);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void interMediateResponse(FutureResponse future) {
+                                        // the future
+                                        // tells us that
+                                        // the
+                                        // communication
+                                        // was
+                                        // successful,
+                                        // which is ok
+                                        // for digest
+                                        if (future.isSuccess()) {
+                                            if (digest) {
+                                                SimpleBloomFilter<Number160> sbf1 = future.getResponse()
+                                                        .getBloomFilter1();
+                                                SimpleBloomFilter<Number160> sbf2 = future.getResponse()
+                                                        .getBloomFilter1();
+                                                final DigestResult digest;
+                                                if (sbf1 == null && sbf2 == null) {
+                                                    Map<Number160, Number160> keyDigest = future.getResponse()
+                                                            .getKeyMap();
+                                                    digest = new DigestResult(keyDigest);
                                                 } else {
-                                                    futureDHT.setReceivedData(locationKey, domainKey,rawData);
-                                                }
-                                            }
-
-                                            @Override
-                                            public void interMediateResponse(FutureResponse future) {
-                                                // the future
-                                                // tells us that
-                                                // the
-                                                // communication
-                                                // was
-                                                // successful,
-                                                // which is ok
-                                                // for digest
-                                                if (future.isSuccess()) {
-                                                    if (digest) {
-                                                        SimpleBloomFilter<Number160> sbf1 = future.getResponse()
-                                                                .getBloomFilter1();
-                                                        SimpleBloomFilter<Number160> sbf2 = future.getResponse()
-                                                                .getBloomFilter1();
-                                                        final DigestResult digest;
-                                                        if (sbf1 == null && sbf2 == null) {
-                                                            Map<Number160, Number160> keyDigest = future.getResponse()
-                                                                    .getKeyMap();
-                                                            digest = new DigestResult(keyDigest);
-                                                        } else {
-                                                            digest = new DigestResult(sbf1, sbf2);
-                                                        }
-
-                                                        rawDigest.put(future.getRequest().getRecipient(), digest);
-                                                    } else {
-                                                        rawData.put(future.getRequest().getRecipient(), future
-                                                                .getResponse().getDataMap());
-                                                    }
+                                                    digest = new DigestResult(sbf1, sbf2);
                                                 }
 
+                                                rawDigest.put(future.getRequest().getRecipient(), digest);
+                                            } else {
+                                                rawData.put(future.getRequest().getRecipient(), future
+                                                        .getResponse().getDataMap());
                                             }
-                                        });
+                                        }
+
+                                    }
+                                });
                             } else {
                                 futureDHT.setFailed("routing failed");
                             }
@@ -449,7 +460,7 @@ public class DistributedHashTable {
                                 if (logger.isDebugEnabled())
                                     logger.debug("found direct hits for remove: " + futureRouting.getDirectHits());
                                 parallelRequests(p2pConfiguration, futureRouting.getDirectHits(), futureDHT, false,
-                                        future.getChannelCreator(), new Operation() {
+                                        future.getChannelCreator(), new OperationMapper<FutureDHT>() {
                                             Map<PeerAddress, Map<Number160, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number160, Data>>();
 
                                             Map<PeerAddress, Collection<Number160>> rawDataNoResult = new HashMap<PeerAddress, Collection<Number160>>();
@@ -457,17 +468,19 @@ public class DistributedHashTable {
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
                                                     PeerAddress address) {
-                                                return storeRCP.remove(address, locationKey, domainKey, contentKeys,
-                                                        returnResults, signMessage, channelCreator,
+                                                return storeRCP.remove(address, locationKey, domainKey,
+                                                        contentKeys, returnResults, signMessage, channelCreator,
                                                         p2pConfiguration.isForceUPD());
                                             }
 
                                             @Override
                                             public void response(FutureDHT futureDHT) {
                                                 if (returnResults)
-                                                    futureDHT.setReceivedData(locationKey, domainKey, rawDataResult);
+                                                    futureDHT
+                                                            .setReceivedData(locationKey, domainKey, rawDataResult);
                                                 else
-                                                    futureDHT.setRemovedKeys(locationKey, domainKey, rawDataNoResult);
+                                                    futureDHT.setRemovedKeys(locationKey, domainKey,
+                                                            rawDataNoResult);
                                             }
 
                                             @Override
@@ -485,11 +498,11 @@ public class DistributedHashTable {
                                                 // it.
                                                 if (future.isSuccess() && future.getResponse().isOk()) {
                                                     if (returnResults) {
-                                                        rawDataResult.put(future.getRequest().getRecipient(), future
-                                                                .getResponse().getDataMap());
+                                                        rawDataResult.put(future.getRequest().getRecipient(),
+                                                                future.getResponse().getDataMap());
                                                     } else {
-                                                        rawDataNoResult.put(future.getRequest().getRecipient(), future
-                                                                .getResponse().getKeys());
+                                                        rawDataNoResult.put(future.getRequest().getRecipient(),
+                                                                future.getResponse().getKeys());
                                                     }
                                                 }
                                             }
@@ -511,34 +524,105 @@ public class DistributedHashTable {
     }
 
     /**
+     * Send a friendly shutdown message to your close neighbors.
+     * 
+     * @param connectionReservation
+     *            The connection reservation The routing configuration
+     * @param shutdownBuilder
+     *            All other options
+     * @return future shutdown
+     */
+    public FutureShutdown quit(final ConnectionReservation connectionReservation,
+            final ShutdownBuilder shutdownBuilder) {
+        final FutureShutdown futureShutdown = new FutureShutdown();
+
+        shutdownBuilder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+            @Override
+            public void operationComplete(final FutureChannelCreator future) throws Exception {
+                if (future.isSuccess()) {
+                    // content key and domain key are not important when sending a friendly shutdown
+                    final FutureRouting futureRouting = createRouting(shutdownBuilder.getLocationKey(), null, null,
+                            shutdownBuilder.getRoutingConfiguration(),
+                            shutdownBuilder.getRequestP2PConfiguration(), Type.REQUEST_2,
+                            future.getChannelCreator());
+                    futureShutdown.setFutureRouting(futureRouting);
+
+                    futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
+                        @Override
+                        public void operationComplete(final FutureRouting futureRouting) throws Exception {
+                            if (futureRouting.isSuccess()) {
+                                if (logger.isDebugEnabled()) {
+                                    logger.debug("found peer to send the quit message: "
+                                            + futureRouting.getPotentialHits());
+                                }
+                                parallelRequests(shutdownBuilder.getRequestP2PConfiguration(),
+                                        futureRouting.getPotentialHits(), futureShutdown, false,
+                                        future.getChannelCreator(), new OperationMapper<FutureShutdown>() {
+
+                                            @Override
+                                            public FutureResponse create(final ChannelCreator channelCreator,
+                                                    final PeerAddress address) {
+                                                return quitRPC.quit(address, shutdownBuilder.isSignMessage(),
+                                                        channelCreator, shutdownBuilder
+                                                                .getRequestP2PConfiguration().isForceUPD());
+                                            }
+
+                                            @Override
+                                            public void response(final FutureShutdown future) {
+                                                future.setDone();
+                                            }
+
+                                            // its fire and forget, so don't bother checking the future success
+                                            @Override
+                                            public void interMediateResponse(final FutureResponse future) {
+                                                // contactedPeers can be accessed by several threads
+                                                futureShutdown.report(future.getRequest().getRecipient(),
+                                                        future.isSuccess());
+                                            }
+                                        });
+                            } else {
+                                futureShutdown.setFailed("routing failed");
+                            }
+                        }
+                    });
+                    if (!shutdownBuilder.isManualCleanup()) {
+                        Utils.addReleaseListenerAll(futureShutdown, connectionReservation,
+                                future.getChannelCreator());
+                    }
+                } else {
+                    futureShutdown.setFailed(future);
+                }
+
+            }
+        });
+        return futureShutdown;
+    }
+
+    /**
      * Creates RPCs and executes them parallel.
      * 
      * @param p2pConfiguration
-     *            The configuration that specifies e.g. how many parallel
-     *            requests there are.
+     *            The configuration that specifies e.g. how many parallel requests there are.
      * @param queue
-     *            The sorted set that will be queries. The first RPC takes the
-     *            first in the queue.
+     *            The sorted set that will be queries. The first RPC takes the first in the queue.
      * @param futureDHT
      *            The future object that tracks the progress
      * @param cancleOnFinish
-     *            Set to true if the operation should be canceled (e.g. file
-     *            transfer) if the future has finished.
+     *            Set to true if the operation should be canceled (e.g. file transfer) if the future has finished.
      * @param operation
      *            The operation that creates the request
      */
-    public FutureDHT parallelRequests(final RequestP2PConfiguration p2pConfiguration,
+    public static <K extends BaseFutureRequest> K parallelRequests(final RequestP2PConfiguration p2pConfiguration,
             final NavigableSet<PeerAddress> queue, final boolean cancleOnFinish,
             final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation,
-            final boolean manualCleanup, final Operation operation) {
-        final FutureDHT futureDHT = new FutureDHT(p2pConfiguration.getMinimumResults(), new VotingSchemeDHT(), null);
+            final boolean manualCleanup, final OperationMapper<K> operation, final K futureDHT) {
 
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    parallelRequests(p2pConfiguration, queue, futureDHT, cancleOnFinish, future.getChannelCreator(),
-                            operation);
+                    parallelRequests(p2pConfiguration, queue, futureDHT, cancleOnFinish,
+                            future.getChannelCreator(), operation);
                     if (!manualCleanup) {
                         Utils.addReleaseListenerAll(futureDHT, connectionReservation, future.getChannelCreator());
                     }
@@ -550,32 +634,37 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
-    private void parallelRequests(RequestP2PConfiguration p2pConfiguration, NavigableSet<PeerAddress> queue,
-            FutureDHT futureDHT, boolean cancleOnFinish, ChannelCreator channelCreator, Operation operation) {
+    private static <K extends BaseFutureRequest> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
+            NavigableSet<PeerAddress> queue, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
+            OperationMapper<K> operation) {
         if (p2pConfiguration.getMinimumResults() == 0) {
-            operation.response(futureDHT);
+            operation.response(future);
             return;
         }
         FutureResponse[] futures = new FutureResponse[p2pConfiguration.getParallel()];
         // here we split min and pardiff, par=min+pardiff
-        loopRec(queue, p2pConfiguration.getMinimumResults(), new AtomicInteger(0), p2pConfiguration.getMaxFailure(),
-                p2pConfiguration.getParallelDiff(), futures, futureDHT, cancleOnFinish, channelCreator, operation);
+        loopRec(queue, p2pConfiguration.getMinimumResults(), new AtomicInteger(0),
+                p2pConfiguration.getMaxFailure(), p2pConfiguration.getParallelDiff(),
+                new AtomicReferenceArray<FutureResponse>(futures), future, cancleOnFinish, channelCreator,
+                operation);
     }
 
-    private void loopRec(final NavigableSet<PeerAddress> queue, final int min, final AtomicInteger nrFailure,
-            final int maxFailure, final int parallelDiff, final FutureResponse[] futures, final FutureDHT futureDHT,
-            final boolean cancelOnFinish, final ChannelCreator channelCreator, final Operation operation) {
+    private static <K extends BaseFutureRequest> void loopRec(final NavigableSet<PeerAddress> queue, final int min,
+            final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
+            final AtomicReferenceArray<FutureResponse> futures, final K futureDHT, final boolean cancelOnFinish,
+            final ChannelCreator channelCreator, final OperationMapper<K> operation) {
         // final int parallel=min+parallelDiff;
         int active = 0;
         int shared = 0;
         for (int i = 0; i < min + parallelDiff; i++) {
-            if (futures[i] == null) {
+            if (futures.get(i) == null) {
                 PeerAddress next = queue.pollFirst();
                 if (next != null) {
                     active++;
-                    futures[i] = operation.create(channelCreator, next);
-                    futureDHT.addRequests(futures[i]);
-                    if (futures[i].isShared()) {
+                    FutureResponse futureResponse = operation.create(channelCreator, next);
+                    futures.set(i, futureResponse);
+                    futureDHT.addRequests(futureResponse);
+                    if (futureResponse.isShared()) {
                         shared++;
                     }
                 }
@@ -594,7 +683,8 @@ public class DistributedHashTable {
         }
         if (logger.isDebugEnabled())
             logger.debug("fork/join status: " + min + "/" + active + " (" + parallelDiff + ")");
-        FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(Math.min(min, active), false, futures);
+        FutureForkJoin<FutureResponse> fp = new FutureForkJoin<FutureResponse>(Math.min(min, active), false,
+                futures);
         fp.addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>() {
             @Override
             public void operationComplete(FutureForkJoin<FutureResponse> future) throws Exception {
@@ -616,40 +706,29 @@ public class DistributedHashTable {
         });
     }
 
-    private FutureRouting createRouting(Number160 locationKey, Number160 domainKey, Collection<Number160> contentKeys,
-            RoutingConfiguration routingConfiguration, RequestP2PConfiguration p2pConfiguration, Type type,
-            ChannelCreator channelCreator) {
+    private FutureRouting createRouting(Number160 locationKey, Number160 domainKey,
+            Collection<Number160> contentKeys, RoutingConfiguration routingConfiguration,
+            RequestP2PConfiguration p2pConfiguration, Type type, ChannelCreator channelCreator) {
         return routing.route(locationKey, domainKey, contentKeys, type, routingConfiguration.getDirectHits(),
                 routingConfiguration.getMaxNoNewInfo(p2pConfiguration.getMinimumResults()),
                 routingConfiguration.getMaxFailures(), routingConfiguration.getMaxSuccess(),
                 routingConfiguration.getParallel(), routingConfiguration.isForceTCP(), channelCreator);
     }
 
-    public interface Operation {
-        public abstract FutureResponse create(ChannelCreator channelCreator, PeerAddress remotePeerAddress);
-
-        public abstract void response(FutureDHT futureDHT);
-
-        public abstract void interMediateResponse(FutureResponse futureResponse);
-    }
-
     /**
-     * Adjusts the number of minimum requests in the P2P configuration. When we
-     * query x peers for the get() operation and they have y different data
-     * stored (y <= x), then set the minimum to y or to the value the user set
-     * if its smaller. If no data is found, then return 0, so we don't start P2P
-     * RPCs.
+     * Adjusts the number of minimum requests in the P2P configuration. When we query x peers for the get() operation
+     * and they have y different data stored (y <= x), then set the minimum to y or to the value the user set if its
+     * smaller. If no data is found, then return 0, so we don't start P2P RPCs.
      * 
      * @param p2pConfiguration
-     *            The old P2P configuration with the user specified minimum
-     *            result
+     *            The old P2P configuration with the user specified minimum result
      * @param directHitsDigest
      *            The digest information from the routing process
      * @return The new RequestP2PConfiguration with the new minimum result
      */
     public static RequestP2PConfiguration adjustConfiguration(final RequestP2PConfiguration p2pConfiguration,
             final SortedMap<PeerAddress, DigestInfo> directHitsDigest) {
-        
+
         int size = directHitsDigest.size();
         int requested = p2pConfiguration.getMinimumResults();
         if (size >= requested) {

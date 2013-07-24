@@ -64,7 +64,7 @@ public final class ExamplePutGet {
             exampleAddGet(peers);
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
     }

@@ -117,7 +117,7 @@ public class TestRealNetwork {
         }
         InetSocketAddress inetSocketAddress = (InetSocketAddress) data.getObject();
         System.err.println("returned " + inetSocketAddress);
-        myPeer.shutdown();
+        myPeer.halt();
         // Thread.sleep( Long.MAX_VALUE );
     }
 }

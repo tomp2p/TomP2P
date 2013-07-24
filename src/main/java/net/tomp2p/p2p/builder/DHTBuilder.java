@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -29,16 +29,23 @@ import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 
-public abstract class DHTBuilder<K extends DHTBuilder<K>> {
-    public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-dht");
+/**
+ * Every DHT builder has those methods in common.
+ * 
+ * @author Thomas Bocek
+ * 
+ * @param <K>
+ */
+public abstract class DHTBuilder<K extends DHTBuilder<K>> implements BasicBuilder<K> {
+    // changed this to zero as for the content key its also zero
+    public static final Number160 DEFAULT_DOMAIN = Number160.ZERO;
 
-    protected final static FutureDHT FUTURE_DHT_SHUTDOWN = new FutureDHT().setFailed("Peer is shutting down");
+    protected static final FutureDHT FUTURE_DHT_SHUTDOWN = new FutureDHT().setFailed("Peer is shutting down");
 
     protected final Peer peer;
 
     protected final Number160 locationKey;
 
-    //
     protected Number160 domainKey;
 
     protected RoutingConfiguration routingConfiguration;
@@ -71,6 +78,10 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> {
 
     public void self(K self) {
         this.self = self;
+    }
+    
+    public Number160 getLocationKey() {
+        return locationKey;
     }
 
     public Number160 getDomainKey() {

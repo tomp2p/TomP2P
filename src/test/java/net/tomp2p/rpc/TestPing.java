@@ -41,9 +41,9 @@ public class TestPing {
             recv1.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -69,9 +69,9 @@ public class TestPing {
             recv1.getConnectionBean().getConnectionReservation().release(cc2);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -110,9 +110,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc2);
         } finally {
             if (sender1 != null)
-                sender1.shutdown();
+                sender1.halt();
             if (recv11 != null)
-                recv11.shutdown();
+                recv11.halt();
         }
     }
 
@@ -134,9 +134,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -160,9 +160,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -187,9 +187,9 @@ public class TestPing {
             System.err.println("done");
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -216,9 +216,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -242,9 +242,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -270,9 +270,9 @@ public class TestPing {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -303,7 +303,7 @@ public class TestPing {
             System.err.println("DONE.");
         } finally {
             for (int i = 0; i < p.length; i++) {
-                p[i].shutdown();
+                p[i].halt();
             }
         }
     }
@@ -361,9 +361,9 @@ public class TestPing {
             System.out.println("UDP time: " + (System.currentTimeMillis() - start));
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -398,9 +398,9 @@ public class TestPing {
 
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 }

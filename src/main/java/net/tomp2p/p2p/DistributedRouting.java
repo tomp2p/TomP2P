@@ -26,6 +26,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerBean;
@@ -77,8 +78,7 @@ public class DistributedRouting {
      *            number of failures to stop at
      * @param parallel
      *            number of routing requests performed concurrently
-     * @return a FutureRouting object, is set to complete if the route has been
-     *         found
+     * @return a FutureRouting object, is set to complete if the route has been found
      */
     public FutureWrapper<FutureRouting> bootstrap(final Collection<PeerAddress> peerAddresses, final int maxNoNewInfo,
             final int maxFailures, final int maxSuccess, final int parallel, final boolean forceTCP,
@@ -89,8 +89,8 @@ public class DistributedRouting {
         }
         final FutureWrapper<FutureRouting> futureWrapper = new FutureWrapper<FutureRouting>();
         // first we find close peers to us
-        FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getPeerId(), null, null, 0,
-                maxNoNewInfo, maxFailures, maxSuccess, parallel, Type.REQUEST_1, forceTCP, cc, true,
+        FutureRouting futureRouting = routing(peerAddresses, peerBean.getServerPeerAddress().getPeerId(), null, null,
+                0, maxNoNewInfo, maxFailures, maxSuccess, parallel, Type.REQUEST_1, forceTCP, cc, true,
                 isForceRoutingOnlyToSelf);
         // to not become a Fachidiot (expert idiot), we need to know other peers
         // as well
@@ -112,11 +112,9 @@ public class DistributedRouting {
      * @param locationKey
      *            the node a route should be found to
      * @param domainKey
-     *            the domain of the network the current node and locationKey is
-     *            in
+     *            the domain of the network the current node and locationKey is in
      * @param contentKeys
-     *            keys of the content to search for. Only used if you perform a
-     *            get
+     *            keys of the content to search for. Only used if you perform a get
      * @param maxDirectHits
      *            number of direct hits to stop at
      * @param maxNoNewInfo
@@ -126,14 +124,12 @@ public class DistributedRouting {
      * @param parallel
      *            number of routing requests performed concurrently
      * @param isDigest
-     *            Set to true to return a digest of the remote content for close
-     *            neighbors
+     *            Set to true to return a digest of the remote content for close neighbors
      * @param forceTCP
      *            Set to true if routing should use TCP connections
      * @param cc
      *            the channel creator
-     * @return a FutureRouting object, is set to complete if the route has been
-     *         found
+     * @return a FutureRouting object, is set to complete if the route has been found
      */
     public FutureRouting route(final Number160 locationKey, final Number160 domainKey,
             final Collection<Number160> contentKeys, Type type, int maxDirectHits, int maxNoNewInfo, int maxFailures,
@@ -152,8 +148,7 @@ public class DistributedRouting {
      * @param locationKey
      *            the node a route should be found to
      * @param domainKey
-     *            the domain of the network the current node and locationKey is
-     *            in
+     *            the domain of the network the current node and locationKey is in
      * @param contentKeys
      *            nodes which we got from another node
      * @param maxDirectHits
@@ -164,8 +159,7 @@ public class DistributedRouting {
      *            number of failures to stop at
      * @param parallel
      *            number of routing requests performed concurrently
-     * @return a FutureRouting object, is set to complete if the route has been
-     *         found
+     * @return a FutureRouting object, is set to complete if the route has been found
      */
     private FutureRouting routing(Collection<PeerAddress> peerAddresses, Number160 locationKey,
             final Number160 domainKey, final Collection<Number160> contentKeys, int maxDirectHits, int maxNoNewInfo,
@@ -230,18 +224,17 @@ public class DistributedRouting {
             boolean isRoutingOnlyToSelf = isForceRoutingOnlyToSelf
                     || (peerAddresses.size() == 1 && peerAddresses.iterator().next()
                             .equals(peerBean.getServerPeerAddress()));
-            routingRec(futureResponses, futureRouting, queueToAsk, alreadyAsked, directHits, potentialHits,
-                    new AtomicInteger(0), new AtomicInteger(0), new AtomicInteger(0), maxDirectHits, maxNoNewInfo,
-                    maxFailures, maxSuccess, parallel, locationKey, domainKey, contentKeys, true, type, forceTCP,
-                    false, cc, isBootstrap, !isRoutingOnlyToSelf);
+            routingRec(new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting, queueToAsk,
+                    alreadyAsked, directHits, potentialHits, new AtomicInteger(0), new AtomicInteger(0),
+                    new AtomicInteger(0), maxDirectHits, maxNoNewInfo, maxFailures, maxSuccess, parallel, locationKey,
+                    domainKey, contentKeys, true, type, forceTCP, false, cc, isBootstrap, !isRoutingOnlyToSelf);
         }
         return futureRouting;
     }
 
     /**
-     * Looks for a route to the given locationKey, performing recursively. Since
-     * this method is not called concurrently, but sequentially, no
-     * synchronization is necessary.
+     * Looks for a route to the given locationKey, performing recursively. Since this method is not called concurrently,
+     * but sequentially, no synchronization is necessary.
      * 
      * @param futureResponses
      *            expected responses
@@ -266,31 +259,30 @@ public class DistributedRouting {
      * @param maxFailures
      *            number of failures to stop at
      * @param maxSuccess
-     *            number of successful requests. To avoid looping if every peer
-     *            gives a new piece of information.
+     *            number of successful requests. To avoid looping if every peer gives a new piece of information.
      * @param parallel
      *            number of routing requests performed concurrently
      * @param locationKey
      *            the node a route should be found to
      * @param domainKey
-     *            the domain of the network the current node and locationKey is
-     *            in
+     *            the domain of the network the current node and locationKey is in
      * @param contentKeys
      *            nodes which we got from another node
      */
-    private void routingRec(final FutureResponse[] futureResponses, final FutureRouting futureRouting,
-            final NavigableSet<PeerAddress> queueToAsk, final SortedSet<PeerAddress> alreadyAsked,
-            final SortedMap<PeerAddress, DigestInfo> directHits, final NavigableSet<PeerAddress> potentialHits,
-            final AtomicInteger nrNoNewInfo, final AtomicInteger nrFailures, final AtomicInteger nrSuccess,
-            final int maxDirectHits, final int maxNoNewInfo, final int maxFailures, final int maxSucess,
-            final int parallel, final Number160 locationKey, final Number160 domainKey,
-            final Collection<Number160> contentKeys, final boolean cancelOnFinish, final Type type,
-            final boolean forceTCP, final boolean stopCreatingNewFutures, final ChannelCreator channelCreator,
-            final boolean isBootstrap, final boolean isRoutingToOthers) {
+    private void routingRec(final AtomicReferenceArray<FutureResponse> futureResponses,
+            final FutureRouting futureRouting, final NavigableSet<PeerAddress> queueToAsk,
+            final SortedSet<PeerAddress> alreadyAsked, final SortedMap<PeerAddress, DigestInfo> directHits,
+            final NavigableSet<PeerAddress> potentialHits, final AtomicInteger nrNoNewInfo,
+            final AtomicInteger nrFailures, final AtomicInteger nrSuccess, final int maxDirectHits,
+            final int maxNoNewInfo, final int maxFailures, final int maxSucess, final int parallel,
+            final Number160 locationKey, final Number160 domainKey, final Collection<Number160> contentKeys,
+            final boolean cancelOnFinish, final Type type, final boolean forceTCP,
+            final boolean stopCreatingNewFutures, final ChannelCreator channelCreator, final boolean isBootstrap,
+            final boolean isRoutingToOthers) {
         boolean randomSearch = locationKey == null;
         int active = 0;
         for (int i = 0; i < parallel; i++) {
-            if (futureResponses[i] == null && !stopCreatingNewFutures) {
+            if (futureResponses.get(i) == null && !stopCreatingNewFutures) {
                 final PeerAddress next;
                 if (randomSearch) {
                     next = Utils.pollRandom(queueToAsk, rnd);
@@ -302,14 +294,15 @@ public class DistributedRouting {
                     active++;
                     // if we search for a random peer, then the peer should
                     // return the address farest away.
-                    final Number160 locationKey2 = randomSearch ? next.getPeerId().xor(Number160.MAX_VALUE) : locationKey;
-                    futureResponses[i] = neighbors.closeNeighbors(next, locationKey2, domainKey, contentKeys, type,
-                            channelCreator, forceTCP);
+                    final Number160 locationKey2 = randomSearch ? next.getPeerId().xor(Number160.MAX_VALUE)
+                            : locationKey;
+                    futureResponses.set(i, neighbors.closeNeighbors(next, locationKey2, domainKey, contentKeys, type,
+                            channelCreator, forceTCP));
                     if (logger.isDebugEnabled()) {
                         logger.debug("get close neighbors: " + next);
                     }
                 }
-            } else if (futureResponses[i] != null) {
+            } else if (futureResponses.get(i) != null) {
                 active++;
             }
         }
@@ -360,8 +353,9 @@ public class DistributedRouting {
                         logger.debug("Routing finished " + finished + "/" + stopCreatingNewFutures);
                     }
                 } else {
-                    //if it failed but the failed is the closest one, its good to try again, since the peer might just be busy
-                    
+                    // if it failed but the failed is the closest one, its good to try again, since the peer might just
+                    // be busy
+
                     finished = nrFailures.incrementAndGet() > maxFailures;
                     stopCreatingNewFutures = finished;
                 }
@@ -381,11 +375,13 @@ public class DistributedRouting {
         });
     }
 
-    public static void cancel(boolean cancelOnFinish, int parallel, BaseFuture[] futureResponses) {
+    public static void cancel(boolean cancelOnFinish, int parallel,
+            AtomicReferenceArray<? extends BaseFuture> futureResponses) {
         if (cancelOnFinish) {
             for (int i = 0; i < parallel; i++) {
-                if (futureResponses[i] != null)
-                    futureResponses[i].cancel();
+                BaseFuture baseFuture = futureResponses.get(i);
+                if (baseFuture != null)
+                    baseFuture.cancel();
             }
         }
     }
@@ -414,20 +410,17 @@ public class DistributedRouting {
     }
 
     /**
-     * Updates queueToAsk with new data, returns if we found peers closer than
-     * we already know.
+     * Updates queueToAsk with new data, returns if we found peers closer than we already know.
      * 
      * @param queueToAsk
      *            The queue to get updated
      * @param newPeers
-     *            The new peers reported from remote peers. Since the remote
-     *            peers do not know what we know, we need to filter this
-     *            information.
+     *            The new peers reported from remote peers. Since the remote peers do not know what we know, we need to
+     *            filter this information.
      * @param alreadyAsked
      *            The peers we already know.
-     * @return True if we added peers that are closer to the target than we
-     *         already knew. Please note, it will return false if we add new
-     *         peers that are not closer to a target.
+     * @return True if we added peers that are closer to the target than we already knew. Please note, it will return
+     *         false if we add new peers that are not closer to a target.
      */
     static boolean merge(SortedSet<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
             Collection<PeerAddress> alreadyAsked) {
@@ -448,8 +441,7 @@ public class DistributedRouting {
      * @param queueToAsk
      *            The sorted set to check
      * @param first
-     *            The element to check if it will be the highest in the sorted
-     *            set
+     *            The element to check if it will be the highest in the sorted set
      * @return True, if item will be the highest element.
      */
     private static boolean isNew(SortedSet<PeerAddress> queueToAsk, PeerAddress item) {

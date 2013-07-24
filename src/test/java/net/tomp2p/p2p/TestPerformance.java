@@ -77,7 +77,7 @@ public class TestPerformance {
             }
         } finally {
             for (Peer peer : peers) {
-                peer.shutdown();
+                peer.halt();
             }
         }
     }
@@ -118,7 +118,7 @@ public class TestPerformance {
             }
         } finally {
             for (Peer peer : peers) {
-                peer.shutdown();
+                peer.halt();
             }
         }
     }
@@ -159,7 +159,7 @@ public class TestPerformance {
             }
         } finally {
             for (Peer peer : peers) {
-                peer.shutdown();
+                peer.halt();
             }
         }
     }
@@ -200,7 +200,7 @@ public class TestPerformance {
             }
         } finally {
             for (Peer peer : peers) {
-                peer.shutdown();
+                peer.halt();
             }
         }
     }

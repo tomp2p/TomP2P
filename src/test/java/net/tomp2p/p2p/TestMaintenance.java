@@ -40,7 +40,7 @@ public class TestMaintenance {
             Collection<PeerAddress> pas = master.getPeerBean().getPeerMap().peersForMaintenance();
             Assert.assertEquals(160 * p.getBagSize(), pas.size());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -70,7 +70,7 @@ public class TestMaintenance {
             // maximum capacity
             Assert.assertEquals(160 * peerMaker.getBagSize(), pas.size());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -92,7 +92,7 @@ public class TestMaintenance {
             //
             Timings.sleep(1000);
             PeerAddress node3 = nodes[3].getPeerAddress();
-            nodes[3].shutdown();
+            nodes[3].halt();
             System.err.println("node 3 shutdown");
             Timings.sleep(15000);
 
@@ -102,7 +102,7 @@ public class TestMaintenance {
             Assert.assertEquals(false, nodes[2].getPeerBean().getPeerMap().contains(node3));
         } finally {
             System.err.println("Shutdown!!");
-            master.shutdown();
+            master.halt();
         }
     }
 

@@ -55,7 +55,7 @@ public class TestTracker {
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.getRawPeersOnTracker().size());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -92,7 +92,7 @@ public class TestTracker {
             Assert.assertEquals(1, ft.getDirectTrackers().size());
 
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -129,7 +129,7 @@ public class TestTracker {
             Assert.assertEquals(2, ft.getDirectTrackers().size());
 
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -176,7 +176,7 @@ public class TestTracker {
             // but here we expect 3 peers, since 3 peers are on the tracker
             Assert.assertEquals(3, ft.getRawPeersOnTracker().values().iterator().next().size());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -273,7 +273,7 @@ public class TestTracker {
             Assert.assertEquals(true, tmp.size() < 160);
 
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -322,7 +322,7 @@ public class TestTracker {
                     .iterator().next().getAttachement());
             Assert.assertArrayEquals(",.peoueuaoeue".getBytes(), ft.getTrackers().iterator().next().getAttachement());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -344,7 +344,7 @@ public class TestTracker {
             Assert.assertTrue(future2.isSuccess());
             Assert.assertEquals(future2.getPeersOnTracker().size(), 1);
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 
@@ -372,7 +372,7 @@ public class TestTracker {
             ft.awaitUninterruptibly();
             Assert.assertEquals(1, ft.getTrackers().size());
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 

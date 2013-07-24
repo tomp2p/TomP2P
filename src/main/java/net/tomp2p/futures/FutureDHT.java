@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
@@ -36,7 +37,7 @@ import org.jboss.netty.buffer.ChannelBuffer;
  * 
  * @author Thomas Bocek
  */
-public class FutureDHT extends BaseFutureImpl<FutureDHT> implements FutureCleanup {
+public class FutureDHT extends BaseFutureImpl<FutureDHT> implements FutureCleanup, BaseFutureRequest {
     // The minimum number of expected results. This is also used for put()
     // operations to decide if a future failed or not.
     private final int min;
@@ -533,10 +534,11 @@ public class FutureDHT extends BaseFutureImpl<FutureDHT> implements FutureCleanu
         synchronized (lock) {
             final int size = requests.size();
             final FutureResponse[] futureResponses = new FutureResponse[size];
+
             for (int i = 0; i < size; i++) {
                 futureResponses[i] = requests.get(i);
             }
-            return new FutureForkJoin<FutureResponse>(futureResponses);
+            return new FutureForkJoin<FutureResponse>(new AtomicReferenceArray<FutureResponse>(futureResponses));
         }
     }
 

@@ -55,7 +55,7 @@ public class ExampleNATChat
         }
         finally 
         {
-            //peer.shutdown();
+            //peer.halt();
         }
     }
     
@@ -145,7 +145,7 @@ public class ExampleNATChat
             }
         }
         System.out.println("Shutting down...");
-        //peer.shutdown();
+        //peer.halt();
     }
 
 

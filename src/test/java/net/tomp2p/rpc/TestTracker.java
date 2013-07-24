@@ -51,9 +51,9 @@ public class TestTracker {
             Assert.fail();
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -90,9 +90,9 @@ public class TestTracker {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -125,9 +125,9 @@ public class TestTracker {
             sender.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 
@@ -162,9 +162,9 @@ public class TestTracker {
             Assert.fail();
         } finally {
             if (sender != null)
-                sender.shutdown();
+                sender.halt();
             if (recv1 != null)
-                recv1.shutdown();
+                recv1.halt();
         }
     }
 }

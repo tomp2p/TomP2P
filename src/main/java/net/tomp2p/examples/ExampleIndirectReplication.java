@@ -96,7 +96,7 @@ public final class ExampleIndirectReplication {
      */
     private static void shutdown(final Peer[] peers) {
         for (Peer peer : peers) {
-            peer.shutdown();
+            peer.halt();
         }
     }
 }

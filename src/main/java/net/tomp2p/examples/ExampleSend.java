@@ -31,7 +31,7 @@ public class ExampleSend
         }
         finally
         {
-            master.shutdown();
+            master.halt();
         }
     }
 

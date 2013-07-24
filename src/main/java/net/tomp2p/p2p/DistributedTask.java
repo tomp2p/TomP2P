@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionReservation;
@@ -57,9 +58,8 @@ public class DistributedTask {
     }
 
     /**
-     * Submit a task to the DHT. The node that is close to the locationKey will
-     * get the task. The routing process returns a list of close peers with the
-     * current load. The peer with the lowest load will get the task.
+     * Submit a task to the DHT. The node that is close to the locationKey will get the task. The routing process
+     * returns a list of close peers with the current load. The peer with the lowest load will get the task.
      * 
      * @param locationKey
      * @param dataMap
@@ -117,25 +117,30 @@ public class DistributedTask {
             Map<Number160, Data> dataMap, Worker worker, boolean forceUDP, boolean sign) {
         FutureAsyncTask[] futures = new FutureAsyncTask[requestP2PConfiguration.getParallel()];
         loopRec(queue, requestP2PConfiguration.getMinimumResults(), new AtomicInteger(0),
-                requestP2PConfiguration.getMaxFailure(), requestP2PConfiguration.getParallelDiff(), futures,
-                futureTask, true, channelCreator, taskId, dataMap, worker, forceUDP, sign);
+                requestP2PConfiguration.getMaxFailure(), requestP2PConfiguration.getParallelDiff(),
+                new AtomicReferenceArray<FutureAsyncTask>(futures), futureTask, true, channelCreator, taskId, dataMap,
+                worker, forceUDP, sign);
     }
 
     private void loopRec(final NavigableSet<Pair> queue, final int min, final AtomicInteger nrFailure,
-            final int maxFailure, final int parallelDiff, final FutureAsyncTask[] futures, final FutureTask futureTask,
-            final boolean cancelOnFinish, final ChannelCreator channelCreator, final Number160 taskId,
-            final Map<Number160, Data> dataMap, final Worker mapper, final boolean forceUDP, final boolean sign) {
+            final int maxFailure, final int parallelDiff, final AtomicReferenceArray<FutureAsyncTask> futures,
+            final FutureTask futureTask, final boolean cancelOnFinish, final ChannelCreator channelCreator,
+            final Number160 taskId, final Map<Number160, Data> dataMap, final Worker mapper, final boolean forceUDP,
+            final boolean sign) {
         int active = 0;
         for (int i = 0; i < min + parallelDiff; i++) {
-            if (futures[i] == null) {
+            if (futures.get(i) == null) {
                 PeerAddress next = queue.pollFirst().peerAddress;
                 if (next != null) {
                     active++;
-                    futures[i] = asyncTask.submit(next, channelCreator, taskId, dataMap, mapper, forceUDP, sign);
-                    futureTask.addRequests(futures[i]);
+                    FutureAsyncTask futureAsyncTask = asyncTask.submit(next, channelCreator, taskId, dataMap, mapper,
+                            forceUDP, sign);
+                    futures.set(i, futureAsyncTask);
+                    futureTask.addRequests(futureAsyncTask);
                 }
-            } else
+            } else {
                 active++;
+            }
         }
         if (active == 0) {
             futureTask.setDone();

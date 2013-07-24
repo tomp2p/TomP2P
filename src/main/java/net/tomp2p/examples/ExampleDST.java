@@ -67,7 +67,7 @@ public final class ExampleDST {
         } finally {
             // 0 is the master
             if (peers != null && peers[0] != null) {
-                peers[0].shutdown();
+                peers[0].halt();
             }
         }
     }

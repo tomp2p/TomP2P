@@ -62,7 +62,7 @@ public final class ExampleDHT {
         } finally {
             // 0 is the master
             if (peers != null && peers[0] != null) {
-                peers[0].shutdown();
+                peers[0].halt();
             }
         }
     }

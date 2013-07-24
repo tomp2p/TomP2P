@@ -1,12 +1,12 @@
 /*
  * Copyright 2012 Thomas Bocek
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -20,15 +20,17 @@ import java.util.NavigableSet;
 import java.util.TreeSet;
 
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.p2p.DistributedHashTable.Operation;
+import net.tomp2p.p2p.DistributedHashTable;
+import net.tomp2p.p2p.OperationMapper;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class ParallelRequestBuilder extends DHTBuilder<ParallelRequestBuilder> {
     private NavigableSet<PeerAddress> queue;
 
-    private Operation operation;
+    private OperationMapper<FutureDHT> operation;
 
     private boolean cancelOnFinish = false;
 
@@ -54,11 +56,11 @@ public class ParallelRequestBuilder extends DHTBuilder<ParallelRequestBuilder> {
         return this;
     }
 
-    public Operation getOperation() {
+    public OperationMapper<FutureDHT> getOperation() {
         return operation;
     }
 
-    public ParallelRequestBuilder setOperation(Operation operation) {
+    public ParallelRequestBuilder setOperation(OperationMapper operation) {
         this.operation = operation;
         return this;
     }
@@ -86,7 +88,10 @@ public class ParallelRequestBuilder extends DHTBuilder<ParallelRequestBuilder> {
         if (queue == null || queue.size() == 0) {
             throw new IllegalArgumentException("queue cannot be empty");
         }
-        return peer.getDistributedHashMap().parallelRequests(requestP2PConfiguration, queue, cancelOnFinish,
-                futureChannelCreator, peer.getConnectionBean().getConnectionReservation(), manualCleanup, operation);
+        final FutureDHT futureDHT = new FutureDHT(requestP2PConfiguration.getMinimumResults(),
+                new VotingSchemeDHT(), null);
+        return DistributedHashTable.<FutureDHT> parallelRequests(requestP2PConfiguration, queue, cancelOnFinish,
+                futureChannelCreator, peer.getConnectionBean().getConnectionReservation(), manualCleanup,
+                operation, futureDHT);
     }
 }

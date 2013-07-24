@@ -68,7 +68,7 @@ public class ExampleNAT
         }
         finally
         {
-            peer.shutdown();
+            peer.halt();
         }
     }
 
@@ -103,6 +103,6 @@ public class ExampleNAT
         {
             System.out.println( "failed " + fd.getFailedReason() );
         }
-        peer.shutdown();
+        peer.halt();
     }
 }

@@ -44,10 +44,10 @@ public class TestTaskRPC {
             Thread.sleep(1000);
         } finally {
             if (peer1 != null) {
-                peer1.shutdown();
+                peer1.halt();
             }
             if (peer2 != null) {
-                peer2.shutdown();
+                peer2.halt();
             }
         }
     }
@@ -113,10 +113,10 @@ public class TestTaskRPC {
             Assert.assertEquals(TaskStatus.Status.SUCCESS_RESULT_SENT, status3.getStatus());
         } finally {
             if (peer1 != null) {
-                peer1.shutdown();
+                peer1.halt();
             }
             if (peer2 != null) {
-                peer2.shutdown();
+                peer2.halt();
             }
         }
     }
@@ -146,10 +146,10 @@ public class TestTaskRPC {
             t.printStackTrace();
         } finally {
             if (peer1 != null) {
-                peer1.shutdown();
+                peer1.halt();
             }
             if (peer2 != null) {
-                peer2.shutdown();
+                peer2.halt();
             }
         }
     }
@@ -172,12 +172,12 @@ public class TestTaskRPC {
                     futureChannelCreator.getChannelCreator(), taskId, dataMap, new MyWorker3(), false, false);
             Utils.addReleaseListenerAll(futureAsyncTask, peer1.getConnectionBean().getConnectionReservation(),
                     futureChannelCreator.getChannelCreator());
-            peer2.shutdown();
+            peer2.halt();
             futureAsyncTask.awaitUninterruptibly();
             Assert.assertEquals(false, futureAsyncTask.isSuccess());
         } finally {
             if (peer1 != null) {
-                peer1.shutdown();
+                peer1.halt();
             }
         }
     }

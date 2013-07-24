@@ -1,12 +1,12 @@
 /*
- * Copyright 2009 Thomas Bocek
- * 
+ * Copyright 2013 Thomas Bocek
+ *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
  * the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -17,70 +17,67 @@ package net.tomp2p.futures;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
- * The key future for recursive loops. A first version with the fork-join
- * framework did not reduce the code complexity significantly, thus I decided to
- * write this class. The basic idea is that you can create parallel loops. For
- * example in a routing process (loop to find closest peers), one starts to ask
- * 3 peers in parallel, the first that returns result gets evaluated for new
- * information about other peers, and a new peer is asked. If two peers finish,
- * then two other peers are asked. Thus, we keep always 3 connections running
- * until we get the result.
+ * The key future for recursive loops. A first version with the fork-join framework did not reduce the code complexity
+ * significantly, thus I decided to write this class. The basic idea is that you can create parallel loops. For example
+ * in a routing process (loop to find closest peers), one starts to ask 3 peers in parallel, the first that returns
+ * result gets evaluated for new information about other peers, and a new peer is asked. If two peers finish, then two
+ * other peers are asked. Thus, we keep always 3 connections running until we get the result.
  * 
  * @author Thomas Bocek
  * @param <K>
  */
 public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureForkJoin<K>> implements BaseFuture {
-    // setup
-    final private K[] forks;
+    // the references are stored in an atomic array, as they are access (although sequentially) but in different
+    // threads.
+    private final AtomicReferenceArray<K> forks;
 
-    final private int nrFutures;
+    private final int nrFutures;
 
-    final private int nrFinishFuturesSuccess;
+    private final int nrFinishFuturesSuccess;
 
-    final private boolean cancelFuturesOnFinish;
+    private final boolean cancelFuturesOnFinish;
 
-    final private List<K> forksCopy = new ArrayList<K>();
+    private final List<K> forksCopy = new ArrayList<K>();
 
     // all these values are accessed within synchronized blocks
-    private K last;
 
     private int counter = 0;
 
     private int successCounter = 0;
 
-    // indication if this future is done. Compared to complete, this may be used
-    // outside of a synchronized block.
-    volatile private boolean completedJoin = false;
-
     /**
-     * Facade if we expect everything to return successfully
+     * Facade if we expect everything to return successfully.
      * 
      * @param forks
-     *            The futures
+     *            The futures that can also be modified outside this class. If a future is finished the future in that
+     *            array will be set to null. A future may be initially null, which is considered a failure.
      */
-    public FutureForkJoin(K... forks) {
-        this(forks.length, false, forks);
+    public FutureForkJoin(final AtomicReferenceArray<K> forks) {
+        this(forks.length(), false, forks);
     }
 
     /**
-     * Create a future fork join object
+     * Create a future fork join object.
      * 
      * @param nrFinishFuturesSuccess
      *            Is the number of futures that we expect to succeed.
      * @param cancelFuturesOnFinish
-     *            Tells use if we should cancel the remaining futures. For get()
-     *            it makes sense to cancel, for store() it does not.
+     *            Tells use if we should cancel the remaining futures. For get() it makes sense to cancel, for store()
+     *            it does not.
      * @param forks
-     *            The future array, that may contain null futures.
+     *            The futures that can also be modified outside this class. If a future is finished the future in that
+     *            array will be set to null. A future may be initially null, which is considered a failure.
      */
-    public FutureForkJoin(int nrFinishFuturesSuccess, boolean cancelFuturesOnFinish, K... forks) {
+    public FutureForkJoin(final int nrFinishFuturesSuccess, final boolean cancelFuturesOnFinish,
+            final AtomicReferenceArray<K> forks) {
         this.nrFinishFuturesSuccess = nrFinishFuturesSuccess;
         this.forks = forks;
         this.cancelFuturesOnFinish = cancelFuturesOnFinish;
         // the futures array may have null entries, so count first.
-        nrFutures = forks.length;
+        nrFutures = forks.length();
         if (this.nrFutures <= 0) {
             setFailed("We have no futures: " + nrFutures);
         } else {
@@ -94,11 +91,14 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      */
     private void join() {
         for (int i = 0; i < nrFutures; i++) {
-            if (completedJoin)
-                return;
+            synchronized (lock) {
+                if (completed) {
+                    return;
+                }
+            }
             final int index = i;
-            if (forks[index] != null) {
-                forks[index].addListener(new BaseFutureAdapter<K>() {
+            if (forks.get(index) != null) {
+                forks.get(index).addListener(new BaseFutureAdapter<K>() {
                     @Override
                     public void operationComplete(final K future) throws Exception {
                         evaluate(future, index);
@@ -107,9 +107,6 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
             } else {
                 boolean notifyNow = false;
                 synchronized (lock) {
-                    if (completed) {
-                        return;
-                    }
                     // if counter reaches nrFutures, that means we are finished
                     // and in this case, we failed otherwise, in evaluate,
                     // successCounter would finish first
@@ -134,15 +131,12 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      * @param index
      *            the index in the array.
      */
-    private void evaluate(K finished, int index) {
+    private void evaluate(final K finished, final int index) {
         boolean notifyNow = false;
         synchronized (lock) {
-            if (completed)
-                return;
             // add the future that we have evaluated
             forksCopy.add(finished);
-            this.last = finished;
-            forks[index] = null;
+            forks.set(index, (K) null);
             if (finished.isSuccess() && ++successCounter >= nrFinishFuturesSuccess) {
                 notifyNow = setFinish(FutureType.OK);
             } else if (++counter >= nrFutures) {
@@ -156,28 +150,30 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
     }
 
     /**
-     * Cancels all remaining futures if requested by the user
+     * Cancels all remaining futures if requested by the user.
      */
     private void cancelAll() {
         if (cancelFuturesOnFinish) {
-            for (K future : forks) {
-                if (future != null)
+            for (int i = 0; i < nrFutures; i++) {
+                K future = forks.get(i);
+                if (future != null) {
                     future.cancel();
+                }
             }
         }
     }
 
     /**
-     * Sets this future to complete. Always call this from a synchronized block
+     * Sets this future to complete. Always call this from a synchronized block.
      * 
-     * @param last
-     *            The last future that set this future to complete
+     * @param type
+     *            The type of the future, if it has failed, its ok, or it has been canceled
      * @return True if other listener should get notified
      */
-    private boolean setFinish(FutureType type) {
-        if (!setCompletedAndNotify())
+    private boolean setFinish(final FutureType type) {
+        if (!setCompletedAndNotify()) {
             return false;
-        this.completedJoin = true;
+        }
         this.type = type;
         return true;
     }
@@ -187,9 +183,6 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
         synchronized (lock) {
             StringBuilder sb = new StringBuilder("FFJ:").append(reason);
             sb.append(", type:").append(type);
-            if (last != null) {
-                sb.append(", last:").append(last.getFailedReason()).append("rest:");
-            }
             for (K k : getCompleted()) {
                 sb.append(",").append(k.getFailedReason());
             }
@@ -198,20 +191,19 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
     }
 
     /**
-     * Returns the last evaluated future. This method may return null if an
-     * array with null values have been has been used.
+     * Returns the last evaluated future. This method may return null if an array with null values have been has been
+     * used.
      * 
      * @return The last evaluated future.
      */
     public K getLast() {
         synchronized (lock) {
-            return last;
+            return forksCopy.get(forksCopy.size() - 1);
         }
     }
 
     /**
-     * Returns a list of evaluated futures. The last completed future is the
-     * same as retrieved with {@link #getLast()}.
+     * Returns a list of evaluated futures. The last completed future is the same as retrieved with {@link #getLast()}.
      * 
      * @return A list of evaluated futures.
      */
@@ -222,7 +214,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
     }
 
     /**
-     * Returns the number of successful finished futures
+     * Returns the number of successful finished futures.
      * 
      * @return The number of successful finished futures
      */

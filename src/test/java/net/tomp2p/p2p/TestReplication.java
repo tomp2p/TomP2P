@@ -135,7 +135,7 @@ public class TestReplication {
             Assert.assertEquals(repetitions, counter2.get());
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
     }
@@ -211,7 +211,7 @@ public class TestReplication {
             // master.getConnectionBean().getConnectionReservation().release(cc);
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
     }
@@ -253,7 +253,7 @@ public class TestReplication {
             Assert.assertNotNull(test);
         } finally {
             if (p1 != null) {
-                p1.shutdown();
+                p1.halt();
             }
         }
     }

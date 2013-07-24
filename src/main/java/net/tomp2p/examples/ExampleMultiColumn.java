@@ -58,7 +58,7 @@ public final class ExampleMultiColumn {
             exampleMultiColumn(peers);
         } finally {
             if (master != null) {
-                master.shutdown();
+                master.halt();
             }
         }
     }

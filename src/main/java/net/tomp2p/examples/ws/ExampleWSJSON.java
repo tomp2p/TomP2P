@@ -17,7 +17,7 @@ public class ExampleWSJSON {
         } catch (Throwable e) {
             e.printStackTrace();
         } finally {
-            master.shutdown();
+            master.halt();
         }
     }
 

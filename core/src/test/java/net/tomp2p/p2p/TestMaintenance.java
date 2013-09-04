@@ -1,15 +1,53 @@
 package net.tomp2p.p2p;
 
-import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Timings;
+import net.tomp2p.Utils2;
+import net.tomp2p.futures.BaseFuture;
 
 import org.junit.Assert;
 import org.junit.Test;
 
 public class TestMaintenance {
-    //TODO: redo maintenance
+    @Test
+    public void testMaintenance() throws Exception {
+        final Random rnd = new Random(42L);
+        Peer master = null;
+        try {
+            // setup
+            AtomicInteger counter = new AtomicInteger(0);
+            Peer[] peers = Utils2.createRealNodes(10, rnd, 4001, new Rep(counter));
+            master = peers[0];
+            //give the master one of the peers,
+            master.getPeerBean().peerMap().peerFound(peers[1].getPeerAddress(), peers[2].getPeerAddress());
+            // wait for 1 sec.
+            
+            master.getPeerBean().peerMap().peerFound(peers[1].getPeerAddress(), peers[2].getPeerAddress());
+            Thread.sleep(3000);
+            
+            //both peers pinged each other
+            Assert.assertEquals(2, counter.get());
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+        
+        
+    }
+    
+    private static class Rep implements AutomaticFuture {
+        
+        private final AtomicInteger counter;
+        
+        public Rep(AtomicInteger counter) {
+            this.counter = counter;
+        }
+
+        @Override
+        public void futureCreated(BaseFuture future) {
+            counter.incrementAndGet();
+        }
+    }
 }

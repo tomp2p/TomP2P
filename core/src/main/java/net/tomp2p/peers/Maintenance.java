@@ -16,6 +16,7 @@
 
 package net.tomp2p.peers;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +49,6 @@ public interface Maintenance {
     /**
      * @return The next peer that needs maintenance or null if no maintenance is needed
      */
-    PeerStatatistic nextForMaintenance();
+    PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses);
 
 }

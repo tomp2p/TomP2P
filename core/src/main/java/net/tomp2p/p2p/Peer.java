@@ -20,6 +20,7 @@ import io.netty.util.Timer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -64,6 +65,7 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
+
 
 
 
@@ -127,7 +129,7 @@ public class Peer {
     //
     private boolean shutdown = false;
     
-    final private List<AutomaticFutures> automaticFutures = new ArrayList<AutomaticFutures>();
+    private List<AutomaticFuture> automaticFutures = null;
 
     //
     // final private ConnectionConfiguration configuration;
@@ -347,10 +349,18 @@ public class Peer {
         return getPeerBean().serverPeerAddress();
     }
     
+    
+    Peer setAutomaticFutures(List<AutomaticFuture> automaticFutures) {
+        this.automaticFutures = Collections.unmodifiableList(automaticFutures);
+        return this;
+    }
+    
     //TODO: expose this
     public Peer notifyAutomaticFutures(BaseFuture future) {
-        for(AutomaticFutures automaticFuture:automaticFutures) {
-            automaticFuture.futureCreated(future);
+        if(automaticFutures!=null) {
+            for(AutomaticFuture automaticFuture:automaticFutures) {
+                automaticFuture.futureCreated(future);
+            }
         }
         return this;
     }

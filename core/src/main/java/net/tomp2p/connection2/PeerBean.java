@@ -17,6 +17,7 @@ package net.tomp2p.connection2;
 
 import java.security.KeyPair;
 
+import net.tomp2p.p2p.MaintenanceTask;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
@@ -41,8 +42,8 @@ public class PeerBean {
     private TrackerStorage trackerStorage;
     private Replication replicationStorage;
     private Replication replicationTracker;
-    
     private BloomfilterFactory bloomfilterFactory;
+    private MaintenanceTask maintenanceTask;
     /*
      * private Statistics statistics; private Peer peer;
      */
@@ -197,6 +198,15 @@ public class PeerBean {
 
     public BloomfilterFactory bloomfilterFactory() {
         return bloomfilterFactory;
+    }
+
+    public PeerBean maintenanceTask(MaintenanceTask maintenanceTask) {
+        this.maintenanceTask = maintenanceTask;
+        return this;
+    }
+    
+    public MaintenanceTask maintenanceTask() {
+        return maintenanceTask;
     }
 
     /*

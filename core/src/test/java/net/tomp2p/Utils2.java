@@ -32,6 +32,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message2.Type;
 import net.tomp2p.message.Message2;
+import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
@@ -103,7 +104,7 @@ public class Utils2 {
     }
 
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
-        return createNodes(nrOfPeers, rnd, port, 0, false);
+        return createNodes(nrOfPeers, rnd, port, null);
     }
 
     /**
@@ -120,32 +121,23 @@ public class Utils2 {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, int refresh,
-            boolean enableIndirectReplication) throws Exception {
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-        if (refresh > 0) {
-            if (enableIndirectReplication) {
+            if (automaticFuture!=null) {
                 peers[0] = new PeerMaker(new Number160(rnd))
-                        .setEnableIndirectReplication(enableIndirectReplication).ports(port)
+                        .addAutomaticFuture(automaticFuture).ports(port)
                         .makeAndListen();
             } else {
                 peers[0] = new PeerMaker(new Number160(rnd)).ports(port).makeAndListen();
             }
-        } else {
-            if (enableIndirectReplication) {
-                peers[0] = new PeerMaker(new Number160(rnd))
-                        .setEnableIndirectReplication(enableIndirectReplication).ports(port).makeAndListen();
-            } else {
-                peers[0] = new PeerMaker(new Number160(rnd)).ports(port).makeAndListen();
-            }
-        }
+        
         for (int i = 1; i < nrOfPeers; i++) {
-            if (enableIndirectReplication) {
+            if (automaticFuture!=null) {
                 peers[i] = new PeerMaker(new Number160(rnd))
-                        .setEnableIndirectReplication(enableIndirectReplication).masterPeer(peers[0])
+                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
                         .makeAndListen();
             } else {
                 peers[i] = new PeerMaker(new Number160(rnd)).masterPeer(peers[0]).makeAndListen();
@@ -155,13 +147,13 @@ public class Utils2 {
         return peers;
     }
 
-    public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort) throws Exception {
+    public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort, AutomaticFuture automaticFuture) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
         for (int i = 0; i < nrOfPeers; i++) {
-            peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).ports(startPort + i)
+            peers[i] = new PeerMaker(new Number160(rnd)).addAutomaticFuture(automaticFuture).ports(startPort + i)
                     .makeAndListen();
         }
         System.err.println("real peers created.");

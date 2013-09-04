@@ -23,7 +23,7 @@ import net.tomp2p.futures.BaseFuture;
  * @author Thomas Bocek
  * 
  */
-public interface AutomaticFutures {
+public interface AutomaticFuture {
 
     /**
      * Call this method when a future has been created without any user interaction.

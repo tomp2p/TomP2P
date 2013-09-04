@@ -341,10 +341,12 @@ public class PingRPC extends DispatchHandler {
             responseMessage = createResponseMessage(message, Type.OK);
             responseMessage.setNeighborsSet(createNeighborSet(message.getSender()));
         } else if (message.getType() == Type.REQUEST_1) { // regular ping
+            LOG.debug("reply to regular ping {}", message.getSender());
             // test if this is a broadcast message to ourselves. If it is, do not
             // reply.
             if (message.getSender().getPeerId().equals(peerBean().serverPeerAddress().getPeerId())
                     && message.getRecipient().getPeerId().equals(Number160.ZERO)) {
+                LOG.debug("don't reply, we are on the same peer");
                 return message;
             }
             if (enable) {

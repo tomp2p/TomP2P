@@ -464,6 +464,37 @@ public class TestPeerMap {
         Assert.assertEquals(queue.pollFirst(), n2);
         Assert.assertEquals(queue.pollLast(), n4);
     }
+    
+    @Test
+    public void testMaintenance() throws UnknownHostException, InterruptedException {
+        PeerMapConfiguration conf = new PeerMapConfiguration(ID);
+        conf.bagSizeVerified(10).bagSizeOverflow(10);
+        conf.offlineCount(1000).offlineTimeout(100);
+        conf.peerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+        
+        conf.maintenance(new DefaultMaintenance(4, new int[] { 1, 1 }));
+        
+        final PeerMap peerMap = new PeerMap(conf);
+        
+        PeerAddress pa1 = Utils2.createAddress(Number160.createHash("peer 1"));
+        PeerAddress pa2 = Utils2.createAddress(Number160.createHash("peer 2"));
+        
+        peerMap.peerFound(pa2, pa1);
+        List<PeerAddress> notInterested = new ArrayList<PeerAddress>();
+        PeerStatatistic peerStatatistic = peerMap.nextForMaintenance(notInterested);
+        notInterested.add(peerStatatistic.getPeerAddress());
+        Assert.assertEquals(peerStatatistic.getPeerAddress(), pa2);
+        peerStatatistic = peerMap.nextForMaintenance(notInterested);
+        Assert.assertEquals(true, peerStatatistic == null);
+        
+        PeerAddress pa3 = Utils2.createAddress(Number160.createHash("peer 3"));
+        peerMap.peerFound(pa3, null);
+        peerStatatistic = peerMap.nextForMaintenance(notInterested);
+        Assert.assertEquals(true, peerStatatistic == null);
+        Thread.sleep(1000);
+        peerStatatistic = peerMap.nextForMaintenance(notInterested);
+        Assert.assertEquals(peerStatatistic.getPeerAddress(), pa3);
+    }
 
     @Test
     public void testClose() throws UnknownHostException {

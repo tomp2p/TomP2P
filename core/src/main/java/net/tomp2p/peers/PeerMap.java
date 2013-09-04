@@ -16,6 +16,7 @@
 package net.tomp2p.peers;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Thomas Bocek
  */
-public class PeerMap implements PeerStatusListener {
+public class PeerMap implements PeerStatusListener, Maintainable {
     private static final Logger LOG = LoggerFactory.getLogger(PeerMap.class);
 
     // each distance bit has its own bag this is the size of the verified peers (the ones that we know are reachable)
@@ -518,8 +519,8 @@ public class PeerMap implements PeerStatusListener {
      * 
      * @return The next most important peer to check if its still alive.
      */
-    public PeerStatatistic nextForMaintenance() {
-        return maintenance.nextForMaintenance();
+    public PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
+        return maintenance.nextForMaintenance(notInterestedAddresses);
     }
 
     /**

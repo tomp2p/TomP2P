@@ -20,23 +20,20 @@ import io.netty.channel.ChannelHandler;
 
 import java.io.IOException;
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 
-import javax.swing.DefaultSingleSelectionModel;
-
 import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelServer;
+import net.tomp2p.connection2.ChannelClientConfiguration;
 import net.tomp2p.connection2.ChannelServerConficuration;
 import net.tomp2p.connection2.ConnectionBean;
 import net.tomp2p.connection2.DefaultSignatureFactory;
-import net.tomp2p.connection2.Dispatcher;
 import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.ChannelClientConfiguration;
 import net.tomp2p.connection2.PeerCreator;
 import net.tomp2p.connection2.PipelineFilter;
-import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -45,15 +42,14 @@ import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
 import net.tomp2p.rpc.DirectDataRPC;
-import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PeerExchangeRPC;
+import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.StorageRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
@@ -117,6 +113,10 @@ public class PeerMaker {
     private BloomfilterFactory bloomfilterFactory;
     
     private Timer timer = null;
+    
+    private MaintenanceTask maintenanceTask = null;
+    
+    private List<AutomaticFuture> automaticFutures = null;
 
     // private ReplicationExecutor replicationExecutor;
 
@@ -279,6 +279,17 @@ public class PeerMaker {
 
         initRPC(peer, connectionBean, peerBean);
         initP2P(peer, connectionBean, peerBean);
+        
+        if(maintenanceTask == null) {
+            maintenanceTask = new MaintenanceTask();
+        }
+        maintenanceTask.init(peer, timer);
+        maintenanceTask.addMaintainable(peerMap);
+        peerBean.maintenanceTask(maintenanceTask);
+        
+        if(automaticFutures!=null) {
+            peer.setAutomaticFutures(automaticFutures);
+        }
 
         return peer;
     }
@@ -357,7 +368,6 @@ public class PeerMaker {
         }
 
         if (isEnableBroadcast()) {
-            
             BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
             peer.setBroadcastRPC(broadcastRPC);
         }
@@ -677,6 +687,14 @@ public class PeerMaker {
      */
     public PeerMaker setBehindFirewall() {
         this.behindFirewall = true;
+        return this;
+    }
+    
+    public PeerMaker addAutomaticFuture(AutomaticFuture automaticFuture) {
+        if(automaticFutures==null) {
+            automaticFutures = new ArrayList<>(1);
+        }
+        automaticFutures.add(automaticFuture);
         return this;
     }
 

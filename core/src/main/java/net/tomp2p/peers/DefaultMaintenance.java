@@ -16,10 +16,15 @@
 
 package net.tomp2p.peers;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.tomp2p.p2p.MaintenanceTask;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Timings;
 
@@ -30,6 +35,8 @@ import net.tomp2p.utils.Timings;
  * 
  */
 public class DefaultMaintenance implements Maintenance {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultMaintenance.class);
 
     private final int peerUrgency;
     private final int[] intervalSeconds;
@@ -87,7 +94,8 @@ public class DefaultMaintenance implements Maintenance {
     public Maintenance init(final List<Map<Number160, PeerStatatistic>> peerMapVerified,
             final List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
             final ConcurrentCacheMap<Number160, PeerAddress> offlineMap) {
-        return new DefaultMaintenance(peerMapVerified, peerMapNonVerified, offlineMap, peerUrgency, intervalSeconds);
+        return new DefaultMaintenance(peerMapVerified, peerMapNonVerified, offlineMap, peerUrgency,
+                intervalSeconds);
     }
 
     /**
@@ -98,12 +106,12 @@ public class DefaultMaintenance implements Maintenance {
      * 
      * @return The next most important peer to check if its still alive.
      */
-    public PeerStatatistic nextForMaintenance() {
+    public PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null) {
             throw new IllegalArgumentException("did not initialize this maintenance class");
         }
         int peersBefore = 0;
-        for (int i = 0; i < Number160.BITS - 1; i++) {
+        for (int i = 0; i < Number160.BITS; i++) {
             final Map<Number160, PeerStatatistic> mapVerified = peerMapVerified.get(i);
             boolean urgent = false;
             synchronized (mapVerified) {
@@ -114,12 +122,15 @@ public class DefaultMaintenance implements Maintenance {
             if (urgent) {
                 final Map<Number160, PeerStatatistic> mapNonVerified = peerMapNonVerified.get(i);
                 final PeerStatatistic readyForMaintenance = next(mapNonVerified);
-                if (readyForMaintenance != null) {
+                if (readyForMaintenance != null
+                        && !notInterestedAddresses.contains(readyForMaintenance.getPeerAddress())) {
+                    LOG.debug("check peer {} from the non verified map",readyForMaintenance.getPeerAddress());
                     return readyForMaintenance;
                 }
             }
             final PeerStatatistic readyForMaintenance = next(mapVerified);
-            if (readyForMaintenance != null) {
+            if (readyForMaintenance != null
+                    && !notInterestedAddresses.contains(readyForMaintenance.getPeerAddress())) {
                 return readyForMaintenance;
             }
         }

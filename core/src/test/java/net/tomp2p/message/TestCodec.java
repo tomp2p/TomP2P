@@ -1,0 +1,49 @@
+package net.tomp2p.message;
+
+import java.util.Random;
+
+import net.tomp2p.message.Message2.Content;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+public class TestCodec {
+    
+    @Test
+    public void testStreaming() {
+        Message2 msg = new Message2();
+    }
+    
+    @Test
+    public void testContentTypeCodec() {
+
+        Random rnd = new Random(42);
+        for (int i = 0; i < 100; i++) {
+            System.err.println("Round "+i);
+            Content[] types1 = initContentTypes(rnd);
+            int nr = MessageHeaderCodec.encodeContentTypes(types1);
+            Content[] types2 = MessageHeaderCodec.decodeContentTypes(nr, new Message2());
+            compare(types2, types1);
+            
+        }
+    }
+
+    private void compare(Content[] types2, Content[] types1) {
+        Assert.assertEquals(types1.length, types2.length);
+        for(int i=0;i<types1.length;i++) {
+            if(types1[i] == null) {
+                types1[i] = Content.EMPTY;
+            }
+        }
+        Assert.assertArrayEquals(types2, types1);
+    }
+
+    private Content[] initContentTypes(Random rnd) {
+        Content[] contents = new Content[Message2.CONTENT_TYPE_LENGTH];
+        int len = rnd.nextInt(9);
+        for (int i = 0; i < len; i++) {
+            contents[i] = Content.values()[rnd.nextInt(8)];
+        }
+        return contents;
+    }
+}

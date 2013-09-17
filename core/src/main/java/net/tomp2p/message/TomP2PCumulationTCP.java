@@ -143,6 +143,9 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
         // http://stackoverflow.com/questions/8699521/any-way-to-ignore-only-connection-reset-by-peer-ioexceptions
         if (cause.getMessage().equals("Connection reset by peer")) {
             return; // ignore
+        } else if(cause.getMessage().endsWith("An existing connection was forcibly closed by the remote host")){
+        	//with windows we see the following message
+        	return; // ignore
         }
         if (msg == null && decoder.lastContent() == null) {
             LOG.error("exception in decoding TCP, not started decoding", cause);

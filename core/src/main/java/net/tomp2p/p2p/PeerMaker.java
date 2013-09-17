@@ -38,6 +38,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.replication.Replication;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -260,8 +261,8 @@ public class PeerMaker {
 
         ConnectionBean connectionBean = peerCreator.connectionBean();
         // peerBean.setStorage(getStorage());
-        // Replication replicationStorage = new Replication(getStorage(), selfAddress, peerMap, 5);
-        // peerBean.setReplicationStorage(replicationStorage);
+        Replication replicationStorage = new Replication(peerBean.storage(), peerBean.serverPeerAddress(), peerMap, 5);
+        peerBean.replicationStorage(replicationStorage);
 
         // TrackerStorage storageTracker = new TrackerStorage(identityManagement,
         // configuration.getTrackerTimoutSeconds(), peerBean, maintenance);
@@ -349,6 +350,7 @@ public class PeerMaker {
 
         if (isEnableQuitRPC()) {
             QuitRPC quitRCP = new QuitRPC(peerBean, connectionBean);
+            quitRCP.addPeerStatusListener(peerMap);
             peer.setQuitRPC(quitRCP);
         }
 

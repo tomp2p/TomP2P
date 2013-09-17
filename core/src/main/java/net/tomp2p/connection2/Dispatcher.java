@@ -51,8 +51,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
     private final int p2pID;
     private final PeerBean peerBean;
 
-    private volatile Map<Number160, Map<Integer, DispatchHandler>> ioHandlers = 
-            new HashMap<Number160, Map<Integer, DispatchHandler>>();
+    private volatile Map<Number160, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number160, Map<Integer, DispatchHandler>>();
 
     /**
      * Constructor.
@@ -84,8 +83,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
      *            will receive these messages!
      */
     public void registerIoHandler(final Number160 peerId, final DispatchHandler ioHandler, final int... names) {
-        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null 
-                ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
+        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
                 : new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
         Map<Integer, DispatchHandler> types = copy.get(peerId);
         if (types == null) {
@@ -108,8 +106,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
         if (ioHandlers == null) {
             return;
         }
-        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null 
-                ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
+        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
                 : new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
         copy.remove(peerId);
         ioHandlers = Collections.unmodifiableMap(copy);
@@ -123,9 +120,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.getVersion(), message);
             ctx.close();
-                for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                    peerStatusListener.peerFailed(message.getSender(), true);
-                }
+            for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+                peerStatusListener.peerFailed(message.getSender(), true);
+            }
             return;
         }
         Message2 responseMessage = null;
@@ -139,8 +136,14 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                         .setType(Type.EXCEPTION);
                 response(ctx, message);
             } else if (responseMessage == message) {
-                LOG.debug("The reply handler was a fire-and-forget handler, we don't send any message back! ", message);
-                ctx.close();
+                LOG.debug(
+                        "The reply handler was a fire-and-forget handler, we don't send any message back! ",
+                        message);
+                if (!(ctx.channel() instanceof DatagramChannel)) {
+                    // if we are TCP, we can close the channel. If its UDP it must be kept open, otherwise we close the
+                    // 4001 udp socket we are listening to and we get "port unreachable exceptions".
+                    ctx.close();
+                }
             } else {
                 response(ctx, responseMessage);
             }
@@ -171,7 +174,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                 return;
             }
             LOG.debug("reply UDP message {}", response);
-            ctx.channel().writeAndFlush(response);
         } else {
             // check if channel is still open. If its not, then do not send
             // anything because
@@ -181,8 +183,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                 return;
             }
             LOG.debug("reply TCP message {} to {}", response, ctx.channel().remoteAddress());
-            ctx.channel().writeAndFlush(response);
         }
+        ctx.channel().writeAndFlush(response);
     }
 
     /**

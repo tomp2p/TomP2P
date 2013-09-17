@@ -94,6 +94,7 @@ public class QuitRPC extends DispatchHandler {
         FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
                 futureResponse, peerBean(), connectionBean(), shutdownBuilder);
+        LOG.debug("send QUIT message {}" + message);
         if (!shutdownBuilder.isForceTCP()) {
             return requestHandler.fireAndForgetUDP(channelCreator);
         } else {

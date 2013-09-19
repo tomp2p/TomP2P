@@ -369,7 +369,10 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     @Override
     public K addCancel(final Cancel cancelListener) {
         synchronized (cancels) {
-            if (!cancel) {
+            if (cancel) {
+                cancelListener.cancel();
+            }
+            else {
                 cancels.add(cancelListener);
             }
         }

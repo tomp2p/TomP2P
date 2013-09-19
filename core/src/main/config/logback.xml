@@ -54,6 +54,7 @@
   
   <!--  <logger name="net.tomp2p.rpc.RequestHandlerTCP" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.RequestHandlerUDP" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.QuitRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.TrackerRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.NeighborRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.PeerExchangeRPC" level="TRACE"/> -->

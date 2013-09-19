@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -479,49 +480,35 @@ public class DistributedHashTable {
                 if (future.isSuccess()) {
                     // content key and domain key are not important when sending a friendly shutdown
                     
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_2,
-                            future.getChannelCreator());
+                    // no need for routing, we can take the close peers from our map, in addition offer a way to add peers to notify by the end user.
+                    NavigableSet<PeerAddress> closePeers = routing.peerMap().closePeers(20);
+                    closePeers = builder.filter(closePeers);
                     
-                    
-                    futureShutdown.setFutureRouting(futureRouting);
+                    parallelRequests(builder.getRequestP2PConfiguration(),
+                            closePeers, futureShutdown, false,
+                            future.getChannelCreator(), new OperationMapper<FutureShutdown>() {
 
-                    futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
-                        @Override
-                        public void operationComplete(final FutureRouting futureRouting) throws Exception {
-                            if (futureRouting.isSuccess()) {
-                                if (logger.isDebugEnabled()) {
-                                    logger.debug("found peer to send the quit message: "
-                                            + futureRouting.getPotentialHits());
+                                @Override
+                                public FutureResponse create(final ChannelCreator channelCreator,
+                                        final PeerAddress address) {
+                                    return quitRPC.quit(address, builder, channelCreator);
                                 }
-                                parallelRequests(builder.getRequestP2PConfiguration(),
-                                        futureRouting.getPotentialHits(), futureShutdown, false,
-                                        future.getChannelCreator(), new OperationMapper<FutureShutdown>() {
 
-                                            @Override
-                                            public FutureResponse create(final ChannelCreator channelCreator,
-                                                    final PeerAddress address) {
-                                                return quitRPC.quit(address, builder, channelCreator);
-                                            }
+                                @Override
+                                public void response(final FutureShutdown future) {
+                                    future.setDone();
+                                }
 
-                                            @Override
-                                            public void response(final FutureShutdown future) {
-                                                future.setDone();
-                                            }
-
-                                            // its fire and forget, so don't bother checking the future success
-                                            @Override
-                                            public void interMediateResponse(final FutureResponse future) {
-                                                // contactedPeers can be accessed by several threads
-                                                futureShutdown.report(future.getRequest().getRecipient(),
-                                                        future.isSuccess());
-                                            }
-                                        });
-                            } else {
-                                futureShutdown.setFailed("routing failed");
-                            }
-                        }
-                    });
+                                // its fire and forget, so don't bother checking the future success
+                                @Override
+                                public void interMediateResponse(final FutureResponse future) {
+                                    // contactedPeers can be accessed by several threads
+                                    futureShutdown.report(future.getRequest().getRecipient(),
+                                            future.isSuccess());
+                                }
+                            });
                     Utils.addReleaseListener(future.getChannelCreator(), futureShutdown);
+                    
                 } else {
                     futureShutdown.setFailed(future);
                 }

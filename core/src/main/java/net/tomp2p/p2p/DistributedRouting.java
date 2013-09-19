@@ -347,6 +347,10 @@ public class DistributedRouting {
             }
         });
     }
+    
+    public PeerMap peerMap() {
+        return peerBean.peerMap();
+    }
 
     /**
      * Cancel the future that causes the underlying futures to cancel as well.

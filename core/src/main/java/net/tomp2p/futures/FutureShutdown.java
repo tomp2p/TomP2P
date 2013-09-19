@@ -30,9 +30,6 @@ import net.tomp2p.peers.PeerAddress;
  */
 public class FutureShutdown extends BaseFutureImpl<FutureShutdown> implements FutureDHT {
 
-    // A pointer to the routing process that run before the DHT operations
-    private FutureRouting futureRouting;
-
     private final Map<PeerAddress, Boolean> status = new HashMap<PeerAddress, Boolean>();
     private final List<FutureResponse> futures = new ArrayList<FutureResponse>();
 
@@ -41,31 +38,6 @@ public class FutureShutdown extends BaseFutureImpl<FutureShutdown> implements Fu
      */
     public FutureShutdown() {
         self(this);
-    }
-
-    /**
-     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @return The future object during the previous routing, or null if routing failed completely.
-     */
-    public FutureRouting getFutureRouting() {
-        synchronized (lock) {
-            return futureRouting;
-        }
-    }
-
-    /**
-     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @param futureRouting
-     *            The future object to set
-     */
-    public void setFutureRouting(final FutureRouting futureRouting) {
-        synchronized (lock) {
-            this.futureRouting = futureRouting;
-        }
     }
 
     @Override

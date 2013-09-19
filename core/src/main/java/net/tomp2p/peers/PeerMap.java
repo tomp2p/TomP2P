@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -391,6 +392,15 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             return tmp.containsKey(peerAddress.getPeerId());
         }
     }
+    
+    /**
+     * Returns close peers to the peer itself.
+     * @param atLeast The number we want to find at least
+     * @return A sorted set with close peers first in this set.
+     */
+    public NavigableSet<PeerAddress> closePeers(final int atLeast) {
+        return closePeers(self, atLeast);
+    }
 
     /**
      * Returns close peer from the set to a given key. This method is tread-safe. You can use the returned set as its a
@@ -400,10 +410,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The key that should be close to the keys in the map
      * @param atLeast
      *            The number we want to find at least
-     * @return A navigable set with close peers first in this set.
+     * @return A sorted set with close peers first in this set.
      */
-    public SortedSet<PeerAddress> closePeers(final Number160 id, final int atLeast) {
-        final SortedSet<PeerAddress> set = new TreeSet<PeerAddress>(createComparator(id));
+    public NavigableSet<PeerAddress> closePeers(final Number160 id, final int atLeast) {
+        final NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(createComparator(id));
         final int classMember = classMember(id);
         // special treatment, as we can start iterating from 0
         if (classMember == -1) {

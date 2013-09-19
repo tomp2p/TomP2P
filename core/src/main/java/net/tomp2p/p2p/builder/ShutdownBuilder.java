@@ -16,9 +16,15 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.util.NavigableSet;
+import java.util.SortedSet;
+
 import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.RequestP2PConfiguration;
+import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 
 /**
  * Set the configuration options for the shutdown command. The shutdown does first a rounting, searches for its close
@@ -31,6 +37,8 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
     private static final FutureShutdown FUTURE_SHUTDOWN = new FutureShutdown()
             .setFailed("Peer is shutting down");
 
+    private Filter filter;
+
     /**
      * Constructor.
      * 
@@ -42,6 +50,15 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
         self(this);
     }
 
+    public ShutdownBuilder filter(final Filter filter) {
+        this.filter = filter;
+        return this;
+    }
+
+    public Filter filter() {
+        return filter;
+    }
+
     /**
      * Start the shutdown. This method returns immediately with a future object. The future object can be used to block
      * or add a listener.
@@ -50,9 +67,23 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
      */
     public FutureShutdown start() {
         setForceUDP();
+        if (routingConfiguration == null) {
+            routingConfiguration = new RoutingConfiguration(0, 0, 0);
+        }
+        if (requestP2PConfiguration == null) {
+            requestP2PConfiguration = new RequestP2PConfiguration(10, 0, 10);
+        }
         preBuild("shutdown-builder");
         if (peer.isShutdown()) {
             return FUTURE_SHUTDOWN;
+        }
+        if (filter == null) {
+            filter = new Filter() {
+                @Override
+                public NavigableSet<PeerAddress> filter(NavigableSet<PeerAddress> closePeers) {
+                    return closePeers;
+                }
+            };
         }
         return peer.getDistributedHashMap().quit(this);
     }
@@ -60,5 +91,33 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
     @Override
     public ShutdownBuilder setDomainKey(final Number160 domainKey) {
         throw new IllegalArgumentException("Cannot be set here");
+    }
+
+    /**
+     * Adds the possibility to filter the peers, to add more or remove peers for the shutdown process.
+     * 
+     * @param closePeers
+     *            The close peers that were found in the peer map.
+     * @return The set modified by the user, may be the same set or a new one
+     */
+    public NavigableSet<PeerAddress> filter(NavigableSet<PeerAddress> closePeers) {
+        return filter.filter(closePeers);
+    }
+
+    /**
+     * The filter can be used to add or remove peers to notify for a shutdown.
+     * 
+     * @author Thomas Bocek
+     * 
+     */
+    public static interface Filter {
+        /**
+         * Adds the possibility to filter the peers, to add more or remove peers for the shutdown process
+         * 
+         * @param closePeers
+         *            The close peers that were found in the peer map.
+         * @return The set modified by the user, may be the same set or a new one
+         */
+        public NavigableSet<PeerAddress> filter(NavigableSet<PeerAddress> closePeers);
     }
 }

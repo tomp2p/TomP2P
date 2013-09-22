@@ -225,7 +225,7 @@ public class PeerMaker {
             peerStatusListeners = new PeerStatusListener[] { peerMap };
         }
         
-        if (timer == null) {
+        if (masterPeer == null && timer == null) {
             timer = new Timer();
         }
 
@@ -284,7 +284,7 @@ public class PeerMaker {
         if(maintenanceTask == null) {
             maintenanceTask = new MaintenanceTask();
         }
-        maintenanceTask.init(peer, timer);
+        maintenanceTask.init(peer, connectionBean.timer());
         maintenanceTask.addMaintainable(peerMap);
         peerBean.maintenanceTask(maintenanceTask);
         

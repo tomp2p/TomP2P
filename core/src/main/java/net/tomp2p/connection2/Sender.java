@@ -133,6 +133,7 @@ public class Sender {
                 peerConnection.channelFuture(channelFuture);
             }
         }
+        futureResponse.setChannelFuture(channelFuture);
         if (channelFuture == null) {
             futureResponse.setFailed("could not create a TCP channel");
         } else {
@@ -187,6 +188,7 @@ public class Sender {
 
         final ChannelFuture channelFuture = channelCreator.createUDP(
                 message.getRecipient().createSocketUDP(), broadcast, handlers);
+        futureResponse.setChannelFuture(channelFuture);
         if (channelFuture == null) {
             futureResponse.setFailed("could not create a UDP channel");
         } else {
@@ -243,6 +245,7 @@ public class Sender {
                     futureResponse.progressFirst();
                 } else {
                     futureResponse.setFailed("Channel creation failed " + future.cause());
+                    LOG.warn("Channel creation failed ", future.cause());
                 }
             }
         });
@@ -267,14 +270,15 @@ public class Sender {
             public void operationComplete(final ChannelFuture future) throws Exception {
                 futureResponse.removeCancel(writeCancel);
                 if (!future.isSuccess()) {
-                    reportFailed(futureResponse, future.channel().close(), future.cause());
-                    if (LOG.isWarnEnabled()) {
-                        LOG.warn("Failed to write channel the request " + futureResponse.getRequest());
-                        future.cause().printStackTrace();
-                    }
+                    futureResponse.setFailedLater(future.cause());
+                    reportFailed(futureResponse, future.channel().close());
+                    LOG.warn("Failed to write channel the request {}", futureResponse.getRequest(), future.cause());
+                    
                 }
                 if (fireAndForget) {
-                    reportMessage(futureResponse, future.channel().close(), null);
+                    futureResponse.setResponseLater(null);
+                    LOG.debug("fire and forget, close channel now");
+                    reportMessage(futureResponse, future.channel().close());
                 }
             }
         });
@@ -291,13 +295,11 @@ public class Sender {
      * @param cause
      *            The response message
      */
-    private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close,
-            final Throwable cause) {
+    private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
         close.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(final ChannelFuture arg0) throws Exception {
-                futureResponse.setFailed(cause);
-
+                futureResponse.setResponseNow();
             }
         });
     }
@@ -312,12 +314,11 @@ public class Sender {
      * @param responseMessage
      *            The response message
      */
-    private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close,
-            final Message2 responseMessage) {
+    private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
         close.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(final ChannelFuture arg0) throws Exception {
-                futureResponse.setResponse(responseMessage);
+                futureResponse.setResponseNow();
             }
         });
     }

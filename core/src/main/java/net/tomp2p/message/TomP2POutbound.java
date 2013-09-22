@@ -2,37 +2,26 @@ package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.security.PublicKey;
 import java.security.Signature;
-import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import net.tomp2p.connection2.Sender;
 import net.tomp2p.connection2.SignatureFactory;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureProgres;
-import net.tomp2p.message.Message2.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
 
@@ -273,18 +262,4 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             cause.printStackTrace();
         }
     }
-
-    /*
-     * private void writeFutureEventually(final ChannelHandlerContext ctx, FutureProgres<Collection<PeerAddress>>
-     * futureProgres, final ChannelPromise promise, final int limit) { final AtomicInteger counter = new
-     * AtomicInteger(0); futureProgres.addListener(new BaseFutureAdapter<FutureProgres<Collection<PeerAddress>>>() {
-     * 
-     * @Override public void operationComplete(final FutureProgres<Collection<PeerAddress>> future) throws Exception {
-     * if (future.isSuccess()) { boolean done = false; for (PeerAddress neighbor : future.getObject()) {
-     * ctx.write(neighbor, promise); if (counter.addAndGet(neighbor.size()) >= limit) { done = true; break; } }
-     * 
-     * if (future.getNext() != null) { if (done) { future.getNext().setDone(null); ctx.write(CONTINUE, promise); } else
-     * { future.getNext().addListener(this); } } else { ctx.write(CONTINUE, promise); } } else {
-     * promise.setFailure(null); } } }); }
-     */
 }

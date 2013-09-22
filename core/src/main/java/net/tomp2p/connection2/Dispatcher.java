@@ -139,6 +139,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
             	 LOG.debug("The reply handler was a fire-and-forget handler, "
                          + "we don't send any message back! {}", message);    
                 if (!(ctx.channel() instanceof DatagramChannel)) {
+                    LOG.warn("There is no TCP fire and forget, use UDP in that case {}", message);
                 	throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
                 }
             } else {

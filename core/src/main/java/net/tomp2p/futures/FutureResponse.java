@@ -15,8 +15,11 @@
  */
 package net.tomp2p.futures;
 
+import io.netty.channel.ChannelFuture;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
 
 import net.tomp2p.connection2.ProgresHandler;
 import net.tomp2p.message.Message2;
@@ -42,6 +45,10 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
 
     private final CountDownLatch firstProgressHandler = new CountDownLatch(1);
     private final CountDownLatch secondProgressHandler = new CountDownLatch(1);
+    
+    private ChannelFuture channelFuture;
+    
+    private boolean reponseLater = false;
 
     /**
      * Create the future and set the request message.
@@ -133,18 +140,60 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return this;
     }
 
-    @Override
-    public FutureResponse setFailed(final String reason) {
+    public boolean setResponseLater(final Message2 responseMessage) {
+        //System.err.println("response later "+this);
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
-                return this;
+            if(completed) {
+                return false;
             }
-            this.reason = reason;
+            reponseLater = true;
+            if (responseMessage != null) {
+                this.responseMessage = responseMessage;
+                // if its ok or nok, the communication was successful.
+                // Everything else is a failure in communication
+                type = futureSuccessEvaluator.evaluate(requestMessage, responseMessage);
+                reason = responseMessage.getType().toString();
+            } else {
+                type = FutureType.OK;
+                reason = "Nothing to deliver...";
+            }
+        }
+        return true;
+    }
+    
+    public boolean setFailedLater(final Throwable cause) {
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        cause.printStackTrace(printWriter);
+        synchronized (lock) {
+            if(completed) {
+                return false;
+            }
+            reponseLater = true;
+            this.reason = stringWriter.toString();
             this.type = FutureType.FAILED;
         }
-        notifyListerenrs();
-        return this;
+        return true;
     }
+    
+    public FutureResponse setResponseNow() {
+        synchronized (lock) {
+            if (!super.setCompletedAndNotify()) {
+                return this;
+            }
+        }
+        notifyListerenrs();
+        return this; 
+    }
+    
+    protected boolean setCompletedAndNotify() {
+        if (reponseLater) {
+            return false;
+        }
+        return super.setCompletedAndNotify();
+    }
+    
+    
 
     /**
      * Returns the response message. This is the same message as in response(Message message). If no response where
@@ -230,5 +279,18 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
                 progressListener.progress(interMediateMessage);
             }
         }
+    }
+
+    public void setChannelFuture(ChannelFuture channelFuture) {
+        synchronized (lock) {
+           this.channelFuture = channelFuture;
+        }
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("future response state:");
+        sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.getCommand()).append(",reason:").append(reason).append(",ch.future:").append(channelFuture);
+        return sb.toString();
     }
 }

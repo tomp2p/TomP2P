@@ -183,7 +183,7 @@ public class DefaultMaintenance implements Maintenance {
         final int divide = 5;
         final int online = peerStatatistic.onlineTime() / divide;
         final int index;
-        if (online == 0) {
+        if (online <= 0) {
             index = 0;
         } else {
             index = Math.min(intervalSeconds.length - 1, log2(online) + 1);

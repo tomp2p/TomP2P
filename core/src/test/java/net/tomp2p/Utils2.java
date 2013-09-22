@@ -106,6 +106,12 @@ public class Utils2 {
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);
     }
+    
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture) throws Exception {
+        return createNodes(nrOfPeers, rnd, port, automaticFuture, false);
+    }
+        
+        
 
     /**
      * Creates peers for testing. The first peer (peer[0]) will be used as the master. This means that shutting down
@@ -121,26 +127,26 @@ public class Utils2 {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture) throws Exception {
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture, boolean replication) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
             if (automaticFuture!=null) {
-                peers[0] = new PeerMaker(new Number160(rnd))
+                peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
                         .addAutomaticFuture(automaticFuture).ports(port)
                         .makeAndListen();
             } else {
-                peers[0] = new PeerMaker(new Number160(rnd)).ports(port).makeAndListen();
+                peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication).ports(port).makeAndListen();
             }
         
         for (int i = 1; i < nrOfPeers; i++) {
             if (automaticFuture!=null) {
-                peers[i] = new PeerMaker(new Number160(rnd))
+                peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
                         .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
                         .makeAndListen();
             } else {
-                peers[i] = new PeerMaker(new Number160(rnd)).masterPeer(peers[0]).makeAndListen();
+                peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication).masterPeer(peers[0]).makeAndListen();
             }
         }
         System.err.println("peers created.");

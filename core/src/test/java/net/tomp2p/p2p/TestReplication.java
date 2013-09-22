@@ -31,10 +31,12 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
@@ -143,18 +145,22 @@ public class TestReplication {
      * 
      * @throws Exception .
      */
-    /*@Test
+    @Test
     public void testIndirectReplicationForward() throws Exception {
         Peer master = null;
         try {
             // setup
-
-            Peer[] peers = Utils2.createNodes(NR_PEERS, RND2, PORT, 0, true);
+            Peer[] peers = Utils2.createNodes(NR_PEERS, RND2, PORT, new AutomaticFuture() {
+                @Override
+                public void futureCreated(BaseFuture future) {
+                    System.err.println("future created "+ future);
+                }
+            }, true);
             master = peers[0];
             Number160 locationKey = new Number160(RND2);
+            master.getPeerBean().peerMap();
             // closest
-            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(master.getPeerBean().getPeerMap()
-                    .createPeerComparator(locationKey));
+            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createComparator(locationKey));
             tmp.add(master.getPeerAddress());
             for (int i = 0; i < peers.length; i++) {
                 tmp.add(peers[i].getPeerAddress());
@@ -163,32 +169,29 @@ public class TestReplication {
             System.err.println("closest to " + locationKey + " is " + closest);
             // store
             Data data = new Data("Test");
-            FutureDHT futureDHT = master.put(locationKey).setData(data).start();
+            FuturePut futureDHT = master.put(locationKey).setData(data).start();
             futureDHT.awaitUninterruptibly();
             futureDHT.getFutureRequests().awaitUninterruptibly();
             Assert.assertEquals(true, futureDHT.isSuccess());
             List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();
-            for (int i = 0; i < peers.length; i++) {
-                if (peers[i] != master) {
-                    tmp2.add(peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start());
-                }
-            }
+            Utils2.perfectRouting(peers);
+            //for (int i = 0; i < peers.length; i++) {
+            //    if (peers[i] != master) {
+            //        tmp2.add(peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start());
+            //    }
+            //}
             for (FutureBootstrap fm : tmp2) {
                 fm.awaitUninterruptibly();
                 Assert.assertEquals(true, fm.isSuccess());
             }
-            for (int i = 0; i < peers.length; i++) {
-                for (BaseFuture baseFuture : peers[i].getPendingFutures().keySet()) {
-                    baseFuture.awaitUninterruptibly();
-                }
-            }
+            
             // wait for the replication
             Peer peerClose = searchPeer(closest, peers);
             int i = 0;
             // wait for 2.5 sec
             final int tests = 10;
             final int wait = 2500;
-            while (!peerClose.getPeerBean().getStorage()
+            while (!peerClose.getPeerBean().storage()
                     .contains(locationKey, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO)) {
                 Timings.sleep(wait / tests);
                 i++;
@@ -196,23 +199,14 @@ public class TestReplication {
                     break;
                 }
             }
-            final FutureChannelCreator fcc = master.getConnectionBean().getConnectionReservation().reserve(1);
-            fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
-            final int peerNr = 76;
-            FutureResponse futureResponse = peers[peerNr].getStoreRPC().get(closest, locationKey,
-                    DHTBuilder.DEFAULT_DOMAIN, null, null, null, false, false, false, false, cc, false);
-            Utils.addReleaseListenerAll(futureResponse, master.getConnectionBean().getConnectionReservation(), cc);
-            futureResponse.awaitUninterruptibly();
-            Assert.assertEquals(true, futureResponse.isSuccess());
-            Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
-            // master.getConnectionBean().getConnectionReservation().release(cc);
+            Assert.assertEquals(true, peerClose.getPeerBean().storage()
+                    .contains(locationKey, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO));
         } finally {
             if (master != null) {
-                master.halt();
+                master.shutdown().awaitUninterruptibly();
             }
         }
-    }*/
+    }
 
     /**
      * Test the replication with the following scenario: 2 peers online that store data, third peer joins. This means

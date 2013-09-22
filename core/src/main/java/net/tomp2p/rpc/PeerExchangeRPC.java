@@ -15,10 +15,7 @@
  */
 package net.tomp2p.rpc;
 
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.ConnectionBean;
@@ -27,14 +24,12 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message2;
-import net.tomp2p.message.TrackerData;
 import net.tomp2p.message.Message2.Type;
-import net.tomp2p.message.NeighborSet;
+import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.TrackerStorage.ReferrerType;
-import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -117,7 +112,7 @@ public class PeerExchangeRPC extends DispatchHandler {
             if (!connectionConfiguration.isForceTCP()) {
                 return requestHandler.fireAndForgetUDP(channelCreator);
             } else {
-                return requestHandler.fireAndForgetTCP(channelCreator);
+                return requestHandler.sendTCP(channelCreator);
             }
         } else {
             // we have nothing to deliver
@@ -150,6 +145,10 @@ public class PeerExchangeRPC extends DispatchHandler {
              * peerBean().trackerStorage().removeReferred(locationKey, domainKey, key, referrer); } }
              */
         }
-        return message;
+        if(message.isUdp()) {
+            return message; 
+        } else {
+            return createResponseMessage(message, Type.OK);
+        }
     }
 }

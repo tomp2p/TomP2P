@@ -56,7 +56,7 @@ public class BroadcastRPC extends DispatchHandler {
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
                 futureResponse, peerBean(), connectionBean(), configuration);
         if (!broadcastBuilder.isUDP()) {
-            return requestHandler.fireAndForgetTCP(channelCreator);
+            return requestHandler.sendTCP(channelCreator);
         } else {
             return requestHandler.fireAndForgetUDP(channelCreator);
         }
@@ -69,7 +69,11 @@ public class BroadcastRPC extends DispatchHandler {
         }
         LOG.debug("received BRODACAST message: {}", message);
         broadcastHandler.receive(message);
-        return message;
+        if(message.isUdp()) {
+            return message;
+        } else {
+            return createResponseMessage(message, Type.OK);
+        }
     }
 
     /**

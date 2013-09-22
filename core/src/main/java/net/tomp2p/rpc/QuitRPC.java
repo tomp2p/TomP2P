@@ -98,7 +98,7 @@ public class QuitRPC extends DispatchHandler {
         if (!shutdownBuilder.isForceTCP()) {
             return requestHandler.fireAndForgetUDP(channelCreator);
         } else {
-            return requestHandler.fireAndForgetTCP(channelCreator);
+            return requestHandler.sendTCP(channelCreator);
         }
     }
 
@@ -113,6 +113,10 @@ public class QuitRPC extends DispatchHandler {
                 listener.peerFailed(message.getSender(), true);
             }
         }
-        return message;
+        if(message.isUdp()) {
+            return message;
+        } else {
+            return createResponseMessage(message, Type.OK);
+        }
     }
 }

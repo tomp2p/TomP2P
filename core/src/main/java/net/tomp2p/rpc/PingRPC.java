@@ -178,7 +178,7 @@ public class PingRPC extends DispatchHandler {
      */
     public FutureResponse fireTCP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
             final ConnectionConfiguration configuration) {
-        return createHandler(remotePeer, Type.REQUEST_FF_1, configuration).fireAndForgetTCP(channelCreator);
+        return createHandler(remotePeer, Type.REQUEST_FF_1, configuration).sendTCP(channelCreator);
     }
 
     /**
@@ -344,7 +344,7 @@ public class PingRPC extends DispatchHandler {
             LOG.debug("reply to regular ping {}", message.getSender());
             // test if this is a broadcast message to ourselves. If it is, do not
             // reply.
-            if (message.getSender().getPeerId().equals(peerBean().serverPeerAddress().getPeerId())
+            if (message.isUdp() && message.getSender().getPeerId().equals(peerBean().serverPeerAddress().getPeerId())
                     && message.getRecipient().getPeerId().equals(Number160.ZERO)) {
                 LOG.debug("don't reply, we are on the same peer");
                 return message;
@@ -365,7 +365,7 @@ public class PingRPC extends DispatchHandler {
         } else { // fire and forget - if (message.getType() == Type.REQUEST_FF_1)
             // we received a fire and forget ping. This means we are reachable
             // from outside
-            responseMessage = null;
+            //responseMessage = null;
             PeerAddress serverAddress = peerBean().serverPeerAddress();
             if (message.isUdp()) {
                 PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
@@ -375,6 +375,7 @@ public class PingRPC extends DispatchHandler {
                         listener.peerWellConnected(newServerAddress, message.getSender(), false);
                     }
                 }
+                responseMessage = message;
             } else {
                 PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
                 peerBean().serverPeerAddress(newServerAddress);
@@ -383,9 +384,9 @@ public class PingRPC extends DispatchHandler {
                         listener.peerWellConnected(newServerAddress, message.getSender(), true);
                     }
                 }
+                responseMessage = createResponseMessage(message, Type.OK);
             }
         }
-
         return responseMessage;
     }
 

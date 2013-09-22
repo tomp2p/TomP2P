@@ -136,13 +136,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                         .setType(Type.EXCEPTION);
                 response(ctx, message);
             } else if (responseMessage == message) {
-                LOG.debug(
-                        "The reply handler was a fire-and-forget handler, we don't send any message back! ",
-                        message);
+            	 LOG.debug("The reply handler was a fire-and-forget handler, "
+                         + "we don't send any message back! {}", message);    
                 if (!(ctx.channel() instanceof DatagramChannel)) {
-                    // if we are TCP, we can close the channel. If its UDP it must be kept open, otherwise we close the
-                    // 4001 udp socket we are listening to and we get "port unreachable exceptions".
-                    ctx.close();
+                	throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
                 }
             } else {
                 response(ctx, responseMessage);

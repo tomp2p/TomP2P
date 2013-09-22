@@ -22,6 +22,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.replication.Replication;
+import net.tomp2p.replication.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.storage.StorageGeneric;
 import net.tomp2p.storage.TrackerStorage;
@@ -44,6 +45,7 @@ public class PeerBean {
     private Replication replicationTracker;
     private BloomfilterFactory bloomfilterFactory;
     private MaintenanceTask maintenanceTask;
+    private ReplicationExecutor replicationExecutor;
     /*
      * private Statistics statistics; private Peer peer;
      */
@@ -209,22 +211,12 @@ public class PeerBean {
         return maintenanceTask;
     }
 
-    /*
-     * public void setStatistics(Statistics statistics) { this.statistics = statistics; }
-     * 
-     * public Statistics getStatistics() { return statistics; }
-     * 
-     * 
-     * 
-     * public Peer getPeer() { return peer; }
-     * 
-     * public void setPeer(Peer peer) { this.peer = peer; }
-     * 
-     * 
-     * 
-     * public void peerStatusListeners(PeerStatusListener[] peerStatusListeners) { // TODO Auto-generated method stub
-     * 
-     * }
-     */
+    public ReplicationExecutor replicationExecutor() {
+        return replicationExecutor;
+    }
 
+    public PeerBean replicationExecutor(ReplicationExecutor replicationExecutor) {
+        this.replicationExecutor = replicationExecutor;
+        return this;
+    }
 }

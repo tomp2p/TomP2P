@@ -39,6 +39,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.replication.Replication;
+import net.tomp2p.replication.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -116,6 +117,8 @@ public class PeerMaker {
     private Timer timer = null;
     
     private MaintenanceTask maintenanceTask = null;
+    
+    private ReplicationExecutor replicationExecutor = null;
     
     private List<AutomaticFuture> automaticFutures = null;
 
@@ -288,6 +291,15 @@ public class PeerMaker {
         maintenanceTask.addMaintainable(peerMap);
         peerBean.maintenanceTask(maintenanceTask);
         
+        // indirect replication
+        if(replicationExecutor == null && isEnableIndirectReplication() && isEnableStorageRPC()) {
+            replicationExecutor = new ReplicationExecutor(peer); 
+        }
+        if (replicationExecutor != null) {
+            replicationExecutor.init(peer, connectionBean.timer());
+        }
+        peerBean.replicationExecutor(replicationExecutor);
+        
         if(automaticFutures!=null) {
             peer.setAutomaticFutures(automaticFutures);
         }
@@ -403,13 +415,8 @@ public class PeerMaker {
          * //peer.setDistributedTask(distributedTask); } // maintenance if (isEnableMaintenance()) { //TODO: enable
          * again //connectionHandler // .getConnectionBean() // .getScheduler() //
          * .startMaintainance(peerBean.getPeerMap(), peer.getHandshakeRPC(), //
-         * connectionBean.getConnectionReservation(), 5); } // indirect replication //TODO: enable again //if
-         * (isEnableIndirectReplication() && isEnableStorageRPC()) { // if (replicationExecutor == null) { //
-         * replicationExecutor = new ReplicationExecutor(peer); // } // peer.getScheduledFutures().add( //
-         * connectionBean // .getScheduler() // .getScheduledExecutorServiceReplication() //
-         * .scheduleWithFixedDelay(replicationExecutor, replicationRefreshMillis, // replicationRefreshMillis,
-         * TimeUnit.MILLISECONDS)); //}
-         */
+         * connectionBean.getConnectionReservation(), 5); } 
+         */ 
     }
 
     public Number160 peerId() {
@@ -529,6 +536,26 @@ public class PeerMaker {
         this.bloomfilterFactory = bloomfilterFactory;
         return this;
     }
+    
+    public MaintenanceTask maintenanceTask() {
+        return maintenanceTask;
+    }
+
+    public PeerMaker maintenanceTask(MaintenanceTask maintenanceTask) {
+        this.maintenanceTask = maintenanceTask;
+        return this;
+    }
+    
+    public ReplicationExecutor replicationExecutor() {
+        return replicationExecutor;
+    }
+
+    public PeerMaker replicationExecutor(ReplicationExecutor replicationExecutor) {
+        this.replicationExecutor = replicationExecutor;
+        return this;
+    }
+    
+    // isEnabled methods
 
     public boolean isEnableHandShakeRPC() {
         return enableHandShakeRPC;

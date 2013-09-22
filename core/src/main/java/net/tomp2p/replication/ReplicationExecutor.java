@@ -19,6 +19,8 @@ package net.tomp2p.replication;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -43,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  * 
  */
-public class ReplicationExecutor implements ResponsibilityListener, Runnable {
+public class ReplicationExecutor extends TimerTask implements ResponsibilityListener {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationExecutor.class);
 
     private final StorageGeneric storage;
@@ -55,6 +57,8 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
     private final Replication replicationStorage;
     // default replication for put and add is 6
     private static final int REPLICATION = 6;
+    
+    private int intervalMillis = 1000;
 
     /**
      * Constructor for the default indirect replication.
@@ -69,6 +73,10 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
         this.replicationStorage = peer.getPeerBean().replicationStorage();
         replicationStorage.addResponsibilityListener(this);
         replicationStorage.setReplicationFactor(REPLICATION);
+    }
+    
+    public void init(Peer peer, Timer timer) {
+        timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
     }
 
     @Override
@@ -201,5 +209,13 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
                 }
             }
         });
+    }
+    
+    public int getIntervalMillis() {
+        return intervalMillis;
+    }
+
+    public void setIntervalMillis(int intervalMillis) {
+        this.intervalMillis = intervalMillis;
     }
 }

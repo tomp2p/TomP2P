@@ -140,6 +140,13 @@ public class PeerCreator {
         }
         // de-register in dispatcher
         connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().getPeerId());
+        // shutdown running tasks for this peer
+        if(peerBean.maintenanceTask() != null) {
+            peerBean.maintenanceTask().cancel();
+        }
+        if(peerBean.replicationExecutor()!=null) {
+            peerBean.replicationExecutor().cancel();
+        }
         // shutdown all children
         if (!master) {
             for (PeerCreator peerCreator : childConnections) {

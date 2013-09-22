@@ -37,9 +37,7 @@ public class MaintenanceTask extends TimerTask {
     private final Object lock = new Object();
 
     public void init(Peer peer, Timer timer) {
-        synchronized (lock) {
-            this.peer = peer;
-        }
+        this.peer = peer;
         timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
     }
 

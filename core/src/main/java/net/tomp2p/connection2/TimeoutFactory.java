@@ -97,7 +97,7 @@ public class TimeoutFactory {
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
             if (evt instanceof IdleStateEvent) {
-                LOG.debug("channel timeout for channel {}", ctx.channel());
+                LOG.warn("channel timeout for channel {}", ctx.channel());
                 final PeerAddress recipient;
                 if (futureResponse != null) {
                     ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {

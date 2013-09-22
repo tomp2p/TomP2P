@@ -254,6 +254,35 @@ public class TestDHT {
     }
     
     @Test
+    public void testPutConvert() throws Exception {
+        Peer master = null;
+        try {
+            // setup
+            Peer[] peers = Utils2.createNodes(2000, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            // do testing
+            RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
+            RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
+            Data data = new Data(new byte[44444]);
+            Map<Number160, Data> tmp = new HashMap<Number160, Data>();
+            tmp.put(new Number160(5), data);
+            FuturePut fput = peers[444].put(peers[30].getPeerID()).setDataMapContent(tmp)
+                    .setDomainKey(Number160.createHash("test")).setRoutingConfiguration(rc)
+                    .setRequestP2PConfiguration(pc).start();
+            fput.awaitUninterruptibly();
+            fput.getFutureRequests().awaitUninterruptibly();
+            System.err.println(fput.getFailedReason());
+            Assert.assertEquals(true, fput.isSuccess());
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
+
+    
+    @Test
     public void testPutGet2() throws Exception {
         Peer master = null;
         try {

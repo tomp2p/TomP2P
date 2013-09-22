@@ -131,13 +131,13 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     public FuturePut start() {
         preBuild("put-builder");
-        if (dataMap == null) {
-            setDataMap(new HashMap<Number480, Data>(1));
-        }
         if (data != null) {
+            if (dataMap == null) {
+                setDataMap(new HashMap<Number480, Data>(1));
+            }
             getDataMap().put(getData().getKey(), getData().getValue());
         }
-        if (dataMap.size() == 0) {
+        if (dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
         }

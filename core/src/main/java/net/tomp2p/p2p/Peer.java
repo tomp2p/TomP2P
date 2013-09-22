@@ -549,7 +549,6 @@ public class Peer {
         //prevent the shutdown from being called twice
         if (!shutdown) {
             shutdown = true;
-            getConnectionBean().timer().cancel();
             return peerCreator.shutdown();
             
         } else {

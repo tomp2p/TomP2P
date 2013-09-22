@@ -147,6 +147,8 @@ public class PeerCreator {
             }
             return shutdownFuture().setDone();
         }
+        //shutdown the timer
+        connectionBean.timer().cancel();
         // we have two things to shut down: the server that listens for incoming connections and the connection creator
         // that establishes connections
         final int maxListeners = 2;

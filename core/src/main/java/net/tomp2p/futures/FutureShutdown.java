@@ -16,9 +16,7 @@
 
 package net.tomp2p.futures;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.peers.PeerAddress;
@@ -28,24 +26,16 @@ import net.tomp2p.peers.PeerAddress;
  * 
  * @author Thomas Bocek
  */
-public class FutureShutdown extends BaseFutureImpl<FutureShutdown> implements FutureDHT {
+public class FutureShutdown extends FutureDHT<FutureShutdown> {
 
     private final Map<PeerAddress, Boolean> status = new HashMap<PeerAddress, Boolean>();
-    private final List<FutureResponse> futures = new ArrayList<FutureResponse>();
 
     /**
      * Creates a new future for the shutdown operation.
      */
     public FutureShutdown() {
         self(this);
-    }
-
-    @Override
-    public void addRequests(final FutureResponse futureResponse) {
-        synchronized (lock) {
-            futures.add(futureResponse);
-        }
-    }
+    } 
 
     /**
      * Set future as finished and notify listeners.

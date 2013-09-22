@@ -248,8 +248,8 @@ public class DistributedHashTable {
                                             @Override
                                             public FutureResponse create(final ChannelCreator channelCreator,
                                                     final PeerAddress address) {
-                                                boolean protectEntry = Utils.checkEntryProtection(putBuilder
-                                                        .getDataMap());
+                                                //boolean protectEntry = Utils.checkEntryProtection(putBuilder
+                                                //        .getDataMap());
                                                 // TODO: content protection
                                                 boolean putIfAbsent = putBuilder.isPutIfAbsent();
                                                 if (putIfAbsent) {

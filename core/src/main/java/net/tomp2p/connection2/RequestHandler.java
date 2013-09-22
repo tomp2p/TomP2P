@@ -182,19 +182,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         return futureResponse;
     }
 
-    /**
-     * Send a TCP message and don't expect a reply.
-     * 
-     * @param channelCreator
-     *            The channel creator will create a TCP connection
-     * @return The future that was added in the constructor
-     */
-    public K fireAndForgetTCP(final ChannelCreator channelCreator) {
-        connectionBean.sender().sendTCP(null, futureResponse, message, channelCreator, 0,
-                connectionTimeoutTCPMillis, null);
-        return futureResponse;
-    }
-
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         LOG.debug("Error originating from: {}, cause {}", futureResponse.getRequest(), cause);
@@ -227,7 +214,14 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                 peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), true);
             }
         }
-        reportFailed(ctx.close(), cause);
+        
+        LOG.warn("report failure {}", cause);
+        if(futureResponse.setFailedLater(cause)) {
+            reportFailed(ctx.close());
+        } else {
+        	ctx.close();
+        }
+        
     }
 
     @Override
@@ -269,7 +263,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         LOG.debug("perfect: {}", responseMessage);
 
         if (!message.isKeepAlive()) {
-            reportMessage(ctx.close(), responseMessage);
+            //set the success now, but trigger the notify when we closed the channel.
+            if (futureResponse.setResponseLater(responseMessage)) {
+                LOG.debug("close channel {}", responseMessage);
+                reportMessage(ctx.close(), responseMessage);
+            } else {
+            	ctx.close();
+            }
         } else {
             futureResponse.setResponse(responseMessage);
         }
@@ -284,12 +284,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      *            The response message
      */
     private void reportMessage(final ChannelFuture close, final Message2 responseMessage) {
-
         close.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(final ChannelFuture arg0) throws Exception {
                 LOG.debug("report success {}", responseMessage);
-                futureResponse.setResponse(responseMessage);
+                //trigger the notify when we closed the channel.
+                futureResponse.setResponseNow();
             }
         });
     }
@@ -299,15 +299,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * 
      * @param close
      *            The close future
-     * @param cause
-     *            The response message
      */
-    private void reportFailed(final ChannelFuture close, final Throwable cause) {
+    private void reportFailed(final ChannelFuture close) {
         close.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(final ChannelFuture arg0) throws Exception {
-                LOG.debug("report failure {}", cause);
-                futureResponse.setFailed(cause);
+                futureResponse.setResponseNow();
             }
         });
     }

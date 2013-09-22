@@ -58,7 +58,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     // default replication for put and add is 6
     private static final int REPLICATION = 6;
     
-    private int intervalMillis = 1000;
+    private int intervalMillis = 60 * 1000;
 
     /**
      * Constructor for the default indirect replication.

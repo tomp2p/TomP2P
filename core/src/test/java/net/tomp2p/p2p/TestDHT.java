@@ -1264,12 +1264,72 @@ public class TestDHT {
 
     
 
-    
+    @Test
+    public void testShutdown() throws Exception {
+        Peer master = null;
+        try {
+            // setup
+            Random rnd = new Random();
+            final int nrPeers = 10;
+            final int port = 4001;
+            //Peer[] peers = Utils2.createNodes(nrPeers, rnd, port);
+            //Peer[] peers = createAndAttachNodesWithReplicationShortId(nrPeers, port);
+            //Peer[] peers = createNodes(nrPeers, rnd, port, null, true);
+            Peer[] peers = createNodesWithShortId(nrPeers, rnd, port, null, true);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            // do testing
 
-    
+            final int peerTest = 3;
+            peers[peerTest].put(Number160.createHash(1000)).setData(new Data("Test")).start().awaitUninterruptibly();
 
-    
+            for(int i=0;i<nrPeers;i++) {
+                for(Data d: peers[i].getPeerBean().storage().map().values())
+                    System.out.println("peer["+i+"]: "+d.object().toString()+" ");
+            }
 
+            FutureShutdown futureShutdown = peers[peerTest].announceShutdown().start();
+            futureShutdown.awaitUninterruptibly();
+            // we need to wait a bit, since the quit RPC is a fire and forget and we return immediately
+            Thread.sleep(2000);
+            peers[peerTest].shutdown().awaitUninterruptibly();
+            System.out.println("peer "+peerTest+" is shutdown");
+            for(int i=0;i<nrPeers;i++) {
+                for(Data d: peers[i].getPeerBean().storage().map().values())
+                    System.out.println("peer["+i+"]: "+d.object().toString()+" ");
+            }
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
+    
+    public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture, boolean replication) throws Exception {
+        if (nrOfPeers < 1) {
+            throw new IllegalArgumentException("Cannot create less than 1 peer");
+        }
+        Peer[] peers = new Peer[nrOfPeers];
+            if (automaticFuture!=null) {
+                peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication)
+                        .addAutomaticFuture(automaticFuture).ports(port)
+                        .makeAndListen();
+            } else {
+                peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication).ports(port).makeAndListen();
+            }
+       
+        for (int i = 1; i < nrOfPeers; i++) {
+            if (automaticFuture!=null) {
+                peers[i] = new PeerMaker(new Number160(i)).setEnableIndirectReplication(replication)
+                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
+                        .makeAndListen();
+            } else {
+                peers[i] = new PeerMaker(new Number160(i)).setEnableIndirectReplication(replication).masterPeer(peers[0]).makeAndListen();
+            }
+        }
+        System.err.println("peers created.");
+        return peers;
+    }
     
 
     private static int countOnline(Peer[] peers, PeerAddress peerAddress) {

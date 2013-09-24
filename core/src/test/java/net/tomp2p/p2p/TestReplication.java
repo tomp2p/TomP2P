@@ -139,6 +139,44 @@ public class TestReplication {
             }
         }
     }*/
+    
+    @Test
+    public void testSimpleIndirectReplicationForward() throws Exception {
+        final Random rnd = new Random(42L);
+        Peer master = null;
+        try {
+            // setup
+            Peer[] peers = Utils2.createNodes(2, rnd, PORT, new AutomaticFuture() {
+                @Override
+                public void futureCreated(BaseFuture future) {
+                    System.err.println("future created "+ future);
+                }
+            }, true);
+            master = peers[0];
+            //print out info
+            System.err.println("looking for "+searchPeer(Number160.createHash("2"), peers).getPeerAddress()+" in ");
+            for(Peer peer:peers) {
+                System.err.println(peer.getPeerAddress());
+            }
+            //store data, the two peers do not know each other
+            Data data = new Data("Test");
+            FuturePut futureDHT = master.put(Number160.createHash("2")).setData(data).start();
+            futureDHT.awaitUninterruptibly();
+            futureDHT.getFutureRequests().awaitUninterruptibly();
+            //now, do the routing, so that each peers know each other. The content should be moved
+            Assert.assertEquals(false, peers[1].getPeerBean().storage().contains(Number160.createHash("2"), Number160.ZERO, Number160.ZERO));
+            Utils2.perfectRouting(peers);
+            //we should see now the forward replication
+            Thread.sleep(1000);
+            //test it
+            Assert.assertEquals(true, peers[1].getPeerBean().storage().contains(Number160.createHash("2"), Number160.ZERO, Number160.ZERO));
+            
+        } finally {
+            if (master != null) {
+                master.shutdown().awaitUninterruptibly();
+            }
+        }
+    }
 
     /**
      * Test the indirect replication where the closest peer is responsible for a location key.
@@ -266,5 +304,14 @@ public class TestReplication {
             }
         }
         return null;
+    }
+    
+    private static Peer searchPeer(final Number160 locationKey, final Peer[] peers) {
+        TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(PeerMap.createComparator(locationKey));
+        for (int i = 0; i < peers.length; i++) {
+            tmp.add(peers[i].getPeerAddress());
+        }
+        PeerAddress peerAddress = tmp.iterator().next();
+        return searchPeer(peerAddress, peers);
     }
 }

@@ -85,27 +85,9 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 .serverPeerAddress());
 
         final Map<Number480, Data> dataMap = storage.subMap(locationKey);
-        Number160 domainKeyOld = null;
-        Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
-        for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
-            final Number160 domainKey = entry.getKey().getDomainKey();
-            final Number160 contentKey = entry.getKey().getContentKey();
-            final Data data = entry.getValue();
-            LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
-                    locationKey);
-
-            if (domainKeyOld == null || domainKeyOld.equals(domainKey)) {
-                dataMapConverted.put(contentKey, data);
-            } else {
-                final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
-                sendDirect(other, locationKey, domainKey, dataMapConverted1);
-                dataMapConverted.clear();
-            }
-            domainKeyOld = domainKey;
-        }
-        if (!dataMapConverted.isEmpty()) {
-            sendDirect(other, locationKey, domainKeyOld, dataMapConverted);
-        }
+        sendDirect(other, locationKey, dataMap);
+        LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
+                locationKey);        
     }
 
     @Override
@@ -188,16 +170,14 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      * @param dataMapConvert
      *            The data to store
      */
-    protected void sendDirect(final PeerAddress other, final Number160 locationKey,
-            final Number160 domainKey, final Map<Number160, Data> dataMapConvert) {
+    protected void sendDirect(final PeerAddress other, final Number160 locationKey, final Map<Number480, Data> dataMap) {
         FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 1);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     PutBuilder putBuilder = new PutBuilder(peer, locationKey);
-                    putBuilder.setDomainKey(domainKey);
-                    putBuilder.setDataMapContent(dataMapConvert);
+                    putBuilder.setDataMap(dataMap);
                     FutureResponse futureResponse = storageRPC.put(other, putBuilder,
                             future.getChannelCreator());
                     Utils.addReleaseListener(future.getChannelCreator(), futureResponse);

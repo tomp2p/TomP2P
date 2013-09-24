@@ -182,7 +182,7 @@ public class StorageRPC extends DispatchHandler {
     private FutureResponse put(final PeerAddress remotePeer, final PutBuilder putBuilder, final Type type,
             final ChannelCreator channelCreator) {
 
-        Utils.nullCheck(remotePeer, putBuilder.getLocationKey(), putBuilder.getDomainKey());
+        Utils.nullCheck(remotePeer);
 
         final DataMap dataMap;
         if (putBuilder.getDataMap() != null) {

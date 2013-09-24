@@ -324,8 +324,7 @@ public class Data implements Serializable {
 
     public Object object() throws ClassNotFoundException, IOException {
         byte[] tmp = new byte[bufferLength()];
-        buffer.readerIndex(startReaderIndex);
-        buffer.readBytes(tmp);
+        buffer.getBytes(startReaderIndex, tmp);
         return Utils.decodeJavaObject(tmp, 0, this.length);
     }
 

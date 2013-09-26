@@ -215,7 +215,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             }
         }
         
-        LOG.warn("report failure {}", cause);
+        LOG.debug("report failure", cause);
         if(futureResponse.setFailedLater(cause)) {
             reportFailed(ctx.close());
         } else {
@@ -230,7 +230,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
         if (responseMessage.getType() == Message2.Type.UNKNOWN_ID) {
-            String msg = "Message was not delivered successfully: " + this.message;
+            String msg = "Message was not delivered successfully, unknow id (peer may be offline): " + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
         } else if (responseMessage.getType() == Message2.Type.EXCEPTION) {

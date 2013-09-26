@@ -329,7 +329,7 @@ public class DistributedRouting {
                 } else {
                     // if it failed but the failed is the closest one, its good to try again, since the peer might just
                     // be busy
-                    LOG.warn("routing error {}", future.getFailedReason());
+                    LOG.debug("routing error {}", future.getFailedReason());
                     finished = routingMechanism.evaluateFailed();
                     routingMechanism.stopCreatingNewFutures(finished);
                 }

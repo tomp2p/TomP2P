@@ -132,9 +132,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
             responseMessage = myHandler.forwardMessage(message);
             if (responseMessage == null) {
                 LOG.warn("Repsonse message was null, probaly a custom handler failed {}", message);
-                message.setRecipient(message.getSender()).setSender(peerBean.serverPeerAddress())
-                        .setType(Type.EXCEPTION);
-                response(ctx, message);
+                responseMessage = DispatchHandler.createResponseMessage(message, Type.EXCEPTION,peerBean.serverPeerAddress());
+                response(ctx, responseMessage);
             } else if (responseMessage == message) {
             	 LOG.debug("The reply handler was a fire-and-forget handler, "
                          + "we don't send any message back! {}", message);    
@@ -146,10 +145,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                 response(ctx, responseMessage);
             }
         } else {
-            LOG.warn("No handler found for {}. Probably we have shutdown this peer.", message);
-            message.setRecipient(message.getSender()).setSender(peerBean.serverPeerAddress())
-                    .setType(Type.UNKNOWN_ID);
-            response(ctx, message);
+            LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
+            responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBean.serverPeerAddress());
+            response(ctx, responseMessage);
         }
     }
 

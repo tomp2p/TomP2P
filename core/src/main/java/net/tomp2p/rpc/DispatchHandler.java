@@ -103,15 +103,19 @@ public abstract class DispatchHandler {
      * @return The reply message
      */
     public Message2 createResponseMessage(final Message2 requestMessage, final Type replyType) {
+        return createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
+    }
+    
+    public static Message2 createResponseMessage(final Message2 requestMessage, final Type replyType, final PeerAddress peerAddress) {
         Message2 replyMessage = new Message2();
         // this will have the ports > 40'000 that we need to know for sendig the reply
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
         replyMessage.setRecipient(requestMessage.getSender());
-        replyMessage.setSender(peerBean().serverPeerAddress());
+        replyMessage.setSender(peerAddress);
         replyMessage.setCommand(requestMessage.getCommand());
         replyMessage.setType(replyType);
-        replyMessage.setVersion(connectionBean().p2pId());
+        replyMessage.setVersion(requestMessage.getVersion());
         replyMessage.setMessageId(requestMessage.getMessageId());
         return replyMessage;
     }

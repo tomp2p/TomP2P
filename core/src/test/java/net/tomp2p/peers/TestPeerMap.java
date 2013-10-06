@@ -247,10 +247,10 @@ public class TestPeerMap {
             peerMap.peerFound(r1, null);
         }
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(100)), FailReason.Shutdown);
+        peerMap.peerFailed(new PeerAddress(new Number160(100)), FailReason.ProbablyOffline);
         Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(2)), FailReason.Shutdown);
+        peerMap.peerFailed(new PeerAddress(new Number160(2)), FailReason.ProbablyOffline);
         Assert.assertEquals(19, peerMap.size());
         Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
         Timings.sleep(1000);

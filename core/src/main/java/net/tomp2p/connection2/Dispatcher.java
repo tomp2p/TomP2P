@@ -31,6 +31,7 @@ import net.tomp2p.message.Message2.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
 
 /**
@@ -121,7 +122,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
                     message.getVersion(), message);
             ctx.close();
             for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                peerStatusListener.peerFailed(message.getSender(), true);
+                peerStatusListener.peerFailed(message.getSender(), FailReason.Exception);
             }
             return;
         }

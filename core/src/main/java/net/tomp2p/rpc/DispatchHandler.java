@@ -20,6 +20,7 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.message.Message2;
 import net.tomp2p.message.Message2.Type;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +137,7 @@ public abstract class DispatchHandler {
             Message2 replyMessage = handleResponse(requestMessage, sign);
             return replyMessage;
         } catch (Throwable e) {
-            peerBean().peerMap().peerFailed(requestMessage.getSender(), true);
+            peerBean().peerMap().peerFailed(requestMessage.getSender(), FailReason.Exception);
             if (LOG.isErrorEnabled()) {
                 LOG.error("Exception in custom handler: " + e.toString());
             }

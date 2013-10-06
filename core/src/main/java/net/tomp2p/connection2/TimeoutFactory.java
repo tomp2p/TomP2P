@@ -32,6 +32,7 @@ import net.tomp2p.message.TomP2PDecoder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -117,7 +118,7 @@ public class TimeoutFactory {
 
                 for (PeerStatusListener peerStatusListener : peerStatusListeners) {
                     if (recipient != null) {
-                        peerStatusListener.peerFailed(recipient, false);
+                        peerStatusListener.peerFailed(recipient, FailReason.Timeout);
                     } else {
                         InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel()
                                 .remoteAddress();
@@ -127,7 +128,7 @@ public class TimeoutFactory {
                         }
                         if (inetSocketAddress != null) {
                             peerStatusListener.peerFailed(
-                                    new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()), false);
+                                    new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()), FailReason.Timeout);
                         } else {
                             LOG.warn("Cannot determine the address!");
                         }

@@ -370,7 +370,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
     }
 
     @Override
-    public boolean peerFailed(final PeerAddress remotePeer, final boolean force) {
+    public boolean peerFailed(final PeerAddress remotePeer, final FailReason reason) {
         peerOffline(remotePeer.getPeerId(), identityManagement.getSelf());
         return true;
     }

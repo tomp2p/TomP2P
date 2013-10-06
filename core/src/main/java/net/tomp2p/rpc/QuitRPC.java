@@ -32,6 +32,7 @@ import net.tomp2p.message.Message2.Type;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 /**
  * This Quit RPC is used to send friendly shutdown messages by peers that are shutdown regularly.
@@ -110,7 +111,7 @@ public class QuitRPC extends DispatchHandler {
         LOG.debug("received QUIT message {}" + message);
         synchronized (listeners) {
             for (PeerStatusListener listener : listeners) {
-                listener.peerFailed(message.getSender(), true);
+                listener.peerFailed(message.getSender(), FailReason.Shutdown);
             }
         }
         if(message.isUdp()) {

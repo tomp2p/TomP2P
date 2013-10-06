@@ -29,6 +29,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -246,10 +247,10 @@ public class TestPeerMap {
             peerMap.peerFound(r1, null);
         }
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(100)), true);
+        peerMap.peerFailed(new PeerAddress(new Number160(100)), FailReason.Shutdown);
         Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
         Assert.assertEquals(20, peerMap.size());
-        peerMap.peerFailed(new PeerAddress(new Number160(2)), true);
+        peerMap.peerFailed(new PeerAddress(new Number160(2)), FailReason.Shutdown);
         Assert.assertEquals(19, peerMap.size());
         Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
         Timings.sleep(1000);
@@ -274,7 +275,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 50; i++) {
-                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), true);
+                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), FailReason.Shutdown);
                 }
             }
         });
@@ -283,7 +284,7 @@ public class TestPeerMap {
             @Override
             public void run() {
                 for (int i = 1; i <= 100; i++) {
-                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), true);
+                    peerMap.peerFailed(new PeerAddress(new Number160(i + 1)), FailReason.Shutdown);
                 }
             }
         });
@@ -372,7 +373,7 @@ public class TestPeerMap {
                             }
                         }
                         if (i - diff > 1) {
-                            boolean retVal = peerMap.peerFailed(new PeerAddress(new Number160(i - diff)), true);
+                            boolean retVal = peerMap.peerFailed(new PeerAddress(new Number160(i - diff)), FailReason.Shutdown);
                             if (retVal) {
                                 del.incrementAndGet();
                             }
@@ -417,7 +418,7 @@ public class TestPeerMap {
         }
         for (int i = 0; i < 100; i++) {
             PeerAddress removed = listAdded.get(random.nextInt(i + 1));
-            if (peerMap.peerFailed(removed, true)) {
+            if (peerMap.peerFailed(removed, FailReason.Shutdown)) {
                 listRemoved.add(removed);
             }
         }
@@ -434,7 +435,7 @@ public class TestPeerMap {
         }
         for (int i = 0; i < 300; i++) {
             PeerAddress removed = listAdded.get(random.nextInt(i + 1));
-            peerMap.peerFailed(removed, true);
+            peerMap.peerFailed(removed, FailReason.Shutdown);
         }
         for (PeerAddress r1 : listRemoved) {
             Assert.assertTrue(peerMap.isPeerRemovedTemporarly(r1));

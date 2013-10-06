@@ -34,6 +34,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ResponsibilityListener;
 import net.tomp2p.storage.Data;
@@ -643,7 +644,7 @@ public class TestStorage {
             final int slavePort = 7701;
             slave = new PeerMaker(new Number160("0xfe")).ports(slavePort).makeAndListen();
             master.getPeerBean().peerMap().peerFound(slave.getPeerAddress(), null);
-            master.getPeerBean().peerMap().peerFailed(slave.getPeerAddress(), true);
+            master.getPeerBean().peerMap().peerFailed(slave.getPeerAddress(), FailReason.Shutdown);
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
         } catch (Throwable t) {
@@ -725,14 +726,14 @@ public class TestStorage {
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.getPeerAddress();
             slave1.shutdown().await();
-            master.getPeerBean().peerMap().peerFailed(slaveAddress1, true);
+            master.getPeerBean().peerMap().peerFailed(slaveAddress1, FailReason.Shutdown);
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(1, test2.get());
 
             PeerAddress slaveAddress2 = slave2.getPeerAddress();
             slave2.shutdown().await();
-            master.getPeerBean().peerMap().peerFailed(slaveAddress2, true);
+            master.getPeerBean().peerMap().peerFailed(slaveAddress2, FailReason.Shutdown);
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());

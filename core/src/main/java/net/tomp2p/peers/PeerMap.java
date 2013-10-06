@@ -54,6 +54,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private final List<Map<Number160, PeerStatatistic>> peerMapOverflow;
 
     private final ConcurrentCacheMap<Number160, PeerAddress> offlineMap;
+    private final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap;
+    private final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap;
 
     // stores listeners that will be notified if a peer gets removed or added
     private final List<PeerMapChangeListener> peerMapChangeListeners = new ArrayList<PeerMapChangeListener>();
@@ -87,8 +89,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // bagSizeVerified * Number160.BITS should be enough
         this.offlineMap = new ConcurrentCacheMap<Number160, PeerAddress>(
                 peerMapConfiguration.offlineTimeout(), bagSizeVerified * Number160.BITS);
+        this.shutdownMap = new ConcurrentCacheMap<Number160, PeerAddress>(
+                peerMapConfiguration.shutdownTimeout(), bagSizeVerified * Number160.BITS);
+        this.exceptionMap = new ConcurrentCacheMap<Number160, PeerAddress>(
+                peerMapConfiguration.exceptionTimeout(), bagSizeVerified * Number160.BITS);
         this.maintenance = peerMapConfiguration.maintenance().init(peerMapVerified, peerMapOverflow,
-                offlineMap);
+                offlineMap, shutdownMap, exceptionMap);
     }
 
     /**
@@ -239,7 +245,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
         if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId())
-                || offlineMap.containsKey(remotePeer.getPeerId()) || peerFilter.reject(remotePeer)) {
+                || offlineMap.containsKey(remotePeer.getPeerId()) || peerFilter.reject(remotePeer) 
+                || shutdownMap.containsKey(remotePeer.getPeerId()) || exceptionMap.containsKey(remotePeer.getPeerId())) {
             return false;
         }
 
@@ -311,7 +318,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *         already in the peer removed temporarily list.
      */
     @Override
-    public boolean peerFailed(final PeerAddress remotePeer, final boolean force) {
+    public boolean peerFailed(final PeerAddress remotePeer, final FailReason reason) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("peer " + remotePeer + " is offline");
         }
@@ -320,8 +327,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             return false;
         }
         final int classMember = classMember(remotePeer.getPeerId());
-        if (force) {
-            offlineMap.put(remotePeer.getPeerId(), remotePeer);
+        if (reason != FailReason.Timeout) {
+            if(reason == FailReason.ProbablyOffline) {
+                offlineMap.put(remotePeer.getPeerId(), remotePeer);
+            } else if(reason == FailReason.Shutdown) {
+                shutdownMap.put(remotePeer.getPeerId(), remotePeer);
+            } else { // reason is exception
+                exceptionMap.put(remotePeer.getPeerId(), remotePeer);
+            }
             Map<Number160, PeerStatatistic> tmp = peerMapOverflow.get(classMember);
             if (tmp != null) {
                 synchronized (tmp) {
@@ -347,10 +360,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         // not forced
         if (updatePeerStatistic(remotePeer, peerMapVerified.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, true);
+            return peerFailed(remotePeer, FailReason.ProbablyOffline);
         }
         if (updatePeerStatistic(remotePeer, peerMapOverflow.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, true);
+            return peerFailed(remotePeer, FailReason.ProbablyOffline);
         }
         return false;
     }
@@ -518,7 +531,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the peer is in the offline map, meaning that we consider this peer offline.
      */
     public boolean isPeerRemovedTemporarly(final PeerAddress peerAddress) {
-        return offlineMap.containsKey(peerAddress.getPeerId());
+        return offlineMap.containsKey(peerAddress.getPeerId())
+                || shutdownMap.containsKey(peerAddress.getPeerId()) 
+                || exceptionMap.containsKey(peerAddress.getPeerId());
     }
 
     /**

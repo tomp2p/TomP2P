@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.p2p.MaintenanceTask;
 import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Timings;
 
@@ -44,6 +43,8 @@ public class DefaultMaintenance implements Maintenance {
     private final List<Map<Number160, PeerStatatistic>> peerMapVerified;
     private final List<Map<Number160, PeerStatatistic>> peerMapNonVerified;
     private final ConcurrentCacheMap<Number160, PeerAddress> offlineMap;
+    private final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap;
+    private final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap;
 
     /**
      * Creates a new maintenance class with the verified and non verified map.
@@ -54,6 +55,8 @@ public class DefaultMaintenance implements Maintenance {
      *            The non-verified map
      * @param offlineMap
      *            The offline map
+     * @param exceptionMap 
+     * @param shutdownMap 
      * @param peerUrgency
      *            The number of peers that should be in the verified map. If the number is lower, urgency is set to yes
      *            and we are looking for peers in the non verified map
@@ -63,11 +66,15 @@ public class DefaultMaintenance implements Maintenance {
      */
     private DefaultMaintenance(final List<Map<Number160, PeerStatatistic>> peerMapVerified,
             final List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
-            final ConcurrentCacheMap<Number160, PeerAddress> offlineMap, final int peerUrgency,
+            final ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
+            final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, 
+            final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap, final int peerUrgency,
             final int[] intervalSeconds) {
         this.peerMapVerified = peerMapVerified;
         this.peerMapNonVerified = peerMapNonVerified;
         this.offlineMap = offlineMap;
+        this.shutdownMap = shutdownMap;
+        this.exceptionMap = exceptionMap;
         this.peerUrgency = peerUrgency;
         this.intervalSeconds = intervalSeconds;
     }
@@ -86,6 +93,8 @@ public class DefaultMaintenance implements Maintenance {
         this.peerMapVerified = null;
         this.peerMapNonVerified = null;
         this.offlineMap = null;
+        this.shutdownMap = null;
+        this.exceptionMap = null;
         this.peerUrgency = peerUrgency;
         this.intervalSeconds = intervalSeconds;
     }
@@ -93,8 +102,10 @@ public class DefaultMaintenance implements Maintenance {
     @Override
     public Maintenance init(final List<Map<Number160, PeerStatatistic>> peerMapVerified,
             final List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
-            final ConcurrentCacheMap<Number160, PeerAddress> offlineMap) {
-        return new DefaultMaintenance(peerMapVerified, peerMapNonVerified, offlineMap, peerUrgency,
+            final ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
+            final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, 
+            final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap) {
+        return new DefaultMaintenance(peerMapVerified, peerMapNonVerified, offlineMap, shutdownMap, exceptionMap, peerUrgency,
                 intervalSeconds);
     }
 
@@ -107,7 +118,8 @@ public class DefaultMaintenance implements Maintenance {
      * @return The next most important peer to check if its still alive.
      */
     public PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
-        if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null) {
+        if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null 
+                || shutdownMap == null || exceptionMap == null) {
             throw new IllegalArgumentException("did not initialize this maintenance class");
         }
         int peersBefore = 0;

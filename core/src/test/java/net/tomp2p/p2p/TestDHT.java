@@ -48,6 +48,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
@@ -774,8 +775,8 @@ public class TestDHT {
             fget.awaitUninterruptibly();
             Assert.assertEquals(true, fget.isSuccess());
             
-            master1.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), true);
-            master3.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), true);
+            master1.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), FailReason.Shutdown);
+            master3.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), FailReason.Shutdown);
             master2 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4002)
                     .makeAndListen();
             master1.getPeerBean().peerMap().peerFound(master2.getPeerAddress(), null);
@@ -1202,65 +1203,7 @@ public class TestDHT {
         }
     }
 
-    /*@Test
-    public void testActiveReplicationRefresh() throws Exception {
-        Peer master = null;
-        try {
-            // setup
-            Peer[] peers = Utils2.createNodes(100, rnd, 4001, 5 * 1000, true);
-            master = peers[0];
-            Number160 locationKey = master.getPeerID().xor(new Number160(77));
-            // store
-            Data data = new Data("Test");
-            FutureDHT futureDHT = master.put(locationKey).setData(data).start();
-            futureDHT.awaitUninterruptibly();
-            futureDHT.getFutureRequests().awaitUninterruptibly();
-            Assert.assertEquals(true, futureDHT.isSuccess());
-            // bootstrap
-            List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();
-            for (int i = 0; i < peers.length; i++) {
-                if (peers[i] != master) {
-                    tmp2.add(peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start());
-                }
-            }
-            for (FutureBootstrap fm : tmp2) {
-                fm.awaitUninterruptibly();
-                Assert.assertEquals(true, fm.isSuccess());
-            }
-            for (int i = 0; i < peers.length; i++) {
-                for (BaseFuture baseFuture : peers[i].getPendingFutures().keySet())
-                    baseFuture.awaitUninterruptibly();
-            }
-            // wait for refresh
-            Thread.sleep(6000);
-            //
-            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(master.getPeerBean().getPeerMap()
-                    .createPeerComparator(locationKey));
-            tmp.add(master.getPeerAddress());
-            for (int i = 0; i < peers.length; i++)
-                tmp.add(peers[i].getPeerAddress());
-            int i = 0;
-            for (PeerAddress closest : tmp) {
-                final FutureChannelCreator fcc = master.getConnectionBean().getConnectionReservation()
-                        .reserve(1);
-                fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
-                FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
-                        DHTBuilder.DEFAULT_DOMAIN, null, null, null, false, false, false, false, cc, false);
-                futureResponse.awaitUninterruptibly();
-                master.getConnectionBean().getConnectionReservation().release(cc);
-                Assert.assertEquals(true, futureResponse.isSuccess());
-                Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
-                i++;
-                if (i >= 5)
-                    break;
-            }
-        } finally {
-            if (master != null) {
-                master.shutdown().await();
-            }
-        }
-    }*/
+    
 
     
 

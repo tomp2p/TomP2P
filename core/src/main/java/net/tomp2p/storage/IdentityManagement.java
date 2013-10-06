@@ -58,7 +58,7 @@ public class IdentityManagement implements PeerStatusListener {
     }
 
     @Override
-    public boolean peerFailed(final PeerAddress peerAddress, final boolean force) {
+    public boolean peerFailed(final PeerAddress peerAddress, final FailReason reason) {
         // don't care, peer can come online again
         return false;
     }

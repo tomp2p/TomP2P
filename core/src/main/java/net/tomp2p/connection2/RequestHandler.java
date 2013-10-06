@@ -22,6 +22,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message2;
 import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,11 +196,10 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             if (cause instanceof PeerException) {
                 PeerException pe = (PeerException) cause;
                 if (pe.getAbortCause() != PeerException.AbortCause.USER_ABORT) {
-                    boolean force = pe.getAbortCause() != PeerException.AbortCause.TIMEOUT;
+                    FailReason reason = pe.getAbortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
-                    boolean added = peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(),
-                            force);
+                    boolean added = peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), reason);
                     if (added) {
                         if (LOG.isWarnEnabled()) {
                             LOG.warn("removed from map, cause: " + pe.toString() + " msg: " + message);
@@ -211,7 +211,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     LOG.warn("error in request", cause);
                 }
             } else {
-                peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), true);
+                peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), FailReason.Exception);
             }
         }
         

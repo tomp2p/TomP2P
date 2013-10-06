@@ -187,7 +187,7 @@ public class Utils2 {
      * @param peers
      *            The peers taking part in the p2p network.
      */
-    public static void perfectRouting(Peer[] peers) {
+    public static void perfectRouting(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
                 peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), null);

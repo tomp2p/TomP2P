@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +36,7 @@ import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
@@ -139,6 +141,172 @@ public class TestReplication {
             }
         }
     }*/
+    
+    /*@Test
+    public void testActiveReplicationRefresh() throws Exception {
+        Peer master = null;
+        try {
+            // setup
+            Peer[] peers = Utils2.createNodes(100, rnd, 4001, 5 * 1000, true);
+            master = peers[0];
+            Number160 locationKey = master.getPeerID().xor(new Number160(77));
+            // store
+            Data data = new Data("Test");
+            FutureDHT futureDHT = master.put(locationKey).setData(data).start();
+            futureDHT.awaitUninterruptibly();
+            futureDHT.getFutureRequests().awaitUninterruptibly();
+            Assert.assertEquals(true, futureDHT.isSuccess());
+            // bootstrap
+            List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();
+            for (int i = 0; i < peers.length; i++) {
+                if (peers[i] != master) {
+                    tmp2.add(peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start());
+                }
+            }
+            for (FutureBootstrap fm : tmp2) {
+                fm.awaitUninterruptibly();
+                Assert.assertEquals(true, fm.isSuccess());
+            }
+            for (int i = 0; i < peers.length; i++) {
+                for (BaseFuture baseFuture : peers[i].getPendingFutures().keySet())
+                    baseFuture.awaitUninterruptibly();
+            }
+            // wait for refresh
+            Thread.sleep(6000);
+            //
+            TreeSet<PeerAddress> tmp = new TreeSet<PeerAddress>(master.getPeerBean().getPeerMap()
+                    .createPeerComparator(locationKey));
+            tmp.add(master.getPeerAddress());
+            for (int i = 0; i < peers.length; i++)
+                tmp.add(peers[i].getPeerAddress());
+            int i = 0;
+            for (PeerAddress closest : tmp) {
+                final FutureChannelCreator fcc = master.getConnectionBean().getConnectionReservation()
+                        .reserve(1);
+                fcc.awaitUninterruptibly();
+                ChannelCreator cc = fcc.getChannelCreator();
+                FutureResponse futureResponse = master.getStoreRPC().get(closest, locationKey,
+                        DHTBuilder.DEFAULT_DOMAIN, null, null, null, false, false, false, false, cc, false);
+                futureResponse.awaitUninterruptibly();
+                master.getConnectionBean().getConnectionReservation().release(cc);
+                Assert.assertEquals(true, futureResponse.isSuccess());
+                Assert.assertEquals(1, futureResponse.getResponse().getDataMap().size());
+                i++;
+                if (i >= 5)
+                    break;
+            }
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }*/
+    
+    @Test
+    public void testDataloss() throws IOException, InterruptedException {
+        Peer p1 = null;
+        try {
+            
+            p1 = new PeerMaker(Number160.createHash("111")).setEnableIndirectReplication(true).ports(PORT)
+                    .makeAndListen();
+            Peer p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
+                    .makeAndListen();
+            Peer p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
+                    .makeAndListen();
+            Utils2.perfectRouting(p1, p2, p3);
+            Number160 locationKey = Number160.createHash("test1");
+            FuturePut fp = p2.put(locationKey).setData(new Data("hallo")).setRequestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
+            fp.awaitUninterruptibly();
+            getReplicasCount(locationKey, p1, p2, p3);
+            //
+            p3.announceShutdown().start().awaitUninterruptibly();
+            p3.shutdown().awaitUninterruptibly();
+            Thread.sleep(500);
+            p3 = new PeerMaker(locationKey).setEnableIndirectReplication(true).ports(PORT+3).makeAndListen();
+            System.out.println("now we add a peer that matches perfectly the key " + locationKey+ ". This will now become the responsible peer");
+            p3.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+            getReplicasCount(locationKey, p1, p2, p3);
+            Thread.sleep(500);
+            p1.announceShutdown().start().awaitUninterruptibly();
+            p1.shutdown().awaitUninterruptibly();
+            p2.announceShutdown().start().awaitUninterruptibly();
+            p2.shutdown().awaitUninterruptibly();
+            Thread.sleep(500);
+            int count = getReplicasCount(locationKey, p1, p2, p3);
+            Assert.assertEquals(1, count);
+            
+        } finally {
+            if (p1 != null) {
+                p1.shutdown().awaitUninterruptibly();
+            }
+        }
+    }
+    
+    @Test
+    public void testDataloss2() throws IOException, InterruptedException {
+        Peer p1 = null;
+        try {
+            
+            p1 = new PeerMaker(Number160.createHash("111")).setEnableIndirectReplication(true).ports(PORT)
+                    .makeAndListen();
+            Peer p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
+                    .makeAndListen();
+            Peer p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
+                    .makeAndListen();
+            Utils2.perfectRouting(p1, p2, p3);
+            Number160 locationKey = Number160.createHash("test1");
+            FuturePut fp = p2.put(locationKey).setData(new Data("hallo")).setRequestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
+            fp.awaitUninterruptibly();
+            getReplicasCount(locationKey, p1, p2, p3);
+            
+            p3.announceShutdown().start().awaitUninterruptibly();
+            p3.shutdown().awaitUninterruptibly();
+            p1.announceShutdown().start().awaitUninterruptibly();
+            p1.shutdown().awaitUninterruptibly();
+            Thread.sleep(500);
+            getReplicasCount(locationKey, p1, p2, p3);
+            
+            //
+            
+            p3 = new PeerMaker(locationKey).setEnableIndirectReplication(true).ports(PORT+3).makeAndListen();
+            System.out.println("now we add a peer that matches perfectly the key " + locationKey+ ". This will now become the responsible peer");
+            p3.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+            
+            p1 = new PeerMaker(Number160.createHash("1111")).setEnableIndirectReplication(true).ports(PORT+4)
+                    .makeAndListen();
+            p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+            
+            getReplicasCount(locationKey, p1, p2, p3);
+            Thread.sleep(500);
+            
+            int count = getReplicasCount(locationKey, p1, p2, p3);
+            Assert.assertEquals(2, count);
+            
+        } finally {
+            if (p1 != null) {
+                p1.shutdown().awaitUninterruptibly();
+            }
+        }
+    }
+    
+    private static int getReplicasCount(Number160 key, Peer... peers) {
+        int count = 0;
+        Number160 locationKey = null;
+        ArrayList<Number160> peerIds = new ArrayList<Number160>();
+        for(int i=0; i<peers.length; i++)
+            if(!peers[i].isShutdown())
+                for(Map.Entry<Number480, Data> entry: peers[i].getPeerBean().storage().map().entrySet()){
+                    locationKey = entry.getKey().getLocationKey();
+                    if(locationKey.equals(key)){
+                        count++;
+                        peerIds.add(peers[i].getPeerID());
+                        System.out.println("key " + key + " FoundOn peers["+i+"]=" + peers[i].getPeerID());
+                        //break;
+                    }
+                }
+        System.out.println("key " + key + " FoundOn "+count+" peers");
+        return count;
+    }
     
     @Test
     public void testSimpleIndirectReplicationForward() throws Exception {

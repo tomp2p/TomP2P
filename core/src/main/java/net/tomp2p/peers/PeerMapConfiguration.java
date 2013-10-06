@@ -28,6 +28,8 @@ public class PeerMapConfiguration {
     private int bagSizeVerified;
     private int bagSizeOverflow;
     private int offlineTimeout;
+    private int shutdownTimeout;
+    private int exceptionTimeout;
     private int offlineCount;
     private PeerFilter peerFilter;
     private Maintenance maintenance;
@@ -44,6 +46,8 @@ public class PeerMapConfiguration {
         bagSizeVerified = 10;
         bagSizeOverflow = 10;
         offlineTimeout = 60;
+        shutdownTimeout = 20;
+        exceptionTimeout = 120;
         offlineCount = 3;
         peerFilter = new DefaultPeerFilter();
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
@@ -164,6 +168,52 @@ public class PeerMapConfiguration {
      */
     public PeerMapConfiguration maintenance(final Maintenance maintenance) {
         this.maintenance = maintenance;
+        return this;
+    }
+    
+    /**
+     * @return The time a peer is considered offline (shutdown) in seconds. This is important, since we see that a peer is offline
+     *         and an other peer reports this peer, we don't want to add it into our map. Thus, there is a map that
+     *         keeps track of such peers. This also means that a fast reconnect is not possible and a peer has to wait
+     *         until the timeout to rejoin
+     */
+    public int shutdownTimeout() {
+        return shutdownTimeout;
+    }
+
+    /**
+     * @param shutdownTimeout
+     *            The time a peer is considered offline (shutdown) in seconds. This is important, since we see that a peer is
+     *            offline and an other peer reports this peer, we don't want to add it into our map. Thus, there is a
+     *            map that keeps track of such peers. This also means that a fast reconnect is not possible and a peer
+     *            has to wait until the timeout to rejoin
+     * @return this class
+     */
+    public PeerMapConfiguration shutdownTimeout(final int shutdownTimeout) {
+        this.shutdownTimeout = shutdownTimeout;
+        return this;
+    }
+    
+    /**
+     * @return The time a peer is considered offline (exception) in seconds. This is important, since we see that a peer is offline
+     *         and an other peer reports this peer, we don't want to add it into our map. Thus, there is a map that
+     *         keeps track of such peers. This also means that a fast reconnect is not possible and a peer has to wait
+     *         until the timeout to rejoin
+     */
+    public int exceptionTimeout() {
+        return exceptionTimeout;
+    }
+
+    /**
+     * @param exceptionTimeout
+     *            The time a peer is considered offline (exception) in seconds. This is important, since we see that a peer is
+     *            offline and an other peer reports this peer, we don't want to add it into our map. Thus, there is a
+     *            map that keeps track of such peers. This also means that a fast reconnect is not possible and a peer
+     *            has to wait until the timeout to rejoin
+     * @return this class
+     */
+    public PeerMapConfiguration exceptionTimeout(final int exceptionTimeout) {
+        this.exceptionTimeout = exceptionTimeout;
         return this;
     }
 }

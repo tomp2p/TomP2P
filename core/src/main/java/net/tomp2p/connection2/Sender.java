@@ -127,7 +127,7 @@ public class Sender {
                 handlers.put("handler", handler);
             }
 
-            channelFuture = channelCreator.createTCP(message.getRecipient().createSocketUDP(),
+            channelFuture = channelCreator.createTCP(message.getRecipient().createSocketTCP(),
                     connectTimeoutMillis, handlers);
             if (peerConnection != null) {
                 peerConnection.channelFuture(channelFuture);

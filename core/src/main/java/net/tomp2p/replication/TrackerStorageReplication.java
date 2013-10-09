@@ -65,7 +65,7 @@ public class TrackerStorageReplication implements ResponsibilityListener {
     }
 
     @Override
-    public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+    public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
         // do pex here, but with mesh peers!
         LOG.debug("other peer became responsibel and we thought we were responsible, so move the data to this peer");
         for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey)) {

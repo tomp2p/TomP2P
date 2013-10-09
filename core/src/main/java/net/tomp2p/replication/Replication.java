@@ -134,10 +134,12 @@ public class Replication implements PeerMapChangeListener {
      *            The location key.
      * @param other
      *            The other peer.
+     * @param delayed Indicates if the other peer should get notified immediately or delayed. The case for delayed is that
+     *            multiple non responsible peers may call this and a delayed call in that case may be better.
      */
-    private void notifyOtherResponsible(final Number160 locationKey, final PeerAddress other) {
+    private void notifyOtherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
         for (ResponsibilityListener responsibilityListener : listeners) {
-            responsibilityListener.otherResponsible(locationKey, other);
+            responsibilityListener.otherResponsible(locationKey, other, delayed);
         }
     }
 
@@ -161,7 +163,7 @@ public class Replication implements PeerMapChangeListener {
             if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
                 // notify that someone else is now responsible for the
                 // content with key responsibleLocations
-                notifyOtherResponsible(locationKey, closest);
+                notifyOtherResponsible(locationKey, closest, false);
             }
         }
     }
@@ -183,13 +185,13 @@ public class Replication implements PeerMapChangeListener {
                 if (replicationStorage.updateResponsibilities(myResponsibleLocation, closest.getPeerId())) {
                     // notify that someone else is now responsible for the
                     // content with key responsibleLocations
-                    notifyOtherResponsible(myResponsibleLocation, closest);
+                    notifyOtherResponsible(myResponsibleLocation, closest, false);
                 }
             } else if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
                 // we are still responsible, but a new peer joined and if it is within the x close peers, we need to
                 // replicate
                 if (replicationStorage.updateResponsibilities(myResponsibleLocation, peerAddress.getPeerId())) {
-                    notifyOtherResponsible(myResponsibleLocation, peerAddress);
+                    notifyMeResponsible(myResponsibleLocation);
                 }
             }
         }
@@ -218,7 +220,10 @@ public class Replication implements PeerMapChangeListener {
                     myResponsibleLocations.remove(otherResponsibleLocation);
                 }
             } else {
-                replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getPeerId());
+                if (replicationStorage.updateResponsibilities(otherResponsibleLocation, closest.getPeerId()) ) {
+                    LOG.debug("We should check if the closer peer has the content");
+                    notifyOtherResponsible(otherResponsibleLocation, closest, true);
+                }
             }
         }
         // now check for our responsibilities. If a peer is gone and it was in the replication range, we need make sure

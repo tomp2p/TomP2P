@@ -121,6 +121,10 @@ public class PeerMaker {
     private ReplicationExecutor replicationExecutor = null;
     
     private List<AutomaticFuture> automaticFutures = null;
+    
+    private Random random = null;
+    private int delayMillis = -1;
+    private int intervalMillis = -1;
 
     // private ReplicationExecutor replicationExecutor;
 
@@ -291,12 +295,23 @@ public class PeerMaker {
         maintenanceTask.addMaintainable(peerMap);
         peerBean.maintenanceTask(maintenanceTask);
         
+        if(random == null) {
+            random = new Random();
+        }
+        if (intervalMillis == -1) {
+            intervalMillis = 60 * 1000;
+        }
+        if (delayMillis == -1) {
+            delayMillis = 30 * 1000;
+        }
+        
+        
         // indirect replication
         if(replicationExecutor == null && isEnableIndirectReplication() && isEnableStorageRPC()) {
-            replicationExecutor = new ReplicationExecutor(peer); 
+            replicationExecutor = new ReplicationExecutor(peer, random, connectionBean.timer(), delayMillis); 
         }
         if (replicationExecutor != null) {
-            replicationExecutor.init(peer, connectionBean.timer());
+            replicationExecutor.init(peer, intervalMillis);
         }
         peerBean.replicationExecutor(replicationExecutor);
         
@@ -552,6 +567,33 @@ public class PeerMaker {
 
     public PeerMaker replicationExecutor(ReplicationExecutor replicationExecutor) {
         this.replicationExecutor = replicationExecutor;
+        return this;
+    }
+    
+    public Random random() {
+        return random;
+    }
+    
+    public PeerMaker random(Random random) {
+        this.random = random;
+        return this;
+    }
+    
+    public int delayMillis() {
+        return delayMillis;
+    }
+    
+    public PeerMaker delayMillis(int delayMillis) {
+        this.delayMillis = delayMillis;
+        return this;
+    }
+    
+    public int intervalMillis() {
+        return intervalMillis;
+    }
+    
+    public PeerMaker intervalMillis(int intervalMillis) {
+        this.intervalMillis = intervalMillis;
         return this;
     }
     

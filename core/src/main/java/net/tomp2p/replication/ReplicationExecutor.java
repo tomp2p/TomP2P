@@ -19,6 +19,7 @@ package net.tomp2p.replication;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -58,7 +59,10 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     // default replication for put and add is 6
     private static final int REPLICATION = 6;
     
-    private int intervalMillis = 60 * 1000;
+    private final Timer timer;
+    private final Random random;
+    
+    private final int delayMillis;
 
     /**
      * Constructor for the default indirect replication.
@@ -66,28 +70,39 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      * @param peer
      *            The peer
      */
-    public ReplicationExecutor(final Peer peer) {
+    public ReplicationExecutor(final Peer peer, final Random random, final Timer timer, final int delayMillis) {
         this.peer = peer;
         this.storage = peer.getPeerBean().storage();
         this.storageRPC = peer.getStoreRPC();
         this.replicationStorage = peer.getPeerBean().replicationStorage();
         replicationStorage.addResponsibilityListener(this);
         replicationStorage.setReplicationFactor(REPLICATION);
+        this.random = random;
+        this.timer = timer;
+        this.delayMillis = delayMillis;
     }
     
-    public void init(Peer peer, Timer timer) {
+    public void init(Peer peer, int intervalMillis) {
         timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
     }
 
     @Override
-    public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+    public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
         LOG.debug("Other peer {} is responsible for {}. I'm {}", other, locationKey, storageRPC.peerBean()
                 .serverPeerAddress());
-
-        final Map<Number480, Data> dataMap = storage.subMap(locationKey);
-        sendDirect(other, locationKey, dataMap);
-        LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
-                locationKey);        
+        if(!delayed) {
+            final Map<Number480, Data> dataMap = storage.subMap(locationKey);
+            sendDirect(other, locationKey, dataMap);
+            LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
+                    locationKey);
+        } else {
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    otherResponsible(locationKey, other, false);
+                }
+            }, random.nextInt(delayMillis));
+        }
     }
 
     @Override
@@ -189,13 +204,5 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 }
             }
         });
-    }
-    
-    public int getIntervalMillis() {
-        return intervalMillis;
-    }
-
-    public void setIntervalMillis(int intervalMillis) {
-        this.intervalMillis = intervalMillis;
     }
 }

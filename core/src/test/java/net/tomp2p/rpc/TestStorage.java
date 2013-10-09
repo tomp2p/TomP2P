@@ -614,7 +614,7 @@ public class TestStorage {
                     .peerMap(), replicatioFactor);
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+                public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
                 }
@@ -692,7 +692,7 @@ public class TestStorage {
 
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+                public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
                 }

@@ -41,6 +41,9 @@ public interface ResponsibilityListener {
      *            The location key
      * @param other
      *            The other peer that is responsible for locationKey
+     * @param delayed
+     *            Indicates if the other peer should get notified immediately or delayed. The case for delayed is that
+     *            multiple non responsible peers may call this and a delayed call in that case may be better.
      */
-    void otherResponsible(Number160 locationKey, PeerAddress other);
+    void otherResponsible(Number160 locationKey, PeerAddress other, boolean delayed);
 }

@@ -386,11 +386,6 @@ public class PeerMaker {
             peer.setPeerExchangeRPC(peerExchangeRPC);
         }
 
-        if (isEnableDirectDataRPC()) {
-            DirectDataRPC directDataRPC = new DirectDataRPC(peerBean, connectionBean);
-            peer.setDirectDataRPC(directDataRPC);
-        }
-
         if (isEnableTrackerRPC()) {
             TrackerRPC trackerRPC = new TrackerRPC(peerBean, connectionBean);
             peer.setTrackerRPC(trackerRPC);

@@ -1,24 +1,30 @@
+/*
+ * Copyright 2013 Maxat Pernebayev, Thomas Bocek
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+ */
+
 package net.tomp2p.replication;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import javax.swing.text.StyledEditorKit.BoldAction;
-
 import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -28,6 +34,7 @@ import net.tomp2p.utils.Utils;
  * If the values are different, then only differences are sent to the replica peer.
  * 
  * @author Maxat Pernebayev
+ * @author Thomas Bocek
  * 
  */
 final public class Synchronization {

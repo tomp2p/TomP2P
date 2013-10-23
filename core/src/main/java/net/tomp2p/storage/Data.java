@@ -51,7 +51,10 @@ public class Data implements Serializable {
 
     private final Type type;
 
-    // version
+    private final boolean isFlag1;
+    
+    private final boolean isFlag2;
+    
     private final boolean hasVersion;
 
     private final boolean hasHash;
@@ -91,12 +94,14 @@ public class Data implements Serializable {
      *            True if this entry is protected
      */
     public Data(final int length, final int version, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry) {
+            final boolean isProtectedEntry, final boolean isFlag1, final boolean isFlag2) {
         this.hasVersion = version != -1;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
         this.length = length + additionalHeader();
+        this.isFlag1 = isFlag1;
+        this.isFlag2 = isFlag2;
         if (length < MAX_BYTE_SIZE) {
             this.type = Type.SMALL;
         } else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {
@@ -122,6 +127,8 @@ public class Data implements Serializable {
      *            The length, which depends on the header values
      */
     public Data(final int header, final int length) {
+        this.isFlag1 = isFlag1(header);
+        this.isFlag2 = isFlag2(header);
         this.hasVersion = hasVersion(header);
         this.hasHash = hasHash(header);
         this.hasTTL = hasTTL(header);
@@ -168,10 +175,20 @@ public class Data implements Serializable {
         this(Unpooled.wrappedBuffer(buffer), -1, -1, hasHash, isProtectedEntry);
 
     }
+    
+    public Data(final byte[] buffer, final boolean isFlag1) {
+        this(Unpooled.wrappedBuffer(buffer), -1, -1, false, false, isFlag1, false);
+
+    }
 
     public Data(final ByteBuf buffer, final boolean hasHash, final boolean isProtectedEntry) {
         this(buffer, -1, -1, hasHash, isProtectedEntry);
 
+    }
+    
+    public Data(final ByteBuf buffer, final int version, final int ttlSeconds, final boolean hasHash,
+            final boolean isProtectedEntry) {
+        this(buffer, version, ttlSeconds, hasHash, isProtectedEntry, false, false);
     }
 
     /**
@@ -189,12 +206,14 @@ public class Data implements Serializable {
      *            True if this entry is protected
      */
     public Data(final ByteBuf buffer, final int version, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry) {
+            final boolean isProtectedEntry, final boolean isFlag1, final boolean isFlag2) {
         this.hasVersion = version != -1;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
         this.buffer = buffer;
+        this.isFlag1 = isFlag1;
+        this.isFlag2 = isFlag2;
         this.startReaderIndex = buffer.readerIndex();
         this.length = buffer.readableBytes() + (hasVersion ? Utils.INTEGER_BYTE_SIZE : 0)
                 + (hasTTL ? Utils.INTEGER_BYTE_SIZE : 0) + (hasHash ? Number160.BYTE_ARRAY_SIZE : 0);
@@ -274,6 +293,12 @@ public class Data implements Serializable {
         // if we encode for the second time, we need to reset the writer index, as this will increase.
         buffer.readerIndex(startReaderIndex);
         int header = type.ordinal();
+        if (isFlag1) {
+            header |= 0x04;
+        }
+        if (isFlag2) {
+            header |= 0x08;
+        }
         if (isProtectedEntry) {
             header |= 0x10;
         }
@@ -461,9 +486,21 @@ public class Data implements Serializable {
     public Data duplicate() {
         return new Data(buffer.duplicate(), version, ttlSeconds, hasHash, isProtectedEntry);
     }
+    
+    public boolean isFlag1() {
+        return isFlag1;
+    }
 
     public static Type type(final int header) {
-        return Type.values()[header & 0xf];
+        return Type.values()[header & 0x3];
+    }
+    
+    private static boolean isFlag1(final int header) {
+        return (header & 0x04) > 0;
+    }
+    
+    private static boolean isFlag2(final int header) {
+        return (header & 0x08) > 0;
     }
 
     private static boolean isProtectedEntry(final int header) {
@@ -480,5 +517,13 @@ public class Data implements Serializable {
 
     private static boolean hasVersion(final int header) {
         return (header & 0x80) > 0;
+    }
+    
+    public byte[] toBytes() {
+        //TODO: converting is bad
+        buffer.readerIndex(startReaderIndex);
+        byte[] orig = new byte[buffer().readableBytes()];
+        buffer().readBytes(orig);
+        return orig;
     }
 }

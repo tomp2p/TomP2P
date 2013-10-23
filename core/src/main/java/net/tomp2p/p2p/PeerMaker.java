@@ -49,6 +49,7 @@ import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.StorageRPC;
+import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
@@ -151,6 +152,7 @@ public class PeerMaker {
     private boolean enableDirectDataRPC = true;
     private boolean enableTrackerRPC = true;
     private boolean enableTaskRPC = true;
+    private boolean enableSynchronizationRPC = true;    
 
     // P2P
     private boolean enableRouting = true;
@@ -395,6 +397,11 @@ public class PeerMaker {
             BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
             peer.setBroadcastRPC(broadcastRPC);
         }
+        
+        if (isEnableSynchronizationRPC()) {
+        	SynchronizationRPC synchronizationRPC = new SynchronizationRPC(peerBean, connectionBean);
+        	peer.setSynchronizationRPC(synchronizationRPC);
+        }        
          
     }
 
@@ -665,6 +672,15 @@ public class PeerMaker {
         this.enableTaskRPC = enableTaskRPC;
         return this;
     }
+    
+    public boolean isEnableSynchronizationRPC() {
+        return enableSynchronizationRPC;
+    }
+
+    public PeerMaker setEnableSynchronizationRPC(boolean enableQuitRPC) {
+        this.enableQuitRPC = enableQuitRPC;
+        return this;
+    }     
 
     public boolean isEnableRouting() {
         return enableRouting;

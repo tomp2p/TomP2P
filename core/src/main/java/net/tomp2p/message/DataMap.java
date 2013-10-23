@@ -85,6 +85,21 @@ public class DataMap {
     public Map<Number480, Data> convertToMap480() {
         return convert(this);
     }
+    
+    public Map<Number480, Number160> convertToHash() {
+        Map<Number480, Number160> retVal = new HashMap<Number480, Number160>();
+        if (dataMap != null) {
+            for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
+                retVal.put(entry.getKey(), entry.getValue().hash());
+            }
+            
+        } else if (dataMapConvert != null) {
+            for (Map.Entry<Number160, Data> entry : dataMapConvert.entrySet()) {
+                retVal.put(new Number480(locationKey, domainKey, entry.getKey()), entry.getValue().hash());
+            }
+        }
+        return retVal;
+    }
 
     private static Map<Number480, Data> convert(final DataMap d) {
         final Map<Number480, Data> dataMap3;

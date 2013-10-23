@@ -62,6 +62,12 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
+/**
+ * 
+ * @author Thomas Bocek
+ * @author Maxat Pernebayev
+ *
+ */
 public class Utils {
     private static final Random random = new Random();
     public static final int IPV4_BYTES = 4;
@@ -160,6 +166,29 @@ public class Utils {
 
     public static Number160 makeSHAHash(byte[] buffer, int offset, int length) {
         return makeSHAHash(ByteBuffer.wrap(buffer, offset, length));
+    }
+    
+    /**
+     * It returns MD5 hash for the buffer.
+     * 
+     * @param buffer
+     *          The buffer to generate the checksum from
+     * @return  The strong checksum
+     */    
+    public static byte[] makeMD5Hash(byte[] buffer)  {
+        return makeMD5Hash(buffer, 0, buffer.length);
+    }
+    
+    public static byte[] makeMD5Hash(byte[] buffer, int offset, int length){
+        MessageDigest m;
+        try {
+            m = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return new byte[0];
+        }
+        m.update(buffer,offset, length);
+        return m.digest();      
     }
 
     public static Number160 createRandomNodeID() {

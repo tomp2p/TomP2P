@@ -61,6 +61,7 @@ import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
+import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
@@ -125,6 +126,7 @@ public class Peer {
     private TrackerRPC trackerRPC;
     // private TaskRPC taskRPC;
     private BroadcastRPC broadcastRPC;
+    private SynchronizationRPC synchronizationRPC;
 
     //
     private boolean shutdown = false;
@@ -276,6 +278,17 @@ public class Peer {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return broadcastRPC;
+    }
+    
+    public void setSynchronizationRPC(SynchronizationRPC synchronizationRPC) {
+    	this.synchronizationRPC = synchronizationRPC;
+    }
+    
+    public SynchronizationRPC getSynchronizationRPC() {
+    	if(synchronizationRPC == null) {
+    		throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+    	}
+    	return synchronizationRPC;
     }
 
     public DistributedRouting getDistributedRouting() {

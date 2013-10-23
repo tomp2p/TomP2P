@@ -79,6 +79,9 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
     }
 
     public Map<Number480, Number160> dataMapHash() {
+        if(dataMapHash == null) {
+            dataMapHash = dataMap.convertToHash();
+        }
         return dataMapHash;
     }
 
@@ -102,7 +105,6 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                     LOG.error("checkDirect failed {}", future2.getFailedReason());
                     return;
                 }
-                dataMapHash = dataMap.convertToHash();
                 final FutureResponse futureResponse = peer.getSynchronizationRPC().infoMessage(other,
                         SynchronizationBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {

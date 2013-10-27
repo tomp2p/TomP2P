@@ -178,7 +178,10 @@ public class Data implements Serializable {
     
     public Data(final byte[] buffer, final boolean isFlag1) {
         this(Unpooled.wrappedBuffer(buffer), -1, -1, false, false, isFlag1, false);
-
+    }
+    
+    public Data(final boolean isFlag2) {
+        this(Unpooled.wrappedBuffer(new byte[0]), -1, -1, false, false, false, isFlag2);
     }
 
     public Data(final ByteBuf buffer, final boolean hasHash, final boolean isProtectedEntry) {
@@ -418,6 +421,14 @@ public class Data implements Serializable {
     public boolean hasHash() {
         return hasHash;
     }
+    
+    public boolean isFlag1() {
+        return isFlag1;
+    }
+    
+    public boolean isFlag2() {
+        return isFlag2;
+    }
 
     @Override
     public String toString() {
@@ -485,10 +496,6 @@ public class Data implements Serializable {
      */
     public Data duplicate() {
         return new Data(buffer.duplicate(), version, ttlSeconds, hasHash, isProtectedEntry);
-    }
-    
-    public boolean isFlag1() {
-        return isFlag1;
     }
 
     public static Type type(final int header) {

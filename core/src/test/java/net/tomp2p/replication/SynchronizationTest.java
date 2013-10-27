@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.DataMap;
@@ -23,6 +24,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.SynchronizationBuilder;
+import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.replication.Checksum;
@@ -333,6 +335,7 @@ public class SynchronizationTest {
         final Number160 locationKey = new Number160(300);
         final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
         final Number160 contentKey = Number160.ZERO;
+       
         final String value = "Test";
         final String value1 = "Test1";
         
@@ -368,91 +371,31 @@ public class SynchronizationTest {
 
         Thread.sleep(500);
         assertEquals(1, ref.get().size());
-        //assertEquals(1, ref.get().dataMap().values().iterator().next().toBytes()[0]);
+        assertEquals(0, ref.get().dataMap().values().iterator().next().toBytes()[0]);
     }   
-
-    /*@Test
-    public void testCopyMessage() throws IOException, InterruptedException, ClassNotFoundException {
-        final Peer sender = new PeerMaker(new Number160(7)).ports(4007).makeAndListen();
-        final Peer receiver = new PeerMaker(new Number160(8)).ports(4008).makeAndListen();
-        
-        final Number160 locationKey = new Number160(400);
-        final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
-        final Number160 contentKey = Number160.ZERO;
-        final String value = "Test";
-        final Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
-        dataMapConverted.put(contentKey, new Data(value));
-        
-        FutureDHT f1 = sender.put(locationKey).setData(new Data(value)).start();
-        f1.awaitUninterruptibly();
-        
-        sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
-        
-        FutureChannelCreator futureChannelCreator = sender.getConnectionBean().reservation().create(0, 1);
-        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future2) throws Exception {
-                if (future2.isSuccess()) {
-                    final DataMap dataMap = new DataMap(locationKey, domainKey, dataMapConverted);
-                    SynchronizationBuilder sb = new SynchronizationBuilder(sender, dataMap);                    
-                    sender.getSynchronizationRPC().copyMessage(receiver.getPeerAddress(), sb, future2.getChannelCreator());
-                } 
-            }
-        });
-        
-        Thread.sleep(100);
-        String secondValue = "";
-        for(Map.Entry<Number480, Data> entry: receiver.getPeerBean().storage().map().entrySet())
-            if(locationKey.equals(entry.getKey().getLocationKey())){
-                Data data = entry.getValue();
-                secondValue = data.object().toString();
-            }
-        assertEquals(value, secondValue);
-    }
 
     @Test
     public void testSyncMessage() throws IOException, InterruptedException, ClassNotFoundException {
         final Peer sender = new PeerMaker(new Number160(9)).ports(4009).makeAndListen();
         final Peer receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
-        final Synchronization synchronization = new Synchronization();
+        
         
         final Number160 locationKey = new Number160(500);
         final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
         final Number160 contentKey = Number160.ZERO;
+        Number480 key = new Number480(locationKey, domainKey, contentKey);
         final String newValue = "Test1Test2Test3Test4";
         final String oldValue = "test0Test2test0Test4";
-        final int size = 5;
         
-        FutureDHT f1 = sender.put(locationKey).setData(new Data(newValue)).start();
-        f1.awaitUninterruptibly();
-        FutureDHT f2 = receiver.put(locationKey).setData(new Data(oldValue)).start();
-        f2.awaitUninterruptibly();
+        sender.put(locationKey).setData(new Data(newValue)).start().awaitUninterruptibly();
+        receiver.put(locationKey).setData(new Data(oldValue)).start().awaitUninterruptibly();
         
-        sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
+        FutureDone<SynchronizationStatistics> future = sender.synchronize(receiver.getPeerAddress()).key(key).start();
+        future.awaitUninterruptibly();
         
-        FutureChannelCreator futureChannelCreator = sender.getConnectionBean().reservation().create(0, 1);
-        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future2) throws Exception {
-                if (future2.isSuccess()) {
-                    ArrayList<Checksum> checksums = synchronization.getChecksums(oldValue.getBytes(), size);
-                    ArrayList<Instruction> instructions = synchronization.getInstructions(newValue.getBytes(), checksums, size);
-                    SynchronizationBuilder synchronizationBuilder = new SynchronizationBuilder(sender, locationKey, domainKey, contentKey, Number160.createHash(newValue), instructions);
-                    sender.getSynchronizationRPC().syncMessage(receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
-                    
-                } 
-            }
-        });
-        
-        Thread.sleep(100);
-        String reconstructedValue = "";
-        for(Map.Entry<Number480, Data> entry: receiver.getPeerBean().storage().map().entrySet())
-            if(locationKey.equals(entry.getKey().getLocationKey())){
-                Data data = entry.getValue();
-                reconstructedValue = data.object().toString();
-            }
-        assertEquals(newValue, reconstructedValue);
-    }*/
+        System.err.println(future.getObject().toString());
+        //assertEquals(newValue, reconstructedValue);
+    }
     
     @Test
     public void testGetObjectAndBuffer() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
@@ -471,4 +414,57 @@ public class SynchronizationTest {
         
         assertEquals(checksums, (ArrayList<Checksum>)synchronization.getObject(buffer));
     }
+    
+    @Test
+    public void testIntToByteArrayToInt(){
+        for(int i=0; i<1000000; i++){
+            testByteArrayToInt0();
+        }
+    }
+    
+    private void testByteArrayToInt0(){
+        Random random = new Random();
+        int value = random.nextInt(32767);
+        
+        assertEquals(value, Synchronization.byteArrayToInt(Synchronization.intToByteArray(value)));
+    }
+    
+    @Test
+    public void testEncodeDecodeChecksums() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
+        String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
+        int size = 10;
+        ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
+        byte[] bytes = Synchronization.encodeChecksumList(checksums);
+        
+        assertEquals(checksums, Synchronization.decodeChecksumList(bytes));
+    }
+    
+    @Test
+    public void testEncodeDecodeInstructions() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
+        String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
+        String newValue = "asdfkjasfalskjfasdfkljasasasdflkjsdfkjjdfasdklfjasa";
+        int size = 10;        
+        ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
+        ArrayList<Instruction> instructions = Synchronization.getInstructions(newValue.getBytes(), checksums, size);
+
+        Number160 key = new Number160(12345);
+        byte[] bytes = Synchronization.encodeInstructionList(instructions, key);
+
+        
+        assertEquals(instructions, Synchronization.decodeInstructionList(bytes));
+    }
+    
+    @Test
+    public void testEncodeDecodeNumber160() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
+        String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
+        String newValue = "asdfkjasfalskjfasdfkljasasasdflkjsdfkjjdfasdklfjasa";
+        int size = 10;        
+        ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
+        ArrayList<Instruction> instructions = Synchronization.getInstructions(newValue.getBytes(), checksums, size);
+
+        Number160 key = new Number160(12345);
+        byte[] bytes = Synchronization.encodeInstructionList(instructions, key);
+
+        assertEquals(key, Synchronization.decodeHash(bytes));
+    }    
 }

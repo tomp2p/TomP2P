@@ -293,29 +293,130 @@ final public class Synchronization {
         return buffer.object();
     }
 
-    public static ArrayList<Checksum> decodeChecksumList(byte[] bytes) {
-        // TODO Auto-generated method stub
-        return null;
+    public static byte[] intToByteArray(int value) {
+        byte[] b = new byte[4];
+        for (int i = 0; i < 4; i++) {
+            int offset = (b.length - 1 - i) * 8;
+            b[i] = (byte) ((value >>> offset) & 0xFF);
+        }
+        return b;
+    }
+    
+    public static int byteArrayToInt(byte[] b){
+        int value = 0;
+        for (int i = 0; i < 4; i++) {
+            int shift = (4 - 1 - i) * 8;
+            value += (b[i] & 0x000000FF) << shift;
+        }
+        return value;
     }
     
     public static byte[] encodeChecksumList(ArrayList<Checksum> checksums) {
-        // TODO Auto-generated method stub
-        return null;
+        int size = checksums.size();
+        byte[] array = new byte[4+size*20];
+        byte[] info = intToByteArray(size);
+        System.arraycopy(info, 0, array, 0, 4);
+        for(int i=0; i<size; i++){
+            byte[] weakChecksum = intToByteArray(checksums.get(i).getWeakChecksum());
+            System.arraycopy(weakChecksum, 0, array, 20*i+4, 4);
+            System.arraycopy(checksums.get(i).getStrongChecksum(), 0, array, 20*i+8, 16);
+        }
+        return array;
     }
 
+    public static ArrayList<Checksum> decodeChecksumList(byte[] bytes) {
+        ArrayList<Checksum> checksums = new ArrayList<Checksum>();
+        byte[] info = new byte[4];
+        System.arraycopy(bytes, 0, info, 0, 4);
+        int size = byteArrayToInt(info);
+        for(int i=0; i<size; i++){
+            Checksum checksum = new Checksum();
+            byte[] weakChecksum = new byte[4];
+            System.arraycopy(bytes, 20*i+4, weakChecksum, 0, 4);
+            checksum.setWeakChecksum(byteArrayToInt(weakChecksum));
+            byte[] strongChecksum = new byte[16];
+            System.arraycopy(bytes, 20*i+8, strongChecksum, 0, 16);
+            checksum.setStrongChecksum(strongChecksum);
+            checksums.add(checksum);
+        }
+        return checksums;
+    }
+    
     public static byte[] encodeInstructionList(ArrayList<Instruction> instructions, Number160 number160) {
-        // TODO Auto-generated method stub
-        return null;
+        int size = instructions.size();
+        int length = 0;
+        ArrayList<Integer> literalSize = new ArrayList<Integer>();
+        for(int i=0; i<size; i++) {
+            int temp = instructions.get(i).literalSize();
+            length += temp;
+            literalSize.add(temp);
+        }
+        
+        byte[] array = new byte[20+4+8*size+length]; // 20 - Number160, 4 - number of instructions, 8 - size of each  instruction and reference, length - all literals
+        byte[] hash = number160.toByteArray();
+        System.arraycopy(hash, 0, array, 0, 20);
+        byte[] info = intToByteArray(size);
+        System.arraycopy(info, 0, array, 20, 4);
+        
+        for(int i=0; i<size; i++) {
+            System.arraycopy(intToByteArray(literalSize.get(i)), 0, array, 4*i+24, 4);
+        }
+        
+        int nextPosition = 4*size+24;
+        
+        int shift = 0;
+        for(int i=0; i<size; i++) {
+            byte[] reference =intToByteArray(instructions.get(i).getReference());
+            System.arraycopy(reference, 0, array, nextPosition+shift, 4);
+            if(literalSize.get(i)!=0)
+                System.arraycopy(instructions.get(i).getLiteral(), 0, array, nextPosition+shift+4, literalSize.get(i));
+            shift += literalSize.get(i)+4;
+        }
+        
+        return array;
     }
 
     public static ArrayList<Instruction> decodeInstructionList(byte[] bytes) {
-        // TODO Auto-generated method stub
-        return null;
+        ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+        byte[] info = new byte[4];
+        System.arraycopy(bytes, 20, info, 0, 4);
+        int size = byteArrayToInt(info);
+        
+        ArrayList<Integer> literalSize = new ArrayList<Integer>();
+        for(int i=0; i<size; i++) {
+            byte[] temp = new byte[4];
+            System.arraycopy(bytes, 4*i+24, temp, 0, 4);
+            literalSize.add(byteArrayToInt(temp));
+        }
+        
+        int nextPosition = 4*size+24;
+        int shift = 0;
+        
+        for(int i=0; i<size; i++) {
+            Instruction instruction = new Instruction();
+            byte[] reference = new byte[4];
+            System.arraycopy(bytes, nextPosition+shift, reference, 0, 4);
+            int referenceValue = byteArrayToInt(reference);
+            if(referenceValue!=-1){
+                instruction.setReference(referenceValue);
+            }
+            else {
+                byte[] literal = new byte[literalSize.get(i)];
+                System.arraycopy(bytes, nextPosition+shift+4, literal, 0, literalSize.get(i));
+                instruction.setLiteral(literal);
+            }
+            shift += literalSize.get(i)+4;
+            instructions.add(instruction);          
+        }
+        
+        return instructions;    
     }
 
     public static Number160 decodeHash(byte[] bytes) {
-        // TODO Auto-generated method stub
-        return null;
+        byte[] number160 = new byte[20];
+        System.arraycopy(bytes, 0, number160, 0, 20);
+        
+        return new Number160(number160);
     }
 
 }

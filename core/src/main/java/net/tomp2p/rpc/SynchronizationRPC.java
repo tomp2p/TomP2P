@@ -118,12 +118,13 @@ public class SynchronizationRPC extends DispatchHandler {
             final SynchronizationBuilder synchronizationBuilder, final ChannelCreator channelCreator)
             throws IOException {
         final Message2 message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
-        
+
         if (synchronizationBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
-        
-        message.setDataMap(synchronizationBuilder.dataMap());
+
+        DataMap dataMap = synchronizationBuilder.dataMap();
+        message.setDataMap(dataMap);
 
         FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
@@ -134,7 +135,7 @@ public class SynchronizationRPC extends DispatchHandler {
 
     @Override
     public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
-        if (!(message.getCommand() == INFO_COMMAND ||  message.getCommand() == SYNC_COMMAND)) {
+        if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message2 responseMessage = createResponseMessage(message, Type.OK);
@@ -176,15 +177,19 @@ public class SynchronizationRPC extends DispatchHandler {
                 // found, check if same
                 if (entry.getValue().equals(data.hash())) {
                     retVal.put(entry.getKey(), new Data(new byte[] { 0 }));
+                    LOG.debug("no sync required");
                 } else {
                     // get the checksums
-                    ArrayList<Checksum> checksums = Synchronization.getChecksums(data.toBytes(), Synchronization.SIZE);
+                    ArrayList<Checksum> checksums = Synchronization.getChecksums(data.toBytes(),
+                            Synchronization.SIZE);
                     byte[] encoded = Synchronization.encodeChecksumList(checksums);
                     retVal.put(entry.getKey(), new Data(encoded));
+                    LOG.debug("sync required");
                 }
             } else {
                 // not found
                 retVal.put(entry.getKey(), new Data(new byte[] { 1 }));
+                LOG.debug("copy required");
             }
         }
         return responseMessage;
@@ -206,42 +211,50 @@ public class SynchronizationRPC extends DispatchHandler {
                 .getPeerId());
 
         DataMap dataMap = message.getDataMap(0);
-        
+
         List<Number480> retVal = new ArrayList<Number480>(dataMap.size());
-        
-        for(Map.Entry<Number480, Data> entry: dataMap.dataMap().entrySet()) {
-            if(entry.getValue().length()>0) {
-                if(entry.getValue().isFlag1()) {
-                    //diff
-                    ArrayList<Instruction> instructions = Synchronization.decodeInstructionList(entry.getValue().toBytes());
+
+        for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
+
+            if (entry.getValue().isFlag2()) {
+                peerBean().storage().remove(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
+                        entry.getKey().getContentKey());
+            } else if (entry.getValue().length() > 0) {
+                if (entry.getValue().isFlag1()) {
+                    // diff
+                    ArrayList<Instruction> instructions = Synchronization.decodeInstructionList(entry
+                            .getValue().toBytes());
                     Number160 hash = Synchronization.decodeHash(entry.getValue().toBytes());
-                    
+
                     Data data = peerBean().storage().get(entry.getKey().getLocationKey(),
                             entry.getKey().getDomainKey(), entry.getKey().getContentKey());
-                    
-                    if(!hash.equals(data.hash())) {
+
+                    if (!hash.equals(data.hash())) {
                         continue;
                     }
-                    byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(), instructions,
-                            Synchronization.SIZE);
+                    byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),
+                            instructions, Synchronization.SIZE);
                     boolean put = peerBean().storage().put(entry.getKey().getLocationKey(),
-                            entry.getKey().getDomainKey(), entry.getKey().getContentKey(), new Data(reconstructedValue));
-                    if(put) {
+                            entry.getKey().getDomainKey(), entry.getKey().getContentKey(),
+                            new Data(reconstructedValue));
+                    if (put) {
                         retVal.add(entry.getKey());
                     }
-                    
+
                 } else {
-                    //copy
-                    //TODO: domain protection?
-                    PutStatus status = peerBean().storage().put(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
-                            entry.getKey().getContentKey(), entry.getValue(), message.getPublicKey(), true, false);
-                    if(status == PutStatus.OK) {
+                    // copy
+                    // TODO: domain protection?
+                    PutStatus status = peerBean().storage().put(entry.getKey().getLocationKey(),
+                            entry.getKey().getDomainKey(), entry.getKey().getContentKey(), entry.getValue(),
+                            message.getPublicKey(), true, false);
+                    if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
-                    
+
                 }
                 if (peerBean().replicationStorage() != null) {
-                    peerBean().replicationStorage().updateAndNotifyResponsibilities(entry.getKey().getLocationKey());
+                    peerBean().replicationStorage().updateAndNotifyResponsibilities(
+                            entry.getKey().getLocationKey());
                 }
             }
         }

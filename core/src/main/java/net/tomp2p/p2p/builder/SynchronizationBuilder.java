@@ -19,6 +19,7 @@ package net.tomp2p.p2p.builder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -52,6 +53,9 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
     private static final Logger LOG = LoggerFactory.getLogger(SynchronizationBuilder.class);
 
     private DataMap dataMap;
+    private Number480 key;
+    private Set<Number480> keys;
+    
     private Map<Number480, Number160> dataMapHash;
     private ArrayList<Instruction> instructions;
 
@@ -74,13 +78,67 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
         return this;
     }
 
+    public Number480 key() {
+        return key;
+    }
+    
+    public SynchronizationBuilder key(Number480 key) {
+        this.key = key;
+        return this;
+    }
+    
+    public Set<Number480> keys() {
+        return keys;
+    }
+    
+    public SynchronizationBuilder keys(Set<Number480> keys) {
+        this.keys = keys;
+        return this;
+    }
+
     public DataMap dataMap() {
-        return dataMap;
+        if(dataMap!=null) {
+            return dataMap;
+        } else {
+            Map<Number480, Data> newDataMap = new HashMap<Number480, Data>();
+            if(key!=null) {
+                Data data = peer.getPeerBean().storage().get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
+                if(data == null) {
+                    data = new Data(true);
+                }
+                newDataMap.put(key, data);
+            } 
+            if (keys!=null) {
+                for(Number480 key:keys) {
+                    Data data = peer.getPeerBean().storage().get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
+                    if(data == null) {
+                        data = new Data(true);
+                    }
+                    newDataMap.put(key, data);
+                }
+            }
+            if(newDataMap.size()>0) {
+                return new DataMap(newDataMap);
+            } else {
+                throw new IllegalArgumentException("Need either dataMap, key, or keys!");
+            }
+        }
     }
 
     public Map<Number480, Number160> dataMapHash() {
         if(dataMapHash == null) {
-            dataMapHash = dataMap.convertToHash();
+            dataMapHash = new HashMap<Number480, Number160>();
+        }
+        if(dataMap != null) {
+            dataMapHash.putAll(dataMap.convertToHash());
+        }
+        if(key != null) {
+            dataMapHash.put(key, peer.getPeerBean().storage().get(key.getLocationKey(), key.getDomainKey(), key.getContentKey()).hash());
+        }
+        if(keys!=null) {
+            for(Number480 key:keys) {
+                dataMapHash.put(key, peer.getPeerBean().storage().get(key.getLocationKey(), key.getDomainKey(), key.getContentKey()).hash());
+            }
         }
         return dataMapHash;
     }
@@ -94,8 +152,8 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
         throw new IllegalArgumentException("Cannot be set here");
     }
 
-    public FutureDone<Void> start() {
-        final FutureDone<Void> futureSync = new FutureDone<>();
+    public FutureDone<SynchronizationStatistics> start() {
+        final FutureDone<SynchronizationStatistics> futureSync = new FutureDone<SynchronizationStatistics>();
         FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 2);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -127,6 +185,10 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
 
                         Map<Number480, Data> retVal = new HashMap<Number480, Data>();
                         boolean secondMessageRequired = false;
+                        int dataCopy = 0;
+                        int dataCopyCount = 0;
+                        int diffCount = 0;
+                        int dataNotCopied = 0;
                         for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
                             byte[] data = entry.getValue().toBytes();
                             if (entry.getValue().length() == 1) {
@@ -137,7 +199,10 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                                 } else {
                                     // put everything
                                     secondMessageRequired = true;
-                                    retVal.put(entry.getKey(), dataMap.dataMap().get(entry.getKey()));
+                                    Data data2 = dataMap.dataMap().get(entry.getKey());
+                                    retVal.put(entry.getKey(), data2);
+                                    dataCopy += data2.length();
+                                    dataCopyCount++;
                                 }
                             } else {
                                 // put diff
@@ -146,12 +211,25 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                                         .getValue().toBytes());
                                 ArrayList<Instruction> instructions = Synchronization.getInstructions(entry
                                         .getValue().toBytes(), checksums, Synchronization.SIZE);
+                                for(Instruction instruction:instructions) {
+                                    if(instruction.getReference()==-1) {
+                                        dataNotCopied +=Synchronization.SIZE;
+                                    } else {
+                                        dataCopy+=instruction.literalSize();
+                                    }
+                                }
                                 byte[] endoced = Synchronization.encodeInstructionList(instructions,
                                         dataMapHash.get(entry.getKey()));
                                 Data data1 = new Data(endoced, true);
                                 retVal.put(entry.getKey(), data1);
+                                diffCount++;
                             }
                         }
+                        final SynchronizationStatistics syncStat = new SynchronizationStatistics();
+                        syncStat.dataCopy(dataCopy);
+                        syncStat.dataCopyCount(dataCopyCount);
+                        syncStat.diffCount(diffCount);
+                        syncStat.dataNotCopied(dataNotCopied);
                         dataMap = new DataMap(retVal);
 
                         if (secondMessageRequired) {
@@ -164,12 +242,13 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                                     if (future.isFailed()) {
                                         futureSync.setFailed(future);
                                     } else {
-                                        futureSync.setDone();
+                                        futureSync.setDone(syncStat);
                                     }
                                 }
                             });
                             Utils.addReleaseListener(future2.getChannelCreator(), fr, futureResponse);
                         } else {
+                            futureSync.setDone(syncStat);
                             Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
                         }
                     }

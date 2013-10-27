@@ -47,6 +47,13 @@ public class Instruction implements Serializable {
     public byte[] getLiteral() {
         return literal;
     }
+    
+    public int literalSize() {
+        if(literal == null)
+            return 0;
+        else
+            return literal.length;
+    }
 
     @Override
     public boolean equals(Object obj) {

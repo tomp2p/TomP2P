@@ -49,7 +49,7 @@ public class SynchronizationStatistics {
         StringBuilder sb = new StringBuilder("rsync stats:");
         sb.append("data copied: ").append(dataCopy).append("(").append(dataCopyCount).append(")");
         sb.append(",data not copied: ").append(dataNotCopied).append("(").append(diffCount).append(")");
-        sb.append(",ratio: ").append(dataCopy/(double)dataNotCopied);
+        sb.append(",ratio: ").append(dataCopy/(double)(dataNotCopied+dataCopy));
         return sb.toString();
     }
 }

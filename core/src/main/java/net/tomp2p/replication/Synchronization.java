@@ -16,14 +16,10 @@
 
 package net.tomp2p.replication;
 
-import io.netty.buffer.Unpooled;
-
-import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Utils;
 
@@ -88,7 +84,7 @@ final public class Synchronization {
         ArrayList<Checksum> checksums = new ArrayList<Checksum>(numberOfBlocks);
         for (int i = 0; i < numberOfBlocks; i++) {
             int remaining = blockSize;
-            if (i == numberOfBlocks - 1) {
+            if (i == numberOfBlocks - 1 && value.length % blockSize != 0) {
                 remaining = value.length % blockSize;
             }
 
@@ -255,7 +251,7 @@ final public class Synchronization {
     public static byte[] getReconstructedValue(byte[] oldValue, ArrayList<Instruction> instructions, int blockSize) {
 
         final int numberOfBlocks = (oldValue.length + blockSize - 1) / blockSize;
-        final int remainigSize = oldValue.length % blockSize;
+        final int lastBlockSize = oldValue.length % blockSize == 0 ? blockSize: oldValue.length % blockSize;
 
         // calculate the new size of the data
         int newSize = 0;
@@ -263,7 +259,7 @@ final public class Synchronization {
             if (instruction.getReference() == -1) {
                 newSize += instruction.getLiteral().length;
             } else {
-                newSize += (instruction.getReference() == numberOfBlocks - 1) ? remainigSize : blockSize;
+                newSize += (instruction.getReference() == numberOfBlocks - 1) ? lastBlockSize : blockSize;
             }
         }
         byte[] reconstructedValue = new byte[newSize];
@@ -276,21 +272,13 @@ final public class Synchronization {
                 System.arraycopy(instruction.getLiteral(), 0, reconstructedValue, offset, len);
 
             } else {
-                len = (instruction.getReference() == numberOfBlocks - 1) ? remainigSize : blockSize;
+                len = (instruction.getReference() == numberOfBlocks - 1) ? lastBlockSize : blockSize;
                 int reference = instruction.getReference();
                 System.arraycopy(oldValue, reference * blockSize, reconstructedValue, offset, len);
             }
             offset += len;
         }
         return reconstructedValue;
-    }
-
-    public Buffer getBuffer(Object object) throws IOException {
-        return new Buffer(Unpooled.wrappedBuffer(Utils.encodeJavaObject(object)));
-    }
-
-    public Object getObject(Buffer buffer) throws IOException, ClassNotFoundException {
-        return buffer.object();
     }
 
     public static byte[] intToByteArray(int value) {

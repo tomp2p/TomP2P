@@ -495,7 +495,7 @@ public class Data implements Serializable {
      * @return A shallow copy where the data is shared but the reader and writer index is not shared
      */
     public Data duplicate() {
-        return new Data(buffer.duplicate(), version, ttlSeconds, hasHash, isProtectedEntry);
+        return new Data(buffer.duplicate(), version, ttlSeconds, hasHash, isProtectedEntry, isFlag1, isFlag2);
     }
 
     public static Type type(final int header) {

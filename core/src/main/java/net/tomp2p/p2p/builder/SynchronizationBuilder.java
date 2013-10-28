@@ -199,7 +199,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                                 } else {
                                     // put everything
                                     secondMessageRequired = true;
-                                    Data data2 = dataMap.dataMap().get(entry.getKey());
+                                    Data data2 = peer.getPeerBean().storage().get(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry.getKey().getContentKey());
                                     retVal.put(entry.getKey(), data2);
                                     dataCopy += data2.length();
                                     dataCopyCount++;
@@ -229,7 +229,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                         syncStat.dataCopyCount(dataCopyCount);
                         syncStat.diffCount(diffCount);
                         syncStat.dataNotCopied(dataNotCopied);
-                        dataMap = new DataMap(retVal);
+                        SynchronizationBuilder.this.dataMap = new DataMap(retVal);
 
                         if (secondMessageRequired) {
                             FutureResponse fr = peer.getSynchronizationRPC().syncMessage(other,

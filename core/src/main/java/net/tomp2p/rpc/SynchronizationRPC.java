@@ -231,7 +231,7 @@ public class SynchronizationRPC extends DispatchHandler {
                     Data data = peerBean().storage().get(entry.getKey().getLocationKey(),
                             entry.getKey().getDomainKey(), entry.getKey().getContentKey());
 
-                    if (!hash.equals(data.hash())) {
+                    if (hash.equals(data.hash())) {
                         continue;
                     }
                     byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),

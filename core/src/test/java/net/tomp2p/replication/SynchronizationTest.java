@@ -34,6 +34,7 @@ import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 import org.hamcrest.Matcher;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class SynchronizationTest {
@@ -164,7 +165,24 @@ public class SynchronizationTest {
  		byte[] reconstructedValue = sync.getReconstructedValue(oldValue.getBytes(), instructions, size);
  		
  		assertArrayEquals(newValue.getBytes(), reconstructedValue);		
-	}	
+	}
+	
+	@Test
+    public void testGetReconstructedValueStatic2() throws IOException, NoSuchAlgorithmException {
+        // oldValue and newValue are set manually
+        Synchronization sync = new Synchronization();
+        int size = 5;
+        String newValue = "Test1Test2Test3Test4l";
+        String oldValue = "test0Test2test0Test4n";
+        ArrayList<Checksum> checksums = sync.getChecksums(oldValue.getBytes(), size);
+        ArrayList<Instruction> instructions = sync.getInstructions(newValue.getBytes(), checksums, size);
+        
+        Assert.assertEquals(4, instructions.size());
+        
+        byte[] reconstructedValue = sync.getReconstructedValue(oldValue.getBytes(), instructions, size);
+        
+        assertArrayEquals(newValue.getBytes(), reconstructedValue);     
+    }   
 	
 	@Test
     public void testGetReconstructedValueDynamic() throws IOException {
@@ -387,8 +405,11 @@ public class SynchronizationTest {
         final String newValue = "Test1Test2Test3Test4";
         final String oldValue = "test0Test2test0Test4";
         
-        sender.put(locationKey).setData(new Data(newValue)).start().awaitUninterruptibly();
-        receiver.put(locationKey).setData(new Data(oldValue)).start().awaitUninterruptibly();
+        Data test1 = new Data(newValue.getBytes());
+        Data test2 = new Data(oldValue.getBytes());
+        
+        sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
+        receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
         
         FutureDone<SynchronizationStatistics> future = sender.synchronize(receiver.getPeerAddress()).key(key).start();
         future.awaitUninterruptibly();
@@ -433,6 +454,16 @@ public class SynchronizationTest {
     public void testEncodeDecodeChecksums() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
         String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
         int size = 10;
+        ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
+        byte[] bytes = Synchronization.encodeChecksumList(checksums);
+        
+        assertEquals(checksums, Synchronization.decodeChecksumList(bytes));
+    }
+    
+    @Test
+    public void testEncodeDecodeChecksums2() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
+        String value = "Test1Test2Test3Test4";
+        int size = 5;
         ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
         byte[] bytes = Synchronization.encodeChecksumList(checksums);
         

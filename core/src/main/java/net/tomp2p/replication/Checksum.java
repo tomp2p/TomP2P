@@ -56,4 +56,10 @@ public class Checksum implements Serializable {
         Checksum c = (Checksum) obj;
         return weakChecksum == c.weakChecksum && Arrays.equals(strongChecksum, c.strongChecksum);
     }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("wcs:"+weakChecksum+",str:"+Arrays.toString(strongChecksum));
+        return sb.toString();
+    }
 }

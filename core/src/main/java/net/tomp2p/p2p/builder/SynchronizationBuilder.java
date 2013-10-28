@@ -207,12 +207,11 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                             } else {
                                 // put diff
                                 secondMessageRequired = true;
-                                ArrayList<Checksum> checksums = Synchronization.decodeChecksumList(entry
-                                        .getValue().toBytes());
-                                ArrayList<Instruction> instructions = Synchronization.getInstructions(entry
-                                        .getValue().toBytes(), checksums, Synchronization.SIZE);
+                                ArrayList<Checksum> checksums = Synchronization.decodeChecksumList(data);
+                                Data data2 = peer.getPeerBean().storage().get(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(), entry.getKey().getContentKey());
+                                ArrayList<Instruction> instructions = Synchronization.getInstructions(data2.toBytes(), checksums, Synchronization.SIZE);
                                 for(Instruction instruction:instructions) {
-                                    if(instruction.getReference()==-1) {
+                                    if(instruction.getReference()!=-1) {
                                         dataNotCopied +=Synchronization.SIZE;
                                     } else {
                                         dataCopy+=instruction.literalSize();

@@ -168,7 +168,7 @@ public class SynchronizationRPC extends DispatchHandler {
         KeysMap keysMap = message.getKeysMap(0);
 
         Map<Number480, Data> retVal = new HashMap<Number480, Data>();
-        responseMessage.setDataMap(new DataMap(retVal));
+        
 
         for (Map.Entry<Number480, Number160> entry : keysMap.keysMap().entrySet()) {
             Data data = peerBean().storage().get(entry.getKey().getLocationKey(),
@@ -182,6 +182,7 @@ public class SynchronizationRPC extends DispatchHandler {
                     // get the checksums
                     ArrayList<Checksum> checksums = Synchronization.getChecksums(data.toBytes(),
                             Synchronization.SIZE);
+                    
                     byte[] encoded = Synchronization.encodeChecksumList(checksums);
                     retVal.put(entry.getKey(), new Data(encoded));
                     LOG.debug("sync required");
@@ -192,6 +193,7 @@ public class SynchronizationRPC extends DispatchHandler {
                 LOG.debug("copy required");
             }
         }
+        responseMessage.setDataMap(new DataMap(retVal));
         return responseMessage;
     }
 

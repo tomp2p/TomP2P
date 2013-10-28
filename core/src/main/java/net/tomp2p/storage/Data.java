@@ -529,7 +529,7 @@ public class Data implements Serializable {
     public byte[] toBytes() {
         //TODO: converting is bad
         buffer.readerIndex(startReaderIndex);
-        byte[] orig = new byte[buffer().readableBytes()];
+        byte[] orig = new byte[bufferLength()];
         buffer().readBytes(orig);
         return orig;
     }

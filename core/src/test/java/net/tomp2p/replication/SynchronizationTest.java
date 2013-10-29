@@ -20,7 +20,7 @@ import net.tomp2p.message.Message2.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.DHTBuilder;
-import net.tomp2p.p2p.builder.SynchronizationBuilder;
+import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -258,7 +258,7 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationBuilder synchronizationBuilder = new SynchronizationBuilder(sender,
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
                             receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
@@ -307,7 +307,7 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationBuilder synchronizationBuilder = new SynchronizationBuilder(sender,
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
                             receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
@@ -357,7 +357,7 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationBuilder synchronizationBuilder = new SynchronizationBuilder(sender,
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
                             receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(

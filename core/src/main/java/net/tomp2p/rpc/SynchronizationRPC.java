@@ -33,7 +33,7 @@ import net.tomp2p.message.Keys;
 import net.tomp2p.message.KeysMap;
 import net.tomp2p.message.Message2;
 import net.tomp2p.message.Message2.Type;
-import net.tomp2p.p2p.builder.SynchronizationBuilder;
+import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -85,7 +85,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
     public FutureResponse infoMessage(final PeerAddress remotePeer,
-            final SynchronizationBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
+            final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
         final Message2 message = createMessage(remotePeer, INFO_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSignMessage()) {
@@ -115,7 +115,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws IOException
      */
     public FutureResponse syncMessage(final PeerAddress remotePeer,
-            final SynchronizationBuilder synchronizationBuilder, final ChannelCreator channelCreator)
+            final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator)
             throws IOException {
         final Message2 message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 

@@ -50,7 +50,7 @@ import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
-import net.tomp2p.p2p.builder.SynchronizationBuilder;
+import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
@@ -546,8 +546,8 @@ public class Peer {
         return new BroadcastBuilder(this, messageKey);
     }
     
-    public SynchronizationBuilder synchronize(PeerAddress other) {
-        return new SynchronizationBuilder(this, other);
+    public SynchronizationDirectBuilder synchronize(PeerAddress other) {
+        return new SynchronizationDirectBuilder(this, other);
     }
 
     /**

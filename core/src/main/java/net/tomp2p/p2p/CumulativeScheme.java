@@ -31,7 +31,18 @@ import net.tomp2p.storage.Data;
 
 public class CumulativeScheme implements EvaluatingSchemeDHT {
     @Override
-    public Collection<Number480> evaluate1(Map<PeerAddress, Collection<Number480>> rawKeys480) {
+    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeys480) {
+        Set<Number480> result = new HashSet<Number480>();
+        if (rawKeys480 != null) {
+            for (Map<Number480, Number160> tmp : rawKeys480.values()) {
+                result.addAll(tmp.keySet());
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480) {
         Set<Number480> result = new HashSet<Number480>();
         if (rawKeys480 != null) {
             for (Collection<Number480> tmp : rawKeys480.values()) {

@@ -102,7 +102,7 @@ public class DistributedHashTable {
                                 parallelRequests(builder.getRequestP2PConfiguration(),
                                         futureRouting.getPotentialHits(), futureDHT, false,
                                         future.getChannelCreator(), new OperationMapper<FuturePut>() {
-                                            Map<PeerAddress, Collection<Number480>> rawData480 = new HashMap<PeerAddress, Collection<Number480>>();
+                                            Map<PeerAddress, Map<Number480,Number160>> rawData480 = new HashMap<PeerAddress, Map<Number480,Number160>>();
 
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
@@ -122,7 +122,7 @@ public class DistributedHashTable {
                                                 // need to check the result if we could store it.
                                                 if (future.isSuccess() && future.getResponse().isOk()) {
                                                     rawData480.put(future.getRequest().getRecipient(), future
-                                                            .getResponse().getKeys(0).keys());
+                                                            .getResponse().getKeysMap(0).keysMap());
                                                 }
                                             }
                                         });
@@ -243,7 +243,7 @@ public class DistributedHashTable {
                                         futureRouting.getPotentialHits(), futureDHT, false,
                                         future.getChannelCreator(), new OperationMapper<FuturePut>() {
 
-                                            Map<PeerAddress, Collection<Number480>> rawData480 = new HashMap<PeerAddress, Collection<Number480>>();
+                                            Map<PeerAddress, Map<Number480, Number160>> rawData480 = new HashMap<PeerAddress, Map<Number480, Number160>>();
 
                                             @Override
                                             public FutureResponse create(final ChannelCreator channelCreator,
@@ -272,7 +272,9 @@ public class DistributedHashTable {
                                                 // the result if we could store it.
                                                 if (future.isSuccess() && future.getResponse().isOk()) {
                                                     rawData480.put(future.getRequest().getRecipient(), future
-                                                            .getResponse().getKeys(0).keys());
+                                                            .getResponse().getKeysMap(0).keysMap());
+                                                } else {
+                                                    rawData480.put(future.getRequest().getRecipient(), null);
                                                 }
                                             }
                                         });

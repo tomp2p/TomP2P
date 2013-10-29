@@ -27,7 +27,7 @@ import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public interface EvaluatingSchemeDHT {
-    public Collection<Number480> evaluate1(Map<PeerAddress, Collection<Number480>> rawKeys480);
+    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeys480);
 
     public Map<Number480, Data> evaluate2(Map<PeerAddress, Map<Number480, Data>> rawData);
 
@@ -36,4 +36,6 @@ public interface EvaluatingSchemeDHT {
     public ByteBuf evaluate4(Map<PeerAddress, ByteBuf> rawChannels);
 
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest);
+    
+    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480);
 }

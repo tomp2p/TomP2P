@@ -184,16 +184,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      */
     public Collection<Number480> getEvalKeys() {
         synchronized (lock) {
-            return evaluationScheme.evaluate1(rawKeys480);
-        }
-    }
-
-    /**
-     * @return The keys together with the location and domain key as a Number480 value.
-     */
-    public Map<PeerAddress, Collection<Number480>> getRawKeys480() {
-        synchronized (lock) {
-            return rawKeys480;
+            return evaluationScheme.evaluate6(rawKeys480);
         }
     }
     

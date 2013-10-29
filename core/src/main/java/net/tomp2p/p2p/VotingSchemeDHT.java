@@ -31,7 +31,35 @@ import net.tomp2p.storage.Data;
 
 public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     @Override
-    public Collection<Number480> evaluate1(Map<PeerAddress, Collection<Number480>> rawKeys480) {
+    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeys480) {
+        Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
+        Set<Number480> result = new HashSet<Number480>();
+
+        int size = rawKeys480 == null ? 0 : rawKeys480.size();
+        int majority = (size + 1) / 2;
+
+        if (rawKeys480 != null) {
+            for (PeerAddress address : rawKeys480.keySet()) {
+                Collection<Number480> keys480 = rawKeys480.get(address).keySet();
+                if (keys480 != null) {
+                    for (Number480 key : keys480) {
+                        int c = 1;
+                        Integer count = counter.get(key);
+                        if (count != null)
+                            c = count + 1;
+                        counter.put(key, c);
+                        if (c >= majority)
+                            result.add(key);
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+    
+    @Override
+    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480) {
         Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
         Set<Number480> result = new HashSet<Number480>();
 

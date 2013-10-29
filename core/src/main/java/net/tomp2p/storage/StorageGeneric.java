@@ -42,7 +42,7 @@ public abstract class StorageGeneric implements Storage {
     };
 
     public enum PutStatus {
-        OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED
+        OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT
     };
 
     // Hash of public key is always preferred

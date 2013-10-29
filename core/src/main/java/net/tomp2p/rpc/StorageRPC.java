@@ -480,18 +480,17 @@ public class StorageRPC extends DispatchHandler {
         final PublicKey publicKey = message.getPublicKey();
         final DataMap toStore = message.getDataMap(0);
         final int dataSize = toStore.size();
-        final Collection<Number480> result = new HashSet<Number480>(dataSize);
+        final Map<Number480, Number160> result = new HashMap<Number480, Number160>(dataSize);
         for (Map.Entry<Number480, Data> entry : toStore.dataMap().entrySet()) {
-            if (doPut(putIfAbsent, protectDomain, publicKey, entry.getKey().getLocationKey(), entry.getKey()
-                    .getDomainKey(), entry.getKey().getContentKey(), entry.getValue())) {
-                result.add(entry.getKey());
+            PutStatus putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey().getLocationKey(), entry.getKey()
+                    .getDomainKey(), entry.getKey().getContentKey(), entry.getValue());
+                result.put(entry.getKey(), new Number160(putStatus.ordinal()));
                 // check the responsibility of the newly added data, do something
                 // (notify) if we are responsible
                 if (peerBean().replicationStorage() != null) {
                     peerBean().replicationStorage().updateAndNotifyResponsibilities(
                             entry.getKey().getLocationKey());
                 }
-            }
         }
 
         if (result.size() == 0 && !putIfAbsent) {
@@ -499,9 +498,9 @@ public class StorageRPC extends DispatchHandler {
         } else if (result.size() == 0 && putIfAbsent) {
             // put if absent does not return an error if it did not work!
             responseMessage.setType(Type.OK);
-            responseMessage.setKeys(new Keys(result));
+            responseMessage.setKeysMap(new KeysMap(result));
         } else {
-            responseMessage.setKeys(new Keys(result));
+            responseMessage.setKeysMap(new KeysMap(result));
             if (result.size() != dataSize) {
                 responseMessage.setType(Type.PARTIALLY_OK);
             }
@@ -509,19 +508,14 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-    private boolean doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
+    private PutStatus doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
             final Number160 locationKey, final Number160 domainKey, final Number160 contentKey,
             final Data value) {
-        if (peerBean().storage().put(locationKey, domainKey, contentKey, value, publicKey, putIfAbsent,
-                protectDomain) == PutStatus.OK) {
-            LOG.debug("put data with key {}, domain {} on {}", locationKey, domainKey, peerBean()
-                    .serverPeerAddress());
-            return true;
-        } else {
-            LOG.debug("could not add {}, domain {} on {}", locationKey, domainKey, peerBean()
-                    .serverPeerAddress());
-            return false;
-        }
+        LOG.debug("put data with key {}, domain {} on {}", locationKey, domainKey, peerBean()
+                .serverPeerAddress());
+        return peerBean().storage().put(locationKey, domainKey, contentKey, value, publicKey, putIfAbsent,
+                protectDomain);
+        
     }
 
     private Message2 handleAdd(final Message2 message, final Message2 responseMessage,

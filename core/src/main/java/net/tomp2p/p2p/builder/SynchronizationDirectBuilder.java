@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
  * @author Maxat Pernebayev
  * 
  */
-public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
+public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDirectBuilder> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SynchronizationBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SynchronizationDirectBuilder.class);
 
     private DataMap dataMap;
     private Number480 key;
@@ -67,13 +67,13 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
      * @param peer
      *            The responsible peer that performs synchronization
      */
-    public SynchronizationBuilder(final Peer peer, final PeerAddress other) {
+    public SynchronizationDirectBuilder(final Peer peer, final PeerAddress other) {
         super(peer, Number160.ZERO);
         self(this);
         this.other = other;
     }
 
-    public SynchronizationBuilder dataMap(DataMap dataMap) {
+    public SynchronizationDirectBuilder dataMap(DataMap dataMap) {
         this.dataMap = dataMap;
         return this;
     }
@@ -82,7 +82,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
         return key;
     }
     
-    public SynchronizationBuilder key(Number480 key) {
+    public SynchronizationDirectBuilder key(Number480 key) {
         this.key = key;
         return this;
     }
@@ -91,7 +91,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
         return keys;
     }
     
-    public SynchronizationBuilder keys(Set<Number480> keys) {
+    public SynchronizationDirectBuilder keys(Set<Number480> keys) {
         this.keys = keys;
         return this;
     }
@@ -148,7 +148,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
     }
 
     @Override
-    public SynchronizationBuilder setDomainKey(final Number160 domainKey) {
+    public SynchronizationDirectBuilder setDomainKey(final Number160 domainKey) {
         throw new IllegalArgumentException("Cannot be set here");
     }
 
@@ -164,7 +164,7 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                     return;
                 }
                 final FutureResponse futureResponse = peer.getSynchronizationRPC().infoMessage(other,
-                        SynchronizationBuilder.this, future2.getChannelCreator());
+                        SynchronizationDirectBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
                     public void operationComplete(FutureResponse future) throws Exception {
@@ -229,11 +229,11 @@ public class SynchronizationBuilder extends DHTBuilder<SynchronizationBuilder> {
                         syncStat.dataCopyCount(dataCopyCount);
                         syncStat.diffCount(diffCount);
                         syncStat.dataNotCopied(dataNotCopied);
-                        SynchronizationBuilder.this.dataMap = new DataMap(retVal);
+                        SynchronizationDirectBuilder.this.dataMap = new DataMap(retVal);
 
                         if (secondMessageRequired) {
                             FutureResponse fr = peer.getSynchronizationRPC().syncMessage(other,
-                                    SynchronizationBuilder.this, future2.getChannelCreator());
+                                    SynchronizationDirectBuilder.this, future2.getChannelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 
                                 @Override

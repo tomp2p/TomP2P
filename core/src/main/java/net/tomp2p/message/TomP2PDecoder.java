@@ -366,7 +366,7 @@ public class TomP2PDecoder {
                     keyMapByteSize = buf.readInt();
                 }
                 if (keyMapByte == null) {
-                    keyMapByte = new KeyMapByte(new HashMap<Number480, Byte>(2 * keyMap480Size));
+                    keyMapByte = new KeyMapByte(new HashMap<Number480, Byte>(2 * keyMapByteSize));
                 }
 
                 for (int i = keyMapByte.size(); i < keyMapByteSize; i++) {

@@ -33,10 +33,11 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Keys;
-import net.tomp2p.message.KeysMap;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.KeyCollection;
+import net.tomp2p.message.KeyMap480;
+import net.tomp2p.message.KeyMapByte;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
@@ -192,7 +193,7 @@ public class StorageRPC extends DispatchHandler {
                     putBuilder.getDataMapContent());
         }
 
-        final Message2 message = createMessage(remotePeer, COMMAND_PUT, type);
+        final Message message = createMessage(remotePeer, COMMAND_PUT, type);
 
         if (putBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -273,7 +274,7 @@ public class StorageRPC extends DispatchHandler {
             }
         }
 
-        final Message2 message = createMessage(remotePeer, COMMAND_ADD, type);
+        final Message message = createMessage(remotePeer, COMMAND_ADD, type);
 
         if (addBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -325,7 +326,7 @@ public class StorageRPC extends DispatchHandler {
         } else { // if(digest && returnBloomFilter)
             type = Type.REQUEST_3;
         }
-        final Message2 message = createMessage(remotePeer, COMMAND_GET, type);
+        final Message message = createMessage(remotePeer, COMMAND_GET, type);
 
         if (getBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -340,7 +341,7 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(getBuilder.getDomainKey());
 
             if (getBuilder.getContentKeys() != null) {
-                message.setKeys(new Keys(getBuilder.getLocationKey(), getBuilder.getDomainKey(), getBuilder
+                message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder.getDomainKey(), getBuilder
                         .getContentKeys()));
             } else if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
                 if (getBuilder.getKeyBloomFilter() != null) {
@@ -351,7 +352,7 @@ public class StorageRPC extends DispatchHandler {
                 }
             }
         } else {
-            message.setKeys(new Keys(getBuilder.keys()));
+            message.setKeyCollection(new KeyCollection(getBuilder.keys()));
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
@@ -387,7 +388,7 @@ public class StorageRPC extends DispatchHandler {
      */
     public FutureResponse remove(final PeerAddress remotePeer, final RemoveBuilder removeBuilder,
             final ChannelCreator channelCreator) {
-        final Message2 message = createMessage(remotePeer, COMMAND_REMOVE,
+        final Message message = createMessage(remotePeer, COMMAND_REMOVE,
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 
         if (removeBuilder.isSignMessage()) {
@@ -403,11 +404,11 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(removeBuilder.getDomainKey());
 
             if (removeBuilder.getContentKeys() != null) {
-                message.setKeys(new Keys(removeBuilder.getLocationKey(), removeBuilder.getDomainKey(),
+                message.setKeyCollection(new KeyCollection(removeBuilder.getLocationKey(), removeBuilder.getDomainKey(),
                         removeBuilder.getContentKeys()));
             }
         } else {
-            message.setKeys(new Keys(removeBuilder.getKeys()));
+            message.setKeyCollection(new KeyCollection(removeBuilder.getKeys()));
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
@@ -422,13 +423,13 @@ public class StorageRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
 
         if (!(message.getCommand() == COMMAND_ADD || message.getCommand() == COMMAND_PUT
                 || message.getCommand() == COMMAND_GET || message.getCommand() == COMMAND_REMOVE)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        final Message2 responseMessage = createResponseMessage(message, Type.OK);
+        final Message responseMessage = createResponseMessage(message, Type.OK);
 
         switch (message.getCommand()) {
         case COMMAND_ADD:
@@ -454,57 +455,72 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-    private boolean isDomainProtected(final Message2 message) {
+    private boolean isDomainProtected(final Message message) {
         boolean protectDomain = message.getPublicKey() != null
                 && (message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4);
         return protectDomain;
     }
 
-    private boolean isStoreIfAbsent(final Message2 message) {
+    private boolean isStoreIfAbsent(final Message message) {
         boolean absent = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
         return absent;
     }
 
-    private boolean isPartial(final Message2 message) {
+    private boolean isList(final Message message) {
         boolean partial = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
         return partial;
     }
 
-    private boolean isList(final Message2 message) {
-        boolean partial = message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4;
-        return partial;
-    }
-
-    private Message2 handlePut(final Message2 message, final Message2 responseMessage,
+    private Message handlePut(final Message message, final Message responseMessage,
             final boolean putIfAbsent, final boolean protectDomain) throws IOException {
         final PublicKey publicKey = message.getPublicKey();
         final DataMap toStore = message.getDataMap(0);
         final int dataSize = toStore.size();
-        final Map<Number480, Number160> result = new HashMap<Number480, Number160>(dataSize);
+        final Map<Number480, Byte> result = new HashMap<Number480, Byte>(dataSize);
         for (Map.Entry<Number480, Data> entry : toStore.dataMap().entrySet()) {
             PutStatus putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey().getLocationKey(), entry.getKey()
                     .getDomainKey(), entry.getKey().getContentKey(), entry.getValue());
-                result.put(entry.getKey(), new Number160(putStatus.ordinal()));
+                result.put(entry.getKey(), (byte)putStatus.ordinal());
                 // check the responsibility of the newly added data, do something
                 // (notify) if we are responsible
-                if (peerBean().replicationStorage() != null) {
+                if (putStatus == PutStatus.OK && peerBean().replicationStorage() != null) {
                     peerBean().replicationStorage().updateAndNotifyResponsibilities(
                             entry.getKey().getLocationKey());
                 }
         }
 
-        if (result.size() == 0 && !putIfAbsent) {
-            responseMessage.setType(Type.DENIED);
-        } else if (result.size() == 0 && putIfAbsent) {
-            // put if absent does not return an error if it did not work!
-            responseMessage.setType(Type.OK);
-            responseMessage.setKeysMap(new KeysMap(result));
-        } else {
-            responseMessage.setKeysMap(new KeysMap(result));
-            if (result.size() != dataSize) {
-                responseMessage.setType(Type.PARTIALLY_OK);
+        responseMessage.setType(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
+        responseMessage.setKeyMapByte(new KeyMapByte(result));
+        return responseMessage;
+    }
+    
+    private Message handleAdd(final Message message, final Message responseMessage,
+            final boolean protectDomain) {
+
+        Utils.nullCheck(message.getDataMap(0));
+
+        final Map<Number480, Byte> result = new HashMap<Number480, Byte>();
+        final DataMap dataMap = message.getDataMap(0);
+        final PublicKey publicKey = message.getPublicKey();
+        final boolean list = isList(message);
+        // here we set the map with the close peers. If we get data by a
+        // sender and the sender is closer than us, we assume that the sender has
+        // the data and we don't need to transfer data to the closest (sender)
+        // peer.
+
+        for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
+            PutStatus status = doAdd(protectDomain, entry, publicKey, list, peerBean());
+            result.put(entry.getKey(), (byte)status.ordinal());
+            
+            // check the responsibility of the newly added data, do something
+            // (notify) if we are responsible
+            if (status == PutStatus.OK && peerBean().replicationStorage() != null) {
+                peerBean().replicationStorage().updateAndNotifyResponsibilities(
+                        entry.getKey().getLocationKey());
             }
+
         }
+        responseMessage.setKeyMapByte(new KeyMapByte(result));
         return responseMessage;
     }
 
@@ -517,43 +533,12 @@ public class StorageRPC extends DispatchHandler {
                 protectDomain);
         
     }
-
-    private Message2 handleAdd(final Message2 message, final Message2 responseMessage,
-            final boolean protectDomain) {
-
-        Utils.nullCheck(message.getDataMap(0));
-
-        final Collection<Number480> result = new HashSet<Number480>();
-        final DataMap dataMap = message.getDataMap(0);
-        final PublicKey publicKey = message.getPublicKey();
-        final boolean list = isList(message);
-        // here we set the map with the close peers. If we get data by a
-        // sender and the sender is closer than us, we assume that the sender has
-        // the data and we don't need to transfer data to the closest (sender)
-        // peer.
-
-        for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
-            Number160 contentKey = doAdd(protectDomain, entry, publicKey, list, peerBean());
-            if (contentKey != null) {
-                result.add(new Number480(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
-                        contentKey));
-            }
-            // check the responsibility of the newly added data, do something
-            // (notify) if we are responsible
-            if (result.size() > 0 && peerBean().replicationStorage() != null) {
-                peerBean().replicationStorage().updateAndNotifyResponsibilities(
-                        entry.getKey().getLocationKey());
-            }
-
-        }
-        responseMessage.setKeys(new Keys(result));
-        return responseMessage;
-    }
-
-    private static Number160 doAdd(final boolean protectDomain, final Map.Entry<Number480, Data> entry,
+    
+    private static PutStatus doAdd(final boolean protectDomain, final Map.Entry<Number480, Data> entry,
             final PublicKey publicKey, final boolean list, final PeerBean peerBean) {
         final Number160 locationKey = entry.getKey().getLocationKey();
         final Number160 domainKey = entry.getKey().getDomainKey();
+        LOG.debug("add list data with key {} on {}", locationKey, peerBean.serverPeerAddress());
         if (list) {
             Number160 contentKey2 = new Number160(RND);
             PutStatus status;
@@ -561,25 +546,22 @@ public class StorageRPC extends DispatchHandler {
                     publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {
                 contentKey2 = new Number160(RND);
             }
-            if (status == PutStatus.OK) {
-                LOG.debug("add list data with key {} on {}", locationKey, peerBean.serverPeerAddress());
-                return contentKey2;
-            }
+            return status;
         } else {
-            if (peerBean.storage().put(locationKey, domainKey, entry.getKey().getContentKey(),
-                    entry.getValue(), publicKey, false, protectDomain) == PutStatus.OK) {
-                LOG.debug("add data with key {} on {}", locationKey, peerBean.serverPeerAddress());
-                return entry.getKey().getContentKey();
-            }
+            return peerBean.storage().put(locationKey, domainKey, entry.getKey().getContentKey(),
+                    entry.getValue(), publicKey, false, protectDomain);
         }
-        return null;
     }
 
-    private Message2 handleGet(final Message2 message, final Message2 responseMessage, final boolean range,
+   
+
+   
+
+    private Message handleGet(final Message message, final Message responseMessage, final boolean range,
             final boolean digest) {
         final Number160 locationKey = message.getKey(0);
         final Number160 domainKey = message.getKey(1);
-        final Keys contentKeys = message.getKeys(0);
+        final KeyCollection contentKeys = message.getKeyCollection(0);
         final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
         final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
 
@@ -597,7 +579,7 @@ public class StorageRPC extends DispatchHandler {
                 throw new IllegalArgumentException("need at least two keys, bloomfilter, or key set");
             }
             if (message.getType() == Type.REQUEST_2) {
-                responseMessage.setKeysMap(new KeysMap(digestInfo.getDigests()));
+                responseMessage.setKeyMap480(new KeyMap480(digestInfo.getDigests()));
             } else if (message.getType() == Type.REQUEST_3) {
                 // we did not specifically set location and domain key, this means we want to see what location and
                 // domains we have
@@ -663,11 +645,11 @@ public class StorageRPC extends DispatchHandler {
         }
     }
 
-    private Message2 handleRemove(final Message2 message, final Message2 responseMessage,
+    private Message handleRemove(final Message message, final Message responseMessage,
             final boolean sendBackResults) {
         final Number160 locationKey = message.getKey(0);
         final Number160 domainKey = message.getKey(1);
-        final Keys keys = message.getKeys(0);
+        final KeyCollection keys = message.getKeyCollection(0);
         final PublicKey publicKey = message.getPublicKey();
         final Map<Number480, Data> result;
         if (keys != null) {
@@ -688,7 +670,7 @@ public class StorageRPC extends DispatchHandler {
         if (!sendBackResults) {
             // make a copy, so the iterator in the codec wont conflict with
             // concurrent calls
-            responseMessage.setKeys(new Keys(result.keySet()));
+            responseMessage.setKeyCollection(new KeyCollection(result.keySet()));
         } else {
             // make a copy, so the iterator in the codec wont conflict with
             // concurrent calls

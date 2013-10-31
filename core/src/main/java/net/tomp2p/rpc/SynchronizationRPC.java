@@ -29,10 +29,10 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Keys;
-import net.tomp2p.message.KeysMap;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.KeyCollection;
+import net.tomp2p.message.KeyMap480;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -86,14 +86,14 @@ public class SynchronizationRPC extends DispatchHandler {
      */
     public FutureResponse infoMessage(final PeerAddress remotePeer,
             final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
-        final Message2 message = createMessage(remotePeer, INFO_COMMAND, Type.REQUEST_1);
+        final Message message = createMessage(remotePeer, INFO_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
 
-        KeysMap keyMap = new KeysMap(synchronizationBuilder.dataMapHash());
-        message.setKeysMap(keyMap);
+        KeyMap480 keyMap = new KeyMap480(synchronizationBuilder.dataMapHash());
+        message.setKeyMap480(keyMap);
 
         FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(
@@ -117,7 +117,7 @@ public class SynchronizationRPC extends DispatchHandler {
     public FutureResponse syncMessage(final PeerAddress remotePeer,
             final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator)
             throws IOException {
-        final Message2 message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
+        final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -134,11 +134,11 @@ public class SynchronizationRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        final Message2 responseMessage = createResponseMessage(message, Type.OK);
+        final Message responseMessage = createResponseMessage(message, Type.OK);
         switch (message.getCommand()) {
         case INFO_COMMAND:
             return handleInfo(message, responseMessage);
@@ -161,11 +161,11 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws ClassNotFoundException
      * @throws NoSuchAlgorithmException
      */
-    private Message2 handleInfo(final Message2 message, final Message2 responseMessage) {
+    private Message handleInfo(final Message message, final Message responseMessage) {
         LOG.debug("Info received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
-        KeysMap keysMap = message.getKeysMap(0);
+        KeyMap480 keysMap = message.getKeyMap480(0);
 
         Map<Number480, Data> retVal = new HashMap<Number480, Data>();
         
@@ -208,7 +208,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    private Message2 handleSync(final Message2 message, final Message2 responseMessage) {
+    private Message handleSync(final Message message, final Message responseMessage) {
         LOG.debug("Sync received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
@@ -260,7 +260,7 @@ public class SynchronizationRPC extends DispatchHandler {
                 }
             }
         }
-        responseMessage.setKeys(new Keys(retVal));
+        responseMessage.setKeyCollection(new KeyCollection(retVal));
         return responseMessage;
     }
 }

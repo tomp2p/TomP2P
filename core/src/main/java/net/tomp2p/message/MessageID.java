@@ -40,7 +40,7 @@ public class MessageID implements Comparable<MessageID> {
      * @param message
      *            The message
      */
-    public MessageID(final Message2 message) {
+    public MessageID(final Message message) {
         this(message.getMessageId(), message.isRequest() ? message.getSender() : message.getRecipient());
     }
 

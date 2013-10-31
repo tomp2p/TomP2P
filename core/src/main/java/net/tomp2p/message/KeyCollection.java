@@ -7,13 +7,13 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.utils.Utils;
 
-public class Keys {
+public class KeyCollection {
     private final Collection<Number480> keys;
     private final Collection<Number160> keysConvert;
     private final Number160 locationKey;
     private final Number160 domainKey;
 
-    public Keys(final Number160 locationKey, final Number160 domainKey,
+    public KeyCollection(final Number160 locationKey, final Number160 domainKey,
             final Collection<Number160> keysConvert) {
         this.keys = null;
         this.keysConvert = keysConvert;
@@ -21,7 +21,7 @@ public class Keys {
         this.domainKey = domainKey;
     }
 
-    public Keys(final Collection<Number480> keys) {
+    public KeyCollection(final Collection<Number480> keys) {
         this.keys = keys;
         this.keysConvert = null;
         this.locationKey = null;
@@ -68,26 +68,26 @@ public class Keys {
      *            Add this number to the number480 set
      * @return This class
      */
-    public Keys add(final Number480 number480) {
+    public KeyCollection add(final Number480 number480) {
         keys.add(number480);
         return this;
     }
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Keys)) {
+        if (!(obj instanceof KeyCollection)) {
             return false;
         }
         if (obj == this) {
             return true;
         }
-        Keys k = (Keys) obj;
+        KeyCollection k = (KeyCollection) obj;
         final Collection<Number480> keys2 = convert(this);
         final Collection<Number480> keys3 = convert(k);
         return Utils.isSameSets(keys2, keys3);
     }
 
-    private Collection<Number480> convert(final Keys k) {
+    private Collection<Number480> convert(final KeyCollection k) {
         final Collection<Number480> keys3;
         if (k.keysConvert != null) {
             keys3 = new ArrayList<Number480>(k.keysConvert.size());

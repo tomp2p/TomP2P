@@ -20,7 +20,7 @@ import java.util.Map;
 
 import net.tomp2p.connection2.DefaultConnectionConfiguration;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -45,7 +45,7 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
     }
 
     public void start() {
-        Message2 message = new Message2();
+        Message message = new Message();
         if (isUDP == null) {
             // not set, decide based on the data
             if (dataMap == null) {

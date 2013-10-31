@@ -74,4 +74,15 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest) {
         throw new UnsupportedOperationException("cannot cumulate");
     }
+    
+    @Override
+    public Collection<Number480> evaluate7(Map<PeerAddress, Map<Number480, Byte>> rawKeys480) {
+        Set<Number480> result = new HashSet<Number480>();
+        if (rawKeys480 != null) {
+            for (Map<Number480, Byte> tmp : rawKeys480.values()) {
+                result.addAll(tmp.keySet());
+            }
+        }
+        return result;
+    }
 }

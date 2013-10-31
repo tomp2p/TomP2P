@@ -31,8 +31,8 @@ import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrapper;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -312,7 +312,7 @@ public class DistributedRouting {
             public void operationComplete(final FutureForkJoin<FutureResponse> future) throws Exception {
                 final boolean finished;
                 if (future.isSuccess()) {
-                    Message2 lastResponse = future.getLast().getResponse();
+                    Message lastResponse = future.getLast().getResponse();
                     PeerAddress remotePeer = lastResponse.getSender();
                     routingMechanism.addPotentialHits(remotePeer);
                     Collection<PeerAddress> newNeighbors = lastResponse.getNeighborsSet(0).neighbors();

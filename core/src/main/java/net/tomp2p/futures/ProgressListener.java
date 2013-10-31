@@ -1,9 +1,9 @@
 package net.tomp2p.futures;
 
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 
 public interface ProgressListener {
 
-    void progress(Message2 interMediateMessage);
+    void progress(Message interMediateMessage);
 
 }

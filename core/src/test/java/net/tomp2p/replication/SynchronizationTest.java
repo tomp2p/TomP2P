@@ -16,7 +16,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.DHTBuilder;

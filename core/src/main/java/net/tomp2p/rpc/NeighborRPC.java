@@ -24,8 +24,8 @@ import net.tomp2p.connection2.ConnectionConfiguration;
 import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -85,7 +85,7 @@ public class NeighborRPC extends DispatchHandler {
      */
     public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        Message2 message = createMessage(remotePeer, NEIGHBORS_COMMAND, type);
+        Message message = createMessage(remotePeer, NEIGHBORS_COMMAND, type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
         }
@@ -114,7 +114,7 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws IOException {
+    public Message handleResponse(final Message message, final boolean sign) throws IOException {
         if (message.getKeyList().size() < 2) {
             throw new IllegalArgumentException("We need the location and domain key at least");
         }
@@ -126,7 +126,7 @@ public class NeighborRPC extends DispatchHandler {
         Number160 locationKey = message.getKey(0);
         Number160 domainKey = message.getKey(1);
         // Create response message and set neighbors
-        final Message2 responseMessage = createResponseMessage(message, Type.OK);
+        final Message responseMessage = createResponseMessage(message, Type.OK);
 
         SortedSet<PeerAddress> neighbors = peerBean().peerMap().closePeers(locationKey, NEIGHBOR_SIZE);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);

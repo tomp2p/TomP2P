@@ -25,8 +25,8 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
@@ -67,7 +67,7 @@ public class DirectDataRPC extends DispatchHandler {
 
     public RequestHandler<FutureResponse> sendInternal(final PeerAddress remotePeer,
             final SendDirectBuilderI sendDirectBuilder) {
-        final Message2 message = createMessage(remotePeer, DIRECT_DATA_COMMAND,
+        final Message message = createMessage(remotePeer, DIRECT_DATA_COMMAND,
                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
         final FutureResponse futureResponse = new FutureResponse(message,
                 sendDirectBuilder.progressListener());
@@ -120,12 +120,12 @@ public class DirectDataRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) && message
                 .getCommand() == DIRECT_DATA_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        final Message2 responseMessage = createResponseMessage(message, Type.OK);
+        final Message responseMessage = createResponseMessage(message, Type.OK);
 
         if (sign) {
             responseMessage.setPublicKeyAndSign(peerBean().getKeyPair());

@@ -22,7 +22,7 @@ import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.connection2.ProgresHandler;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 
 /**
  * Each response has one request messages. The corresponding response message is set only if the request has been
@@ -32,12 +32,12 @@ import net.tomp2p.message.Message2;
  */
 public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     // the message that was requested
-    private final Message2 requestMessage;
+    private final Message requestMessage;
 
     private final FutureSuccessEvaluator futureSuccessEvaluator;
 
     // the reply to this request
-    private Message2 responseMessage;
+    private Message responseMessage;
 
     private ProgresHandler progressHandler;
 
@@ -56,7 +56,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * @param requestMessage
      *            The request message that will be send over the wire.
      */
-    public FutureResponse(final Message2 requestMessage) {
+    public FutureResponse(final Message requestMessage) {
         this(requestMessage, new FutureSuccessEvaluatorCommunication());
     }
 
@@ -68,7 +68,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * @param futureSuccessEvaluator
      *            Evaluates if the future was a success or failure
      */
-    public FutureResponse(final Message2 requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator) {
+    public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator) {
         this(requestMessage, futureSuccessEvaluator, null);
     }
 
@@ -80,7 +80,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * @param progressListener
      *            The progress listener for streaming support
      */
-    public FutureResponse(final Message2 requestMessage, final ProgressListener progressListener) {
+    public FutureResponse(final Message requestMessage, final ProgressListener progressListener) {
         this(requestMessage, new FutureSuccessEvaluatorCommunication(), progressListener);
     }
 
@@ -94,7 +94,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * @param progressListener
      *            The progress listener for streaming support
      */
-    public FutureResponse(final Message2 requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator,
+    public FutureResponse(final Message requestMessage, final FutureSuccessEvaluator futureSuccessEvaluator,
             final ProgressListener progressListener) {
         this.requestMessage = requestMessage;
         this.futureSuccessEvaluator = futureSuccessEvaluator;
@@ -120,7 +120,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      *            The received message
      * @return This class
      */
-    public FutureResponse setResponse(final Message2 responseMessage) {
+    public FutureResponse setResponse(final Message responseMessage) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return this;
@@ -140,7 +140,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return this;
     }
 
-    public boolean setResponseLater(final Message2 responseMessage) {
+    public boolean setResponseLater(final Message responseMessage) {
         //System.err.println("response later "+this);
         synchronized (lock) {
             if(completed) {
@@ -201,7 +201,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * 
      * @return The successful response message or null if failed
      */
-    public Message2 getResponse() {
+    public Message getResponse() {
         synchronized (lock) {
             return responseMessage;
         }
@@ -212,7 +212,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * 
      * @return The request message.
      */
-    public Message2 getRequest() {
+    public Message getRequest() {
         synchronized (lock) {
             return requestMessage;
         }
@@ -270,10 +270,10 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * This will be called by the TomP2P library when a partial message is ready.
      * 
      * @param interMediateMessage
-     *            The message that is either incomplete as indicated with {@link Message2#isDone()} or completed. This
+     *            The message that is either incomplete as indicated with {@link Message#isDone()} or completed. This
      *            will be called before the future completes.
      */
-    public void progress(final Message2 interMediateMessage) {
+    public void progress(final Message interMediateMessage) {
         synchronized (lock) {
             if (progressListener != null) {
                 progressListener.progress(interMediateMessage);

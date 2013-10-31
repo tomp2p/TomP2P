@@ -46,7 +46,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
     private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
 
     // Storage of results
-    private Map<PeerAddress, Map<Number480, Number160>> rawKeys480;
+    private Map<PeerAddress, Map<Number480, Byte>> rawResult;
 
     private Number160 locationKey;
 
@@ -92,15 +92,15 @@ public class FuturePut extends FutureDHT<FuturePut> {
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
     public void setStoredKeys(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number480, Number160>> rawKeys480) {
+            final Map<PeerAddress, Map<Number480, Byte>> rawResult) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.rawKeys480 = rawKeys480;
+            this.rawResult = rawResult;
             this.locationKey = locationKey;
             this.domainKey = domainKey;
-            final int size = rawKeys480 == null ? 0 : rawKeys480.size();
+            final int size = rawResult == null ? 0 : rawResult.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
             this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
@@ -114,9 +114,9 @@ public class FuturePut extends FutureDHT<FuturePut> {
      */
     public double getAvgStoredKeys() {
         synchronized (lock) {
-            final int size = rawKeys480.size();
+            final int size = rawResult.size();
             int total = 0;
-            for (Map<Number480, Number160> map : rawKeys480.values()) {
+            for (Map<Number480, Byte> map : rawResult.values()) {
                 Collection<Number480> collection = map.keySet();
                 if (collection != null) {
                     total += collection.size();
@@ -127,13 +127,13 @@ public class FuturePut extends FutureDHT<FuturePut> {
     }
 
     /**
-     * Returns the raw keys from the storage or removal operation.
+     * Returns the raw result from the storage or removal operation.
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number480, Number160>> getRawKeys() {
+    public Map<PeerAddress, Map<Number480, Byte>> getRawResult() {
         synchronized (lock) {
-            return rawKeys480;
+            return rawResult;
         }
     }
 
@@ -155,9 +155,9 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * 
      * @return The keys that have been stored or removed
      */
-    public Collection<Number480> getEvalKeys() {
+    public Collection<Number480> getResult() {
         synchronized (lock) {
-            return evaluationScheme.evaluate1(rawKeys480);
+            return evaluationScheme.evaluate7(rawResult);
         }
     }
 

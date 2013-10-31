@@ -23,8 +23,8 @@ import net.tomp2p.connection2.ConnectionConfiguration;
 import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -80,7 +80,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     public FutureResponse peerExchange(final PeerAddress remotePeer, final Number160 locationKey,
             final Number160 domainKey, final boolean isReplication, final ChannelCreator channelCreator,
             final ConnectionConfiguration connectionConfiguration) {
-        final Message2 message = createMessage(remotePeer, PEX_COMMAND, isReplication ? Type.REQUEST_FF_2
+        final Message message = createMessage(remotePeer, PEX_COMMAND, isReplication ? Type.REQUEST_FF_2
                 : Type.REQUEST_FF_1);
 
         TrackerData peers;
@@ -123,7 +123,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2) && message
                 .getCommand() == PEX_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");

@@ -17,8 +17,8 @@ package net.tomp2p.rpc;
 
 import net.tomp2p.connection2.ConnectionBean;
 import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 
@@ -89,8 +89,8 @@ public abstract class DispatchHandler {
      *            The request type
      * @return The request message
      */
-    public Message2 createMessage(final PeerAddress recipient, final byte name, final Type type) {
-        return new Message2().setRecipient(recipient).setSender(peerBean().serverPeerAddress())
+    public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
+        return new Message().setRecipient(recipient).setSender(peerBean().serverPeerAddress())
                 .setCommand(name).setType(type).setVersion(connectionBean().p2pId());
     }
 
@@ -103,12 +103,12 @@ public abstract class DispatchHandler {
      *            The type of the reply
      * @return The reply message
      */
-    public Message2 createResponseMessage(final Message2 requestMessage, final Type replyType) {
+    public Message createResponseMessage(final Message requestMessage, final Type replyType) {
         return createResponseMessage(requestMessage, replyType, peerBean().serverPeerAddress());
     }
     
-    public static Message2 createResponseMessage(final Message2 requestMessage, final Type replyType, final PeerAddress peerAddress) {
-        Message2 replyMessage = new Message2();
+    public static Message createResponseMessage(final Message requestMessage, final Type replyType, final PeerAddress peerAddress) {
+        Message replyMessage = new Message();
         // this will have the ports > 40'000 that we need to know for sendig the reply
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
@@ -128,13 +128,13 @@ public abstract class DispatchHandler {
      *            The request message
      * @return The reply message
      */
-    public Message2 forwardMessage(final Message2 requestMessage) {
+    public Message forwardMessage(final Message requestMessage) {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
         peerBean().peerMap().peerFound(requestMessage.getSender(), requestMessage.getSender());
         try {
-            Message2 replyMessage = handleResponse(requestMessage, sign);
+            Message replyMessage = handleResponse(requestMessage, sign);
             return replyMessage;
         } catch (Throwable e) {
             peerBean().peerMap().peerFailed(requestMessage.getSender(), FailReason.Exception);
@@ -158,6 +158,6 @@ public abstract class DispatchHandler {
      * @throws Exception
      *             Any exception
      */
-    public abstract Message2 handleResponse(Message2 message, boolean sign) throws Exception;
+    public abstract Message handleResponse(Message message, boolean sign) throws Exception;
 
 }

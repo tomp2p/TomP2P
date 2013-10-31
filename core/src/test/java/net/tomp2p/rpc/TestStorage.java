@@ -22,8 +22,8 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureSuccessEvaluatorCommunication;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Keys;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.KeyCollection;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.AddBuilder;
@@ -281,7 +281,7 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             // we cannot put anything there, since there already is
             Assert.assertEquals(true, fr.isSuccess());
-            Collection<Number480> putKeys = fr.getResponse().getKeys(0).keys();
+            Collection<Number480> putKeys = fr.getResponse().getKeyCollection(0).keys();
             Assert.assertEquals(0, putKeys.size());
             c = storeRecv.get(new Number160(33), Number160.createHash("test"), new Number160(88));
             Assert.assertEquals(c, test2);
@@ -339,7 +339,7 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             System.err.println(fr.getFailedReason());
-            Message2 m = fr.getResponse();
+            Message m = fr.getResponse();
             Map<Number480, Data> stored = m.getDataMap(0).dataMap();
             compare(dataMap.convertToMap480(), stored);
         } finally {
@@ -397,7 +397,7 @@ public class TestStorage {
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            Message2 m = fr.getResponse();
+            Message m = fr.getResponse();
             Map<Number480, Data> stored = m.getDataMap(0).dataMap();
             compare(dataMap.convertToMap480(), stored);
         } finally {
@@ -463,7 +463,7 @@ public class TestStorage {
             removeBuilder.setReturnResults();
             fr = smmSender.remove(recv1.getPeerAddress(), removeBuilder, cc);
             fr.awaitUninterruptibly();
-            Message2 m = fr.getResponse();
+            Message m = fr.getResponse();
             Assert.assertEquals(true, fr.isSuccess());
 
             // check for returned results
@@ -526,7 +526,7 @@ public class TestStorage {
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            Keys keys = fr.getResponse().getKeys(0);
+            KeyCollection keys = fr.getResponse().getKeyCollection(0);
             Utils.isSameSets(keys.keys(), dataMap.convertToMap480().keySet());
 
         } finally {
@@ -809,7 +809,7 @@ public class TestStorage {
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            Message2 m = fr.getResponse();
+            Message m = fr.getResponse();
             Map<Number480, Data> stored = m.getDataMap(0).dataMap();
             Assert.assertEquals(1, stored.size());
         } finally {
@@ -871,8 +871,8 @@ public class TestStorage {
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            Message2 m = fr.getResponse();
-            Assert.assertEquals(2, m.getKeysMap(0).size());
+            Message m = fr.getResponse();
+            Assert.assertEquals(2, m.getKeyMap480(0).size());
 
         } finally {
             if (cc != null) {

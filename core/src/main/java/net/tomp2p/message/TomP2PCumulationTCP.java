@@ -24,8 +24,8 @@ import org.slf4j.LoggerFactory;
 import net.tomp2p.connection2.SignatureFactory;
 import net.tomp2p.futures.FutureProgres;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2.Content;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Content;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
@@ -138,7 +138,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-        Message2 msg = decoder.message();
+        Message msg = decoder.message();
         // don't use getLocalizedMessage() -
         // http://stackoverflow.com/questions/8699521/any-way-to-ignore-only-connection-reset-by-peer-ioexceptions
         if (cause.getMessage().equals("Connection reset by peer")) {

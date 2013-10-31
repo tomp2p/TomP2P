@@ -19,8 +19,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.net.InetSocketAddress;
 
-import net.tomp2p.message.Message2.Content;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Content;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
@@ -59,7 +59,7 @@ public final class MessageHeaderCodec {
      *            The message with the header that will be serialized
      * @return The buffer passed as an argument
      */
-    public static ByteBuf encodeHeader(final ByteBuf buffer, final Message2 message) {
+    public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
         // CHECKSTYLE:OFF
         final int versionAndType = message.getVersion() << 4 | (message.getType().ordinal() & 0xf);
         // CHECKSTYLE:ON
@@ -92,10 +92,10 @@ public final class MessageHeaderCodec {
      *            The sender of the packet, which has been set in the socket class
      * @return The partial message, only the header fields are filled
      */
-    public static Message2 decodeHeader(final ByteBuf buffer, final InetSocketAddress recipient,
+    public static Message decodeHeader(final ByteBuf buffer, final InetSocketAddress recipient,
             final InetSocketAddress sender) {
         LOG.debug("Decode message, recipient={}, sender={}", recipient, sender);
-        final Message2 message = new Message2();
+        final Message message = new Message();
         final int versionAndType = buffer.readInt();
         // CHECKSTYLE:OFF
         message.setVersion(versionAndType >>> 4);
@@ -149,7 +149,7 @@ public final class MessageHeaderCodec {
      */
     public static int encodeContentTypes(final Content[] contentTypes) {
         int result = 0;
-        for (int i = 0; i < Message2.CONTENT_TYPE_LENGTH / 2; i++) {
+        for (int i = 0; i < Message.CONTENT_TYPE_LENGTH / 2; i++) {
             if (contentTypes[i * 2] != null) {
                 // CHECKSTYLE:OFF
                 result |= (contentTypes[i * 2].ordinal() << (i * 8));
@@ -173,9 +173,9 @@ public final class MessageHeaderCodec {
      * @return The decoded content types
      */
     // CHECKSTYLE:OFF
-    public static Content[] decodeContentTypes(int contentTypes, Message2 message) {
-        Content[] result = new Content[Message2.CONTENT_TYPE_LENGTH];
-        for (int i = 0; i < Message2.CONTENT_TYPE_LENGTH; i++) {
+    public static Content[] decodeContentTypes(int contentTypes, Message message) {
+        Content[] result = new Content[Message.CONTENT_TYPE_LENGTH];
+        for (int i = 0; i < Message.CONTENT_TYPE_LENGTH; i++) {
             Content type = Content.values()[contentTypes & Utils.MASK_0F];
             result[i] = type;
             if(type == Content.PUBLIC_KEY_SIGNATURE) {

@@ -28,8 +28,8 @@ import net.tomp2p.connection2.ConnectionConfiguration;
 import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.GetTrackerBuilder;
@@ -73,7 +73,7 @@ public class TrackerRPC extends DispatchHandler {
             ChannelCreator channelCreator) {
 
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
-        final Message2 message = createMessage(remotePeer, TRACKER_ADD_COMMAND,
+        final Message message = createMessage(remotePeer, TRACKER_ADD_COMMAND,
                 builder.isPrimary() ? Type.REQUEST_3 : Type.REQUEST_1);
         if (builder.isMessageSign()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -107,7 +107,7 @@ public class TrackerRPC extends DispatchHandler {
         //Set<Number160> knownPeers,
         
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
-        final Message2 message = createMessage(remotePeer, TRACKER_GET_COMMAND, Type.REQUEST_1);
+        final Message message = createMessage(remotePeer, TRACKER_GET_COMMAND, Type.REQUEST_1);
         if (builder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
@@ -130,12 +130,12 @@ public class TrackerRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(Message2 message, boolean sign) throws Exception {
+    public Message handleResponse(Message message, boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
                 && message.getKey(0) != null && message.getKey(1) != null)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        final Message2 responseMessage = createResponseMessage(message, Type.OK);
+        final Message responseMessage = createResponseMessage(message, Type.OK);
 
         // get data
         Number160 locationKey = message.getKey(0);
@@ -161,18 +161,18 @@ public class TrackerRPC extends DispatchHandler {
         }
 
         if (couldProvideMoreData) {
-            responseMessage.setType(Message2.Type.PARTIALLY_OK);
+            responseMessage.setType(Message.Type.PARTIALLY_OK);
         }
 
         if (message.getCommand() == TRACKER_ADD_COMMAND) {
             TrackerData trackerData = message.getTrackerData(0);
             if (trackerData.size() != 1) {
-                responseMessage.setType(Message2.Type.EXCEPTION);
+                responseMessage.setType(Message.Type.EXCEPTION);
             } else {
                 Map.Entry<PeerAddress, Data> entry = trackerData.getPeerAddresses().entrySet().iterator()
                         .next();
                 if (!trackerStorage.put(locationKey, domainKey, entry.getKey(), publicKey, entry.getValue())) {
-                    responseMessage.setType(Message2.Type.DENIED);
+                    responseMessage.setType(Message.Type.DENIED);
                     LOG.debug("tracker NOT put on({}) locationKey:{}, domainKey:{}, address:{}", peerBean()
                             .serverPeerAddress(), locationKey, domainKey, entry.getKey());
                 } else {
@@ -194,14 +194,14 @@ public class TrackerRPC extends DispatchHandler {
     }
 
     private class TrackerRequest<K> extends RequestHandler<FutureResponse> {
-        private final Message2 message;
+        private final Message message;
 
         private final Number160 locationKey;
 
         private final Number160 domainKey;
 
         public TrackerRequest(FutureResponse futureResponse, PeerBean peerBean,
-                ConnectionBean connectionBean, Message2 message, Number160 locationKey, Number160 domainKey,
+                ConnectionBean connectionBean, Message message, Number160 locationKey, Number160 domainKey,
                 ConnectionConfiguration configuration) {
             super(futureResponse, peerBean, connectionBean, configuration);
             this.message = message;
@@ -209,7 +209,7 @@ public class TrackerRPC extends DispatchHandler {
             this.domainKey = domainKey;
         }
 
-        protected void channelRead0(final ChannelHandlerContext ctx, final Message2 responseMessage)
+        protected void channelRead0(final ChannelHandlerContext ctx, final Message responseMessage)
                 throws Exception {
             preHandleMessage(responseMessage, peerBean().trackerStorage(), this.message.getRecipient(),
                     locationKey, domainKey);
@@ -217,7 +217,7 @@ public class TrackerRPC extends DispatchHandler {
         }
     }
 
-    private void preHandleMessage(Message2 message, TrackerStorage trackerStorage, PeerAddress referrer,
+    private void preHandleMessage(Message message, TrackerStorage trackerStorage, PeerAddress referrer,
             Number160 locationKey, Number160 domainKey) throws IOException, ClassNotFoundException {
         // Since I might become a tracker as well, we keep this information
         // about those trackers.

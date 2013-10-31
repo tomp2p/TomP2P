@@ -13,7 +13,7 @@ import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.ProgressListener;
 import net.tomp2p.message.Buffer;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
@@ -90,7 +90,7 @@ public class TestDirect {
             sendDirectBuilder.setBuffer(b);
             sendDirectBuilder.progressListener(new ProgressListener() {
                 @Override
-                public void progress(final Message2 interMediateMessage) {
+                public void progress(final Message interMediateMessage) {
                     if (interMediateMessage.isDone()) {
                         progressComplete.incrementAndGet();
                         System.err.println("progress 1 ? done");

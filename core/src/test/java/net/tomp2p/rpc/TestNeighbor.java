@@ -24,7 +24,7 @@ import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;

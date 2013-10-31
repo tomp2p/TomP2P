@@ -44,7 +44,7 @@ import net.tomp2p.rpc.SimpleBloomFilter;
  * 
  * @author Thomas Bocek
  */
-public class Message2 {
+public class Message {
 
     // used for creating random message id
     private static final Random RND = new Random();
@@ -56,7 +56,7 @@ public class Message2 {
      */
     public enum Content {
         EMPTY, KEY, MAP_KEY480_DATA, MAP_KEY480_KEY, SET_KEY480, SET_NEIGHBORS, BYTE_BUFFER, 
-        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, USER1, USER2, USER3, USER4
+        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY480_BYTE, USER1, USER2, USER3
     };
 
     /**
@@ -129,8 +129,9 @@ public class Message2 {
     private AtomicReference<PublicKey> publicKeyReference = null;
     private List<Integer> integerList = null;
     private List<Long> longList = null;
-    private List<Keys> keysList = null;
-    private List<KeysMap> keysMapList = null;
+    private List<KeyCollection> keyCollectionList = null;
+    private List<KeyMap480> keyMap480List = null;
+    private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
 
@@ -150,7 +151,7 @@ public class Message2 {
     /**
      * Creates message with a random ID.
      */
-    public Message2() {
+    public Message() {
         this.messageId = RND.nextInt();
     }
 
@@ -170,7 +171,7 @@ public class Message2 {
      *            The message Id
      * @return This class
      */
-    public Message2 setMessageId(final int messageId) {
+    public Message setMessageId(final int messageId) {
         this.messageId = messageId;
         return this;
     }
@@ -192,7 +193,7 @@ public class Message2 {
      *            The 24bit version
      * @return This class
      */
-    public Message2 setVersion(final int version) {
+    public Message setVersion(final int version) {
         this.version = version;
         return this;
     }
@@ -213,7 +214,7 @@ public class Message2 {
      *            Type of the message
      * @return This class
      */
-    public Message2 setType(final Type type) {
+    public Message setType(final Type type) {
         this.type = type;
         return this;
     }
@@ -234,7 +235,7 @@ public class Message2 {
      *            Command
      * @return This class
      */
-    public Message2 setCommand(final byte command) {
+    public Message setCommand(final byte command) {
         this.command = command;
         return this;
     }
@@ -255,7 +256,7 @@ public class Message2 {
      *            The ID of the sender.
      * @return This class
      */
-    public Message2 setSender(final PeerAddress sender) {
+    public Message setSender(final PeerAddress sender) {
         this.sender = sender;
         return this;
     }
@@ -276,7 +277,7 @@ public class Message2 {
      *            The ID of the recipient
      * @return This class
      */
-    public Message2 setRecipient(final PeerAddress recipient) {
+    public Message setRecipient(final PeerAddress recipient) {
         this.recipient = recipient;
         return this;
     }
@@ -298,7 +299,7 @@ public class Message2 {
      *            The content type to set
      * @return This class
      */
-    public Message2 setContentType(final Content contentType) {
+    public Message setContentType(final Content contentType) {
         for (int i = 0, reference = 0; i < CONTENT_TYPE_LENGTH; i++) {
             if (contentTypes[i] == null) {
                 if (contentType == Content.PUBLIC_KEY_SIGNATURE && i != 0) {
@@ -324,7 +325,7 @@ public class Message2 {
      *            The content type
      * @return This class
      */
-    public Message2 setContentType(final int index, final Content contentType) {
+    public Message setContentType(final int index, final Content contentType) {
         contentTypes[index] = contentType;
         return this;
     }
@@ -336,7 +337,7 @@ public class Message2 {
      *            The content types that were decoded.
      * @return This class
      */
-    public Message2 setContentTypes(final Content[] contentTypes) {
+    public Message setContentTypes(final Content[] contentTypes) {
         this.contentTypes = contentTypes;
         return this;
     }
@@ -360,7 +361,7 @@ public class Message2 {
      *            We can set this already in the header to know if we have content or not
      * @return This class
      */
-    public Message2 hasContent(final boolean content) {
+    public Message hasContent(final boolean content) {
         this.content = content;
         return this;
     }
@@ -417,7 +418,7 @@ public class Message2 {
      *            The option from the last byte of the header
      * @return This class
      */
-    public Message2 setOptions(final int options) {
+    public Message setOptions(final int options) {
         this.options = options;
         return this;
     }
@@ -436,7 +437,7 @@ public class Message2 {
      *            other end has an idle handler that will close the connection.
      * @return This class
      */
-    public Message2 setKeepAlive(final boolean isKeepAlive) {
+    public Message setKeepAlive(final boolean isKeepAlive) {
         if (isKeepAlive) {
             options |= 1;
         } else {
@@ -452,11 +453,11 @@ public class Message2 {
         return (options & 1) > 0;
     }
     
-    public Message2 setStreaming() {
+    public Message setStreaming() {
         return streaming(true);
     }
 
-    public Message2 streaming(boolean streaming) {
+    public Message streaming(boolean streaming) {
         if (streaming) {
             options |= 2;
         } else {
@@ -471,7 +472,7 @@ public class Message2 {
 
     // Header data ends here *********************************** static payload starts now
 
-    public Message2 setKey(final Number160 key) {
+    public Message setKey(final Number160 key) {
         if (!presetContentTypes) {
             setContentType(Content.KEY);
         }
@@ -496,7 +497,7 @@ public class Message2 {
         return keyList.get(index);
     }
 
-    public Message2 setBloomFilter(final SimpleBloomFilter<Number160> bloomFilter) {
+    public Message setBloomFilter(final SimpleBloomFilter<Number160> bloomFilter) {
         if (!presetContentTypes) {
             setContentType(Content.BLOOM_FILTER);
         }
@@ -521,7 +522,7 @@ public class Message2 {
         return bloomFilterList.get(index);
     }
 
-    public Message2 setPublicKeyAndSign(KeyPair keyPair) {
+    public Message setPublicKeyAndSign(KeyPair keyPair) {
         if (!presetContentTypes) {
             setContentType(Content.PUBLIC_KEY_SIGNATURE);
         }
@@ -530,7 +531,7 @@ public class Message2 {
         return this;
     }
 
-    public Message2 setInteger(final int integer) {
+    public Message setInteger(final int integer) {
         if (!presetContentTypes) {
             setContentType(Content.INTEGER);
         }
@@ -555,7 +556,7 @@ public class Message2 {
         return integerList.get(index);
     }
 
-    public Message2 setLong(long long0) {
+    public Message setLong(long long0) {
         if (!presetContentTypes) {
             setContentType(Content.LONG);
         }
@@ -580,7 +581,7 @@ public class Message2 {
         return longList.get(index);
     }
 
-    public Message2 setNeighborsSet(final NeighborSet neighborSet) {
+    public Message setNeighborsSet(final NeighborSet neighborSet) {
         if (!presetContentTypes) {
             setContentType(Content.SET_NEIGHBORS);
         }
@@ -605,7 +606,7 @@ public class Message2 {
         return neighborsList.get(index);
     }
 
-    public Message2 setDataMap(final DataMap dataMap) {
+    public Message setDataMap(final DataMap dataMap) {
         if (!presetContentTypes) {
             setContentType(Content.MAP_KEY480_DATA);
         }
@@ -630,57 +631,88 @@ public class Message2 {
         return dataMapList.get(index);
     }
 
-    public Message2 setKeys(final Keys key) {
+    public Message setKeyCollection(final KeyCollection key) {
         if (!presetContentTypes) {
             setContentType(Content.SET_KEY480);
         }
-        if (keysList == null) {
-            keysList = new ArrayList<Keys>(1);
+        if (keyCollectionList == null) {
+            keyCollectionList = new ArrayList<KeyCollection>(1);
         }
-        keysList.add(key);
+        keyCollectionList.add(key);
         return this;
     }
 
-    public List<Keys> getKeysList() {
-        if (keysList == null) {
+    public List<KeyCollection> getKeyCollectionList() {
+        if (keyCollectionList == null) {
             return Collections.emptyList();
         }
-        return keysList;
+        return keyCollectionList;
     }
 
-    public Keys getKeys(final int index) {
-        if (keysList == null || index > keysList.size() - 1) {
+    public KeyCollection getKeyCollection(final int index) {
+        if (keyCollectionList == null || index > keyCollectionList.size() - 1) {
             return null;
         }
-        return keysList.get(index);
+        return keyCollectionList.get(index);
     }
 
-    public Message2 setKeysMap(final KeysMap keyMap) {
+    
+    public Message setKeyMap480(final KeyMap480 keyMap) {
         if (!presetContentTypes) {
             setContentType(Content.MAP_KEY480_KEY);
         }
-        if (keysMapList == null) {
-            keysMapList = new ArrayList<KeysMap>(1);
+        if (keyMap480List == null) {
+            keyMap480List = new ArrayList<KeyMap480>(1);
         }
-        keysMapList.add(keyMap);
+        keyMap480List.add(keyMap);
         return this;
     }
 
-    public List<KeysMap> getKeysMapList() {
-        if (keysMapList == null) {
+    public List<KeyMap480> getKeyMap480List() {
+        if (keyMap480List == null) {
             return Collections.emptyList();
         }
-        return keysMapList;
+        return keyMap480List;
     }
 
-    public KeysMap getKeysMap(final int index) {
-        if (keysMapList == null || index > keysMapList.size() - 1) {
+    public KeyMap480 getKeyMap480(final int index) {
+        if (keyMap480List == null || index > keyMap480List.size() - 1) {
             return null;
         }
-        return keysMapList.get(index);
+        return keyMap480List.get(index);
+    }
+    
+    
+    
+    
+    public Message setKeyMapByte(final KeyMapByte keyMap) {
+        if (!presetContentTypes) {
+            setContentType(Content.MAP_KEY480_BYTE);
+        }
+        if (keyMapByteList == null) {
+            keyMapByteList = new ArrayList<KeyMapByte>(1);
+        }
+        keyMapByteList.add(keyMap);
+        return this;
     }
 
-    public Message2 setPublicKey(final PublicKey publicKey) {
+    public List<KeyMapByte> getKeyMapByteList() {
+        if (keyMapByteList == null) {
+            return Collections.emptyList();
+        }
+        return keyMapByteList;
+    }
+
+    public KeyMapByte getKeyMapByte(final int index) {
+        if (keyMapByteList == null || index > keyMapByteList.size() - 1) {
+            return null;
+        }
+        return keyMapByteList.get(index);
+    }
+    
+    
+
+    public Message setPublicKey(final PublicKey publicKey) {
         publicKeyReference();
         publicKeyReference.set(publicKey);
         return this;
@@ -697,7 +729,7 @@ public class Message2 {
         return privateKey;
     }
 
-    public Message2 setBuffer(final Buffer byteBuf) {
+    public Message setBuffer(final Buffer byteBuf) {
         if (!presetContentTypes) {
             setContentType(Content.BYTE_BUFFER);
         }
@@ -722,7 +754,7 @@ public class Message2 {
         return bufferList.get(index);
     }
     
-    public Message2 setTrackerData(final TrackerData trackerData) {
+    public Message setTrackerData(final TrackerData trackerData) {
         if (!presetContentTypes) {
             setContentType(Content.SET_TRACKER_DATA);
         }
@@ -754,7 +786,7 @@ public class Message2 {
         return publicKeyReference;
     }
 
-    public Message2 signatureForVerification(Signature signature, PublicKey receivedPublicKey) {
+    public Message signatureForVerification(Signature signature, PublicKey receivedPublicKey) {
         this.signature = signature;
         this.receivedPublicKey = receivedPublicKey;
         return this;
@@ -768,7 +800,7 @@ public class Message2 {
         return receivedPublicKey;
     }
 
-    public Message2 receivedSignature(SHA1Signature signatureEncode) {
+    public Message receivedSignature(SHA1Signature signatureEncode) {
         this.signatureEncode = signatureEncode;
         return this;
     }
@@ -804,7 +836,7 @@ public class Message2 {
      *            True if the content type is already set.
      * @return This class
      */
-    public Message2 presetContentTypes(final boolean presetContentTypes) {
+    public Message presetContentTypes(final boolean presetContentTypes) {
         this.presetContentTypes = presetContentTypes;
         return this;
     }
@@ -816,7 +848,7 @@ public class Message2 {
      *            The sender as we saw it on the interface
      * @return This class
      */
-    public Message2 senderSocket(final InetSocketAddress senderSocket) {
+    public Message senderSocket(final InetSocketAddress senderSocket) {
         this.senderSocket = senderSocket;
         return this;
     }
@@ -833,7 +865,7 @@ public class Message2 {
      * @param recipientSocket The recipient as we saw it on the interface
      * @return This class
      */
-    public Message2 recipientSocket(InetSocketAddress recipientSocket) {
+    public Message recipientSocket(InetSocketAddress recipientSocket) {
         this.recipientSocket = recipientSocket;
         return this;
     }
@@ -850,7 +882,7 @@ public class Message2 {
      * 
      * @return This class
      */
-    public Message2 setHintSign() {
+    public Message setHintSign() {
         sign = true;
         return this;
     }
@@ -871,7 +903,7 @@ public class Message2 {
      *            True if connection is UDP
      * @return This class
      */
-    public Message2 udp(final boolean udp) {
+    public Message udp(final boolean udp) {
         this.udp = udp;
         return this;
     }
@@ -888,7 +920,7 @@ public class Message2 {
      *            True if message decoding or encoding is done
      * @return This class
      */
-    public Message2 done(final boolean done) {
+    public Message done(final boolean done) {
         this.done = done;
         return this;
     }
@@ -897,7 +929,7 @@ public class Message2 {
      * Set done to true if message decoding or encoding is done.
      * @return This class
      */
-    public Message2 setDone() {
+    public Message setDone() {
         this.done = true;
         return this;
     }
@@ -909,7 +941,7 @@ public class Message2 {
         return done;
     }
 
-    public static boolean decodeSignature(Signature signature, Message2 message, ByteBuf buffer)
+    public static boolean decodeSignature(Signature signature, Message message, ByteBuf buffer)
             throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException {
         if (buffer.readableBytes() < 20 + 20)
             return false;

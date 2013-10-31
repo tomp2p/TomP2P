@@ -20,7 +20,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * @param <K>
  *            The type of future to handle
  */
-public class RequestHandler<K extends FutureResponse> extends SimpleChannelInboundHandler<Message2> {
+public class RequestHandler<K extends FutureResponse> extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
     // The future response which is currently be waited for
@@ -46,7 +46,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     private final PeerBean peerBean;
     private final ConnectionBean connectionBean;
 
-    private final Message2 message;
+    private final Message message;
 
     private final MessageID sendMessageID;
 
@@ -225,15 +225,15 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final Message2 responseMessage)
+    protected void channelRead0(final ChannelHandlerContext ctx, final Message responseMessage)
             throws Exception {
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
-        if (responseMessage.getType() == Message2.Type.UNKNOWN_ID) {
+        if (responseMessage.getType() == Message.Type.UNKNOWN_ID) {
             String msg = "Message was not delivered successfully, unknow id (peer may be offline): " + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-        } else if (responseMessage.getType() == Message2.Type.EXCEPTION) {
+        } else if (responseMessage.getType() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
@@ -283,7 +283,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
      * @param responseMessage
      *            The response message
      */
-    private void reportMessage(final ChannelFuture close, final Message2 responseMessage) {
+    private void reportMessage(final ChannelFuture close, final Message responseMessage) {
         close.addListener(new GenericFutureListener<ChannelFuture>() {
             @Override
             public void operationComplete(final ChannelFuture arg0) throws Exception {

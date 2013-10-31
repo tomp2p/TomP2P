@@ -125,7 +125,7 @@ public class TestAddUpdateTTL {
                 .addListener(new BaseFutureAdapter<FuturePut>() {
                     @Override
                     public void operationComplete(final FuturePut future) throws Exception {
-                        System.out.println(future.getRawKeys());
+                        System.out.println(future.getRawResult());
                     }
                 });
     }

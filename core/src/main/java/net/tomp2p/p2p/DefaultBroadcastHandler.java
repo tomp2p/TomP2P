@@ -26,7 +26,7 @@ import net.tomp2p.connection2.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -84,7 +84,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
     }
 
     @Override
-    public void receive(final Message2 message) {
+    public void receive(final Message message) {
         final Number160 messageKey = message.getKey(0);
         final Map<Number480, Data> dataMap;
         if(message.getDataMap(0)!=null) {

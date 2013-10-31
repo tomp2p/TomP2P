@@ -28,8 +28,8 @@ import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2.Type;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.Message;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.peers.Number160;
@@ -224,7 +224,7 @@ public class PingRPC extends DispatchHandler {
      */
     public FutureResponse pingUDPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
             final ConnectionConfiguration configuration) {
-        final Message2 message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_3);
+        final Message message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_3);
         FutureResponse futureResponse = new FutureResponse(message);
         return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
                 .sendUDP(channelCreator);
@@ -241,7 +241,7 @@ public class PingRPC extends DispatchHandler {
      */
     public FutureResponse pingTCPProbe(final PeerAddress remotePeer, final ChannelCreator channelCreator,
             final ConnectionConfiguration configuration) {
-        final Message2 message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_3);
+        final Message message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_3);
         FutureResponse futureResponse = new FutureResponse(message);
         return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
                 .sendTCP(channelCreator);
@@ -258,7 +258,7 @@ public class PingRPC extends DispatchHandler {
      */
     private RequestHandler<FutureResponse> createHandler(final PeerAddress remotePeer, final Type type,
             final ConnectionConfiguration configuration) {
-        final Message2 message = createMessage(remotePeer, PING_COMMAND, type);
+        final Message message = createMessage(remotePeer, PING_COMMAND, type);
         final FutureResponse futureResponse = new FutureResponse(message);
         return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration);
     }
@@ -271,7 +271,7 @@ public class PingRPC extends DispatchHandler {
      * @return The future of this discover handler
      */
     private FutureResponse createDiscoverHandler(final PeerAddress remotePeer) {
-        final Message2 message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_2);
+        final Message message = createMessage(remotePeer, PING_COMMAND, Type.REQUEST_2);
         message.setNeighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
         return new FutureResponse(message);
     }
@@ -290,13 +290,13 @@ public class PingRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1
                 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3) && message
                 .getCommand() == PING_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        final Message2 responseMessage;
+        final Message responseMessage;
         // probe
         if (message.getType() == Type.REQUEST_3) {
             LOG.debug("reply to probing, fire message to {}", message.getSender());

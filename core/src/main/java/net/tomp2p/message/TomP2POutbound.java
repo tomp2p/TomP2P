@@ -30,7 +30,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
 
     private boolean header = false;
     private boolean resume = false;
-    private Message2 message;
+    private Message message;
 
     private SignatureFactory signatureFactory;
 
@@ -44,8 +44,8 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             throws Exception {
         ByteBuf buf = null;
         try {
-            if (msg instanceof Message2) {
-                message = (Message2) msg;
+            if (msg instanceof Message) {
+                message = (Message) msg;
                 LOG.debug("message for outbound {}", message);
             }
 
@@ -56,7 +56,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             }
 
             if (!header) {
-                MessageHeaderCodec.encodeHeader(buf, (Message2) msg);
+                MessageHeaderCodec.encodeHeader(buf, (Message) msg);
                 header = true;
             } else {
                 LOG.debug("send a follow up message {}", message);
@@ -155,7 +155,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 break;
             case SET_KEY480:
                 // length
-                Keys keys = message.getKeys(next.number());
+                KeyCollection keys = message.getKeyCollection(next.number());
                 buf.writeInt(keys.size());
                 if (keys.isConvert()) {
                     for (Number160 key : keys.keysConvert()) {
@@ -197,13 +197,24 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 message.contentRefencencs().poll();
                 break;
             case MAP_KEY480_KEY:
-                KeysMap keysMap = message.getKeysMap(next.number());
-                buf.writeInt(keysMap.size());
-                for (Entry<Number480, Number160> entry : keysMap.keysMap().entrySet()) {
+                KeyMap480 keyMap480 = message.getKeyMap480(next.number());
+                buf.writeInt(keyMap480.size());
+                for (Entry<Number480, Number160> entry : keyMap480.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                     buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                     buf.writeBytes(entry.getKey().getContentKey().toByteArray());
                     buf.writeBytes(entry.getValue().toByteArray());
+                }
+                message.contentRefencencs().poll();
+                break;
+            case MAP_KEY480_BYTE:
+                KeyMapByte keysMap = message.getKeyMapByte(next.number());
+                buf.writeInt(keysMap.size());
+                for (Entry<Number480, Byte> entry : keysMap.keysMap().entrySet()) {
+                    buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
+                    buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
+                    buf.writeBytes(entry.getKey().getContentKey().toByteArray());
+                    buf.writeByte(entry.getValue());
                 }
                 message.contentRefencencs().poll();
                 break;
@@ -245,6 +256,9 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 message.contentRefencencs().poll();
                 break;
             default:
+            case USER1:
+            case USER2:
+            case USER3:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
 

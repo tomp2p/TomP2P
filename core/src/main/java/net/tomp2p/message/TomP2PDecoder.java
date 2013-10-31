@@ -20,7 +20,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import net.tomp2p.connection2.SignatureFactory;
-import net.tomp2p.message.Message2.Content;
+import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -41,25 +41,28 @@ public class TomP2PDecoder {
 
     private static final Logger LOG = LoggerFactory.getLogger(TomP2PDecoder.class);
 
-    private final Queue<Content> contentTypes = new LinkedList<Message2.Content>();
+    private final Queue<Content> contentTypes = new LinkedList<Message.Content>();
 
     // private Message2 result = null;
 
     // current state - needs to be deleted if we want to reuse
-    private Message2 message = null;
+    private Message message = null;
 
     private int neighborSize = -1;
     private NeighborSet neighborSet = null;
 
-    private int keysSize = -1;
-    private Keys keys = null;
+    private int keyCollectionSize = -1;
+    private KeyCollection keyCollection = null;
 
     private int mapsSize = -1;
     private DataMap dataMap = null;
     private Data data = null;
 
-    private int keysMapSize = -1;
-    private KeysMap keysMap = null;
+    private int keyMap480Size = -1;
+    private KeyMap480 keyMap480 = null;
+
+    private int keyMapByteSize = -1;
+    private KeyMapByte keyMapByte = null;
 
     private int bufferSize = -1;
     private Buffer buffer = null;
@@ -80,7 +83,7 @@ public class TomP2PDecoder {
             final InetSocketAddress sender) {
 
         LOG.debug("decode of TomP2P starts now");
-        
+
         // store positions for the verification
         int[] pos = new int[buf.nioBufferCount()];
         for (int i = 0; i < buf.nioBufferCount(); i++) {
@@ -122,7 +125,7 @@ public class TomP2PDecoder {
             e.printStackTrace();
             retVal = true;
         }
-        //System.err.println("can read more: " + buf.readableBytes() + " / " + retVal);
+        // System.err.println("can read more: " + buf.readableBytes() + " / " + retVal);
         return retVal;
 
     }
@@ -238,16 +241,16 @@ public class TomP2PDecoder {
                 neighborSet = null;
                 break;
             case SET_KEY480:
-                if (keysSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+                if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
-                if (keysSize == -1) {
-                    keysSize = buf.readInt();
+                if (keyCollectionSize == -1) {
+                    keyCollectionSize = buf.readInt();
                 }
-                if (keys == null) {
-                    keys = new Keys(new ArrayList<Number480>(keysSize));
+                if (keyCollection == null) {
+                    keyCollection = new KeyCollection(new ArrayList<Number480>(keyCollectionSize));
                 }
-                for (int i = keys.size(); i < keysSize; i++) {
+                for (int i = keyCollection.size(); i < keyCollectionSize; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
                             + Number160.BYTE_ARRAY_SIZE) {
                         return false;
@@ -259,12 +262,12 @@ public class TomP2PDecoder {
                     Number160 domainKey = new Number160(me2);
                     buf.readBytes(me2);
                     Number160 contentKey = new Number160(me2);
-                    keys.add(new Number480(locationKey, domainKey, contentKey));
+                    keyCollection.add(new Number480(locationKey, domainKey, contentKey));
                 }
-                message.setKeys(keys);
+                message.setKeyCollection(keyCollection);
                 lastContent = contentTypes.poll();
-                keysSize = -1;
-                keys = null;
+                keyCollectionSize = -1;
+                keyCollection = null;
                 break;
             case MAP_KEY480_DATA:
                 if (mapsSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -323,17 +326,17 @@ public class TomP2PDecoder {
                 dataMap = null;
                 break;
             case MAP_KEY480_KEY:
-                if (keysMapSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+                if (keyMap480Size == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
-                if (keysMapSize == -1) {
-                    keysMapSize = buf.readInt();
+                if (keyMap480Size == -1) {
+                    keyMap480Size = buf.readInt();
                 }
-                if (keysMap == null) {
-                    keysMap = new KeysMap(new HashMap<Number480, Number160>(2 * keysMapSize));
+                if (keyMap480 == null) {
+                    keyMap480 = new KeyMap480(new HashMap<Number480, Number160>(2 * keyMap480Size));
                 }
 
-                for (int i = keysMap.size(); i < keysMapSize; i++) {
+                for (int i = keyMap480.size(); i < keyMap480Size; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
                             + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
                         return false;
@@ -347,13 +350,45 @@ public class TomP2PDecoder {
                     Number160 contentKey = new Number160(me3);
                     buf.readBytes(me3);
                     Number160 valueKey = new Number160(me3);
-                    keysMap.put(new Number480(locationKey, domainKey, contentKey), valueKey);
+                    keyMap480.put(new Number480(locationKey, domainKey, contentKey), valueKey);
                 }
 
-                message.setKeysMap(keysMap);
+                message.setKeyMap480(keyMap480);
                 lastContent = contentTypes.poll();
-                keysMapSize = -1;
-                keysMap = null;
+                keyMap480Size = -1;
+                keyMap480 = null;
+                break;
+            case MAP_KEY480_BYTE:
+                if (keyMapByteSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+                    return false;
+                }
+                if (keyMapByteSize == -1) {
+                    keyMapByteSize = buf.readInt();
+                }
+                if (keyMapByte == null) {
+                    keyMapByte = new KeyMapByte(new HashMap<Number480, Byte>(2 * keyMap480Size));
+                }
+
+                for (int i = keyMapByte.size(); i < keyMapByteSize; i++) {
+                    if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
+                            + Number160.BYTE_ARRAY_SIZE + 1) {
+                        return false;
+                    }
+                    byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
+                    buf.readBytes(me3);
+                    Number160 locationKey = new Number160(me3);
+                    buf.readBytes(me3);
+                    Number160 domainKey = new Number160(me3);
+                    buf.readBytes(me3);
+                    Number160 contentKey = new Number160(me3);
+                    byte value = buf.readByte();
+                    keyMapByte.put(new Number480(locationKey, domainKey, contentKey), value);
+                }
+
+                message.setKeyMapByte(keyMapByte);
+                lastContent = contentTypes.poll();
+                keyMapByteSize = -1;
+                keyMapByte = null;
                 break;
             case BYTE_BUFFER:
                 if (bufferSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -370,7 +405,7 @@ public class TomP2PDecoder {
                 int readable = buf.readableBytes();
                 int remaining = bufferSize - already;
                 int toread = Math.min(remaining, readable);
-                //Unpooled.copiedBuffer(buf.duplicate().writerIndex(writerIndex))
+                // Unpooled.copiedBuffer(buf.duplicate().writerIndex(writerIndex))
                 buffer.addComponent(buf.slice(buf.readerIndex(), toread));
                 // slice and addComponent do not modifie the reader or the writer, thus we need to do this on our own
                 buf.skipBytes(toread);
@@ -411,9 +446,9 @@ public class TomP2PDecoder {
                     if (buf.readableBytes() < Utils.BYTE_SIZE) {
                         return false;
                     }
-                    
+
                     int header = buf.getUnsignedShort(buf.readerIndex());
-                    
+
                     size = PeerAddress.size(header);
 
                     if (buf.readableBytes() < size) {
@@ -464,6 +499,9 @@ public class TomP2PDecoder {
                 lastContent = contentTypes.poll();
                 break;
             default:
+            case USER1:
+            case USER2:
+            case USER3:
             case EMPTY:
                 break;
             }
@@ -483,27 +521,27 @@ public class TomP2PDecoder {
         return true;
     }
 
-    public Message2 prepareFinish() {
-        Message2 ret = message;
+    public Message prepareFinish() {
+        Message ret = message;
         message.setDone();
         contentTypes.clear();
         //
         message = null;
         neighborSize = -1;
         neighborSet = null;
-        keysSize = -1;
-        keys = null;
+        keyCollectionSize = -1;
+        keyCollection = null;
         mapsSize = -1;
         dataMap = null;
         data = null;
-        keysMapSize = -1;
-        keysMap = null;
+        keyMap480Size = -1;
+        keyMap480 = null;
         bufferSize = -1;
         buffer = null;
         return ret;
     }
 
-    public Message2 message() {
+    public Message message() {
         return message;
     }
 

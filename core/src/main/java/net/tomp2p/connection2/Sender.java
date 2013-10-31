@@ -25,7 +25,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
@@ -76,8 +76,8 @@ public class Sender {
      * @param connectTimeoutMillis
      *            The idle we set for the connection setup
      */
-    public void sendTCP(final SimpleChannelInboundHandler<Message2> handler,
-            final FutureResponse futureResponse, final Message2 message, final ChannelCreator channelCreator,
+    public void sendTCP(final SimpleChannelInboundHandler<Message> handler,
+            final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
             final int idleTCPSeconds, final int connectTimeoutMillis, final PeerConnection peerConnection) {
         // no need to continue if we already finished
         if (futureResponse.isCompleted()) {
@@ -157,8 +157,8 @@ public class Sender {
      * @param broadcast
      *            True to send via layer 2 broadcast
      */
-    public void sendUDP(final SimpleChannelInboundHandler<Message2> handler,
-            final FutureResponse futureResponse, final Message2 message, final ChannelCreator channelCreator,
+    public void sendUDP(final SimpleChannelInboundHandler<Message> handler,
+            final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
             final int idleUDPSeconds, final boolean broadcast) {
         // no need to continue if we already finished
         if (futureResponse.isCompleted()) {
@@ -225,7 +225,7 @@ public class Sender {
      * @param fireAndForget
      *            True, if we don't expect a message
      */
-    private void afterConnect(final FutureResponse futureResponse, final Message2 message,
+    private void afterConnect(final FutureResponse futureResponse, final Message message,
             final ChannelFuture channelFuture, final boolean fireAndForget) {
         final Cancel connectCancel = createCancel(channelFuture);
         futureResponse.addCancel(connectCancel);

@@ -26,8 +26,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.socket.DatagramChannel;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
@@ -45,7 +45,7 @@ import net.tomp2p.rpc.DispatchHandler;
  * @author Thomas Bocek
  */
 @Sharable
-public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
+public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
@@ -114,7 +114,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final Message2 message) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
 
         LOG.debug("received request {}", message);
         if (message.getVersion() != p2pID) {
@@ -126,7 +126,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
             }
             return;
         }
-        Message2 responseMessage = null;
+        Message responseMessage = null;
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
             LOG.debug("about to respond to {}", message);
@@ -161,7 +161,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
      * @param response
      *            The response to send
      */
-    private void response(final ChannelHandlerContext ctx, final Message2 response) {
+    private void response(final ChannelHandlerContext ctx, final Message response) {
         if (ctx.channel() instanceof DatagramChannel) {
             // check if channel is still open. If its not, then do not send
             // anything because
@@ -191,7 +191,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message2> {
      *            the message a handler should be found for
      * @return the handler for the given message, null if none has been registered for that message.
      */
-    private DispatchHandler getAssociatedHandler(final Message2 message) {
+    private DispatchHandler getAssociatedHandler(final Message message) {
         if (message == null || !(message.isRequest())) {
             return null;
         }

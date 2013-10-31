@@ -26,7 +26,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -175,7 +175,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                             return;
                         }
 
-                        Message2 responseMessage = future.getResponse();
+                        Message responseMessage = future.getResponse();
                         DataMap dataMap = responseMessage.getDataMap(0);
 
                         if (dataMap == null) {

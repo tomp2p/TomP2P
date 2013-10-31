@@ -40,7 +40,7 @@ import net.tomp2p.futures.FutureRemove;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureShutdown;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.BasicBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
@@ -102,7 +102,7 @@ public class DistributedHashTable {
                                 parallelRequests(builder.getRequestP2PConfiguration(),
                                         futureRouting.getPotentialHits(), futureDHT, false,
                                         future.getChannelCreator(), new OperationMapper<FuturePut>() {
-                                            Map<PeerAddress, Map<Number480,Number160>> rawData480 = new HashMap<PeerAddress, Map<Number480,Number160>>();
+                                            Map<PeerAddress, Map<Number480, Byte>> rawData = new HashMap<PeerAddress, Map<Number480, Byte>>();
 
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
@@ -113,7 +113,7 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FuturePut futureDHT) {
                                                 futureDHT.setStoredKeys(builder.getLocationKey(),
-                                                        builder.getDomainKey(), rawData480);
+                                                        builder.getDomainKey(), rawData);
                                             }
 
                                             @Override
@@ -121,8 +121,8 @@ public class DistributedHashTable {
                                                 // the future tells us that the communication was successful, but we
                                                 // need to check the result if we could store it.
                                                 if (future.isSuccess() && future.getResponse().isOk()) {
-                                                    rawData480.put(future.getRequest().getRecipient(), future
-                                                            .getResponse().getKeysMap(0).keysMap());
+                                                    rawData.put(future.getRequest().getRecipient(), future
+                                                            .getResponse().getKeyMapByte(0).keysMap());
                                                 }
                                             }
                                         });
@@ -243,7 +243,7 @@ public class DistributedHashTable {
                                         futureRouting.getPotentialHits(), futureDHT, false,
                                         future.getChannelCreator(), new OperationMapper<FuturePut>() {
 
-                                            Map<PeerAddress, Map<Number480, Number160>> rawData480 = new HashMap<PeerAddress, Map<Number480, Number160>>();
+                                            Map<PeerAddress, Map<Number480, Byte>> rawData = new HashMap<PeerAddress, Map<Number480, Byte>>();
 
                                             @Override
                                             public FutureResponse create(final ChannelCreator channelCreator,
@@ -263,7 +263,7 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(final FuturePut futureDHT) {
                                                 futureDHT.setStoredKeys(putBuilder.getLocationKey(),
-                                                        putBuilder.getDomainKey(), rawData480);
+                                                        putBuilder.getDomainKey(), rawData);
                                             }
 
                                             @Override
@@ -271,10 +271,10 @@ public class DistributedHashTable {
                                                 // the future tells us that the communication was successful, to check
                                                 // the result if we could store it.
                                                 if (future.isSuccess() && future.getResponse().isOk()) {
-                                                    rawData480.put(future.getRequest().getRecipient(), future
-                                                            .getResponse().getKeysMap(0).keysMap());
+                                                    rawData.put(future.getRequest().getRecipient(), future
+                                                            .getResponse().getKeyMapByte(0).keysMap());
                                                 } else {
-                                                    rawData480.put(future.getRequest().getRecipient(), null);
+                                                    rawData.put(future.getRequest().getRecipient(), null);
                                                 }
                                             }
                                         });
@@ -356,7 +356,7 @@ public class DistributedHashTable {
                                                 final DigestResult digest;
                                                 if (sbf1 == null && sbf2 == null) {
                                                     Map<Number480, Number160> keyDigest = future.getResponse()
-                                                            .getKeysMap(0).keysMap();
+                                                            .getKeyMap480(0).keysMap();
                                                     digest = new DigestResult(keyDigest);
                                                 } else {
                                                     digest = new DigestResult(sbf1, sbf2);
@@ -443,7 +443,7 @@ public class DistributedHashTable {
                                                                 future.getResponse().getDataMap(0).dataMap());
                                                     } else {
                                                         rawDataNoResult.put(future.getRequest().getRecipient(),
-                                                                future.getResponse().getKeys(0).keys());
+                                                                future.getResponse().getKeyCollection(0).keys());
                                                     }
                                                 }
                                             }

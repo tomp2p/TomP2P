@@ -16,7 +16,7 @@
 package net.tomp2p.futures;
 
 import net.tomp2p.futures.BaseFuture.FutureType;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 
 /**
  * The communication future success evaluator returns OK if the communication was successful, otherwise it returns
@@ -27,7 +27,7 @@ import net.tomp2p.message.Message2;
  */
 public class FutureSuccessEvaluatorCommunication implements FutureSuccessEvaluator {
     @Override
-    public FutureType evaluate(final Message2 requestMessage, final Message2 responseMessage) {
+    public FutureType evaluate(final Message requestMessage, final Message responseMessage) {
         return (responseMessage.isOk() || responseMessage.isNotOk()) ? FutureType.OK : FutureType.FAILED;
     }
 }

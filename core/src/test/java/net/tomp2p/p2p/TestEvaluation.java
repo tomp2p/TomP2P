@@ -19,28 +19,29 @@ public class TestEvaluation {
     @Test
     public void testEvaluationKeys() throws Exception {
 
-        Map<PeerAddress, Collection<Number480>> rawKeys = new HashMap<PeerAddress, Collection<Number480>>();
+        Map<PeerAddress, Map<Number480, Byte>> rawKeys = new HashMap<PeerAddress, Map<Number480, Byte>>();
         PeerAddress pa1 = Utils2.createAddress(19);
-        Collection<Number480> test1 = new HashSet<Number480>();
-        test1.add(new Number480(new Number160(4), new Number160(5),new Number160(12)));
-        test1.add(new Number480(new Number160(4), new Number160(5),new Number160(13)));
-        test1.add(new Number480(new Number160(4), new Number160(5),new Number160(14)));
+        Map<Number480, Byte> test1 = new HashMap<Number480, Byte>();
+        test1.put(new Number480(new Number160(4), new Number160(5),new Number160(12)), (byte)0);
+        test1.put(new Number480(new Number160(4), new Number160(5),new Number160(13)), (byte)0);
+        test1.put(new Number480(new Number160(4), new Number160(5),new Number160(14)), (byte)0);
         rawKeys.put(pa1, test1);
         //
         PeerAddress pa2 = Utils2.createAddress(20);
-        Collection<Number480> test2 = new HashSet<Number480>();
-        test2.add(new Number480(new Number160(4), new Number160(5),new Number160(12)));
-        test2.add(new Number480(new Number160(4), new Number160(5),new Number160(13)));
+        Map<Number480, Byte> test2 = new HashMap<Number480, Byte>();
+        test2.put(new Number480(new Number160(4), new Number160(5),new Number160(12)), (byte)0);
+        test2.put(new Number480(new Number160(4), new Number160(5),new Number160(13)), (byte)0);
         rawKeys.put(pa2, test2);
         //
         PeerAddress pa3 = Utils2.createAddress(21);
-        Collection<Number480> test3 = new HashSet<Number480>();
-        test3.add(new Number480(new Number160(4), new Number160(5),new Number160(11)));
-        test3.add(new Number480(new Number160(4), new Number160(5),new Number160(13)));
-        test3.add(new Number480(new Number160(4), new Number160(5),new Number160(14)));
+        Map<Number480, Byte> test3 = new HashMap<Number480, Byte>();
+        test3.put(new Number480(new Number160(4), new Number160(5),new Number160(11)), (byte)0);
+        test3.put(new Number480(new Number160(4), new Number160(5),new Number160(13)), (byte)0);
+        test3.put(new Number480(new Number160(4), new Number160(5),new Number160(14)), (byte)0);
         rawKeys.put(pa3, test3);
         VotingSchemeDHT evs = new VotingSchemeDHT();
-        Collection<Number480> tmp = evs.evaluate1(rawKeys);
+        
+        Collection<Number480> tmp = evs.evaluate7(rawKeys);
         Assert.assertEquals(false, tmp.contains(new Number480(new Number160(4), new Number160(5), new Number160(11))));
         Assert.assertEquals(true, tmp.contains(new Number480(new Number160(4), new Number160(5), new Number160(12))));
         Assert.assertEquals(true, tmp.contains(new Number480(new Number160(4), new Number160(5), new Number160(13))));

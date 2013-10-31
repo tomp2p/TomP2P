@@ -16,7 +16,7 @@
 
 package net.tomp2p.p2p;
 
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message;
 
 /**
  * The handler that is called when we receive a broadcast message. One way to implement this would be to send it to
@@ -33,5 +33,5 @@ public interface BroadcastHandler {
      * @param message
      *            The message that was received in the broadcast message
      */
-     void receive(Message2 message);
+     void receive(Message message);
 }

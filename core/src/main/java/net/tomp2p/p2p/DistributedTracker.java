@@ -38,7 +38,7 @@ import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.GetTrackerBuilder;

@@ -30,8 +30,8 @@ import java.util.TreeSet;
 
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.message.Message2.Type;
-import net.tomp2p.message.Message2;
+import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -51,11 +51,11 @@ public class Utils2 {
      */
     public static final long THE_ANSWER2 = 43L;
 
-    public static Message2 createDummyMessage() throws UnknownHostException {
+    public static Message createDummyMessage() throws UnknownHostException {
         return createDummyMessage(false, false);
     }
 
-    public static Message2 createDummyMessage(boolean firewallUDP, boolean firewallTCP)
+    public static Message createDummyMessage(boolean firewallUDP, boolean firewallTCP)
             throws UnknownHostException {
         return createDummyMessage(new Number160("0x4321"), "127.0.0.1", 8001, 8002, new Number160("0x1234"),
                 "127.0.0.1", 8003, 8004, (byte) 0, Type.REQUEST_1, firewallUDP, firewallTCP);
@@ -86,11 +86,11 @@ public class Utils2 {
         return n1;
     }
 
-    public static Message2 createDummyMessage(Number160 idSender, String inetSender, int tcpPortSendor,
+    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSendor,
             int udpPortSender, Number160 idRecipien, String inetRecipient, int tcpPortRecipient,
             int udpPortRecipient, byte command, Type type, boolean firewallUDP, boolean firewallTCP)
             throws UnknownHostException {
-        Message2 message = new Message2();
+        Message message = new Message();
         PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSendor, udpPortSender, firewallUDP,
                 firewallTCP);
         message.setSender(n1);

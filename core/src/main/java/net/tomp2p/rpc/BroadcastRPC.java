@@ -22,8 +22,8 @@ import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.Message2;
-import net.tomp2p.message.Message2.Type;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.BroadcastHandler;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.PeerAddress;
@@ -46,7 +46,7 @@ public class BroadcastRPC extends DispatchHandler {
 
     public FutureResponse send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        final Message2 message = createMessage(remotePeer, BROADCAST_COMMAND, Type.REQUEST_FF_1);
+        final Message message = createMessage(remotePeer, BROADCAST_COMMAND, Type.REQUEST_FF_1);
         message.setInteger(broadcastBuilder.hopCounter());
         message.setKey(broadcastBuilder.messageKey());
         if (broadcastBuilder.dataMap() != null) {
@@ -63,7 +63,7 @@ public class BroadcastRPC extends DispatchHandler {
     }
 
     @Override
-    public Message2 handleResponse(final Message2 message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, final boolean sign) throws Exception {
         if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == BROADCAST_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }

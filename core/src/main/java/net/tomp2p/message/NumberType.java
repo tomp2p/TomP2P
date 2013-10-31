@@ -1,6 +1,6 @@
 package net.tomp2p.message;
 
-import net.tomp2p.message.Message2.Content;
+import net.tomp2p.message.Message.Content;
 
 public class NumberType {
     private final int number;

@@ -41,6 +41,7 @@ public abstract class StorageGeneric implements Storage {
         NO_MASTER, MASTER_PUBLIC_KEY
     };
 
+    //The number of PutStatus should never exceed 255.
     public enum PutStatus {
         OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT
     };

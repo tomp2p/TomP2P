@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedMap;
-import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -530,7 +529,7 @@ public class DistributedHashTable {
      * @param operation
      *            The operation that creates the request
      */
-    public static <K extends FutureDHT> K parallelRequests(final RequestP2PConfiguration p2pConfiguration,
+    public static <K extends FutureDHT<?>> K parallelRequests(final RequestP2PConfiguration p2pConfiguration,
             final NavigableSet<PeerAddress> queue, final boolean cancleOnFinish,
             final FutureChannelCreator futureChannelCreator,
             final OperationMapper<K> operation, final K futureDHT) {
@@ -550,7 +549,7 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
-    private static <K extends FutureDHT> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
+    private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
             NavigableSet<PeerAddress> queue, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
             OperationMapper<K> operation) {
         if (p2pConfiguration.getMinimumResults() == 0) {
@@ -565,7 +564,7 @@ public class DistributedHashTable {
                 operation);
     }
 
-    private static <K extends FutureDHT> void loopRec(final NavigableSet<PeerAddress> queue, final int min,
+    private static <K extends FutureDHT<?>> void loopRec(final NavigableSet<PeerAddress> queue, final int min,
             final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
             final AtomicReferenceArray<FutureResponse> futures, final K futureDHT, final boolean cancelOnFinish,
             final ChannelCreator channelCreator, final OperationMapper<K> operation) {

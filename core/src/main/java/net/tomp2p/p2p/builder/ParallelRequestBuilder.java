@@ -26,7 +26,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
-public class ParallelRequestBuilder<K extends FutureDHT> extends
+public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         DHTBuilder<ParallelRequestBuilder<K>> {
     private NavigableSet<PeerAddress> queue;
 

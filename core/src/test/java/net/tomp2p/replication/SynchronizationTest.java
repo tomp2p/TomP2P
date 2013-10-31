@@ -258,8 +258,8 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
-                            receiver.getPeerAddress());
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
+                            sender, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
@@ -307,8 +307,8 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
-                            receiver.getPeerAddress());
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
+                            sender, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
@@ -357,8 +357,8 @@ public class SynchronizationTest {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
-                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(sender,
-                            receiver.getPeerAddress());
+                    SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
+                            sender, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
                     final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());

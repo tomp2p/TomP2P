@@ -149,10 +149,8 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
         }
         if (msg == null && decoder.lastContent() == null) {
             LOG.error("exception in decoding TCP, not started decoding", cause);
-            cause.printStackTrace();
         } else if (msg != null && !msg.isDone()) {
             LOG.error("exception in decoding TCP, decoding started", cause);
-            cause.printStackTrace();
         }
     }
 }

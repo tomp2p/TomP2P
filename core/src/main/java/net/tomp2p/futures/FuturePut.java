@@ -106,7 +106,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
             this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
                     + " result, but got " + size;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

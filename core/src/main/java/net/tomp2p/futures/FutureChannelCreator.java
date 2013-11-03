@@ -48,7 +48,7 @@ public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
             this.type = FutureType.OK;
             this.channelCreator = channelCreator;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

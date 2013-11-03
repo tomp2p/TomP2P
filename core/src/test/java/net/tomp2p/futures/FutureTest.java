@@ -39,7 +39,7 @@ public class FutureTest extends BaseFutureImpl<FutureTest> {
             this.result = result;
             this.counter = counter;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
     
     public int getCounter() {

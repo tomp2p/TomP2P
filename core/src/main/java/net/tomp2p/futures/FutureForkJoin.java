@@ -116,7 +116,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
                     }
                 }
                 if (notifyNow) {
-                    notifyListerenrs();
+                    notifyListeners();
                     cancelAll();
                     return;
                 }
@@ -150,7 +150,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
             }
         }
         if (notifyNow) {
-            notifyListerenrs();
+            notifyListeners();
             cancelAll();
         }
     }

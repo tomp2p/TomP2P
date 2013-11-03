@@ -79,7 +79,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
                         }
                     }
                     if (done) {
-                        notifyListerenrs();
+                        notifyListeners();
                     }
                 }
             });
@@ -115,7 +115,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
             done = checkDone();
         }
         if (done) {
-            notifyListerenrs();
+            notifyListeners();
         }
     }
 

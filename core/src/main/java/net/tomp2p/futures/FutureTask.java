@@ -70,7 +70,7 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
             this.reason = message.toString();
             this.type = resultSuccess > 0 ? FutureType.OK : FutureType.FAILED;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

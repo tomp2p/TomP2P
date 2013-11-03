@@ -59,7 +59,7 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
             this.object = object;
             this.type = BaseFuture.FutureType.OK;
         }
-        notifyListerenrs();
+        notifyListeners();
         return this;
     }
 

@@ -96,7 +96,7 @@ public class FutureDirect extends FutureDHT<FutureDirect> {
             this.reason = minReached ? "Minimun number of results reached" : "Expected " + min + " result, but got "
                     + size;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**
@@ -117,7 +117,7 @@ public class FutureDirect extends FutureDHT<FutureDirect> {
             this.reason = minReached ? "Minimun number of results reached" : "Expected " + min + " result, but got "
                     + size;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
     
     /**

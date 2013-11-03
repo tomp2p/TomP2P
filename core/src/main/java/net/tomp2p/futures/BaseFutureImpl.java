@@ -225,7 +225,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
             this.reason = failed;
             this.type = FutureType.FAILED;
         }
-        notifyListerenrs();
+        notifyListeners();
         return self;
     }
 
@@ -342,7 +342,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     /**
      * Always call this from outside synchronized(lock)!
      */
-    protected void notifyListerenrs() {
+    protected void notifyListeners() {
         // if this is synchronized, it will deadlock, so do not lock this!
         // There won't be any visibility problem or concurrent modification
         // because 'ready' flag will be checked against both addListener and

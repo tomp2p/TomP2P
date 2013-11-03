@@ -107,7 +107,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimun number of results reached" : "Expected > 0 result, but got " + size;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**
@@ -150,7 +150,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimun number of results reached" : "Expected >0 result, but got " + size;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

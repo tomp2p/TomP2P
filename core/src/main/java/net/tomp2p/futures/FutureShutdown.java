@@ -47,7 +47,7 @@ public class FutureShutdown extends FutureDHT<FutureShutdown> {
             }
             this.type = BaseFuture.FutureType.OK;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

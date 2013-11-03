@@ -136,7 +136,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
                 reason = "Nothing to deliver...";
             }
         }
-        notifyListerenrs();
+        notifyListeners();
         return this;
     }
 
@@ -182,7 +182,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
                 return this;
             }
         }
-        notifyListerenrs();
+        notifyListeners();
         return this; 
     }
     

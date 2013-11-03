@@ -56,7 +56,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
             this.object = object;
             this.type = BaseFuture.FutureType.OK;
         }
-        notifyListerenrs();
+        notifyListeners();
         return last ? null : next;
     }
 
@@ -75,7 +75,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
             this.object = object;
             this.type = BaseFuture.FutureType.OK;
         }
-        notifyListerenrs();
+        notifyListeners();
         return this;
     }
 

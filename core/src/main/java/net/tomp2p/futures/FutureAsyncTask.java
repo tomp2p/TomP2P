@@ -61,7 +61,7 @@ public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
             this.dataMap = dataMap;
             this.type = FutureType.OK;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**

@@ -86,7 +86,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
             this.ourPeerAddress = ourPeerAddress;
             this.reporter = reporter;
         }
-        notifyListerenrs();
+        notifyListeners();
     }
 
     /**
@@ -190,7 +190,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
             this.type = FutureType.FAILED;
             this.setupRelay = true;
         }
-        notifyListerenrs();
+        notifyListeners();
         return this;
     }
 }

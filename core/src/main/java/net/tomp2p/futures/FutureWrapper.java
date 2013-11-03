@@ -49,7 +49,7 @@ public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
                     reason = future.toString();
                     wrappedFuture = future;
                 }
-                notifyListerenrs();
+                notifyListeners();
             }
         });
     }

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.SequenceInputStream;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
@@ -61,6 +63,7 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DataBuffer;
 
 /**
  * 
@@ -146,11 +149,28 @@ public class Utils {
      * @param buffer The buffer that stores data
      * @return The 160bit hash number
      */
-    public static Number160 makeSHAHash(final ByteBuf buffer) {
+    public static Number160 makeSHAHash(final ByteBuf buf) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            for (int i = 0; i < buffer.nioBufferCount(); i++) {
-                md.update(buffer.nioBuffers()[i]);
+            final ByteBuffer[] byteBuffers = buf.nioBuffers();
+            final int len = byteBuffers.length;
+            for (int i = 0; i < len; i++) {
+                md.update(byteBuffers[i]);
+            }
+            byte[] digest = md.digest();
+            return new Number160(digest);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return new Number160();
+        }
+    }
+    
+    public static Number160 makeSHAHash(DataBuffer buffer) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            DataBuffer copy = buffer.shallowCopy();
+            for (ByteBuffer byteBuffer:copy.bufferList()) {
+                md.update(byteBuffer);
             }
             byte[] digest = md.digest();
             return new Number160(digest);
@@ -268,6 +288,22 @@ public class Utils {
     public static Object decodeJavaObject(ByteBuf channelBuffer) throws ClassNotFoundException, IOException {
         InputStream is = new MultiByteBufferInputStream(channelBuffer);
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(is));
+        Object obj = ois.readObject();
+        ois.close();
+        return obj;
+    }
+    
+    public static Object decodeJavaObject(DataBuffer shallowCopy) throws ClassNotFoundException, IOException {
+        int count = shallowCopy.bufferList().size();
+        Vector<InputStream> is = new Vector<InputStream>(count);
+        for (ByteBuffer byteBuffer:shallowCopy.bufferList()) {
+            byte[] me = byteBuffer.array();
+            int offset = byteBuffer.arrayOffset();
+            int length = byteBuffer.limit() - byteBuffer.position();
+            is.add(new ByteArrayInputStream(me, offset, length));
+        }
+        SequenceInputStream sis = new SequenceInputStream(is.elements());
+        ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sis));
         Object obj = ois.readObject();
         ois.close();
         return obj;
@@ -774,6 +810,10 @@ public class Utils {
         }
         return true;
     }
+
+    
+
+    
 
     
     

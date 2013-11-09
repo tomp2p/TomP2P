@@ -22,7 +22,7 @@ import java.util.Map;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
@@ -47,7 +47,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
     private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
 
     // Storage of results
-    private Map<PeerAddress, Map<Number480, Data>> rawData;
+    private Map<PeerAddress, Map<Number640, Data>> rawData;
     private Map<PeerAddress, DigestResult> rawDigest;
 
     private Number160 locationKey;
@@ -89,7 +89,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      *            The keys and data that have been received with information from which peer it has been received.
      */
     public void setReceivedData(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number480, Data>> rawData) {
+            final Map<PeerAddress, Map<Number640, Data>> rawData) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
@@ -137,7 +137,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * 
      * @return The raw data and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number480, Data>> getRawData() {
+    public Map<PeerAddress, Map<Number640, Data>> getRawData() {
         synchronized (lock) {
             return rawData;
         }
@@ -158,7 +158,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * 
      * @return The evaluated data that have been received.
      */
-    public Map<Number480, Data> getDataMap() {
+    public Map<Number640, Data> getDataMap() {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
         }
@@ -180,7 +180,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * @return The first data object from get() after evaluation.
      */
     public Data getData() {
-        Map<Number480, Data> dataMap = getDataMap();
+        Map<Number640, Data> dataMap = getDataMap();
         if (dataMap.size() == 0) {
             return null;
         }

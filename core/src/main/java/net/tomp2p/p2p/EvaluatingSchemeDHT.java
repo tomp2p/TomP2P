@@ -21,15 +21,15 @@ import java.util.Collection;
 import java.util.Map;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public interface EvaluatingSchemeDHT {
-    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeys480);
+    public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys480);
 
-    public Map<Number480, Data> evaluate2(Map<PeerAddress, Map<Number480, Data>> rawData);
+    public Map<Number640, Data> evaluate2(Map<PeerAddress, Map<Number640, Data>> rawData);
 
     public Object evaluate3(Map<PeerAddress, Object> rawObjects);
 
@@ -37,7 +37,7 @@ public interface EvaluatingSchemeDHT {
 
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest);
     
-    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480);
+    public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480);
     
-    public Collection<Number480> evaluate7(Map<PeerAddress, Map<Number480, Byte>> rawResult);
+    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawResult);
 }

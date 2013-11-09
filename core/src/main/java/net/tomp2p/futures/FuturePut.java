@@ -23,7 +23,7 @@ import java.util.Map;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -46,7 +46,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
     private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
 
     // Storage of results
-    private Map<PeerAddress, Map<Number480, Byte>> rawResult;
+    private Map<PeerAddress, Map<Number640, Byte>> rawResult;
 
     private Number160 locationKey;
 
@@ -92,7 +92,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
     public void setStoredKeys(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number480, Byte>> rawResult) {
+            final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
@@ -116,8 +116,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
         synchronized (lock) {
             final int size = rawResult.size();
             int total = 0;
-            for (Map<Number480, Byte> map : rawResult.values()) {
-                Collection<Number480> collection = map.keySet();
+            for (Map<Number640, Byte> map : rawResult.values()) {
+                Collection<Number640> collection = map.keySet();
                 if (collection != null) {
                     total += collection.size();
                 }
@@ -131,7 +131,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number480, Byte>> getRawResult() {
+    public Map<PeerAddress, Map<Number640, Byte>> getRawResult() {
         synchronized (lock) {
             return rawResult;
         }
@@ -155,7 +155,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * 
      * @return The keys that have been stored or removed
      */
-    public Collection<Number480> getResult() {
+    public Collection<Number640> getResult() {
         synchronized (lock) {
             return evaluationScheme.evaluate7(rawResult);
         }

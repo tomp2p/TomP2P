@@ -15,7 +15,6 @@
  */
 package net.tomp2p.message;
 
-import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 

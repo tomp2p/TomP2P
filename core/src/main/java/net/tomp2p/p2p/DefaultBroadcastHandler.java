@@ -22,14 +22,13 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.connection2.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.ConcurrentCacheMap;
@@ -86,7 +85,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
     @Override
     public void receive(final Message message) {
         final Number160 messageKey = message.getKey(0);
-        final Map<Number480, Data> dataMap;
+        final Map<Number640, Data> dataMap;
         if(message.getDataMap(0)!=null) {
              dataMap = message.getDataMap(0).dataMap();
         } else {
@@ -144,7 +143,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
      * @param isUDP
      *            Flag if message can be sent with UDP
      */
-    private void firstPeer(final Number160 messageKey, final Map<Number480, Data> dataMap, final int hopCounter,
+    private void firstPeer(final Number160 messageKey, final Map<Number640, Data> dataMap, final int hopCounter,
             final boolean isUDP) {
         final List<PeerAddress> list = peer.getPeerBean().peerMap().getAll();
         for (final PeerAddress peerAddress : list) {
@@ -178,7 +177,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
      * @param isUDP
      *            Flag if message can be sent with UDP
      */
-    private void otherPeer(final Number160 messageKey, final Map<Number480, Data> dataMap,
+    private void otherPeer(final Number160 messageKey, final Map<Number640, Data> dataMap,
             final int hopCounter, final boolean isUDP) {
         LOG.debug("other");
         final List<PeerAddress> list = peer.getPeerBean().peerMap().getAll();

@@ -55,8 +55,8 @@ public class Message {
      * 8 x 4 bit.
      */
     public enum Content {
-        EMPTY, KEY, MAP_KEY480_DATA, MAP_KEY480_KEY, SET_KEY480, SET_NEIGHBORS, BYTE_BUFFER, 
-        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY480_BYTE, USER1, USER2, USER3
+        EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEY, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
+        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, USER1, USER2, USER3
     };
 
     /**
@@ -130,7 +130,7 @@ public class Message {
     private List<Integer> integerList = null;
     private List<Long> longList = null;
     private List<KeyCollection> keyCollectionList = null;
-    private List<KeyMap480> keyMap480List = null;
+    private List<KeyMap640> keyMap640List = null;
     private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
@@ -608,7 +608,7 @@ public class Message {
 
     public Message setDataMap(final DataMap dataMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY480_DATA);
+            setContentType(Content.MAP_KEY640_DATA);
         }
         if (dataMapList == null) {
             dataMapList = new ArrayList<DataMap>(1);
@@ -633,7 +633,7 @@ public class Message {
 
     public Message setKeyCollection(final KeyCollection key) {
         if (!presetContentTypes) {
-            setContentType(Content.SET_KEY480);
+            setContentType(Content.SET_KEY640);
         }
         if (keyCollectionList == null) {
             keyCollectionList = new ArrayList<KeyCollection>(1);
@@ -657,37 +657,34 @@ public class Message {
     }
 
     
-    public Message setKeyMap480(final KeyMap480 keyMap) {
+    public Message setKeyMap480(final KeyMap640 keyMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY480_KEY);
+            setContentType(Content.MAP_KEY640_KEY);
         }
-        if (keyMap480List == null) {
-            keyMap480List = new ArrayList<KeyMap480>(1);
+        if (keyMap640List == null) {
+            keyMap640List = new ArrayList<KeyMap640>(1);
         }
-        keyMap480List.add(keyMap);
+        keyMap640List.add(keyMap);
         return this;
     }
 
-    public List<KeyMap480> getKeyMap480List() {
-        if (keyMap480List == null) {
+    public List<KeyMap640> getKeyMap480List() {
+        if (keyMap640List == null) {
             return Collections.emptyList();
         }
-        return keyMap480List;
+        return keyMap640List;
     }
 
-    public KeyMap480 getKeyMap480(final int index) {
-        if (keyMap480List == null || index > keyMap480List.size() - 1) {
+    public KeyMap640 getKeyMap640(final int index) {
+        if (keyMap640List == null || index > keyMap640List.size() - 1) {
             return null;
         }
-        return keyMap480List.get(index);
+        return keyMap640List.get(index);
     }
-    
-    
-    
     
     public Message setKeyMapByte(final KeyMapByte keyMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY480_BYTE);
+            setContentType(Content.MAP_KEY640_BYTE);
         }
         if (keyMapByteList == null) {
             keyMapByteList = new ArrayList<KeyMapByte>(1);

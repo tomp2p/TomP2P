@@ -16,12 +16,7 @@
 
 package net.tomp2p.p2p.builder;
 
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.Cancel;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureCreator;
 import net.tomp2p.futures.FutureLateJoin;
@@ -31,7 +26,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.TrackerStorage;
 
 public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
     private Data attachement;

@@ -17,7 +17,6 @@
 package net.tomp2p.p2p;
 
 import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
@@ -30,7 +29,7 @@ import net.tomp2p.peers.PeerAddress;
  * @param <K>
  *            The type of the future that takes care of all the RPC futures
  */
-public interface OperationMapper<K extends FutureDHT> {
+public interface OperationMapper<K extends FutureDHT<?>> {
     /**
      * Creates a single RPC.
      * 

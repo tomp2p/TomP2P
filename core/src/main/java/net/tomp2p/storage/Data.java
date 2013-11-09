@@ -16,7 +16,7 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.CompositeByteBuf;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -52,9 +52,9 @@ public class Data implements Serializable {
     private final Type type;
 
     private final boolean isFlag1;
-    
+
     private final boolean isFlag2;
-    
+
     private final boolean hasVersion;
 
     private final boolean hasHash;
@@ -65,14 +65,14 @@ public class Data implements Serializable {
 
     private final int length;
 
-    private final ByteBuf buffer;
-
-    private final int startReaderIndex;
+    // the buffer contains data without the header
+    private final DataBuffer buffer;
 
     // can be added later
     private Number160 hash;
     private int ttlSeconds = -1;
-    private int version = -1;
+    private long timestamp = -1;
+    private Number160 basedOn = null;
 
     // never serialized over the network in this object
     private final long validFromMillis;
@@ -80,10 +80,10 @@ public class Data implements Serializable {
     private AtomicReference<PublicKey> publicKeyReference;
 
     /**
-     * Create a data object that does not have the complete data yet.
+     * Create a data object that does have the complete data.
      * 
      * @param length
-     *            The expected length of the buffer. This does not include the header, version, etc. sizes.
+     *            The expected length of the buffer. This does not include the header + size (2, 5, or 9).
      * @param version
      *            The version of a data object, optional
      * @param ttlSeconds
@@ -93,13 +93,14 @@ public class Data implements Serializable {
      * @param isProtectedEntry
      *            True if this entry is protected
      */
-    public Data(final int length, final int version, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry, final boolean isFlag1, final boolean isFlag2) {
-        this.hasVersion = version != -1;
+    public Data(final DataBuffer buffer, final int length, final long timestamp, final Number160 basedOn,
+            final int ttlSeconds, final boolean hasHash, final boolean isProtectedEntry,
+            final boolean isFlag1, final boolean isFlag2) {
+        this.hasVersion = timestamp != -1 && basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
-        this.length = length + additionalHeader();
+        this.length = length;
         this.isFlag1 = isFlag1;
         this.isFlag2 = isFlag2;
         if (length < MAX_BYTE_SIZE) {
@@ -109,13 +110,14 @@ public class Data implements Serializable {
         } else {
             this.type = Type.LARGE;
         }
-        this.buffer = Unpooled.buffer();
-        this.startReaderIndex = 0;
+        this.buffer = buffer;
         this.validFromMillis = Timings.currentTimeMillis();
+        this.timestamp = timestamp;
+        this.basedOn = basedOn;
     }
 
     private int additionalHeader() {
-        return (hasVersion ? 4 : 0) + (hasTTL ? 4 : 0) + (hasHash ? 20 : 0);
+        return (hasVersion ? 8 + 20 : 0) + (hasTTL ? 4 : 0) + (hasHash ? 20 : 0);
     }
 
     /**
@@ -134,14 +136,22 @@ public class Data implements Serializable {
         this.hasTTL = hasTTL(header);
         this.isProtectedEntry = isProtectedEntry(header);
         this.type = type(header);
+
+        if (type == Type.SMALL && length > 255) {
+            throw new IllegalArgumentException("Type is not small");
+        } else if (type == Type.MEDIUM && (length <= 255 || length > (255 * 255))) {
+            throw new IllegalArgumentException("Type is not medium");
+        } else if (type == Type.LARGE && (length <= 255 * 255)) {
+            throw new IllegalArgumentException("Type is not large");
+        }
+
         this.length = length;
-        this.buffer = Unpooled.buffer();
-        this.startReaderIndex = 0;
+        this.buffer = new DataBuffer(bufferLength());
         this.validFromMillis = Timings.currentTimeMillis();
     }
 
     public Data(final Object object) throws IOException {
-        this(object, -1, -1, false, false);
+        this(Utils.encodeJavaObject(object));
     }
 
     /**
@@ -160,38 +170,44 @@ public class Data implements Serializable {
      * @throws IOException
      *             If the object conversion did not succeed
      */
-    public Data(final Object object, final int version, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry) throws IOException {
-        this(Unpooled.wrappedBuffer(Utils.encodeJavaObject(object)), version, ttlSeconds, hasHash,
-                isProtectedEntry);
+    public Data(final Object object, final long timestamp, final Number160 basedOn, final int ttlSeconds,
+            final boolean hasHash, final boolean isProtectedEntry) throws IOException {
+        this(Utils.encodeJavaObject(object), timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry);
+    }
+
+    public Data(final byte[] buffer, final long timestamp, final Number160 basedOn, final int ttlSeconds,
+            final boolean hasHash, final boolean isProtectedEntry) throws IOException {
+        this(buffer, 0, buffer.length, timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry);
     }
 
     public Data(final byte[] buffer) {
-        this(Unpooled.wrappedBuffer(buffer), -1, -1, false, false);
+        this(buffer, 0, buffer.length, -1, null, -1, false, false);
 
     }
 
     public Data(final byte[] buffer, final boolean hasHash, final boolean isProtectedEntry) {
-        this(Unpooled.wrappedBuffer(buffer), -1, -1, hasHash, isProtectedEntry);
+        this(buffer, 0, buffer.length, -1, null, -1, hasHash, isProtectedEntry);
 
     }
-    
+
     public Data(final byte[] buffer, final boolean isFlag1) {
-        this(Unpooled.wrappedBuffer(buffer), -1, -1, false, false, isFlag1, false);
+        this(buffer, 0, buffer.length, -1, null, -1, false, false, isFlag1, false);
     }
-    
+
     public Data(final boolean isFlag2) {
-        this(Unpooled.wrappedBuffer(new byte[0]), -1, -1, false, false, false, isFlag2);
+        this(new byte[0], 0, 0, -1, null, -1, false, false, false, isFlag2);
     }
 
-    public Data(final ByteBuf buffer, final boolean hasHash, final boolean isProtectedEntry) {
-        this(buffer, -1, -1, hasHash, isProtectedEntry);
-
-    }
-    
-    public Data(final ByteBuf buffer, final int version, final int ttlSeconds, final boolean hasHash,
+    public Data(final byte[] buffer, final int offest, final int length, final boolean hasHash,
             final boolean isProtectedEntry) {
-        this(buffer, version, ttlSeconds, hasHash, isProtectedEntry, false, false);
+        this(buffer, offest, length, -1, null, -1, hasHash, isProtectedEntry);
+
+    }
+
+    public Data(final byte[] buffer, final int offest, final int length, final long timestamp,
+            final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
+            final boolean isProtectedEntry) {
+        this(buffer, offest, length, timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry, false, false);
     }
 
     /**
@@ -208,18 +224,17 @@ public class Data implements Serializable {
      * @param isProtectedEntry
      *            True if this entry is protected
      */
-    public Data(final ByteBuf buffer, final int version, final int ttlSeconds, final boolean hasHash,
+    public Data(final byte[] buffer, final int offest, final int length, final long timestamp,
+            final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
             final boolean isProtectedEntry, final boolean isFlag1, final boolean isFlag2) {
-        this.hasVersion = version != -1;
+        this.hasVersion = timestamp != -1 && basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
-        this.buffer = buffer;
+        this.buffer = new DataBuffer(buffer);
         this.isFlag1 = isFlag1;
         this.isFlag2 = isFlag2;
-        this.startReaderIndex = buffer.readerIndex();
-        this.length = buffer.readableBytes() + (hasVersion ? Utils.INTEGER_BYTE_SIZE : 0)
-                + (hasTTL ? Utils.INTEGER_BYTE_SIZE : 0) + (hasHash ? Number160.BYTE_ARRAY_SIZE : 0);
+        this.length = length + additionalHeader();
         if (length < MAX_BYTE_SIZE) {
             this.type = Type.SMALL;
         } else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {
@@ -229,7 +244,8 @@ public class Data implements Serializable {
         }
         this.validFromMillis = Timings.currentTimeMillis();
         this.ttlSeconds = ttlSeconds;
-        this.version = version;
+        this.timestamp = timestamp;
+        this.basedOn = basedOn;
     }
 
     /**
@@ -275,7 +291,10 @@ public class Data implements Serializable {
             data.ttlSeconds = buf.readInt();
         }
         if (data.hasVersion) {
-            data.version = buf.readInt();
+            data.timestamp = buf.readLong();
+            byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+            buf.readBytes(me);
+            data.basedOn = new Number160(me);
         }
         return data;
     }
@@ -292,9 +311,7 @@ public class Data implements Serializable {
         return true;
     }
 
-    public void encode(final ByteBuf buf) {
-        // if we encode for the second time, we need to reset the writer index, as this will increase.
-        buffer.readerIndex(startReaderIndex);
+    public void encodeHeader(final CompositeByteBuf buf) {
         int header = type.ordinal();
         if (isFlag1) {
             header |= 0x04;
@@ -314,15 +331,18 @@ public class Data implements Serializable {
         if (hasVersion) {
             header |= 0x80;
         }
-        buf.writeByte(header);
+
         switch (type) {
         case SMALL:
+            buf.writeByte(header);
             buf.writeByte(length);
             break;
         case MEDIUM:
+            buf.writeByte(header);
             buf.writeShort(length);
             break;
         case LARGE:
+            buf.writeByte(header);
             buf.writeInt(length);
             break;
         default:
@@ -332,9 +352,10 @@ public class Data implements Serializable {
             buf.writeInt(ttlSeconds);
         }
         if (hasVersion) {
-            buf.writeInt(version);
+            buf.writeLong(timestamp);
+            buf.writeBytes(basedOn.toByteArray());
         }
-        buf.writeBytes(buffer);
+        buffer.transferTo(buf);
     }
 
     public void encodeDone(final ByteBuf buf) {
@@ -347,13 +368,11 @@ public class Data implements Serializable {
     }
 
     public ByteBuf buffer() {
-        return buffer;
+        return buffer.toByteBuffer();
     }
 
     public Object object() throws ClassNotFoundException, IOException {
-        byte[] tmp = new byte[bufferLength()];
-        buffer.getBytes(startReaderIndex, tmp);
-        return Utils.decodeJavaObject(tmp, 0, this.length);
+        return Utils.decodeJavaObject(buffer.shallowCopy());
     }
 
     public long validFromMillis() {
@@ -397,8 +416,12 @@ public class Data implements Serializable {
         return this;
     }
 
-    public int version() {
-        return version;
+    public long timestamp() {
+        return timestamp;
+    }
+
+    public Number160 basedOn() {
+        return basedOn;
     }
 
     public PublicKey publicKey() {
@@ -421,11 +444,11 @@ public class Data implements Serializable {
     public boolean hasHash() {
         return hasHash;
     }
-    
+
     public boolean isFlag1() {
         return isFlag1;
     }
-    
+
     public boolean isFlag2() {
         return isFlag2;
     }
@@ -454,22 +477,36 @@ public class Data implements Serializable {
                 || d.isProtectedEntry != isProtectedEntry) {
             return false;
         }
-        if (d.version != version || d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
+        if (d.timestamp != timestamp || d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
             return false;
         }
-        return d.buffer.duplicate().readerIndex(0).equals(buffer.duplicate().readerIndex(0));
+        if (basedOn != null) {
+            if (!basedOn.equals(d.basedOn)) {
+                return false;
+            }
+        } else {
+            if (d.basedOn != null) {
+                return false;
+            }
+        }
+        return d.buffer.equals(buffer);
     }
 
-    public boolean encodeBuffer(final ByteBuf buf) {
-        int maxRead = buf.readableBytes();
-        int already = buffer.writerIndex();
+    public boolean fillBuffer(final ByteBuf buf) {
+        buffer.addBuf(buf);
+        return buffer.bufferSize() == bufferLength();
+    }
+
+    public boolean encodeBuffer(final CompositeByteBuf buf) {
+        int already = buffer.alreadyTransferred();
+
         int remaining = bufferLength() - already;
         // already finished
         if (remaining == 0) {
             return true;
         }
-        buffer.writeBytes(buf, Math.min(maxRead, remaining));
-        return buffer.writerIndex() == bufferLength();
+        buffer.transferTo(buf);
+        return buffer.alreadyTransferred() == bufferLength();
     }
 
     /**
@@ -480,32 +517,34 @@ public class Data implements Serializable {
      * @return True if we are done reading
      */
     public boolean decodeBuffer(final ByteBuf buf) {
-        int maxRead = buf.readableBytes() - (hasHash ? Number160.BYTE_ARRAY_SIZE : 0);
-        int already = buffer.writerIndex();
-        int remaining = length - additionalHeader() - already;
+        int already = buffer.alreadyTransferred();
+        int remaining = bufferLength() - already;
         // already finished
         if (remaining == 0) {
             return true;
         }
-        buffer.writeBytes(buf, Math.min(maxRead, remaining));
-        return buffer.writerIndex() == length - additionalHeader();
+
+        final int transfered = buffer.transferFrom(buf, remaining);
+        return transfered == remaining;
     }
-    
+
     /**
      * @return A shallow copy where the data is shared but the reader and writer index is not shared
      */
     public Data duplicate() {
-        return new Data(buffer.duplicate(), version, ttlSeconds, hasHash, isProtectedEntry, isFlag1, isFlag2);
+        return new Data(buffer.shallowCopy(), length, timestamp, basedOn, ttlSeconds, hasHash,
+                isProtectedEntry, isFlag1, isFlag2);
+
     }
 
     public static Type type(final int header) {
         return Type.values()[header & 0x3];
     }
-    
+
     private static boolean isFlag1(final int header) {
         return (header & 0x04) > 0;
     }
-    
+
     private static boolean isFlag2(final int header) {
         return (header & 0x08) > 0;
     }
@@ -525,12 +564,12 @@ public class Data implements Serializable {
     private static boolean hasVersion(final int header) {
         return (header & 0x80) > 0;
     }
-    
+
     public byte[] toBytes() {
-        //TODO: converting is bad
-        buffer.readerIndex(startReaderIndex);
-        byte[] orig = new byte[bufferLength()];
-        buffer().readBytes(orig);
-        return orig;
+        // TODO: avoid copy, use DataBuffer directly
+        ByteBuf buf = buffer.shallowCopy().toByteBuffer();
+        byte[] me = new byte[buf.readableBytes()];
+        buf.readBytes(me);
+        return me;
     }
 }

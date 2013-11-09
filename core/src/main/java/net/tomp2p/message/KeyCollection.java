@@ -4,31 +4,34 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.utils.Utils;
 
 public class KeyCollection {
-    private final Collection<Number480> keys;
+    private final Collection<Number640> keys;
     private final Collection<Number160> keysConvert;
     private final Number160 locationKey;
     private final Number160 domainKey;
+    private final Number160 versionKey;
 
-    public KeyCollection(final Number160 locationKey, final Number160 domainKey,
+    public KeyCollection(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
             final Collection<Number160> keysConvert) {
         this.keys = null;
         this.keysConvert = keysConvert;
         this.locationKey = locationKey;
         this.domainKey = domainKey;
+        this.versionKey = versionKey;
     }
 
-    public KeyCollection(final Collection<Number480> keys) {
+    public KeyCollection(final Collection<Number640> keys) {
         this.keys = keys;
         this.keysConvert = null;
         this.locationKey = null;
         this.domainKey = null;
+        this.versionKey = null;
     }
 
-    public Collection<Number480> keys() {
+    public Collection<Number640> keys() {
         return keys;
     }
 
@@ -42,6 +45,10 @@ public class KeyCollection {
 
     public Number160 domainKey() {
         return domainKey;
+    }
+
+    public Number160 versionKey() {
+        return versionKey;
     }
 
     /**
@@ -64,12 +71,12 @@ public class KeyCollection {
     }
 
     /**
-     * @param number480
+     * @param number640
      *            Add this number to the number480 set
      * @return This class
      */
-    public KeyCollection add(final Number480 number480) {
-        keys.add(number480);
+    public KeyCollection add(final Number640 number640) {
+        keys.add(number640);
         return this;
     }
 
@@ -82,17 +89,17 @@ public class KeyCollection {
             return true;
         }
         KeyCollection k = (KeyCollection) obj;
-        final Collection<Number480> keys2 = convert(this);
-        final Collection<Number480> keys3 = convert(k);
+        final Collection<Number640> keys2 = convert(this);
+        final Collection<Number640> keys3 = convert(k);
         return Utils.isSameSets(keys2, keys3);
     }
 
-    private Collection<Number480> convert(final KeyCollection k) {
-        final Collection<Number480> keys3;
+    private Collection<Number640> convert(final KeyCollection k) {
+        final Collection<Number640> keys3;
         if (k.keysConvert != null) {
-            keys3 = new ArrayList<Number480>(k.keysConvert.size());
+            keys3 = new ArrayList<Number640>(k.keysConvert.size());
             for (Number160 n160 : k.keysConvert) {
-                keys3.add(new Number480(k.locationKey, k.domainKey, n160));
+                keys3.add(new Number640(k.locationKey, k.domainKey, k.versionKey, n160));
             }
         } else {
             keys3 = k.keys;

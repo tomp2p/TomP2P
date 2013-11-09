@@ -19,11 +19,9 @@ package net.tomp2p.p2p.builder;
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.ConnectionBean;
 import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.PeerConnection;
 import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.ProgressListener;
@@ -36,8 +34,6 @@ import net.tomp2p.utils.Utils;
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI{
     private static final FutureResponse FUTURE_REQUEST_SHUTDOWN = new FutureResponse(null)
             .setFailed("Peer is shutting down");
-    private static final FutureResponse FUTURE_REQUEST_INTERRUPTED = new FutureResponse(null)
-            .setFailed("Peer is interrupted");
 
     private final Peer peer;
 

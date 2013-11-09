@@ -18,55 +18,53 @@ package net.tomp2p.storage;
 
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.Map;
 import java.util.NavigableMap;
-import java.util.SortedMap;
 
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number640;
 
+/**
+ * The storage is typically backed by multiple Java collections (HashMap, TreeMap, etc.). This map returns the map that
+ * stores the values which are present in the DHT. If you plan to do transactions (put/get), make sure you do the
+ * locking in order to not interfere with other threads that use this map. Although the storage is threadsafe, there may
+ * be concurrency issues with respect to transactions (e.g., do a get before a put). Please use
+ * {@link StorageGeneric#getLockStorage()} for full locking, and {@link StorageGeneric#getLockNumber160()},
+ * {@link StorageGeneric#getLockNumber320()}, {@link StorageGeneric#getLockNumber480()},
+ * {@link StorageGeneric#getLockNumber640()} for fine grained locking.
+ * 
+ * 
+ * @author Thomas Bocek
+ * 
+ */
 public interface Storage extends Digest, ReplicationStorage {
-    // Core
-    public abstract boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data value);
+    // Core storage
+    public abstract boolean put(Number640 key, Data value);
 
-    public abstract Data get(Number160 locationKey, Number160 domainKey, Number160 contentKey);
+    public abstract Data get(Number640 key);
 
-    public abstract boolean contains(Number160 locationKey, Number160 domainKey, Number160 contentKey);
+    public abstract boolean contains(Number640 key);
 
-    public abstract Data remove(Number160 locationKey, Number160 domainKey, Number160 contentKey);
+    public abstract int contains(Number640 from, Number640 to);
 
-    public abstract SortedMap<Number480, Data> subMap(Number160 locationKey, Number160 domainKey,
-            Number160 fromContentKey, Number160 toContentKey);
+    public abstract Data remove(Number640 key);
 
-    public abstract Map<Number480, Data> subMap(Number160 locationKey);
+    public abstract NavigableMap<Number640, Data> remove(Number640 from, Number640 to);
 
-    /**
-     * The storage is typically backed by multiple Java collections (HashMap,
-     * TreeMap, etc.). This map returns the map that stores the values which are
-     * present in the DHT. If you plan to do transactions (put/get), make sure
-     * you do the locking in order to not interfere with other threads that use
-     * this map. Although the storage is threadsafe, there may be concurrency
-     * issues with respect to transactions (e.g., do a get before a put). Please
-     * use {@link StorageGeneric#getLockStorage()} for full locking, and
-     * {@link StorageGeneric#getLockNumber160()},
-     * {@link StorageGeneric#getLockNumber320()},
-     * {@link StorageGeneric#getLockNumber480()} for fine grained locking.
-     * 
-     * @return The backing dataMap
-     */
-    public abstract NavigableMap<Number480, Data> map();
+    public abstract NavigableMap<Number640, Data> subMap(Number640 from, Number640 to);
+
+    public abstract NavigableMap<Number640, Data> map();
 
     public abstract void close();
 
     // Maintenance
-    public abstract void addTimeout(Number160 locationKey, Number160 domainKey, Number160 contentKey, long expiration);
+    public abstract void addTimeout(Number640 key, long expiration);
 
-    public abstract void removeTimeout(Number160 locationKey, Number160 domainKey, Number160 contentKey);
+    public abstract void removeTimeout(Number640 key);
 
-    public abstract Collection<Number480> subMapTimeout(long to);
+    public abstract Collection<Number640> subMapTimeout(long to);
 
     // Domain / entry protection
-    public abstract boolean protectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey);
+    public abstract boolean protectDomain(Number320 key, PublicKey publicKey);
 
-    public abstract boolean isDomainProtectedByOthers(Number160 locationKey, Number160 domainKey, PublicKey publicKey);
+    public abstract boolean isDomainProtectedByOthers(Number320 key, PublicKey publicKey);
 }

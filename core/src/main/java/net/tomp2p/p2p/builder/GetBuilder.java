@@ -24,7 +24,7 @@ import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class GetBuilder extends DHTBuilder<GetBuilder> {
@@ -33,7 +33,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
 
     private Collection<Number160> contentKeys;
     
-    private Collection<Number480> keys;
+    private Collection<Number640> keys;
 
     private Number160 contentKey;
 
@@ -80,11 +80,11 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return this;
     }
     
-    public Collection<Number480> keys() {
+    public Collection<Number640> keys() {
         return keys;
     }
     
-    public GetBuilder setKey(Collection<Number480> keys) {
+    public GetBuilder setKey(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }

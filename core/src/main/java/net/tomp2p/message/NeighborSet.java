@@ -3,7 +3,6 @@ package net.tomp2p.message;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.SortedSet;
 
 import net.tomp2p.peers.PeerAddress;
 

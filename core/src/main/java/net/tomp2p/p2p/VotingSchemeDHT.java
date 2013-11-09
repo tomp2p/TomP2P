@@ -24,25 +24,25 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     @Override
-    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeysByte) {
-        Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
-        Set<Number480> result = new HashSet<Number480>();
+    public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeysByte) {
+        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
+        Set<Number640> result = new HashSet<Number640>();
 
         int size = rawKeysByte == null ? 0 : rawKeysByte.size();
         int majority = (size + 1) / 2;
 
         if (rawKeysByte != null) {
             for (PeerAddress address : rawKeysByte.keySet()) {
-                Collection<Number480> keys480 = rawKeysByte.get(address).keySet();
+                Collection<Number640> keys480 = rawKeysByte.get(address).keySet();
                 if (keys480 != null) {
-                    for (Number480 key : keys480) {
+                    for (Number640 key : keys480) {
                         int c = 1;
                         Integer count = counter.get(key);
                         if (count != null)
@@ -59,18 +59,18 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480) {
-        Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
-        Set<Number480> result = new HashSet<Number480>();
+    public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480) {
+        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
+        Set<Number640> result = new HashSet<Number640>();
 
         int size = rawKeys480 == null ? 0 : rawKeys480.size();
         int majority = (size + 1) / 2;
 
         if (rawKeys480 != null) {
             for (PeerAddress address : rawKeys480.keySet()) {
-                Collection<Number480> keys480 = rawKeys480.get(address);
+                Collection<Number640> keys480 = rawKeys480.get(address);
                 if (keys480 != null) {
-                    for (Number480 key : keys480) {
+                    for (Number640 key : keys480) {
                         int c = 1;
                         Integer count = counter.get(key);
                         if (count != null)
@@ -87,17 +87,17 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     }
 
     @Override
-    public Map<Number480, Data> evaluate2(final Map<PeerAddress, Map<Number480, Data>> rawData) {
+    public Map<Number640, Data> evaluate2(final Map<PeerAddress, Map<Number640, Data>> rawData) {
         if (rawData == null) {
             throw new IllegalArgumentException("cannot evaluate, as no result provided");
         }
         Map<Number160, Integer> counter = new HashMap<Number160, Integer>();
-        Map<Number480, Data> result = new HashMap<Number480, Data>();
+        Map<Number640, Data> result = new HashMap<Number640, Data>();
         int size = rawData.size();
         int majority = (size + 1) / 2;
         for (PeerAddress address : rawData.keySet()) {
-            Map<Number480, Data> data = rawData.get(address);
-            for (Number480 contentKey : data.keySet()) {
+            Map<Number640, Data> data = rawData.get(address);
+            for (Number640 contentKey : data.keySet()) {
                 Data dat = data.get(contentKey);
                 Number160 hash = dat.hash().xor(contentKey.getContentKey()).
                         xor(contentKey.getDomainKey()).xor(contentKey.getLocationKey());
@@ -155,18 +155,18 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number480> evaluate7(Map<PeerAddress, Map<Number480, Byte>> rawKeysByte) {
-        Map<Number480, Integer> counter = new HashMap<Number480, Integer>();
-        Set<Number480> result = new HashSet<Number480>();
+    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawKeysByte) {
+        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
+        Set<Number640> result = new HashSet<Number640>();
 
         int size = rawKeysByte == null ? 0 : rawKeysByte.size();
         int majority = (size + 1) / 2;
 
         if (rawKeysByte != null) {
             for (PeerAddress address : rawKeysByte.keySet()) {
-                Collection<Number480> keys480 = rawKeysByte.get(address).keySet();
+                Collection<Number640> keys480 = rawKeysByte.get(address).keySet();
                 if (keys480 != null) {
-                    for (Number480 key : keys480) {
+                    for (Number640 key : keys480) {
                         int c = 1;
                         Integer count = counter.get(key);
                         if (count != null)

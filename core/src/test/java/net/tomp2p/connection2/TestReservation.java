@@ -139,7 +139,8 @@ public class TestReservation {
     }
 
     /**
-     * Test the TCP connection reservation.
+     * Test the TCP connection reservation. This will throw many
+     * "TomP2PSinglePacketUDP - did not get the complete packet" exceptions, since we are not having any proper headers.
      * 
      * @throws InterruptedException .
      */

@@ -15,7 +15,6 @@
  */
 package net.tomp2p.rpc;
 
-import io.netty.buffer.ByteBuf;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.PeerAddress;
 

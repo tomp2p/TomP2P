@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import net.tomp2p.connection2.PeerBean;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Maintenance;
 import net.tomp2p.peers.Number160;

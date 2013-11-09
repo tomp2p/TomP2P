@@ -24,17 +24,17 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public class CumulativeScheme implements EvaluatingSchemeDHT {
     @Override
-    public Collection<Number480> evaluate1(Map<PeerAddress, Map<Number480, Number160>> rawKeys480) {
-        Set<Number480> result = new HashSet<Number480>();
+    public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeys480) {
+        Set<Number640> result = new HashSet<Number640>();
         if (rawKeys480 != null) {
-            for (Map<Number480, Number160> tmp : rawKeys480.values()) {
+            for (Map<Number640, Number160> tmp : rawKeys480.values()) {
                 result.addAll(tmp.keySet());
             }
         }
@@ -42,10 +42,10 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number480> evaluate6(Map<PeerAddress, Collection<Number480>> rawKeys480) {
-        Set<Number480> result = new HashSet<Number480>();
+    public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480) {
+        Set<Number640> result = new HashSet<Number640>();
         if (rawKeys480 != null) {
-            for (Collection<Number480> tmp : rawKeys480.values()) {
+            for (Collection<Number640> tmp : rawKeys480.values()) {
                 result.addAll(tmp);
             }
         }
@@ -53,9 +53,9 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     }
 
     @Override
-    public Map<Number480, Data> evaluate2(Map<PeerAddress, Map<Number480, Data>> rawKeys) {
-        Map<Number480, Data> result = new HashMap<Number480, Data>();
-        for (Map<Number480, Data> tmp : rawKeys.values())
+    public Map<Number640, Data> evaluate2(Map<PeerAddress, Map<Number640, Data>> rawKeys) {
+        Map<Number640, Data> result = new HashMap<Number640, Data>();
+        for (Map<Number640, Data> tmp : rawKeys.values())
             result.putAll(tmp);
         return result;
     }
@@ -76,10 +76,10 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number480> evaluate7(Map<PeerAddress, Map<Number480, Byte>> rawKeys480) {
-        Set<Number480> result = new HashSet<Number480>();
-        if (rawKeys480 != null) {
-            for (Map<Number480, Byte> tmp : rawKeys480.values()) {
+    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawKeys640) {
+        Set<Number640> result = new HashSet<Number640>();
+        if (rawKeys640 != null) {
+            for (Map<Number640, Byte> tmp : rawKeys640.values()) {
                 result.addAll(tmp.keySet());
             }
         }

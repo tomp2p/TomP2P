@@ -1,8 +1,8 @@
 package net.tomp2p.peers;
 
-import junit.framework.Assert;
 import net.tomp2p.storage.StorageMemoryReplication;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TestStorageMemoryReplication {

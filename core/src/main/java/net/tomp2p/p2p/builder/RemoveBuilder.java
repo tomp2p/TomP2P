@@ -22,12 +22,12 @@ import java.util.Collection;
 import net.tomp2p.futures.FutureRemove;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 
 public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     private Collection<Number160> contentKeys;
 
-    private Collection<Number480> keys;
+    private Collection<Number640> keys;
 
     private Number160 contentKey;
 
@@ -49,11 +49,11 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
         return this;
     }
 
-    public Collection<Number480> getKeys() {
+    public Collection<Number640> getKeys() {
         return keys;
     }
 
-    public RemoveBuilder setKeys(Collection<Number480> keys) {
+    public RemoveBuilder setKeys(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }

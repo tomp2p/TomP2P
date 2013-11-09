@@ -18,11 +18,10 @@ package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.security.PublicKey;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.concurrent.locks.Lock;
@@ -34,7 +33,7 @@ import net.tomp2p.connection2.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
-import net.tomp2p.message.KeyMap480;
+import net.tomp2p.message.KeyMap640;
 import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -44,7 +43,7 @@ import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageGeneric.PutStatus;
@@ -190,7 +189,7 @@ public class StorageRPC extends DispatchHandler {
             dataMap = new DataMap(putBuilder.getDataMap());
         } else {
             dataMap = new DataMap(putBuilder.getLocationKey(), putBuilder.getDomainKey(),
-                    putBuilder.getDataMapContent());
+                    putBuilder.getVersionKey(), putBuilder.getDataMapContent());
         }
 
         final Message message = createMessage(remotePeer, COMMAND_PUT, type);
@@ -280,7 +279,8 @@ public class StorageRPC extends DispatchHandler {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
 
-        message.setDataMap(new DataMap(addBuilder.getLocationKey(), addBuilder.getDomainKey(), dataMap));
+        message.setDataMap(new DataMap(addBuilder.getLocationKey(), addBuilder.getDomainKey(), addBuilder
+                .getVersionKey(), dataMap));
 
         final FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
@@ -341,8 +341,8 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(getBuilder.getDomainKey());
 
             if (getBuilder.getContentKeys() != null) {
-                message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder.getDomainKey(), getBuilder
-                        .getContentKeys()));
+                message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder
+                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.getContentKeys()));
             } else if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
                 if (getBuilder.getKeyBloomFilter() != null) {
                     message.setBloomFilter(getBuilder.getKeyBloomFilter());
@@ -404,8 +404,8 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(removeBuilder.getDomainKey());
 
             if (removeBuilder.getContentKeys() != null) {
-                message.setKeyCollection(new KeyCollection(removeBuilder.getLocationKey(), removeBuilder.getDomainKey(),
-                        removeBuilder.getContentKeys()));
+                message.setKeyCollection(new KeyCollection(removeBuilder.getLocationKey(), removeBuilder
+                        .getDomainKey(), removeBuilder.getVersionKey(), removeBuilder.getContentKeys()));
             }
         } else {
             message.setKeyCollection(new KeyCollection(removeBuilder.getKeys()));
@@ -476,30 +476,30 @@ public class StorageRPC extends DispatchHandler {
         final PublicKey publicKey = message.getPublicKey();
         final DataMap toStore = message.getDataMap(0);
         final int dataSize = toStore.size();
-        final Map<Number480, Byte> result = new HashMap<Number480, Byte>(dataSize);
-        for (Map.Entry<Number480, Data> entry : toStore.dataMap().entrySet()) {
-            PutStatus putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey().getLocationKey(), entry.getKey()
-                    .getDomainKey(), entry.getKey().getContentKey(), entry.getValue());
-                result.put(entry.getKey(), (byte)putStatus.ordinal());
-                // check the responsibility of the newly added data, do something
-                // (notify) if we are responsible
-                if (putStatus == PutStatus.OK && peerBean().replicationStorage() != null) {
-                    peerBean().replicationStorage().updateAndNotifyResponsibilities(
-                            entry.getKey().getLocationKey());
-                }
+        final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
+        for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+            PutStatus putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(),
+                    entry.getValue());
+            result.put(entry.getKey(), (byte) putStatus.ordinal());
+            // check the responsibility of the newly added data, do something
+            // (notify) if we are responsible
+            if (putStatus == PutStatus.OK && peerBean().replicationStorage() != null) {
+                peerBean().replicationStorage().updateAndNotifyResponsibilities(
+                        entry.getKey().getLocationKey());
+            }
         }
 
         responseMessage.setType(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
         responseMessage.setKeyMapByte(new KeyMapByte(result));
         return responseMessage;
     }
-    
+
     private Message handleAdd(final Message message, final Message responseMessage,
             final boolean protectDomain) {
 
         Utils.nullCheck(message.getDataMap(0));
 
-        final Map<Number480, Byte> result = new HashMap<Number480, Byte>();
+        final Map<Number640, Byte> result = new HashMap<Number640, Byte>();
         final DataMap dataMap = message.getDataMap(0);
         final PublicKey publicKey = message.getPublicKey();
         final boolean list = isList(message);
@@ -508,10 +508,10 @@ public class StorageRPC extends DispatchHandler {
         // the data and we don't need to transfer data to the closest (sender)
         // peer.
 
-        for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
+        for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
             PutStatus status = doAdd(protectDomain, entry, publicKey, list, peerBean());
-            result.put(entry.getKey(), (byte)status.ordinal());
-            
+            result.put(entry.getKey(), (byte) status.ordinal());
+
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (status == PutStatus.OK && peerBean().replicationStorage() != null) {
@@ -524,38 +524,30 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-    private PutStatus doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
-            final Number160 locationKey, final Number160 domainKey, final Number160 contentKey,
-            final Data value) {
-        LOG.debug("put data with key {}, domain {} on {}", locationKey, domainKey, peerBean()
-                .serverPeerAddress());
-        return peerBean().storage().put(locationKey, domainKey, contentKey, value, publicKey, putIfAbsent,
-                protectDomain);
-        
+    private PutStatus doPut(final boolean putIfAbsent, final boolean protectDomain,
+            final PublicKey publicKey, final Number640 key, final Data value) {
+        LOG.debug("put data with key {} on {}", key, peerBean().serverPeerAddress());
+        return peerBean().storage().put(key, value, publicKey, putIfAbsent, protectDomain);
+
     }
-    
-    private static PutStatus doAdd(final boolean protectDomain, final Map.Entry<Number480, Data> entry,
+
+    private static PutStatus doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,
             final PublicKey publicKey, final boolean list, final PeerBean peerBean) {
-        final Number160 locationKey = entry.getKey().getLocationKey();
-        final Number160 domainKey = entry.getKey().getDomainKey();
-        LOG.debug("add list data with key {} on {}", locationKey, peerBean.serverPeerAddress());
+
+        LOG.debug("add list data with key {} on {}", entry.getKey(), peerBean.serverPeerAddress());
         if (list) {
             Number160 contentKey2 = new Number160(RND);
             PutStatus status;
-            while ((status = peerBean.storage().put(locationKey, domainKey, contentKey2, entry.getValue(),
-                    publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {
+            Number640 key = new Number640(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
+                    contentKey2, entry.getKey().getVersionKey());
+            while ((status = peerBean.storage().put(key, entry.getValue(), publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {
                 contentKey2 = new Number160(RND);
             }
             return status;
         } else {
-            return peerBean.storage().put(locationKey, domainKey, entry.getKey().getContentKey(),
-                    entry.getValue(), publicKey, false, protectDomain);
+            return peerBean.storage().put(entry.getKey(), entry.getValue(), publicKey, false, protectDomain);
         }
     }
-
-   
-
-   
 
     private Message handleGet(final Message message, final Message responseMessage, final boolean range,
             final boolean digest) {
@@ -579,7 +571,7 @@ public class StorageRPC extends DispatchHandler {
                 throw new IllegalArgumentException("need at least two keys, bloomfilter, or key set");
             }
             if (message.getType() == Type.REQUEST_2) {
-                responseMessage.setKeyMap480(new KeyMap480(digestInfo.getDigests()));
+                responseMessage.setKeyMap480(new KeyMap640(digestInfo.getDigests()));
             } else if (message.getType() == Type.REQUEST_3) {
                 // we did not specifically set location and domain key, this means we want to see what location and
                 // domains we have
@@ -592,24 +584,23 @@ public class StorageRPC extends DispatchHandler {
             }
             return responseMessage;
         } else {
-            final Map<Number480, Data> result;
+            final Map<Number640, Data> result;
             if (contentKeys != null) {
-                result = new HashMap<Number480, Data>();
+                result = new HashMap<Number640, Data>();
                 if (!range || contentKeys.size() != 2) {
-                    for (Number480 key : contentKeys.keys()) {
-                        Data data = peerBean().storage().get(key.getLocationKey(), key.getDomainKey(),
-                                key.getContentKey());
+                    for (Number640 key : contentKeys.keys()) {
+                        Data data = peerBean().storage().get(key);
                         if (data != null) {
                             result.put(key, data);
                         }
                     }
                 } else {
                     // get min/max
-                    Iterator<Number480> iterator = contentKeys.keys().iterator();
-                    Number160 min = iterator.next().getContentKey();
-                    Number160 max = iterator.next().getContentKey();
-                    SortedMap<Number480, Data> map = peerBean().storage().get(locationKey, domainKey, min,
-                            max);
+                    Iterator<Number640> iterator = contentKeys.keys().iterator();
+                    Number640 min = iterator.next();
+                    Number640 max = iterator.next();
+                    NavigableMap<Number640, Data> map = peerBean().storage().subMap(min, max);
+                    // TODO: lockey may not be correct anymore, figure out which key to take!
                     Number320 lockKey = new Number320(locationKey, domainKey);
                     Lock lock = peerBean().storage().getLockNumber320().lock(lockKey);
                     try {
@@ -619,13 +610,15 @@ public class StorageRPC extends DispatchHandler {
                     }
                 }
             } else if (keyBloomFilter != null || contentBloomFilter != null) {
-                result = new HashMap<Number480, Data>();
-                SortedMap<Number480, Data> tmp = peerBean().storage().get(locationKey, domainKey,
-                        Number160.ZERO, Number160.MAX_VALUE);
+                result = new HashMap<Number640, Data>();
+                Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+                Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
+                        Number160.MAX_VALUE);
+                SortedMap<Number640, Data> tmp = peerBean().storage().subMap(min, max);
                 Number320 lockKey = new Number320(locationKey, domainKey);
                 Lock lock = peerBean().storage().getLockNumber320().lock(lockKey);
                 try {
-                    for (Map.Entry<Number480, Data> entry : tmp.entrySet()) {
+                    for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                         if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
                             if (contentBloomFilter == null
                                     || contentBloomFilter.contains(entry.getValue().hash())) {
@@ -637,8 +630,10 @@ public class StorageRPC extends DispatchHandler {
                     peerBean().storage().getLockNumber320().unlock(lockKey, lock);
                 }
             } else {
-                result = peerBean().storage()
-                        .get(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
+                Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+                Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
+                        Number160.MAX_VALUE);
+                result = peerBean().storage().subMap(min, max);
             }
             responseMessage.setDataMap(new DataMap(result));
             return responseMessage;
@@ -651,19 +646,19 @@ public class StorageRPC extends DispatchHandler {
         final Number160 domainKey = message.getKey(1);
         final KeyCollection keys = message.getKeyCollection(0);
         final PublicKey publicKey = message.getPublicKey();
-        final Map<Number480, Data> result;
+        final Map<Number640, Data> result;
         if (keys != null) {
-            result = new HashMap<Number480, Data>(keys.size());
-            for (Number480 key : keys.keys()) {
-                Data data = peerBean().storage().remove(key.getLocationKey(), key.getDomainKey(),
-                        key.getContentKey(), publicKey);
+            result = new HashMap<Number640, Data>(keys.size());
+            for (Number640 key : keys.keys()) {
+                Data data = peerBean().storage().remove(key, publicKey);
                 if (data != null) {
                     result.put(key, data);
                 }
             }
         } else if (locationKey != null && domainKey != null) {
-            result = peerBean().storage().remove(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE,
-                    publicKey);
+            Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            result = peerBean().storage().remove(min, max, publicKey);
         } else {
             throw new IllegalArgumentException("Either two keys or a key set are necessary");
         }

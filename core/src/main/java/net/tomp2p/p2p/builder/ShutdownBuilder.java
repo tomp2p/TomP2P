@@ -17,7 +17,6 @@
 package net.tomp2p.p2p.builder;
 
 import java.util.NavigableSet;
-import java.util.SortedSet;
 
 import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.p2p.Peer;

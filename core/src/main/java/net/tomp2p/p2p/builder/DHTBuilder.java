@@ -40,6 +40,8 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     protected final Number160 locationKey;
 
     protected Number160 domainKey;
+    
+    protected Number160 versionKey;
 
     protected RoutingConfiguration routingConfiguration;
 
@@ -78,9 +80,18 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     public Number160 getDomainKey() {
         return domainKey;
     }
-
+    
     public K setDomainKey(Number160 domainKey) {
         this.domainKey = domainKey;
+        return self;
+    }
+    
+    public Number160 getVersionKey() {
+        return versionKey;
+    }
+    
+    public K setVersionKey(Number160 versionKey) {
+        this.versionKey = versionKey;
         return self;
     }
 

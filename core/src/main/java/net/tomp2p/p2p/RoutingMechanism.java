@@ -8,11 +8,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
@@ -21,6 +17,9 @@ import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.Utils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The routing mechanism. Since this is called from Netty handlers, we don't have any visibility issues. If you want to

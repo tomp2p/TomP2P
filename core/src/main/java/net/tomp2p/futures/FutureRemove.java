@@ -23,7 +23,7 @@ import java.util.Map;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 
@@ -47,8 +47,8 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
 
     // Storage of results
-    private Map<PeerAddress, Collection<Number480>> rawKeys480;
-    private Map<PeerAddress, Map<Number480, Data>> rawData;
+    private Map<PeerAddress, Collection<Number640>> rawKeys640;
+    private Map<PeerAddress, Map<Number640, Data>> rawData;
 
     private Number160 locationKey;
 
@@ -94,12 +94,12 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
     public void setStoredKeys(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Collection<Number480>> rawKeys480) {
+            final Map<PeerAddress, Collection<Number640>> rawKeys480) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.rawKeys480 = rawKeys480;
+            this.rawKeys640 = rawKeys480;
             this.locationKey = locationKey;
             this.domainKey = domainKey;
             final int size = rawKeys480 == null ? 0 : rawKeys480.size();
@@ -115,9 +115,9 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      */
     public double getAvgStoredKeys() {
         synchronized (lock) {
-            final int size = rawKeys480.size();
+            final int size = rawKeys640.size();
             int total = 0;
-            for (Collection<Number480> collection : rawKeys480.values()) {
+            for (Collection<Number640> collection : rawKeys640.values()) {
                 if (collection != null) {
                     total += collection.size();
                 }
@@ -137,7 +137,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      *            The keys and data that have been received with information from which peer it has been received.
      */
     public void setReceivedData(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number480, Data>> rawData) {
+            final Map<PeerAddress, Map<Number640, Data>> rawData) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
@@ -158,9 +158,9 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Collection<Number480>> getRawKeys() {
+    public Map<PeerAddress, Collection<Number640>> getRawKeys() {
         synchronized (lock) {
-            return rawKeys480;
+            return rawKeys640;
         }
     }
 
@@ -182,9 +182,9 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The keys that have been stored or removed
      */
-    public Collection<Number480> getEvalKeys() {
+    public Collection<Number640> getEvalKeys() {
         synchronized (lock) {
-            return evaluationScheme.evaluate6(rawKeys480);
+            return evaluationScheme.evaluate6(rawKeys640);
         }
     }
     
@@ -193,7 +193,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The raw data and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number480, Data>> getRawData() {
+    public Map<PeerAddress, Map<Number640, Data>> getRawData() {
         synchronized (lock) {
             return rawData;
         }
@@ -205,7 +205,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The evaluated data that have been received.
      */
-    public Map<Number480, Data> getDataMap() {
+    public Map<Number640, Data> getDataMap() {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
         }

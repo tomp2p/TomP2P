@@ -872,7 +872,7 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.getResponse();
-            Assert.assertEquals(2, m.getKeyMap480(0).size());
+            Assert.assertEquals(2, m.getKeyMap640(0).size());
 
         } finally {
             if (cc != null) {

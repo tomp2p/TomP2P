@@ -24,13 +24,13 @@ import java.util.Map.Entry;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class PutBuilder extends DHTBuilder<PutBuilder> {
-    private Entry<Number480, Data> data;
+    private Entry<Number640, Data> data;
 
-    private Map<Number480, Data> dataMap;
+    private Map<Number640, Data> dataMap;
 
     private Map<Number160, Data> dataMapConvert;
 
@@ -42,25 +42,37 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         self(this);
     }
 
-    public Entry<Number480, Data> getData() {
+    public Entry<Number640, Data> getData() {
         return data;
     }
 
     public PutBuilder setData(final Data data) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO, data);
+        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
+                Number160.ZERO, data);
     }
 
     public PutBuilder setData(final Number160 contentKey, final Data data) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey, data);
+        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey,
+                Number160.ZERO, data);
     }
 
     public PutBuilder setData(final Number160 domainKey, final Number160 contentKey, final Data data) {
-        return setData(locationKey, domainKey, contentKey, data);
+        return setData(locationKey, domainKey, contentKey, Number160.ZERO, data);
+    }
+
+    public PutBuilder setData(final Data data, final Number160 versionKey) {
+        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
+                versionKey, data);
+    }
+
+    public PutBuilder setData(final Number160 contentKey, final Data data, final Number160 versionKey) {
+        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey, versionKey,
+                data);
     }
 
     public PutBuilder setData(final Number160 locationKey, final Number160 domainKey,
-            final Number160 contentKey, final Data data) {
-        this.data = new Entry<Number480, Data>() {
+            final Number160 contentKey, final Number160 versionKey, final Data data) {
+        this.data = new Entry<Number640, Data>() {
             @Override
             public Data setValue(Data value) {
                 return null;
@@ -72,8 +84,8 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             }
 
             @Override
-            public Number480 getKey() {
-                return new Number480(locationKey, domainKey, contentKey);
+            public Number640 getKey() {
+                return new Number640(locationKey, domainKey, contentKey, versionKey);
             }
         };
         return this;
@@ -83,7 +95,8 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     public PutBuilder setDomainKey(final Number160 domainKey) {
         // if we set data before we set domain key, we need to adapt the domain key of the data object
         if (data != null) {
-            setData(data.getKey().getLocationKey(), domainKey, data.getKey().getContentKey(), data.getValue());
+            setData(data.getKey().getLocationKey(), domainKey, data.getKey().getContentKey(), data.getKey()
+                    .getVersionKey(), data.getValue());
         }
         super.setDomainKey(domainKey);
         return this;
@@ -97,11 +110,11 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return setData(contentKey, new Data(object));
     }
 
-    public Map<Number480, Data> getDataMap() {
+    public Map<Number640, Data> getDataMap() {
         return dataMap;
     }
 
-    public PutBuilder setDataMap(Map<Number480, Data> dataMap) {
+    public PutBuilder setDataMap(Map<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
     }
@@ -133,7 +146,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         preBuild("put-builder");
         if (data != null) {
             if (dataMap == null) {
-                setDataMap(new HashMap<Number480, Data>(1));
+                setDataMap(new HashMap<Number640, Data>(1));
             }
             getDataMap().put(getData().getKey(), getData().getValue());
         }

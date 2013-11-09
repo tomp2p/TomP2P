@@ -15,10 +15,10 @@
  */
 package net.tomp2p.rpc;
 
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.ConnectionBean;
 import net.tomp2p.connection2.PeerBean;
@@ -27,7 +27,6 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 

@@ -15,11 +15,7 @@
  */
 package net.tomp2p.p2p;
 
-import io.netty.util.ResourceLeakDetector;
-import io.netty.util.Timer;
-
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,10 +51,10 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
-import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PeerExchangeRPC;
+import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
@@ -67,13 +63,6 @@ import net.tomp2p.rpc.SynchronizationRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
-
-
-
-
-
-
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,7 +168,6 @@ public class Peer {
         this.p2pID = p2pID;
         this.peerId = peerId;
         this.peerCreator = peerCreator;
-        ResourceLeakDetector.setEnabled(false);
     }
 
     PeerCreator peerCreator() {
@@ -538,8 +526,8 @@ public class Peer {
         return new GetTrackerBuilder(this, locationKey);
     }
 
-    public ParallelRequestBuilder parallelRequest(Number160 locationKey) {
-        return new ParallelRequestBuilder(this, locationKey);
+    public ParallelRequestBuilder<?> parallelRequest(Number160 locationKey) {
+        return new ParallelRequestBuilder<>(this, locationKey);
     }
 
     public BroadcastBuilder broadcast(Number160 messageKey) {

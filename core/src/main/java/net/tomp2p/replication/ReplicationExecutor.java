@@ -18,7 +18,6 @@ package net.tomp2p.replication;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -29,13 +28,12 @@ import java.util.TimerTask;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
@@ -100,7 +98,9 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         LOG.debug("Other peer {} is responsible for {}. I'm {}", other, locationKey, storageRPC.peerBean()
                 .serverPeerAddress());
         if (!delayed) {
-            final Map<Number480, Data> dataMap = storage.subMap(locationKey);
+            Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            final Map<Number640, Data> dataMap = storage.subMap(min, max);
             sendDirect(other, locationKey, dataMap);
             LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
                     locationKey);
@@ -143,30 +143,13 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      *            The location key.
      */
     private void synchronizeData(final Number160 locationKey) {
-        final Map<Number480, Data> dataMap = storage.subMap(locationKey);
-        Number160 domainKeyOld = null;
-        Map<Number160, Data> dataMapConverted = new HashMap<Number160, Data>();
-        for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
-            final Number160 domainKey = entry.getKey().getDomainKey();
-            final Number160 contentKey = entry.getKey().getContentKey();
-            final Data data = entry.getValue();
-            LOG.debug("[storage refresh] I ({}) restore {}", storageRPC.peerBean().serverPeerAddress(),
-                    locationKey);
-            if (domainKeyOld == null || domainKeyOld.equals(domainKey)) {
-                dataMapConverted.put(contentKey, data);
-            } else {
-                final Map<Number160, Data> dataMapConverted1 = new HashMap<Number160, Data>(dataMapConverted);
-                FuturePut futurePut = send(locationKey, domainKey, dataMapConverted1);
-                peer.notifyAutomaticFutures(futurePut);
-                dataMapConverted.clear();
-                dataMapConverted.put(contentKey, data);
-            }
-            domainKeyOld = domainKey;
-        }
-        if (!dataMapConverted.isEmpty() && domainKeyOld != null) {
-            FuturePut futurePut = send(locationKey, domainKeyOld, dataMapConverted);
-            peer.notifyAutomaticFutures(futurePut);
-        }
+        Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+        Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
+                Number160.MAX_VALUE);
+        final Map<Number640, Data> dataMap = storage.subMap(min, max);
+        List<PeerAddress> closePeers = send(locationKey, dataMap);
+        LOG.debug("[storage refresh] I ({}) restore {} to {}", storageRPC.peerBean().serverPeerAddress(),
+                locationKey, closePeers);
     }
 
     /**
@@ -180,8 +163,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      *            The data to store
      * @return The future of the put
      */
-    protected FuturePut send(final Number160 locationKey, final Number160 domainKey,
-            final Map<Number160, Data> dataMapConverted) {
+    protected List<PeerAddress> send(final Number160 locationKey, final Map<Number640, Data> dataMapConverted) {
         int replicationFactor = replicationStorage.getReplicationFactor() - 1;
         List<PeerAddress> closePeers = new ArrayList<PeerAddress>();
         SortedSet<PeerAddress> sortedSet = peer.getPeerBean().peerMap()
@@ -190,18 +172,16 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         for (PeerAddress peerAddress : sortedSet) {
             count++;
             closePeers.add(peerAddress);
-            for (Map.Entry<Number160, Data> entry : dataMapConverted.entrySet()) {
-                Number160 contentKey = entry.getKey();
-                Number480 key = new Number480(locationKey, domainKey, contentKey);
-                FutureDone<SynchronizationStatistics> future = peer.synchronize(peerAddress).key(key).start();
+            for (Map.Entry<Number640, Data> entry : dataMapConverted.entrySet()) {
+                FutureDone<SynchronizationStatistics> future = peer.synchronize(peerAddress)
+                        .key(entry.getKey()).start();
                 peer.notifyAutomaticFutures(future);
             }
             if (count == replicationFactor) {
                 break;
             }
         }
-
-        return null;
+        return closePeers;
     }
 
     /**
@@ -217,7 +197,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      *            The data to store
      */
     protected void sendDirect(final PeerAddress other, final Number160 locationKey,
-            final Map<Number480, Data> dataMap) {
+            final Map<Number640, Data> dataMap) {
         FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 1);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override

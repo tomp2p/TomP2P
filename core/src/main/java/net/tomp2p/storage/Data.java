@@ -523,7 +523,8 @@ public class Data implements Serializable {
         if (remaining == 0) {
             return true;
         }
-
+        //make sure it gets not garbage collected
+        buf.retain();
         final int transfered = buffer.transferFrom(buf, remaining);
         return transfered == remaining;
     }
@@ -571,5 +572,9 @@ public class Data implements Serializable {
         byte[] me = new byte[buf.readableBytes()];
         buf.readBytes(me);
         return me;
+    }
+
+    public DataBuffer dataBuffer() {
+        return buffer;
     }
 }

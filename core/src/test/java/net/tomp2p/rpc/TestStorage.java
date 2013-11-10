@@ -33,6 +33,7 @@ import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.replication.Replication;
@@ -187,6 +188,7 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
+            putBuilder.setVersionKey(Number160.ZERO);
             putBuilder.setDataMapContent(tmp);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
@@ -196,9 +198,11 @@ public class TestStorage {
 
             Number320 key = new Number320(new Number160(33), Number160.createHash("test"));
             // Set<Number480> tofetch = new HashSet<Number480>();
-            Data c = storeRecv.get(key.getLocationKey(), key.getDomainKey(), new Number160(77));
+            Number640 key1 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
+            Data c = storeRecv.get(key1);
+            
             Assert.assertEquals(test, c);
-
+            //Thread.sleep(10000000);
             //
             tmp.clear();
             me1 = new byte[] { 5, 6, 7 };
@@ -212,11 +216,11 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             System.err.println(fr.getFailedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            Map<Number480, Data> result2 = storeRecv.subMap(key.getLocationKey(), key.getDomainKey(),
-                    Number160.ZERO, Number160.MAX_VALUE);
+            Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey());
             Assert.assertEquals(result2.size(), 2);
-            Number480 search = new Number480(key, new Number160(88));
-            c = result2.get(search);
+            //Number480 search = new Number480(key, new Number160(88));
+            Number640 key2 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(88), Number160.ZERO);
+            c = result2.get(key2);
             Assert.assertEquals(c, test2);
 
         } finally {

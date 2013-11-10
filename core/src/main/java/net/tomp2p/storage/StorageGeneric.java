@@ -126,7 +126,7 @@ public abstract class StorageGeneric implements Storage {
         boolean retVal = false;
         Lock lock = dataLock640.lock(key);
         try {
-            if (!securityDomainCheck(key.getLocationKey(), key.getDomainKey(), publicKey, domainProtection)) {
+            if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, domainProtection)) {
                 return PutStatus.FAILED;
             }
             boolean contains = contains(key);
@@ -295,13 +295,13 @@ public abstract class StorageGeneric implements Storage {
         removeResponsibility(locationKey);
     }
 
-    private boolean canClaimDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey) {
-        boolean domainProtectedByOthers = isDomainProtectedByOthers(locationKey, domainKey, publicKey);
-        boolean domainOverridableByMe = foreceOverrideDomain(domainKey, publicKey);
+    private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
+        boolean domainProtectedByOthers = isDomainProtectedByOthers(key, publicKey);
+        boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
         return !domainProtectedByOthers || domainOverridableByMe;
     }
 
-    private boolean canProtectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey) {
+    private boolean canProtectDomain(Number160 domainKey, PublicKey publicKey) {
         if (isDomainRemoved(domainKey)) {
             return false;
         }
@@ -314,18 +314,18 @@ public abstract class StorageGeneric implements Storage {
         return false;
     }
 
-    private boolean securityDomainCheck(Number160 locationKey, Number160 domainKey, PublicKey publicKey,
+    private boolean securityDomainCheck(Number320 key, PublicKey publicKey,
             boolean domainProtection) {
-        boolean domainProtectedByOthers = isDomainProtectedByOthers(locationKey, domainKey, publicKey);
+        boolean domainProtectedByOthers = isDomainProtectedByOthers(key, publicKey);
         // I dont want to claim the domain
         if (!domainProtection) {
             // returns true if the domain is not protceted by others, otherwise
             // false if the domain is protected
             return !domainProtectedByOthers;
         } else {
-            if (canClaimDomain(locationKey, domainKey, publicKey)) {
-                if (canProtectDomain(locationKey, domainKey, publicKey)) {
-                    return protectDomain(locationKey, domainKey, publicKey);
+            if (canClaimDomain(key, publicKey)) {
+                if (canProtectDomain(key.getDomainKey(), publicKey)) {
+                    return protectDomain(key, publicKey);
                 } else {
                     return true;
                 }

@@ -48,6 +48,7 @@ public class StorageMemory extends StorageGeneric {
     // Core
     @Override
     public boolean put(Number640 key, Data value) {
+        System.err.println("gut data " + value);
         dataMap.put(key, value);
         return true;
     }

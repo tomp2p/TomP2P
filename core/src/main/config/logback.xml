@@ -52,7 +52,7 @@
   <!--  <logger name="net.tomp2p.rpc.TrackerRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.NeighborRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.PeerExchangeRPC" level="TRACE"/> -->
-  <logger name="net.tomp2p.rpc.SynchronizationRPC" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.rpc.SynchronizationRPC" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.rpc.StorageRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.HandshakeRPC" level="TRACE"/> -->

@@ -116,7 +116,7 @@ public class TomP2PDecoder {
                     LOG.debug("wrong signature!");
                 }
             }
-            // see https://github.com/netty/netty/issues/1976 (TODO: enable again)
+            // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
             // buf.discardSomeReadBytes();
 
         } catch (Exception e) {

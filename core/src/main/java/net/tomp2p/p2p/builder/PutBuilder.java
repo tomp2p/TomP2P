@@ -154,6 +154,15 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
         }
+        if (locationKey == null) {
+            throw new IllegalArgumentException("You must provide a location key.");
+        }
+        if (domainKey == null) {
+            domainKey = Number160.ZERO;
+        }
+        if (versionKey == null) {
+            versionKey = Number160.ZERO;
+        }
 
         return peer.getDistributedHashMap().put(this);
     }

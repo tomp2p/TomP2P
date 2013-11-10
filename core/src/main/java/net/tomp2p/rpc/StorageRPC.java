@@ -526,9 +526,8 @@ public class StorageRPC extends DispatchHandler {
 
     private PutStatus doPut(final boolean putIfAbsent, final boolean protectDomain,
             final PublicKey publicKey, final Number640 key, final Data value) {
-        LOG.debug("put data with key {} on {}", key, peerBean().serverPeerAddress());
+        LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
         return peerBean().storage().put(key, value, publicKey, putIfAbsent, protectDomain);
-
     }
 
     private static PutStatus doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,

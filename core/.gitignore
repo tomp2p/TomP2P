@@ -8,3 +8,4 @@ bin
 .idea
 *.iml
 *~
+p2p.log

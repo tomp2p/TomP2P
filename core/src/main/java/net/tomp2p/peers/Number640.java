@@ -175,4 +175,24 @@ public final class Number640 extends Number implements Comparable<Number640> {
                 + (contentKey.doubleValue() * Math.pow(2, Number160.BITS * 1))
                 + versionKey.doubleValue();
     }
+    
+    public Number640 minVersionKey() {
+        return new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
+    }
+    
+    public Number640 minContentKey() {
+        return new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+    }
+    
+    public Number640 maxVersionKey() {
+        return new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE);
+    }
+    
+    public Number640 maxContentKey() {
+        return new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+    }
+    
+    public Number320 locationAndDomainKey() {
+        return new Number320(locationKey, domainKey);
+    }
 }

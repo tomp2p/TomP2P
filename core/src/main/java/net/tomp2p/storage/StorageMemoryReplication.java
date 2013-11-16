@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.peers.Number160;
 
@@ -52,11 +51,11 @@ public class StorageMemoryReplication implements ReplicationStorage {
         if (contentIDs == null) {
             return Collections.<Number160> emptyList();
         } else {
-            Lock lock = responsibilityLock.lock(peerID);
+            KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerID);
             try {
                 return new ArrayList<Number160>(contentIDs);
             } finally {
-                responsibilityLock.unlock(peerID, lock);
+                responsibilityLock.unlock(lock);
             }
         }
     }
@@ -68,22 +67,22 @@ public class StorageMemoryReplication implements ReplicationStorage {
         boolean isNew = true;
         Number160 oldPeerId = responsibilityMap.put(locationKey, peerId);
         // add to the reverse map
-        Lock lock1 = responsibilityLock.lock(peerId);
+        KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
         try {
             Set<Number160> contentIDs = putIfAbsent1(peerId, new HashSet<Number160>());
             contentIDs.add(locationKey);
         } finally {
-            responsibilityLock.unlock(peerId, lock1);
+            responsibilityLock.unlock(lock1);
         }
         if (oldPeerId != null) {
             isNew = !oldPeerId.equals(peerId);
             if (isNew) {
-                Lock lock2 = responsibilityLock.lock(oldPeerId);
+                KeyLock<Number160>.RefCounterLock lock2 = responsibilityLock.lock(oldPeerId);
                 try {
                     // clean up reverse map
                     removeRevResponsibility(oldPeerId, locationKey);
                 } finally {
-                    responsibilityLock.unlock(oldPeerId, lock2);
+                    responsibilityLock.unlock(lock2);
                 }
             }
         }
@@ -101,11 +100,11 @@ public class StorageMemoryReplication implements ReplicationStorage {
         if (peerId == null) {
             return;
         }
-        Lock lock = responsibilityLock.lock(peerId);
+        KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerId);
         try {
             removeRevResponsibility(peerId, locationKey);
         } finally {
-            responsibilityLock.unlock(peerId, lock);
+            responsibilityLock.unlock(lock);
         }
     }
 

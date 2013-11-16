@@ -31,8 +31,10 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.rpc.DigestInfo;
+import net.tomp2p.rpc.SimpleBloomFilter;
 
-public class StorageMemory extends StorageGeneric {
+public class StorageMemory implements Storage {
 
     // Core
     final private NavigableMap<Number640, Data> dataMap = new ConcurrentSkipListMap<Number640, Data>();
@@ -86,6 +88,10 @@ public class StorageMemory extends StorageGeneric {
     public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey) {
         NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
         return new TreeMap<Number640, Data>(tmp);
+    }
+    
+    NavigableMap<Number640, Data> subMap0(Number640 fromKey, Number640 toKey) {
+        return dataMap.subMap(fromKey, true, toKey, true);
     }
 
     @Override
@@ -184,4 +190,19 @@ public class StorageMemory extends StorageGeneric {
         timeoutMap.clear();
         timeoutMapRev.clear();
     }
+
+    @Override
+    public DigestInfo digest(Number640 from, Number640 to) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public DigestInfo digest(Number320 key, SimpleBloomFilter<Number160> keyBloomFilter,
+            SimpleBloomFilter<Number160> contentBloomFilter) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    
 }

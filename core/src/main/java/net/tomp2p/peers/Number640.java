@@ -195,4 +195,8 @@ public final class Number640 extends Number implements Comparable<Number640> {
     public Number320 locationAndDomainKey() {
         return new Number320(locationKey, domainKey);
     }
+    
+    public Number480 locationDomainAndContentKey() {
+        return new Number480(locationKey, domainKey, contentKey);
+    }
 }

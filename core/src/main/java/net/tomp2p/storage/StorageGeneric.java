@@ -19,7 +19,9 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.locks.Lock;
@@ -30,10 +32,11 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.KeyLock.RefCounterLock;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
-public abstract class StorageGeneric implements Storage {
+public class StorageGeneric {
     public enum ProtectionEnable {
         ALL, NONE
     };
@@ -72,6 +75,12 @@ public abstract class StorageGeneric implements Storage {
     final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
     
     final private KeyLock<Number640> dataLock640 = new KeyLock<Number640>();
+    
+    final private Storage backend;
+    
+    public StorageGeneric(Storage backend) {
+        this.backend = backend;
+    }
 
     public void setProtection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
             ProtectionEnable protectionEntryEnable, ProtectionMode protectionEntryMode) {
@@ -124,12 +133,12 @@ public abstract class StorageGeneric implements Storage {
     public PutStatus put(final Number640 key, Data newData,
             PublicKey publicKey, boolean putIfAbsent, boolean domainProtection) {
         boolean retVal = false;
-        Lock lock = dataLock640.lock(key);
+        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
             if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, domainProtection)) {
                 return PutStatus.FAILED;
             }
-            boolean contains = contains(key);
+            boolean contains = backend.contains(key);
             if (putIfAbsent && contains) {
                 return PutStatus.FAILED_NOT_ABSENT;
             }
@@ -140,23 +149,23 @@ public abstract class StorageGeneric implements Storage {
                     return PutStatus.FAILED_SECURITY;
                 }
             }
-            retVal = put(key, newData);
+            retVal = backend.put(key, newData);
             if (retVal) {
                 long expiration = newData.expirationMillis();
                 // handle timeout
-                addTimeout(key, expiration);
+                backend.addTimeout(key, expiration);
             }
         } finally {
-            dataLock640.unlock(key, lock);
+            dataLock640.unlock(lock);
         }
         return retVal ? PutStatus.OK : PutStatus.FAILED;
     }
 
     public Data remove(Number640 key, PublicKey publicKey) {
         //Number480 lockKey = new Number480(locationKey, domainKey, contentKey);
-        Lock lock = dataLock640.lock(key);
+        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
-            if (!canClaimDomain(key.getLocationKey(), key.getDomainKey(), publicKey)) {
+            if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
                 return null;
             }
             Data data = get(key);
@@ -164,57 +173,114 @@ public abstract class StorageGeneric implements Storage {
                 return null;
             }
             if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
-                removeTimeout(key);
-                removeContentResponsibility(key.getLocationKey());
-                return remove(key);
+                backend.removeTimeout(key);
+                backend.removeResponsibility(key.getLocationKey());
+                return backend.remove(key);
             }
         } finally {
-            dataLock640.unlock(key, lock);
+            dataLock640.unlock(lock);
         }
         return null;
     }
+    
+    public Data get(Number640 key) {
+        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+        try {
+            return backend.get(key);
+        } finally {
+            dataLock640.unlock(lock);
+        }
+        
+    }
+    
+    public SortedMap<Number640, Data> get(Number640 from, Number640 to) {
+        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+        try {
+            return backend.subMap(from, to);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    public Map<Number640, Data> get(Number640 from, Number640 to,
+            SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter) {
+        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+        try {
+            NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+            Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+            while(iterator.hasNext()) {
+                Map.Entry<Number640, Data> entry = iterator.next();
+                if(keyBloomFilter != null && !keyBloomFilter.contains(entry.getKey().getContentKey())) {
+                    iterator.remove();
+                    continue;
+                }
+                if(contentBloomFilter != null && !contentBloomFilter.contains(entry.getValue().hash())) {
+                    iterator.remove();
+                }
+            }
+            return tmp;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private KeyLock<?>.RefCounterLock findAndLock(Number640 from, Number640 to) {
+        if(!from.getLocationKey().equals(to.getLocationKey())) {
+            //everything is different, return a 640 lock
+            KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
+            return lock;
+        } else if(!from.getDomainKey().equals(to.getDomainKey())) {
+            //location key is the same, rest is different
+            KeyLock<Number160>.RefCounterLock lock = dataLock160.lock(from.getLocationKey());
+            return lock;
+        } else if(!from.getContentKey().equals(to.getContentKey())) {
+            //location and domain key are same, rest is different
+            KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(from.locationAndDomainKey());
+            return lock;
+        } else if(!from.getVersionKey().equals(to.getVersionKey())) {
+            //location, domain, and content key are the same, rest is different
+            KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationDomainAndContentKey());
+            return lock;
+        } else {
+            KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(from);
+            return lock;
+        }
+    }
 
     public SortedMap<Number640, Data> remove(Number640 from, Number640 to, PublicKey publicKey) {
-        Number320 lockKey = new Number320(locationKey, domainKey);
-        Lock lock = dataLock320.lock(lockKey);
+        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
-            if (!canClaimDomain(locationKey, domainKey, publicKey)) {
-                return null;
+            Map<Number640, Data> tmp = backend.subMap(from, to);
+            Collection<Number320> locationAndDomains = new HashSet<Number320>();
+            for (Number640 key : tmp.keySet()) {
+                locationAndDomains.add(key.locationAndDomainKey());
             }
-            SortedMap<Number480, Data> tmp = subMap(locationKey, domainKey, fromContentKey, toContentKey);
-            Collection<Number480> keys = new ArrayList<Number480>(tmp.keySet());
-            SortedMap<Number480, Data> result = new TreeMap<Number480, Data>();
-            for (Number480 key : keys) {
-                Data data = get(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
+            for(Number320 locationAndDomain:locationAndDomains) {
+                //fail fast, as soon as we want to remove 1 domain that we cannot, abort
+                if (!canClaimDomain(locationAndDomain, publicKey)) {
+                    return null;
+                }
+            }
+            SortedMap<Number640, Data> result = backend.remove(from, to);
+            for (Map.Entry<Number640, Data> entry : result.entrySet()) {
+                Data data = entry.getValue();
                 if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
-                    removeTimeout(key.getLocationKey(), key.getDomainKey(), key.getContentKey());
-                    removeContentResponsibility(key.getLocationKey());
-                    result.put(key, remove(key.getLocationKey(), key.getDomainKey(), key.getContentKey()));
+                    backend.removeTimeout(entry.getKey());
+                    backend.removeResponsibility((entry.getKey().getLocationKey()));
                 }
             }
             return result;
         } finally {
-            dataLock320.unlock(lockKey, lock);
-        }
-    }
-
-    public SortedMap<Number640, Data> get(Number160 locationKey, Number160 domainKey, Number160 fromContentKey,
-            Number160 toContentKey) {
-        Number320 lockKey = new Number320(locationKey, domainKey);
-        Lock lock = dataLock320.lock(lockKey);
-        try {
-            return subMap(locationKey, domainKey, fromContentKey, toContentKey);
-        } finally {
-            dataLock320.unlock(lockKey, lock);
+            lock.unlock();
         }
     }
 
     public void checkTimeout() {
         long time = Timings.currentTimeMillis();
-        Collection<Number640> toRemove = subMapTimeout(time);
+        Collection<Number640> toRemove = backend.subMapTimeout(time);
         if (toRemove.size() > 0) {
             for (Number640 key : toRemove) {
-                remove(key);
+                backend.remove(key);
             }
         }
     }
@@ -291,12 +357,8 @@ public abstract class StorageGeneric implements Storage {
         return digestInfo;
     }
 
-    private void removeContentResponsibility(Number160 locationKey) {
-        removeResponsibility(locationKey);
-    }
-
     private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
-        boolean domainProtectedByOthers = isDomainProtectedByOthers(key, publicKey);
+        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
         boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
         return !domainProtectedByOthers || domainOverridableByMe;
     }
@@ -316,7 +378,7 @@ public abstract class StorageGeneric implements Storage {
 
     private boolean securityDomainCheck(Number320 key, PublicKey publicKey,
             boolean domainProtection) {
-        boolean domainProtectedByOthers = isDomainProtectedByOthers(key, publicKey);
+        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
         // I dont want to claim the domain
         if (!domainProtection) {
             // returns true if the domain is not protceted by others, otherwise
@@ -325,7 +387,7 @@ public abstract class StorageGeneric implements Storage {
         } else {
             if (canClaimDomain(key, publicKey)) {
                 if (canProtectDomain(key.getDomainKey(), publicKey)) {
-                    return protectDomain(key, publicKey);
+                    return backend.protectDomain(key, publicKey);
                 } else {
                     return true;
                 }
@@ -394,5 +456,9 @@ public abstract class StorageGeneric implements Storage {
 
     public KeyLock<Number480> getLockNumber480() {
         return dataLock480;
+    }
+
+    public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
+        return backend.findContentForResponsiblePeerID(peerID);
     }
 }

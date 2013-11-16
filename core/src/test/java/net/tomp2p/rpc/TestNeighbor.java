@@ -18,7 +18,6 @@ package net.tomp2p.rpc;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Collection;
 
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.DefaultConnectionConfiguration;
@@ -29,6 +28,7 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 import net.tomp2p.storage.Data;
@@ -148,8 +148,8 @@ public class TestNeighbor {
 
             SimpleBloomFilter<Number160> bf = new SimpleBloomFilter<Number160>(20, 10);
             for (int i = 0; i < 10; i++) {
-                sender.getPeerBean().storage()
-                        .put(new Number160(0x1), Number160.ZERO, Number160.createHash(i), new Data("test"));
+                Number640 key = new Number640(new Number160(0x1), Number160.ZERO, Number160.createHash(i), Number160.ZERO);
+                sender.getPeerBean().storage().put(key, new Data("test"));
                 bf.add(Number160.createHash(i));
             }
 

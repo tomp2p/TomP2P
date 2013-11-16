@@ -97,7 +97,7 @@ public class PeerMaker {
 
     private PeerStatusListener[] peerStatusListeners = null;
 
-    private StorageGeneric storage = null;
+    private StorageMemory storage = null;
 
     private TrackerStorage trackerStorage = null;
     
@@ -251,7 +251,7 @@ public class PeerMaker {
         PeerBean peerBean = peerCreator.peerBean();
         peerBean.peerMap(peerMap);
         peerBean.keyPair(keyPair);
-        peerBean.storage(storage);
+        peerBean.storage(new StorageGeneric(storage));
 
         if (trackerStorage == null) {
             trackerStorage = new TrackerStorage(new IdentityManagement(peerBean.serverPeerAddress()), 300,
@@ -270,7 +270,7 @@ public class PeerMaker {
 
         ConnectionBean connectionBean = peerCreator.connectionBean();
         // peerBean.setStorage(getStorage());
-        Replication replicationStorage = new Replication(peerBean.storage(), peerBean.serverPeerAddress(), peerMap, 5);
+        Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5);
         peerBean.replicationStorage(replicationStorage);
 
         // TrackerStorage storageTracker = new TrackerStorage(identityManagement,

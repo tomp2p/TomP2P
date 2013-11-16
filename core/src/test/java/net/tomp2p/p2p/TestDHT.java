@@ -3,62 +3,47 @@ package net.tomp2p.p2p;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureRemove;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureShutdown;
-import net.tomp2p.futures.FutureSuccessEvaluatorOperation;
 import net.tomp2p.message.Buffer;
-import net.tomp2p.p2p.builder.DHTBuilder;
-import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
-import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.HashData;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1290,7 +1275,8 @@ public class TestDHT {
         final Number160 locationKey = Number160.createHash(location);
         final Number160 domainKey = Number160.createHash(domain);
         final Number160 contentKey = Number160.createHash(content);
-        peer.getPeerBean().storage().put(locationKey, domainKey, contentKey, data, null, false, false);
+        final Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
+        peer.getPeerBean().storage().put(key, data, null, false, false);
     }
 
     private void send2(final Peer p1, final Peer p2, final ByteBuf toStore1, final int count)
@@ -1333,8 +1319,9 @@ public class TestDHT {
     private void testForArray(Peer peer, Number160 locationKey, boolean find) {
         Collection<Number160> tmp = new ArrayList<Number160>();
         tmp.add(new Number160(5));
-        Map<Number480, Data> test = peer.getPeerBean().storage()
-                .subMap(locationKey, Number160.createHash("test"), Number160.ZERO, Number160.MAX_VALUE);
+        Number640 min = new Number640(locationKey, Number160.createHash("test"), Number160.ZERO, Number160.ZERO);
+        Number640 max = new Number640(locationKey, Number160.createHash("test"), Number160.MAX_VALUE, Number160.MAX_VALUE);
+        Map<Number640, Data> test = peer.getPeerBean().storage().subMap(min,max);
         if (find) {
             Assert.assertEquals(1, test.size());
             Assert.assertEquals(

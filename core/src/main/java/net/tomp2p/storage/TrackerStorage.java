@@ -28,6 +28,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Maintenance;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.replication.Replication;
@@ -99,8 +100,8 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         ACTIVE, MESH
     };
 
-    public TrackerStorage(IdentityManagement identityManagement, int trackerTimoutSeconds, Replication replication,
-            Maintenance maintenance) {
+    public TrackerStorage(IdentityManagement identityManagement, int trackerTimoutSeconds,
+            Replication replication, Maintenance maintenance) {
         this.trackerTimoutSeconds = trackerTimoutSeconds;
         this.identityManagement = identityManagement;
         this.replication = replication;
@@ -283,7 +284,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         }
 
         Collection<Number320> collection = reverseTrackerData.get(peerId);
-        if(collection == null) {
+        if (collection == null) {
             collection = new HashSet<Number320>();
         }
         synchronized (collection) {
@@ -403,13 +404,8 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         }
     }
 
-    @Override
-    public DigestInfo digest(Number160 locationKey, Number160 domainKey,
-            SimpleBloomFilter<Number160> bloomFilter1, SimpleBloomFilter<Number160> bloomFilter2) {
-        throw new UnsupportedOperationException("Bloom filters and trackers are not supported");
-    }
-
-   // @Override
+    // TODO: merge with digest
+    // @Override
     public DigestInfo digest(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
         if (contentKey == null) {
             return digest(locationKey, domainKey);
@@ -420,9 +416,9 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         }
         int counter = 0;
         synchronized (data) {
-                if (data.containsKey(contentKey)) {
-                    counter++;
-                }
+            if (data.containsKey(contentKey)) {
+                counter++;
+            }
         }
         return new DigestInfo(counter);
     }
@@ -491,5 +487,16 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
     @Override
     public void removeResponsibility(Number160 locationKey) {
         storageMemoryReplication.removeResponsibility(locationKey);
+    }
+
+    @Override
+    public DigestInfo digest(Number640 from, Number640 to) {
+        throw new UnsupportedOperationException("Bloom filters and trackers are not supported");
+    }
+
+    @Override
+    public DigestInfo digest(Number320 key, SimpleBloomFilter<Number160> keyBloomFilter,
+            SimpleBloomFilter<Number160> contentBloomFilter) {
+        throw new UnsupportedOperationException("Bloom filters and trackers are not supported");
     }
 }

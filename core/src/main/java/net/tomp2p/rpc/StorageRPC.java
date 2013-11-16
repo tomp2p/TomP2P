@@ -21,10 +21,7 @@ import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Random;
-import java.util.SortedMap;
-import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.ConnectionBean;
@@ -42,7 +39,6 @@ import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -549,9 +545,10 @@ public class StorageRPC extends DispatchHandler {
     }
 
     private Message handleGet(final Message message, final Message responseMessage, final boolean range,
-            final boolean digest) {
+            final boolean digest) {   
         final Number160 locationKey = message.getKey(0);
         final Number160 domainKey = message.getKey(1);
+        LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
         final KeyCollection contentKeys = message.getKeyCollection(0);
         final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
         final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
@@ -585,8 +582,8 @@ public class StorageRPC extends DispatchHandler {
         } else {
             final Map<Number640, Data> result;
             if (contentKeys != null) {
-                result = new HashMap<Number640, Data>();
                 if (!range || contentKeys.size() != 2) {
+                    result = new HashMap<Number640, Data>();
                     for (Number640 key : contentKeys.keys()) {
                         Data data = peerBean().storage().get(key);
                         if (data != null) {
@@ -598,41 +595,18 @@ public class StorageRPC extends DispatchHandler {
                     Iterator<Number640> iterator = contentKeys.keys().iterator();
                     Number640 min = iterator.next();
                     Number640 max = iterator.next();
-                    NavigableMap<Number640, Data> map = peerBean().storage().subMap(min, max);
-                    // TODO: lockey may not be correct anymore, figure out which key to take!
-                    Number320 lockKey = new Number320(locationKey, domainKey);
-                    Lock lock = peerBean().storage().getLockNumber320().lock(lockKey);
-                    try {
-                        result.putAll(map);
-                    } finally {
-                        peerBean().storage().getLockNumber320().unlock(lockKey, lock);
-                    }
+                    result = peerBean().storage().get(min, max);
                 }
             } else if (keyBloomFilter != null || contentBloomFilter != null) {
-                result = new HashMap<Number640, Data>();
                 Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
                 Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
                         Number160.MAX_VALUE);
-                SortedMap<Number640, Data> tmp = peerBean().storage().subMap(min, max);
-                Number320 lockKey = new Number320(locationKey, domainKey);
-                Lock lock = peerBean().storage().getLockNumber320().lock(lockKey);
-                try {
-                    for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                        if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
-                            if (contentBloomFilter == null
-                                    || contentBloomFilter.contains(entry.getValue().hash())) {
-                                result.put(entry.getKey(), entry.getValue());
-                            }
-                        }
-                    }
-                } finally {
-                    peerBean().storage().getLockNumber320().unlock(lockKey, lock);
-                }
+                result = peerBean().storage().get(min, max, keyBloomFilter, contentBloomFilter);
             } else {
                 Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
                 Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
                         Number160.MAX_VALUE);
-                result = peerBean().storage().subMap(min, max);
+                result = peerBean().storage().get(min, max);
             }
             responseMessage.setDataMap(new DataMap(result));
             return responseMessage;

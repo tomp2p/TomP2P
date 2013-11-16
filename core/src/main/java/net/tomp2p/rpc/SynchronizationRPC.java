@@ -18,6 +18,7 @@ package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -211,14 +212,15 @@ public class SynchronizationRPC extends DispatchHandler {
         LOG.debug("Sync received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
-        DataMap dataMap = message.getDataMap(0);
+        final DataMap dataMap = message.getDataMap(0);
+        final PublicKey publicKey = message.getPublicKey();
 
         List<Number640> retVal = new ArrayList<Number640>(dataMap.size());
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
 
             if (entry.getValue().isFlag2()) {
-                peerBean().storage().remove(entry.getKey());
+                peerBean().storage().remove(entry.getKey(), publicKey);
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff
@@ -233,17 +235,17 @@ public class SynchronizationRPC extends DispatchHandler {
                     }
                     byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),
                             instructions, Synchronization.SIZE);
-                    boolean put = peerBean().storage().put(entry.getKey(),
-                            new Data(reconstructedValue));
-                    if (put) {
+                    //TODO: domain protection?, make the flags configurable
+                    PutStatus status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
 
                 } else {
                     // copy
-                    // TODO: domain protection?
+                    //TODO: domain protection?, make the flags configurable
                     PutStatus status = peerBean().storage().put(entry.getKey(), entry.getValue(),
-                            message.getPublicKey(), true, false);
+                            message.getPublicKey(), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }

@@ -19,11 +19,10 @@ import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
-import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
@@ -240,13 +239,13 @@ public class SynchronizationTest {
         final Peer receiver = new PeerMaker(new Number160(2)).ports(4002).makeAndListen();
 
         final Number160 locationKey = new Number160(100);
-        final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+        final Number160 domainKey = Number160.ZERO;
         final Number160 contentKey = Number160.ZERO;
         final String value = "Test";
 
-        HashMap<Number480, Data> map = new HashMap<Number480, Data>();
+        HashMap<Number640, Data> map = new HashMap<Number640, Data>();
         final DataMap dataMap = new DataMap(map);
-        map.put(new Number480(locationKey, domainKey, contentKey), new Data("Test"));
+        map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
         sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
         receiver.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
@@ -290,13 +289,13 @@ public class SynchronizationTest {
         final Peer receiver = new PeerMaker(new Number160(4)).ports(4004).makeAndListen();
 
         final Number160 locationKey = new Number160(200);
-        final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+        final Number160 domainKey = Number160.ZERO;
         final Number160 contentKey = Number160.ZERO;
         final String value = "Test";
 
-        HashMap<Number480, Data> map = new HashMap<Number480, Data>();
+        HashMap<Number640, Data> map = new HashMap<Number640, Data>();
         final DataMap dataMap = new DataMap(map);
-        map.put(new Number480(locationKey, domainKey, contentKey), new Data("Test"));
+        map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
         sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
 
@@ -337,7 +336,7 @@ public class SynchronizationTest {
         final Peer receiver = new PeerMaker(new Number160(6)).ports(4006).makeAndListen();
 
         final Number160 locationKey = new Number160(300);
-        final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+        final Number160 domainKey = Number160.ZERO;
         final Number160 contentKey = Number160.ZERO;
 
         final String value = "Test";
@@ -346,9 +345,9 @@ public class SynchronizationTest {
         sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
         receiver.put(locationKey).setData(new Data(value1)).start().awaitUninterruptibly();
 
-        HashMap<Number480, Data> map = new HashMap<Number480, Data>();
+        HashMap<Number640, Data> map = new HashMap<Number640, Data>();
         final DataMap dataMap = new DataMap(map);
-        map.put(new Number480(locationKey, domainKey, contentKey), new Data("Test"));
+        map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
         sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
 
@@ -387,9 +386,9 @@ public class SynchronizationTest {
             receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
 
             final Number160 locationKey = new Number160(500);
-            final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+            final Number160 domainKey = Number160.ZERO;
             final Number160 contentKey = Number160.ZERO;
-            Number480 key = new Number480(locationKey, domainKey, contentKey);
+            Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
             final String newValue = "Test1Test2Test3Test4";
             final String oldValue = "test0Test2test0Test4";
 
@@ -404,7 +403,7 @@ public class SynchronizationTest {
             future.awaitUninterruptibly();
 
             System.err.println(future.getObject().toString());
-            Data data = receiver.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            Data data = receiver.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] reconstructedValue = data.toBytes();
 
             assertArrayEquals(newValue.getBytes(), reconstructedValue);
@@ -427,9 +426,9 @@ public class SynchronizationTest {
             receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
 
             final Number160 locationKey = new Number160(500);
-            final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+            final Number160 domainKey = Number160.ZERO;
             final Number160 contentKey = Number160.ZERO;
-            Number480 key = new Number480(locationKey, domainKey, contentKey);
+            Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
             final String newValue = "Test1Test2Test3Test4";
             final String oldValue = "Test1Test2Test3Test4";
 
@@ -444,7 +443,7 @@ public class SynchronizationTest {
             future.awaitUninterruptibly();
 
             System.err.println(future.getObject().toString());
-            Data data = receiver.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            Data data = receiver.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] reconstructedValue = data.toBytes();
 
             assertArrayEquals(newValue.getBytes(), reconstructedValue);
@@ -467,9 +466,9 @@ public class SynchronizationTest {
             receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
 
             final Number160 locationKey = new Number160(600);
-            final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+            final Number160 domainKey = Number160.ZERO;
             final Number160 contentKey = Number160.ZERO;
-            Number480 key = new Number480(locationKey, domainKey, contentKey);
+            Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
             final String newValue = "Test1Test2Test3Test4";
 
             Data test1 = new Data(newValue.getBytes());
@@ -482,7 +481,7 @@ public class SynchronizationTest {
 
             System.err.println(future.getObject().toString());
 
-            Data data = receiver.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            Data data = receiver.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] reconstructedValue = data.toBytes();
             assertArrayEquals(newValue.getBytes(), reconstructedValue);
         } finally {

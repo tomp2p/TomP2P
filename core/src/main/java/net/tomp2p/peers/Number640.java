@@ -72,6 +72,10 @@ public final class Number640 extends Number implements Comparable<Number640> {
     public Number640(final Number480 key, final Number160 versionKey) {
         this(key.getLocationKey(), key.getDomainKey(), key.getContentKey(), versionKey);
     }
+    
+    public Number640(final Number320 key, final Number160 contentKey, final Number160 versionKey) {
+        this(key.getLocationKey(), key.getDomainKey(), contentKey, versionKey);
+    }
 
     /**
      * Constructor that creates a random 480bit number.

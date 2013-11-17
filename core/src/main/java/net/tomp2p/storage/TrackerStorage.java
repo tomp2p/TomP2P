@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 public class TrackerStorage implements PeerStatusListener, Digest, ReplicationStorage {
     private static final Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
 
-    private static final Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
+   // private static final Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
 
     private static final DigestInfo EMPTY_DIGEST_INFO = new DigestInfo(0);
 

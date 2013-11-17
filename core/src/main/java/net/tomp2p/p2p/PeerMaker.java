@@ -53,7 +53,7 @@ import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
-import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Utils;
@@ -251,7 +251,7 @@ public class PeerMaker {
         PeerBean peerBean = peerCreator.peerBean();
         peerBean.peerMap(peerMap);
         peerBean.keyPair(keyPair);
-        peerBean.storage(new StorageGeneric(storage));
+        peerBean.storage(new StorageLayer(storage));
 
         if (trackerStorage == null) {
             trackerStorage = new TrackerStorage(new IdentityManagement(peerBean.serverPeerAddress()), 300,
@@ -326,10 +326,10 @@ public class PeerMaker {
 
     public ChannelServerConficuration createDefaultChannelServerConfiguration() {
         ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
-        channelServerConfiguration.setBindings(bindings);
-        channelServerConfiguration.setTcpPort(tcpPort);
-        channelServerConfiguration.setUdpPort(udpPort);
-        channelServerConfiguration.setBehindFirewall(behindFirewall);
+        channelServerConfiguration.setBindings(new Bindings());
+        channelServerConfiguration.setTcpPort(Bindings.DEFAULT_PORT);
+        channelServerConfiguration.setUdpPort(Bindings.DEFAULT_PORT);
+        channelServerConfiguration.setBehindFirewall(false);
         channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
         channelServerConfiguration.signatureFactory(new DefaultSignatureFactory());
         return channelServerConfiguration;

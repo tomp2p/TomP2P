@@ -31,8 +31,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.rpc.DigestInfo;
-import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class StorageMemory implements Storage {
 
@@ -50,7 +48,6 @@ public class StorageMemory implements Storage {
     // Core
     @Override
     public boolean put(Number640 key, Data value) {
-        System.err.println("gut data " + value);
         dataMap.put(key, value);
         return true;
     }
@@ -190,19 +187,4 @@ public class StorageMemory implements Storage {
         timeoutMap.clear();
         timeoutMapRev.clear();
     }
-
-    @Override
-    public DigestInfo digest(Number640 from, Number640 to) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public DigestInfo digest(Number320 key, SimpleBloomFilter<Number160> keyBloomFilter,
-            SimpleBloomFilter<Number160> contentBloomFilter) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    
 }

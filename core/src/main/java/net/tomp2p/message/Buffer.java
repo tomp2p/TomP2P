@@ -1,15 +1,14 @@
 package net.tomp2p.message;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+
 import java.io.IOException;
 
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 
 public class Buffer {
     
@@ -65,14 +64,19 @@ public class Buffer {
     public Buffer addComponent(final ByteBuf slice) {
         if (buffer instanceof CompositeByteBuf) {
             CompositeByteBuf cbb = (CompositeByteBuf) buffer;
-            //make a copy for the user, otherwise we may leak a pooled byte buffer
-            cbb.addComponent(Unpooled.copiedBuffer(slice));
+            slice.retain();
+            cbb.addComponent(slice);
             cbb.writerIndex(cbb.writerIndex() + slice.readableBytes());
         } else {
             buffer.writeBytes(slice);
             LOG.debug("buffer copied. You can use a CompositeByteBuf");
         }
         return this;
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        buffer.release();       
     }
 
     @Override

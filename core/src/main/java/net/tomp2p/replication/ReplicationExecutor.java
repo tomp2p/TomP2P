@@ -37,7 +37,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class ReplicationExecutor extends TimerTask implements ResponsibilityListener {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationExecutor.class);
 
-    private final StorageGeneric storage;
+    private final StorageLayer storage;
 
     private final StorageRPC storageRPC;
 

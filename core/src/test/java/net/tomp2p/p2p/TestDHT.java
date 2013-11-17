@@ -1119,9 +1119,9 @@ public class TestDHT {
             // only for the connection, we may run into
             // too many open files
             PeerMaker masterMaker = new PeerMaker(new Number160(rnd)).ports(4001);
-            master = masterMaker.makeAndListen();
+            master = masterMaker.setEnableMaintenance(false).makeAndListen();
             PeerMaker slaveMaker = new PeerMaker(new Number160(rnd)).ports(4002);
-            slave = slaveMaker.makeAndListen();
+            slave = slaveMaker.setEnableMaintenance(false).makeAndListen();
 
             System.err.println("peers up and running");
 
@@ -1138,7 +1138,7 @@ public class TestDHT {
             List<BaseFuture> list1 = new ArrayList<BaseFuture>();
             List<BaseFuture> list2 = new ArrayList<BaseFuture>();
             List<FuturePeerConnection> list3 = new ArrayList<FuturePeerConnection>();
-            for (int i = 0; i < 250; i++) {
+            for (int i = 0; i < 125; i++) {
                 final byte[] b = new byte[10000];
                 FuturePeerConnection pc = master.createPeerConnection(slave.getPeerAddress());
                 list1.add(master.sendDirect(pc).setBuffer(new Buffer(Unpooled.wrappedBuffer(b))).start());
@@ -1212,7 +1212,7 @@ public class TestDHT {
             peers[peerTest].put(Number160.createHash(1000)).setData(new Data("Test")).start().awaitUninterruptibly();
 
             for(int i=0;i<nrPeers;i++) {
-                for(Data d: peers[i].getPeerBean().storage().map().values())
+                for(Data d: peers[i].getPeerBean().storage().get().values())
                     System.out.println("peer["+i+"]: "+d.object().toString()+" ");
             }
 
@@ -1223,7 +1223,7 @@ public class TestDHT {
             peers[peerTest].shutdown().awaitUninterruptibly();
             System.out.println("peer "+peerTest+" is shutdown");
             for(int i=0;i<nrPeers;i++) {
-                for(Data d: peers[i].getPeerBean().storage().map().values())
+                for(Data d: peers[i].getPeerBean().storage().get().values())
                     System.out.println("peer["+i+"]: "+d.object().toString()+" ");
             }
         } finally {
@@ -1321,14 +1321,14 @@ public class TestDHT {
         tmp.add(new Number160(5));
         Number640 min = new Number640(locationKey, Number160.createHash("test"), Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.createHash("test"), Number160.MAX_VALUE, Number160.MAX_VALUE);
-        Map<Number640, Data> test = peer.getPeerBean().storage().subMap(min,max);
+        Map<Number640, Data> test = peer.getPeerBean().storage().get(min,max);
         if (find) {
             Assert.assertEquals(1, test.size());
             Assert.assertEquals(
                     44444,
                     test.get(
-                            new Number480(new Number320(locationKey, Number160.createHash("test")),
-                                    new Number160(5))).length());
+                            new Number640(new Number320(locationKey, Number160.createHash("test")),
+                                    new Number160(5), Number160.ZERO)).length());
         } else
             Assert.assertEquals(0, test.size());
     }

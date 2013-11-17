@@ -87,7 +87,7 @@ public class DataMap {
         return test1 && test2;
     }
 
-    public Map<Number640, Data> convertToMap480() {
+    public Map<Number640, Data> convertToMap640() {
         return convert(this);
     }
 
@@ -100,7 +100,7 @@ public class DataMap {
 
         } else if (dataMapConvert != null) {
             for (Map.Entry<Number160, Data> entry : dataMapConvert.entrySet()) {
-                retVal.put(new Number640(locationKey, domainKey, versionKey, entry.getKey()), entry
+                retVal.put(new Number640(locationKey, domainKey, entry.getKey(), versionKey), entry
                         .getValue().hash());
             }
         }
@@ -112,7 +112,7 @@ public class DataMap {
         if (d.dataMapConvert != null) {
             dataMap3 = new HashMap<Number640, Data>(d.dataMapConvert.size());
             for (Map.Entry<Number160, Data> entry : d.dataMapConvert.entrySet()) {
-                dataMap3.put(new Number640(d.locationKey, d.domainKey, d.versionKey, entry.getKey()),
+                dataMap3.put(new Number640(d.locationKey, d.domainKey, entry.getKey(), d.versionKey),
                         entry.getValue());
             }
         } else {

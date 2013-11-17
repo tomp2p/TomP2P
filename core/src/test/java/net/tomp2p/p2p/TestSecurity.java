@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric.ProtectionEnable;
-import net.tomp2p.storage.StorageGeneric.ProtectionMode;
+import net.tomp2p.storage.StorageLayer.ProtectionEnable;
+import net.tomp2p.storage.StorageLayer.ProtectionMode;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Utils;
 

@@ -39,10 +39,11 @@ import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric.PutStatus;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -548,6 +549,7 @@ public class StorageRPC extends DispatchHandler {
             final boolean digest) {   
         final Number160 locationKey = message.getKey(0);
         final Number160 domainKey = message.getKey(1);
+        Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
         LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
         final KeyCollection contentKeys = message.getKeyCollection(0);
         final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
@@ -557,10 +559,12 @@ public class StorageRPC extends DispatchHandler {
             final DigestInfo digestInfo;
             if (keyBloomFilter != null || contentBloomFilter != null
                     && (locationKey != null && domainKey != null)) {
-                digestInfo = peerBean().storage().digest(locationKey, domainKey, keyBloomFilter,
+                digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
                         contentBloomFilter);
             } else if (locationKey != null && domainKey != null && contentKeys == null) {
-                digestInfo = peerBean().storage().digest(locationKey, domainKey, null);
+                Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
+                Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+                digestInfo = peerBean().storage().digest(from, to);
             } else if (contentKeys != null) {
                 digestInfo = peerBean().storage().digest(contentKeys.keys());
             } else {

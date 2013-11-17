@@ -42,7 +42,7 @@ import net.tomp2p.replication.Checksum;
 import net.tomp2p.replication.Instruction;
 import net.tomp2p.replication.Synchronization;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric.PutStatus;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

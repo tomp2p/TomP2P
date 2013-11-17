@@ -15,14 +15,12 @@ import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.ChannelClientConfiguration;
 import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.connection2.ChannelServerConficuration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.futures.FutureSuccessEvaluatorCommunication;
 import net.tomp2p.message.DataMap;
-import net.tomp2p.message.KeyCollection;
+import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -32,16 +30,14 @@ import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ResponsibilityListener;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.HashData;
 //import net.tomp2p.storage.StorageDisk;
-import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
@@ -85,17 +81,17 @@ public class TestStorage {
 
     @Test
     public void testAdd() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
@@ -107,6 +103,7 @@ public class TestStorage {
             AddBuilder addBuilder = new AddBuilder(recv1, new Number160(33));
             addBuilder.setDomainKey(Number160.createHash("test"));
             addBuilder.setDataSet(dataSet);
+            addBuilder.setVersionKey(Number160.ZERO);
             // addBuilder.setList();
             // addBuilder.random(new Random(42));
             FutureResponse fr = smmSender.add(recv1.getPeerAddress(), addBuilder, cc);
@@ -121,8 +118,9 @@ public class TestStorage {
 
             Number320 key = new Number320(new Number160(33), Number160.createHash("test"));
             // Set<Number480> tofetch = new HashSet<Number480>();
-            SortedMap<Number480, Data> c = storeRecv.get(key.getLocationKey(), key.getDomainKey(),
-                    Number160.ZERO, Number160.MAX_VALUE);
+            Number640 from = new Number640(key, Number160.ZERO, Number160.ZERO);
+            Number640 to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            SortedMap<Number640, Data> c = storeRecv.subMap(from, to);
             Assert.assertEquals(1, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -140,7 +138,9 @@ public class TestStorage {
 
             key = new Number320(new Number160(33), Number160.createHash("test"));
             // Set<Number480> tofetch = new HashSet<Number480>();
-            c = storeRecv.get(key.getLocationKey(), key.getDomainKey(), Number160.ZERO, Number160.MAX_VALUE);
+            from = new Number640(key, Number160.ZERO, Number160.ZERO);
+            to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            c = storeRecv.subMap(from, to);
             Assert.assertEquals(2, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -161,17 +161,17 @@ public class TestStorage {
 
     @Test
     public void testStorePut() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -190,14 +190,13 @@ public class TestStorage {
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setVersionKey(Number160.ZERO);
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.getFailedReason());
             Assert.assertEquals(true, fr.isSuccess());
 
-            Number320 key = new Number320(new Number160(33), Number160.createHash("test"));
-            // Set<Number480> tofetch = new HashSet<Number480>();
             Number640 key1 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Data c = storeRecv.get(key1);
             
@@ -238,17 +237,17 @@ public class TestStorage {
 
     @Test
     public void testStorePutIfAbsent() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -265,11 +264,14 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
+            //putBuilder.set
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            Data c = storeRecv.get(new Number160(33), Number160.createHash("test"), new Number160(77));
+            Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
+            Data c = storeRecv.get(key);
 
             Assert.assertEquals(c, test);
             //
@@ -285,9 +287,11 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             // we cannot put anything there, since there already is
             Assert.assertEquals(true, fr.isSuccess());
-            Collection<Number480> putKeys = fr.getResponse().getKeyCollection(0).keys();
-            Assert.assertEquals(0, putKeys.size());
-            c = storeRecv.get(new Number160(33), Number160.createHash("test"), new Number160(88));
+            Map<Number640, Byte> putKeys = fr.getResponse().getKeyMapByte(0).keysMap();
+            Assert.assertEquals(2, putKeys.size());
+            Assert.assertEquals(Byte.valueOf((byte)StorageLayer.PutStatus.FAILED_NOT_ABSENT.ordinal()), putKeys.values().iterator().next());
+            Number640 key2 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(88), Number160.ZERO);
+            c = storeRecv.get(key2);
             Assert.assertEquals(c, test2);
         } finally {
             if (cc != null) {
@@ -304,17 +308,17 @@ public class TestStorage {
 
     @Test
     public void testStorePutGetTCP() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -328,8 +332,9 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), tmp);
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -338,14 +343,15 @@ public class TestStorage {
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setContentKeys(tmp.keySet());
+            getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             System.err.println(fr.getFailedReason());
             Message m = fr.getResponse();
-            Map<Number480, Data> stored = m.getDataMap(0).dataMap();
-            compare(dataMap.convertToMap480(), stored);
+            Map<Number640, Data> stored = m.getDataMap(0).dataMap();
+            compare(dataMap.convertToMap640(), stored);
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -361,17 +367,17 @@ public class TestStorage {
 
     @Test
     public void testStorePutGetUDP() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -385,9 +391,10 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), tmp);
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             putBuilder.setDataMapContent(tmp);
             putBuilder.setForceUDP();
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -396,14 +403,15 @@ public class TestStorage {
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setContentKeys(tmp.keySet());
             getBuilder.setForceUDP();
+            getBuilder.setVersionKey(Number160.ZERO);
 
             // get
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.getResponse();
-            Map<Number480, Data> stored = m.getDataMap(0).dataMap();
-            compare(dataMap.convertToMap480(), stored);
+            Map<Number640, Data> stored = m.getDataMap(0).dataMap();
+            compare(dataMap.convertToMap640(), stored);
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -417,11 +425,11 @@ public class TestStorage {
         }
     }
 
-    private void compare(Map<Number480, Data> tmp, Map<Number480, Data> stored) {
+    private void compare(Map<Number640, Data> tmp, Map<Number640, Data> stored) {
         Assert.assertEquals(tmp.size(), stored.size());
-        Iterator<Number480> iterator1 = tmp.keySet().iterator();
+        Iterator<Number640> iterator1 = tmp.keySet().iterator();
         while (iterator1.hasNext()) {
-            Number480 key1 = iterator1.next();
+            Number640 key1 = iterator1.next();
             Assert.assertEquals(true, stored.containsKey(key1));
             Data data1 = tmp.get(key1);
             Data data2 = stored.get(key1);
@@ -431,17 +439,17 @@ public class TestStorage {
 
     @Test
     public void testStorePutRemoveGet() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -455,8 +463,9 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), tmp);
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -465,19 +474,21 @@ public class TestStorage {
             removeBuilder.setDomainKey(Number160.createHash("test"));
             removeBuilder.setContentKeys(tmp.keySet());
             removeBuilder.setReturnResults();
+            removeBuilder.setVersionKey(Number160.ZERO);
             fr = smmSender.remove(recv1.getPeerAddress(), removeBuilder, cc);
             fr.awaitUninterruptibly();
             Message m = fr.getResponse();
             Assert.assertEquals(true, fr.isSuccess());
 
             // check for returned results
-            Map<Number480, Data> stored = m.getDataMap(0).dataMap();
-            compare(dataMap.convertToMap480(), stored);
+            Map<Number640, Data> stored = m.getDataMap(0).dataMap();
+            compare(dataMap.convertToMap640(), stored);
 
             // get
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setContentKeys(tmp.keySet());
+            getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
@@ -500,17 +511,17 @@ public class TestStorage {
 
     @Test
     public void testBigStorePut() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[100];
@@ -524,14 +535,15 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), tmp);
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
-            KeyCollection keys = fr.getResponse().getKeyCollection(0);
-            Utils.isSameSets(keys.keys(), dataMap.convertToMap480().keySet());
+            KeyMapByte keys = fr.getResponse().getKeyMapByte(0);
+            Utils.isSameSets(keys.keysMap().keySet(), dataMap.convertToMap640().keySet());
 
         } finally {
             if (cc != null) {
@@ -548,16 +560,16 @@ public class TestStorage {
 
     @Test
     public void testConcurrentStoreAddGet() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             final StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             List<FutureResponse> res = new ArrayList<FutureResponse>();
 
@@ -609,8 +621,8 @@ public class TestStorage {
         ChannelCreator cc = null;
         try {
             master = new PeerMaker(new Number160("0xee")).makeAndListen();
-            StorageGeneric s1 = new StorageMemory();
-            master.getPeerBean().storage(s1);
+            StorageMemory s1 = new StorageMemory();
+            master.getPeerBean().storage(new StorageLayer(s1));
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
             final int replicatioFactor = 5;
@@ -641,6 +653,7 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(master, location);
             putBuilder.setDomainKey(location);
             putBuilder.setDataMapContent(dataMap);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -688,8 +701,8 @@ public class TestStorage {
             master = new PeerMaker(new Number160(rnd)).ports(port).makeAndListen();
             System.err.println("master is " + master.getPeerAddress());
 
-            StorageGeneric s1 = new StorageMemory();
-            master.getPeerBean().storage(s1);
+            StorageMemory s1 = new StorageMemory();
+            master.getPeerBean().storage(new StorageLayer(s1));
             final int replicatioFactor = 5;
             Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
                     .peerMap(), replicatioFactor);
@@ -717,6 +730,7 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(master, loc);
             putBuilder.setDomainKey(domainKey);
             putBuilder.setDataMapContent(contentMap);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             master.getStoreRPC().put(master.getPeerAddress(), putBuilder, cc).awaitUninterruptibly();
             slave1 = new PeerMaker(new Number160(rnd)).ports(port + 1).makeAndListen();
@@ -764,6 +778,7 @@ public class TestStorage {
         AddBuilder addBuilder = new AddBuilder(recv1, new Number160(33));
         addBuilder.setDomainKey(Number160.createHash("test"));
         addBuilder.setDataSet(tmp.values());
+        addBuilder.setVersionKey(Number160.ZERO);
 
         FutureResponse fr = smmSender.add(recv1.getPeerAddress(), addBuilder, cc);
         return fr;
@@ -771,17 +786,17 @@ public class TestStorage {
 
     @Test
     public void testBloomFilter() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -798,6 +813,7 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -809,12 +825,13 @@ public class TestStorage {
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setKeyBloomFilter(sbf);
+            getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.getResponse();
-            Map<Number480, Data> stored = m.getDataMap(0).dataMap();
+            Map<Number640, Data> stored = m.getDataMap(0).dataMap();
             Assert.assertEquals(1, stored.size());
         } finally {
             if (cc != null) {
@@ -831,17 +848,17 @@ public class TestStorage {
 
     @Test
     public void testBloomFilterDigest() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -858,6 +875,7 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -871,6 +889,7 @@ public class TestStorage {
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setKeyBloomFilter(sbf);
             getBuilder.setDigest();
+            getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
@@ -893,8 +912,8 @@ public class TestStorage {
 
     @Test
     public void testBigStore2() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
@@ -909,9 +928,9 @@ public class TestStorage {
             pm2.channelServerConfiguration(css);
             recv1 = pm2.makeAndListen();
 
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
@@ -925,15 +944,17 @@ public class TestStorage {
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Data data = recv1.getPeerBean().storage()
-                    .get(new Number160(33), Number160.createHash("test"), new Number160(77));
+                    .get(new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO));
             Assert.assertEquals(true, data != null);
 
-        } finally {
+        }
+        finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
             }
@@ -948,8 +969,8 @@ public class TestStorage {
 
     @Test
     public void testBigStoreGet() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
@@ -964,9 +985,9 @@ public class TestStorage {
             pm2.channelServerConfiguration(css);
             recv1 = pm2.makeAndListen();
 
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
@@ -980,6 +1001,7 @@ public class TestStorage {
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
 
@@ -990,13 +1012,14 @@ public class TestStorage {
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
 
             fr.awaitUninterruptibly();
             System.err.println(fr.getFailedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            Number480 key = new Number480(new Number160(33), Number160.createHash("test"), new Number160(77));
+            Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Assert.assertEquals(50 * 1024 * 1024, fr.getResponse().getDataMap(0).dataMap().get(key)
                     .bufferLength());
         } finally {
@@ -1014,17 +1037,17 @@ public class TestStorage {
 
     @Test
     public void testBigStoreCancel() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
             sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
             recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
@@ -1037,6 +1060,7 @@ public class TestStorage {
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
 
@@ -1059,8 +1083,8 @@ public class TestStorage {
 
     @Test
     public void testBigStoreGetCancel() throws Exception {
-        StorageGeneric storeSender = new StorageMemory();
-        StorageGeneric storeRecv = new StorageMemory();
+        StorageMemory storeSender = new StorageMemory();
+        StorageMemory storeRecv = new StorageMemory();
         Peer sender = null;
         Peer recv1 = null;
         ChannelCreator cc = null;
@@ -1076,9 +1100,9 @@ public class TestStorage {
             pm2.channelServerConfiguration(css);
             recv1 = pm2.makeAndListen();
 
-            sender.getPeerBean().storage(storeSender);
+            sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
-            recv1.getPeerBean().storage(storeRecv);
+            recv1.getPeerBean().storage(new StorageLayer(storeRecv));
             new StorageRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
@@ -1092,6 +1116,7 @@ public class TestStorage {
             putBuilder.setDomainKey(Number160.createHash("test"));
             putBuilder.setDataMapContent(tmp);
             putBuilder.idleTCPSeconds(Integer.MAX_VALUE);
+            putBuilder.setVersionKey(Number160.ZERO);
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();

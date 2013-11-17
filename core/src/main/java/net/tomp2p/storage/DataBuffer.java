@@ -6,7 +6,6 @@ import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -87,7 +86,7 @@ public class DataBuffer {
         }
     }
     
-    public int transferFrom(ByteBuf buf, int remaining) {
+    public int transferFrom(final ByteBuf buf, final int remaining) {
         int size = 0;
         final ByteBuffer[] byteBuffers = buf.nioBuffers();
         final int len = byteBuffers.length;
@@ -95,73 +94,17 @@ public class DataBuffer {
             throw new IllegalArgumentException("Buffer count must >= 1.");
         }
         
-        Iterator<ByteBuffer> iterator0 = Arrays.asList(byteBuffers).iterator();
-        ByteBuffer first = iterator0.next();
-
-        int bufSize = buffers.size();
-        for(int i=0;i<bufSize;i++) {
-            ByteBuffer buffer = buffers.get(i);
-            if(buffer.array() == first.array()) {
-                //update
-                size += first.limit() - first.position();
-                boolean done = false;
-                if(size>=remaining) {
-                    first.limit(first.limit() - (size-remaining));
-                    done = true;
-                }
-                buffers.set(i, first);
-                marks.set(i, first.position());
-                if(done) {
-                    buf.readerIndex(buf.readerIndex()+remaining);
-                    alreadyTransferred += remaining;
-                    return remaining;
-                }
-                first = null;
-                if(iterator0.hasNext()) {
-                    first = iterator0.next();
-                } else {
-                    break;
-                }
-            }
-            if(size>=remaining) {
-                break;
-            }
+        for(int i=0;i<len && size < remaining;i++) {
+            int toTransfer = byteBuffers[i].limit() - byteBuffers[i].position();
+            if(size + toTransfer > remaining) {
+                byteBuffers[i].limit(byteBuffers[i].limit() - (size + toTransfer - remaining));
+            } 
+            buffers.add(byteBuffers[i]);
+            marks.add(byteBuffers[i].position());
+            size += byteBuffers[i].limit() - byteBuffers[i].position();
         }
-        
-        if(first!=null) {
-            size += first.limit() - first.position();
-            boolean done = false;
-            if(size>=remaining) {
-                first.limit(first.limit() - (size-remaining));
-                done = true;
-            }
-            buffers.add(first);
-            marks.add(first.position());
-            if(done) {
-                buf.readerIndex(buf.readerIndex()+remaining);
-                alreadyTransferred += remaining;
-                return remaining;
-            }
-        } 
-        
-        while(iterator0.hasNext()) {
-            first = iterator0.next();
-            size += first.limit() - first.position();
-            boolean done = false;
-            if(size>=remaining) {
-                first.limit(first.limit() - (size-remaining));
-                done = true;
-            }
-            buffers.add(first);
-            marks.add(first.position());
-            if(done) {
-                buf.readerIndex(buf.readerIndex()+remaining);
-                alreadyTransferred += remaining;
-                return remaining;
-            }
-        }
-        buf.readerIndex(buf.readerIndex()+size);
         alreadyTransferred += size;
+        buf.readerIndex(buf.readerIndex()+size);
         return size;
     }
 

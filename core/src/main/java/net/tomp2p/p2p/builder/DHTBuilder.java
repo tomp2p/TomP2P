@@ -33,7 +33,6 @@ import net.tomp2p.peers.Number160;
  */
 public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnectionConfiguration implements BasicBuilder<K>, ConnectionConfiguration {
     // changed this to zero as for the content key its also zero
-    public static final Number160 DEFAULT_DOMAIN = Number160.ZERO;
 
     protected final Peer peer;
 
@@ -231,7 +230,10 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
 
     protected void preBuild(String name) {
         if (domainKey == null) {
-            domainKey = DEFAULT_DOMAIN;
+            domainKey = Number160.ZERO;
+        }
+        if (versionKey == null) {
+            versionKey = Number160.ZERO;
         }
         if (routingConfiguration == null) {
             routingConfiguration = new RoutingConfiguration(5, 10, 2);

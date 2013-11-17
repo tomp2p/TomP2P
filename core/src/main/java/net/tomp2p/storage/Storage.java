@@ -28,15 +28,15 @@ import net.tomp2p.peers.Number640;
  * stores the values which are present in the DHT. If you plan to do transactions (put/get), make sure you do the
  * locking in order to not interfere with other threads that use this map. Although the storage is threadsafe, there may
  * be concurrency issues with respect to transactions (e.g., do a get before a put). Please use
- * {@link StorageGeneric#getLockStorage()} for full locking, and {@link StorageGeneric#getLockNumber160()},
- * {@link StorageGeneric#getLockNumber320()}, {@link StorageGeneric#getLockNumber480()},
- * {@link StorageGeneric#getLockNumber640()} for fine grained locking.
+ * {@link StorageLayer#getLockStorage()} for full locking, and {@link StorageLayer#getLockNumber160()},
+ * {@link StorageLayer#getLockNumber320()}, {@link StorageLayer#getLockNumber480()},
+ * {@link StorageLayer#getLockNumber640()} for fine grained locking.
  * 
  * 
  * @author Thomas Bocek
  * 
  */
-public interface Storage extends Digest, ReplicationStorage {
+public interface Storage extends ReplicationStorage {
     // Core storage
     public abstract boolean put(Number640 key, Data value);
 

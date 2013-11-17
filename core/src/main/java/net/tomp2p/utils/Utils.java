@@ -297,16 +297,37 @@ public class Utils {
         int count = shallowCopy.bufferList().size();
         Vector<InputStream> is = new Vector<InputStream>(count);
         for (ByteBuffer byteBuffer:shallowCopy.bufferList()) {
-            byte[] me = byteBuffer.array();
-            int offset = byteBuffer.arrayOffset();
-            int length = byteBuffer.limit() - byteBuffer.position();
-            is.add(new ByteArrayInputStream(me, offset, length));
+            is.add(createInputStream(byteBuffer));
         }
         SequenceInputStream sis = new SequenceInputStream(is.elements());
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sis));
         Object obj = ois.readObject();
         ois.close();
         return obj;
+    }
+    
+    public static InputStream createInputStream(final ByteBuffer buf) {
+        return new InputStream() {
+            @Override
+            public int read() throws IOException {
+                if (!buf.hasRemaining()) {
+                    return -1;
+                }
+                return buf.get() & 0xFF;
+            }
+
+            @Override
+            public int read(byte[] bytes, int off, int len)
+                    throws IOException {
+                if (!buf.hasRemaining()) {
+                    return -1;
+                }
+
+                len = Math.min(len, buf.remaining());
+                buf.get(bytes, off, len);
+                return len;
+            }
+        };
     }
 
     public static Object decodeJavaObject(byte[] me, int offset, int length) throws ClassNotFoundException,
@@ -356,6 +377,7 @@ public class Utils {
      *            The second collections that will be searched for duplicates
      * @return Returns the collection the user specified as the resulting collection
      */
+    @SafeVarargs
     public static <K> Collection<K> difference(Collection<K> collection1, Collection<K> result,
             Collection<K>... collections2) {
         for (Iterator<K> iterator = collection1.iterator(); iterator.hasNext();) {

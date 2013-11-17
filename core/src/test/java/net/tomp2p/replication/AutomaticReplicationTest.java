@@ -15,9 +15,9 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
-import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -449,7 +449,7 @@ public class AutomaticReplicationTest {
 
             master = peers[0];
             final Number160 locationKey = new Number160(12345);
-            final Number160 domainKey = DHTBuilder.DEFAULT_DOMAIN;
+            final Number160 domainKey = Number160.ZERO;
             final Number160 contentKey = Number160.ZERO;
 
             ArrayList<Integer> closestPeersIndexes = findTheClosestPeer(peers, locationKey);
@@ -469,11 +469,11 @@ public class AutomaticReplicationTest {
 
             Utils2.perfectRouting(peers);
 
-            Data data = A.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            Data data = A.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] valueOfA = data.toBytes();
-            data = B.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            data = B.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] valueOfB = data.toBytes();
-            data = C.getPeerBean().storage().get(locationKey, domainKey, contentKey);
+            data = C.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
             byte[] valueOfC = data.toBytes();
 
             Assert.assertArrayEquals(valueOfA, valueOfB);

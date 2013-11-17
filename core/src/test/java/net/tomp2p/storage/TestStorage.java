@@ -14,7 +14,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.KeyLock.RefCounterLock;
-import net.tomp2p.storage.StorageGeneric.PutStatus;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 import net.tomp2p.utils.Utils;
 
 import org.junit.After;
@@ -65,22 +65,22 @@ public class TestStorage {
     @Test
     public void testPutInitial() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        store(new StorageGeneric(storageM));
+        store(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void store(StorageGeneric storage) throws IOException {
+    private void store(StorageLayer storage) throws IOException {
         store(storage, null, false);
     }
 
-    private void store(StorageGeneric storage, int nr) throws IOException {
+    private void store(StorageLayer storage, int nr) throws IOException {
         PutStatus store = storage.put(key1, new Data("test1"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
         store = storage.put(key2, new Data("test2"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
     }
 
-    private void store(StorageGeneric storage, PublicKey publicKey, boolean protectDomain) throws IOException {
+    private void store(StorageLayer storage, PublicKey publicKey, boolean protectDomain) throws IOException {
         PutStatus store = storage.put(key1, new Data("test1"), publicKey, false,
                 protectDomain);
         Assert.assertEquals(PutStatus.OK, store);
@@ -92,11 +92,11 @@ public class TestStorage {
     @Test
     public void testGet() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testGet(new StorageGeneric(storageM));
+        testGet(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testGet(StorageGeneric storage) throws IOException, ClassNotFoundException {
+    private void testGet(StorageLayer storage) throws IOException, ClassNotFoundException {
         store(storage);
         Data result1 = storage.get(key1);
         Assert.assertEquals("test1", result1.object());
@@ -109,11 +109,11 @@ public class TestStorage {
     @Test
     public void testPut() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testPut(new StorageGeneric(storageM));
+        testPut(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPut(StorageGeneric storage) throws IOException {
+    private void testPut(StorageLayer storage) throws IOException {
         store(storage);
         PutStatus store = storage
                 .put(key1, new Data("test3"), null, false, false);
@@ -126,11 +126,11 @@ public class TestStorage {
     @Test
     public void testPutIfAbsent() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testPutIfAbsent(new StorageGeneric(storageM));
+        testPutIfAbsent(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPutIfAbsent(StorageGeneric storage) throws IOException {
+    private void testPutIfAbsent(StorageLayer storage) throws IOException {
         store(storage);
         PutStatus store = storage.put(key1, new Data("test3"), null, true, false);
         Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
@@ -144,11 +144,11 @@ public class TestStorage {
     @Test
     public void testRemove() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testRemove(new StorageGeneric(storageM));
+        testRemove(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testRemove(StorageGeneric storage) throws IOException, ClassNotFoundException {
+    private void testRemove(StorageLayer storage) throws IOException, ClassNotFoundException {
         store(storage);
         Data result1 = storage.remove(key1, null);
         Assert.assertEquals("test1", result1.object());
@@ -164,11 +164,11 @@ public class TestStorage {
     @Test
     public void testTTL1() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testTTL1(new StorageGeneric(storageM));
+        testTTL1(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testTTL1(StorageGeneric storage) throws Exception {
+    private void testTTL1(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(0);
         storage.put(key1, data, null, false, false);
@@ -180,11 +180,11 @@ public class TestStorage {
     @Test
     public void testTTL2() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testTTL2(new StorageGeneric(storageM));
+        testTTL2(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testTTL2(StorageGeneric storage) throws Exception {
+    private void testTTL2(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(1);
         storage.put(key1, data, null, false, false);
@@ -214,11 +214,11 @@ public class TestStorage {
     @Test
     public void testPublicKeyDomain() throws Exception {
         StorageMemory storageM = new StorageMemory();
-        testPublicKeyDomain(new StorageGeneric(storageM));
+        testPublicKeyDomain(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPublicKeyDomain(StorageGeneric storage) throws Exception {
+    private void testPublicKeyDomain(StorageLayer storage) throws Exception {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
         KeyPair pair1 = gen.generateKeyPair();
         KeyPair pair2 = gen.generateKeyPair();
@@ -299,7 +299,7 @@ public class TestStorage {
     @Test
     public void testConcurrency() throws InterruptedException, IOException {
         final StorageMemory sM = new StorageMemory();
-        final StorageGeneric storageGeneric = new StorageGeneric(sM);
+        final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
         final AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < 100; i++) {

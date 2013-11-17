@@ -21,6 +21,8 @@ import io.netty.buffer.CompositeByteBuf;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.peers.Number160;
@@ -38,6 +40,8 @@ public class Data implements Serializable {
     private static final long serialVersionUID = -5023493840082652284L;
 
     private static final int MAX_BYTE_SIZE = 256;
+    
+    private final List<ByteBuf> releasing = new ArrayList<ByteBuf>();
 
     /**
      * Tiny means 8 bit, small means 16bit, medium is 32bit.
@@ -517,16 +521,25 @@ public class Data implements Serializable {
      * @return True if we are done reading
      */
     public boolean decodeBuffer(final ByteBuf buf) {
-        int already = buffer.alreadyTransferred();
-        int remaining = bufferLength() - already;
+        final int already = buffer.alreadyTransferred();
+        final int remaining = bufferLength() - already;
         // already finished
         if (remaining == 0) {
             return true;
         }
         //make sure it gets not garbage collected
         buf.retain();
+        //but we need to keep track of it and when this object gets collected, we need to release the buffer
+        releasing.add(buf);
         final int transfered = buffer.transferFrom(buf, remaining);
         return transfered == remaining;
+    }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        for(ByteBuf buf:releasing) {
+            buf.release();
+        }
     }
 
     /**

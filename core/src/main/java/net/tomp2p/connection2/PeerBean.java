@@ -24,7 +24,7 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.replication.Replication;
 import net.tomp2p.replication.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
-import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.TrackerStorage;
 
 /**
@@ -39,7 +39,7 @@ public class PeerBean {
     private PeerAddress serverPeerAddress;
     private PeerMap peerMap;
     private PeerStatusListener[] peerStatusListeners;
-    private StorageGeneric storage;
+    private StorageLayer storage;
     private TrackerStorage trackerStorage;
     private Replication replicationStorage;
     private Replication replicationTracker;
@@ -142,7 +142,7 @@ public class PeerBean {
      *            The storage where the key value pairs are stored
      * @return This class
      */
-    public PeerBean storage(final StorageGeneric storage) {
+    public PeerBean storage(final StorageLayer storage) {
         this.storage = storage;
         return this;
     }
@@ -150,7 +150,7 @@ public class PeerBean {
     /**
      * @return The storage where the key value pairs are stored
      */
-    public StorageGeneric storage() {
+    public StorageLayer storage() {
         return storage;
     }
 

@@ -3,8 +3,8 @@ package net.tomp2p.p2p;
 import java.net.InetAddress;
 import java.util.Random;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;

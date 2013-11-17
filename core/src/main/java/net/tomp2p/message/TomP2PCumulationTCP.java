@@ -7,7 +7,7 @@ import io.netty.handler.codec.DecoderException;
 
 import java.net.InetSocketAddress;
 
-import net.tomp2p.connection2.SignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

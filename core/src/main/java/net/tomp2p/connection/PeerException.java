@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.connection2;
+package net.tomp2p.connection;
 
 /**
  * This exception is used internally and passed over to the method

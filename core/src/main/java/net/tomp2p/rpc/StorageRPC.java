@@ -23,10 +23,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;

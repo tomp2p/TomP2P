@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.connection2;
+package net.tomp2p.connection;
 
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -35,6 +35,13 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelServer;
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PipelineFilter;
+import net.tomp2p.connection.Reservation;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 

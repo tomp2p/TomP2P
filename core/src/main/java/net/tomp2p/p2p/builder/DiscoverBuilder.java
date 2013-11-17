@@ -19,11 +19,11 @@ package net.tomp2p.p2p.builder;
 import java.net.InetAddress;
 import java.util.Collection;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
-import net.tomp2p.connection2.DiscoverNetworks;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DiscoverNetworks;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;

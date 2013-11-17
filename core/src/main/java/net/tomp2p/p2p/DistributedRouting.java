@@ -24,8 +24,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.PeerBean;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;

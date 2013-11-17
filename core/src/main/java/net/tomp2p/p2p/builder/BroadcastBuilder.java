@@ -18,7 +18,7 @@ package net.tomp2p.p2p.builder;
 
 import java.util.Map;
 
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;

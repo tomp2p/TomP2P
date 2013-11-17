@@ -16,7 +16,7 @@
 
 package net.tomp2p.p2p;
 
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;

@@ -16,8 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;

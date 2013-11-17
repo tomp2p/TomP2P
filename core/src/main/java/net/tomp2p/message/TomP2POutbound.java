@@ -13,7 +13,7 @@ import java.security.Signature;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.tomp2p.connection2.SignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;

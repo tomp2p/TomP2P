@@ -24,10 +24,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
-import net.tomp2p.connection2.Bindings.Protocol;
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;

@@ -4,9 +4,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ChannelServerConficuration;
-import net.tomp2p.connection2.PeerConnection;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FuturePeerConnection;

@@ -3,9 +3,9 @@ package net.tomp2p.rpc;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;

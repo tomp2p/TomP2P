@@ -41,7 +41,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.DefaultSignatureFactory;
+import net.tomp2p.connection.DefaultSignatureFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;

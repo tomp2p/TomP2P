@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.connection2;
+package net.tomp2p.connection;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;

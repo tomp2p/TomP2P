@@ -15,7 +15,7 @@
  */
 package net.tomp2p.futures;
 
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.ChannelCreator;
 
 /**
  * This future is used for the connection reservation. If notifies the user when

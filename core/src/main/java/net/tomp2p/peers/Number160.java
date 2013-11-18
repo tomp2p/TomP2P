@@ -199,16 +199,16 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * 
      * @param timestamp
      *            The long value that will be set in the beginning (most significant)
-     * @param number160
+     * @param number96
      *            The rest will be filled with this number
      */
-    public Number160(final long timestamp, Number160 number160) {
+    public Number160(final long timestamp, Number160 number96) {
         this.val = new int[INT_ARRAY_SIZE];
         this.val[0] = (int) timestamp;
         this.val[1] = (int) (timestamp >> Integer.SIZE);
-        this.val[2] = number160.val[2];
-        this.val[3] = number160.val[3];
-        this.val[4] = number160.val[4];
+        this.val[2] = number96.val[2];
+        this.val[3] = number96.val[3];
+        this.val[4] = number96.val[4];
     }
 
     /**
@@ -216,6 +216,13 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public long timestamp() {
         return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[2] & LONG_MASK);
+    }
+    
+    /**
+     * @return The lower 96 bits of the 160 bit number
+     */
+    public Number160 number96() {
+        return new Number160(0, 0, this.val[2], this.val[3], this.val[4]);
     }
 
     /**

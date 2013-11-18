@@ -31,7 +31,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     // This key has *always* 160 bit. Do not change.
     public static final int BITS = 160;
 
-    public static final Number160 MAX_VALUE = new Number160(new int[] {-1, -1, -1, -1, -1 });
+    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
 
     private static final long LONG_MASK = 0xffffffffL;
 
@@ -42,8 +42,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     private static final int STRING_LENGTH = 42;
 
     // a map used for String <-> Key conversion
-    private static final char[] DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
-            'e', 'f' };
+    private static final char[] DIGITS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c',
+            'd', 'e', 'f' };
 
     // size of the backing integer array
     public static final int INT_ARRAY_SIZE = BITS / Integer.SIZE;
@@ -77,8 +77,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final int... val) {
         if (val.length > INT_ARRAY_SIZE) {
-            throw new IllegalArgumentException("Can only deal with arrays of smaller or equal " + INT_ARRAY_SIZE
-                    + ". Your array has " + val.length);
+            throw new IllegalArgumentException("Can only deal with arrays of smaller or equal "
+                    + INT_ARRAY_SIZE + ". Your array has " + val.length);
         }
         this.val = new int[INT_ARRAY_SIZE];
         final int len = val.length;
@@ -97,7 +97,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public Number160(final String val) {
         if (val.length() > STRING_LENGTH) {
             throw new IllegalArgumentException(
-                    "Can only deal with strings of size smaller or equal than 42. Your string has " + val.length());
+                    "Can only deal with strings of size smaller or equal than 42. Your string has "
+                            + val.length());
         }
         if (val.indexOf("0x") != 0) {
             throw new IllegalArgumentException(val
@@ -112,7 +113,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
 
             int digit = Character.digit(tmp[j], 16);
             if (digit < 0) {
-                throw new RuntimeException("Not a hexadecimal number \"" + tmp[j] + "\". The range is [0-9a-f]");
+                throw new RuntimeException("Not a hexadecimal number \"" + tmp[j]
+                        + "\". The range is [0-9a-f]");
             }
             // += or |= does not matter here
             this.val[i >> 3] += digit & CHAR_MASK;
@@ -166,7 +168,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public Number160(final byte[] val, final int offset, final int length) {
         if (length > BYTE_ARRAY_SIZE) {
             throw new IllegalArgumentException(
-                    "Can only deal with byte arrays of size smaller or equal than 20. Your array has " + length);
+                    "Can only deal with byte arrays of size smaller or equal than 20. Your array has "
+                            + length);
         }
         this.val = new int[INT_ARRAY_SIZE];
         for (int i = length + offset - 1, j = BYTE_ARRAY_SIZE - 1, k = 0; i >= offset; i--, j--, k++) {
@@ -189,6 +192,30 @@ public final class Number160 extends Number implements Comparable<Number160> {
         for (int i = 0; i < INT_ARRAY_SIZE; i++) {
             this.val[i] = random.nextInt();
         }
+    }
+
+    /**
+     * Creates a new key with a long for the first 64bits, and using the lower 96bits for the rest.
+     * 
+     * @param timestamp
+     *            The long value that will be set in the beginning (most significant)
+     * @param number160
+     *            The rest will be filled with this number
+     */
+    public Number160(final long timestamp, Number160 number160) {
+        this.val = new int[INT_ARRAY_SIZE];
+        this.val[0] = (int) timestamp;
+        this.val[1] = (int) (timestamp >> Integer.SIZE);
+        this.val[2] = number160.val[2];
+        this.val[3] = number160.val[3];
+        this.val[4] = number160.val[4];
+    }
+
+    /**
+     * @return The first (most significant 64bits)
+     */
+    public long timestamp() {
+        return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[2] & LONG_MASK);
     }
 
     /**

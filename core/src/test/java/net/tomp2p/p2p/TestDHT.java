@@ -53,6 +53,31 @@ public class TestDHT {
     private static final Logger LOG = LoggerFactory.getLogger(TestDHT.class);
     
     @Test
+    public void testPutTwo() throws Exception {
+        Peer master = null;
+        try {
+        Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+        master = peers[0];
+        Utils2.perfectRouting(peers);
+        final Data data1 = new Data(new byte[1]);
+        data1.ttlSeconds(3);
+        FuturePut futurePut = master.put(Number160.createHash("test")).setData(data1).start();
+        futurePut.awaitUninterruptibly();
+        Assert.assertEquals(true, futurePut.isSuccess());
+        FutureGet futureGet = peers[1].get(Number160.createHash("test")).start();
+        futureGet.awaitUninterruptibly();
+        Assert.assertEquals(true, futureGet.isSuccess());
+        //LOG.error("done");
+        
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+
+    }
+    
+    @Test
     public void testPutPerforomance() throws Exception {
         Peer master = null;
         try {

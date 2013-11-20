@@ -475,7 +475,7 @@ public class StorageRPC extends DispatchHandler {
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
         for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-            PutStatus putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(),
+            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(),
                     entry.getValue());
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
@@ -506,7 +506,7 @@ public class StorageRPC extends DispatchHandler {
         // peer.
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
-            PutStatus status = doAdd(protectDomain, entry, publicKey, list, peerBean());
+            Enum<?> status = doAdd(protectDomain, entry, publicKey, list, peerBean());
             result.put(entry.getKey(), (byte) status.ordinal());
 
             // check the responsibility of the newly added data, do something
@@ -521,19 +521,19 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-    private PutStatus doPut(final boolean putIfAbsent, final boolean protectDomain,
+    private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain,
             final PublicKey publicKey, final Number640 key, final Data value) {
         LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
         return peerBean().storage().put(key, value, publicKey, putIfAbsent, protectDomain);
     }
 
-    private static PutStatus doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,
+    private static Enum<?> doAdd(final boolean protectDomain, final Map.Entry<Number640, Data> entry,
             final PublicKey publicKey, final boolean list, final PeerBean peerBean) {
 
         LOG.debug("add list data with key {} on {}", entry.getKey(), peerBean.serverPeerAddress());
         if (list) {
             Number160 contentKey2 = new Number160(RND);
-            PutStatus status;
+            Enum<?> status;
             Number640 key = new Number640(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
                     contentKey2, entry.getKey().getVersionKey());
             while ((status = peerBean.storage().put(key, entry.getValue(), publicKey, true, protectDomain)) == PutStatus.FAILED_NOT_ABSENT) {

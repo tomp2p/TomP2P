@@ -74,14 +74,14 @@ public class TestStorage {
     }
 
     private void store(StorageLayer storage, int nr) throws IOException {
-        PutStatus store = storage.put(key1, new Data("test1"), null, false, false);
+        Enum<?> store = storage.put(key1, new Data("test1"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
         store = storage.put(key2, new Data("test2"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
     }
 
     private void store(StorageLayer storage, PublicKey publicKey, boolean protectDomain) throws IOException {
-        PutStatus store = storage.put(key1, new Data("test1"), publicKey, false,
+        Enum<?> store = storage.put(key1, new Data("test1"), publicKey, false,
                 protectDomain);
         Assert.assertEquals(PutStatus.OK, store);
         store = storage.put(key2, new Data("test2"), publicKey, false,
@@ -115,7 +115,7 @@ public class TestStorage {
 
     private void testPut(StorageLayer storage) throws IOException {
         store(storage);
-        PutStatus store = storage
+        Enum<?> store = storage
                 .put(key1, new Data("test3"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
         storage.put(key3, new Data("test4"), null, false, false);
@@ -132,7 +132,7 @@ public class TestStorage {
 
     private void testPutIfAbsent(StorageLayer storage) throws IOException {
         store(storage);
-        PutStatus store = storage.put(key1, new Data("test3"), null, true, false);
+        Enum<?> store = storage.put(key1, new Data("test3"), null, true, false);
         Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
         storage.put(key3, new Data("test4"), null, true, false);
         SortedMap<Number640, Data> result1 = storage.get(key1, key3);
@@ -223,14 +223,14 @@ public class TestStorage {
         KeyPair pair1 = gen.generateKeyPair();
         KeyPair pair2 = gen.generateKeyPair();
         store(storage, pair1.getPublic(), true);
-        PutStatus result1 = storage.put(key3, new Data("test4"),
+        Enum<?> result1 = storage.put(key3, new Data("test4"),
                 pair1.getPublic(), false, false);
         Assert.assertEquals(PutStatus.OK, result1);
-        PutStatus result3 = storage.put(key3, new Data("test6"),
+        Enum<?> result3 = storage.put(key3, new Data("test6"),
                 pair1.getPublic(), false, true);
         Assert.assertEquals(PutStatus.OK, result3);
         // domain is protected by pair1
-        PutStatus result2 = storage.put(key3, new Data("test5"),
+        Enum<?> result2 = storage.put(key3, new Data("test5"),
                 pair2.getPublic(), false, true);
         Assert.assertEquals(PutStatus.FAILED, result2);
     }

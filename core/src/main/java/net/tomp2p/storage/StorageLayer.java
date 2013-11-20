@@ -126,7 +126,7 @@ public class StorageLayer {
         return removedDomains.contains(domain);
     }
 
-    public PutStatus put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+    public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
             boolean domainProtection) {
         boolean retVal = false;
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);

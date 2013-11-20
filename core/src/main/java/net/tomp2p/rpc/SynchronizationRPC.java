@@ -236,7 +236,7 @@ public class SynchronizationRPC extends DispatchHandler {
                     byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),
                             instructions, Synchronization.SIZE);
                     //TODO: domain protection?, make the flags configurable
-                    PutStatus status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
@@ -244,7 +244,7 @@ public class SynchronizationRPC extends DispatchHandler {
                 } else {
                     // copy
                     //TODO: domain protection?, make the flags configurable
-                    PutStatus status = peerBean().storage().put(entry.getKey(), entry.getValue(),
+                    Enum<?> status = peerBean().storage().put(entry.getKey(), entry.getValue(),
                             message.getPublicKey(), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());

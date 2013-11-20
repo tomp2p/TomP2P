@@ -150,7 +150,7 @@ public class Data implements Serializable {
         }
 
         this.length = length;
-        this.buffer = new DataBuffer(bufferLength());
+        this.buffer = new DataBuffer();
         this.validFromMillis = Timings.currentTimeMillis();
     }
 
@@ -394,10 +394,6 @@ public class Data implements Serializable {
         return length;
     }
 
-    public int bufferLength() {
-        return length - additionalHeader();
-    }
-
     public long expirationMillis() {
         return ttlSeconds <= 0 ? Long.MAX_VALUE : validFromMillis + (ttlSeconds * 1000L);
     }
@@ -422,6 +418,11 @@ public class Data implements Serializable {
 
     public long timestamp() {
         return timestamp;
+    }
+    
+    public Data basedOn(Number160 basedOn) {
+        this.basedOn = basedOn;
+        return this;
     }
 
     public Number160 basedOn() {
@@ -498,19 +499,19 @@ public class Data implements Serializable {
 
     public boolean fillBuffer(final ByteBuf buf) {
         buffer.addBuf(buf);
-        return buffer.bufferSize() == bufferLength();
+        return buffer.bufferSize() == length();
     }
 
     public boolean encodeBuffer(final CompositeByteBuf buf) {
         int already = buffer.alreadyTransferred();
 
-        int remaining = bufferLength() - already;
+        int remaining = length() - already;
         // already finished
         if (remaining == 0) {
             return true;
         }
         buffer.transferTo(buf);
-        return buffer.alreadyTransferred() == bufferLength();
+        return buffer.alreadyTransferred() == length();
     }
 
     /**
@@ -522,7 +523,7 @@ public class Data implements Serializable {
      */
     public boolean decodeBuffer(final ByteBuf buf) {
         final int already = buffer.alreadyTransferred();
-        final int remaining = bufferLength() - already;
+        final int remaining = length() - already;
         // already finished
         if (remaining == 0) {
             return true;

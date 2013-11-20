@@ -38,7 +38,7 @@ public class DataBuffer {
         }
     }
 
-    public DataBuffer(final int length) {
+    public DataBuffer() {
         buffers = new ArrayList<ByteBuffer>(1);
         marks = new ArrayList<Integer>(1);
     }

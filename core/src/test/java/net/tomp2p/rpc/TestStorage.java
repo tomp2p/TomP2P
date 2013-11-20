@@ -1021,7 +1021,7 @@ public class TestStorage {
             Assert.assertEquals(true, fr.isSuccess());
             Number640 key = new Number640(new Number160(33), Number160.createHash("test"), new Number160(77), Number160.ZERO);
             Assert.assertEquals(50 * 1024 * 1024, fr.getResponse().getDataMap(0).dataMap().get(key)
-                    .bufferLength());
+                    .length());
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();

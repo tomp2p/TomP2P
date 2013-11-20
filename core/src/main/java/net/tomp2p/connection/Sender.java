@@ -18,6 +18,7 @@ package net.tomp2p.connection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
@@ -245,7 +246,9 @@ public class Sender {
                     futureResponse.progressFirst();
                 } else {
                     futureResponse.setFailed("Channel creation failed " + future.cause());
-                    LOG.warn("Channel creation failed ", future.cause());
+                    if(!(future.cause() instanceof CancellationException)) {
+                        LOG.warn("Channel creation failed ", future.cause());
+                    }
                 }
             }
         });

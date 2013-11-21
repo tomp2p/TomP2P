@@ -48,16 +48,17 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     public PutBuilder setData(final Data data) {
         return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
-                Number160.ZERO, data);
+                versionKey == null ? Number160.ZERO : versionKey, data);
     }
 
     public PutBuilder setData(final Number160 contentKey, final Data data) {
         return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey,
-                Number160.ZERO, data);
+                versionKey == null ? Number160.ZERO : versionKey, data);
     }
 
     public PutBuilder setData(final Number160 domainKey, final Number160 contentKey, final Data data) {
-        return setData(locationKey, domainKey, contentKey, Number160.ZERO, data);
+        return setData(locationKey, domainKey, contentKey, versionKey == null ? Number160.ZERO : versionKey,
+                data);
     }
 
     public PutBuilder setData(final Data data, final Number160 versionKey) {
@@ -99,6 +100,17 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
                     .getVersionKey(), data.getValue());
         }
         super.setDomainKey(domainKey);
+        return this;
+    }
+
+    @Override
+    public PutBuilder setVersionKey(final Number160 versionKey) {
+        // if we set data before we set domain key, we need to adapt the domain key of the data object
+        if (data != null) {
+            setData(data.getKey().getLocationKey(), data.getKey().getDomainKey(), data.getKey()
+                    .getContentKey(), versionKey, data.getValue());
+        }
+        super.setVersionKey(versionKey);
         return this;
     }
 

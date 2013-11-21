@@ -78,6 +78,29 @@ public class TestDHT {
     }
     
     @Test
+    public void testPutVersion() throws Exception {
+        Peer master = null;
+        try {
+        Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+        master = peers[0];
+        Utils2.perfectRouting(peers);
+        final Data data1 = new Data(new byte[1]);
+        data1.ttlSeconds(3);
+        FuturePut futurePut = master.put(Number160.createHash("test")).setVersionKey(Number160.MAX_VALUE).setData(data1).start();
+        futurePut.awaitUninterruptibly();
+        Assert.assertEquals(true, futurePut.isSuccess());
+        //
+        Map<Number640, Data> map = peers[0].getPeerBean().storage().get();
+        Assert.assertEquals(Number160.MAX_VALUE, map.entrySet().iterator().next().getKey().getVersionKey());
+        LOG.error("done");
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
+    
+    @Test
     public void testPutPerforomance() throws Exception {
         Peer master = null;
         try {

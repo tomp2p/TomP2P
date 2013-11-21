@@ -40,7 +40,7 @@ public class Data implements Serializable {
     private static final long serialVersionUID = -5023493840082652284L;
 
     private static final int MAX_BYTE_SIZE = 256;
-    
+
     private final List<ByteBuf> releasing = new ArrayList<ByteBuf>();
 
     /**
@@ -56,16 +56,13 @@ public class Data implements Serializable {
     private final Type type;
 
     private final boolean isFlag1;
-
     private final boolean isFlag2;
-
-    private final boolean hasVersion;
-
-    private final boolean hasHash;
-
-    private final boolean hasTTL;
-
     private final boolean isProtectedEntry;
+
+    // these flags can be modified
+    private boolean hasVersion;
+    private boolean hasHash;
+    private boolean hasTTL;
 
     private final int length;
 
@@ -75,7 +72,6 @@ public class Data implements Serializable {
     // can be added later
     private Number160 hash;
     private int ttlSeconds = -1;
-    private long timestamp = -1;
     private Number160 basedOn = null;
 
     // never serialized over the network in this object
@@ -97,10 +93,10 @@ public class Data implements Serializable {
      * @param isProtectedEntry
      *            True if this entry is protected
      */
-    public Data(final DataBuffer buffer, final int length, final long timestamp, final Number160 basedOn,
-            final int ttlSeconds, final boolean hasHash, final boolean isProtectedEntry,
-            final boolean isFlag1, final boolean isFlag2) {
-        this.hasVersion = timestamp != -1 && basedOn != null;
+    public Data(final DataBuffer buffer, final int length, final Number160 basedOn, final int ttlSeconds,
+            final boolean hasHash, final boolean isProtectedEntry, final boolean isFlag1,
+            final boolean isFlag2) {
+        this.hasVersion = basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
@@ -116,7 +112,6 @@ public class Data implements Serializable {
         }
         this.buffer = buffer;
         this.validFromMillis = Timings.currentTimeMillis();
-        this.timestamp = timestamp;
         this.basedOn = basedOn;
     }
 
@@ -174,44 +169,37 @@ public class Data implements Serializable {
      * @throws IOException
      *             If the object conversion did not succeed
      */
-    public Data(final Object object, final long timestamp, final Number160 basedOn, final int ttlSeconds,
-            final boolean hasHash, final boolean isProtectedEntry) throws IOException {
-        this(Utils.encodeJavaObject(object), timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry);
+    public Data(final Object object, final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
+            final boolean isProtectedEntry) throws IOException {
+        this(Utils.encodeJavaObject(object), basedOn, ttlSeconds, hasHash, isProtectedEntry);
     }
 
-    public Data(final byte[] buffer, final long timestamp, final Number160 basedOn, final int ttlSeconds,
-            final boolean hasHash, final boolean isProtectedEntry) throws IOException {
-        this(buffer, 0, buffer.length, timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry);
+    public Data(final byte[] buffer, final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
+            final boolean isProtectedEntry) throws IOException {
+        this(buffer, 0, buffer.length, basedOn, ttlSeconds, hasHash, isProtectedEntry);
     }
 
     public Data(final byte[] buffer) {
-        this(buffer, 0, buffer.length, -1, null, -1, false, false);
+        this(buffer, 0, buffer.length, null, -1, false, false);
 
     }
 
     public Data(final byte[] buffer, final boolean hasHash, final boolean isProtectedEntry) {
-        this(buffer, 0, buffer.length, -1, null, -1, hasHash, isProtectedEntry);
+        this(buffer, 0, buffer.length, null, -1, hasHash, isProtectedEntry);
 
     }
 
     public Data(final byte[] buffer, final boolean isFlag1) {
-        this(buffer, 0, buffer.length, -1, null, -1, false, false, isFlag1, false);
+        this(buffer, 0, buffer.length, null, -1, false, false, isFlag1, false);
     }
 
     public Data(final boolean isFlag2) {
-        this(new byte[0], 0, 0, -1, null, -1, false, false, false, isFlag2);
+        this(new byte[0], 0, 0, null, -1, false, false, false, isFlag2);
     }
 
-    public Data(final byte[] buffer, final int offest, final int length, final boolean hasHash,
-            final boolean isProtectedEntry) {
-        this(buffer, offest, length, -1, null, -1, hasHash, isProtectedEntry);
-
-    }
-
-    public Data(final byte[] buffer, final int offest, final int length, final long timestamp,
-            final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry) {
-        this(buffer, offest, length, timestamp, basedOn, ttlSeconds, hasHash, isProtectedEntry, false, false);
+    public Data(final byte[] buffer, final int offest, final int length, final Number160 basedOn,
+            final int ttlSeconds, final boolean hasHash, final boolean isProtectedEntry) {
+        this(buffer, offest, length, basedOn, ttlSeconds, hasHash, isProtectedEntry, false, false);
     }
 
     /**
@@ -228,10 +216,10 @@ public class Data implements Serializable {
      * @param isProtectedEntry
      *            True if this entry is protected
      */
-    public Data(final byte[] buffer, final int offest, final int length, final long timestamp,
-            final Number160 basedOn, final int ttlSeconds, final boolean hasHash,
-            final boolean isProtectedEntry, final boolean isFlag1, final boolean isFlag2) {
-        this.hasVersion = timestamp != -1 && basedOn != null;
+    public Data(final byte[] buffer, final int offest, final int length, final Number160 basedOn,
+            final int ttlSeconds, final boolean hasHash, final boolean isProtectedEntry,
+            final boolean isFlag1, final boolean isFlag2) {
+        this.hasVersion = basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
@@ -248,7 +236,6 @@ public class Data implements Serializable {
         }
         this.validFromMillis = Timings.currentTimeMillis();
         this.ttlSeconds = ttlSeconds;
-        this.timestamp = timestamp;
         this.basedOn = basedOn;
     }
 
@@ -295,7 +282,6 @@ public class Data implements Serializable {
             data.ttlSeconds = buf.readInt();
         }
         if (data.hasVersion) {
-            data.timestamp = buf.readLong();
             byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
             buf.readBytes(me);
             data.basedOn = new Number160(me);
@@ -356,7 +342,6 @@ public class Data implements Serializable {
             buf.writeInt(ttlSeconds);
         }
         if (hasVersion) {
-            buf.writeLong(timestamp);
             buf.writeBytes(basedOn.toByteArray());
         }
         buffer.transferTo(buf);
@@ -413,15 +398,13 @@ public class Data implements Serializable {
 
     public Data ttlSeconds(int ttlSeconds) {
         this.ttlSeconds = ttlSeconds;
+        this.hasTTL = true;
         return this;
     }
 
-    public long timestamp() {
-        return timestamp;
-    }
-    
     public Data basedOn(Number160 basedOn) {
         this.basedOn = basedOn;
+        this.hasVersion = true;
         return this;
     }
 
@@ -482,7 +465,7 @@ public class Data implements Serializable {
                 || d.isProtectedEntry != isProtectedEntry) {
             return false;
         }
-        if (d.timestamp != timestamp || d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
+        if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
             return false;
         }
         if (basedOn != null) {
@@ -528,17 +511,17 @@ public class Data implements Serializable {
         if (remaining == 0) {
             return true;
         }
-        //make sure it gets not garbage collected
+        // make sure it gets not garbage collected
         buf.retain();
-        //but we need to keep track of it and when this object gets collected, we need to release the buffer
+        // but we need to keep track of it and when this object gets collected, we need to release the buffer
         releasing.add(buf);
         final int transfered = buffer.transferFrom(buf, remaining);
         return transfered == remaining;
     }
-    
+
     @Override
     protected void finalize() throws Throwable {
-        for(ByteBuf buf:releasing) {
+        for (ByteBuf buf : releasing) {
             buf.release();
         }
     }
@@ -547,8 +530,8 @@ public class Data implements Serializable {
      * @return A shallow copy where the data is shared but the reader and writer index is not shared
      */
     public Data duplicate() {
-        return new Data(buffer.shallowCopy(), length, timestamp, basedOn, ttlSeconds, hasHash,
-                isProtectedEntry, isFlag1, isFlag2);
+        return new Data(buffer.shallowCopy(), length, basedOn, ttlSeconds, hasHash, isProtectedEntry,
+                isFlag1, isFlag2);
 
     }
 

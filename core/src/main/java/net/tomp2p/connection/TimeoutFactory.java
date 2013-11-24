@@ -20,8 +20,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -49,6 +47,7 @@ public class TimeoutFactory {
     private final FutureResponse futureResponse;
     private final int timeoutSeconds;
     private final PeerStatusListener[] peerStatusListeners;
+    private final String name;
 
     /**
      * @param futureResponse
@@ -59,18 +58,34 @@ public class TimeoutFactory {
      *            The listeners that get notified when a timeout happend
      */
     public TimeoutFactory(final FutureResponse futureResponse, final int timeoutSeconds,
-            final PeerStatusListener[] peerStatusListeners) {
+            final PeerStatusListener[] peerStatusListeners, final String name) {
         this.futureResponse = futureResponse;
         this.timeoutSeconds = timeoutSeconds;
         this.peerStatusListeners = peerStatusListeners;
+        this.name = name;
     }
 
     /**
      * @return Two handlers, one default Netty that will call the second handler
      */
-    public ChannelHandler[] twoTimeoutHandlers() {
-        return new ChannelHandler[] {new IdleStateHandler(0, 0, timeoutSeconds),
-                new TimeHandler(futureResponse, peerStatusListeners) };
+    public ChannelHandler idleStateHandlerTomP2P() {
+        return new IdleStateHandlerTomP2P(timeoutSeconds);
+    }
+    
+    /**
+     * @return Two handlers, one default Netty that will call the second handler
+     */
+    public ChannelHandler timeHandler() {
+        return new TimeHandler(futureResponse, peerStatusListeners, name);
+    }
+    
+    public static void removeTimeout(ChannelHandlerContext ctx) {
+        if (ctx.channel().pipeline().names().contains("timeout0")) {
+             ctx.channel().pipeline().remove("timeout0");
+        }
+        if (ctx.channel().pipeline().names().contains("timeout1")) {
+            ctx.channel().pipeline().remove("timeout1");
+        }
     }
 
     /**
@@ -83,6 +98,7 @@ public class TimeoutFactory {
 
         private final FutureResponse futureResponse;
         private final PeerStatusListener[] peerStatusListeners;
+        private final String name;
 
         /**
          * @param futureResponse
@@ -90,15 +106,16 @@ public class TimeoutFactory {
          * @param peerStatusListeners
          *            The listeners that get notified when a timeout happend
          */
-        public TimeHandler(final FutureResponse futureResponse, final PeerStatusListener[] peerStatusListeners) {
+        public TimeHandler(final FutureResponse futureResponse, final PeerStatusListener[] peerStatusListeners, final String name) {
             this.futureResponse = futureResponse;
             this.peerStatusListeners = peerStatusListeners;
+            this.name = name;
         }
 
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
-            if (evt instanceof IdleStateEvent) {
-                LOG.warn("channel timeout for channel {}", ctx.channel());
+            if (evt instanceof IdleStateHandlerTomP2P) {
+                LOG.warn("channel timeout for channel {} {}. Request status is {}", name, ctx.channel(), futureResponse.getRequest());
                 final PeerAddress recipient;
                 if (futureResponse != null) {
                     ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
@@ -134,7 +151,6 @@ public class TimeoutFactory {
                         }
                     }
                 }
-                
             }
         }
     }

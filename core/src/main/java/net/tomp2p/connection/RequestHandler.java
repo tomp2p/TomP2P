@@ -170,6 +170,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         return futureResponse;
     }
     
+    public K sendTCP(final PeerConnection peerConnection) {
+        connectionBean.sender().sendTCP(this, futureResponse, message, null, idleTCPSeconds,
+                connectionTimeoutTCPMillis, peerConnection);
+        return futureResponse;
+    }
+    
     /**
      * Send a TCP message and expect a reply.
      * 
@@ -237,6 +243,9 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            return;
+        } else if (responseMessage.isRequest()) {
+            ctx.fireChannelRead(responseMessage);
             return;
         } else if (!sendMessageID.equals(recvMessageID)) {
             String msg = "Message [" + responseMessage

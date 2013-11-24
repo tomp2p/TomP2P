@@ -25,7 +25,7 @@ public class TestBootstrap {
         try {
             master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
             slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
-            FutureDiscover fd = master.discover().setPeerAddress(slave.getPeerAddress()).start();
+            FutureDiscover fd = master.discover().peerAddress(slave.getPeerAddress()).start();
             fd.awaitUninterruptibly();
             System.err.println(fd.getFailedReason());
             Assert.assertEquals(true, fd.isSuccess());

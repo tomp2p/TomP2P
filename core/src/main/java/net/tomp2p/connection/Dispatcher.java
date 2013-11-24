@@ -15,17 +15,16 @@
  */
 package net.tomp2p.connection;
 
+import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.DefaultChannelPromise;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.DatagramChannel;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.socket.DatagramChannel;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -33,6 +32,9 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Used to deliver incoming REQUEST messages to their specific handlers. You can register handlers using the
@@ -126,21 +128,31 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             }
             return;
         }
+        if (!message.isRequest()) {
+            LOG.debug("handing message to the next handler {}", message);
+            ctx.fireChannelRead(message);
+            return;
+        }
         Message responseMessage = null;
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
+            boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);
-            responseMessage = myHandler.forwardMessage(message);
+            PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess());
+            responseMessage = myHandler.forwardMessage(message, isUdp ? null : peerConnection);
             if (responseMessage == null) {
                 LOG.warn("Repsonse message was null, probaly a custom handler failed {}", message);
                 responseMessage = DispatchHandler.createResponseMessage(message, Type.EXCEPTION,peerBean.serverPeerAddress());
                 response(ctx, responseMessage);
             } else if (responseMessage == message) {
-            	 LOG.debug("The reply handler was a fire-and-forget handler, "
+                
+            	LOG.debug("The reply handler was a fire-and-forget handler, "
                          + "we don't send any message back! {}", message);    
-                if (!(ctx.channel() instanceof DatagramChannel)) {
+                if (!isUdp) {
                     LOG.warn("There is no TCP fire and forget, use UDP in that case {}", message);
                 	throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
+                } else {
+                    TimeoutFactory.removeTimeout(ctx);
                 }
             } else {
                 response(ctx, responseMessage);

@@ -813,7 +813,7 @@ public class Message {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Message:id=");
-        sb.append(getMessageId()).append(",t=").append(type.toString()).append(",c=").append(command);
+        sb.append(getMessageId()).append(",t=").append(type.toString()).append(",c=").append(command).append(",").append(isUdp()?"udp":"tcp");
         /*
          * sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString()).append(",l=")
          * .append(getLength() + MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(",r=")

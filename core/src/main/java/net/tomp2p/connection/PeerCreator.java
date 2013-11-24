@@ -23,6 +23,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -87,20 +89,21 @@ public class PeerCreator {
         peerBean.peerStatusListeners(peerStatusListeners);
         workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(
                 ConnectionBean.THREAD_NAME + "worker-client - "));
-        Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
-
+        
         Dispatcher dispatcher = new Dispatcher(p2pId, peerBean);
+        Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
+      
         final ChannelServer channelServer = new ChannelServer(channelServerConficuration, dispatcher,
                 peerStatusListeners);
-
-        PeerAddress self = channelServer.findPeerAddress(peerId);
         channelServer.startup();
+        
+        PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
         peerBean.serverPeerAddress(self);
         if (LOG.isInfoEnabled()) {
             LOG.info("Visible address to other peers: " + self);
         }
 
-        Sender sender = new Sender(peerStatusListeners, channelClientConfiguration);
+        Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher);
 
         NATUtils natUtils = new NATUtils();
         connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
@@ -209,5 +212,32 @@ public class PeerCreator {
      */
     public ConnectionBean connectionBean() {
         return connectionBean;
+    }
+    
+    /**
+     * Creates the {@link PeerAddress} based on the network discovery that was done in
+     * {@link #ChannelServer(Bindings, int, int, ChannelServerConficuration)}.
+     * 
+     * @param peerId
+     *            The id of this peer
+     * @return The peer address of this peer
+     * @throws IOException
+     *             If the address could not be determined
+     */
+    private PeerAddress findPeerAddress(final Number160 peerId, final ChannelClientConfiguration channelClientConfiguration, final ChannelServerConficuration channelServerConficuration) throws IOException {
+        final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.externalBindings());
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Status of external search: " + status);
+        }
+        if (channelClientConfiguration.externalBindings().foundAddresses().size() == 0) {
+            throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
+        }
+        InetAddress outsideAddress = channelClientConfiguration.externalBindings().foundAddresses().get(0);
+        final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress,
+                channelServerConficuration.ports().externalTCPPort(), channelServerConficuration.ports().externalUDPPort());
+        final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
+                channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(),
+                false, new PeerSocketAddress[] {});
+        return self;
     }
 }

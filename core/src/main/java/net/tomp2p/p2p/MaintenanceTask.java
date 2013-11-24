@@ -54,7 +54,7 @@ public class MaintenanceTask extends TimerTask {
                     continue;
                 }
                 BaseFuture future = peer.ping().setPeerAddress(peerStatatistic.getPeerAddress()).start();
-                LOG.debug("maintenance ping for " + peerStatatistic.getPeerAddress());
+                LOG.debug("maintenance ping from {} to {}", peer.getPeerAddress(), peerStatatistic.getPeerAddress());
                 peer.notifyAutomaticFutures(future);
                 runningFutures.put(future, peerStatatistic.getPeerAddress());
                 COUNTER.incrementAndGet();

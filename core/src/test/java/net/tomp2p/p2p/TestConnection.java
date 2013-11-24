@@ -1,13 +1,14 @@
 package net.tomp2p.p2p;
 
 import java.net.InetAddress;
+import java.net.StandardProtocolFamily;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -24,8 +25,9 @@ public class TestConnection {
         Peer peer1 = null;
         Peer peer2 = null;
         try {
-            Bindings b1 = new Bindings(Bindings.Protocol.IPv4, InetAddress.getByName("127.0.0.1"), 4005, 4005);
-            Bindings b2 = new Bindings(Bindings.Protocol.IPv4, InetAddress.getByName("127.0.0.1"), 4006, 4006);
+            Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
+            Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
+            
             peer1 = new PeerMaker(new Number160(rnd)).ports(4005).bindings(b1).makeAndListen();
             peer2 = new PeerMaker(new Number160(rnd)).ports(4006).bindings(b2).makeAndListen();
 
@@ -45,11 +47,11 @@ public class TestConnection {
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
             String sentObject = "Hello";
-            FutureResponse fd = peer1.sendDirect(fpc).setObject(sentObject).start();
+            FutureDirect fd = peer1.sendDirect(fpc).setObject(sentObject).start();
             System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
             Assert.assertEquals(true, fd.isSuccess());
-            System.out.println("received " + fd.getResponse().getBuffer(0).object() + " connections: "
+            System.out.println("received " + fd.object() + " connections: "
                     + ChannelCreator.tcpConnectionCount());
             // we reuse the connection
             long start = System.currentTimeMillis();
@@ -59,7 +61,7 @@ public class TestConnection {
             System.err.println(fd.getFailedReason());
             Assert.assertEquals(true, fd.isSuccess());
             System.err.println(fd.getFailedReason());
-            System.out.println("received " + fd.getResponse().getBuffer(0).object() + " connections: "
+            System.out.println("received " + fd.object() + " connections: "
                     + ChannelCreator.tcpConnectionCount());
             // now we don't want to keep the connection open anymore:
             double duration = (System.currentTimeMillis() - start) / 1000d;

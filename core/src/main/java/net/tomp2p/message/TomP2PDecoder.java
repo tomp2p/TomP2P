@@ -20,6 +20,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -159,15 +160,9 @@ public class TomP2PDecoder {
                 }
                 contentTypes.offer(content);
             }
-            // if we receive a keep alive message, remove the timeout handler. Maybe its better to add a longer timeout
-            // in the future
-            if (message.isKeepAlive()) {
-                if (ctx.channel().pipeline().names().contains("timeout-server0")) {
-                    ctx.channel().pipeline().remove("timeout-server0");
-                }
-                if (ctx.channel().pipeline().names().contains("timeout-server1")) {
-                    ctx.channel().pipeline().remove("timeout-server1");
-                }
+
+            if (message.isFireAndForget() && message.isUdp()) {
+                TimeoutFactory.removeTimeout(ctx);
             }
             LOG.debug("parsed message {}", message);
         }

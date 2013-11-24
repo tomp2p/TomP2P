@@ -28,6 +28,7 @@ import java.util.NavigableSet;
 import java.util.Random;
 import java.util.TreeSet;
 
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message.Type;
@@ -106,12 +107,16 @@ public class Utils2 {
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);
     }
-    
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture) throws Exception {
+
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
+            throws Exception {
         return createNodes(nrOfPeers, rnd, port, automaticFuture, false);
     }
-        
-        
+
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+            boolean replication) throws Exception {
+        return createNodes(nrOfPeers, rnd, port, automaticFuture, false, true);
+    }
 
     /**
      * Creates peers for testing. The first peer (peer[0]) will be used as the master. This means that shutting down
@@ -127,40 +132,46 @@ public class Utils2 {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture, boolean replication) throws Exception {
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+            boolean replication, boolean maintenance) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
+        Bindings bindings = new Bindings().addInterface("lo");
         Peer[] peers = new Peer[nrOfPeers];
-            if (automaticFuture!=null) {
-                peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
-                        .addAutomaticFuture(automaticFuture).ports(port)
-                        .makeAndListen();
-            } else {
-                peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication).ports(port).makeAndListen();
-            }
-        
+        if (automaticFuture != null) {
+            peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
+                    .addAutomaticFuture(automaticFuture).ports(port).setEnableMaintenance(maintenance)
+                    .externalBindings(bindings).makeAndListen();
+        } else {
+            peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(maintenance).externalBindings(bindings)
+                    .setEnableIndirectReplication(replication).ports(port).makeAndListen();
+        }
+
         for (int i = 1; i < nrOfPeers; i++) {
-            if (automaticFuture!=null) {
+            if (automaticFuture != null) {
                 peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
                         .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
-                        .makeAndListen();
+                        .setEnableMaintenance(maintenance).externalBindings(bindings).makeAndListen();
             } else {
-                peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication).masterPeer(peers[0]).makeAndListen();
+                peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(maintenance)
+                        .externalBindings(bindings).setEnableIndirectReplication(replication).masterPeer(peers[0])
+                        .makeAndListen();
             }
         }
         System.err.println("peers created.");
         return peers;
     }
 
-    public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort, AutomaticFuture automaticFuture) throws Exception {
+    public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort,
+            AutomaticFuture automaticFuture) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
         for (int i = 0; i < nrOfPeers; i++) {
-            peers[i] = new PeerMaker(new Number160(rnd)).addAutomaticFuture(automaticFuture).ports(startPort + i)
-                    .makeAndListen();
+            peers[i] = new PeerMaker(new Number160(rnd)).addAutomaticFuture(automaticFuture)
+                    .ports(startPort + i).makeAndListen();
         }
         System.err.println("real peers created.");
         return peers;
@@ -191,6 +202,14 @@ public class Utils2 {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
                 peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), null);
+        }
+        System.err.println("perfect routing done.");
+    }
+    
+    public static void perfectRoutingIndirect(Peer... peers) {
+        for (int i = 0; i < peers.length; i++) {
+            for (int j = 0; j < peers.length; j++)
+                peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), peers[j].getPeerAddress());
         }
         System.err.println("perfect routing done.");
     }
@@ -231,7 +250,7 @@ public class Utils2 {
         List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
         List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
         for (int i = 1; i < peers.length; i++) {
-            FutureDiscover tmp = peers[i].discover().setPeerAddress(peers[0].getPeerAddress()).start();
+            FutureDiscover tmp = peers[i].discover().peerAddress(peers[0].getPeerAddress()).start();
             futures2.add(tmp);
         }
         for (FutureDiscover future : futures2) {

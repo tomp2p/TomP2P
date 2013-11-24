@@ -54,7 +54,7 @@ public final class DiscoverNetworks {
         Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
         while (e.hasMoreElements()) {
             NetworkInterface networkInterface = e.nextElement();
-            if (bindings.isAllInterfaces()) {
+            if (bindings.anyInterfaces()) {
                 sb.append(" ++").append(networkInterface.getName());
                 sb.append(discoverNetwork(networkInterface, bindings)).append(",");
             } else {
@@ -91,15 +91,15 @@ public final class DiscoverNetworks {
                 continue;
             }
             InetAddress inet = iface.getAddress();
-            if (iface.getBroadcast() != null && !bindings.getBroadcastAddresses().contains(iface.getBroadcast())) {
-                bindings.getBroadcastAddresses().add(iface.getBroadcast());
+            if (iface.getBroadcast() != null && !bindings.broadcastAddresses().contains(iface.getBroadcast())) {
+                bindings.broadcastAddresses().add(iface.getBroadcast());
             }
-            if (bindings.getFoundAddresses().contains(inet)) {
+            if (bindings.containsAddress(inet)) {
                 continue;
             }
             // ignore if a user specifies an address and inet is not part of it
-            if (!bindings.isAllAddresses()) {
-                if (!bindings.getAddresses().contains(inet)) {
+            if (!bindings.anyAddresses()) {
+                if (!bindings.addresses().contains(inet)) {
                     continue;
                 }
             }

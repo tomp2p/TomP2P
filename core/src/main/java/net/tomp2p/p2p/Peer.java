@@ -20,12 +20,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -63,7 +63,6 @@ import net.tomp2p.rpc.SynchronizationRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -406,7 +405,6 @@ public class Peer {
                 } else {
                     futureDone.setFailed(future);
                 }
-
             }
         });
         return futureDone;
@@ -418,17 +416,16 @@ public class Peer {
      * 
      * @param internalHost
      *            The IP of the internal host
-     * @return True if port forwarding seemed to be successful
+     * @return The new external ports if port forwarding seemed to be successful, otherwise null
      */
-    public boolean setupPortForwanding(final String internalHost) {
-        Bindings bindings = getConnectionBean().channelServer().bindings();
-        int portUDP = bindings.getOutsideUDPPort();
-        int portTCP = bindings.getOutsideTCPPort();
+    public Ports setupPortForwanding(final String internalHost) {
+        //new random ports
+        Ports ports = new Ports();
         boolean success;
 
         try {
             success = getConnectionBean().natUtils().mapUPNP(internalHost, getPeerAddress().tcpPort(),
-                    getPeerAddress().udpPort(), portUDP, portTCP);
+                    getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
         } catch (IOException e) {
             success = false;
         }
@@ -439,7 +436,7 @@ public class Peer {
             }
             try {
                 success = getConnectionBean().natUtils().mapPMP(getPeerAddress().tcpPort(),
-                        getPeerAddress().udpPort(), portUDP, portTCP);
+                        getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
                 if (!success) {
                     if (LOG.isWarnEnabled()) {
                         LOG.warn("cannot find NAT-PMP devices");
@@ -451,7 +448,10 @@ public class Peer {
                 }
             }
         }
-        return success;
+        if(success) {
+            return ports;
+        }
+        return null;
     }
 
     // New API - builder pattern

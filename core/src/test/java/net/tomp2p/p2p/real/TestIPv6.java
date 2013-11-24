@@ -18,6 +18,7 @@ package net.tomp2p.p2p.real;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.StandardProtocolFamily;
 import java.util.Random;
 
 import org.junit.Ignore;
@@ -27,7 +28,6 @@ import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.connection.Bindings.Protocol;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -56,7 +56,7 @@ public class TestIPv6 {
     @Ignore
     public void startServer() throws IOException {
         Random r = new Random(Utils2.THE_ANSWER);
-        Bindings b = new Bindings(Protocol.IPv6);
+        Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET6);
         Peer peer = new PeerMaker(new Number160(r)).bindings(b).ports(port).makeAndListen();
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             for (PeerAddress pa : peer.getPeerBean().peerMap().getAll()) {
@@ -96,7 +96,7 @@ public class TestIPv6 {
     @Ignore
     public void startClient() throws IOException {
         Random r = new Random(Utils2.THE_ANSWER2);
-        Bindings b = new Bindings(Protocol.IPv6);
+        Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET6);
         Peer peer = new PeerMaker(new Number160(r)).bindings(b).ports(port).makeAndListen();
         FutureBootstrap fb = peer.bootstrap().setInetAddress(InetAddress.getByName(ipSuperPeer)).setPorts(port).start();
         fb.awaitUninterruptibly();

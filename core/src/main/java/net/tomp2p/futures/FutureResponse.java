@@ -141,7 +141,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     public boolean setResponseLater(final Message responseMessage) {
-        //System.err.println("response later "+this);
         synchronized (lock) {
             if(completed) {
                 return false;

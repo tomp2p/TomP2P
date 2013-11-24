@@ -31,7 +31,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureSend;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
@@ -144,10 +144,10 @@ public class DistributedHashTable {
             final FutureCreate<FutureDHT> futureCreate, final boolean cancelOnFinish, final boolean manualCleanup,
             final FutureChannelCreator futureChannelCreator, final ConnectionReservation connectionReservation) {*/
     
-    public FutureDirect direct(final SendBuilder builder) {
+    public FutureSend direct(final SendBuilder builder) {
     
-        final FutureDirect futureDHT = 
-                new FutureDirect(builder.getRequestP2PConfiguration().getMinimumResults(), new VotingSchemeDHT());
+        final FutureSend futureDHT = 
+                new FutureSend(builder.getRequestP2PConfiguration().getMinimumResults(), new VotingSchemeDHT());
         
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -165,7 +165,7 @@ public class DistributedHashTable {
                                     logger.debug("storing lkey={} on {}", builder.getLocationKey(), futureRouting.getPotentialHits());
                                 parallelRequests(builder.getRequestP2PConfiguration(), futureRouting.getPotentialHits(), futureDHT,
                                         builder.isCancelOnFinish(), future.getChannelCreator(),
-                                        new OperationMapper<FutureDirect>() {
+                                        new OperationMapper<FutureSend>() {
                                             Map<PeerAddress, ByteBuf> rawChannels = new HashMap<PeerAddress, ByteBuf>();
 
                                             Map<PeerAddress, Object> rawObjects = new HashMap<PeerAddress, Object>();
@@ -177,7 +177,7 @@ public class DistributedHashTable {
                                             }
 
                                             @Override
-                                            public void response(FutureDirect futureDHT) {
+                                            public void response(FutureSend futureDHT) {
                                                 if (builder.isRaw())
                                                     futureDHT.setDirectData1(rawChannels);
                                                 else

@@ -32,7 +32,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -83,6 +82,8 @@ public class ChannelCreator {
     private final FutureDone<Void> futureChannelCreationDone;
 
     private final ChannelClientConfiguration channelClientConfiguration;
+    
+    private final Bindings externalBindings;
 
     /**
      * Package private constructor, since this is created by {@link ConnectionReservation} and should never be called
@@ -110,6 +111,7 @@ public class ChannelCreator {
         this.semaphoreUPD = new Semaphore(maxPermitsUDP);
         this.semaphoreTCP = new Semaphore(maxPermitsTCP);
         this.channelClientConfiguration = channelClientConfiguration;
+        this.externalBindings = channelClientConfiguration.externalBindings();
     }
 
     /**
@@ -148,9 +150,9 @@ public class ChannelCreator {
             // broadcast messages
             final ChannelFuture channelFuture;
             if (broadcast) {
-                channelFuture = b.bind(new InetSocketAddress(0));
+                channelFuture = b.bind(externalBindings.wildCardSocket());
             } else {
-                channelFuture = b.connect(recipient);
+                channelFuture = b.connect(recipient, externalBindings.wildCardSocket());
             }
 
             setupCloseListener(channelFuture, semaphoreUPD);
@@ -194,7 +196,7 @@ public class ChannelCreator {
             channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
             addHandlers(b, channelHandlers);
 
-            ChannelFuture channelFuture = b.connect(socketAddress);
+            ChannelFuture channelFuture = b.connect(socketAddress, externalBindings.wildCardSocket());
 
             setupCloseListener(channelFuture, semaphoreTCP);
             CREATED_TCP_CONNECTIONS.incrementAndGet();

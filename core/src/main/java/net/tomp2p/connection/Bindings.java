@@ -18,9 +18,11 @@ package net.tomp2p.connection;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.StandardProtocolFamily;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Gathers information about interface bindings. Here a user can set the
@@ -34,186 +36,19 @@ import java.util.Random;
  * @author Thomas Bocek
  */
 public class Bindings {
-    /**
-     * Types of protocols. This was a boolean, but there needs to be the type
-     * "Any".
-     */
-    public enum Protocol {
-        /**
-         * 32 bit IP version 4.
-         */
-        IPv4,
-        /**
-         * 128 bit IP version 6.
-         */
-        IPv6,
-        /**
-         * This type indicates that the address to bind to can be either IPv4 or
-         * IPv6.
-         */
-        Any
-    };
-
-    /**
-     * The number of maximum ports, 2^16.
-     */
-    public static final int MAX_PORT = 65535;
-
-    /**
-     * IANA recommends to use ports higher than 49152.
-     */
-    public static final int MIN_DYN_PORT = 49152;
-
-    /**
-     * The default port of TomP2P.
-     */
-    public static final int DEFAULT_PORT = 7700;
-
-    private static final Random RND = new Random();
-
-    // IANA recommends to use ports higher than 49152
-    private static final int RANGE = MAX_PORT - MIN_DYN_PORT;
 
     // This can be set by the user. The discover process will not use this field
     // to store anything
-    private final List<InetAddress> listenAddresses = new ArrayList<InetAddress>(1);
-
-    private final List<String> listenInterfaceHints = new ArrayList<String>(1);
-
-    private final Protocol listenProtocolHint;
-
-    // provide this information if you know your mapping beforehand, i.e. manual
-    // port-forwarding
-    private final InetAddress externalAddress;
-
-    private final int externalTCPPort;
-
-    private final int externalUDPPort;
-
-    private final boolean setExternalPortsManually;
+    private final List<InetAddress> addresses = new ArrayList<InetAddress>(1);
+    private final List<String> interfaceHints = new ArrayList<String>(1);
+    private final List<StandardProtocolFamily> protocolHint = new ArrayList<StandardProtocolFamily>(1);
 
     // here are the found address stored. This is not set by the user
     private final List<InetAddress> foundBroadcastAddresses = new ArrayList<InetAddress>(1);
-
     // here are the found address stored. This is not set by the user
     private final List<Inet4Address> foundAddresses4 = new ArrayList<Inet4Address>(1);
-
     // here are the found address stored. This is not set by the user
     private final List<Inet6Address> foundAddresses6 = new ArrayList<Inet6Address>(1);
-
-    /**
-     * Creates a binding class that binds to everything.
-     */
-    public Bindings() {
-        this(Protocol.Any, null, 0, 0);
-    }
-
-    /**
-     * Creates a binding class that binds to a specified address.
-     * 
-     * @param bind
-     *            the address to bind to
-     */
-    public Bindings(final InetAddress bind) {
-        this(Protocol.Any, null, 0, 0);
-        addAddress(bind);
-    }
-
-    /**
-     * Creates a Binding class that binds to a specified interface.
-     * 
-     * @param iface
-     *            The interface to bind to
-     */
-    public Bindings(final String iface) {
-        this(Protocol.Any, null, 0, 0);
-        addInterface(iface);
-    }
-
-    /**
-     * Creates a Binding class that binds to a specified protocol.
-     * 
-     * @param protocol
-     *            The protocol to bind to
-     */
-    public Bindings(final Protocol protocol) {
-        this(protocol, null, 0, 0);
-    }
-
-    /**
-     * Creates a Binding class that binds to a specified protocol and interface.
-     * 
-     * @param protocol
-     *            The protocol to bind to
-     * @param iface
-     *            The interface to bind to
-     */
-    public Bindings(final Protocol protocol, final String iface) {
-        this(protocol, null, 0, 0);
-        addInterface(iface);
-    }
-
-    /**
-     * Creates a Binding class that binds to a specified protocol and interface
-     * and address.
-     * 
-     * @param protocol
-     *            The protocol to bind to
-     * @param iface
-     *            The interface to bind to
-     * @param bind
-     *            The address to bind to
-     */
-    public Bindings(final Protocol protocol, final String iface, final InetAddress bind) {
-        this(protocol, null, 0, 0);
-        addInterface(iface);
-    }
-
-    /**
-     * Creates a Binding class that binds to everything and provides information
-     * about manual port forwarding.
-     * 
-     * @param externalAddress
-     *            The external address, how other peers will see us
-     * @param externalTCPPort
-     *            The external port, how other peers will see us
-     * @param externalUDPPort
-     *            The external port, how other peers will see us
-     */
-    public Bindings(final InetAddress externalAddress, final int externalTCPPort, final int externalUDPPort) {
-        this(Protocol.Any, externalAddress, externalTCPPort, externalUDPPort);
-    }
-
-    /**
-     * Creates a Binding class that binds to a specified protocol and provides
-     * information about manual port forwarding.
-     * 
-     * @param protocol
-     *            The protocol to bind to
-     * @param externalAddress
-     *            The external address, how other peers will see us. Use null if
-     *            you don't want to use external address
-     * @param externalTCPPort
-     *            The external port, how other peers will see us, if 0 is
-     *            provided, a random port will be used
-     * @param externalUDPPort
-     *            The external port, how other peers will see us, if 0 is
-     *            provided, a random port will be used
-     */
-    public Bindings(final Protocol protocol, final InetAddress externalAddress, 
-            final int externalTCPPort, final int externalUDPPort) {
-        if (externalTCPPort < 0 || externalUDPPort < 0) {
-            throw new IllegalArgumentException("port needs to be >= 0");
-        }
-        this.externalAddress = externalAddress;
-        this.externalTCPPort = externalTCPPort == 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalTCPPort;
-        this.externalUDPPort = externalUDPPort == 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalUDPPort;
-        // set setExternalPortsManually to true if the user specified both ports
-        // in advance. This tells us that the user knows about the ports and did
-        // a manual port-forwarding.
-        this.setExternalPortsManually = externalUDPPort != 0 && externalTCPPort != 0;
-        this.listenProtocolHint = protocol;
-    }
 
     /**
      * Adds an address that we want to listen to. If the address is not found,
@@ -236,6 +71,15 @@ public class Bindings {
         }
         return this;
     }
+    
+    boolean containsAddress(final InetAddress address) {
+        boolean contains = foundAddresses4.contains(address);
+        if(contains) {
+            return true;
+        } else {
+            return foundAddresses6.contains(address);
+        }
+    }
 
     /**
      * Returns a list of InetAddresses to listen to. First Inet4Addresses, then
@@ -244,12 +88,19 @@ public class Bindings {
      * 
      * @return A list of InetAddresses to listen to
      */
-    public List<InetAddress> getFoundAddresses() {
+    public List<InetAddress> foundAddresses() {
         // first return ipv4, then ipv6
         List<InetAddress> listenAddresses2 = new ArrayList<InetAddress>();
         listenAddresses2.addAll(foundAddresses4);
         listenAddresses2.addAll(foundAddresses6);
         return listenAddresses2;
+    }
+    
+    /**
+     * @return A list of broadcast addresses.
+     */
+    public List<InetAddress> broadcastAddresses() {
+        return foundBroadcastAddresses;
     }
 
     /**
@@ -261,23 +112,16 @@ public class Bindings {
      * @return this instance
      */
     public Bindings addAddress(final InetAddress address) {
-        listenAddresses.add(address);
+        addresses.add(address);
         return this;
     }
 
     /**
      * @return A list of the addresses provided by the user
      */
-    public List<InetAddress> getAddresses() {
-        return listenAddresses;
-    }
-
-    /**
-     * @return A list of broadcast addresses.
-     */
-    public List<InetAddress> getBroadcastAddresses() {
-        return foundBroadcastAddresses;
-    }
+    public List<InetAddress> addresses() {
+        return addresses;
+    }    
 
     /**
      * Adds an interface that will be searched for. If the interface is not
@@ -291,22 +135,30 @@ public class Bindings {
         if (interfaceHint == null) {
             throw new IllegalArgumentException("Cannot add null");
         }
-        listenInterfaceHints.add(interfaceHint);
+        interfaceHints.add(interfaceHint);
+        return this;
+    }
+    
+    public Bindings addProtocol(StandardProtocolFamily protocolFamily) {
+        if (protocolFamily == null) {
+            throw new IllegalArgumentException("Cannot add null");
+        }
+        protocolHint.add(protocolFamily);
         return this;
     }
 
     /**
      * @return A list of interfaces to listen to
      */
-    public List<String> getInterfaces() {
-        return listenInterfaceHints;
+    public List<String> interfaceHints() {
+        return interfaceHints;
     }
 
     /**
      * @return The protocol to listen to
      */
-    public Protocol getProtocol() {
-        return listenProtocolHint;
+    public List<StandardProtocolFamily> protocolHint() {
+        return protocolHint;
     }
 
     /**
@@ -314,8 +166,8 @@ public class Bindings {
      * broadcastAddresses.
      */
     public void clear() {
-        listenInterfaceHints.clear();
-        listenAddresses.clear();
+        interfaceHints.clear();
+        addresses.clear();
         foundAddresses4.clear();
         foundAddresses6.clear();
         foundBroadcastAddresses.clear();
@@ -324,43 +176,43 @@ public class Bindings {
     /**
      * @return Checks if the user sets any addresses
      */
-    public boolean isAllAddresses() {
-        return listenAddresses.size() == 0;
+    public boolean anyAddresses() {
+        return addresses.size() == 0;
     }
 
     /**
      * @return Checks if the user sets any interfaces
      */
-    public boolean isAllInterfaces() {
-        return listenInterfaceHints.size() == 0;
+    public boolean anyInterfaces() {
+        return interfaceHints.size() == 0;
     }
 
     /**
      * @return Checks if the user sets any protocols
      */
-    public boolean isAllProtocols() {
-        return listenProtocolHint == Protocol.Any;
+    public boolean anyProtocols() {
+        return protocolHint.size() == 0;
     }
 
     /**
      * @return Checks if the user sets protocol to anything or IPv4
      */
     public boolean isIPv4() {
-        return isAllProtocols() || listenProtocolHint == Protocol.IPv4;
+        return anyProtocols() || protocolHint.contains(StandardProtocolFamily.INET);
     }
 
     /**
      * @return Checks if the user sets protocol to anything or IPv6
      */
     public boolean isIPv6() {
-        return isAllProtocols() || listenProtocolHint == Protocol.IPv6;
+        return anyProtocols() || protocolHint.contains(StandardProtocolFamily.INET6);
     }
 
     /**
      * @return Checks if the user sets anything at all
      */
     public boolean isListenAll() {
-        return isAllProtocols() && isAllInterfaces() && isAllAddresses();
+        return anyProtocols() && anyInterfaces() && anyAddresses();
     }
 
     /**
@@ -371,35 +223,7 @@ public class Bindings {
      * @return True if the user added the interface
      */
     public boolean containsInterface(final String name) {
-        return listenInterfaceHints.contains(name);
-    }
-
-    /**
-     * @return Checks if the user set the external address
-     */
-    public boolean isExternalAddress() {
-        return externalAddress != null && externalTCPPort != 0 && externalUDPPort != 0;
-    }
-
-    /**
-     * @return Returns the externalAddress, how other peers see us
-     */
-    public InetAddress getExternalAddress() {
-        return externalAddress;
-    }
-
-    /**
-     * @return Returns the external port, how other peers see us
-     */
-    public int getOutsideTCPPort() {
-        return externalTCPPort;
-    }
-
-    /**
-     * @return Returns the external port, how other peers see us
-     */
-    public int getOutsideUDPPort() {
-        return externalUDPPort;
+        return interfaceHints.contains(name);
     }
 
     /**
@@ -420,12 +244,15 @@ public class Bindings {
         return this;
     }
 
-    /**
-     * @return True if the user specified both ports in advance. This tells us
-     *         that the user knows about the ports and did a manual
-     *         port-forwarding.
-     */
-    public boolean isSetExternalPortsManually() {
-        return setExternalPortsManually;
+    public SocketAddress wildCardSocket() {
+        if(!isListenAll()) {
+            if(foundAddresses4.size()>0) {
+                return new InetSocketAddress(foundAddresses4.get(0), 0);
+            }
+            if(foundAddresses6.size()>0) {
+                return new InetSocketAddress(foundAddresses6.get(0), 0);
+            }
+        }
+        return new InetSocketAddress(0);
     }
 }

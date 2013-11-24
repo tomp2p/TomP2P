@@ -450,7 +450,6 @@ public class DistributedTracker {
     private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
             Collection<PeerAddress> knownPeers1, Collection<PeerAddress> knownPeers2) {
         // result will be small, so we chose an array list.
-        @SuppressWarnings("unchecked")
         final Collection<PeerAddress> result = Utils.difference(newPeers, new ArrayList<PeerAddress>(), knownPeers1,
                 knownPeers2);
         // if result contains only elements that queueToAsk already has, false

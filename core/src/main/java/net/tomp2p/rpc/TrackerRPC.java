@@ -26,6 +26,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -130,7 +131,7 @@ public class TrackerRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(Message message, boolean sign) throws Exception {
+    public Message handleResponse(Message message, PeerConnection peerConnection, boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
                 && message.getKey(0) != null && message.getKey(1) != null)) {
             throw new IllegalArgumentException("Message content is wrong");

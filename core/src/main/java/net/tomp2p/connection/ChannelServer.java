@@ -43,9 +43,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -76,9 +73,9 @@ public final class ChannelServer {
     private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
     // setup
-    private final Bindings bindings;
-    private final int tcpPort;
-    private final int udpPort;
+    private final Bindings interfaceBindings;
+    private final Ports ports;
+
     private final ChannelServerConficuration channelServerConfiguration;
     private final Dispatcher dispatcher;
     private final PeerStatusListener[] peerStatusListeners;
@@ -97,13 +94,12 @@ public final class ChannelServer {
      */
     public ChannelServer(final ChannelServerConficuration channelServerConfiguration,
             final Dispatcher dispatcher, final PeerStatusListener[] peerStatusListeners) throws IOException {
-        this.bindings = channelServerConfiguration.getBindings();
-        this.tcpPort = channelServerConfiguration.getTcpPort();
-        this.udpPort = channelServerConfiguration.getUdpPort();
+        this.interfaceBindings = channelServerConfiguration.interfaceBindings();
+        this.ports = channelServerConfiguration.ports();
         this.channelServerConfiguration = channelServerConfiguration;
         this.dispatcher = dispatcher;
         this.peerStatusListeners = peerStatusListeners;
-        final String status = DiscoverNetworks.discoverInterfaces(bindings);
+        final String status = DiscoverNetworks.discoverInterfaces(interfaceBindings);
         if (LOG.isInfoEnabled()) {
             LOG.info("Status of interface search: " + status);
         }
@@ -112,8 +108,8 @@ public final class ChannelServer {
     /**
      * @return The binding that was used to setup the incoming connections
      */
-    public Bindings bindings() {
-        return bindings;
+    public Ports ports() {
+        return ports;
     }
 
     /**
@@ -124,64 +120,31 @@ public final class ChannelServer {
     }
 
     /**
-     * Creates the {@link PeerAddress} based on the network discovery that was done in
-     * {@link #ChannelServer(Bindings, int, int, ChannelServerConficuration)}.
-     * 
-     * @param peerId
-     *            The id of this peer
-     * @return The peer address of this peer
-     * @throws IOException
-     *             If the address could not be determined
-     */
-    public PeerAddress findPeerAddress(final Number160 peerId) throws IOException {
-        InetAddress outsideAddress = bindings.getExternalAddress();
-        final PeerAddress self;
-        if (outsideAddress == null) {
-            if (bindings.getFoundAddresses().size() == 0) {
-                throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
-            }
-            outsideAddress = bindings.getFoundAddresses().get(0);
-            final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, tcpPort,
-                    udpPort);
-
-            self = new PeerAddress(peerId, peerSocketAddress, channelServerConfiguration.isBehindFirewall(),
-                    channelServerConfiguration.isBehindFirewall(), false, new PeerSocketAddress[] {});
-        } else {
-            final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress,
-                    bindings.getOutsideTCPPort(), bindings.getOutsideUDPPort());
-            self = new PeerAddress(peerId, peerSocketAddress, channelServerConfiguration.isBehindFirewall(),
-                    channelServerConfiguration.isBehindFirewall(), false, new PeerSocketAddress[] {});
-        }
-        return self;
-    }
-
-    /**
      * Starts to listen to UDP and TCP ports.
      * 
      * @throws IOException
-     *             If the starup fails, e.g, ports already in use
+     *             If the startup fails, e.g, ports already in use
      */
     public void startup() throws IOException {
-
         if (!channelServerConfiguration.disableBind()) {
-            final boolean listenAll = bindings.isListenAll();
+            final boolean listenAll = interfaceBindings.isListenAll();
             if (listenAll) {
                 if (LOG.isInfoEnabled()) {
-                    LOG.info("Listening for broadcasts on port udp: " + udpPort + " and tcp:" + tcpPort);
+                    LOG.info("Listening for broadcasts on port udp: " + ports.externalUDPPort() + " and tcp:" + ports.externalTCPPort());
                 }
-                if (!startupTCP(new InetSocketAddress(tcpPort), channelServerConfiguration)
-                        || !startupUDP(new InetSocketAddress(udpPort), channelServerConfiguration)) {
+                if (!startupTCP(new InetSocketAddress(ports.externalTCPPort()), channelServerConfiguration)
+                        || !startupUDP(new InetSocketAddress(ports.externalUDPPort()), channelServerConfiguration)) {
                     throw new IOException("cannot bind TCP or UDP");
                 }
 
             } else {
-                for (InetAddress addr : bindings.getFoundAddresses()) {
+                for (InetAddress addr : interfaceBindings.foundAddresses()) {
                     if (LOG.isInfoEnabled()) {
-                        LOG.info("Listening on address: " + addr + " on port udp: " + udpPort + " and tcp:"
-                                + tcpPort);
+                        LOG.info("Listening on address: " + addr + " on port udp: " + ports.externalUDPPort() + " and tcp:"
+                                + ports.externalTCPPort());
                     }
-                    if (!startupTCP(new InetSocketAddress(addr, tcpPort), channelServerConfiguration)
-                            || !startupUDP(new InetSocketAddress(addr, udpPort), channelServerConfiguration)) {
+                    if (!startupTCP(new InetSocketAddress(addr, ports.externalTCPPort()), channelServerConfiguration)
+                            || !startupUDP(new InetSocketAddress(addr, ports.externalUDPPort()), channelServerConfiguration)) {
                         throw new IOException("cannot bind TCP or UDP");
                     }
                 }
@@ -258,14 +221,14 @@ public final class ChannelServer {
      * @return The channel handlers that may have been modified by the user
      */
     private Map<String, ChannelHandler> handlers(final boolean tcp) {
-        final ChannelHandler[] c = new TimeoutFactory(null, channelServerConfiguration.idleTCPSeconds(),
-                peerStatusListeners).twoTimeoutHandlers();
+        TimeoutFactory timeoutFactory = new TimeoutFactory(null, channelServerConfiguration.idleTCPSeconds(),
+                peerStatusListeners, "Server");
         final Map<String, ChannelHandler> handlers;
         if (tcp) {
             final int nrTCPHandlers = 5;
             handlers = new LinkedHashMap<String, ChannelHandler>(nrTCPHandlers);
-            handlers.put("timeout-server0", c[0]);
-            handlers.put("timeout-server1", c[1]);
+            handlers.put("timeout0", timeoutFactory.idleStateHandlerTomP2P());
+            handlers.put("timeout1", timeoutFactory.timeHandler());
             handlers.put("decoder", new TomP2PCumulationTCP(channelServerConfiguration.signatureFactory()));
         } else {
             // we don't need here a timeout since we receive a packet or nothing. It is different than with TCP where we

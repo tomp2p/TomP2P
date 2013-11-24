@@ -34,61 +34,14 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
 
     private PipelineFilter pipelineFilter = null;
 
-    private Bindings bindings = null;
-
-    private int tcpPort = -1;
-
-    private int udpPort = -1;
+    private Bindings interfaceBindings = null;
 
     private SignatureFactory signatureFactory = null;
 
     private boolean forceTCP;
     private boolean forceUDP;
-
-    /**
-     * @return the bindings
-     */
-    public Bindings getBindings() {
-        return bindings;
-    }
-
-    /**
-     * @param bindings
-     *            the bindings to set
-     */
-    public void setBindings(final Bindings bindings) {
-        this.bindings = bindings;
-    }
-
-    /**
-     * @return the tcpPort
-     */
-    public int getTcpPort() {
-        return tcpPort;
-    }
-
-    /**
-     * @param tcpPort
-     *            the tcpPort to set
-     */
-    public void setTcpPort(final int tcpPort) {
-        this.tcpPort = tcpPort;
-    }
-
-    /**
-     * @return the udpPort
-     */
-    public int getUdpPort() {
-        return udpPort;
-    }
-
-    /**
-     * @param udpPort
-     *            the udpPort to set
-     */
-    public void setUdpPort(final int udpPort) {
-        this.udpPort = udpPort;
-    }
+    
+    private Ports ports;
 
     /**
      * @return True if this peer is behind a firewall and cannot be accessed directly
@@ -252,5 +205,21 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return this;
     }
 
+    public Ports ports() {
+        return ports;
+    }
+
+    public ChannelServerConficuration ports(Ports ports) {
+        this.ports = ports;
+        return this;
+    }
+
+    public ChannelServerConficuration interfaceBindings(Bindings interfaceBindings) {
+        this.interfaceBindings = interfaceBindings;
+        return this;
+    }
     
+    public Bindings interfaceBindings() {
+        return interfaceBindings;
+    }
 }

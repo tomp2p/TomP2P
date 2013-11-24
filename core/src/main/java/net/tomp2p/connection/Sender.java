@@ -16,20 +16,25 @@
 
 package net.tomp2p.connection;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.GenericFutureListener;
+
+import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
+import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -46,6 +51,9 @@ public class Sender {
     private static final Logger LOG = LoggerFactory.getLogger(Sender.class);
     private final PeerStatusListener[] peerStatusListeners;
     private final ChannelClientConfiguration channelClientConfiguration;
+    private final Dispatcher dispatcher;
+
+    private PingBuilder pingBuilder;
 
     /**
      * Creates a new sender with the listeners for offline peers.
@@ -54,11 +62,26 @@ public class Sender {
      *            The listener for offline peers
      * @param channelClientConfiguration
      *            The configuration used to get the signature factory
+     * @param dispatcher
      */
     public Sender(final PeerStatusListener[] peerStatusListeners,
-            final ChannelClientConfiguration channelClientConfiguration) {
+            final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
         this.peerStatusListeners = peerStatusListeners;
         this.channelClientConfiguration = channelClientConfiguration;
+        this.dispatcher = dispatcher;
+    }
+    
+    public ChannelClientConfiguration channelClientConfiguration() {
+        return channelClientConfiguration;
+    }
+
+    public PingBuilder pingBuilder() {
+        return pingBuilder;
+    }
+
+    public Sender pingBuilder(PingBuilder pingBuilder) {
+        this.pingBuilder = pingBuilder;
+        return this;
     }
 
     /**
@@ -84,61 +107,113 @@ public class Sender {
         if (futureResponse.isCompleted()) {
             return;
         }
-        final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds,
-                handler == null);
-        
+
         final ChannelFuture channelFuture;
         if (peerConnection != null && peerConnection.channelFuture() != null
                 && peerConnection.channelFuture().channel().isActive()) {
-            ChannelHandler[] c = timeoutHandler.twoTimeoutHandlers();
-            channelFuture = peerConnection.channelFuture();
-            channelFuture.channel().pipeline().replace("timeout0", "timeout0", c[0]);
-            channelFuture.channel().pipeline().replace("timeout1", "timeout1", c[1]);
-            channelFuture
-                    .channel()
-                    .pipeline()
-                    .replace("decoder", "decoder",
-                            new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory()));
-            channelFuture
-                    .channel()
-                    .pipeline()
-                    .replace("encoder", "encoder",
-                            new TomP2POutbound(false, channelClientConfiguration.signatureFactory()));
-            channelFuture.channel().pipeline().replace("handler", "handler", handler);
+            channelFuture = sendTCPPeerConnection(peerConnection, handler);
+        } else if (channelCreator != null) {
+            final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds,
+                    handler == null);
+            InetSocketAddress recipient = message.getRecipient().createSocketTCP();
+            channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+                    timeoutHandler, connectTimeoutMillis);
         } else {
-            final int nrTCPHandlers;
-            final ChannelHandler[] c;
-            if (timeoutHandler != null) {
-                c = timeoutHandler.twoTimeoutHandlers();
-                nrTCPHandlers = 7; // 5 / 0.75;
-            } else {
-                c = null;
-                nrTCPHandlers = 3; // 2 / 0.75;
-            }
-            final Map<String, ChannelHandler> handlers = new LinkedHashMap<String, ChannelHandler>(
-                    nrTCPHandlers);
-            
-            if (timeoutHandler != null) {
-                handlers.put("timeout0", c[0]);
-                handlers.put("timeout1", c[1]);
-            }
-            handlers.put("decoder", new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory()));
-            handlers.put("encoder", new TomP2POutbound(false, channelClientConfiguration.signatureFactory()));
-            if (timeoutHandler != null) {
-                handlers.put("handler", handler);
-            }
-
-            channelFuture = channelCreator.createTCP(message.getRecipient().createSocketTCP(),
-                    connectTimeoutMillis, handlers);
-            if (peerConnection != null) {
-                peerConnection.channelFuture(channelFuture);
-            }
+            channelFuture = null;
         }
         futureResponse.setChannelFuture(channelFuture);
+
         if (channelFuture == null) {
             futureResponse.setFailed("could not create a TCP channel");
         } else {
             afterConnect(futureResponse, message, channelFuture, handler == null);
+        }
+    }
+
+    private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
+            PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
+            int connectTimeoutMillis) {
+
+        final Map<String, ChannelHandler> handlers;
+        
+        if (timeoutHandler != null) {
+            final int nrTCPHandlers = peerConnection != null ? 10 : 7; // 10 = 7 / 0.75  ** 7 = 5 / 0.75;
+            handlers = new LinkedHashMap<String, ChannelHandler>(nrTCPHandlers);
+            handlers.put("timeout0", timeoutHandler.idleStateHandlerTomP2P());
+            handlers.put("timeout1", timeoutHandler.timeHandler());
+        } else {
+            final int nrTCPHandlers = 3; // 2 / 0.75;
+            handlers = new LinkedHashMap<String, ChannelHandler>(nrTCPHandlers);
+        }
+  
+        handlers.put("decoder", new TomP2PCumulationTCP(channelClientConfiguration.signatureFactory()));
+        handlers.put("encoder", new TomP2POutbound(false, channelClientConfiguration.signatureFactory()));
+        
+        if (peerConnection != null) {
+            //we expect replies on this connection
+            handlers.put("dispatcher", dispatcher);
+        }
+
+        if (timeoutHandler != null) {
+            handlers.put("handler", handler);
+        }
+
+        HeartBeat heartBeat = null;
+        if (peerConnection != null) {
+            heartBeat = new HeartBeat(2, pingBuilder);
+            handlers.put("heartbeat", heartBeat);
+        }
+
+        ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers);
+
+        if (peerConnection != null) {
+            peerConnection.channelFuture(channelFuture);
+            heartBeat.peerConnection(peerConnection);
+        }
+        return channelFuture;
+    }
+
+    private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler) {
+        ChannelFuture channelFuture = peerConnection.channelFuture();
+        ChannelPipeline pipeline = channelFuture.channel().pipeline();
+
+        // we need to replace the handler if this comes from the peer that create a peerconnection, otherwise we
+        // need to add a handler
+        addOrReplace(pipeline, "dispatcher", "handler", handler);
+        // uncomment this if the recipient should also heartbeat
+        // addIfAbsent(pipeline, "handler", "heartbeat",
+        // new HeartBeat(2, pingBuilder).peerConnection(peerConnection));
+        return channelFuture;
+    }
+
+    // private boolean addIfAbsent(ChannelPipeline pipeline, String before, String name,
+    // ChannelHandler channelHandler) {
+    // List<String> names = pipeline.names();
+    // if (names.contains(name)) {
+    // return false;
+    // } else {
+    // if (before == null) {
+    // pipeline.addFirst(name, channelHandler);
+    // } else {
+    // pipeline.addBefore(before, name, channelHandler);
+    // }
+    // return true;
+    // }
+    // }
+
+    private boolean addOrReplace(ChannelPipeline pipeline, String before, String name,
+            ChannelHandler channelHandler) {
+        List<String> names = pipeline.names();
+        if (names.contains(name)) {
+            pipeline.replace(name, name, channelHandler);
+            return false;
+        } else {
+            if (before == null) {
+                pipeline.addFirst(name, channelHandler);
+            } else {
+                pipeline.addBefore(before, name, channelHandler);
+            }
+            return true;
         }
     }
 
@@ -166,8 +241,7 @@ public class Sender {
             return;
         }
         boolean isFireAndForget = handler == null;
-        final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds,
-                isFireAndForget);
+        
 
         final Map<String, ChannelHandler> handlers;
         if (isFireAndForget) {
@@ -176,9 +250,9 @@ public class Sender {
         } else {
             final int nrTCPHandlers = 7; // 5 / 0.75
             handlers = new LinkedHashMap<String, ChannelHandler>(nrTCPHandlers);
-            ChannelHandler[] c = timeoutHandler.twoTimeoutHandlers();
-            handlers.put("timeout0", c[0]);
-            handlers.put("timeout1", c[1]);
+            final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, isFireAndForget);
+            handlers.put("timeout0", timeoutHandler.idleStateHandlerTomP2P());
+            handlers.put("timeout1", timeoutHandler.timeHandler());
         }
 
         handlers.put("decoder", new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory()));
@@ -211,7 +285,7 @@ public class Sender {
      */
     private TimeoutFactory createTimeoutHandler(final FutureResponse futureResponse, final int idleMillis,
             final boolean fireAndForget) {
-        return fireAndForget ? null : new TimeoutFactory(futureResponse, idleMillis, peerStatusListeners);
+        return fireAndForget ? null : new TimeoutFactory(futureResponse, idleMillis, peerStatusListeners, "Sender");
     }
 
     /**
@@ -246,7 +320,7 @@ public class Sender {
                     futureResponse.progressFirst();
                 } else {
                     futureResponse.setFailed("Channel creation failed " + future.cause());
-                    if(!(future.cause() instanceof CancellationException)) {
+                    if (!(future.cause() instanceof CancellationException)) {
                         LOG.warn("Channel creation failed ", future.cause());
                     }
                 }
@@ -275,8 +349,9 @@ public class Sender {
                 if (!future.isSuccess()) {
                     futureResponse.setFailedLater(future.cause());
                     reportFailed(futureResponse, future.channel().close());
-                    LOG.warn("Failed to write channel the request {}", futureResponse.getRequest(), future.cause());
-                    
+                    LOG.warn("Failed to write channel the request {}", futureResponse.getRequest(),
+                            future.cause());
+
                 }
                 if (fireAndForget) {
                     futureResponse.setResponseLater(null);

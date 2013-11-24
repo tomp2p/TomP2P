@@ -24,6 +24,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -290,7 +291,7 @@ public class PingRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1
                 || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3) && message
                 .getCommand() == PING_COMMAND)) {
@@ -346,7 +347,7 @@ public class PingRPC extends DispatchHandler {
             // reply.
             if (message.isUdp() && message.getSender().getPeerId().equals(peerBean().serverPeerAddress().getPeerId())
                     && message.getRecipient().getPeerId().equals(Number160.ZERO)) {
-                LOG.debug("don't reply, we are on the same peer");
+                LOG.warn("don't reply, we are on the same peer, you should not make this call");
                 return message;
             }
             if (enable) {

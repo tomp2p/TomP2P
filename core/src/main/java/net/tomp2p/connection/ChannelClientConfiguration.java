@@ -30,6 +30,7 @@ public class ChannelClientConfiguration {
 
     private PipelineFilter pipelineFilter;
     private SignatureFactory signatureFactory;
+    private Bindings externalBindings;
 
     /**
      * @return The maximum number of permanent (long-lived) connections
@@ -113,6 +114,15 @@ public class ChannelClientConfiguration {
      */
     public ChannelClientConfiguration signatureFactory(final SignatureFactory signatureFactory) {
         this.signatureFactory = signatureFactory;
+        return this;
+    }
+
+    public Bindings externalBindings() {
+        return externalBindings;
+    }
+    
+    public ChannelClientConfiguration externalBindings(Bindings externalBindings) {
+        this.externalBindings = externalBindings;
         return this;
     }
 }

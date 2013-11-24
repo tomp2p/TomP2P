@@ -24,6 +24,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
@@ -47,9 +48,8 @@ public class DiscoverBuilder {
 
     private InetAddress inetAddress;
 
-    private int portUDP = Bindings.DEFAULT_PORT;
-
-    private int portTCP = Bindings.DEFAULT_PORT;
+    private int portUDP = Ports.DEFAULT_PORT;
+    private int portTCP = Ports.DEFAULT_PORT;
 
     private PeerAddress peerAddress;
 
@@ -61,53 +61,67 @@ public class DiscoverBuilder {
         this.peer = peer;
     }
 
-    public InetAddress getInetAddress() {
+    public InetAddress inetAddress() {
         return inetAddress;
     }
 
-    public DiscoverBuilder setInetAddress(InetAddress inetAddress) {
+    public DiscoverBuilder inetAddress(InetAddress inetAddress) {
         this.inetAddress = inetAddress;
         return this;
     }
-
-    public int getPortUDP() {
-        return portUDP;
+    
+    public DiscoverBuilder inetSocketAddress(InetAddress inetAddress, int port) {
+        this.inetAddress = inetAddress;
+        this.portTCP = port;
+        this.portUDP = port;
+        return this;
     }
-
-    public DiscoverBuilder setPortUDP(int portUDP) {
+    
+    public DiscoverBuilder inetSocketAddress(InetAddress inetAddress, int portTCP, int portUDP) {
+        this.inetAddress = inetAddress;
+        this.portTCP = portTCP;
         this.portUDP = portUDP;
         return this;
     }
 
-    public int getPortTCP() {
+    public int portUDP() {
+        return portUDP;
+    }
+
+    public DiscoverBuilder portUDP(int portUDP) {
+        this.portUDP = portUDP;
+        return this;
+    }
+
+    public int portTCP() {
         return portTCP;
     }
 
-    public DiscoverBuilder setPortTCP(int portTCP) {
+    public DiscoverBuilder portTCP(int portTCP) {
         this.portTCP = portTCP;
         return this;
     }
 
-    public DiscoverBuilder setPorts(int port) {
+    public DiscoverBuilder ports(int port) {
         this.portTCP = port;
         this.portUDP = port;
         return this;
     }
 
-    public PeerAddress getPeerAddress() {
+    public PeerAddress peerAddress() {
         return peerAddress;
     }
 
-    public DiscoverBuilder setPeerAddress(PeerAddress peerAddress) {
+    public DiscoverBuilder peerAddress(PeerAddress peerAddress) {
         this.peerAddress = peerAddress;
         return this;
     }
 
-    public int getDiscoverTimeoutSec() {
+    public int discoverTimeoutSec() {
         return discoverTimeoutSec;
     }
 
-    public DiscoverBuilder setDiscoverTimeoutSec(int discoverTimeoutSec) {
+    public DiscoverBuilder discoverTimeoutSec(int discoverTimeoutSec) {
         this.discoverTimeoutSec = discoverTimeoutSec;
         return this;
     }
@@ -201,25 +215,31 @@ public class DiscoverBuilder {
                         if (!peer.getPeerAddress().getInetAddress().equals(seenAs.getInetAddress())) {
                             // check if we have this interface in that we can
                             // listen to
-                            Bindings bindings2 = new Bindings(seenAs.getInetAddress());
+                            Bindings bindings2 = new Bindings().addAddress(seenAs.getInetAddress());
                             String status = DiscoverNetworks.discoverInterfaces(bindings2);
                             logger.info("2nd interface discovery: " + status);
-                            if (bindings2.getFoundAddresses().size() > 0
-                                    && bindings2.getFoundAddresses().contains(seenAs.getInetAddress())) {
+                            if (bindings2.foundAddresses().size() > 0
+                                    && bindings2.foundAddresses().contains(seenAs.getInetAddress())) {
                                 serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
                                 peer.getPeerBean().serverPeerAddress(serverAddress);
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
-                                final Bindings bindings = peer.getConnectionBean().channelServer().bindings();
-                                if (bindings.isSetExternalPortsManually()
-                                        || peer.setupPortForwanding(futureResponseTCP.getResponse()
-                                                .getRecipient().getInetAddress().getHostAddress())) {
-                                    serverAddress = serverAddress.changePorts(bindings.getOutsideTCPPort(),
-                                            bindings.getOutsideUDPPort());
+                                final Ports ports = peer.getConnectionBean().channelServer().ports();
+                                final Ports externalPorts;
+                                if (ports.isSetExternalPortsManually()) {
+                                    serverAddress = serverAddress.changePorts(ports.externalTCPPort(),
+                                            ports.externalUDPPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
                                     peer.getPeerBean().serverPeerAddress(serverAddress);
-                                } else {
+                                } else if ((externalPorts = peer.setupPortForwanding(futureResponseTCP.getResponse()
+                                        .getRecipient().getInetAddress().getHostAddress()))!=null) {
+                                    serverAddress = serverAddress.changePorts(externalPorts.externalTCPPort(),
+                                            externalPorts.externalUDPPort());
+                                    serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
+                                    peer.getPeerBean().serverPeerAddress(serverAddress);
+                                }
+                                else {
                                     // we need to find a relay, because there is a NAT in the way.
                                     futureDiscover
                                             .setFailedRelayPossible("UPNP, NATPMP could not be setup and the user did not provide any "

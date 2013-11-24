@@ -70,11 +70,10 @@ public class TestReservation {
      */
     @Before
     public void createSink() throws IOException {
-        Bindings bindings = new Bindings(InetAddress.getByName("127.0.0.1"));
+        Bindings bindings = new Bindings().addAddress(InetAddress.getByName("127.0.0.1"));
         ChannelServerConficuration c = new ChannelServerConficuration();
-        c.setBindings(bindings);
-        c.setTcpPort(PORT);
-        c.setUdpPort(PORT);
+        c.interfaceBindings(bindings);
+        c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
         cs = new ChannelServer(c, null, null);
         cs.startup();

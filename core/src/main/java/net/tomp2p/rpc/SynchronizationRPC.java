@@ -27,6 +27,7 @@ import java.util.Map;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
@@ -135,7 +136,7 @@ public class SynchronizationRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
         if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }

@@ -29,9 +29,6 @@ public class NeighborSet {
             serializedSize += neighbor.size();
             if (serializedSize > neighborLimit) {
                 iterator.remove();
-                //System.err.println("remove "+ neighbor);
-            } else {
-                //System.err.println("keep "+ neighbor);
             }
         }
     }

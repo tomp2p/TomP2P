@@ -19,14 +19,12 @@ package net.tomp2p.connection;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.HashMap;
@@ -35,12 +33,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ChannelServer;
-import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.FutureDone;
 
 import org.junit.After;
@@ -86,11 +78,10 @@ public class TestChannelCreator {
      */
     @Before
     public void createSink() throws IOException {
-        Bindings bindings = new Bindings(InetAddress.getByName("127.0.0.1"));
+        Bindings bindings = new Bindings().addAddress(Inet4Address.getByName("127.0.0.1"));
         ChannelServerConficuration c = new ChannelServerConficuration();
-        c.setBindings(bindings);
-        c.setTcpPort(PORT);
-        c.setUdpPort(PORT);
+        c.interfaceBindings(bindings);
+        c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
         cs = new ChannelServer(c, null, null);
         cs.startup();

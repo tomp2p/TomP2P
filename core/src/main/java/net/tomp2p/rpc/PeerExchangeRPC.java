@@ -21,6 +21,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -123,7 +124,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2) && message
                 .getCommand() == PEX_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");

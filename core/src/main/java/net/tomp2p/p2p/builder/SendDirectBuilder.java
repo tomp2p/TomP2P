@@ -16,14 +16,12 @@
 
 package net.tomp2p.p2p.builder;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.PeerConnection;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.ProgressListener;
@@ -34,10 +32,8 @@ import net.tomp2p.rpc.SendDirectBuilderI;
 import net.tomp2p.utils.Utils;
 
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI{
-    private static final FutureResponse FUTURE_REQUEST_SHUTDOWN = new FutureResponse(null)
-            .setFailed("Peer is shutting down");
-    private static final FutureResponse FUTURE_REQUEST_INTERRUPTED = new FutureResponse(null)
-            .setFailed("Peer is interrupted");
+    private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null)
+            .setFailed0("Peer is shutting down");
 
     private final Peer peer;
 
@@ -135,7 +131,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
         return object == null;
     }
 
-    public FutureResponse start() {
+    public FutureDirect start() {
         if (peer.isShutdown()) {
             return FUTURE_REQUEST_SHUTDOWN;
         }
@@ -162,23 +158,22 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
                 @Override
                 public void operationComplete(final FuturePeerConnection future) throws Exception {
                     if (future.isSuccess()) {
-                        ChannelCreator cc = recipientConnection.getObject().acquire(request.futureResponse());
-                        if (cc == null) {
-                            request.futureResponse().setFailed(
-                                    "ChannelCreator was null, this means you are trying to "
-                                            + "open peerconnections in parallel. This is not allowed.");
-                            return;
-                        }
-                        request.sendTCP(cc, recipientConnection.getObject());
-                        request.futureResponse().getRequest().setKeepAlive(true);
-                        request.futureResponse().addListener(new BaseFutureAdapter<FutureResponse>() {
+                        FutureChannelCreator futureChannelCreator2 = recipientConnection.getObject().acquire(request.futureResponse());
+                        futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                             @Override
-                            public void operationComplete(final FutureResponse future) throws Exception {
-                                recipientConnection.getObject().release();
+                            public void operationComplete(FutureChannelCreator future) throws Exception {
+                                if(future.isSuccess()) {
+                                    request.futureResponse().getRequest().setKeepAlive(true);
+                                    request.sendTCP(recipientConnection.getObject().channelCreator(), recipientConnection.getObject());
+                                } else {
+                                    request.futureResponse().setFailed("Could not acquire channel (2)", future);
+                                }
                             }
+                            
                         });
+                        
                     } else {
-                        request.futureResponse().setFailed("Could not acquire channel", future);
+                        request.futureResponse().setFailed("Could not acquire channel (1)", future);
                     }
 
                 }
@@ -198,7 +193,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
             });
         }
        
-        return request.futureResponse();
+        return new FutureDirect(request.futureResponse());
     }
 
     public boolean isForceUDP() {

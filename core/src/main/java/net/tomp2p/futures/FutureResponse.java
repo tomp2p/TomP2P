@@ -21,7 +21,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
 
-import net.tomp2p.connection2.ProgresHandler;
+import net.tomp2p.connection.ProgresHandler;
 import net.tomp2p.message.Message;
 
 /**
@@ -141,7 +141,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     }
 
     public boolean setResponseLater(final Message responseMessage) {
-        //System.err.println("response later "+this);
         synchronized (lock) {
             if(completed) {
                 return false;

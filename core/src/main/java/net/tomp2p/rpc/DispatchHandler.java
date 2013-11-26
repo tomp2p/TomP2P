@@ -15,8 +15,9 @@
  */
 package net.tomp2p.rpc;
 
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.PeerBean;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
@@ -118,6 +119,7 @@ public abstract class DispatchHandler {
         replyMessage.setType(replyType);
         replyMessage.setVersion(requestMessage.getVersion());
         replyMessage.setMessageId(requestMessage.getMessageId());
+        replyMessage.udp(requestMessage.isUdp());
         return replyMessage;
     }
 
@@ -126,15 +128,16 @@ public abstract class DispatchHandler {
      * 
      * @param requestMessage
      *            The request message
+     * @param peerConnection The peer connection that can be used for communication
      * @return The reply message
      */
-    public Message forwardMessage(final Message requestMessage) {
+    public Message forwardMessage(final Message requestMessage, PeerConnection peerConnection) {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
         peerBean().peerMap().peerFound(requestMessage.getSender(), requestMessage.getSender());
         try {
-            Message replyMessage = handleResponse(requestMessage, sign);
+            Message replyMessage = handleResponse(requestMessage, peerConnection, sign);
             return replyMessage;
         } catch (Throwable e) {
             peerBean().peerMap().peerFailed(requestMessage.getSender(), FailReason.Exception);
@@ -152,12 +155,13 @@ public abstract class DispatchHandler {
      * 
      * @param message
      *            Request message
+     * @param peerConnection 
      * @param sign
      *            Flag to indicate if message is signed
      * @return The message from the handler
      * @throws Exception
      *             Any exception
      */
-    public abstract Message handleResponse(Message message, boolean sign) throws Exception;
+    public abstract Message handleResponse(Message message, PeerConnection peerConnection, boolean sign) throws Exception;
 
 }

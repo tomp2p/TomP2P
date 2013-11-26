@@ -126,5 +126,4 @@ public final class Number320 extends Number implements Comparable<Number320> {
     public double doubleValue() {
         return (locationKey.doubleValue() * Math.pow(2, Number160.BITS)) + domainKey.doubleValue();
     }
-
 }

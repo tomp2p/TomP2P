@@ -3,34 +3,14 @@ package net.tomp2p.message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.socket.DatagramChannel;
-import io.netty.channel.socket.DatagramPacket;
 import io.netty.handler.codec.DecoderException;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+
+import net.tomp2p.connection.SignatureFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.tomp2p.connection2.SignatureFactory;
-import net.tomp2p.futures.FutureProgres;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message.Content;
-import net.tomp2p.message.Message.Type;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.utils.CacheMap;
-import net.tomp2p.utils.ConcurrentCacheMap;
 
 public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 

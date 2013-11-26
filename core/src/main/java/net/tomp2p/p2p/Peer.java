@@ -15,21 +15,17 @@
  */
 package net.tomp2p.p2p;
 
-import io.netty.util.ResourceLeakDetector;
-import io.netty.util.Timer;
-
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.PeerConnection;
-import net.tomp2p.connection2.PeerCreator;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -55,10 +51,10 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
-import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PeerExchangeRPC;
+import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
@@ -67,13 +63,6 @@ import net.tomp2p.rpc.SynchronizationRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
-
-
-
-
-
-
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -179,7 +168,6 @@ public class Peer {
         this.p2pID = p2pID;
         this.peerId = peerId;
         this.peerCreator = peerCreator;
-        ResourceLeakDetector.setEnabled(false);
     }
 
     PeerCreator peerCreator() {
@@ -417,7 +405,6 @@ public class Peer {
                 } else {
                     futureDone.setFailed(future);
                 }
-
             }
         });
         return futureDone;
@@ -429,17 +416,16 @@ public class Peer {
      * 
      * @param internalHost
      *            The IP of the internal host
-     * @return True if port forwarding seemed to be successful
+     * @return The new external ports if port forwarding seemed to be successful, otherwise null
      */
-    public boolean setupPortForwanding(final String internalHost) {
-        Bindings bindings = getConnectionBean().channelServer().bindings();
-        int portUDP = bindings.getOutsideUDPPort();
-        int portTCP = bindings.getOutsideTCPPort();
+    public Ports setupPortForwanding(final String internalHost) {
+        //new random ports
+        Ports ports = new Ports();
         boolean success;
 
         try {
             success = getConnectionBean().natUtils().mapUPNP(internalHost, getPeerAddress().tcpPort(),
-                    getPeerAddress().udpPort(), portUDP, portTCP);
+                    getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
         } catch (IOException e) {
             success = false;
         }
@@ -450,7 +436,7 @@ public class Peer {
             }
             try {
                 success = getConnectionBean().natUtils().mapPMP(getPeerAddress().tcpPort(),
-                        getPeerAddress().udpPort(), portUDP, portTCP);
+                        getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
                 if (!success) {
                     if (LOG.isWarnEnabled()) {
                         LOG.warn("cannot find NAT-PMP devices");
@@ -462,7 +448,10 @@ public class Peer {
                 }
             }
         }
-        return success;
+        if(success) {
+            return ports;
+        }
+        return null;
     }
 
     // New API - builder pattern
@@ -538,8 +527,8 @@ public class Peer {
         return new GetTrackerBuilder(this, locationKey);
     }
 
-    public ParallelRequestBuilder parallelRequest(Number160 locationKey) {
-        return new ParallelRequestBuilder(this, locationKey);
+    public ParallelRequestBuilder<?> parallelRequest(Number160 locationKey) {
+        return new ParallelRequestBuilder<>(this, locationKey);
     }
 
     public BroadcastBuilder broadcast(Number160 messageKey) {

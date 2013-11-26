@@ -15,19 +15,19 @@
  */
 package net.tomp2p.rpc;
 
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
@@ -120,7 +120,7 @@ public class DirectDataRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) && message
                 .getCommand() == DIRECT_DATA_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");

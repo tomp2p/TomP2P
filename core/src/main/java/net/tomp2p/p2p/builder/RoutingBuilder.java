@@ -2,8 +2,7 @@ package net.tomp2p.p2p.builder;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.RoutingMechanism;

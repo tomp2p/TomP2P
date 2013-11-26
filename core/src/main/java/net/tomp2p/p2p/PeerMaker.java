@@ -26,14 +26,15 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Timer;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelClientConfiguration;
-import net.tomp2p.connection2.ChannelServerConficuration;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.DefaultSignatureFactory;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.PeerCreator;
-import net.tomp2p.connection2.PipelineFilter;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.DefaultSignatureFactory;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.PipelineFilter;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -53,7 +54,7 @@ import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
-import net.tomp2p.storage.StorageGeneric;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Utils;
@@ -85,7 +86,8 @@ public class PeerMaker {
 
     private int udpPort = -1;
 
-    private Bindings bindings = null;
+    private Bindings interfaceBindings = null;
+    private Bindings externalBindings = null;
 
     private PeerMap peerMap = null;
 
@@ -97,7 +99,7 @@ public class PeerMaker {
 
     private PeerStatusListener[] peerStatusListeners = null;
 
-    private StorageGeneric storage = null;
+    private StorageMemory storage = null;
 
     private TrackerStorage trackerStorage = null;
     
@@ -211,17 +213,20 @@ public class PeerMaker {
             p2pID = 1;
         }
         if (tcpPort == -1) {
-            tcpPort = Bindings.DEFAULT_PORT;
+            tcpPort = Ports.DEFAULT_PORT;
         }
-        channelServerConfiguration.setTcpPort(tcpPort);
         if (udpPort == -1) {
-            udpPort = Bindings.DEFAULT_PORT;
+            udpPort = Ports.DEFAULT_PORT;
         }
-        channelServerConfiguration.setUdpPort(tcpPort);
-        if (bindings == null) {
-            bindings = new Bindings();
+        channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
+        if (interfaceBindings == null) {
+            interfaceBindings = new Bindings();
         }
-        channelServerConfiguration.setBindings(bindings);
+        channelServerConfiguration.interfaceBindings(interfaceBindings);
+        if (externalBindings == null) {
+            externalBindings = new Bindings();
+        }
+        channelClientConfiguration.externalBindings(externalBindings);
         if (peerMap == null) {
             peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         }
@@ -247,11 +252,12 @@ public class PeerMaker {
         }
 
         final Peer peer = new Peer(p2pID, peerId, peerCreator);
+        
 
         PeerBean peerBean = peerCreator.peerBean();
         peerBean.peerMap(peerMap);
         peerBean.keyPair(keyPair);
-        peerBean.storage(storage);
+        peerBean.storage(new StorageLayer(storage));
 
         if (trackerStorage == null) {
             trackerStorage = new TrackerStorage(new IdentityManagement(peerBean.serverPeerAddress()), 300,
@@ -269,8 +275,9 @@ public class PeerMaker {
         }
 
         ConnectionBean connectionBean = peerCreator.connectionBean();
+        
         // peerBean.setStorage(getStorage());
-        Replication replicationStorage = new Replication(peerBean.storage(), peerBean.serverPeerAddress(), peerMap, 5);
+        Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5);
         peerBean.replicationStorage(replicationStorage);
 
         // TrackerStorage storageTracker = new TrackerStorage(identityManagement,
@@ -290,11 +297,14 @@ public class PeerMaker {
         initRPC(peer, connectionBean, peerBean);
         initP2P(peer, connectionBean, peerBean);
         
-        if(maintenanceTask == null) {
+        if(maintenanceTask == null && isEnableMaintenance()) {
             maintenanceTask = new MaintenanceTask();
         }
-        maintenanceTask.init(peer, connectionBean.timer());
-        maintenanceTask.addMaintainable(peerMap);
+        
+        if (maintenanceTask != null) {
+            maintenanceTask.init(peer, connectionBean.timer());
+            maintenanceTask.addMaintainable(peerMap);
+        }
         peerBean.maintenanceTask(maintenanceTask);
         
         if(random == null) {
@@ -321,15 +331,16 @@ public class PeerMaker {
             peer.setAutomaticFutures(automaticFutures);
         }
 
+        //set the ping builder for the heart beat
+        connectionBean.sender().pingBuilder(peer.ping());
         return peer;
     }
 
     public ChannelServerConficuration createDefaultChannelServerConfiguration() {
         ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
-        channelServerConfiguration.setBindings(bindings);
-        channelServerConfiguration.setTcpPort(tcpPort);
-        channelServerConfiguration.setUdpPort(udpPort);
-        channelServerConfiguration.setBehindFirewall(behindFirewall);
+        channelServerConfiguration.interfaceBindings(new Bindings());
+        channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
+        channelServerConfiguration.setBehindFirewall(false);
         channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
         channelServerConfiguration.signatureFactory(new DefaultSignatureFactory());
         return channelServerConfiguration;
@@ -337,6 +348,7 @@ public class PeerMaker {
 
     public ChannelClientConfiguration createDefaultChannelClientConfiguration() {
         ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
+        channelClientConfiguration.externalBindings(new Bindings());
         channelClientConfiguration.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP);
         channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
         channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
@@ -482,12 +494,27 @@ public class PeerMaker {
         return this;
     }
 
-    public Bindings bindings() {
-        return bindings;
+    public PeerMaker bindings(Bindings bindings) {
+        this.interfaceBindings = bindings;
+        this.externalBindings = bindings;
+        return this;
     }
 
-    public PeerMaker bindings(Bindings bindings) {
-        this.bindings = bindings;
+    public Bindings interfaceBindings() {
+        return interfaceBindings;
+    }
+
+    public PeerMaker interfaceBindings(Bindings interfaceBindings) {
+        this.interfaceBindings = interfaceBindings;
+        return this;
+    }
+    
+    public Bindings externalBindings() {
+        return externalBindings;
+    }
+
+    public PeerMaker externalBindings(Bindings externalBindings) {
+        this.externalBindings = externalBindings;
         return this;
     }
 

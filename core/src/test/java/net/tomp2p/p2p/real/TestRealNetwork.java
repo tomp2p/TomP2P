@@ -20,7 +20,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
@@ -91,7 +90,7 @@ public class TestRealNetwork {
         PeerAddress bootstrapServerPeerAddress = new PeerAddress(Number160.ZERO, new InetSocketAddress(
                 InetAddress.getByName(ipSuperPeer), port));
 
-        FutureDiscover discovery = myPeer.discover().setPeerAddress(bootstrapServerPeerAddress).start();
+        FutureDiscover discovery = myPeer.discover().peerAddress(bootstrapServerPeerAddress).start();
         discovery.awaitUninterruptibly();
         if (!discovery.isSuccess()) {
             System.err.println("no success!");

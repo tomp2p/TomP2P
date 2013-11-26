@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import org.junit.Test;
 
 import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureSend;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.RequestP2PConfiguration;
@@ -51,7 +51,7 @@ public class TestSend {
 
         System.out.println(String.format("Sending message '%s' to key '%s' converted to '%s'", message.getType(),
                 "key", keyForID.toString()));
-        FutureDirect futureDHT = peers[0].send(keyForID).setObject(message).setRequestP2PConfiguration(REQ).start();
+        FutureSend futureDHT = peers[0].send(keyForID).setObject(message).setRequestP2PConfiguration(REQ).start();
         futureDHT.awaitUninterruptibly();
         System.out.println("got: " + futureDHT.getObject());
         Thread.sleep(Long.MAX_VALUE);

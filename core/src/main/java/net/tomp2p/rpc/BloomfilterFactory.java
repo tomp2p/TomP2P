@@ -1,7 +1,6 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
 
 public interface BloomfilterFactory {
 

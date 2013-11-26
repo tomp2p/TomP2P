@@ -27,9 +27,9 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.PeerBean;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -450,7 +450,6 @@ public class DistributedTracker {
     private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerAddress> newPeers,
             Collection<PeerAddress> knownPeers1, Collection<PeerAddress> knownPeers2) {
         // result will be small, so we chose an array list.
-        @SuppressWarnings("unchecked")
         final Collection<PeerAddress> result = Utils.difference(newPeers, new ArrayList<PeerAddress>(), knownPeers1,
                 knownPeers2);
         // if result contains only elements that queueToAsk already has, false

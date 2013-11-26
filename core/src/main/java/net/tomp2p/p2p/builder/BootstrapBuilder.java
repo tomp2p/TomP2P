@@ -20,7 +20,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import net.tomp2p.connection2.Bindings;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -72,9 +72,9 @@ public class BootstrapBuilder {
 
     private InetAddress inetAddress;
 
-    private int portUDP = Bindings.DEFAULT_PORT;
+    private int portUDP = Ports.DEFAULT_PORT;
 
-    private int portTCP = Bindings.DEFAULT_PORT;
+    private int portTCP = Ports.DEFAULT_PORT;
 
     private RoutingConfiguration routingConfiguration;
 

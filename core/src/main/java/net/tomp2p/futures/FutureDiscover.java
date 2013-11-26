@@ -77,7 +77,6 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      *            The peerAddress of the peer that reported our address
      */
     public void done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
-        // System.err.println("called done");
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;

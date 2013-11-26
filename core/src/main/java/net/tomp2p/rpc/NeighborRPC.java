@@ -18,16 +18,19 @@ package net.tomp2p.rpc;
 import java.io.IOException;
 import java.util.SortedSet;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 
 import org.slf4j.Logger;
@@ -114,7 +117,7 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws IOException {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws IOException {
         if (message.getKeyList().size() < 2) {
             throw new IllegalArgumentException("We need the location and domain key at least");
         }
@@ -125,6 +128,7 @@ public class NeighborRPC extends DispatchHandler {
         }
         Number160 locationKey = message.getKey(0);
         Number160 domainKey = message.getKey(1);
+        Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
         // Create response message and set neighbors
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
@@ -143,12 +147,16 @@ public class NeighborRPC extends DispatchHandler {
             if (message.getType() == Type.REQUEST_2) {
                 final DigestInfo digestInfo;
                 if (contentKey != null) {
-                    digestInfo = peerBean().storage().digest(locationKey, domainKey, contentKey);
+                    Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
+                    Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
+                    digestInfo = peerBean().storage().digest(from, to);
                 } else if (keyBloomFilter != null || contentBloomFilter != null) {
-                    digestInfo = peerBean().storage().digest(locationKey, domainKey, keyBloomFilter,
+                    digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
                             contentBloomFilter);
                 } else {
-                    digestInfo = peerBean().storage().digest(locationKey, domainKey, null);
+                    Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
+                    Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+                    digestInfo = peerBean().storage().digest(from, to);
                 }
                 responseMessage.setInteger(digestInfo.getSize());
                 responseMessage.setKey(digestInfo.getKeyDigest());

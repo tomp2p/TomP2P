@@ -16,7 +16,7 @@
 
 package net.tomp2p.p2p.builder;
 
-import net.tomp2p.connection2.ConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;

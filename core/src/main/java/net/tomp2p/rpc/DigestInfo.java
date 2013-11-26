@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 
 /**
  * Calculates or sets a global hash. The digest is used in two places: for routing, where a message needs to have a
@@ -35,7 +35,7 @@ public class DigestInfo {
 
     private volatile int size = -1;
 
-    private final Map<Number480, Number160> mapDigests = new HashMap<Number480, Number160>();
+    private final Map<Number640, Number160> mapDigests = new HashMap<Number640, Number160>();
 
     /**
      * Empty constructor is used to add the hashes to the list.
@@ -98,10 +98,11 @@ public class DigestInfo {
     private void process() {
         Number160 hashKey = Number160.ZERO;
         Number160 hashContent = Number160.ZERO;
-        for (Map.Entry<Number480, Number160> entry : mapDigests.entrySet()) {
+        for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
             hashKey = hashKey.xor(entry.getKey().getLocationKey());
             hashKey = hashKey.xor(entry.getKey().getDomainKey());
             hashKey = hashKey.xor(entry.getKey().getContentKey());
+            hashKey = hashKey.xor(entry.getKey().getVersionKey());
             hashContent = hashContent.xor(entry.getValue());
         }
         keyDigest = hashKey;
@@ -115,7 +116,7 @@ public class DigestInfo {
      */
     public SimpleBloomFilter<Number160> getLocationKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createLoctationKeyBloomFilter();
-        for (Map.Entry<Number480, Number160> entry : mapDigests.entrySet()) {
+        for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
             sbf.add(entry.getKey().getLocationKey());
         }
         return sbf;
@@ -128,7 +129,7 @@ public class DigestInfo {
      */
     public SimpleBloomFilter<Number160> getDomainKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createDomainKeyBloomFilter();
-        for (Map.Entry<Number480, Number160> entry : mapDigests.entrySet()) {
+        for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
             sbf.add(entry.getKey().getDomainKey());
         }
         return sbf;
@@ -141,7 +142,7 @@ public class DigestInfo {
      */
     public SimpleBloomFilter<Number160> getContentKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createContentKeyBloomFilter();
-        for (Map.Entry<Number480, Number160> entry : mapDigests.entrySet()) {
+        for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
             sbf.add(entry.getKey().getContentKey());
         }
         return sbf;
@@ -154,7 +155,7 @@ public class DigestInfo {
      */
     public SimpleBloomFilter<Number160> getContentBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createContentBloomFilter();
-        for (Map.Entry<Number480, Number160> entry : mapDigests.entrySet()) {
+        for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
             sbf.add(entry.getValue());
         }
         return sbf;
@@ -168,14 +169,14 @@ public class DigestInfo {
      * @param content
      *            The hash of the content
      */
-    public void put(final Number480 key, final Number160 content) {
+    public void put(final Number640 key, final Number160 content) {
         mapDigests.put(key, content);
     }
 
     /**
      * @return The list of hashes
      */
-    public Map<Number480, Number160> getDigests() {
+    public Map<Number640, Number160> getDigests() {
         return mapDigests;
     }
 

@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import net.tomp2p.connection2.ConnectionBean;
+import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.utils.Timings;
 
 import org.slf4j.Logger;

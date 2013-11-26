@@ -18,30 +18,32 @@ package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
-import net.tomp2p.message.KeyMap480;
+import net.tomp2p.message.KeyMap640;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.replication.Checksum;
 import net.tomp2p.replication.Instruction;
 import net.tomp2p.replication.Synchronization;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageGeneric.PutStatus;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +94,7 @@ public class SynchronizationRPC extends DispatchHandler {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
 
-        KeyMap480 keyMap = new KeyMap480(synchronizationBuilder.dataMapHash());
+        KeyMap640 keyMap = new KeyMap640(synchronizationBuilder.dataMapHash());
         message.setKeyMap480(keyMap);
 
         FutureResponse futureResponse = new FutureResponse(message);
@@ -134,7 +136,7 @@ public class SynchronizationRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, final boolean sign) throws Exception {
+    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
         if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -165,14 +167,13 @@ public class SynchronizationRPC extends DispatchHandler {
         LOG.debug("Info received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
-        KeyMap480 keysMap = message.getKeyMap480(0);
+        KeyMap640 keysMap = message.getKeyMap640(0);
 
-        Map<Number480, Data> retVal = new HashMap<Number480, Data>();
+        Map<Number640, Data> retVal = new HashMap<Number640, Data>();
         
 
-        for (Map.Entry<Number480, Number160> entry : keysMap.keysMap().entrySet()) {
-            Data data = peerBean().storage().get(entry.getKey().getLocationKey(),
-                    entry.getKey().getDomainKey(), entry.getKey().getContentKey());
+        for (Map.Entry<Number640, Number160> entry : keysMap.keysMap().entrySet()) {
+            Data data = peerBean().storage().get(entry.getKey());
             if (data != null) {
                 // found, check if same
                 if (entry.getValue().equals(data.hash())) {
@@ -212,15 +213,15 @@ public class SynchronizationRPC extends DispatchHandler {
         LOG.debug("Sync received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
-        DataMap dataMap = message.getDataMap(0);
+        final DataMap dataMap = message.getDataMap(0);
+        final PublicKey publicKey = message.getPublicKey();
 
-        List<Number480> retVal = new ArrayList<Number480>(dataMap.size());
+        List<Number640> retVal = new ArrayList<Number640>(dataMap.size());
 
-        for (Map.Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
+        for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
 
             if (entry.getValue().isFlag2()) {
-                peerBean().storage().remove(entry.getKey().getLocationKey(), entry.getKey().getDomainKey(),
-                        entry.getKey().getContentKey());
+                peerBean().storage().remove(entry.getKey(), publicKey);
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff
@@ -228,27 +229,24 @@ public class SynchronizationRPC extends DispatchHandler {
                             .getValue().toBytes());
                     Number160 hash = Synchronization.decodeHash(entry.getValue().toBytes());
 
-                    Data data = peerBean().storage().get(entry.getKey().getLocationKey(),
-                            entry.getKey().getDomainKey(), entry.getKey().getContentKey());
+                    Data data = peerBean().storage().get(entry.getKey());
 
                     if (hash.equals(data.hash())) {
                         continue;
                     }
                     byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),
                             instructions, Synchronization.SIZE);
-                    boolean put = peerBean().storage().put(entry.getKey().getLocationKey(),
-                            entry.getKey().getDomainKey(), entry.getKey().getContentKey(),
-                            new Data(reconstructedValue));
-                    if (put) {
+                    //TODO: domain protection?, make the flags configurable
+                    Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
 
                 } else {
                     // copy
-                    // TODO: domain protection?
-                    PutStatus status = peerBean().storage().put(entry.getKey().getLocationKey(),
-                            entry.getKey().getDomainKey(), entry.getKey().getContentKey(), entry.getValue(),
-                            message.getPublicKey(), true, false);
+                    //TODO: domain protection?, make the flags configurable
+                    Enum<?> status = peerBean().storage().put(entry.getKey(), entry.getValue(),
+                            message.getPublicKey(), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }

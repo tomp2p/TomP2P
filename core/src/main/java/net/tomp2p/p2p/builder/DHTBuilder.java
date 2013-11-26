@@ -16,8 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
@@ -33,13 +33,14 @@ import net.tomp2p.peers.Number160;
  */
 public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnectionConfiguration implements BasicBuilder<K>, ConnectionConfiguration {
     // changed this to zero as for the content key its also zero
-    public static final Number160 DEFAULT_DOMAIN = Number160.ZERO;
 
     protected final Peer peer;
 
     protected final Number160 locationKey;
 
     protected Number160 domainKey;
+    
+    protected Number160 versionKey;
 
     protected RoutingConfiguration routingConfiguration;
 
@@ -78,9 +79,18 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     public Number160 getDomainKey() {
         return domainKey;
     }
-
+    
     public K setDomainKey(Number160 domainKey) {
         this.domainKey = domainKey;
+        return self;
+    }
+    
+    public Number160 getVersionKey() {
+        return versionKey;
+    }
+    
+    public K setVersionKey(Number160 versionKey) {
+        this.versionKey = versionKey;
         return self;
     }
 
@@ -220,7 +230,10 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
 
     protected void preBuild(String name) {
         if (domainKey == null) {
-            domainKey = DEFAULT_DOMAIN;
+            domainKey = Number160.ZERO;
+        }
+        if (versionKey == null) {
+            versionKey = Number160.ZERO;
         }
         if (routingConfiguration == null) {
             routingConfiguration = new RoutingConfiguration(5, 10, 2);

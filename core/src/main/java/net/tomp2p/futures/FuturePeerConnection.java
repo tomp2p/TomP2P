@@ -1,6 +1,6 @@
 package net.tomp2p.futures;
 
-import net.tomp2p.connection2.PeerConnection;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.PeerAddress;
 
 public class FuturePeerConnection extends FutureDone<PeerConnection> {

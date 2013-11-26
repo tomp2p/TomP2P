@@ -15,7 +15,7 @@
  */
 package net.tomp2p.replication;
 
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;

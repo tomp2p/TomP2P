@@ -16,6 +16,7 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 
 import java.net.InetSocketAddress;
 
@@ -59,7 +60,7 @@ public final class MessageHeaderCodec {
      *            The message with the header that will be serialized
      * @return The buffer passed as an argument
      */
-    public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
+    public static ByteBuf encodeHeader(final CompositeByteBuf buffer, final Message message) {
         // CHECKSTYLE:OFF
         final int versionAndType = message.getVersion() << 4 | (message.getType().ordinal() & 0xf);
         // CHECKSTYLE:ON

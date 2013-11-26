@@ -3,7 +3,6 @@ package net.tomp2p.message;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.SortedSet;
 
 import net.tomp2p.peers.PeerAddress;
 
@@ -30,9 +29,6 @@ public class NeighborSet {
             serializedSize += neighbor.size();
             if (serializedSize > neighborLimit) {
                 iterator.remove();
-                //System.err.println("remove "+ neighbor);
-            } else {
-                //System.err.println("keep "+ neighbor);
             }
         }
     }

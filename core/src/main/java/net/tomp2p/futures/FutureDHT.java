@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.ChannelCreator;
 
 public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> {
 

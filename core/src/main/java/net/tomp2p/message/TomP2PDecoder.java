@@ -19,10 +19,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
 
-import net.tomp2p.connection2.SignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
@@ -33,11 +34,8 @@ import org.slf4j.LoggerFactory;
 
 public class TomP2PDecoder {
 
-    public static final AttributeKey<InetSocketAddress> INET_ADDRESS_KEY = new AttributeKey<InetSocketAddress>(
-            "inet-addr");
-
-    public static final AttributeKey<PeerAddress> PEER_ADDRESS_KEY = new AttributeKey<PeerAddress>(
-            "peer-addr");
+    public static final AttributeKey<InetSocketAddress> INET_ADDRESS_KEY = AttributeKey.valueOf("inet-addr");
+    public static final AttributeKey<PeerAddress> PEER_ADDRESS_KEY = AttributeKey.valueOf("peer-addr");
 
     private static final Logger LOG = LoggerFactory.getLogger(TomP2PDecoder.class);
 
@@ -59,7 +57,7 @@ public class TomP2PDecoder {
     private Data data = null;
 
     private int keyMap480Size = -1;
-    private KeyMap480 keyMap480 = null;
+    private KeyMap640 keyMap480 = null;
 
     private int keyMapByteSize = -1;
     private KeyMapByte keyMapByte = null;
@@ -85,9 +83,11 @@ public class TomP2PDecoder {
         LOG.debug("decode of TomP2P starts now");
 
         // store positions for the verification
-        int[] pos = new int[buf.nioBufferCount()];
-        for (int i = 0; i < buf.nioBufferCount(); i++) {
-            pos[i] = buf.nioBuffers()[i].position();
+        ByteBuffer[] byteBuffers = buf.nioBuffers();
+        int len = byteBuffers.length;
+        int[] pos = new int[len];
+        for (int i = 0; i < len; i++) {
+            pos[i] = byteBuffers[i].position();
         }
 
         boolean retVal;
@@ -97,15 +97,14 @@ public class TomP2PDecoder {
             // if retMsg == null, then we even could not read the message due to lack of data
             if (message != null && message.isSign()) {
 
-                for (int i = 0; i < buf.nioBufferCount(); i++) {
-                    ByteBuffer byteBuffer = buf.nioBuffers()[i];
+                for (int i = 0; i < len; i++) {
                     // since we read the bytebuffer, the nio buffer also has a
-                    byteBuffer.position(pos[i]);
-                    if (retVal && i + 1 == buf.nioBufferCount()) {
-                        byteBuffer.limit(byteBuffer.limit()
+                    byteBuffers[i].position(pos[i]);
+                    if (retVal && i + 1 == len) {
+                        byteBuffers[i].limit(byteBuffers[i].limit()
                                 - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE));
                     }
-                    message.signatureForVerification().update(byteBuffer);
+                    message.signatureForVerification().update(byteBuffers[i]);
                 }
 
                 byte[] signatureReceived = message.receivedSignature().encode();
@@ -118,7 +117,8 @@ public class TomP2PDecoder {
                     LOG.debug("wrong signature!");
                 }
             }
-            buf.discardSomeReadBytes();
+            // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
+            // buf.discardSomeReadBytes();
 
         } catch (Exception e) {
             ctx.fireExceptionCaught(e);
@@ -160,15 +160,9 @@ public class TomP2PDecoder {
                 }
                 contentTypes.offer(content);
             }
-            // if we receive a keep alive message, remove the timeout handler. Maybe its better to add a longer timeout
-            // in the future
-            if (message.isKeepAlive()) {
-                if (ctx.channel().pipeline().names().contains("timeout-server0")) {
-                    ctx.channel().pipeline().remove("timeout-server0");
-                }
-                if (ctx.channel().pipeline().names().contains("timeout-server1")) {
-                    ctx.channel().pipeline().remove("timeout-server1");
-                }
+
+            if (message.isFireAndForget() && message.isUdp()) {
+                TimeoutFactory.removeTimeout(ctx);
             }
             LOG.debug("parsed message {}", message);
         }
@@ -240,7 +234,7 @@ public class TomP2PDecoder {
                 neighborSize = -1;
                 neighborSet = null;
                 break;
-            case SET_KEY480:
+            case SET_KEY640:
                 if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
@@ -248,11 +242,11 @@ public class TomP2PDecoder {
                     keyCollectionSize = buf.readInt();
                 }
                 if (keyCollection == null) {
-                    keyCollection = new KeyCollection(new ArrayList<Number480>(keyCollectionSize));
+                    keyCollection = new KeyCollection(new ArrayList<Number640>(keyCollectionSize));
                 }
                 for (int i = keyCollection.size(); i < keyCollectionSize; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-                            + Number160.BYTE_ARRAY_SIZE) {
+                            + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
                         return false;
                     }
                     byte[] me2 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -262,14 +256,16 @@ public class TomP2PDecoder {
                     Number160 domainKey = new Number160(me2);
                     buf.readBytes(me2);
                     Number160 contentKey = new Number160(me2);
-                    keyCollection.add(new Number480(locationKey, domainKey, contentKey));
+                    buf.readBytes(me2);
+                    Number160 versionKey = new Number160(me2);
+                    keyCollection.add(new Number640(locationKey, domainKey, contentKey, versionKey));
                 }
                 message.setKeyCollection(keyCollection);
                 lastContent = contentTypes.poll();
                 keyCollectionSize = -1;
                 keyCollection = null;
                 break;
-            case MAP_KEY480_DATA:
+            case MAP_KEY640_DATA:
                 if (mapsSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
@@ -277,7 +273,7 @@ public class TomP2PDecoder {
                     mapsSize = buf.readInt();
                 }
                 if (dataMap == null) {
-                    dataMap = new DataMap(new HashMap<Number480, Data>(2 * mapsSize));
+                    dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapsSize));
                 }
                 if (data != null) {
                     if (!data.decodeBuffer(buf)) {
@@ -290,7 +286,7 @@ public class TomP2PDecoder {
                 }
                 for (int i = dataMap.size(); i < mapsSize; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-                            + Number160.BYTE_ARRAY_SIZE) {
+                            + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
                         return false;
                     }
                     byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -300,11 +296,14 @@ public class TomP2PDecoder {
                     Number160 domainKey = new Number160(me3);
                     buf.readBytes(me3);
                     Number160 contentKey = new Number160(me3);
+                    buf.readBytes(me3);
+                    Number160 versionKey = new Number160(me3);
                     data = Data.decodeHeader(buf);
                     if (data == null) {
                         return false;
                     }
-                    dataMap.dataMap().put(new Number480(locationKey, domainKey, contentKey), data);
+                    dataMap.dataMap()
+                            .put(new Number640(locationKey, domainKey, contentKey, versionKey), data);
 
                     if (message.isSign()) {
                         data.publicKey(message.publicKeyReference());
@@ -325,7 +324,7 @@ public class TomP2PDecoder {
                 mapsSize = -1;
                 dataMap = null;
                 break;
-            case MAP_KEY480_KEY:
+            case MAP_KEY640_KEY:
                 if (keyMap480Size == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
@@ -333,12 +332,13 @@ public class TomP2PDecoder {
                     keyMap480Size = buf.readInt();
                 }
                 if (keyMap480 == null) {
-                    keyMap480 = new KeyMap480(new HashMap<Number480, Number160>(2 * keyMap480Size));
+                    keyMap480 = new KeyMap640(new HashMap<Number640, Number160>(2 * keyMap480Size));
                 }
 
                 for (int i = keyMap480.size(); i < keyMap480Size; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-                            + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+                            + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
+                            + Number160.BYTE_ARRAY_SIZE) {
                         return false;
                     }
                     byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -349,8 +349,10 @@ public class TomP2PDecoder {
                     buf.readBytes(me3);
                     Number160 contentKey = new Number160(me3);
                     buf.readBytes(me3);
+                    Number160 versionKey = new Number160(me3);
+                    buf.readBytes(me3);
                     Number160 valueKey = new Number160(me3);
-                    keyMap480.put(new Number480(locationKey, domainKey, contentKey), valueKey);
+                    keyMap480.put(new Number640(locationKey, domainKey, contentKey, versionKey), valueKey);
                 }
 
                 message.setKeyMap480(keyMap480);
@@ -358,7 +360,7 @@ public class TomP2PDecoder {
                 keyMap480Size = -1;
                 keyMap480 = null;
                 break;
-            case MAP_KEY480_BYTE:
+            case MAP_KEY640_BYTE:
                 if (keyMapByteSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
                     return false;
                 }
@@ -366,12 +368,12 @@ public class TomP2PDecoder {
                     keyMapByteSize = buf.readInt();
                 }
                 if (keyMapByte == null) {
-                    keyMapByte = new KeyMapByte(new HashMap<Number480, Byte>(2 * keyMapByteSize));
+                    keyMapByte = new KeyMapByte(new HashMap<Number640, Byte>(2 * keyMapByteSize));
                 }
 
                 for (int i = keyMapByte.size(); i < keyMapByteSize; i++) {
                     if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-                            + Number160.BYTE_ARRAY_SIZE + 1) {
+                            + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE + 1) {
                         return false;
                     }
                     byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -381,8 +383,10 @@ public class TomP2PDecoder {
                     Number160 domainKey = new Number160(me3);
                     buf.readBytes(me3);
                     Number160 contentKey = new Number160(me3);
+                    buf.readBytes(me3);
+                    Number160 versionKey = new Number160(me3);
                     byte value = buf.readByte();
-                    keyMapByte.put(new Number480(locationKey, domainKey, contentKey), value);
+                    keyMapByte.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
                 }
 
                 message.setKeyMapByte(keyMapByte);

@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.PeerConnection;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;

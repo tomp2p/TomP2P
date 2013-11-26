@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -40,10 +41,10 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.DefaultSignatureFactory;
+import net.tomp2p.connection.DefaultSignatureFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
@@ -64,6 +65,41 @@ import org.mockito.stubbing.Answer;
  * 
  */
 public class TestMessage {
+
+    @Test
+    public void compositeBufferTest1() {
+        CompositeByteBuf cbuf = Unpooled.compositeBuffer();
+        cbuf.writeInt(1);
+        ByteBuf buf = Unpooled.buffer();
+        buf.writeInt(2);
+        cbuf.capacity(4);
+        cbuf.addComponent(buf);
+        cbuf.writerIndex(8);
+
+        Assert.assertEquals(1, cbuf.readInt());
+        Assert.assertEquals(2, cbuf.readInt());
+    }
+
+    @Test
+    public void compositeBufferTest2() {
+        CompositeByteBuf cbuf = Unpooled.compositeBuffer();
+        int len = 8 * 4;
+        for (int i = 0; i < len; i += 4) {
+            ByteBuf buf = Unpooled.buffer().writeInt(i);
+            cbuf.capacity(cbuf.writerIndex()).addComponent(buf).writerIndex(i + 4);
+        }
+        cbuf.writeByte(1);
+
+        byte[] me = new byte[len];
+        cbuf.readBytes(me);
+        cbuf.readByte();
+
+        System.err.println("reader: " + cbuf.readerIndex());
+        System.err.println("writer: " + cbuf.writerIndex());
+        System.err.println("capacity: " + cbuf.capacity());
+        //see https://github.com/netty/netty/issues/1976
+        cbuf.discardSomeReadBytes();  
+    }
 
     /**
      * Test a simple message to endcode and then decode.
@@ -93,9 +129,9 @@ public class TestMessage {
         Number160 key2 = new Number160(5667);
         m1.setKey(key1);
         m1.setKey(key2);
-        List<Number480> tmp2 = new ArrayList<Number480>();
-        Number480 n1 = new Number480(rnd);
-        Number480 n2 = new Number480(rnd);
+        List<Number640> tmp2 = new ArrayList<Number640>();
+        Number640 n1 = new Number640(rnd);
+        Number640 n2 = new Number640(rnd);
         tmp2.add(n1);
         tmp2.add(n2);
         m1.setKeyCollection(new KeyCollection(tmp2));
@@ -141,22 +177,22 @@ public class TestMessage {
         KeyPair pair1 = gen.generateKeyPair();
         m1.setPublicKeyAndSign(pair1);
 
-        Map<Number480, Data> dataMap = new HashMap<Number480, Data>();
-        dataMap.put(new Number480(rnd), new Data(new byte[] { 3, 4, 5 }, true, true));
-        dataMap.put(new Number480(rnd), new Data(new byte[] { 4, 5, 6 }, true, true));
-        dataMap.put(new Number480(rnd), new Data(new byte[] { 5, 6, 7 }, true, true));
+        Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+        dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }, true, true));
+        dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6 }, true, true));
+        dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7 }, true, true));
         m1.setDataMap(new DataMap(dataMap));
-        Map<Number480, Number160> keysMap = new HashMap<Number480, Number160>();
-        keysMap.put(new Number480(rnd), new Number160(rnd));
-        keysMap.put(new Number480(rnd), new Number160(rnd));
-        keysMap.put(new Number480(rnd), new Number160(rnd));
-        m1.setKeyMap480(new KeyMap480(keysMap));
+        Map<Number640, Number160> keysMap = new HashMap<Number640, Number160>();
+        keysMap.put(new Number640(rnd), new Number160(rnd));
+        keysMap.put(new Number640(rnd), new Number160(rnd));
+        keysMap.put(new Number640(rnd), new Number160(rnd));
+        m1.setKeyMap480(new KeyMap640(keysMap));
         //
 
         Message m2 = encodeDecode(m1);
         Assert.assertEquals(true, m2.getPublicKey() != null);
         Assert.assertEquals(false, m2.getDataMap(0) == null);
-        Assert.assertEquals(false, m2.getKeyMap480(0) == null);
+        Assert.assertEquals(false, m2.getKeyMap640(0) == null);
         compareMessage(m1, m2);
     }
 
@@ -189,9 +225,9 @@ public class TestMessage {
         final int size = 50 * 1024 * 1024;
         Random rnd = new Random(42);
         Message m1 = Utils2.createDummyMessage();
-        Map<Number480, Data> dataMap = new HashMap<Number480, Data>();
+        Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
         Data data = new Data(new byte[size], true, false);
-        dataMap.put(new Number480(rnd), data);
+        dataMap.put(new Number640(rnd), data);
         m1.setDataMap(new DataMap(dataMap));
         Message m2 = encodeDecode(m1);
         compareMessage(m1, m2);
@@ -204,12 +240,12 @@ public class TestMessage {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
         KeyPair pair1 = gen.generateKeyPair();
         m1.setPublicKeyAndSign(pair1);
-        Map<Number480, Data> dataMap = new HashMap<Number480, Data>(1000);
+        Map<Number640, Data> dataMap = new HashMap<Number640, Data>(1000);
         Random rnd = new Random(42l);
         for (int i = 0; i < 1000; i++) {
-            dataMap.put(new Number480(new Number160(rnd), new Number160(rnd), new Number160(rnd)),
-                    new Data(new byte[] { (byte) rnd.nextInt(), (byte) rnd.nextInt(), (byte) rnd.nextInt(),
-                            (byte) rnd.nextInt(), (byte) rnd.nextInt() }, true, true));
+            dataMap.put(new Number640(new Number160(rnd), new Number160(rnd), new Number160(rnd),
+                    new Number160(rnd)), new Data(new byte[] { (byte) rnd.nextInt(), (byte) rnd.nextInt(),
+                    (byte) rnd.nextInt(), (byte) rnd.nextInt(), (byte) rnd.nextInt() }, true, true));
         }
         m1.setDataMap(new DataMap(dataMap));
         Message m2 = encodeDecode(m1);
@@ -224,10 +260,11 @@ public class TestMessage {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
         KeyPair pair1 = gen.generateKeyPair();
         m1.setPublicKeyAndSign(pair1);
-        Collection<Number480> list = new ArrayList<Number480>();
+        Collection<Number640> list = new ArrayList<Number640>();
         Random rnd = new Random(42l);
         for (int i = 0; i < 1000; i++) {
-            list.add(new Number480(new Number160(rnd), new Number160(rnd), new Number160(rnd)));
+            list.add(new Number640(new Number160(rnd), new Number160(rnd), new Number160(rnd), new Number160(
+                    rnd)));
         }
         m1.setKeyCollection(new KeyCollection(list));
         Message m2 = encodeDecode(m1);
@@ -246,12 +283,12 @@ public class TestMessage {
     private Message encodeDecode(final Message m1) throws Exception {
         AtomicReference<Message> m2 = new AtomicReference<Message>();
         TomP2POutbound encoder = new TomP2POutbound(true, new DefaultSignatureFactory());
-        ByteBuf buf = Unpooled.buffer();
+        CompositeByteBuf buf = Unpooled.compositeBuffer();
         ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
         encoder.write(ctx, m1, null);
         TomP2PDecoder decoder = new TomP2PDecoder(new DefaultSignatureFactory());
         decoder.decode(ctx, buf, m1.getRecipient().createSocketTCP(), m1.getSender().createSocketTCP());
-        return m2.get();
+        return decoder.message();
     }
 
     /**
@@ -264,12 +301,16 @@ public class TestMessage {
      * @return The mocked ChannelHandlerContext
      */
     @SuppressWarnings("unchecked")
-    private ChannelHandlerContext mockChannelHandlerContext(final ByteBuf buf,
+    private ChannelHandlerContext mockChannelHandlerContext(final CompositeByteBuf buf,
             final AtomicReference<Message> m2) {
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         ByteBufAllocator alloc = mock(ByteBufAllocator.class);
         when(ctx.alloc()).thenReturn(alloc);
+
         when(alloc.ioBuffer()).thenReturn(buf);
+        when(alloc.compositeDirectBuffer(0)).thenReturn(buf);
+        when(alloc.compositeHeapBuffer(0)).thenReturn(buf);
+
         DatagramChannel dc = mock(DatagramChannel.class);
         when(ctx.channel()).thenReturn(dc);
         when(ctx.writeAndFlush(any(), any(ChannelPromise.class))).thenReturn(null);

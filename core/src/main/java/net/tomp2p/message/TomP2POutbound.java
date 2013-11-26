@@ -1,6 +1,6 @@
 package net.tomp2p.message;
 
-import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -13,9 +13,9 @@ import java.security.Signature;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.tomp2p.connection2.SignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
@@ -42,7 +42,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
             throws Exception {
-        ByteBuf buf = null;
+        CompositeByteBuf buf = null;
         try {
             if (msg instanceof Message) {
                 message = (Message) msg;
@@ -50,9 +50,9 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             }
 
             if (preferDirect) {
-                buf = ctx.alloc().ioBuffer();
+                buf = ctx.alloc().compositeDirectBuffer(0);
             } else {
-                buf = ctx.alloc().heapBuffer();
+                buf = ctx.alloc().compositeHeapBuffer(0);
             }
 
             if (!header) {
@@ -77,8 +77,10 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
 
                     signature.initSign(message.getPrivateKey());
                     // debug2 = message.getPublicKey();
-                    for (int i = 0; i < buf.nioBufferCount(); i++) {
-                        ByteBuffer buffer = buf.nioBuffers()[i];
+                    ByteBuffer[] byteBuffers = buf.nioBuffers();
+                    int len = byteBuffers.length;
+                    for (int i = 0; i < len; i++) {
+                        ByteBuffer buffer = byteBuffers[i];
                         signature.update(buffer);
                     }
                     byte[] signatureData = signature.sign();
@@ -122,7 +124,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
         }
     }
 
-    private boolean loop(ByteBuf buf) {
+    private boolean loop(CompositeByteBuf buf) {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
 
@@ -153,7 +155,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 simpleBloomFilter.toByteBuf(buf);
                 message.contentRefencencs().poll();
                 break;
-            case SET_KEY480:
+            case SET_KEY640:
                 // length
                 KeyCollection keys = message.getKeyCollection(next.number());
                 buf.writeInt(keys.size());
@@ -162,17 +164,19 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                         buf.writeBytes(keys.locationKey().toByteArray());
                         buf.writeBytes(keys.domainKey().toByteArray());
                         buf.writeBytes(key.toByteArray());
+                        buf.writeBytes(keys.versionKey().toByteArray());
                     }
                 } else {
-                    for (Number480 key : keys.keys()) {
+                    for (Number640 key : keys.keys()) {
                         buf.writeBytes(key.getLocationKey().toByteArray());
                         buf.writeBytes(key.getDomainKey().toByteArray());
                         buf.writeBytes(key.getContentKey().toByteArray());
+                        buf.writeBytes(key.getVersionKey().toByteArray());
                     }
                 }
                 message.contentRefencencs().poll();
                 break;
-            case MAP_KEY480_DATA:
+            case MAP_KEY640_DATA:
                 DataMap dataMap = message.getDataMap(next.number());
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
@@ -180,40 +184,44 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                         buf.writeBytes(dataMap.locationKey().toByteArray());
                         buf.writeBytes(dataMap.domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().toByteArray());
+                        buf.writeBytes(dataMap.versionKey().toByteArray());
                         Data data = entry.getValue().duplicate();
-                        data.encode(buf);
+                        data.encodeHeader(buf);
                         data.encodeDone(buf);
                     }
                 } else {
-                    for (Entry<Number480, Data> entry : dataMap.dataMap().entrySet()) {
+                    for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
                         buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                         buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                         buf.writeBytes(entry.getKey().getContentKey().toByteArray());
+                        buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
                         Data data = entry.getValue().duplicate();
-                        data.encode(buf);
+                        data.encodeHeader(buf);
                         data.encodeDone(buf);
                     }
                 }
                 message.contentRefencencs().poll();
                 break;
-            case MAP_KEY480_KEY:
-                KeyMap480 keyMap480 = message.getKeyMap480(next.number());
-                buf.writeInt(keyMap480.size());
-                for (Entry<Number480, Number160> entry : keyMap480.keysMap().entrySet()) {
+            case MAP_KEY640_KEY:
+                KeyMap640 keyMap640 = message.getKeyMap640(next.number());
+                buf.writeInt(keyMap640.size());
+                for (Entry<Number640, Number160> entry : keyMap640.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                     buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                     buf.writeBytes(entry.getKey().getContentKey().toByteArray());
+                    buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
                     buf.writeBytes(entry.getValue().toByteArray());
                 }
                 message.contentRefencencs().poll();
                 break;
-            case MAP_KEY480_BYTE:
+            case MAP_KEY640_BYTE:
                 KeyMapByte keysMap = message.getKeyMapByte(next.number());
                 buf.writeInt(keysMap.size());
-                for (Entry<Number480, Byte> entry : keysMap.keysMap().entrySet()) {
+                for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                     buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                     buf.writeBytes(entry.getKey().getContentKey().toByteArray());
+                    buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
                     buf.writeByte(entry.getValue());
                 }
                 message.contentRefencencs().poll();
@@ -242,7 +250,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 for (Map.Entry<PeerAddress, Data> entry : trackerData.getPeerAddresses().entrySet()) {
                     buf.writeBytes(entry.getKey().toByteArray());
                     Data data = entry.getValue().duplicate();
-                    data.encode(buf);
+                    data.encodeHeader(buf);
                     data.encodeDone(buf);
                 }
                 message.contentRefencencs().poll();

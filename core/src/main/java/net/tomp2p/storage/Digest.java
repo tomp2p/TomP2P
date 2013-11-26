@@ -16,6 +16,8 @@
 package net.tomp2p.storage;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
@@ -32,26 +34,24 @@ public interface Digest {
      * Calculates a digest over a specific location and domain. It will return those content keys that are stored. Those
      * keys that are not stored are ignored
      * 
-     * @param locationKey
-     *            The location key
-     * @param domainKey
-     *            The domain key
+     * @param from
+     *            The start key for the digest
+     * @param to
+     *            The end key for the digest
      * @param contentKey
      *            The content key to look for. The key that is not found is ignored. Can be set to null -> gets the
      *            information for all content keys
      * @return A list of all hashes for the content keys. To return a predictable amount (important for routing), the
      *         hashes can be xored.
      */
-    DigestInfo digest(Number160 locationKey, Number160 domainKey, Number160 contentKey);
+    DigestInfo digest(Number640 from, Number640 to);
 
     /**
      * Calculates a digest over a specific location and domain. It will return those content keys that match the Bloom
      * filter. Those keys that are not stored are ignored
      * 
-     * @param locationKey
-     *            The location key
-     * @param domainKey
-     *            The domain key
+     * @param key
+     *            The location and domain key
      * @param keyBloomFilter
      *            The bloomFilter of those key elements we want the digest. Please not that there might be false
      *            positive, e.g., a Number160 that is included in the digest but not stored on disk/memory.
@@ -61,6 +61,5 @@ public interface Digest {
      * @return A list of all hashes for the content keys. To return a predictable amount (important for routing), the
      *         hashes can be xored.
      */
-    DigestInfo digest(Number160 locationKey, Number160 domainKey,
-            SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter);
+    DigestInfo digest(Number320 key, SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter);
 }

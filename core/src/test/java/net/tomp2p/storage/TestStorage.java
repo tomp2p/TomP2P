@@ -12,7 +12,9 @@ import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
-import net.tomp2p.storage.StorageGeneric.PutStatus;
+import net.tomp2p.peers.Number640;
+import net.tomp2p.storage.KeyLock.RefCounterLock;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 import net.tomp2p.utils.Utils;
 
 import org.junit.After;
@@ -32,6 +34,11 @@ public class TestStorage {
     final private static Number160 content3 = new Number160(70);
 
     final private static Number160 content4 = new Number160(80);
+    
+    final private Number640 key1 = new Number640(locationKey, domainKey, content1, Number160.ZERO);
+    final private Number640 key2 = new Number640(locationKey, domainKey, content2, Number160.ZERO);
+    final private Number640 key3 = new Number640(locationKey, domainKey, content3, Number160.ZERO);
+    final private Number640 key4 = new Number640(locationKey, domainKey, content4, Number160.ZERO);
 
     private static String DIR;
 
@@ -57,145 +64,144 @@ public class TestStorage {
 
     @Test
     public void testPutInitial() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        store(storageM);
+        StorageMemory storageM = new StorageMemory();
+        store(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void store(StorageGeneric storage) throws IOException {
+    private void store(StorageLayer storage) throws IOException {
         store(storage, null, false);
     }
 
-    private void store(StorageGeneric storage, int nr) throws IOException {
-        PutStatus store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test1"), null,
-                false, false);
+    private void store(StorageLayer storage, int nr) throws IOException {
+        Enum<?> store = storage.put(key1, new Data("test1"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
-        store = storage.put(locationKey, domainKey, new Number160(nr), new Data("test2"), null, false, false);
+        store = storage.put(key2, new Data("test2"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
     }
 
-    private void store(StorageGeneric storage, PublicKey publicKey, boolean protectDomain) throws IOException {
-        PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test1"), publicKey, false,
+    private void store(StorageLayer storage, PublicKey publicKey, boolean protectDomain) throws IOException {
+        Enum<?> store = storage.put(key1, new Data("test1"), publicKey, false,
                 protectDomain);
         Assert.assertEquals(PutStatus.OK, store);
-        store = storage.put(locationKey, domainKey, content2, new Data("test2"), publicKey, false,
+        store = storage.put(key2, new Data("test2"), publicKey, false,
                 protectDomain);
         Assert.assertEquals(PutStatus.OK, store);
     }
 
     @Test
     public void testGet() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testGet(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testGet(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testGet(StorageGeneric storage) throws IOException, ClassNotFoundException {
+    private void testGet(StorageLayer storage) throws IOException, ClassNotFoundException {
         store(storage);
-        Data result1 = storage.get(locationKey, domainKey, content1);
+        Data result1 = storage.get(key1);
         Assert.assertEquals("test1", result1.object());
-        Data result2 = storage.get(locationKey, domainKey, content2);
+        Data result2 = storage.get(key2);
         Assert.assertEquals("test2", result2.object());
-        Data result3 = storage.get(locationKey, domainKey, content3);
+        Data result3 = storage.get(key3);
         Assert.assertEquals(null, result3);
     }
 
     @Test
     public void testPut() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testPut(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testPut(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPut(StorageGeneric storage) throws IOException {
+    private void testPut(StorageLayer storage) throws IOException {
         store(storage);
-        PutStatus store = storage
-                .put(locationKey, domainKey, content1, new Data("test3"), null, false, false);
+        Enum<?> store = storage
+                .put(key1, new Data("test3"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
-        storage.put(locationKey, domainKey, content3, new Data("test4"), null, false, false);
-        SortedMap<Number480, Data> result = storage.subMap(locationKey, domainKey, content1, content4);
+        storage.put(key3, new Data("test4"), null, false, false);
+        SortedMap<Number640, Data> result = storage.get(key1, key4);
         Assert.assertEquals(3, result.size());
     }
 
     @Test
     public void testPutIfAbsent() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testPutIfAbsent(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testPutIfAbsent(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPutIfAbsent(StorageGeneric storage) throws IOException {
+    private void testPutIfAbsent(StorageLayer storage) throws IOException {
         store(storage);
-        PutStatus store = storage.put(locationKey, domainKey, content1, new Data("test3"), null, true, false);
+        Enum<?> store = storage.put(key1, new Data("test3"), null, true, false);
         Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
-        storage.put(locationKey, domainKey, content3, new Data("test4"), null, true, false);
-        SortedMap<Number480, Data> result1 = storage.subMap(locationKey, domainKey, content1, content4);
+        storage.put(key3, new Data("test4"), null, true, false);
+        SortedMap<Number640, Data> result1 = storage.get(key1, key3);
         Assert.assertEquals(3, result1.size());
-        SortedMap<Number480, Data> result2 = storage.subMap(locationKey, domainKey, content1, content3);
+        SortedMap<Number640, Data> result2 = storage.get(key1, key2);
         Assert.assertEquals(2, result2.size());
     }
 
     @Test
     public void testRemove() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testRemove(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testRemove(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testRemove(StorageGeneric storage) throws IOException, ClassNotFoundException {
+    private void testRemove(StorageLayer storage) throws IOException, ClassNotFoundException {
         store(storage);
-        Data result1 = storage.remove(locationKey, domainKey, content1);
+        Data result1 = storage.remove(key1, null);
         Assert.assertEquals("test1", result1.object());
-        SortedMap<Number480, Data> result2 = storage.subMap(locationKey, domainKey, content1, content4);
+        SortedMap<Number640, Data> result2 = storage.get(key1, key4);
         Assert.assertEquals(1, result2.size());
         store(storage);
-        SortedMap<Number480, Data> result3 = storage.remove(locationKey, domainKey, content1, content4, null);
+        SortedMap<Number640, Data> result3 = storage.remove(key1, key4, null);
         Assert.assertEquals(2, result3.size());
-        SortedMap<Number480, Data> result4 = storage.subMap(locationKey, domainKey, content1, content4);
+        SortedMap<Number640, Data> result4 = storage.get(key1, key4);
         Assert.assertEquals(0, result4.size());
     }
 
     @Test
     public void testTTL1() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testTTL1(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testTTL1(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testTTL1(StorageGeneric storage) throws Exception {
+    private void testTTL1(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(0);
-        storage.put(locationKey, domainKey, content1, data, null, false, false);
+        storage.put(key1, data, null, false, false);
         Thread.sleep(2000);
-        Data tmp = storage.get(locationKey, domainKey, content1);
+        Data tmp = storage.get(key1);
         Assert.assertEquals(true, tmp != null);
     }
 
     @Test
     public void testTTL2() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testTTL2(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testTTL2(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testTTL2(StorageGeneric storage) throws Exception {
+    private void testTTL2(StorageLayer storage) throws Exception {
         Data data = new Data("string");
         data.ttlSeconds(1);
-        storage.put(locationKey, domainKey, content1, data, null, false, false);
+        storage.put(key1, data, null, false, false);
         Thread.sleep(2000);
         storage.checkTimeout();
-        Data tmp = storage.get(locationKey, domainKey, content1);
+        Data tmp = storage.get(key1);
         Assert.assertEquals(true, tmp == null);
     }
 
     @Test
     public void testResponsibility() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
+        StorageMemory storageM = new StorageMemory();
         testResponsibility(storageM);
         storageM.close();
     }
 
-    private void testResponsibility(StorageGeneric storage) throws Exception {
+    private void testResponsibility(StorageMemory storage) throws Exception {
         storage.updateResponsibilities(content1, locationKey);
         storage.updateResponsibilities(content2, locationKey);
         Assert.assertEquals(locationKey, storage.findPeerIDForResponsibleContent(content1));
@@ -207,24 +213,24 @@ public class TestStorage {
 
     @Test
     public void testPublicKeyDomain() throws Exception {
-        StorageGeneric storageM = new StorageMemory();
-        testPublicKeyDomain(storageM);
+        StorageMemory storageM = new StorageMemory();
+        testPublicKeyDomain(new StorageLayer(storageM));
         storageM.close();
     }
 
-    private void testPublicKeyDomain(StorageGeneric storage) throws Exception {
+    private void testPublicKeyDomain(StorageLayer storage) throws Exception {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
         KeyPair pair1 = gen.generateKeyPair();
         KeyPair pair2 = gen.generateKeyPair();
         store(storage, pair1.getPublic(), true);
-        PutStatus result1 = storage.put(locationKey, domainKey, content3, new Data("test4"),
+        Enum<?> result1 = storage.put(key3, new Data("test4"),
                 pair1.getPublic(), false, false);
         Assert.assertEquals(PutStatus.OK, result1);
-        PutStatus result3 = storage.put(locationKey, domainKey, content3, new Data("test6"),
+        Enum<?> result3 = storage.put(key3, new Data("test6"),
                 pair1.getPublic(), false, true);
         Assert.assertEquals(PutStatus.OK, result3);
         // domain is protected by pair1
-        PutStatus result2 = storage.put(locationKey, domainKey, content3, new Data("test5"),
+        Enum<?> result2 = storage.put(key3, new Data("test5"),
                 pair2.getPublic(), false, true);
         Assert.assertEquals(PutStatus.FAILED, result2);
     }
@@ -232,21 +238,21 @@ public class TestStorage {
     @Test
     public void testLock1() {
         KeyLock<Number160> lock = new KeyLock<Number160>();
-        Lock tmp = lock.lock(Number160.createHash("test"));
+        KeyLock<Number160>.RefCounterLock tmp = lock.lock(Number160.createHash("test"));
         Assert.assertEquals(1, lock.cacheSize());
-        lock.unlock(Number160.createHash("test"), tmp);
+        lock.unlock(tmp);
         Assert.assertEquals(0, lock.cacheSize());
-        lock.unlock(Number160.createHash("test"), tmp);
+        lock.unlock(tmp);
     }
 
     @Test
     public void testLock2() {
         KeyLock<Number160> lock = new KeyLock<Number160>();
-        Lock tmp1 = lock.lock(Number160.createHash("test1"));
-        Lock tmp2 = lock.lock(Number160.createHash("test2"));
+        KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
+        KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
         Assert.assertEquals(2, lock.cacheSize());
-        lock.unlock(Number160.createHash("test1"), tmp1);
-        lock.unlock(Number160.createHash("test2"), tmp2);
+        lock.unlock(tmp1);
+        lock.unlock(tmp2);
         Assert.assertEquals(0, lock.cacheSize());
     }
 
@@ -258,10 +264,10 @@ public class TestStorage {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Lock tmp1 = lock.lock(Number160.createHash("test1"));
-                    Lock tmp2 = lock.lock(Number160.createHash("test2"));
-                    lock.unlock(Number160.createHash("test1"), tmp1);
-                    lock.unlock(Number160.createHash("test2"), tmp2);
+                    KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
+                    KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
+                    lock.unlock(tmp1);
+                    lock.unlock(tmp2);
                     System.err.print("a" + ii + " ");
                 }
             }).start();
@@ -271,41 +277,43 @@ public class TestStorage {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Lock tmp1 = lock.lock(Number160.createHash("test3"));
-                    Lock tmp2 = lock.lock(Number160.createHash("test4"));
-                    lock.unlock(Number160.createHash("test3"), tmp1);
-                    lock.unlock(Number160.createHash("test4"), tmp2);
+                    KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test3"));
+                    KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test4"));
+                    lock.unlock(tmp1);
+                    lock.unlock(tmp2);
                     System.err.print("b" + ii + " ");
                 }
             }).start();
         }
         Thread.sleep(500);
         Assert.assertEquals(0, lock.cacheSize());
-        Lock tmp1 = lock.lock(Number160.createHash("test1"));
-        Lock tmp2 = lock.lock(Number160.createHash("test2"));
+        KeyLock<Number160>.RefCounterLock tmp1 = lock.lock(Number160.createHash("test1"));
+        KeyLock<Number160>.RefCounterLock tmp2 = lock.lock(Number160.createHash("test2"));
         Assert.assertEquals(2, lock.cacheSize());
-        lock.unlock(Number160.createHash("test1"), tmp1);
-        lock.unlock(Number160.createHash("test1"), tmp2);
+        lock.unlock(tmp1);
         Assert.assertEquals(1, lock.cacheSize());
+        lock.unlock(tmp2);
+        Assert.assertEquals(0, lock.cacheSize());
     }
 
     @Test
     public void testConcurrency() throws InterruptedException, IOException {
-        final StorageGeneric sM = new StorageMemory();
-        store(sM);
+        final StorageMemory sM = new StorageMemory();
+        final StorageLayer storageGeneric = new StorageLayer(sM);
+        store(storageGeneric);
         final AtomicInteger counter = new AtomicInteger();
         for (int i = 0; i < 100; i++) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        Data result1 = sM.get(locationKey, domainKey, content1);
+                        Data result1 = storageGeneric.get(key1);
                         Assert.assertEquals("test1", result1.object());
-                        Data result2 = sM.get(locationKey, domainKey, content2);
+                        Data result2 = storageGeneric.get(key2);
                         Assert.assertEquals("test2", result2.object());
-                        Data result3 = sM.get(locationKey, domainKey, content3);
+                        Data result3 = storageGeneric.get(key3);
                         Assert.assertEquals(null, result3);
-                        store(sM, 1);
+                        store(storageGeneric, 1);
                     } catch (Throwable t) {
                         t.printStackTrace();
                         counter.incrementAndGet();

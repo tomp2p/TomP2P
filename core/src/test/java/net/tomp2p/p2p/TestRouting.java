@@ -11,7 +11,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureRouting;

@@ -17,32 +17,22 @@
 package net.tomp2p.p2p;
 
 import java.io.IOException;
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection2.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureCreate;
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FuturePut;
-import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.utils.Timings;
-import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -295,7 +285,7 @@ public class TestReplication {
         ArrayList<Number160> peerIds = new ArrayList<Number160>();
         for(int i=0; i<peers.length; i++)
             if(!peers[i].isShutdown())
-                for(Map.Entry<Number480, Data> entry: peers[i].getPeerBean().storage().map().entrySet()){
+                for(Map.Entry<Number640, Data> entry: peers[i].getPeerBean().storage().get().entrySet()){
                     locationKey = entry.getKey().getLocationKey();
                     if(locationKey.equals(key)){
                         count++;
@@ -332,12 +322,12 @@ public class TestReplication {
             futureDHT.awaitUninterruptibly();
             futureDHT.getFutureRequests().awaitUninterruptibly();
             //now, do the routing, so that each peers know each other. The content should be moved
-            Assert.assertEquals(false, peers[1].getPeerBean().storage().contains(Number160.createHash("2"), Number160.ZERO, Number160.ZERO));
+            Assert.assertEquals(false, peers[1].getPeerBean().storage().contains(new Number640(Number160.createHash("2"), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
             Utils2.perfectRouting(peers);
             //we should see now the forward replication
             Thread.sleep(1000);
             //test it
-            Assert.assertEquals(true, peers[1].getPeerBean().storage().contains(Number160.createHash("2"), Number160.ZERO, Number160.ZERO));
+            Assert.assertEquals(true, peers[1].getPeerBean().storage().contains(new Number640(Number160.createHash("2"), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
             
         } finally {
             if (master != null) {
@@ -398,7 +388,7 @@ public class TestReplication {
             final int tests = 10;
             final int wait = 2500;
             while (!peerClose.getPeerBean().storage()
-                    .contains(locationKey, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO)) {
+                    .contains(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO))) {
                 Timings.sleep(wait / tests);
                 i++;
                 if (i > tests) {
@@ -406,7 +396,7 @@ public class TestReplication {
                 }
             }
             Assert.assertEquals(true, peerClose.getPeerBean().storage()
-                    .contains(locationKey, DHTBuilder.DEFAULT_DOMAIN, Number160.ZERO));
+                    .contains(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO)));
         } finally {
             if (master != null) {
                 master.shutdown().awaitUninterruptibly();

@@ -4,11 +4,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ChannelServerConficuration;
-import net.tomp2p.connection2.PeerConnection;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.ProgressListener;
@@ -260,7 +261,7 @@ public class TestDirect {
             FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress());
             ChannelCreator.resetConnectionCounts();
 
-            FutureResponse fd1 = sender.sendDirect(peerConnection).setObject("test")
+            FutureDirect fd1 = sender.sendDirect(peerConnection).setObject("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(10 * 1000).start();
             Assert.assertEquals(1, ChannelCreator.tcpConnectionCount());
             Assert.assertEquals(0, ChannelCreator.udpConnectionCount());
@@ -270,7 +271,7 @@ public class TestDirect {
             Assert.assertEquals(0, ChannelCreator.udpConnectionCount());
             Timings.sleep(2000);
             System.err.println("send second with the same connection");
-            FutureResponse fd2 = sender.sendDirect(peerConnection).setObject("test").start();
+            FutureDirect fd2 = sender.sendDirect(peerConnection).setObject("test").start();
             fd2.awaitUninterruptibly();
             Assert.assertEquals(1, ChannelCreator.tcpConnectionCount());
             Assert.assertEquals(0, ChannelCreator.udpConnectionCount());
@@ -306,7 +307,7 @@ public class TestDirect {
             FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress());
             ChannelCreator.resetConnectionCounts();
 
-            FutureResponse fd1 = sender.sendDirect(peerConnection).setObject("test")
+            FutureDirect fd1 = sender.sendDirect(peerConnection).setObject("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(5).start();
             fd1.awaitUninterruptibly();
 
@@ -314,7 +315,7 @@ public class TestDirect {
 
             Timings.sleep(7000);
 
-            FutureResponse fd2 = sender.sendDirect(peerConnection).setObject("test").start();
+            FutureDirect fd2 = sender.sendDirect(peerConnection).setObject("test").start();
             fd2.awaitUninterruptibly();
             peerConnection.close().await();
             Assert.assertEquals(2, ChannelCreator.tcpConnectionCount());

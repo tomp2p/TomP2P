@@ -16,7 +16,7 @@
 
 package net.tomp2p.p2p.builder;
 
-import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureSend;
 import net.tomp2p.futures.ProgressListener;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.p2p.Peer;
@@ -93,7 +93,7 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
     }
 
 
-    public FutureDirect start() {
+    public FutureSend start() {
         preBuild("send-builder");
         return peer.getDistributedHashMap().direct(this);
     }

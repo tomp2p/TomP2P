@@ -19,171 +19,143 @@ package net.tomp2p.storage;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 
-public class StorageMemory extends StorageGeneric {
+public class StorageMemory implements Storage {
+
     // Core
-    final private NavigableMap<Number480, Data> dataMap = new ConcurrentSkipListMap<Number480, Data>();
+    final private NavigableMap<Number640, Data> dataMap = new ConcurrentSkipListMap<Number640, Data>();
 
     // Maintenance
-    final private Map<Number480, Long> timeoutMap = new ConcurrentHashMap<Number480, Long>();
-
-    final private SortedMap<Long, Set<Number480>> timeoutMapRev = new ConcurrentSkipListMap<Long, Set<Number480>>();
+    final private Map<Number640, Long> timeoutMap = new ConcurrentHashMap<Number640, Long>();
+    final private ConcurrentSkipListMap<Long, Set<Number640>> timeoutMapRev = new ConcurrentSkipListMap<Long, Set<Number640>>();
 
     // Protection
     final private Map<Number320, PublicKey> protectedMap = new ConcurrentHashMap<Number320, PublicKey>();
-
     final private StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
-
-    final private KeyLock<Long> timeoutLock = new KeyLock<Long>();
 
     // Core
     @Override
-    public boolean put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data value) {
-        dataMap.put(new Number480(locationKey, domainKey, contentKey), value);
+    public boolean put(Number640 key, Data value) {
+        dataMap.put(key, value);
         return true;
     }
 
     @Override
-    public Data get(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
-        return dataMap.get(new Number480(locationKey, domainKey, contentKey));
+    public Data get(Number640 key) {
+        return dataMap.get(key);
     }
 
     @Override
-    public boolean contains(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
-        return dataMap.containsKey(new Number480(locationKey, domainKey, contentKey));
+    public boolean contains(Number640 key) {
+        return dataMap.containsKey(key);
     }
 
     @Override
-    public Data remove(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
-        return dataMap.remove(new Number480(locationKey, domainKey, contentKey));
+    public int contains(Number640 fromKey, Number640 toKey) {
+        NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+        return tmp.size();
     }
 
     @Override
-    public SortedMap<Number480, Data> subMap(Number160 locationKey, Number160 domainKey, Number160 fromContentKey,
-            Number160 toContentKey) {
-        return dataMap.subMap(new Number480(locationKey, domainKey, fromContentKey), new Number480(locationKey,
-                domainKey, toContentKey));
+    public Data remove(Number640 key) {
+        return dataMap.remove(key);
     }
 
     @Override
-    public Map<Number480, Data> subMap(Number160 locationKey) {
-        return dataMap.subMap(new Number480(locationKey, Number160.ZERO, Number160.ZERO), new Number480(locationKey,
-                Number160.MAX_VALUE, Number160.MAX_VALUE));
+    public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey) {
+        NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+        NavigableMap<Number640, Data> copy = new TreeMap<Number640, Data>(tmp);
+        tmp.clear();
+        return copy;
     }
 
     @Override
-    public NavigableMap<Number480, Data> map() {
-        return dataMap;
+    public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey) {
+        NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+        return new TreeMap<Number640, Data>(tmp);
+    }
+    
+    NavigableMap<Number640, Data> subMap0(Number640 fromKey, Number640 toKey) {
+        return dataMap.subMap(fromKey, true, toKey, true);
+    }
+
+    @Override
+    public NavigableMap<Number640, Data> map() {
+        return new TreeMap<Number640, Data>(dataMap);
     }
 
     // Maintenance
     @Override
-    public void addTimeout(Number160 locationKey, Number160 domainKey, Number160 contentKey, long expiration) {
-        Number480 key = new Number480(locationKey, domainKey, contentKey);
+    public void addTimeout(Number640 key, long expiration) {
         Long oldExpiration = timeoutMap.put(key, expiration);
-        Lock lock1 = timeoutLock.lock(expiration);
-        try {
-            Set<Number480> tmp = putIfAbsent2(expiration, new HashSet<Number480>());
-            tmp.add(key);
-        } finally {
-            timeoutLock.unlock(expiration, lock1);
-        }
+        Set<Number640> tmp = putIfAbsent2(expiration,
+                Collections.newSetFromMap(new ConcurrentHashMap<Number640, Boolean>()));
+        tmp.add(key);
         if (oldExpiration == null) {
             return;
         }
-        Lock lock2 = timeoutLock.lock(oldExpiration);
-        try {
-            removeRevTimeout(key, oldExpiration);
-
-        } finally {
-            timeoutLock.unlock(oldExpiration, lock2);
-        }
+        removeRevTimeout(key, oldExpiration);
     }
 
     @Override
-    public void removeTimeout(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
-        Number480 key = new Number480(locationKey, domainKey, contentKey);
+    public void removeTimeout(Number640 key) {
         Long expiration = timeoutMap.remove(key);
         if (expiration == null) {
             return;
         }
-        Lock lock = timeoutLock.lock(expiration);
-        try {
-            removeRevTimeout(key, expiration);
-        } finally {
-            timeoutLock.unlock(expiration, lock);
-        }
+        removeRevTimeout(key, expiration);
     }
 
-    private void removeRevTimeout(Number480 key, Long expiration) {
-        if (expiration != null) {
-            Set<Number480> tmp2 = timeoutMapRev.get(expiration);
-            if (tmp2 != null) {
-                tmp2.remove(key);
-                if (tmp2.isEmpty()) {
-                    timeoutMapRev.remove(expiration);
-                }
+    private void removeRevTimeout(Number640 key, Long expiration) {
+        Set<Number640> tmp = timeoutMapRev.get(expiration);
+        if (tmp != null) {
+            tmp.remove(key);
+            if (tmp.isEmpty()) {
+                timeoutMapRev.remove(expiration);
             }
         }
     }
 
     @Override
-    public Collection<Number480> subMapTimeout(long to) {
-        SortedMap<Long, Set<Number480>> tmp = timeoutMapRev.subMap(0L, to);
-        Collection<Number480> toRemove = new ArrayList<Number480>();
-        for (Map.Entry<Long, Set<Number480>> entry : tmp.entrySet()) {
-            Lock lock = timeoutLock.lock(entry.getKey());
-            try {
-                toRemove.addAll(entry.getValue());
-            } finally {
-                timeoutLock.unlock(entry.getKey(), lock);
-            }
+    public Collection<Number640> subMapTimeout(long to) {
+        SortedMap<Long, Set<Number640>> tmp = timeoutMapRev.subMap(0L, to);
+        Collection<Number640> toRemove = new ArrayList<Number640>();
+        for (Set<Number640> set : tmp.values()) {
+            toRemove.addAll(set);
         }
         return toRemove;
     }
 
     // Protection
     @Override
-    public boolean protectDomain(Number160 locationKey, Number160 domainKey, PublicKey publicKey) {
-        protectedMap.put(new Number320(locationKey, domainKey), publicKey);
+    public boolean protectDomain(Number320 key, PublicKey publicKey) {
+        protectedMap.put(key, publicKey);
         return true;
     }
 
     @Override
-    public boolean isDomainProtectedByOthers(Number160 locationKey, Number160 domainKey, PublicKey publicKey) {
-        PublicKey other = protectedMap.get(new Number320(locationKey, domainKey));
+    public boolean isDomainProtectedByOthers(Number320 key, PublicKey publicKey) {
+        PublicKey other = protectedMap.get(key);
         if (other == null) {
             return false;
         }
         return !other.equals(publicKey);
     }
 
-    // Misc
-    @Override
-    public void close() {
-        dataMap.clear();
-        protectedMap.clear();
-        timeoutMap.clear();
-        timeoutMapRev.clear();
-    }
-
-    private Set<Number480> putIfAbsent2(long expiration, Set<Number480> hashSet) {
-        @SuppressWarnings("unchecked")
-        Set<Number480> timeouts = ((ConcurrentMap<Long, Set<Number480>>) timeoutMapRev)
-                .putIfAbsent(expiration, hashSet);
+    private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {
+        Set<Number640> timeouts = timeoutMapRev.putIfAbsent(expiration, hashSet);
         return timeouts == null ? hashSet : timeouts;
     }
 
@@ -205,5 +177,14 @@ public class StorageMemory extends StorageGeneric {
     @Override
     public void removeResponsibility(Number160 locationKey) {
         storageMemoryReplication.removeResponsibility(locationKey);
+    }
+
+    // Misc
+    @Override
+    public void close() {
+        dataMap.clear();
+        protectedMap.clear();
+        timeoutMap.clear();
+        timeoutMapRev.clear();
     }
 }

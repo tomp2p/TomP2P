@@ -1,37 +1,38 @@
 package net.tomp2p.message;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 public class DataMap {
-    private final Map<Number480, Data> dataMap;
+    private final Map<Number640, Data> dataMap;
     private final Map<Number160, Data> dataMapConvert;
     private final Number160 locationKey;
     private final Number160 domainKey;
+    private final Number160 versionKey;
 
-    public DataMap(final Map<Number480, Data> dataMap) {
+    public DataMap(final Map<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         this.dataMapConvert = null;
         this.locationKey = null;
         this.domainKey = null;
+        this.versionKey = null;
     }
 
-    public DataMap(final Number160 locationKey, final Number160 domainKey,
+    public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
             final Map<Number160, Data> dataMapConvert) {
         this.dataMap = null;
         this.dataMapConvert = dataMapConvert;
         this.locationKey = locationKey;
         this.domainKey = domainKey;
+        this.versionKey = versionKey;
     }
 
-    public Map<Number480, Data> dataMap() {
+    public Map<Number640, Data> dataMap() {
         return dataMap;
     }
 
@@ -45,6 +46,10 @@ public class DataMap {
 
     public Number160 domainKey() {
         return domainKey;
+    }
+
+    public Number160 versionKey() {
+        return versionKey;
     }
 
     /**
@@ -65,7 +70,7 @@ public class DataMap {
     public boolean isConvert() {
         return dataMapConvert != null;
     }
-    
+
     @Override
     public boolean equals(final Object obj) {
         if (!(obj instanceof DataMap)) {
@@ -75,38 +80,40 @@ public class DataMap {
             return true;
         }
         DataMap d = (DataMap) obj;
-        final Map<Number480, Data> dataMap2 = convert(this);
-        final Map<Number480, Data> dataMap3 = convert(d);
+        final Map<Number640, Data> dataMap2 = convert(this);
+        final Map<Number640, Data> dataMap3 = convert(d);
         boolean test1 = Utils.isSameSets(dataMap2.keySet(), dataMap3.keySet());
         boolean test2 = Utils.isSameSets(dataMap2.values(), dataMap3.values());
         return test1 && test2;
     }
-    
-    public Map<Number480, Data> convertToMap480() {
+
+    public Map<Number640, Data> convertToMap640() {
         return convert(this);
     }
-    
-    public Map<Number480, Number160> convertToHash() {
-        Map<Number480, Number160> retVal = new HashMap<Number480, Number160>();
+
+    public Map<Number640, Number160> convertToHash() {
+        Map<Number640, Number160> retVal = new HashMap<Number640, Number160>();
         if (dataMap != null) {
-            for (Map.Entry<Number480, Data> entry : dataMap.entrySet()) {
+            for (Map.Entry<Number640, Data> entry : dataMap.entrySet()) {
                 retVal.put(entry.getKey(), entry.getValue().hash());
             }
-            
+
         } else if (dataMapConvert != null) {
             for (Map.Entry<Number160, Data> entry : dataMapConvert.entrySet()) {
-                retVal.put(new Number480(locationKey, domainKey, entry.getKey()), entry.getValue().hash());
+                retVal.put(new Number640(locationKey, domainKey, entry.getKey(), versionKey), entry
+                        .getValue().hash());
             }
         }
         return retVal;
     }
 
-    private static Map<Number480, Data> convert(final DataMap d) {
-        final Map<Number480, Data> dataMap3;
+    private static Map<Number640, Data> convert(final DataMap d) {
+        final Map<Number640, Data> dataMap3;
         if (d.dataMapConvert != null) {
-            dataMap3 = new HashMap<Number480, Data>(d.dataMapConvert.size());
+            dataMap3 = new HashMap<Number640, Data>(d.dataMapConvert.size());
             for (Map.Entry<Number160, Data> entry : d.dataMapConvert.entrySet()) {
-                dataMap3.put(new Number480(d.locationKey, d.domainKey, entry.getKey()), entry.getValue());
+                dataMap3.put(new Number640(d.locationKey, d.domainKey, entry.getKey(), d.versionKey),
+                        entry.getValue());
             }
         } else {
             dataMap3 = d.dataMap;

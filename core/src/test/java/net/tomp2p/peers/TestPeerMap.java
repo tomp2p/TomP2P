@@ -454,9 +454,7 @@ public class TestPeerMap {
         PeerAddress n2 = new PeerAddress(b2);
         PeerAddress n3 = new PeerAddress(b3);
         PeerAddress n4 = new PeerAddress(b4);
-        PeerMapConfiguration pm = new PeerMapConfiguration(b1);
-        PeerMap routingMap = new PeerMap(pm);
-        final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(routingMap.createComparator(b3));
+        final NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(b3));
         queue.add(n1);
         queue.add(n2);
         queue.add(n3);

@@ -97,13 +97,13 @@ public class TestAddUpdateTTL {
         }
         final FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(seed.getPeerAddress().udpPort()).start();
         fb.awaitUninterruptibly();
-        peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).start();
+        peer.discover().peerAddress(fb.getBootstrapTo().iterator().next()).start();
         fb.addListener(new BaseFutureListener<BaseFuture>() {
             @Override
             public void operationComplete(BaseFuture future) throws Exception {
                 Collection<PeerAddress> addresses = fb.getBootstrapTo();
                 if (addresses != null && !addresses.isEmpty()) {
-                    peer.discover().setPeerAddress(addresses.iterator().next()).start().awaitUninterruptibly();
+                    peer.discover().peerAddress(addresses.iterator().next()).start().awaitUninterruptibly();
                 } else {
                     Assert.assertTrue("Unable to boostrap to peers in the network", false);
                 }

@@ -24,8 +24,8 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.PeerBean;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
@@ -35,6 +35,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.DigestInfo;
@@ -156,7 +157,7 @@ public class DistributedRouting {
             throw new IllegalArgumentException("you need to specify some nodes");
         }
         boolean randomSearch = routingBuilder.getLocationKey() == null;
-        
+
         final FutureRouting futureRouting = new FutureRouting();
         //
         final Comparator<PeerAddress> comparator;
@@ -180,8 +181,25 @@ public class DistributedRouting {
         potentialHits.add(peerBean.serverPeerAddress());
         // domainkey can be null if we bootstrap
         if (type == Type.REQUEST_2 && routingBuilder.getDomainKey() != null && !randomSearch) {
-            DigestInfo digestBean = peerBean.storage().digest(routingBuilder.getLocationKey(),
-                    routingBuilder.getDomainKey(), routingBuilder.getContentKey());
+            final Number640 from;
+            final Number640 to;
+            if (routingBuilder.getDomainKey() == null) {
+                from = new Number640(routingBuilder.getLocationKey(), Number160.ZERO, Number160.ZERO,
+                        Number160.ZERO);
+                to = new Number640(routingBuilder.getLocationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,
+                        Number160.MAX_VALUE);
+            } else if (routingBuilder.getContentKey() == null) {
+                from = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+                        Number160.ZERO, Number160.ZERO);
+                to = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+                        Number160.MAX_VALUE, Number160.MAX_VALUE);
+            } else {
+                from = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+                        routingBuilder.getContentKey(), Number160.ZERO);
+                to = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+                        routingBuilder.getContentKey(), Number160.MAX_VALUE);
+            }
+            DigestInfo digestBean = peerBean.storage().digest(from, to);
             if (digestBean.getSize() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestBean);
             }
@@ -215,14 +233,14 @@ public class DistributedRouting {
             // ourselfs, to return the correct status for the future
             boolean isRoutingOnlyToSelf = (peerAddresses.size() == 1 && peerAddresses.iterator().next()
                     .equals(peerBean.serverPeerAddress()));
-            
+
             RoutingMechanism routingMechanism = routingBuilder.createRoutingMechanism(futureRouting);
-                 
+
             routingMechanism.queueToAsk(queueToAsk);
             routingMechanism.potentialHits(potentialHits);
             routingMechanism.directHits(directHits);
             routingMechanism.alreadyAsked(alreadyAsked);
-            
+
             routingBuilder.routingOnlyToSelf(isRoutingOnlyToSelf);
             routingRec(routingBuilder, routingMechanism, type, cc);
         }
@@ -299,7 +317,7 @@ public class DistributedRouting {
         }
         if (active == 0) {
             LOG.debug("no activity, closing");
-            
+
             routingMechanism.setNeighbors(routingBuilder);
             routingMechanism.cancel();
             return;
@@ -316,13 +334,14 @@ public class DistributedRouting {
                     PeerAddress remotePeer = lastResponse.getSender();
                     routingMechanism.addPotentialHits(remotePeer);
                     Collection<PeerAddress> newNeighbors = lastResponse.getNeighborsSet(0).neighbors();
-                    
+
                     Integer resultSize = lastResponse.getInteger(0);
                     Number160 keyDigest = lastResponse.getKey(0);
                     Number160 contentDigest = lastResponse.getKey(1);
-                    DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null? 0 : resultSize);
-                    LOG.debug("Peer ({}) {} reported {}", (digestBean.getSize() > 0 ? "direct" : "none"), remotePeer,
-                            newNeighbors);
+                    DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null ? 0
+                            : resultSize);
+                    LOG.debug("Peer ({}) {} reported {}", (digestBean.getSize() > 0 ? "direct" : "none"),
+                            remotePeer, newNeighbors);
                     finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last);
                     LOG.debug("Routing finished {} / {}", finished,
                             routingMechanism.isStopCreatingNewFutures());
@@ -336,18 +355,18 @@ public class DistributedRouting {
                 if (finished) {
                     LOG.debug("finished routing, direct hits: {} potential: {}",
                             routingMechanism.directHits(), routingMechanism.potentialHits());
-                    
+
                     routingMechanism.setNeighbors(routingBuilder);
                     routingMechanism.cancel();
                     // stop all operations, as we are finished, no need to go further
                 } else {
-                    
+
                     routingRec(routingBuilder, routingMechanism, type, channelCreator);
                 }
             }
         });
     }
-    
+
     public PeerMap peerMap() {
         return peerBean.peerMap();
     }
@@ -358,13 +377,9 @@ public class DistributedRouting {
      * @param futureResponses
      *            The array with the future responses some items may be null
      */
-    /*public static void cancel(final AtomicReferenceArray<? extends BaseFuture> futureResponses) {
-        int len = futureResponses.length();
-        for (int i = 0; i < len; i++) {
-            BaseFuture baseFuture = futureResponses.get(i);
-            if (baseFuture != null) {
-                baseFuture.cancel();
-            }
-        }
-    }*/
+    /*
+     * public static void cancel(final AtomicReferenceArray<? extends BaseFuture> futureResponses) { int len =
+     * futureResponses.length(); for (int i = 0; i < len; i++) { BaseFuture baseFuture = futureResponses.get(i); if
+     * (baseFuture != null) { baseFuture.cancel(); } } }
+     */
 }

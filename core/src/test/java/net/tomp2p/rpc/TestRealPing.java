@@ -23,6 +23,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -184,9 +185,9 @@ public class TestRealPing {
                 }
 
                 @Override
-                public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+                public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Dispatcher.Responder responder) throws Exception {
                     System.err.println("handle message " + message);
-                    return super.handleResponse(message, peerConnection, sign);
+                    super.handleResponse(message, peerConnection, sign, responder);
                 }
 
             }

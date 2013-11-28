@@ -4,6 +4,7 @@ import java.util.Random;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureDirect;
@@ -82,11 +83,11 @@ public class TestRelay {
             super(peerBean, connectionBean);
         }
         @Override
-        public Message handleResponse(Message message, PeerConnection peerConnection, boolean sign)
+        public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
                 throws Exception {
             futurePeerConnection = new FuturePeerConnection(message.getSender());
             futurePeerConnection.setDone(peerConnection);
-            return super.handleResponse(message, peerConnection, sign);
+            super.handleResponse(message, peerConnection, sign, responder);
         }
         
         public FuturePeerConnection peerConnection() {

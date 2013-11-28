@@ -24,6 +24,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -120,7 +121,7 @@ public class DirectDataRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) && message
                 .getCommand() == DIRECT_DATA_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
@@ -169,6 +170,6 @@ public class DirectDataRPC extends DispatchHandler {
                 }
             }
         }
-        return responseMessage;
+        responder.response(responseMessage);
     }
 }

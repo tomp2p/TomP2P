@@ -16,6 +16,7 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.message.Message;
@@ -129,23 +130,20 @@ public abstract class DispatchHandler {
      * @param requestMessage
      *            The request message
      * @param peerConnection The peer connection that can be used for communication
+     * @param responder 
      * @return The reply message
      */
-    public Message forwardMessage(final Message requestMessage, PeerConnection peerConnection) {
+    public void forwardMessage(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
         peerBean().peerMap().peerFound(requestMessage.getSender(), requestMessage.getSender());
         try {
-            Message replyMessage = handleResponse(requestMessage, peerConnection, sign);
-            return replyMessage;
+            handleResponse(requestMessage, peerConnection, sign, responder);
         } catch (Throwable e) {
             peerBean().peerMap().peerFailed(requestMessage.getSender(), FailReason.Exception);
-            if (LOG.isErrorEnabled()) {
-                LOG.error("Exception in custom handler: " + e.toString());
-            }
-            e.printStackTrace();
-            return null;
+            LOG.error("Exception in custom handler", e);
+            responder.failed(Type.EXCEPTION , e.toString());
         }
     }
 
@@ -158,10 +156,12 @@ public abstract class DispatchHandler {
      * @param peerConnection 
      * @param sign
      *            Flag to indicate if message is signed
+     * @param responder2 
+     * @param responder 
      * @return The message from the handler
      * @throws Exception
      *             Any exception
      */
-    public abstract Message handleResponse(Message message, PeerConnection peerConnection, boolean sign) throws Exception;
+    public abstract void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception;
 
 }

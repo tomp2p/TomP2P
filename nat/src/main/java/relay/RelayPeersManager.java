@@ -3,16 +3,16 @@ package relay;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.ObjectDataReply;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +79,7 @@ public class RelayPeersManager {
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				relayCandidates.addAll(peer.getDistributedRouting().peerMap().getAll());
 				logger.debug("Found {} peers that could act as relays", relayCandidates.size());
+				//peer.setObjectDataReply(new RelayObjectReply(peer));
 				setupPeerConnections(rf, cc);
 			}
 
@@ -90,15 +91,21 @@ public class RelayPeersManager {
 	}
 
 	private void setupPeerConnections(final RelayFuture rf, final ChannelCreator cc) {
-
+		
 		while (!relayCandidates.isEmpty() && relayConnections.connectionCount().getAndIncrement() < maxRelays) {
 			final PeerAddress candidate = relayCandidates.poll();
-			RelayRPC relayRPC = new RelayRPC(peer.getPeerBean(), peer.getConnectionBean());
+			RelayRPC relayRPC = new RelayRPC(peer);
 			FutureResponse futureResponse = relayRPC.setupRelay(candidate, cc);
 			futureResponse.addListener(new BaseFutureListener<FutureResponse>() {
 
 				public void operationComplete(FutureResponse future) throws Exception {
-					setupPeerConnection(rf, candidate);
+					if(future.isSuccess() && future.getResponse().getType() == Type.OK) {
+						createPermanentConnection(rf, candidate);
+					} else {
+						logger.debug("Relay setup failed");
+						relayConnections.connectionCount().decrementAndGet();
+						setupPeerConnections(rf, cc);
+					}
 				}
 
 				public void exceptionCaught(Throwable t) throws Exception {
@@ -109,30 +116,19 @@ public class RelayPeersManager {
 
 			});
 		}
-	}
-
-	private void setupPeerConnection(final RelayFuture rf, final PeerAddress relayPeer) {
 		
-		// Setup peer connection to relay peer
-		FuturePeerConnection fpc = peer.createPeerConnection(relayPeer);
-		fpc.addListener(new BaseFutureListener<FuturePeerConnection>() {
-
-			public void operationComplete(FuturePeerConnection future) throws Exception {
-				logger.debug("Opened PeerConnection to peer {}", relayPeer);
-				
-				if(future.isSuccess()) {
-					System.out.println("Opened connection to " + relayPeer);
-					//Add relay address to peer's server addresses
-					//TODO
-				} else {
-					System.err.println(future.getFailedReason());
-				}
-			}
-
-			public void exceptionCaught(Throwable t) throws Exception {
-				System.err.println("whoopsie");
-			}
-
-		});
+		try {
+			Thread.sleep(2000);
+			rf.done();
+			System.out.println("relay future done");
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
+	
+	private void createPermanentConnection(RelayFuture rf, PeerAddress relayPeer) {
+		FuturePeerConnection fpc = peer.createPeerConnection(relayPeer);
+		peer.sendDirect(fpc).setObject("trolololo").start();
+	}
+
 }

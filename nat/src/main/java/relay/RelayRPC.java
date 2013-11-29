@@ -1,11 +1,10 @@
 package relay;
 
-import net.tomp2p.connection2.ChannelCreator;
-import net.tomp2p.connection2.ConnectionBean;
-import net.tomp2p.connection2.ConnectionConfiguration;
-import net.tomp2p.connection2.DefaultConnectionConfiguration;
-import net.tomp2p.connection2.PeerBean;
-import net.tomp2p.connection2.RequestHandler;
+import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -23,27 +22,13 @@ public class RelayRPC extends DispatchHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
 	private ConnectionConfiguration config;
+	
+	private Peer peer;
 
-	public RelayRPC(PeerBean peerBean, ConnectionBean connectionBean) {
-		super(peerBean, connectionBean, RELAY_COMMAND);
+	public RelayRPC(Peer peer) {
+		super(peer.getPeerBean(), peer.getConnectionBean(), RELAY_COMMAND);
+		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
-	}
-
-	@Override
-	public Message handleResponse(Message message, boolean sign) throws Exception {
-
-		if (!(message.getType() == Type.REQUEST_1 && message.getCommand() == RELAY_COMMAND)) {
-			throw new IllegalArgumentException("Message content is wrong");
-		}
-		
-		LOG.debug("received RPC message {}", message);
-		
-		// check if this peer is behind nat. If yes, deny request
-		if(peerBean().serverPeerAddress().isRelay()) {
-			return createResponseMessage(message, Type.DENIED);
-		} else {
-			return createResponseMessage(message, Type.OK);
-		}
 	}
 
 	public FutureResponse setupRelay(PeerAddress other, final ChannelCreator channelCreator) {
@@ -56,5 +41,23 @@ public class RelayRPC extends DispatchHandler {
 
 		return futureResponse;
 
+	}
+
+	@Override
+	public Message handleResponse(Message message, PeerConnection peerConnection, boolean sign) throws Exception {
+		if (!(message.getType() == Type.REQUEST_1 && message.getCommand() == RELAY_COMMAND)) {
+			throw new IllegalArgumentException("Message content is wrong");
+		}
+		
+		LOG.debug("received RPC message {}", message);
+		
+		if(peerBean().serverPeerAddress().isRelay()) {
+			//peer is behind a NAT as well -> deny request
+			return createResponseMessage(message, Type.DENIED);
+		} else {
+			PermanentConnectionRPC permanentConnection = new PermanentConnectionRPC(peer, message.getSender());
+			peer.setDirectDataRPC(permanentConnection);
+			return createResponseMessage(message, Type.OK);
+		}
 	}
 }

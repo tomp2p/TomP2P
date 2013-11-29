@@ -28,6 +28,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -131,7 +132,7 @@ public class TrackerRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(Message message, PeerConnection peerConnection, boolean sign) throws Exception {
+    public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_3)
                 && message.getKey(0) != null && message.getKey(1) != null)) {
             throw new IllegalArgumentException("Message content is wrong");
@@ -191,7 +192,7 @@ public class TrackerRPC extends DispatchHandler {
         if (sign) {
             responseMessage.setPublicKeyAndSign(peerBean().getKeyPair());
         }
-        return responseMessage;
+        responder.response(responseMessage);
     }
 
     private class TrackerRequest<K> extends RequestHandler<FutureResponse> {

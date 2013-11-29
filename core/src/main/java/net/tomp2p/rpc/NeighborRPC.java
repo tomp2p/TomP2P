@@ -24,6 +24,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -117,7 +118,7 @@ public class NeighborRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws IOException {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws IOException {
         if (message.getKeyList().size() < 2) {
             throw new IllegalArgumentException("We need the location and domain key at least");
         }
@@ -172,7 +173,7 @@ public class NeighborRPC extends DispatchHandler {
                * peerBean().taskManager().digest(); responseMessage.setInteger(digestInfo.getSize()); }
                */
         }
-        return responseMessage;
+        responder.response(responseMessage);
     }
 
     /**

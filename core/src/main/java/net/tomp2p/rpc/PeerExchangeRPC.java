@@ -23,6 +23,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -124,7 +125,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2) && message
                 .getCommand() == PEX_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
@@ -147,9 +148,9 @@ public class PeerExchangeRPC extends DispatchHandler {
              */
         }
         if(message.isUdp()) {
-            return message; 
+            responder.responseFireAndForget();
         } else {
-            return createResponseMessage(message, Type.OK);
+            responder.response(createResponseMessage(message, Type.OK));
         }
     }
 }

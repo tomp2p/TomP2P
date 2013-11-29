@@ -28,6 +28,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -421,7 +422,7 @@ public class StorageRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
 
         if (!(message.getCommand() == COMMAND_ADD || message.getCommand() == COMMAND_PUT
                 || message.getCommand() == COMMAND_GET || message.getCommand() == COMMAND_REMOVE)) {
@@ -450,7 +451,7 @@ public class StorageRPC extends DispatchHandler {
         if (sign) {
             responseMessage.setPublicKeyAndSign(peerBean().getKeyPair());
         }
-        return responseMessage;
+        responder.response(responseMessage);
     }
 
     private boolean isDomainProtected(final Message message) {

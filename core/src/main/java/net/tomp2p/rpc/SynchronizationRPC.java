@@ -29,6 +29,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -136,16 +137,16 @@ public class SynchronizationRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
         switch (message.getCommand()) {
         case INFO_COMMAND:
-            return handleInfo(message, responseMessage);
+            handleInfo(message, responseMessage, responder);
         case SYNC_COMMAND:
-            return handleSync(message, responseMessage);
+            handleSync(message, responseMessage, responder);
         default:
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -163,7 +164,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws ClassNotFoundException
      * @throws NoSuchAlgorithmException
      */
-    private Message handleInfo(final Message message, final Message responseMessage) {
+    private void handleInfo(final Message message, final Message responseMessage, Responder responder) {
         LOG.debug("Info received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
@@ -195,7 +196,7 @@ public class SynchronizationRPC extends DispatchHandler {
             }
         }
         responseMessage.setDataMap(new DataMap(retVal));
-        return responseMessage;
+        responder.response(responseMessage);
     }
 
     /**
@@ -209,7 +210,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    private Message handleSync(final Message message, final Message responseMessage) {
+    private void handleSync(final Message message, final Message responseMessage, Responder responder) {
         LOG.debug("Sync received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
@@ -259,6 +260,6 @@ public class SynchronizationRPC extends DispatchHandler {
             }
         }
         responseMessage.setKeyCollection(new KeyCollection(retVal));
-        return responseMessage;
+        responder.response(responseMessage);
     }
 }

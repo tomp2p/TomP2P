@@ -133,34 +133,44 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             ctx.fireChannelRead(message);
             return;
         }
-        Message responseMessage = null;
+        //Message responseMessage = null;
+        Responder responder = new Responder(ctx, message);
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);
             PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess());
-            responseMessage = myHandler.forwardMessage(message, isUdp ? null : peerConnection);
-            if (responseMessage == null) {
-                LOG.warn("Repsonse message was null, probaly a custom handler failed {}", message);
-                responseMessage = DispatchHandler.createResponseMessage(message, Type.EXCEPTION,peerBean.serverPeerAddress());
-                response(ctx, responseMessage);
-            } else if (responseMessage == message) {
-                
-            	LOG.debug("The reply handler was a fire-and-forget handler, "
-                         + "we don't send any message back! {}", message);    
-                if (!isUdp) {
-                    LOG.warn("There is no TCP fire and forget, use UDP in that case {}", message);
-                	throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
-                } else {
-                    TimeoutFactory.removeTimeout(ctx);
-                }
-            } else {
-                response(ctx, responseMessage);
-            }
+            myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
             LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
-            responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBean.serverPeerAddress());
+            Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBean.serverPeerAddress());
             response(ctx, responseMessage);
+        }
+    }
+    
+    public class Responder {
+        final ChannelHandlerContext ctx;
+        final Message requestMessage;
+        Responder(final ChannelHandlerContext ctx, final Message requestMessage) {
+            this.ctx = ctx;
+            this.requestMessage = requestMessage;
+        }
+        public void response(Message responseMessage) {
+            Dispatcher.this.response(ctx, responseMessage);
+        }
+        public void failed(Message.Type type, String reason) {
+            Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBean.serverPeerAddress());
+            Dispatcher.this.response(ctx, responseMessage);
+        }
+        public void responseFireAndForget() {
+            LOG.debug("The reply handler was a fire-and-forget handler, "
+                    + "we don't send any message back! {}", requestMessage);    
+           if (!(ctx.channel() instanceof DatagramChannel)) {
+               LOG.warn("There is no TCP fire and forget, use UDP in that case {}", requestMessage);
+               throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
+           } else {
+               TimeoutFactory.removeTimeout(ctx);
+           }
         }
     }
 

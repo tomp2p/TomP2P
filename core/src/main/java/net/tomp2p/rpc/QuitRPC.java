@@ -23,6 +23,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -104,7 +105,7 @@ public class QuitRPC extends DispatchHandler {
     }
 
     @Override
-    public Message handleResponse(final Message message, PeerConnection peerConnection, final boolean sign) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == QUIT_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -115,9 +116,9 @@ public class QuitRPC extends DispatchHandler {
             }
         }
         if(message.isUdp()) {
-            return message;
+            responder.responseFireAndForget();
         } else {
-            return createResponseMessage(message, Type.OK);
+            responder.response(createResponseMessage(message, Type.OK));
         }
     }
 }

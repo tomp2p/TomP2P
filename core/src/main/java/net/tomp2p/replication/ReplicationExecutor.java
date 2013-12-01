@@ -100,7 +100,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         if (!delayed) {
             Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
             Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            final Map<Number640, Data> dataMap = storage.get(min, max);
+            final Map<Number640, Data> dataMap = storage.get(min, max, -1, true);
             sendDirect(other, locationKey, dataMap);
             LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
                     locationKey);
@@ -146,7 +146,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
                 Number160.MAX_VALUE);
-        final Map<Number640, Data> dataMap = storage.get(min, max);
+        final Map<Number640, Data> dataMap = storage.get(min, max, -1, true);
         List<PeerAddress> closePeers = send(locationKey, dataMap);
         LOG.debug("[storage refresh] I ({}) restore {} to {}", storageRPC.peerBean().serverPeerAddress(),
                 locationKey, closePeers);

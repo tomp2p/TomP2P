@@ -660,7 +660,7 @@ public class Message implements Serializable {
     }
 
     
-    public Message setKeyMap480(final KeyMap640 keyMap) {
+    public Message setKeyMap640(final KeyMap640 keyMap) {
         if (!presetContentTypes) {
             setContentType(Content.MAP_KEY640_KEY);
         }

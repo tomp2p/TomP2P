@@ -115,9 +115,10 @@ public class TimeoutFactory {
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
             if (evt instanceof IdleStateHandlerTomP2P) {
-                LOG.warn("channel timeout for channel {} {}. Request status is {}", name, ctx.channel(), futureResponse.getRequest());
+                LOG.warn("channel timeout for channel {} {}", name, ctx.channel());
                 final PeerAddress recipient;
                 if (futureResponse != null) {
+                    LOG.warn("Request status is {}", futureResponse.getRequest());
                     ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {

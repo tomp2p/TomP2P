@@ -25,6 +25,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.builder.AddBuilder;
+import net.tomp2p.p2p.builder.DigestBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
@@ -120,7 +121,7 @@ public class TestStorage {
             // Set<Number480> tofetch = new HashSet<Number480>();
             Number640 from = new Number640(key, Number160.ZERO, Number160.ZERO);
             Number640 to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            SortedMap<Number640, Data> c = storeRecv.subMap(from, to);
+            SortedMap<Number640, Data> c = storeRecv.subMap(from, to, -1, true);
             Assert.assertEquals(1, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -140,7 +141,7 @@ public class TestStorage {
             // Set<Number480> tofetch = new HashSet<Number480>();
             from = new Number640(key, Number160.ZERO, Number160.ZERO);
             to = new Number640(key, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            c = storeRecv.subMap(from, to);
+            c = storeRecv.subMap(from, to, -1, true);
             Assert.assertEquals(2, c.size());
             for (Data data : c.values()) {
                 Assert.assertEquals((Integer) 1, (Integer) data.object());
@@ -215,7 +216,7 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             System.err.println(fr.getFailedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey());
+            Map<Number640, Data> result2 = storeRecv.subMap(key1.minContentKey(), key1.maxContentKey(), -1, true);
             Assert.assertEquals(result2.size(), 2);
             //Number480 search = new Number480(key, new Number160(88));
             Number640 key2 = new Number640(new Number160(33), Number160.createHash("test"), new Number160(88), Number160.ZERO);
@@ -854,8 +855,8 @@ public class TestStorage {
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
-            recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
+            sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).setEnableMaintenance(false).makeAndListen();
+            recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).setEnableMaintenance(false).makeAndListen();
             sender.getPeerBean().storage(new StorageLayer(storeSender));
             StorageRPC smmSender = new StorageRPC(sender.getPeerBean(), sender.getConnectionBean());
             recv1.getPeerBean().storage(new StorageLayer(storeRecv));
@@ -884,14 +885,13 @@ public class TestStorage {
             sbf.add(new Number160(77));
             sbf.add(new Number160(99));
 
-            // get
-            GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
+            // digest
+            DigestBuilder getBuilder = new DigestBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
             getBuilder.setKeyBloomFilter(sbf);
-            getBuilder.setDigest();
             getBuilder.setVersionKey(Number160.ZERO);
 
-            fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
+            fr = smmSender.digest(recv1.getPeerAddress(), getBuilder, cc);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.getResponse();

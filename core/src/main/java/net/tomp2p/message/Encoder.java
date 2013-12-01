@@ -50,7 +50,6 @@ public class Encoder {
 
         LOG.debug("entering loop");
         boolean done = loop(buf);
-
         LOG.debug("exiting loop");
 
         // write out what we have
@@ -82,7 +81,6 @@ public class Encoder {
     private boolean loop(CompositeByteBuf buf) {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
-
             switch (next.content()) {
             case KEY:
                 buf.writeBytes(message.getKey(next.number()).toByteArray());

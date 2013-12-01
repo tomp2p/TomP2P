@@ -19,7 +19,9 @@ package net.tomp2p.p2p.builder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -56,7 +58,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     private Number640 key;
     private Set<Number640> keys;
     
-    private Map<Number640, Number160> dataMapHash;
+    private NavigableMap<Number640, Number160> dataMapHash;
     private ArrayList<Instruction> instructions;
 
     private final PeerAddress other;
@@ -125,9 +127,9 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
         }
     }
 
-    public Map<Number640, Number160> dataMapHash() {
+    public NavigableMap<Number640, Number160> dataMapHash() {
         if(dataMapHash == null) {
-            dataMapHash = new HashMap<Number640, Number160>();
+            dataMapHash = new TreeMap<Number640, Number160>();
         }
         if(dataMap != null) {
             dataMapHash.putAll(dataMap.convertToHash());

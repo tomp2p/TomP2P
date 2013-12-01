@@ -199,7 +199,7 @@ public class DistributedRouting {
                 to = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
                         routingBuilder.getContentKey(), Number160.MAX_VALUE);
             }
-            DigestInfo digestBean = peerBean.storage().digest(from, to);
+            DigestInfo digestBean = peerBean.storage().digest(from, to, -1, true);
             if (digestBean.getSize() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestBean);
             }

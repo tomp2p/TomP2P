@@ -96,7 +96,7 @@ public class SynchronizationRPC extends DispatchHandler {
         }
 
         KeyMap640 keyMap = new KeyMap640(synchronizationBuilder.dataMapHash());
-        message.setKeyMap480(keyMap);
+        message.setKeyMap640(keyMap);
 
         FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(

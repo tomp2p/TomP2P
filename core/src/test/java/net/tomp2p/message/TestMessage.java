@@ -42,7 +42,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.Utils2;
@@ -187,11 +189,11 @@ public class TestMessage {
         dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6 }, true, true));
         dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7 }, true, true));
         m1.setDataMap(new DataMap(dataMap));
-        Map<Number640, Number160> keysMap = new HashMap<Number640, Number160>();
+        NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
         keysMap.put(new Number640(rnd), new Number160(rnd));
         keysMap.put(new Number640(rnd), new Number160(rnd));
         keysMap.put(new Number640(rnd), new Number160(rnd));
-        m1.setKeyMap480(new KeyMap640(keysMap));
+        m1.setKeyMap640(new KeyMap640(keysMap));
         //
 
         Message m2 = encodeDecode(m1);

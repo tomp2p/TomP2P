@@ -72,7 +72,7 @@ public class Data implements Serializable {
     // can be added later
     private Number160 hash;
     private int ttlSeconds = -1;
-    private Number160 basedOn = null;
+    private Number160 basedOn = Number160.ZERO;
 
     // never serialized over the network in this object
     private final long validFromMillis;
@@ -113,10 +113,6 @@ public class Data implements Serializable {
         this.buffer = buffer;
         this.validFromMillis = Timings.currentTimeMillis();
         this.basedOn = basedOn;
-    }
-
-    private int additionalHeader() {
-        return (hasVersion ? 8 + 20 : 0) + (hasTTL ? 4 : 0) + (hasHash ? 20 : 0);
     }
 
     /**
@@ -359,9 +355,16 @@ public class Data implements Serializable {
     public ByteBuf buffer() {
         return buffer.toByteBuffer();
     }
+    
+    private static Object lock = new Object();
 
     public Object object() throws ClassNotFoundException, IOException {
-        return Utils.decodeJavaObject(buffer.shallowCopy());
+        DataBuffer dataBuffer;
+        synchronized (lock) {
+            dataBuffer = buffer.shallowCopy();
+        }
+        return Utils.decodeJavaObject(dataBuffer);
+        
     }
 
     public long validFromMillis() {

@@ -18,6 +18,8 @@ package net.tomp2p.rpc;
 
 import java.io.IOException;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,6 +39,7 @@ import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.AddBuilder;
+import net.tomp2p.p2p.builder.DigestBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
@@ -61,10 +64,11 @@ public class StorageRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StorageRPC.class);
     private static final Random RND = new Random();
 
-    public static final byte COMMAND_PUT = 1;
-    public static final byte COMMAND_GET = 2;
-    public static final byte COMMAND_ADD = 3;
-    public static final byte COMMAND_REMOVE = 4;
+    public static final byte PUT_COMMAND = 1;
+    public static final byte GET_COMMAND = 2;
+    public static final byte ADD_COMMAND = 3;
+    public static final byte REMOVE_COMMAND = 4;
+    public static final byte DIGEST_COMMAND = 11;
 
     private final BloomfilterFactory factory;
 
@@ -77,7 +81,7 @@ public class StorageRPC extends DispatchHandler {
      *            The connection bean
      */
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, COMMAND_PUT, COMMAND_GET, COMMAND_ADD, COMMAND_REMOVE);
+        super(peerBean, connectionBean, PUT_COMMAND, GET_COMMAND, ADD_COMMAND, REMOVE_COMMAND, DIGEST_COMMAND);
         this.factory = peerBean.bloomfilterFactory();
     }
 
@@ -191,7 +195,7 @@ public class StorageRPC extends DispatchHandler {
                     putBuilder.getVersionKey(), putBuilder.getDataMapContent());
         }
 
-        final Message message = createMessage(remotePeer, COMMAND_PUT, type);
+        final Message message = createMessage(remotePeer, PUT_COMMAND, type);
 
         if (putBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -272,7 +276,7 @@ public class StorageRPC extends DispatchHandler {
             }
         }
 
-        final Message message = createMessage(remotePeer, COMMAND_ADD, type);
+        final Message message = createMessage(remotePeer, ADD_COMMAND, type);
 
         if (addBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
@@ -292,46 +296,32 @@ public class StorageRPC extends DispatchHandler {
 
     }
 
-    /**
-     * Get the data from a remote peer. This is an RPC.
-     * 
-     * @param remotePeer
-     *            The remote peer to send this request
-     * @param locationKey
-     *            The location key
-     * @param domainKey
-     *            The domain key
-     * @param contentKeys
-     *            The content keys or null if requested all
-     * @param signMessage
-     *            Adds a public key and signs the message
-     * @param digest
-     *            Returns a list of hashes of the data stored on this peer
-     * @param channelCreator
-     *            The channel creator that creates connections. Typically we need one connection here.
-     * @param forceUDP
-     *            Set to true if the communication should be UDP, default is TCP
-     * @return The future response to keep track of future events
-     */
-    public FutureResponse get(final PeerAddress remotePeer, final GetBuilder getBuilder,
+    //TODO: clean up DRY
+    public FutureResponse digest(final PeerAddress remotePeer, final DigestBuilder getBuilder,
             final ChannelCreator channelCreator) {
         Type type;
-        if (getBuilder.isRange() && !getBuilder.isDigest()) {
-            type = Type.REQUEST_4;
-        } else if (!getBuilder.isRange() && !getBuilder.isDigest()) {
+        if (getBuilder.isAscending() && !getBuilder.isReturnBloomFilter()) {
             type = Type.REQUEST_1;
-        } else if (getBuilder.isDigest() && !getBuilder.isReturnBloomFilter()) {
+        } else if (getBuilder.isAscending() && getBuilder.isReturnBloomFilter()) {
             type = Type.REQUEST_2;
-        } else { // if(digest && returnBloomFilter)
+        } else if (getBuilder.isDescending() && !getBuilder.isReturnBloomFilter()) {
             type = Type.REQUEST_3;
+        } else {
+            type = Type.REQUEST_4;
         }
-        final Message message = createMessage(remotePeer, COMMAND_GET, type);
+        final Message message = createMessage(remotePeer, DIGEST_COMMAND, type);
 
         if (getBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
 
-        if (getBuilder.keys() == null) {
+        if (getBuilder.to() != null && getBuilder.from() != null) {
+            final Collection<Number640> keys = new ArrayList<Number640>(2);
+            keys.add(getBuilder.from());
+            keys.add(getBuilder.to());
+            message.setInteger(getBuilder.returnNr());
+            message.setKeyCollection(new KeyCollection(keys));
+        } else if (getBuilder.keys() == null) {
 
             if (getBuilder.getLocationKey() == null || getBuilder.getDomainKey() == null) {
                 throw new IllegalArgumentException("Null not allowed in location or domain");
@@ -342,12 +332,75 @@ public class StorageRPC extends DispatchHandler {
             if (getBuilder.getContentKeys() != null) {
                 message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder
                         .getDomainKey(), getBuilder.getVersionKey(), getBuilder.getContentKeys()));
-            } else if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
-                if (getBuilder.getKeyBloomFilter() != null) {
-                    message.setBloomFilter(getBuilder.getKeyBloomFilter());
+            } else {
+                message.setInteger(getBuilder.returnNr());
+                if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
+                    if (getBuilder.getKeyBloomFilter() != null) {
+                        message.setBloomFilter(getBuilder.getKeyBloomFilter());
+                    }
+                    if (getBuilder.getContentBloomFilter() != null) {
+                        message.setBloomFilter(getBuilder.getContentBloomFilter());
+                    }
                 }
-                if (getBuilder.getContentBloomFilter() != null) {
-                    message.setBloomFilter(getBuilder.getContentBloomFilter());
+            }
+        } else {
+            message.setKeyCollection(new KeyCollection(getBuilder.keys()));
+        }
+
+        final FutureResponse futureResponse = new FutureResponse(message);
+        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+                peerBean(), connectionBean(), getBuilder);
+        if (!getBuilder.isForceUDP()) {
+            return request.sendTCP(channelCreator);
+        } else {
+            return request.sendUDP(channelCreator);
+        }
+    }
+
+    public FutureResponse get(final PeerAddress remotePeer, final GetBuilder getBuilder,
+            final ChannelCreator channelCreator) {
+        Type type;
+        if (getBuilder.isAscending() && !getBuilder.isReturnBloomFilter()) {
+            type = Type.REQUEST_1;
+        } else if (getBuilder.isAscending() && getBuilder.isReturnBloomFilter()) {
+            type = Type.REQUEST_2;
+        } else if (getBuilder.isDescending() && !getBuilder.isReturnBloomFilter()) {
+            type = Type.REQUEST_3;
+        } else {
+            type = Type.REQUEST_4;
+        }
+        final Message message = createMessage(remotePeer, GET_COMMAND, type);
+
+        if (getBuilder.isSignMessage()) {
+            message.setPublicKeyAndSign(peerBean().getKeyPair());
+        }
+
+        if (getBuilder.to() != null && getBuilder.from() != null) {
+            final Collection<Number640> keys = new ArrayList<Number640>(2);
+            keys.add(getBuilder.from());
+            keys.add(getBuilder.to());
+            message.setInteger(getBuilder.returnNr());
+            message.setKeyCollection(new KeyCollection(keys));
+        } else if (getBuilder.keys() == null) {
+
+            if (getBuilder.getLocationKey() == null || getBuilder.getDomainKey() == null) {
+                throw new IllegalArgumentException("Null not allowed in location or domain");
+            }
+            message.setKey(getBuilder.getLocationKey());
+            message.setKey(getBuilder.getDomainKey());
+
+            if (getBuilder.getContentKeys() != null) {
+                message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder
+                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.getContentKeys()));
+            } else {
+                message.setInteger(getBuilder.returnNr());
+                if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
+                    if (getBuilder.getKeyBloomFilter() != null) {
+                        message.setBloomFilter(getBuilder.getKeyBloomFilter());
+                    }
+                    if (getBuilder.getContentBloomFilter() != null) {
+                        message.setBloomFilter(getBuilder.getContentBloomFilter());
+                    }
                 }
             }
         } else {
@@ -387,7 +440,7 @@ public class StorageRPC extends DispatchHandler {
      */
     public FutureResponse remove(final PeerAddress remotePeer, final RemoveBuilder removeBuilder,
             final ChannelCreator channelCreator) {
-        final Message message = createMessage(remotePeer, COMMAND_REMOVE,
+        final Message message = createMessage(remotePeer, REMOVE_COMMAND,
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 
         if (removeBuilder.isSignMessage()) {
@@ -422,27 +475,29 @@ public class StorageRPC extends DispatchHandler {
     }
 
     @Override
-    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
+            Responder responder) throws Exception {
 
-        if (!(message.getCommand() == COMMAND_ADD || message.getCommand() == COMMAND_PUT
-                || message.getCommand() == COMMAND_GET || message.getCommand() == COMMAND_REMOVE)) {
+        if (!(message.getCommand() == ADD_COMMAND || message.getCommand() == PUT_COMMAND
+                || message.getCommand() == GET_COMMAND || message.getCommand() == REMOVE_COMMAND || message.getCommand() == DIGEST_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         switch (message.getCommand()) {
-        case COMMAND_ADD:
+        case ADD_COMMAND:
             handleAdd(message, responseMessage, isDomainProtected(message));
             break;
-        case COMMAND_PUT:
+        case PUT_COMMAND:
             handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message));
             break;
-        case COMMAND_GET:
-            final boolean range = message.getType() == Type.REQUEST_4;
-            final boolean digest = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3;
-            handleGet(message, responseMessage, range, digest);
+        case GET_COMMAND:
+            handleGet(message, responseMessage);
             break;
-        case COMMAND_REMOVE:
+        case DIGEST_COMMAND:
+            handleDigest(message, responseMessage);
+            break;
+        case REMOVE_COMMAND:
             handleRemove(message, responseMessage, message.getType() == Type.REQUEST_2);
             break;
         default:
@@ -470,6 +525,16 @@ public class StorageRPC extends DispatchHandler {
         return partial;
     }
 
+    private boolean isAscending(final Message message) {
+        boolean partial = message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2;
+        return partial;
+    }
+
+    private boolean isReturnBloomfilter(final Message message) {
+        boolean partial = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4;
+        return partial;
+    }
+
     private Message handlePut(final Message message, final Message responseMessage,
             final boolean putIfAbsent, final boolean protectDomain) throws IOException {
         final PublicKey publicKey = message.getPublicKey();
@@ -477,8 +542,7 @@ public class StorageRPC extends DispatchHandler {
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
         for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(),
-                    entry.getValue());
+            Enum<?> putStatus = doPut(putIfAbsent, protectDomain, publicKey, entry.getKey(), entry.getValue());
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
@@ -523,8 +587,8 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-    private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain,
-            final PublicKey publicKey, final Number640 key, final Data value) {
+    private Enum<?> doPut(final boolean putIfAbsent, final boolean protectDomain, final PublicKey publicKey,
+            final Number640 key, final Data value) {
         LOG.debug("put data with key {} on {} with data {}", key, peerBean().serverPeerAddress(), value);
         return peerBean().storage().put(key, value, publicKey, putIfAbsent, protectDomain);
     }
@@ -547,76 +611,97 @@ public class StorageRPC extends DispatchHandler {
         }
     }
 
-    private Message handleGet(final Message message, final Message responseMessage, final boolean range,
-            final boolean digest) {   
+    private Message handleGet(final Message message, final Message responseMessage) {
         final Number160 locationKey = message.getKey(0);
-        final Number160 domainKey = message.getKey(1);
-        Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
         LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
+        final Number160 domainKey = message.getKey(1);
         final KeyCollection contentKeys = message.getKeyCollection(0);
         final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
         final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
+        final Integer returnNr = message.getInteger(0);
+        final int limit = returnNr == null ? -1 : returnNr;
+        final boolean ascending = isAscending(message);
+        final boolean isRange = contentKeys != null && returnNr != null;
+        final boolean isCollection = contentKeys != null && returnNr == null;
 
-        if (digest) {
-            final DigestInfo digestInfo;
-            if (keyBloomFilter != null || contentBloomFilter != null
-                    && (locationKey != null && domainKey != null)) {
-                digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
-                        contentBloomFilter);
-            } else if (locationKey != null && domainKey != null && contentKeys == null) {
-                Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
-                Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-                digestInfo = peerBean().storage().digest(from, to);
-            } else if (contentKeys != null) {
-                digestInfo = peerBean().storage().digest(contentKeys.keys());
-            } else {
-                throw new IllegalArgumentException("need at least two keys, bloomfilter, or key set");
-            }
-            if (message.getType() == Type.REQUEST_2) {
-                responseMessage.setKeyMap480(new KeyMap640(digestInfo.getDigests()));
-            } else if (message.getType() == Type.REQUEST_3) {
-                // we did not specifically set location and domain key, this means we want to see what location and
-                // domains we have
-                if (locationKey == null && domainKey == null) {
-                    responseMessage.setBloomFilter(digestInfo.getLocationKeyBloomFilter(factory));
-                    responseMessage.setBloomFilter(digestInfo.getDomainKeyBloomFilter(factory));
+        final Map<Number640, Data> result;
+        if (isCollection) {
+            result = new HashMap<Number640, Data>();
+            for (Number640 key : contentKeys.keys()) {
+                Data data = peerBean().storage().get(key);
+                if (data != null) {
+                    result.put(key, data);
                 }
-                responseMessage.setBloomFilter(digestInfo.getContentKeyBloomFilter(factory));
-                responseMessage.setBloomFilter(digestInfo.getContentBloomFilter(factory));
             }
-            return responseMessage;
+        } else if (isRange) {
+            // get min/max
+            Iterator<Number640> iterator = contentKeys.keys().iterator();
+            Number640 min = iterator.next();
+            Number640 max = iterator.next();
+            result = peerBean().storage().get(min, max, limit, ascending);
+
+        } else if (keyBloomFilter != null || contentBloomFilter != null) {
+            Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            result = peerBean().storage().get(min, max, keyBloomFilter, contentBloomFilter, limit, ascending);
         } else {
-            final Map<Number640, Data> result;
-            if (contentKeys != null) {
-                if (!range || contentKeys.size() != 2) {
-                    result = new HashMap<Number640, Data>();
-                    for (Number640 key : contentKeys.keys()) {
-                        Data data = peerBean().storage().get(key);
-                        if (data != null) {
-                            result.put(key, data);
-                        }
-                    }
-                } else {
-                    // get min/max
-                    Iterator<Number640> iterator = contentKeys.keys().iterator();
-                    Number640 min = iterator.next();
-                    Number640 max = iterator.next();
-                    result = peerBean().storage().get(min, max);
-                }
-            } else if (keyBloomFilter != null || contentBloomFilter != null) {
-                Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
-                Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
-                        Number160.MAX_VALUE);
-                result = peerBean().storage().get(min, max, keyBloomFilter, contentBloomFilter);
-            } else {
-                Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
-                Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE,
-                        Number160.MAX_VALUE);
-                result = peerBean().storage().get(min, max);
-            }
-            responseMessage.setDataMap(new DataMap(result));
-            return responseMessage;
+            // get all
+            Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            result = peerBean().storage().get(min, max, limit, ascending);
         }
+        responseMessage.setDataMap(new DataMap(result));
+        return responseMessage;
+    }
+
+    private Message handleDigest(final Message message, final Message responseMessage) {
+
+        final Number160 locationKey = message.getKey(0);
+        LOG.debug("get data with key {} on {}", locationKey, peerBean().serverPeerAddress());
+        final Number160 domainKey = message.getKey(1);
+        final KeyCollection contentKeys = message.getKeyCollection(0);
+        final SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
+        final SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
+        final Integer returnNr = message.getInteger(0);
+        final int limit = returnNr == null ? -1 : returnNr;
+        final boolean ascending = isAscending(message);
+        final boolean isRange = contentKeys != null && returnNr != null;
+        final boolean isCollection = contentKeys != null && returnNr == null;
+        final boolean isReturnBloomfilter = isReturnBloomfilter(message);
+        
+
+        final DigestInfo digestInfo;
+        if (isCollection) {
+            digestInfo = peerBean().storage().digest(contentKeys.keys());
+        } else if (isRange) {
+            // get min/max
+            Iterator<Number640> iterator = contentKeys.keys().iterator();
+            Number640 min = iterator.next();
+            Number640 max = iterator.next();
+            digestInfo = peerBean().storage().digest(min, max, limit, ascending);
+        } else if (keyBloomFilter != null || contentBloomFilter != null) {
+            final Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
+            digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
+                    contentBloomFilter, limit, ascending);
+        } else {
+            // get all
+            Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+            Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            digestInfo = peerBean().storage().digest(min, max, limit, ascending);
+        }
+
+        if (isReturnBloomfilter) {
+            if (locationKey == null && domainKey == null) {
+                responseMessage.setBloomFilter(digestInfo.getLocationKeyBloomFilter(factory));
+                responseMessage.setBloomFilter(digestInfo.getDomainKeyBloomFilter(factory));
+            }
+            responseMessage.setBloomFilter(digestInfo.getContentKeyBloomFilter(factory));
+            responseMessage.setBloomFilter(digestInfo.getVersionKeyBloomFilter(factory));
+        } else {
+            responseMessage.setKeyMap640(new KeyMap640(digestInfo.getDigests()));
+        }
+        return responseMessage;
+
     }
 
     private Message handleRemove(final Message message, final Message responseMessage,

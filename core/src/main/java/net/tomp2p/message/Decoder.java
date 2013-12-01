@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.TreeMap;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.connection.TimeoutFactory;
@@ -347,7 +348,7 @@ public class Decoder {
                     keyMap480Size = buf.readInt();
                 }
                 if (keyMap480 == null) {
-                    keyMap480 = new KeyMap640(new HashMap<Number640, Number160>(2 * keyMap480Size));
+                    keyMap480 = new KeyMap640(new TreeMap<Number640, Number160>());
                 }
 
                 for (int i = keyMap480.size(); i < keyMap480Size; i++) {
@@ -370,7 +371,7 @@ public class Decoder {
                     keyMap480.put(new Number640(locationKey, domainKey, contentKey, versionKey), valueKey);
                 }
 
-                message.setKeyMap480(keyMap480);
+                message.setKeyMap640(keyMap480);
                 lastContent = contentTypes.poll();
                 keyMap480Size = -1;
                 keyMap480 = null;

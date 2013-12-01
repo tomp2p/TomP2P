@@ -69,7 +69,10 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             }
             buf = null;
 
-        } finally {
+        } catch (Throwable t) {
+            ctx.fireExceptionCaught(t);
+        }
+        finally {
             if (buf != null) {
                 buf.release();
             }

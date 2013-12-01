@@ -37,7 +37,7 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
         final InetSocketAddress recipient = d.recipient();
 
         try {
-            TomP2PDecoder decoder = new TomP2PDecoder(signatureFactory);
+            Decoder decoder = new Decoder(signatureFactory);
             boolean finished = decoder.decode(ctx, buf, recipient, sender);
             if (finished) {
                 ctx.fireChannelRead(decoder.prepareFinish());

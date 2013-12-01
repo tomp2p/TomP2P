@@ -29,9 +29,14 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -271,6 +276,33 @@ public class TestMessage {
         Assert.assertEquals(true, m2.getPublicKey() != null);
         compareMessage(m1, m2);
     }
+    
+    @Test
+    public void serializationTest() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Message m1 = Utils2.createDummyMessage();
+        m1.setBuffer(new Buffer(Unpooled.buffer()));
+        Encoder e = new Encoder(null);
+        CompositeByteBuf buf = Unpooled.compositeBuffer();
+        e.write(buf, m1);
+        Decoder d = new Decoder(null);
+        boolean header = d.decodeHeader(buf, new InetSocketAddress(0), new InetSocketAddress(0));
+        boolean payload = d.decodePayload(buf);
+        Assert.assertEquals(true, header);
+        Assert.assertEquals(true, payload);
+        compareMessage(m1, d.message());
+    }
+    
+    @Test
+    public void serializationTestFail() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
+        try {
+            Message m1 = Utils2.createDummyMessage();
+            m1.setBuffer(new Buffer(Unpooled.buffer()));
+            Utils.encodeJavaObject(m1);
+            Assert.fail("Unserializable exception here");
+        } catch (Throwable t) {
+            // nada
+        }
+    }
 
     /**
      * Encodes and decodes a message.
@@ -286,7 +318,7 @@ public class TestMessage {
         CompositeByteBuf buf = Unpooled.compositeBuffer();
         ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
         encoder.write(ctx, m1, null);
-        TomP2PDecoder decoder = new TomP2PDecoder(new DefaultSignatureFactory());
+        Decoder decoder = new Decoder(new DefaultSignatureFactory());
         decoder.decode(ctx, buf, m1.getRecipient().createSocketTCP(), m1.getSender().createSocketTCP());
         return decoder.message();
     }

@@ -226,7 +226,7 @@ public class Data implements Serializable {
         this.buffer = new DataBuffer(buffer);
         this.isFlag1 = isFlag1;
         this.isFlag2 = isFlag2;
-        this.length = length + additionalHeader();
+        this.length = length;
         if (length < MAX_BYTE_SIZE) {
             this.type = Type.SMALL;
         } else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {

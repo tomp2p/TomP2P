@@ -16,13 +16,13 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TomP2PCumulationTCP.class);
 
-    private final TomP2PDecoder decoder;
+    private final Decoder decoder;
     private ByteBuf cumulation = null;
 
     private int lastId = 0;
 
     public TomP2PCumulationTCP(final SignatureFactory signatureFactory) {
-        decoder = new TomP2PDecoder(signatureFactory);
+        decoder = new Decoder(signatureFactory);
     }
 
     @Override

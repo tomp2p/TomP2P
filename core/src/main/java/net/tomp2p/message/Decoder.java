@@ -7,12 +7,14 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,12 +34,12 @@ import net.tomp2p.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TomP2PDecoder {
+public class Decoder {
 
     public static final AttributeKey<InetSocketAddress> INET_ADDRESS_KEY = AttributeKey.valueOf("inet-addr");
     public static final AttributeKey<PeerAddress> PEER_ADDRESS_KEY = AttributeKey.valueOf("peer-addr");
 
-    private static final Logger LOG = LoggerFactory.getLogger(TomP2PDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(Decoder.class);
 
     private final Queue<Content> contentTypes = new LinkedList<Message.Content>();
 
@@ -73,7 +75,7 @@ public class TomP2PDecoder {
 
     private final SignatureFactory signatureFactory;
 
-    public TomP2PDecoder(SignatureFactory signatureFactory) {
+    public Decoder(SignatureFactory signatureFactory) {
         this.signatureFactory = signatureFactory;
     }
 
@@ -90,25 +92,55 @@ public class TomP2PDecoder {
             pos[i] = byteBuffers[i].position();
         }
 
-        boolean retVal;
         try {
-            retVal = decode0(ctx, buf, recipient, sender);
+            // set the sender of this message for handling timeout
+            final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
+            attributeInet.set(sender);
 
-            // if retMsg == null, then we even could not read the message due to lack of data
-            if (message != null && message.isSign()) {
-
-                for (int i = 0; i < len; i++) {
-                    // since we read the bytebuffer, the nio buffer also has a
-                    byteBuffers[i].position(pos[i]);
-                    if (retVal && i + 1 == len) {
-                        byteBuffers[i].limit(byteBuffers[i].limit()
-                                - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE));
+            if (message == null) {
+                boolean doneHeader = decodeHeader(buf, recipient, sender);
+                if (doneHeader) {
+                    // store the sender as an attribute
+                    final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
+                    attributePeerAddress.set(message.getSender());
+                    message.udp(ctx.channel() instanceof DatagramChannel);
+                    if (message.isFireAndForget() && message.isUdp()) {
+                        TimeoutFactory.removeTimeout(ctx);
                     }
-                    message.signatureForVerification().update(byteBuffers[i]);
+                } else {
+                    return false;
                 }
+            }
 
+            boolean donePayload = decodePayload(buf);
+            verifySignature(byteBuffers, pos, donePayload);
+            // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
+            buf.discardSomeReadBytes();
+            return donePayload;
+
+        } catch (Exception e) {
+            ctx.fireExceptionCaught(e);
+            e.printStackTrace();
+            return true;
+        }
+    }
+
+    private void verifySignature(final ByteBuffer[] byteBuffers, final int[] pos, final boolean donePayload)
+            throws SignatureException, IOException {
+        final int len = byteBuffers.length;
+        if (message.isSign()) {
+            for (int i = 0; i < len; i++) {
+                // since we read the bytebuffer, the nio buffer also has a
+                byteBuffers[i].position(pos[i]);
+                if (donePayload && i + 1 == len) {
+                    byteBuffers[i].limit(byteBuffers[i].limit()
+                            - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE));
+                }
+                message.signatureForVerification().update(byteBuffers[i]);
+            }
+
+            if (donePayload) {
                 byte[] signatureReceived = message.receivedSignature().encode();
-
                 if (message.signatureForVerification().verify(signatureReceived)) {
                     // set public key only if signature is correct
                     message.setPublicKey(message.receivedPublicKey());
@@ -117,27 +149,11 @@ public class TomP2PDecoder {
                     LOG.debug("wrong signature!");
                 }
             }
-            // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
-            // buf.discardSomeReadBytes();
-
-        } catch (Exception e) {
-            ctx.fireExceptionCaught(e);
-            e.printStackTrace();
-            retVal = true;
         }
-        // System.err.println("can read more: " + buf.readableBytes() + " / " + retVal);
-        return retVal;
-
     }
 
-    public boolean decode0(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
-            final InetSocketAddress sender) throws NoSuchAlgorithmException, InvalidKeySpecException,
-            InvalidKeyException {
-
-        // set the sender of this message for handling timeout
-        final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
-        attributeInet.set(sender);
-
+    public boolean decodeHeader(final ByteBuf buf, InetSocketAddress recipient,
+            final InetSocketAddress sender) {
         // we don't have the header yet, we need the full header first
         if (message == null) {
             if (buf.readableBytes() < MessageHeaderCodec.HEADER_SIZE) {
@@ -145,12 +161,9 @@ public class TomP2PDecoder {
                 return false;
             }
             message = MessageHeaderCodec.decodeHeader(buf, recipient, sender);
-            // store the sender as an attribute
-            final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
-            attributePeerAddress.set(message.getSender());
             // we have set the content types already
             message.presetContentTypes(true);
-            message.udp(ctx.channel() instanceof DatagramChannel);
+
             for (Content content : message.getContentTypes()) {
                 if (content == Content.EMPTY) {
                     break;
@@ -160,12 +173,14 @@ public class TomP2PDecoder {
                 }
                 contentTypes.offer(content);
             }
-
-            if (message.isFireAndForget() && message.isUdp()) {
-                TimeoutFactory.removeTimeout(ctx);
-            }
             LOG.debug("parsed message {}", message);
+            return true;
         }
+        return false;
+    }
+
+    public boolean decodePayload(final ByteBuf buf) throws NoSuchAlgorithmException, InvalidKeySpecException,
+            InvalidKeyException {
         LOG.debug("about to pass message {} to {}", message, message.senderSocket());
         if (!message.hasContent()) {
             return true;

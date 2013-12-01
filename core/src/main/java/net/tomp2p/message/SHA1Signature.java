@@ -80,6 +80,10 @@ public class SHA1Signature {
         }
     }
 
+    /**
+     * @return ASN1 encoded signature
+     * @throws IOException
+     */
     public byte[] encode() throws IOException {
         byte me[] = new byte[2 + (2 * (20 + 2))];
         me[0] = 0x30;

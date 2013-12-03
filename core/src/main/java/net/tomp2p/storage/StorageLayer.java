@@ -188,15 +188,15 @@ public class StorageLayer {
         }
     }
 
-    public SortedMap<Number640, Data> get(Number640 from, Number640 to) {
+    public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
         KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
-            return backend.subMap(from, to);
+            return backend.subMap(from, to, limit, ascending);
         } finally {
             lock.unlock();
         }
     }
-    
+
     public NavigableMap<Number640, Data> get() {
         KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
         try {
@@ -205,7 +205,7 @@ public class StorageLayer {
             lock.unlock();
         }
     }
-    
+
     public boolean contains(Number640 key) {
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
@@ -216,10 +216,11 @@ public class StorageLayer {
     }
 
     public Map<Number640, Data> get(Number640 from, Number640 to,
-            SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter) {
+            SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter,
+            int limit, boolean ascending) {
         KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
-            NavigableMap<Number640, Data> tmp = backend.subMap(from, to);
+            NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
             Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
             while (iterator.hasNext()) {
                 Map.Entry<Number640, Data> entry = iterator.next();
@@ -263,7 +264,7 @@ public class StorageLayer {
     public SortedMap<Number640, Data> remove(Number640 from, Number640 to, PublicKey publicKey) {
         KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
-            Map<Number640, Data> tmp = backend.subMap(from, to);
+            Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
             Collection<Number320> locationAndDomains = new HashSet<Number320>();
             for (Number640 key : tmp.keySet()) {
                 locationAndDomains.add(key.locationAndDomainKey());
@@ -298,13 +299,13 @@ public class StorageLayer {
         }
     }
 
-    public DigestInfo digest(Number640 from, Number640 to) {
+    public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
         DigestInfo digestInfo = new DigestInfo();
         KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
-            Map<Number640, Data> tmp = backend.subMap(from, to);
+            Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                digestInfo.put(entry.getKey(), entry.getValue().hash());
+                digestInfo.put(entry.getKey(), entry.getValue().basedOn());
             }
             return digestInfo;
         } finally {
@@ -313,17 +314,17 @@ public class StorageLayer {
     }
 
     public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter,
-            SimpleBloomFilter<Number160> contentBloomFilter) {
+            SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending) {
         DigestInfo digestInfo = new DigestInfo();
         KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(locationAndDomainKey);
         try {
             Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
             Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            Map<Number640, Data> tmp = backend.subMap(from, to);
+            Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                 if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
                     if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-                        digestInfo.put(entry.getKey(), entry.getValue().hash());
+                        digestInfo.put(entry.getKey(), entry.getValue().basedOn());
                     }
                 }
             }
@@ -340,7 +341,7 @@ public class StorageLayer {
             try {
                 if (backend.contains(number640)) {
                     Data data = get(number640);
-                    digestInfo.put(number640, data.hash());
+                    digestInfo.put(number640, data.basedOn());
                 }
             } finally {
                 lock.unlock();
@@ -468,5 +469,4 @@ public class StorageLayer {
         return backend.findContentForResponsiblePeerID(peerID);
     }
 
-    
 }

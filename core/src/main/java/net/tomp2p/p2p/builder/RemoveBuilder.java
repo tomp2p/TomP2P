@@ -25,6 +25,10 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 
 public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
+    
+    private final static FutureRemove FUTURE_SHUTDOWN = new FutureRemove(null)
+            .setFailed("remove builder - peer is shutting down");
+    
     private Collection<Number160> contentKeys;
 
     private Collection<Number640> keys;
@@ -96,7 +100,9 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     }
 
     public FutureRemove start() {
-
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         preBuild("remove-builder");
         if (all) {
             contentKeys = null;

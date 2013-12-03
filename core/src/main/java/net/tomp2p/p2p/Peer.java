@@ -36,6 +36,7 @@ import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
+import net.tomp2p.p2p.builder.DigestBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.GetTrackerBuilder;
@@ -63,6 +64,7 @@ import net.tomp2p.rpc.SynchronizationRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -472,6 +474,10 @@ public class Peer {
 
     public GetBuilder get(Number160 locationKey) {
         return new GetBuilder(this, locationKey);
+    }
+    
+    public DigestBuilder digest(Number160 locationKey) {
+        return new DigestBuilder(this, locationKey);
     }
 
     public RemoveBuilder remove(Number160 locationKey) {

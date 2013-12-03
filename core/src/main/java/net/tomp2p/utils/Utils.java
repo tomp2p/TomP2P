@@ -69,7 +69,7 @@ import net.tomp2p.storage.DataBuffer;
  * 
  * @author Thomas Bocek
  * @author Maxat Pernebayev
- *
+ * 
  */
 public class Utils {
     private static final Random random = new Random();
@@ -146,7 +146,9 @@ public class Utils {
 
     /**
      * Calculates the SHA-1 hash of the Netty byte buffer.
-     * @param buffer The buffer that stores data
+     * 
+     * @param buffer
+     *            The buffer that stores data
      * @return The 160bit hash number
      */
     public static Number160 makeSHAHash(final ByteBuf buf) {
@@ -164,12 +166,12 @@ public class Utils {
             return new Number160();
         }
     }
-    
+
     public static Number160 makeSHAHash(DataBuffer buffer) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
             DataBuffer copy = buffer.shallowCopy();
-            for (ByteBuffer byteBuffer:copy.bufferList()) {
+            for (ByteBuffer byteBuffer : copy.bufferList()) {
                 md.update(byteBuffer);
             }
             byte[] digest = md.digest();
@@ -187,19 +189,19 @@ public class Utils {
     public static Number160 makeSHAHash(byte[] buffer, int offset, int length) {
         return makeSHAHash(ByteBuffer.wrap(buffer, offset, length));
     }
-    
+
     /**
      * It returns MD5 hash for the buffer.
      * 
      * @param buffer
-     *          The buffer to generate the checksum from
-     * @return  The strong checksum
-     */    
-    public static byte[] makeMD5Hash(byte[] buffer)  {
+     *            The buffer to generate the checksum from
+     * @return The strong checksum
+     */
+    public static byte[] makeMD5Hash(byte[] buffer) {
         return makeMD5Hash(buffer, 0, buffer.length);
     }
-    
-    public static byte[] makeMD5Hash(byte[] buffer, int offset, int length){
+
+    public static byte[] makeMD5Hash(byte[] buffer, int offset, int length) {
         MessageDigest m;
         try {
             m = MessageDigest.getInstance("MD5");
@@ -207,8 +209,8 @@ public class Utils {
             e.printStackTrace();
             return new byte[0];
         }
-        m.update(buffer,offset, length);
-        return m.digest();      
+        m.update(buffer, offset, length);
+        return m.digest();
     }
 
     public static Number160 createRandomNodeID() {
@@ -292,11 +294,12 @@ public class Utils {
         ois.close();
         return obj;
     }
-    
-    public static Object decodeJavaObject(DataBuffer shallowCopy) throws ClassNotFoundException, IOException {
-        int count = shallowCopy.bufferList().size();
+
+    public static Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+        List<ByteBuffer> buffers = dataBuffer.shallowCopy().bufferList();
+        int count = buffers.size();
         Vector<InputStream> is = new Vector<InputStream>(count);
-        for (ByteBuffer byteBuffer:shallowCopy.bufferList()) {
+        for (ByteBuffer byteBuffer : buffers) {
             is.add(createInputStream(byteBuffer));
         }
         SequenceInputStream sis = new SequenceInputStream(is.elements());
@@ -305,7 +308,7 @@ public class Utils {
         ois.close();
         return obj;
     }
-    
+
     public static InputStream createInputStream(final ByteBuffer buf) {
         return new InputStream() {
             @Override
@@ -317,8 +320,7 @@ public class Utils {
             }
 
             @Override
-            public int read(byte[] bytes, int off, int len)
-                    throws IOException {
+            public int read(byte[] bytes, int off, int len) throws IOException {
                 if (!buf.hasRemaining()) {
                     return -1;
                 }
@@ -495,17 +497,16 @@ public class Utils {
         }
         return map;
     }
-    
+
     public static TrackerData disjunction(TrackerData meshPeers, SimpleBloomFilter<Number160> knownPeers) {
         TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>(), null);
-        for(Map.Entry<PeerAddress, Data> entry: meshPeers.getPeerAddresses().entrySet()) {
-            if(!knownPeers.contains(entry.getKey().getPeerId())) {
+        for (Map.Entry<PeerAddress, Data> entry : meshPeers.getPeerAddresses().entrySet()) {
+            if (!knownPeers.contains(entry.getKey().getPeerId())) {
                 trackerData.put(entry.getKey(), entry.getValue());
             }
         }
         return trackerData;
     }
-
 
     public static <K> Collection<K> limit(final Collection<K> a, final int size) {
         ArrayList<K> list = new ArrayList<K>();
@@ -515,7 +516,7 @@ public class Utils {
         }
         return list;
     }
-    
+
     public static TrackerData limit(TrackerData peers, int size) {
         Map<PeerAddress, Data> map = new HashMap<PeerAddress, Data>(peers.getPeerAddresses());
         int i = 0;
@@ -523,7 +524,7 @@ public class Utils {
             Map.Entry<PeerAddress, Data> entry = it.next();
             map.put(entry.getKey(), entry.getValue());
         }
-        
+
         TrackerData data = new TrackerData(map, peers.getReferrer());
         return data;
     }
@@ -780,7 +781,7 @@ public class Utils {
 
     /**
      * Adds a listener to the response future and releases all aquired channels in channel creator.
-     *
+     * 
      * @param channelCreator
      *            The channel creator that will be shutdown and all connections will be closed
      * @param baseFutures
@@ -806,7 +807,7 @@ public class Utils {
             });
         }
     }
-    
+
     /**
      * Compares if two sets have the exact same elements.
      * 
@@ -832,12 +833,5 @@ public class Utils {
         }
         return true;
     }
-
-    
-
-    
-
-    
-    
 
 }

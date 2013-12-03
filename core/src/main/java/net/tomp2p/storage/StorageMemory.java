@@ -20,6 +20,7 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -82,13 +83,22 @@ public class StorageMemory implements Storage {
     }
 
     @Override
-    public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey) {
+    public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey, int limit,
+            boolean ascending) {
         NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
-        return new TreeMap<Number640, Data>(tmp);
-    }
-    
-    NavigableMap<Number640, Data> subMap0(Number640 fromKey, Number640 toKey) {
-        return dataMap.subMap(fromKey, true, toKey, true);
+        if (limit < 0) {
+            return new TreeMap<Number640, Data>(ascending ? tmp : tmp.descendingMap());
+        } else {
+            NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+            limit = Math.min(limit, tmp.size());
+            Iterator<Map.Entry<Number640, Data>> iterator = ascending ? tmp.entrySet().iterator() : tmp
+                    .descendingMap().entrySet().iterator();
+            for (int i = 0; iterator.hasNext() && i < limit; i++) {
+                Map.Entry<Number640, Data> entry = iterator.next();
+                retVal.put(entry.getKey(), entry.getValue());
+            }
+            return retVal;
+        }
     }
 
     @Override

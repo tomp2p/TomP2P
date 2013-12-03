@@ -15,9 +15,7 @@
  */
 package net.tomp2p.futures;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,8 +40,6 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
 
     // keeps track of futures that are based on this future
     final private FutureCreate<BaseFuture> futureCreate;
-
-    final private List<Cancel> cleanup = new ArrayList<Cancel>(1);
 
     // results
     private Set<PeerAddress> potentialTrackers;
@@ -193,22 +189,6 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     public Collection<TrackerData> getTrackers() {
         synchronized (lock) {
             return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
-        }
-    }
-
-    public void addCleanup(Cancel cancellable) {
-        synchronized (lock) {
-            cleanup.add(cancellable);
-        }
-    }
-
-    public void shutdown() {
-        // Even though, this future is completed, there may be tasks than can be
-        // canceled due to scheduled futures attached to this event.
-        synchronized (lock) {
-            for (final Cancel cancellable : cleanup) {
-                cancellable.cancel();
-            }
         }
     }
 }

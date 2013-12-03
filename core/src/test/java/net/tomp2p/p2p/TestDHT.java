@@ -11,17 +11,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.swing.plaf.basic.BasicSplitPaneUI.KeyboardDownRightHandler;
+
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureDigest;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePeerConnection;
@@ -38,6 +42,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.storage.Data;
@@ -52,24 +57,24 @@ import org.slf4j.LoggerFactory;
 public class TestDHT {
     final private static Random rnd = new Random(42L);
     private static final Logger LOG = LoggerFactory.getLogger(TestDHT.class);
-    
+
     @Test
     public void testPutTwo() throws Exception {
         Peer master = null;
         try {
-        Peer[] peers = Utils2.createNodes(10, rnd, 4001);
-        master = peers[0];
-        Utils2.perfectRouting(peers);
-        final Data data1 = new Data(new byte[1]);
-        data1.ttlSeconds(3);
-        FuturePut futurePut = master.put(Number160.createHash("test")).setData(data1).start();
-        futurePut.awaitUninterruptibly();
-        Assert.assertEquals(true, futurePut.isSuccess());
-        FutureGet futureGet = peers[1].get(Number160.createHash("test")).start();
-        futureGet.awaitUninterruptibly();
-        Assert.assertEquals(true, futureGet.isSuccess());
-        //LOG.error("done");
-        
+            Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            final Data data1 = new Data(new byte[1]);
+            data1.ttlSeconds(3);
+            FuturePut futurePut = master.put(Number160.createHash("test")).setData(data1).start();
+            futurePut.awaitUninterruptibly();
+            Assert.assertEquals(true, futurePut.isSuccess());
+            FutureGet futureGet = peers[1].get(Number160.createHash("test")).start();
+            futureGet.awaitUninterruptibly();
+            Assert.assertEquals(true, futureGet.isSuccess());
+            // LOG.error("done");
+
         } finally {
             if (master != null) {
                 master.shutdown().await();
@@ -77,30 +82,32 @@ public class TestDHT {
         }
 
     }
-    
+
     @Test
     public void testPutVersion() throws Exception {
         Peer master = null;
         try {
-        Peer[] peers = Utils2.createNodes(10, rnd, 4001);
-        master = peers[0];
-        Utils2.perfectRouting(peers);
-        final Data data1 = new Data(new byte[1]);
-        data1.ttlSeconds(3);
-        FuturePut futurePut = master.put(Number160.createHash("test")).setVersionKey(Number160.MAX_VALUE).setData(data1).start();
-        futurePut.awaitUninterruptibly();
-        Assert.assertEquals(true, futurePut.isSuccess());
-        //
-        Map<Number640, Data> map = peers[0].getPeerBean().storage().get();
-        Assert.assertEquals(Number160.MAX_VALUE, map.entrySet().iterator().next().getKey().getVersionKey());
-        LOG.error("done");
+            Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            final Data data1 = new Data(new byte[1]);
+            data1.ttlSeconds(3);
+            FuturePut futurePut = master.put(Number160.createHash("test")).setVersionKey(Number160.MAX_VALUE)
+                    .setData(data1).start();
+            futurePut.awaitUninterruptibly();
+            Assert.assertEquals(true, futurePut.isSuccess());
+            //
+            Map<Number640, Data> map = peers[0].getPeerBean().storage().get();
+            Assert.assertEquals(Number160.MAX_VALUE, map.entrySet().iterator().next().getKey()
+                    .getVersionKey());
+            LOG.error("done");
         } finally {
             if (master != null) {
                 master.shutdown().await();
             }
         }
     }
-    
+
     @Test
     public void testPutPerforomance() throws Exception {
         Peer master = null;
@@ -109,28 +116,28 @@ public class TestDHT {
             Peer[] peers = Utils2.createNodes(2000, rnd, 4001);
             master = peers[0];
             Utils2.perfectRouting(peers);
-            
-            for(int i=0;i<500;i++) {
+
+            for (int i = 0; i < 500; i++) {
                 long start = System.currentTimeMillis();
                 FuturePut fp = peers[444].put(Number160.createHash("1")).setData(new Data("test")).start();
                 fp.awaitUninterruptibly();
                 fp.getFutureRequests().awaitUninterruptibly();
-                for(FutureResponse fr:fp.getFutureRequests().getCompleted()) {
-                    LOG.error(fr+ " / "+fr.getRequest());
+                for (FutureResponse fr : fp.getFutureRequests().getCompleted()) {
+                    LOG.error(fr + " / " + fr.getRequest());
                 }
-                
+
                 long stop = System.currentTimeMillis();
-                System.err.println("Test " + fp.getFailedReason()+ " / " +(stop-start)+ "ms");
+                System.err.println("Test " + fp.getFailedReason() + " / " + (stop - start) + "ms");
                 Assert.assertEquals(true, fp.isSuccess());
             }
-            
+
         } finally {
             if (master != null) {
                 master.shutdown().await();
             }
         }
     }
-    
+
     @Test
     public void testPut() throws Exception {
         Peer master = null;
@@ -145,17 +152,17 @@ public class TestDHT {
             RequestP2PConfiguration pc = new RequestP2PConfiguration(3, 5, 0);
 
             FuturePut fp = peers[444].put(peers[30].getPeerID())
-                    .setData(Number160.createHash("test"),new Number160(5) , data).setRequestP2PConfiguration(pc)
-                    .setRoutingConfiguration(rc).start();
+                    .setData(Number160.createHash("test"), new Number160(5), data)
+                    .setRequestP2PConfiguration(pc).setRoutingConfiguration(rc).start();
 
             fp.awaitUninterruptibly();
             fp.getFutureRequests().awaitUninterruptibly();
             System.err.println("Test " + fp.getFailedReason());
             Assert.assertEquals(true, fp.isSuccess());
-            peers[30].getPeerBean()
-                    .peerMap();
+            peers[30].getPeerBean().peerMap();
             // search top 3
-            TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(PeerMap.createComparator(peers[30].getPeerID()));
+            TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(
+                    PeerMap.createComparator(peers[30].getPeerID()));
             int i = 0;
             for (Peer node : peers) {
                 tmp.put(node.getPeerAddress(), i);
@@ -183,7 +190,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testPutGetAlone() throws Exception {
         Peer master = null;
@@ -205,7 +212,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testPut2() throws Exception {
         Peer master = null;
@@ -224,8 +231,7 @@ public class TestDHT {
             fdht.awaitUninterruptibly();
             fdht.getFutureRequests().awaitUninterruptibly();
             Assert.assertEquals(true, fdht.isSuccess());
-            peers[30].getPeerBean()
-                    .peerMap();
+            peers[30].getPeerBean().peerMap();
             // search top 3
             TreeMap<PeerAddress, Integer> tmp = new TreeMap<PeerAddress, Integer>(
                     PeerMap.createComparator(peers[30].getPeerID()));
@@ -252,7 +258,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testPutGet() throws Exception {
         Peer master = null;
@@ -287,7 +293,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testPutConvert() throws Exception {
         Peer master = null;
@@ -316,7 +322,6 @@ public class TestDHT {
         }
     }
 
-    
     @Test
     public void testPutGet2() throws Exception {
         Peer master = null;
@@ -375,9 +380,9 @@ public class TestDHT {
             rc = new RoutingConfiguration(1, 0, 10, 1);
             pc = new RequestP2PConfiguration(1, 0, 0);
             for (int i = 0; i < 1000; i++) {
-                FutureGet fget = peers[100 + i].get(peers[30].getPeerID()).setDomainKey(Number160.createHash("test"))
-                        .setContentKey(new Number160(5)).setRoutingConfiguration(rc)
-                        .setRequestP2PConfiguration(pc).start();
+                FutureGet fget = peers[100 + i].get(peers[30].getPeerID())
+                        .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
+                        .setRoutingConfiguration(rc).setRequestP2PConfiguration(pc).start();
                 fget.awaitUninterruptibly();
                 Assert.assertEquals(true, fget.isSuccess());
                 Assert.assertEquals(1, fget.getRawData().size());
@@ -411,9 +416,9 @@ public class TestDHT {
             Assert.assertEquals(true, fput.isSuccess());
             rc = new RoutingConfiguration(4, 0, 10, 1);
             pc = new RequestP2PConfiguration(4, 0, 0);
-            FutureRemove frem = peers[222].remove(peers[30].getPeerID()).setDomainKey(Number160.createHash("test"))
-                    .setContentKey(new Number160(5)).setRoutingConfiguration(rc)
-                    .setRequestP2PConfiguration(pc).start();
+            FutureRemove frem = peers[222].remove(peers[30].getPeerID())
+                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
+                    .setRoutingConfiguration(rc).setRequestP2PConfiguration(pc).start();
             frem.awaitUninterruptibly();
             Assert.assertEquals(true, frem.isSuccess());
             Assert.assertEquals(3, frem.getRawKeys().size());
@@ -429,7 +434,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testPutGetRemove2() throws Exception {
         Peer master = null;
@@ -500,7 +505,7 @@ public class TestDHT {
             System.err.println(fdir.getFailedReason());
             Assert.assertEquals(true, fdir.isSuccess());
             Assert.assertEquals(true, ai.get() >= 3 && ai.get() <= 6);
-            System.err.println("called: "+ai.get());
+            System.err.println("called: " + ai.get());
             Assert.assertEquals("ja", fdir.getObject());
         } finally {
             if (master != null) {
@@ -597,7 +602,7 @@ public class TestDHT {
             fput = peers[51].add(nr).setData(data3).start();
             fput.awaitUninterruptibly();
             System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
-            FutureGet fget = peers[77].get(nr).setAll().setDigest().start();
+            FutureDigest fget = peers[77].digest(nr).setAll().start();
             fget.awaitUninterruptibly();
             System.err.println(fget.getFailedReason());
             Assert.assertEquals(true, fget.isSuccess());
@@ -605,10 +610,118 @@ public class TestDHT {
             Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
             Set<Number160> test2 = new HashSet<Number160>();
             test2.add(test);
-            fget = peers[67].get(nr).setDigest().setContentKeys(test2).start();
+            fget = peers[67].digest(nr).setContentKeys(test2).start();
             fget.awaitUninterruptibly();
             Assert.assertEquals(true, fget.isSuccess());
             Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
+
+    @Test
+    public void testDigest2() throws Exception {
+        Peer master = null;
+        try {
+            // setup
+            Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            // do testing
+            Number160 nr = new Number160(rnd);
+            String toStore1 = "hallo1";
+            String toStore2 = "hallo2";
+            String toStore3 = "hallo3";
+            Data data1 = new Data(toStore1.getBytes());
+            Data data2 = new Data(toStore2.getBytes());
+            Data data3 = new Data(toStore3.getBytes());
+            Number160 key1 = new Number160(1);
+            Number160 key2 = new Number160(2);
+            Number160 key3 = new Number160(3);
+            FuturePut fput = peers[30].put(nr).setData(key1, data1).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore1 + " (" + fput.isSuccess() + ")");
+            fput = peers[50].put(nr).setData(key2, data2).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
+            fput = peers[51].put(nr).setData(key3, data3).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
+            Number640 from = new Number640(nr, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+            Number640 to = new Number640(nr, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            FutureDigest fget = peers[77].digest(nr).from(from).to(to).returnNr(1).start();
+            fget.awaitUninterruptibly();
+            System.err.println(fget.getFailedReason());
+            Assert.assertEquals(true, fget.isSuccess());
+            Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
+            Assert.assertEquals(key1, fget.getDigest().getKeyDigest().keySet().iterator().next()
+                    .getContentKey());
+            fget = peers[67].digest(nr).from(from).to(to).returnNr(1).descending().start();
+            fget.awaitUninterruptibly();
+            System.err.println(fget.getFailedReason());
+            Assert.assertEquals(true, fget.isSuccess());
+            Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
+            Assert.assertEquals(key3, fget.getDigest().getKeyDigest().keySet().iterator().next()
+                    .getContentKey());
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
+    
+    @Test
+    public void testDigest3() throws Exception {
+        Peer master = null;
+        try {
+            // setup
+            Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            // do testing
+            Number160 nr = new Number160(rnd);
+            String toStore1 = "hallo1";
+            String toStore2 = "hallo2";
+            String toStore3 = "hallo3";
+            Data data1 = new Data(toStore1.getBytes());
+            Data data2 = new Data(toStore2.getBytes());
+            Data data3 = new Data(toStore3.getBytes());
+            Number160 key = new Number160(rnd);
+            data1.basedOn(Number160.ONE);
+            Number160 versionKey1 = new Number160(1, data1.hash());
+            data2.basedOn(versionKey1);
+            Number160 versionKey2 = new Number160(2, data2.hash());
+            data3.basedOn(versionKey2);
+            Number160 versionKey3 = new Number160(3, data3.hash());
+            FuturePut fput = peers[30].put(nr).setData(key, data1, versionKey1).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore1 + " (" + fput.isSuccess() + ")");
+            fput = peers[50].put(nr).setData(key, data2, versionKey2).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
+            fput = peers[51].put(nr).setData(key, data3, versionKey3).start();
+            fput.awaitUninterruptibly();
+            System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
+            
+            FutureDigest fget = peers[77].digest(nr).setAll().start();
+            fget.awaitUninterruptibly();
+            DigestResult dr = fget.getDigest();
+            NavigableMap<Number640, Number160> map = dr.getKeyDigest();
+            Entry<Number640, Number160> e1 = map.pollFirstEntry();
+            Assert.assertEquals(Number160.ONE, e1.getValue());
+            Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey1), e1.getKey());
+            System.err.println(e1);
+            Entry<Number640, Number160> e2 = map.pollFirstEntry();
+            Assert.assertEquals(Number160.ONE, e1.getValue());
+            Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey2), e2.getKey());
+            System.err.println(e2);
+            Entry<Number640, Number160> e3 = map.pollFirstEntry();
+            Assert.assertEquals(Number160.ONE, e1.getValue());
+            Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey2), e3.getKey());
+            System.err.println(e3);
+            
         } finally {
             if (master != null) {
                 master.shutdown().await();
@@ -689,7 +802,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testObjectLoop() throws Exception {
         for (int i = 0; i < 1000; i++) {
@@ -734,7 +847,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testMaintenanceInit() throws Exception {
         Peer master = null;
@@ -744,10 +857,11 @@ public class TestDHT {
             master = peers[0];
             Utils2.perfectRoutingIndirect(peers);
             // do testing
-            
-            PeerStatatistic peerStatatistic = master.getPeerBean().peerMap().nextForMaintenance(new ArrayList<PeerAddress>());
+
+            PeerStatatistic peerStatatistic = master.getPeerBean().peerMap()
+                    .nextForMaintenance(new ArrayList<PeerAddress>());
             Assert.assertNotEquals(master.getPeerAddress(), peerStatatistic.getPeerAddress());
-           Thread.sleep(10000);
+            Thread.sleep(10000);
             System.err.println("DONE");
         } finally {
             if (master != null) {
@@ -755,7 +869,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testAddGetPermits() throws Exception {
         Peer master = null;
@@ -784,19 +898,16 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testhalt() throws Exception {
         Peer master1 = null;
         Peer master2 = null;
         Peer master3 = null;
         try {
-            master1 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4001)
-                    .makeAndListen();
-            master2 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4002)
-                    .makeAndListen();
-            master3 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4003)
-                    .makeAndListen();
+            master1 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4001).makeAndListen();
+            master2 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4002).makeAndListen();
+            master3 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4003).makeAndListen();
             // perfect routing
             master1.getPeerBean().peerMap().peerFound(master2.getPeerAddress(), null);
             master1.getPeerBean().peerMap().peerFound(master3.getPeerAddress(), null);
@@ -814,36 +925,33 @@ public class TestDHT {
                     .setRoutingConfiguration(rc).start();
             fput.awaitUninterruptibly();
             fput.getFutureRequests().awaitUninterruptibly();
-            //Collection<Number160> tmp = new ArrayList<Number160>();
-            //tmp.add(new Number160(5));
+            // Collection<Number160> tmp = new ArrayList<Number160>();
+            // tmp.add(new Number160(5));
 
             //
             Assert.assertEquals(true, fput.isSuccess());
             // search top 3
             master2.shutdown().await();
-           
+
             //
 
             FutureGet fget = master1.get(id).setRoutingConfiguration(rc).setRequestP2PConfiguration(pc)
-                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
-                    .start();
+                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5)).start();
             fget.awaitUninterruptibly();
             Assert.assertEquals(true, fget.isSuccess());
-            
+
             master1.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), FailReason.Shutdown);
             master3.getPeerBean().peerMap().peerFailed(master2.getPeerAddress(), FailReason.Shutdown);
-            master2 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4002)
-                    .makeAndListen();
+            master2 = new PeerMaker(new Number160(rnd)).p2pId(1).ports(4002).makeAndListen();
             master1.getPeerBean().peerMap().peerFound(master2.getPeerAddress(), null);
             master3.getPeerBean().peerMap().peerFound(master2.getPeerAddress(), null);
             master2.getPeerBean().peerMap().peerFound(master1.getPeerAddress(), null);
             master2.getPeerBean().peerMap().peerFound(master3.getPeerAddress(), null);
-            
+
             System.err.println("no more exceptions here!!");
-            
+
             fget = master1.get(id).setRoutingConfiguration(rc).setRequestP2PConfiguration(pc)
-                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
-                    .start();
+                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5)).start();
             fget.awaitUninterruptibly();
             Assert.assertEquals(true, fget.isSuccess());
 
@@ -907,7 +1015,7 @@ public class TestDHT {
                 });
                 peers[i].setRawDataReply(new RawDataReply() {
                     @Override
-                    public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) 
+                    public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete)
                             throws Exception {
                         return requestBuffer;
                     }
@@ -933,7 +1041,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testKeys() throws Exception {
         final Random rnd = new Random(42L);
@@ -988,7 +1096,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     @Test
     public void testKeys2() throws Exception {
         final Random rnd = new Random(42L);
@@ -1079,7 +1187,7 @@ public class TestDHT {
             }
         }
     }
-    
+
     /**
      * This will probably fail on your machine since you have to have eth0 configured. This testcase is suited for
      * running on the tomp2p.net server
@@ -1110,10 +1218,8 @@ public class TestDHT {
 
         }
     }
-    
-    
 
-    //TODO: make this work
+    // TODO: make this work
     @Test
     public void testBroadcast() throws Exception {
         Peer master = null;
@@ -1124,8 +1230,7 @@ public class TestDHT {
             Utils2.perfectRouting(peers);
             // do testing
             master.broadcast(Number160.createHash("blub")).start();
-            DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.getBroadcastRPC()
-                    .broadcastHandler();
+            DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.getBroadcastRPC().broadcastHandler();
             int counter = 0;
             while (d.getBroadcastCounter() < 900) {
                 Thread.sleep(200);
@@ -1173,9 +1278,9 @@ public class TestDHT {
                 master.shutdown().await();
             }
         }
-    }    
+    }
 
-    //TODO: make this work
+    // TODO: make this work
     @Test
     public void testTooManyOpenFilesInSystem() throws Exception {
         Peer master = null;
@@ -1258,10 +1363,6 @@ public class TestDHT {
         }
     }
 
-    
-
-    
-
     @Test
     public void testShutdown() throws Exception {
         Peer master = null;
@@ -1270,20 +1371,21 @@ public class TestDHT {
             Random rnd = new Random();
             final int nrPeers = 10;
             final int port = 4001;
-            //Peer[] peers = Utils2.createNodes(nrPeers, rnd, port);
-            //Peer[] peers = createAndAttachNodesWithReplicationShortId(nrPeers, port);
-            //Peer[] peers = createNodes(nrPeers, rnd, port, null, true);
+            // Peer[] peers = Utils2.createNodes(nrPeers, rnd, port);
+            // Peer[] peers = createAndAttachNodesWithReplicationShortId(nrPeers, port);
+            // Peer[] peers = createNodes(nrPeers, rnd, port, null, true);
             Peer[] peers = createNodesWithShortId(nrPeers, rnd, port, null, true);
             master = peers[0];
             Utils2.perfectRouting(peers);
             // do testing
 
             final int peerTest = 3;
-            peers[peerTest].put(Number160.createHash(1000)).setData(new Data("Test")).start().awaitUninterruptibly();
+            peers[peerTest].put(Number160.createHash(1000)).setData(new Data("Test")).start()
+                    .awaitUninterruptibly();
 
-            for(int i=0;i<nrPeers;i++) {
-                for(Data d: peers[i].getPeerBean().storage().get().values())
-                    System.out.println("peer["+i+"]: "+d.object().toString()+" ");
+            for (int i = 0; i < nrPeers; i++) {
+                for (Data d : peers[i].getPeerBean().storage().get().values())
+                    System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
             }
 
             FutureShutdown futureShutdown = peers[peerTest].announceShutdown().start();
@@ -1291,10 +1393,10 @@ public class TestDHT {
             // we need to wait a bit, since the quit RPC is a fire and forget and we return immediately
             Thread.sleep(2000);
             peers[peerTest].shutdown().awaitUninterruptibly();
-            System.out.println("peer "+peerTest+" is shutdown");
-            for(int i=0;i<nrPeers;i++) {
-                for(Data d: peers[i].getPeerBean().storage().get().values())
-                    System.out.println("peer["+i+"]: "+d.object().toString()+" ");
+            System.out.println("peer " + peerTest + " is shutdown");
+            for (int i = 0; i < nrPeers; i++) {
+                for (Data d : peers[i].getPeerBean().storage().get().values())
+                    System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
             }
         } finally {
             if (master != null) {
@@ -1302,33 +1404,33 @@ public class TestDHT {
             }
         }
     }
-    
-    public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture, boolean replication) throws Exception {
+
+    public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port,
+            AutomaticFuture automaticFuture, boolean replication) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-            if (automaticFuture!=null) {
-                peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication)
-                        .addAutomaticFuture(automaticFuture).ports(port)
-                        .makeAndListen();
-            } else {
-                peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication).ports(port).makeAndListen();
-            }
-       
+        if (automaticFuture != null) {
+            peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication)
+                    .addAutomaticFuture(automaticFuture).ports(port).makeAndListen();
+        } else {
+            peers[0] = new PeerMaker(new Number160(1111)).setEnableIndirectReplication(replication)
+                    .ports(port).makeAndListen();
+        }
+
         for (int i = 1; i < nrOfPeers; i++) {
-            if (automaticFuture!=null) {
+            if (automaticFuture != null) {
                 peers[i] = new PeerMaker(new Number160(i)).setEnableIndirectReplication(replication)
-                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
-                        .makeAndListen();
+                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0]).makeAndListen();
             } else {
-                peers[i] = new PeerMaker(new Number160(i)).setEnableIndirectReplication(replication).masterPeer(peers[0]).makeAndListen();
+                peers[i] = new PeerMaker(new Number160(i)).setEnableIndirectReplication(replication)
+                        .masterPeer(peers[0]).makeAndListen();
             }
         }
         System.err.println("peers created.");
         return peers;
     }
-    
 
     private static int countOnline(Peer[] peers, PeerAddress peerAddress) {
         int counter = 0;
@@ -1389,9 +1491,11 @@ public class TestDHT {
     private void testForArray(Peer peer, Number160 locationKey, boolean find) {
         Collection<Number160> tmp = new ArrayList<Number160>();
         tmp.add(new Number160(5));
-        Number640 min = new Number640(locationKey, Number160.createHash("test"), Number160.ZERO, Number160.ZERO);
-        Number640 max = new Number640(locationKey, Number160.createHash("test"), Number160.MAX_VALUE, Number160.MAX_VALUE);
-        Map<Number640, Data> test = peer.getPeerBean().storage().get(min,max);
+        Number640 min = new Number640(locationKey, Number160.createHash("test"), Number160.ZERO,
+                Number160.ZERO);
+        Number640 max = new Number640(locationKey, Number160.createHash("test"), Number160.MAX_VALUE,
+                Number160.MAX_VALUE);
+        Map<Number640, Data> test = peer.getPeerBean().storage().get(min, max, -1, true);
         if (find) {
             Assert.assertEquals(1, test.size());
             Assert.assertEquals(

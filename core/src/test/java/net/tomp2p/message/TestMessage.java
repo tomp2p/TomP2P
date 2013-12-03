@@ -29,15 +29,22 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.Utils2;
@@ -182,11 +189,11 @@ public class TestMessage {
         dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6 }, true, true));
         dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7 }, true, true));
         m1.setDataMap(new DataMap(dataMap));
-        Map<Number640, Number160> keysMap = new HashMap<Number640, Number160>();
+        NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
         keysMap.put(new Number640(rnd), new Number160(rnd));
         keysMap.put(new Number640(rnd), new Number160(rnd));
         keysMap.put(new Number640(rnd), new Number160(rnd));
-        m1.setKeyMap480(new KeyMap640(keysMap));
+        m1.setKeyMap640(new KeyMap640(keysMap));
         //
 
         Message m2 = encodeDecode(m1);
@@ -271,6 +278,33 @@ public class TestMessage {
         Assert.assertEquals(true, m2.getPublicKey() != null);
         compareMessage(m1, m2);
     }
+    
+    @Test
+    public void serializationTest() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException, NoSuchAlgorithmException, InvalidKeySpecException {
+        Message m1 = Utils2.createDummyMessage();
+        m1.setBuffer(new Buffer(Unpooled.buffer()));
+        Encoder e = new Encoder(null);
+        CompositeByteBuf buf = Unpooled.compositeBuffer();
+        e.write(buf, m1);
+        Decoder d = new Decoder(null);
+        boolean header = d.decodeHeader(buf, new InetSocketAddress(0), new InetSocketAddress(0));
+        boolean payload = d.decodePayload(buf);
+        Assert.assertEquals(true, header);
+        Assert.assertEquals(true, payload);
+        compareMessage(m1, d.message());
+    }
+    
+    @Test
+    public void serializationTestFail() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
+        try {
+            Message m1 = Utils2.createDummyMessage();
+            m1.setBuffer(new Buffer(Unpooled.buffer()));
+            Utils.encodeJavaObject(m1);
+            Assert.fail("Unserializable exception here");
+        } catch (Throwable t) {
+            // nada
+        }
+    }
 
     /**
      * Encodes and decodes a message.
@@ -286,7 +320,7 @@ public class TestMessage {
         CompositeByteBuf buf = Unpooled.compositeBuffer();
         ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
         encoder.write(ctx, m1, null);
-        TomP2PDecoder decoder = new TomP2PDecoder(new DefaultSignatureFactory());
+        Decoder decoder = new Decoder(new DefaultSignatureFactory());
         decoder.decode(ctx, buf, m1.getRecipient().createSocketTCP(), m1.getSender().createSocketTCP());
         return decoder.message();
     }

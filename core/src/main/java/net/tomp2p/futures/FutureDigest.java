@@ -20,16 +20,15 @@ import java.util.Map;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.p2p.builder.DHTBuilder;
-import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Data;
+import net.tomp2p.rpc.DigestResult;
 
 /**
  * The future object for put() operations including routing.
  * 
  * @author Thomas Bocek
  */
-public class FutureGet extends FutureDHT<FutureGet> {
+public class FutureDigest extends FutureDHT<FutureDigest> {
     // The minimum number of expected results. This is also used for put()
     // operations to decide if a future failed or not.
     private final int min;
@@ -38,8 +37,8 @@ public class FutureGet extends FutureDHT<FutureGet> {
     // simplify the result
     private final EvaluatingSchemeDHT evaluationScheme;
 
-    // Storage of results
-    private Map<PeerAddress, Map<Number640, Data>> rawData;
+    // Digest results
+    private Map<PeerAddress, DigestResult> rawDigest;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -47,7 +46,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
     /**
      * Default constructor.
      */
-    public FutureGet(final DHTBuilder<?> builder) {
+    public FutureDigest(final DHTBuilder<?> builder) {
         this(builder, 0, new VotingSchemeDHT());
     }
 
@@ -59,65 +58,52 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureGet(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureDigest(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
         super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
         self(this);
     }
-
+    
     /**
-     * Finish the future and set the keys and data that have been received.
+     * Finishes the future and set the digest information that have been received.
      * 
-     * @param rawData
-     *            The keys and data that have been received with information from which peer it has been received.
+     * @param rawDigest
+     *            The hashes of the content stored with information from which peer it has been received.
      */
-    public void setReceivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
+    public void setReceivedDigest(final Map<PeerAddress, DigestResult> rawDigest) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.rawData = rawData;
-            final int size = rawData.size();
+            this.rawDigest = rawDigest;
+            final int size = rawDigest.size();
             this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimun number of results reached" : "Expected >0 result, but got " + size;
         }
         notifyListeners();
     }
-
+    
     /**
-     * Returns the raw data from the get operation.
-     * 
-     * @return The raw data and the information which peer has been contacted
+     * @return The raw digest information with hashes of the content and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number640, Data>> getRawData() {
+    public Map<PeerAddress, DigestResult> getRawDigest() {
         synchronized (lock) {
-            return rawData;
-        }
-    }
-
-    /**
-     * Return the data from get() after evaluation. The evaluation gets rid of the PeerAddress information, by either a
-     * majority vote or cumulation.
-     * 
-     * @return The evaluated data that have been received.
-     */
-    public Map<Number640, Data> getDataMap() {
-        synchronized (lock) {
-            return evaluationScheme.evaluate2(rawData);
+            return rawDigest;
         }
     }
     
     /**
-     * @return The first data object from get() after evaluation.
+     * Return the digest information from the get() after evaluation. The evaluation gets rid of the PeerAddress
+     * information, by either a majority vote or cumulation.
+     * 
+     * @return The evaluated digest information that have been received.
      */
-    public Data getData() {
-        Map<Number640, Data> dataMap = getDataMap();
-        if (dataMap.size() == 0) {
-            return null;
+    public DigestResult getDigest() {
+        synchronized (lock) {
+            return evaluationScheme.evaluate5(rawDigest);
         }
-        return dataMap.values().iterator().next();
     }
 
     /**

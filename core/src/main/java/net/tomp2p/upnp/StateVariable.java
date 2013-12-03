@@ -143,12 +143,10 @@ public class StateVariable implements StateVariableTypes {
      *             if some IO error with device occurs during query
      */
     public String getValue() throws UPNPResponseException, IOException {
-        if (stateVarMsg == null) {
-            synchronized (this) {
-                if (stateVarMsg == null) {
-                    UPNPMessageFactory factory = new UPNPMessageFactory(parent);
-                    stateVarMsg = factory.getStateVariableMessage(name);
-                }
+        synchronized (this) {
+            if (stateVarMsg == null) {
+                UPNPMessageFactory factory = new UPNPMessageFactory(parent);
+                stateVarMsg = factory.getStateVariableMessage(name);
             }
         }
         return stateVarMsg.service().getStateVariableValue();

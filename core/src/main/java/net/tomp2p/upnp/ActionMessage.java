@@ -50,6 +50,7 @@ import java.io.StringReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -302,7 +303,7 @@ public class ActionMessage {
         Argument arg = serviceAction.getInputActionArgument(parameterName);
         if (arg == null) {
             throw new IllegalArgumentException("Wrong input argument name for this action:" + parameterName
-                    + " available parameters are : " + serviceAction.getInputActionArguments());
+                    + " available parameters are : " + Arrays.toString(serviceAction.getInputActionArguments()));
         }
         for (Iterator<InputParamContainer> i = inputParameters.iterator(); i.hasNext();) {
             InputParamContainer container = i.next();
@@ -340,7 +341,7 @@ public class ActionMessage {
         Argument arg = serviceAction.getInputActionArgument(parameterName);
         if (arg == null) {
             throw new IllegalArgumentException("Wrong input argument name for this action:" + parameterName
-                    + " available parameters are : " + serviceAction.getInputActionArguments());
+                    + " available parameters are : " + Arrays.toString(serviceAction.getInputActionArguments()));
         }
         StateVariable linkedVar = arg.getRelatedStateVariable();
         if (linkedVar.dataType.equals(StateVariableTypes.TIME)) {

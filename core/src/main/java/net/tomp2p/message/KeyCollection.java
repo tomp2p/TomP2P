@@ -80,20 +80,6 @@ public class KeyCollection {
         return this;
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof KeyCollection)) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        KeyCollection k = (KeyCollection) obj;
-        final Collection<Number640> keys2 = convert(this);
-        final Collection<Number640> keys3 = convert(k);
-        return Utils.isSameSets(keys2, keys3);
-    }
-
     private Collection<Number640> convert(final KeyCollection k) {
         final Collection<Number640> keys3;
         if (k.keysConvert != null) {
@@ -105,5 +91,25 @@ public class KeyCollection {
             keys3 = k.keys;
         }
         return keys3;
+    }
+    
+    @Override
+    public int hashCode() {
+        final Collection<Number640> keys = convert(this);
+        return keys.hashCode();
+    }
+    
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof KeyCollection)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final KeyCollection k = (KeyCollection) obj;
+        final Collection<Number640> keys2 = convert(this);
+        final Collection<Number640> keys3 = convert(k);
+        return Utils.isSameSets(keys2, keys3);
     }
 }

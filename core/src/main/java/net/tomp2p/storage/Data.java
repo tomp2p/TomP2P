@@ -19,9 +19,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -36,8 +36,7 @@ import net.tomp2p.utils.Utils;
  * 
  * @author Thomas Bocek
  */
-public class Data implements Serializable {
-    private static final long serialVersionUID = -5023493840082652284L;
+public class Data {
 
     private static final int MAX_BYTE_SIZE = 256;
 
@@ -72,7 +71,7 @@ public class Data implements Serializable {
     // can be added later
     private Number160 hash;
     private int ttlSeconds = -1;
-    private Number160 basedOn = null;
+    private Number160 basedOn = Number160.ZERO;
 
     // never serialized over the network in this object
     private final long validFromMillis;
@@ -113,10 +112,6 @@ public class Data implements Serializable {
         this.buffer = buffer;
         this.validFromMillis = Timings.currentTimeMillis();
         this.basedOn = basedOn;
-    }
-
-    private int additionalHeader() {
-        return (hasVersion ? 8 + 20 : 0) + (hasTTL ? 4 : 0) + (hasHash ? 20 : 0);
     }
 
     /**
@@ -226,7 +221,7 @@ public class Data implements Serializable {
         this.buffer = new DataBuffer(buffer);
         this.isFlag1 = isFlag1;
         this.isFlag2 = isFlag2;
-        this.length = length + additionalHeader();
+        this.length = length;
         if (length < MAX_BYTE_SIZE) {
             this.type = Type.SMALL;
         } else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {
@@ -360,8 +355,15 @@ public class Data implements Serializable {
         return buffer.toByteBuffer();
     }
 
+    private static Object lock = new Object();
+
     public Object object() throws ClassNotFoundException, IOException {
-        return Utils.decodeJavaObject(buffer.shallowCopy());
+        DataBuffer dataBuffer;
+        synchronized (lock) {
+            dataBuffer = buffer.shallowCopy();
+        }
+        return Utils.decodeJavaObject(dataBuffer);
+
     }
 
     public long validFromMillis() {
@@ -452,34 +454,6 @@ public class Data implements Serializable {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof Data)) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        Data d = (Data) obj;
-        if (d.hasHash != hasHash || d.hasTTL != hasTTL || d.hasVersion != hasVersion
-                || d.isProtectedEntry != isProtectedEntry) {
-            return false;
-        }
-        if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
-            return false;
-        }
-        if (basedOn != null) {
-            if (!basedOn.equals(d.basedOn)) {
-                return false;
-            }
-        } else {
-            if (d.basedOn != null) {
-                return false;
-            }
-        }
-        return d.buffer.equals(buffer);
-    }
-
     public boolean fillBuffer(final ByteBuf buf) {
         buffer.addBuf(buf);
         return buffer.bufferSize() == length();
@@ -565,7 +539,7 @@ public class Data implements Serializable {
 
     public byte[] toBytes() {
         // TODO: avoid copy, use DataBuffer directly
-        ByteBuf buf = buffer.shallowCopy().toByteBuffer();
+        ByteBuf buf = buffer.toByteBuffer();
         byte[] me = new byte[buf.readableBytes()];
         buf.readBytes(me);
         return me;
@@ -573,5 +547,49 @@ public class Data implements Serializable {
 
     public DataBuffer dataBuffer() {
         return buffer;
+    }
+
+    @Override
+    public int hashCode() {
+        BitSet bs = new BitSet(4);
+        bs.set(0, hasHash);
+        bs.set(1, hasTTL);
+        bs.set(2, hasVersion);
+        bs.set(3, isProtectedEntry);
+        int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
+        if (basedOn != null) {
+            hashCode = hashCode ^ basedOn.hashCode();
+        }
+        // This is a slow operation, use with care!
+        return hashCode ^ buffer.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof Data)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        Data d = (Data) obj;
+        if (d.hasHash != hasHash || d.hasTTL != hasTTL || d.hasVersion != hasVersion
+                || d.isProtectedEntry != isProtectedEntry) {
+            return false;
+        }
+        if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
+            return false;
+        }
+        if (basedOn != null) {
+            if (!basedOn.equals(d.basedOn)) {
+                return false;
+            }
+        } else {
+            if (d.basedOn != null) {
+                return false;
+            }
+        }
+        // This is a slow operation, use with care!
+        return d.buffer.equals(buffer);
     }
 }

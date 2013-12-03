@@ -28,6 +28,8 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 public class PutBuilder extends DHTBuilder<PutBuilder> {
+    private final static FuturePut FUTURE_SHUTDOWN = new FuturePut(null)
+            .setFailed("put builder - peer is shutting down");
     private Entry<Number640, Data> data;
 
     private Map<Number640, Data> dataMap;
@@ -155,6 +157,9 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     }
 
     public FuturePut start() {
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         preBuild("put-builder");
         if (data != null) {
             if (dataMap == null) {

@@ -47,11 +47,19 @@ public class Checksum implements Serializable {
     public byte[] getStrongChecksum() {
         return strongChecksum;
     }
+    
+    @Override
+    public int hashCode() {
+        return weakChecksum ^ (strongChecksum == null ? 0 : Arrays.hashCode(strongChecksum));
+    }
 
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Checksum)) {
             return false;
+        }
+        if (this == obj) {
+            return true;
         }
         Checksum c = (Checksum) obj;
         return weakChecksum == c.weakChecksum && Arrays.equals(strongChecksum, c.strongChecksum);

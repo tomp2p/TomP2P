@@ -150,14 +150,14 @@ public class NeighborRPC extends DispatchHandler {
                 if (contentKey != null) {
                     Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
                     Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
-                    digestInfo = peerBean().storage().digest(from, to);
+                    digestInfo = peerBean().storage().digest(from, to, -1, true);
                 } else if (keyBloomFilter != null || contentBloomFilter != null) {
                     digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
-                            contentBloomFilter);
+                            contentBloomFilter, -1, true);
                 } else {
                     Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
                     Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-                    digestInfo = peerBean().storage().digest(from, to);
+                    digestInfo = peerBean().storage().digest(from, to, -1, true);
                 }
                 responseMessage.setInteger(digestInfo.getSize());
                 responseMessage.setKey(digestInfo.getKeyDigest());

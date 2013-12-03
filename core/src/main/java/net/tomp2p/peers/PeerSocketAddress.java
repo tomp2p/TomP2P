@@ -192,15 +192,14 @@ public class PeerSocketAddress implements Serializable {
 
     @Override
     public boolean equals(final Object obj) {
+        if (!(obj instanceof PeerSocketAddress)) {
+            return false;
+        }
         if (this == obj) {
             return true;
         }
-        if (obj instanceof PeerSocketAddress) {
-            PeerSocketAddress psa = (PeerSocketAddress) obj;
-            return psa.inetAddress.equals(inetAddress) && psa.tcpPort == tcpPort && psa.udpPort == udpPort;
-        } else {
-            return false;
-        }
+        PeerSocketAddress psa = (PeerSocketAddress) obj;
+        return psa.inetAddress.equals(inetAddress) && psa.tcpPort == tcpPort && psa.udpPort == udpPort;
     }
     
     @Override

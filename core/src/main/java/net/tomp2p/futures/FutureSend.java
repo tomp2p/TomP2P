@@ -17,13 +17,11 @@ package net.tomp2p.futures;
 
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -40,19 +38,9 @@ public class FutureSend extends FutureDHT<FutureSend> {
     // simplify the result
     private final EvaluatingSchemeDHT evaluationScheme;
 
-    // A pointer to the routing process that run before the DHT operations
-    private FutureRouting futureRouting;
-
-    private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
-
     // Storage of results
     private Map<PeerAddress, Object> rawObjects;
-
     private Map<PeerAddress, ByteBuf> rawChannels;
-
-    private Number160 locationKey;
-
-    private Number160 domainKey;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -60,8 +48,8 @@ public class FutureSend extends FutureDHT<FutureSend> {
     /**
      * Default constructor.
      */
-    public FutureSend() {
-        this(0, new VotingSchemeDHT());
+    public FutureSend(final DHTBuilder<?> builder) {
+        this(builder, 0, new VotingSchemeDHT());
     }
 
     /**
@@ -72,7 +60,8 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureSend(final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureSend(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+        super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
         self(this);
@@ -175,76 +164,6 @@ public class FutureSend extends FutureDHT<FutureSend> {
     public boolean isMinReached() {
         synchronized (lock) {
             return minReached;
-        }
-    }
-
-    /**
-     * @return The location key used for this future request
-     */
-    public Number160 getLocationKey() {
-        synchronized (lock) {
-            return locationKey;
-        }
-    }
-
-    /**
-     * 
-     * @return The domain key used for this future request
-     */
-    public Number160 getDomainKey() {
-        synchronized (lock) {
-            return domainKey;
-        }
-    }
-
-    /**
-     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @return The future object during the previous routing, or null if routing failed completely.
-     */
-    public FutureRouting getFutureRouting() {
-        synchronized (lock) {
-            return futureRouting;
-        }
-    }
-
-    /**
-     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @param futureRouting
-     *            The future object to set
-     */
-    public void setFutureRouting(final FutureRouting futureRouting) {
-        synchronized (lock) {
-            this.futureRouting = futureRouting;
-        }
-    }   
-
-    /**
-     * Add cancel operations. These operations are called when a future is done, and we want to cancel all pending
-     * operations.
-     * 
-     * @param cancellable
-     *            The operation that can be canceled.
-     */
-    public void addCleanup(final Cancel cancellable) {
-        synchronized (lock) {
-            cleanup.add(cancellable);
-        }
-    }
-
-    /**
-     * Shutdown cancels all pending futures.
-     */
-    public void shutdown() {
-        // Even though, this future is completed, there may be tasks than can be
-        // canceled due to scheduled futures attached to this event.
-        synchronized (lock) {
-            for (final Cancel cancellable : cleanup) {
-                cancellable.cancel();
-            }
         }
     }
 }

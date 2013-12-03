@@ -71,22 +71,6 @@ public class DataMap {
         return dataMapConvert != null;
     }
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof DataMap)) {
-            return false;
-        }
-        if (obj == this) {
-            return true;
-        }
-        DataMap d = (DataMap) obj;
-        final Map<Number640, Data> dataMap2 = convert(this);
-        final Map<Number640, Data> dataMap3 = convert(d);
-        boolean test1 = Utils.isSameSets(dataMap2.keySet(), dataMap3.keySet());
-        boolean test2 = Utils.isSameSets(dataMap2.values(), dataMap3.values());
-        return test1 && test2;
-    }
-
     public Map<Number640, Data> convertToMap640() {
         return convert(this);
     }
@@ -119,5 +103,27 @@ public class DataMap {
             dataMap3 = d.dataMap;
         }
         return dataMap3;
+    }
+    
+    @Override
+    public int hashCode() {
+        final Map<Number640, Data> dataMap = convert(this);
+        return dataMap.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+        if (!(obj instanceof DataMap)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        final DataMap d = (DataMap) obj;
+        final Map<Number640, Data> dataMap2 = convert(this);
+        final Map<Number640, Data> dataMap3 = convert(d);
+        final boolean test1 = Utils.isSameSets(dataMap2.keySet(), dataMap3.keySet());
+        final boolean test2 = Utils.isSameSets(dataMap2.values(), dataMap3.values());
+        return test1 && test2;
     }
 }

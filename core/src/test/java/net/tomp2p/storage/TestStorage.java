@@ -8,12 +8,9 @@ import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.storage.KeyLock.RefCounterLock;
 import net.tomp2p.storage.StorageLayer.PutStatus;
 import net.tomp2p.utils.Utils;
 
@@ -119,7 +116,7 @@ public class TestStorage {
                 .put(key1, new Data("test3"), null, false, false);
         Assert.assertEquals(PutStatus.OK, store);
         storage.put(key3, new Data("test4"), null, false, false);
-        SortedMap<Number640, Data> result = storage.get(key1, key4);
+        SortedMap<Number640, Data> result = storage.get(key1, key4, -1, true);
         Assert.assertEquals(3, result.size());
     }
 
@@ -135,9 +132,9 @@ public class TestStorage {
         Enum<?> store = storage.put(key1, new Data("test3"), null, true, false);
         Assert.assertEquals(PutStatus.FAILED_NOT_ABSENT, store);
         storage.put(key3, new Data("test4"), null, true, false);
-        SortedMap<Number640, Data> result1 = storage.get(key1, key3);
+        SortedMap<Number640, Data> result1 = storage.get(key1, key3, -1, true);
         Assert.assertEquals(3, result1.size());
-        SortedMap<Number640, Data> result2 = storage.get(key1, key2);
+        SortedMap<Number640, Data> result2 = storage.get(key1, key2, -1, true);
         Assert.assertEquals(2, result2.size());
     }
 
@@ -152,12 +149,12 @@ public class TestStorage {
         store(storage);
         Data result1 = storage.remove(key1, null);
         Assert.assertEquals("test1", result1.object());
-        SortedMap<Number640, Data> result2 = storage.get(key1, key4);
+        SortedMap<Number640, Data> result2 = storage.get(key1, key4, -1, true);
         Assert.assertEquals(1, result2.size());
         store(storage);
         SortedMap<Number640, Data> result3 = storage.remove(key1, key4, null);
         Assert.assertEquals(2, result3.size());
-        SortedMap<Number640, Data> result4 = storage.get(key1, key4);
+        SortedMap<Number640, Data> result4 = storage.get(key1, key4, -1, true);
         Assert.assertEquals(0, result4.size());
     }
 
@@ -295,9 +292,34 @@ public class TestStorage {
         lock.unlock(tmp2);
         Assert.assertEquals(0, lock.cacheSize());
     }
-
+    
     @Test
     public void testConcurrency() throws InterruptedException, IOException {
+        final StorageMemory sM = new StorageMemory();
+        final StorageLayer storageGeneric = new StorageLayer(sM);
+        store(storageGeneric);
+        final AtomicInteger counter = new AtomicInteger();
+        final Data result1 = storageGeneric.get(key1);
+        for (int i = 0; i < 10; i++) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Assert.assertEquals("test1", result1.object());    
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        counter.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+        Thread.sleep(500);
+        Assert.assertEquals(0, counter.get());
+        sM.close();
+    }
+
+    @Test
+    public void testConcurrency2() throws InterruptedException, IOException {
         final StorageMemory sM = new StorageMemory();
         final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
@@ -306,12 +328,23 @@ public class TestStorage {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Data result1 = null;
+                    Data result2 = null;
+                    Data result3 = null;
                     try {
-                        Data result1 = storageGeneric.get(key1);
+                        result1 = storageGeneric.get(key1);
                         Assert.assertEquals("test1", result1.object());
-                        Data result2 = storageGeneric.get(key2);
+                        result3 = storageGeneric.get(key3);
+                        Assert.assertEquals(null, result3);
+                        store(storageGeneric, 1);
+                    } catch (Throwable t) {
+                        t.printStackTrace();
+                        counter.incrementAndGet();
+                    }
+                    try {
+                        result2 = storageGeneric.get(key2);
                         Assert.assertEquals("test2", result2.object());
-                        Data result3 = storageGeneric.get(key3);
+                        result3 = storageGeneric.get(key3);
                         Assert.assertEquals(null, result3);
                         store(storageGeneric, 1);
                     } catch (Throwable t) {

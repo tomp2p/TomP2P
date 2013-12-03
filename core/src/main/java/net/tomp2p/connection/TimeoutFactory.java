@@ -26,7 +26,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.net.InetSocketAddress;
 
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.TomP2PDecoder;
+import net.tomp2p.message.Decoder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
@@ -115,9 +115,10 @@ public class TimeoutFactory {
         @Override
         public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
             if (evt instanceof IdleStateHandlerTomP2P) {
-                LOG.warn("channel timeout for channel {} {}. Request status is {}", name, ctx.channel(), futureResponse.getRequest());
+                LOG.warn("channel timeout for channel {} {}", name, ctx.channel());
                 final PeerAddress recipient;
                 if (futureResponse != null) {
+                    LOG.warn("Request status is {}", futureResponse.getRequest());
                     ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
@@ -129,7 +130,7 @@ public class TimeoutFactory {
                 } else {
                     ctx.close();
                     // check if we have set an attribute at least (if we have already decoded the header)
-                    final Attribute<PeerAddress> pa = ctx.attr(TomP2PDecoder.PEER_ADDRESS_KEY);
+                    final Attribute<PeerAddress> pa = ctx.attr(Decoder.PEER_ADDRESS_KEY);
                     recipient = pa.get();
                 }
 
@@ -140,7 +141,7 @@ public class TimeoutFactory {
                         InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel()
                                 .remoteAddress();
                         if (inetSocketAddress == null) {
-                            final Attribute<InetSocketAddress> pa = ctx.attr(TomP2PDecoder.INET_ADDRESS_KEY);
+                            final Attribute<InetSocketAddress> pa = ctx.attr(Decoder.INET_ADDRESS_KEY);
                             inetSocketAddress = pa.get();
                         }
                         if (inetSocketAddress != null) {

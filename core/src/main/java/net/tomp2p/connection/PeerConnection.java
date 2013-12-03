@@ -69,7 +69,7 @@ public class PeerConnection {
                 @Override
                 public void operationComplete(FutureResponse future) throws Exception {
                     oneConnection.release();
-                    synchronized (oneConnection) {
+                    synchronized (map) {
                         Iterator<Map.Entry<FutureChannelCreator, FutureResponse>> iterator = map.entrySet().iterator();
                         if(iterator.hasNext()) {
                             Map.Entry<FutureChannelCreator, FutureResponse> entry = iterator.next();
@@ -83,7 +83,7 @@ public class PeerConnection {
             futureChannelCreator.reserved(cc);
             return futureChannelCreator;
         } else {
-            synchronized (oneConnection) {
+            synchronized (map) {
                 map.put(futureChannelCreator, futureResponse);
             }
         }

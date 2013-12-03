@@ -47,7 +47,7 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 public class Message {
 
     // used for creating random message id
-    private static final Random RND = new Random();
+    private static final transient Random RND = new Random();
 
     public static final int CONTENT_TYPE_LENGTH = 8;
 
@@ -657,7 +657,7 @@ public class Message {
     }
 
     
-    public Message setKeyMap480(final KeyMap640 keyMap) {
+    public Message setKeyMap640(final KeyMap640 keyMap) {
         if (!presetContentTypes) {
             setContentType(Content.MAP_KEY640_KEY);
         }

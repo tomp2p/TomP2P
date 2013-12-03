@@ -54,11 +54,19 @@ public class Instruction implements Serializable {
         else
             return literal.length;
     }
+    
+    @Override
+    public int hashCode() {
+        return reference ^ (literal == null ? 0 : Arrays.hashCode(literal));
+    }
 
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof Instruction)) {
             return false;
+        }
+        if (this == obj) {
+            return true;
         }
         Instruction i = (Instruction) obj;
         if (reference >= 0) {

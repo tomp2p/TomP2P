@@ -15,8 +15,9 @@
  */
 package net.tomp2p.rpc;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -35,7 +36,7 @@ public class DigestInfo {
 
     private volatile int size = -1;
 
-    private final Map<Number640, Number160> mapDigests = new HashMap<Number640, Number160>();
+    private final NavigableMap<Number640, Number160> mapDigests = new TreeMap<Number640, Number160>();
 
     /**
      * Empty constructor is used to add the hashes to the list.
@@ -153,10 +154,10 @@ public class DigestInfo {
      *            The bloom filter creator
      * @return The bloom filter of the content keys that are on this peer
      */
-    public SimpleBloomFilter<Number160> getContentBloomFilter(final BloomfilterFactory factory) {
+    public SimpleBloomFilter<Number160> getVersionKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createContentBloomFilter();
         for (Map.Entry<Number640, Number160> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getValue());
+            sbf.add(entry.getKey().getVersionKey());
         }
         return sbf;
     }
@@ -176,7 +177,7 @@ public class DigestInfo {
     /**
      * @return The list of hashes
      */
-    public Map<Number640, Number160> getDigests() {
+    public NavigableMap<Number640, Number160> getDigests() {
         return mapDigests;
     }
 
@@ -201,6 +202,9 @@ public class DigestInfo {
     public boolean equals(final Object obj) {
         if (!(obj instanceof DigestInfo)) {
             return false;
+        }
+        if (this == obj) {
+            return true;
         }
         DigestInfo other = (DigestInfo) obj;
         return getKeyDigest().equals(other.getKeyDigest()) && getSize() == other.getSize()

@@ -19,7 +19,7 @@ package net.tomp2p.p2p.builder;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import net.tomp2p.futures.FutureGet;
+import net.tomp2p.futures.FutureDigest;
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.VotingSchemeDHT;
@@ -27,11 +27,11 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
-public class GetBuilder extends DHTBuilder<GetBuilder> {
-
-    private final static FutureGet FUTURE_SHUTDOWN = new FutureGet(null)
-            .setFailed("get builder - peer is shutting down");
-
+public class DigestBuilder extends DHTBuilder<DigestBuilder> {
+    
+    private final static FutureDigest FUTURE_SHUTDOWN = new FutureDigest(null)
+    .setFailed("digest builder - peer is shutting down");
+    
     // if we don't provide any content key, the default is Number160.ZERO
     private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
 
@@ -64,7 +64,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
     }
 
-    public GetBuilder(Peer peer, Number160 locationKey) {
+    public DigestBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
     }
@@ -82,7 +82,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
      * @param contentKeys
      * @return
      */
-    public GetBuilder setContentKeys(Collection<Number160> contentKeys) {
+    public DigestBuilder setContentKeys(Collection<Number160> contentKeys) {
         this.contentKeys = contentKeys;
         return this;
     }
@@ -91,7 +91,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return keys;
     }
 
-    public GetBuilder setKey(Collection<Number640> keys) {
+    public DigestBuilder setKey(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }
@@ -100,7 +100,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return contentKey;
     }
 
-    public GetBuilder setContentKey(Number160 contentKey) {
+    public DigestBuilder setContentKey(Number160 contentKey) {
         this.contentKey = contentKey;
         return this;
     }
@@ -109,7 +109,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return keyBloomFilter;
     }
 
-    public GetBuilder setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public DigestBuilder setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
         return this;
     }
@@ -118,7 +118,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return contentBloomFilter;
     }
 
-    public GetBuilder setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public DigestBuilder setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
         return this;
     }
@@ -127,7 +127,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return evaluationScheme;
     }
 
-    public GetBuilder setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+    public DigestBuilder setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
         this.evaluationScheme = evaluationScheme;
         return this;
     }
@@ -136,12 +136,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return all;
     }
 
-    public GetBuilder setAll(boolean all) {
+    public DigestBuilder setAll(boolean all) {
         this.all = all;
         return this;
     }
 
-    public GetBuilder setAll() {
+    public DigestBuilder setAll() {
         this.all = true;
         return this;
     }
@@ -150,12 +150,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return returnBloomFilter;
     }
 
-    public GetBuilder setReturnBloomFilter(boolean returnBloomFilter) {
+    public DigestBuilder setReturnBloomFilter(boolean returnBloomFilter) {
         this.returnBloomFilter = returnBloomFilter;
         return this;
     }
 
-    public GetBuilder setReturnBloomFilter() {
+    public DigestBuilder setReturnBloomFilter() {
         this.returnBloomFilter = true;
         return this;
     }
@@ -164,12 +164,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return ascending;
     }
 
-    public GetBuilder ascending(boolean ascending) {
+    public DigestBuilder ascending(boolean ascending) {
         this.ascending = ascending;
         return this;
     }
 
-    public GetBuilder ascending() {
+    public DigestBuilder ascending() {
         this.ascending = true;
         return this;
     }
@@ -178,12 +178,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return !ascending;
     }
 
-    public GetBuilder descending() {
+    public DigestBuilder descending() {
         this.ascending = false;
         return this;
     }
 
-    public GetBuilder returnNr(int returnNr) {
+    public DigestBuilder returnNr(int returnNr) {
         this.returnNr = returnNr;
         return this;
     }
@@ -192,7 +192,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return returnNr;
     }
 
-    public GetBuilder from(Number640 from) {
+    public DigestBuilder from(Number640 from) {
         this.from = from;
         return this;
     }
@@ -201,7 +201,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return from;
     }
 
-    public GetBuilder to(Number640 to) {
+    public DigestBuilder to(Number640 to) {
         this.to = to;
         return this;
     }
@@ -214,11 +214,11 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         return from != null && to != null;
     }
 
-    public FutureGet start() {
+    public FutureDigest start() {
         if (peer.isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        preBuild("get-builder");
+        preBuild("digest-builder");
 
         if (all) {
             contentKeys = null;
@@ -234,6 +234,6 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         if (evaluationScheme == null) {
             evaluationScheme = new VotingSchemeDHT();
         }
-        return peer.getDistributedHashMap().get(this);
+        return peer.getDistributedHashMap().digest(this);
     }
 }

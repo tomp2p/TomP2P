@@ -25,6 +25,11 @@ public class KeyMapByte {
     }
     
     @Override
+    public int hashCode() {
+        return keysMap.hashCode();
+    }
+    
+    @Override
     public boolean equals(final Object obj) {
         if (!(obj instanceof KeyMapByte)) {
             return false;
@@ -32,9 +37,9 @@ public class KeyMapByte {
         if (obj == this) {
             return true;
         }
-        KeyMapByte k = (KeyMapByte) obj;
-        boolean test1 = Utils.isSameSets(k.keysMap.keySet(), keysMap.keySet());
-        boolean test2 = Utils.isSameSets(k.keysMap.values(), keysMap.values());
+        final KeyMapByte k = (KeyMapByte) obj;
+        final boolean test1 = Utils.isSameSets(k.keysMap.keySet(), keysMap.keySet());
+        final boolean test2 = Utils.isSameSets(k.keysMap.values(), keysMap.values());
         return test1 && test2;
     }
 }

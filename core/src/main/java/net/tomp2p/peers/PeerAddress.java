@@ -498,13 +498,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public boolean equals(final Object obj) {
-        if (this == obj) {
-            return true;
-        } else if (obj instanceof PeerAddress) {
-            return peerId.equals(((PeerAddress) obj).peerId);
-        } else {
+        if (!(obj instanceof PeerAddress)) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
+        PeerAddress pa = (PeerAddress) obj;
+        return peerId.equals((pa).peerId);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package relay;
 
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
@@ -21,15 +22,14 @@ public class PermanentConnectionRPC extends DirectDataRPC {
 	}
 	
     @Override
-    public Message handleResponse(Message message, PeerConnection peerConnection, boolean sign)
-            throws Exception {
-    	System.out.println("direct message content: " + message.getBuffer(0).object().toString());
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
+
     	if(message.getSender().equals(unreachablePeer) && futurePeerConnection == null) {
     		futurePeerConnection = new FuturePeerConnection(message.getSender());
             futurePeerConnection.setDone(peerConnection);
             new RelayForwarder(futurePeerConnection, peer);
     	}
-        return super.handleResponse(message, peerConnection, sign);
+        super.handleResponse(message, peerConnection, sign, responder);
     }
 
 }

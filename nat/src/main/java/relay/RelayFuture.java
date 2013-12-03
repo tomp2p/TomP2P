@@ -19,19 +19,16 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 	private final static Logger logger = LoggerFactory.getLogger(RelayFuture.class);
 	
 	private Map<PeerAddress, String> failedRelays;
-	private RelayPeersManager manager;
+	private RelayPeersManager relayManager;
 	
-	public RelayFuture() {
+	public RelayFuture(RelayPeersManager relayManager) {
 		self(this);
 		this.failedRelays = new HashMap<PeerAddress, String>();
+		this.relayManager = relayManager;
 	}
 	
-	public void setRelayPeersManager(RelayPeersManager manager) {
-		this.manager = manager;
-	}
-	
-	public RelayPeersManager getRelayPeersManager() {
-		return manager;
+	public RelayPeersManager relayPeersManager() {
+		return relayManager;
 	}
 
 	public boolean done() {

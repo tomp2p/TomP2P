@@ -211,7 +211,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            the message a handler should be found for
      * @return the handler for the given message, null if none has been registered for that message.
      */
-    private DispatchHandler getAssociatedHandler(final Message message) {
+    public DispatchHandler getAssociatedHandler(final Message message) {
         if (message == null || !(message.isRequest())) {
             return null;
         }

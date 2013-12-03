@@ -148,15 +148,22 @@ public class DataBuffer {
         return bufferSize;
     }
 
-    // use only for debug as its slow
+    @Override
+    public int hashCode() {
+        //This is a slow operation, use with care!
+        return toByteBuffer().hashCode();
+    }
+
     @Override
     public boolean equals(final Object obj) {
         if (!(obj instanceof DataBuffer)) {
             return false;
         }
-        final DataBuffer m = ((DataBuffer) obj).shallowCopy();
-        final DataBuffer copy = shallowCopy();
-
-        return m.toByteBuffer().equals(copy.toByteBuffer());
+        if (this == obj) {
+            return true;
+        }
+        final DataBuffer m = (DataBuffer) obj;
+        //This is a slow operation, use with care!
+        return m.toByteBuffer().equals(toByteBuffer());
     }
 }

@@ -87,6 +87,9 @@ public class MessageID implements Comparable<MessageID> {
         if (!(obj instanceof MessageID)) {
             return false;
         }
+        if (obj == this) {
+            return true;
+        }
         return compareTo((MessageID) obj) == 0;
     }
 

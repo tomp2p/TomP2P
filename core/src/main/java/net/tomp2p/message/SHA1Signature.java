@@ -44,14 +44,14 @@ public class SHA1Signature {
             throw new IOException("expected sequence with value 48, but got " + encodedData[0]);
         }
         int seqLen = encodedData[1];
-        if (seqLen > 127) {
+        if (seqLen < 0) {
             throw new IOException("cannot handle seq legth > than 127, got " + seqLen);
         }
         if (encodedData[2] != 0x02) {
             throw new IOException("expected sequence with value 2, but got " + encodedData[2]);
         }
         int intLen1 = encodedData[3];
-        if (intLen1 > 127) {
+        if (intLen1 < 0) {
             throw new IOException("cannot handle int legth > than 127, got " + intLen1);
         }
         number1 = encodeNumber(encodedData, 4, intLen1);
@@ -60,7 +60,7 @@ public class SHA1Signature {
             throw new IOException("expected sequence with value 2, but got " + encodedData[4 + intLen1]);
         }
         int intLen2 = encodedData[5 + intLen1];
-        if (intLen2 > 127) {
+        if (intLen2 < 0) {
             throw new IOException("cannot handle int legth > than 127, got " + intLen2);
         }
         number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);

@@ -72,6 +72,9 @@ public final class Number320 extends Number implements Comparable<Number320> {
         if (!(obj instanceof Number320)) {
             return false;
         }
+        if (obj == this) {
+            return true;
+        }
         Number320 cmp = (Number320) obj;
         return locationKey.equals(cmp.locationKey) && domainKey.equals(cmp.domainKey);
     }

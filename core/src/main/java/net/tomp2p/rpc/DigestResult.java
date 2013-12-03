@@ -81,6 +81,9 @@ public class DigestResult {
         if (!(obj instanceof DigestResult)) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
         DigestResult o = (DigestResult) obj;
         boolean test1 = keyDigest == o.keyDigest;
         if (!test1 && keyDigest != null && o.keyDigest != null) {

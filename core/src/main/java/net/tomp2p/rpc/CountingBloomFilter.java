@@ -244,6 +244,9 @@ public class CountingBloomFilter<E> implements Set<E>, Serializable {
         if (!(obj instanceof CountingBloomFilter)) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
         @SuppressWarnings("unchecked")
         CountingBloomFilter<E> o = (CountingBloomFilter<E>) obj;
         return o.k == k && o.intArraySize == intArraySize && expectedElements == o.expectedElements

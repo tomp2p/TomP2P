@@ -111,6 +111,9 @@ public final class Number480 extends Number implements Comparable<Number480> {
         if (!(obj instanceof Number480)) {
             return false;
         }
+        if (obj == this) {
+            return true;
+        }
         Number480 cmp = (Number480) obj;
         return locationKey.equals(cmp.locationKey) && domainKey.equals(cmp.domainKey)
                 && contentKey.equals(cmp.contentKey);

@@ -335,6 +335,9 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
         if (!(obj instanceof SimpleBloomFilter)) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
         @SuppressWarnings("unchecked")
         SimpleBloomFilter<E> o = (SimpleBloomFilter<E>) obj;
         return o.k == k && o.bitArraySize == bitArraySize && expectedElements == o.expectedElements

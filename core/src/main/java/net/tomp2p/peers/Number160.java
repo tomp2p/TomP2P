@@ -398,11 +398,11 @@ public final class Number160 extends Number implements Comparable<Number160> {
 
     @Override
     public boolean equals(final Object obj) {
-        if (obj == this) {
-            return true;
-        }
         if (!(obj instanceof Number160)) {
             return false;
+        }
+        if (obj == this) {
+            return true;
         }
         final Number160 key = (Number160) obj;
         for (int i = 0; i < INT_ARRAY_SIZE; i++) {

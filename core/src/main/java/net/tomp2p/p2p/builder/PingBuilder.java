@@ -148,9 +148,9 @@ public class PingBuilder {
                 }
             } else if (inetAddress != null) {
                 if (tcpPing) {
-                    return ping(new InetSocketAddress(inetAddress, port), peerAddress.getPeerId(), false);
+                    return ping(new InetSocketAddress(inetAddress, port), Number160.ZERO, false);
                 } else {
-                    return ping(new InetSocketAddress(inetAddress, port), peerAddress.getPeerId(), true);
+                    return ping(new InetSocketAddress(inetAddress, port), Number160.ZERO, true);
                 }
             } else if (peerConnection != null) {
                 return pingPeerConnection(peerConnection);

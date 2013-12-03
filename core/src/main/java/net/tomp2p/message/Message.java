@@ -18,7 +18,6 @@ package net.tomp2p.message;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -45,9 +44,7 @@ import net.tomp2p.rpc.SimpleBloomFilter;
  * 
  * @author Thomas Bocek
  */
-public class Message implements Serializable {
-
-    private static final long serialVersionUID = 4771494924180765386L;
+public class Message {
 
     // used for creating random message id
     private static final transient Random RND = new Random();

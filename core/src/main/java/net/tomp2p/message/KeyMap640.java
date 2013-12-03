@@ -26,6 +26,11 @@ public class KeyMap640 {
     }
     
     @Override
+    public int hashCode() {
+        return keysMap.hashCode();
+    }
+    
+    @Override
     public boolean equals(final Object obj) {
         if (!(obj instanceof KeyMap640)) {
             return false;
@@ -33,9 +38,9 @@ public class KeyMap640 {
         if (obj == this) {
             return true;
         }
-        KeyMap640 k = (KeyMap640) obj;
-        boolean test1 = Utils.isSameSets(k.keysMap.keySet(), keysMap.keySet());
-        boolean test2 = Utils.isSameSets(k.keysMap.values(), keysMap.values());
+        final KeyMap640 k = (KeyMap640) obj;
+        final boolean test1 = Utils.isSameSets(k.keysMap.keySet(), keysMap.keySet());
+        final boolean test2 = Utils.isSameSets(k.keysMap.values(), keysMap.values());
         return test1 && test2;
     }
 }

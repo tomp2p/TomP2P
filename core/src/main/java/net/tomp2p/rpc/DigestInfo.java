@@ -203,6 +203,9 @@ public class DigestInfo {
         if (!(obj instanceof DigestInfo)) {
             return false;
         }
+        if (this == obj) {
+            return true;
+        }
         DigestInfo other = (DigestInfo) obj;
         return getKeyDigest().equals(other.getKeyDigest()) && getSize() == other.getSize()
                 && getContentDigest().equals(other.getContentDigest());

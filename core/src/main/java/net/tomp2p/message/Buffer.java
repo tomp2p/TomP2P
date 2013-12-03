@@ -14,7 +14,6 @@ public class Buffer {
     
     private static final Logger LOG = LoggerFactory.getLogger(Buffer.class);
     
-    //TODO: use ByteBuffer
     private final ByteBuf buffer;
     private final int length;
 
@@ -74,9 +73,18 @@ public class Buffer {
         return this;
     }
     
+    public Object object() throws ClassNotFoundException, IOException {
+        return Utils.decodeJavaObject(buffer.duplicate().readerIndex(0));
+    }
+    
     @Override
     protected void finalize() throws Throwable {
         buffer.release();       
+    }
+    
+    @Override
+    public int hashCode() {
+        return buffer.duplicate().readerIndex(0).hashCode() ^ length;
     }
 
     @Override
@@ -87,11 +95,10 @@ public class Buffer {
         if (obj == this) {
             return true;
         }
-        Buffer b = (Buffer) obj;
+        final Buffer b = (Buffer) obj;
+        if(b.length != length) {
+            return false;
+        }
         return b.buffer.duplicate().readerIndex(0).equals(buffer.duplicate().readerIndex(0));
-    }
-
-    public Object object() throws ClassNotFoundException, IOException {
-        return Utils.decodeJavaObject(buffer.duplicate().readerIndex(0));
     }
 }

@@ -40,6 +40,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 done = encoder.write(buf, message);
             } else {
                 ctx.write(msg, promise);
+                return;
             }
             
             Message message = encoder.message();

@@ -28,6 +28,10 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 public class DigestBuilder extends DHTBuilder<DigestBuilder> {
+    
+    private final static FutureDigest FUTURE_SHUTDOWN = new FutureDigest(null)
+    .setFailed("digest builder - peer is shutting down");
+    
     // if we don't provide any content key, the default is Number160.ZERO
     private final static Collection<Number160> NUMBER_ZERO_CONTENT_KEYS = new ArrayList<Number160>(1);
 
@@ -211,6 +215,9 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> {
     }
 
     public FutureDigest start() {
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         preBuild("digest-builder");
 
         if (all) {

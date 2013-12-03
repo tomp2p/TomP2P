@@ -19,6 +19,7 @@ package net.tomp2p.futures;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.PeerAddress;
 
 /**
@@ -33,7 +34,8 @@ public class FutureShutdown extends FutureDHT<FutureShutdown> {
     /**
      * Creates a new future for the shutdown operation.
      */
-    public FutureShutdown() {
+    public FutureShutdown(final DHTBuilder<?> builder) {
+        super(builder);
         self(this);
     } 
 

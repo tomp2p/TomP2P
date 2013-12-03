@@ -23,19 +23,21 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SendDirectBuilderI;
 
-
 public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBuilderI {
+
+    private final static FutureSend FUTURE_SHUTDOWN = new FutureSend(null)
+            .setFailed("send builder - peer is shutting down");
+
     private Buffer buffer;
 
     private Object object;
 
     //
     private boolean cancelOnFinish = false;
-    
-    private boolean streaming = false;
-    
-    private ProgressListener progressListener;
 
+    private boolean streaming = false;
+
+    private ProgressListener progressListener;
 
     public SendBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -73,11 +75,11 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         this.cancelOnFinish = true;
         return this;
     }
-    
+
     public boolean isRaw() {
         return object == null;
     }
-    
+
     public SendBuilder streaming(boolean streaming) {
         this.streaming = streaming;
         return this;
@@ -92,8 +94,10 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return this;
     }
 
-
     public FutureSend start() {
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         preBuild("send-builder");
         return peer.getDistributedHashMap().direct(this);
     }

@@ -86,7 +86,7 @@ public class DistributedHashTable {
     }
 
     public FuturePut add(final AddBuilder builder) {
-        final FuturePut futureDHT = new FuturePut(builder.getRequestP2PConfiguration().getMinimumResults(),
+        final FuturePut futureDHT = new FuturePut(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
                 new VotingSchemeDHT());
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -114,8 +114,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FuturePut futureDHT) {
-                                                futureDHT.setStoredKeys(builder.getLocationKey(),
-                                                        builder.getDomainKey(), rawData);
+                                                futureDHT.setStoredKeys(rawData);
                                             }
 
                                             @Override
@@ -151,7 +150,7 @@ public class DistributedHashTable {
 
     public FutureSend direct(final SendBuilder builder) {
 
-        final FutureSend futureDHT = new FutureSend(builder.getRequestP2PConfiguration().getMinimumResults(),
+        final FutureSend futureDHT = new FutureSend(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
                 new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -233,7 +232,7 @@ public class DistributedHashTable {
     }
 
     public FuturePut put(final PutBuilder putBuilder) {
-        final FuturePut futureDHT = new FuturePut(
+        final FuturePut futureDHT = new FuturePut(putBuilder, 
                 putBuilder.getRequestP2PConfiguration().getMinimumResults(), new VotingSchemeDHT());
         putBuilder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -272,8 +271,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(final FuturePut futureDHT) {
-                                                futureDHT.setStoredKeys(putBuilder.getLocationKey(),
-                                                        putBuilder.getDomainKey(), rawData);
+                                                futureDHT.setStoredKeys(rawData);
                                             }
 
                                             @Override
@@ -304,7 +302,7 @@ public class DistributedHashTable {
 
     public FutureGet get(final GetBuilder builder) {
 
-        final FutureGet futureDHT = new FutureGet(builder.getRequestP2PConfiguration().getMinimumResults(),
+        final FutureGet futureDHT = new FutureGet(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
                 new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -345,8 +343,7 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureGet futureDHT) {
 
-                                                futureDHT.setReceivedData(builder.getLocationKey(),
-                                                        builder.getDomainKey(), rawData);
+                                                futureDHT.setReceivedData(rawData);
 
                                             }
 
@@ -379,7 +376,7 @@ public class DistributedHashTable {
     }
 
     public FutureDigest digest(final DigestBuilder builder) {
-        final FutureDigest futureDHT = new FutureDigest(builder.getRequestP2PConfiguration()
+        final FutureDigest futureDHT = new FutureDigest(builder, builder.getRequestP2PConfiguration()
                 .getMinimumResults(), new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -411,8 +408,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureDigest futureDHT) {
-                                                futureDHT.setReceivedDigest(builder.getLocationKey(),
-                                                        builder.getDomainKey(), rawDigest);
+                                                futureDHT.setReceivedDigest(rawDigest);
                                             }
 
                                             @Override
@@ -461,7 +457,7 @@ public class DistributedHashTable {
      * {
      */
     public FutureRemove remove(final RemoveBuilder builder) {
-        final FutureRemove futureDHT = new FutureRemove(builder.getRequestP2PConfiguration()
+        final FutureRemove futureDHT = new FutureRemove(builder, builder.getRequestP2PConfiguration()
                 .getMinimumResults(), new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -501,12 +497,11 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureRemove futureDHT) {
-                                                if (builder.isReturnResults())
-                                                    futureDHT.setReceivedData(builder.getLocationKey(),
-                                                            builder.getDomainKey(), rawDataResult);
-                                                else
-                                                    futureDHT.setStoredKeys(builder.getLocationKey(),
-                                                            builder.getDomainKey(), rawDataNoResult);
+                                                if (builder.isReturnResults()) {
+                                                    futureDHT.setReceivedData(rawDataResult);
+                                                } else {
+                                                    futureDHT.setStoredKeys(rawDataNoResult);
+                                                }
                                             }
 
                                             @Override
@@ -549,7 +544,7 @@ public class DistributedHashTable {
      * @return future shutdown
      */
     public FutureShutdown quit(final ShutdownBuilder builder) {
-        final FutureShutdown futureShutdown = new FutureShutdown();
+        final FutureShutdown futureShutdown = new FutureShutdown(builder);
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override

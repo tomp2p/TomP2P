@@ -15,14 +15,12 @@
  */
 package net.tomp2p.futures;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
@@ -41,18 +39,9 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     // simplify the result
     private final EvaluatingSchemeDHT evaluationScheme;
 
-    // A pointer to the routing process that run before the DHT operations
-    private FutureRouting futureRouting;
-
-    private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
-
     // Storage of results
     private Map<PeerAddress, Collection<Number640>> rawKeys640;
     private Map<PeerAddress, Map<Number640, Data>> rawData;
-
-    private Number160 locationKey;
-
-    private Number160 domainKey;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -60,8 +49,8 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     /**
      * Default constructor.
      */
-    public FutureRemove() {
-        this(0, new VotingSchemeDHT());
+    public FutureRemove(final DHTBuilder<?> builder) {
+        this(builder, 0, new VotingSchemeDHT());
     }
 
     /**
@@ -72,7 +61,8 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureRemove(final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureRemove(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+        super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
         self(this);
@@ -93,16 +83,13 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Collection<Number640>> rawKeys480) {
+    public void setStoredKeys(final Map<PeerAddress, Collection<Number640>> rawKeys640) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.rawKeys640 = rawKeys480;
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
-            final int size = rawKeys480 == null ? 0 : rawKeys480.size();
+            this.rawKeys640 = rawKeys640;
+            final int size = rawKeys640 == null ? 0 : rawKeys640.size();
             this.minReached = size >= min;
             this.type = size > 0 ? FutureType.OK : FutureType.FAILED;
             this.reason = size > 0 ? "Minimun number of results reached" : "Expected > 0 result, but got " + size;
@@ -129,21 +116,14 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     /**
      * Finish the future and set the keys and data that have been received.
      * 
-     * @param domainKey
-     *            The domain key
-     * @param locationKey
-     *            The location key
      * @param rawData
      *            The keys and data that have been received with information from which peer it has been received.
      */
-    public void setReceivedData(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number640, Data>> rawData) {
+    public void setReceivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
             this.rawData = rawData;
             final int size = rawData.size();
             this.minReached = size >= min;
@@ -208,76 +188,6 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     public Map<Number640, Data> getDataMap() {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
-        }
-    }
-
-    /**
-     * @return The location key used for this future request
-     */
-    public Number160 getLocationKey() {
-        synchronized (lock) {
-            return locationKey;
-        }
-    }
-
-    /**
-     * 
-     * @return The domain key used for this future request
-     */
-    public Number160 getDomainKey() {
-        synchronized (lock) {
-            return domainKey;
-        }
-    }
-
-    /**
-     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @return The future object during the previous routing, or null if routing failed completely.
-     */
-    public FutureRouting getFutureRouting() {
-        synchronized (lock) {
-            return futureRouting;
-        }
-    }
-
-    /**
-     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @param futureRouting
-     *            The future object to set
-     */
-    public void setFutureRouting(final FutureRouting futureRouting) {
-        synchronized (lock) {
-            this.futureRouting = futureRouting;
-        }
-    }
-
-    /**
-     * Add cancel operations. These operations are called when a future is done, and we want to cancel all pending
-     * operations.
-     * 
-     * @param cancellable
-     *            The operation that can be canceled.
-     */
-    public void addCleanup(final Cancel cancellable) {
-        synchronized (lock) {
-            cleanup.add(cancellable);
-        }
-    }
-
-    /**
-     * Shutdown cancels all pending futures.
-     */
-    public void shutdown() {
-        // Even though, this future is completed, there may be tasks than can be
-        // canceled due to scheduled futures attached to this event.
-        synchronized (lock) {
-            for (final Cancel cancellable : cleanup) {
-                cancellable.cancel();
-            }
         }
     }
 }

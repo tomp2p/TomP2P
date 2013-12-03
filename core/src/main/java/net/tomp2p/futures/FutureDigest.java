@@ -15,13 +15,11 @@
  */
 package net.tomp2p.futures;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DigestResult;
 
@@ -39,17 +37,8 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
     // simplify the result
     private final EvaluatingSchemeDHT evaluationScheme;
 
-    // A pointer to the routing process that run before the DHT operations
-    private FutureRouting futureRouting;
-
-    private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
-
     // Digest results
     private Map<PeerAddress, DigestResult> rawDigest;
-
-    private Number160 locationKey;
-
-    private Number160 domainKey;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -57,8 +46,8 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
     /**
      * Default constructor.
      */
-    public FutureDigest() {
-        this(0, new VotingSchemeDHT());
+    public FutureDigest(final DHTBuilder<?> builder) {
+        this(builder, 0, new VotingSchemeDHT());
     }
 
     /**
@@ -69,7 +58,8 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureDigest(final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureDigest(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+        super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
         self(this);
@@ -78,21 +68,14 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
     /**
      * Finishes the future and set the digest information that have been received.
      * 
-     * @param domainKey
-     *            The domain key
-     * @param locationKey
-     *            The location key
      * @param rawDigest
      *            The hashes of the content stored with information from which peer it has been received.
      */
-    public void setReceivedDigest(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, DigestResult> rawDigest) {
+    public void setReceivedDigest(final Map<PeerAddress, DigestResult> rawDigest) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
             this.rawDigest = rawDigest;
             final int size = rawDigest.size();
             this.minReached = size >= min;
@@ -132,78 +115,6 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
     public boolean isMinReached() {
         synchronized (lock) {
             return minReached;
-        }
-    }
-
-    /**
-     * @return The location key used for this future request
-     */
-    public Number160 getLocationKey() {
-        synchronized (lock) {
-            return locationKey;
-        }
-    }
-
-    /**
-     * 
-     * @return The domain key used for this future request
-     */
-    public Number160 getDomainKey() {
-        synchronized (lock) {
-            return domainKey;
-        }
-    }
-
-    /**
-     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @return The future object during the previous routing, or null if routing failed completely.
-     */
-    public FutureRouting getFutureRouting() {
-        synchronized (lock) {
-            return futureRouting;
-        }
-    }
-
-    /**
-     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @param futureRouting
-     *            The future object to set
-     */
-    public void setFutureRouting(final FutureRouting futureRouting) {
-        synchronized (lock) {
-            this.futureRouting = futureRouting;
-        }
-    }
-
-    
-
-    /**
-     * Add cancel operations. These operations are called when a future is done, and we want to cancel all pending
-     * operations.
-     * 
-     * @param cancellable
-     *            The operation that can be canceled.
-     */
-    public void addCleanup(final Cancel cancellable) {
-        synchronized (lock) {
-            cleanup.add(cancellable);
-        }
-    }
-
-    /**
-     * Shutdown cancels all pending futures.
-     */
-    public void shutdown() {
-        // Even though, this future is completed, there may be tasks than can be
-        // canceled due to scheduled futures attached to this event.
-        synchronized (lock) {
-            for (final Cancel cancellable : cleanup) {
-                cancellable.cancel();
-            }
         }
     }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.p2p.builder.DHTBuilder;
 
 public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> {
 
@@ -12,7 +13,24 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
     // generates as seen in Configurations (min.res + parr.diff)
     private final List<FutureResponse> requests = new ArrayList<FutureResponse>(6);
 
+    // A reference to the builder that contains the data we were looking for
+    private final DHTBuilder<?> builder;
+
+    // A reference to the routing process that run before the DHT operations
+    private FutureRouting futureRouting;
+
     private K self;
+
+    public FutureDHT(DHTBuilder<?> builder) {
+        this.builder = builder;
+    }
+
+    /**
+     * @return A reference to the builder that contains the data we were looking for
+     */
+    public DHTBuilder<?> builder() {
+        return builder;
+    }
 
     /**
      * @param self2
@@ -75,5 +93,30 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
                 });
             }
         });
+    }
+
+    /**
+     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
+     * completed successfully.
+     * 
+     * @return The future object during the previous routing, or null if routing failed completely.
+     */
+    public FutureRouting getFutureRouting() {
+        synchronized (lock) {
+            return futureRouting;
+        }
+    }
+
+    /**
+     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
+     * completed successfully.
+     * 
+     * @param futureRouting
+     *            The future object to set
+     */
+    public void setFutureRouting(final FutureRouting futureRouting) {
+        synchronized (lock) {
+            this.futureRouting = futureRouting;
+        }
     }
 }

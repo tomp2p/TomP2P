@@ -16,7 +16,6 @@
 
 package net.tomp2p.rpc;
 
-import java.util.Map;
 import java.util.NavigableMap;
 
 import net.tomp2p.peers.Number160;

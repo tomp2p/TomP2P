@@ -15,7 +15,6 @@
  */
 package net.tomp2p.rpc;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;

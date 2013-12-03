@@ -15,14 +15,12 @@
  */
 package net.tomp2p.futures;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
 import net.tomp2p.p2p.VotingSchemeDHT;
-import net.tomp2p.peers.Number160;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 
@@ -40,17 +38,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
     // simplify the result
     private final EvaluatingSchemeDHT evaluationScheme;
 
-    // A pointer to the routing process that run before the DHT operations
-    private FutureRouting futureRouting;
-
-    private final List<Cancel> cleanup = new ArrayList<Cancel>(1);
-
     // Storage of results
     private Map<PeerAddress, Map<Number640, Byte>> rawResult;
-
-    private Number160 locationKey;
-
-    private Number160 domainKey;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
@@ -58,8 +47,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
     /**
      * Default constructor.
      */
-    public FuturePut() {
-        this(0, new VotingSchemeDHT());
+    public FuturePut(final DHTBuilder<?> builder) {
+        this(builder, 0, new VotingSchemeDHT());
     }
 
     /**
@@ -70,7 +59,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FuturePut(final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FuturePut(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+        super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
         self(this);
@@ -82,24 +72,17 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * no storage space, no security permissions). Further evaluation can be retrieved with {@link #getAvgStoredKeys()}
      * or if the evaluation should be done by the user, use {@link #getRawKeys()}.
      * 
-     * @param domainKey
-     *            The domain key
-     * @param locationKey
-     *            The location key
      * @param rawKeys
      *            The keys that have been stored with information on which peer it has been stored
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys(final Number160 locationKey, final Number160 domainKey,
-            final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
+    public void setStoredKeys(final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
             }
             this.rawResult = rawResult;
-            this.locationKey = locationKey;
-            this.domainKey = domainKey;
             final int size = rawResult == null ? 0 : rawResult.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
@@ -158,76 +141,6 @@ public class FuturePut extends FutureDHT<FuturePut> {
     public Collection<Number640> getResult() {
         synchronized (lock) {
             return evaluationScheme.evaluate7(rawResult);
-        }
-    }
-
-    /**
-     * @return The location key used for this future request
-     */
-    public Number160 getLocationKey() {
-        synchronized (lock) {
-            return locationKey;
-        }
-    }
-
-    /**
-     * 
-     * @return The domain key used for this future request
-     */
-    public Number160 getDomainKey() {
-        synchronized (lock) {
-            return domainKey;
-        }
-    }
-
-    /**
-     * Returns the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @return The future object during the previous routing, or null if routing failed completely.
-     */
-    public FutureRouting getFutureRouting() {
-        synchronized (lock) {
-            return futureRouting;
-        }
-    }
-
-    /**
-     * Sets the future object that was used for the routing. Before the FutureDHT is used, FutureRouting has to be
-     * completed successfully.
-     * 
-     * @param futureRouting
-     *            The future object to set
-     */
-    public void setFutureRouting(final FutureRouting futureRouting) {
-        synchronized (lock) {
-            this.futureRouting = futureRouting;
-        }
-    }
-
-    /**
-     * Add cancel operations. These operations are called when a future is done, and we want to cancel all pending
-     * operations.
-     * 
-     * @param cancellable
-     *            The operation that can be canceled.
-     */
-    public void addCleanup(final Cancel cancellable) {
-        synchronized (lock) {
-            cleanup.add(cancellable);
-        }
-    }
-
-    /**
-     * Shutdown cancels all pending futures.
-     */
-    public void shutdown() {
-        // Even though, this future is completed, there may be tasks than can be
-        // canceled due to scheduled futures attached to this event.
-        synchronized (lock) {
-            for (final Cancel cancellable : cleanup) {
-                cancellable.cancel();
-            }
         }
     }
 }

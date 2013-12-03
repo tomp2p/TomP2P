@@ -54,10 +54,13 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
 
     private static final Logger LOG = LoggerFactory.getLogger(SynchronizationDirectBuilder.class);
 
+    private static final FutureDone<SynchronizationStatistics> FUTURE_SHUTDOWN = new FutureDone<SynchronizationStatistics>()
+            .setFailed("sync builder - peer is shutting down");
+
     private DataMap dataMap;
     private Number640 key;
     private Set<Number640> keys;
-    
+
     private NavigableMap<Number640, Number160> dataMapHash;
     private ArrayList<Instruction> instructions;
 
@@ -83,43 +86,43 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     public Number640 key() {
         return key;
     }
-    
+
     public SynchronizationDirectBuilder key(Number640 key) {
         this.key = key;
         return this;
     }
-    
+
     public Set<Number640> keys() {
         return keys;
     }
-    
+
     public SynchronizationDirectBuilder keys(Set<Number640> keys) {
         this.keys = keys;
         return this;
     }
 
     public DataMap dataMap() {
-        if(dataMap!=null) {
+        if (dataMap != null) {
             return dataMap;
         } else {
             Map<Number640, Data> newDataMap = new HashMap<Number640, Data>();
-            if(key!=null) {
+            if (key != null) {
                 Data data = peer.getPeerBean().storage().get(key);
-                if(data == null) {
+                if (data == null) {
                     data = new Data(true);
                 }
                 newDataMap.put(key, data);
-            } 
-            if (keys!=null) {
-                for(Number640 key:keys) {
+            }
+            if (keys != null) {
+                for (Number640 key : keys) {
                     Data data = peer.getPeerBean().storage().get(key);
-                    if(data == null) {
+                    if (data == null) {
                         data = new Data(true);
                     }
                     newDataMap.put(key, data);
                 }
             }
-            if(newDataMap.size()>0) {
+            if (newDataMap.size() > 0) {
                 return new DataMap(newDataMap);
             } else {
                 throw new IllegalArgumentException("Need either dataMap, key, or keys!");
@@ -128,17 +131,17 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     }
 
     public NavigableMap<Number640, Number160> dataMapHash() {
-        if(dataMapHash == null) {
+        if (dataMapHash == null) {
             dataMapHash = new TreeMap<Number640, Number160>();
         }
-        if(dataMap != null) {
+        if (dataMap != null) {
             dataMapHash.putAll(dataMap.convertToHash());
         }
-        if(key != null) {
+        if (key != null) {
             dataMapHash.put(key, peer.getPeerBean().storage().get(key).hash());
         }
-        if(keys!=null) {
-            for(Number640 key:keys) {
+        if (keys != null) {
+            for (Number640 key : keys) {
                 dataMapHash.put(key, peer.getPeerBean().storage().get(key).hash());
             }
         }
@@ -155,6 +158,9 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     }
 
     public FutureDone<SynchronizationStatistics> start() {
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         final FutureDone<SynchronizationStatistics> futureSync = new FutureDone<SynchronizationStatistics>();
         FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 2);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -211,12 +217,13 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                                 secondMessageRequired = true;
                                 ArrayList<Checksum> checksums = Synchronization.decodeChecksumList(data);
                                 Data data2 = peer.getPeerBean().storage().get(entry.getKey());
-                                ArrayList<Instruction> instructions = Synchronization.getInstructions(data2.toBytes(), checksums, Synchronization.SIZE);
-                                for(Instruction instruction:instructions) {
-                                    if(instruction.getReference()!=-1) {
-                                        dataNotCopied +=Synchronization.SIZE;
+                                ArrayList<Instruction> instructions = Synchronization.getInstructions(
+                                        data2.toBytes(), checksums, Synchronization.SIZE);
+                                for (Instruction instruction : instructions) {
+                                    if (instruction.getReference() != -1) {
+                                        dataNotCopied += Synchronization.SIZE;
                                     } else {
-                                        dataCopy+=instruction.literalSize();
+                                        dataCopy += instruction.literalSize();
                                     }
                                 }
                                 byte[] endoced = Synchronization.encodeInstructionList(instructions,

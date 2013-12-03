@@ -33,8 +33,8 @@ import net.tomp2p.peers.PeerAddress;
  * 
  */
 public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
-    private static final FutureShutdown FUTURE_SHUTDOWN = new FutureShutdown()
-            .setFailed("Peer is shutting down");
+    private static final FutureShutdown FUTURE_SHUTDOWN = new FutureShutdown(null)
+            .setFailed("shutdown builder - peer is shutting down");
 
     private Filter filter;
 
@@ -65,6 +65,9 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
      * @return The future object
      */
     public FutureShutdown start() {
+        if (peer.isShutdown()) {
+            return FUTURE_SHUTDOWN;
+        }
         setForceUDP();
         if (routingConfiguration == null) {
             routingConfiguration = new RoutingConfiguration(0, 0, 0);
@@ -73,9 +76,7 @@ public class ShutdownBuilder extends DHTBuilder<ShutdownBuilder> {
             requestP2PConfiguration = new RequestP2PConfiguration(10, 0, 10);
         }
         preBuild("shutdown-builder");
-        if (peer.isShutdown()) {
-            return FUTURE_SHUTDOWN;
-        }
+        
         if (filter == null) {
             filter = new Filter() {
                 @Override

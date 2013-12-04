@@ -21,6 +21,7 @@ import io.netty.buffer.ByteBuf;
 import java.io.Serializable;
 import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 
 import net.tomp2p.utils.Utils;
 
@@ -188,6 +189,24 @@ public class PeerSocketAddress implements Serializable {
             address = Utils.inet6FromBytes(me, 0);
         }
         return new PeerSocketAddress(address, portTCP, portUDP, ch.readerIndex());
+    }
+    
+    /**
+     * Returns the socket address.
+     * 
+     * @return The socket address how to reach this peer
+     */
+    public static InetSocketAddress createSocketTCP(PeerSocketAddress peerSocketAddress) {
+        return new InetSocketAddress(peerSocketAddress.getInetAddress(), peerSocketAddress.getTcpPort());
+    }
+
+    /**
+     * Returns the socket address.
+     * 
+     * @return The socket address how to reach this peer
+     */
+    public static InetSocketAddress createSocketUDP(PeerSocketAddress peerSocketAddress) {
+        return new InetSocketAddress(peerSocketAddress.getInetAddress(), peerSocketAddress.getUdpPort());
     }
 
     @Override

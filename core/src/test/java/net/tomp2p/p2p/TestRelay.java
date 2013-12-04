@@ -4,9 +4,9 @@ import java.util.Random;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;

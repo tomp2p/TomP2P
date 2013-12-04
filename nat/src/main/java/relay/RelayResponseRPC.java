@@ -1,9 +1,9 @@
 package relay;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.rpc.DispatchHandler;
 

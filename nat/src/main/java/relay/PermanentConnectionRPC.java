@@ -1,7 +1,7 @@
 package relay;
 
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;

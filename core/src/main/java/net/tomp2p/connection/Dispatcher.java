@@ -134,7 +134,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         //Message responseMessage = null;
-        Responder responder = new Responder(ctx, message);
+        Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
@@ -148,21 +148,27 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
     }
     
-    public class Responder {
+    public class DirectResponder implements Responder {
         final ChannelHandlerContext ctx;
         final Message requestMessage;
-        Responder(final ChannelHandlerContext ctx, final Message requestMessage) {
+        DirectResponder(final ChannelHandlerContext ctx, final Message requestMessage) {
             this.ctx = ctx;
             this.requestMessage = requestMessage;
         }
-        public void response(Message responseMessage) {
+        
+        @Override
+		public void response(Message responseMessage) {
             Dispatcher.this.response(ctx, responseMessage);
         }
-        public void failed(Message.Type type, String reason) {
+        
+        @Override
+		public void failed(Message.Type type, String reason) {
             Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBean.serverPeerAddress());
             Dispatcher.this.response(ctx, responseMessage);
         }
-        public void responseFireAndForget() {
+        
+        @Override
+		public void responseFireAndForget() {
             LOG.debug("The reply handler was a fire-and-forget handler, "
                     + "we don't send any message back! {}", requestMessage);    
            if (!(ctx.channel() instanceof DatagramChannel)) {

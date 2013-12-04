@@ -35,6 +35,7 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
@@ -115,7 +116,12 @@ public class Sender {
         } else if (channelCreator != null) {
             final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds,
                     handler == null);
-            InetSocketAddress recipient = message.getRecipient().createSocketTCP();
+            InetSocketAddress recipient = null;
+            if(message.getRecipient().getPeerSocketAddresses().length > 0) {
+            	recipient = PeerSocketAddress.createSocketTCP(message.getRecipient().getPeerSocketAddresses()[0]);
+            } else {
+                recipient = message.getRecipient().createSocketTCP();
+            }
             channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
                     timeoutHandler, connectTimeoutMillis);
         } else {
@@ -260,9 +266,13 @@ public class Sender {
         if (!isFireAndForget) {
             handlers.put("handler", handler);
         }
-
-        final ChannelFuture channelFuture = channelCreator.createUDP(
-                message.getRecipient().createSocketUDP(), broadcast, handlers);
+        InetSocketAddress udpSocket = null;
+        if(message.getRecipient().getPeerSocketAddresses().length > 0) {
+        	udpSocket = PeerSocketAddress.createSocketUDP(message.getRecipient().getPeerSocketAddresses()[0]);
+        } else {
+        	udpSocket = message.getRecipient().createSocketUDP();
+        }
+        final ChannelFuture channelFuture = channelCreator.createUDP(udpSocket, broadcast, handlers);
         futureResponse.setChannelFuture(channelFuture);
         if (channelFuture == null) {
             futureResponse.setFailed("could not create a UDP channel");

@@ -39,6 +39,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
 
 public class Utils2 {
@@ -140,22 +141,30 @@ public class Utils2 {
         Bindings bindings = new Bindings().addInterface("lo");
         Peer[] peers = new Peer[nrOfPeers];
         if (automaticFuture != null) {
-            peers[0] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
+        	Number160 peerId = new Number160(rnd);
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+            peers[0] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
                     .addAutomaticFuture(automaticFuture).ports(port).setEnableMaintenance(maintenance)
-                    .externalBindings(bindings).makeAndListen();
+                    .externalBindings(bindings).peerMap(peerMap).makeAndListen();
         } else {
-            peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(maintenance).externalBindings(bindings)
-                    .setEnableIndirectReplication(replication).ports(port).makeAndListen();
+        	Number160 peerId = new Number160(rnd);
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+            peers[0] = new PeerMaker(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+                    .setEnableIndirectReplication(replication).peerMap(peerMap).ports(port).makeAndListen();
         }
 
         for (int i = 1; i < nrOfPeers; i++) {
             if (automaticFuture != null) {
-                peers[i] = new PeerMaker(new Number160(rnd)).setEnableIndirectReplication(replication)
+            	Number160 peerId = new Number160(rnd);
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+                peers[i] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
                         .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
-                        .setEnableMaintenance(maintenance).externalBindings(bindings).makeAndListen();
+                        .setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).makeAndListen();
             } else {
-                peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(maintenance)
-                        .externalBindings(bindings).setEnableIndirectReplication(replication).masterPeer(peers[0])
+            	Number160 peerId = new Number160(rnd);
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+                peers[i] = new PeerMaker(peerId).setEnableMaintenance(maintenance)
+                        .externalBindings(bindings).setEnableIndirectReplication(replication).peerMap(peerMap).masterPeer(peers[0])
                         .makeAndListen();
             }
         }

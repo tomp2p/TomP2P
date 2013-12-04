@@ -36,10 +36,6 @@ public class RelayConnectionFuture extends BaseFutureImpl<RelayConnectionFuture>
 		}
 		notifyListeners();
 	}
-	
-	@Override
-	public String toString() {
-		return "templol";
-	}
+
 
 }

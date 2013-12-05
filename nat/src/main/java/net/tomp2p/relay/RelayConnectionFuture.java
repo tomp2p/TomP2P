@@ -1,4 +1,4 @@
-package relay;
+package net.tomp2p.relay;
 
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.futures.FuturePeerConnection;

@@ -1,4 +1,4 @@
-package relay;
+package net.tomp2p.relay;
 
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,9 +30,9 @@ import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RelayPeersManager {
+public class RelayManager {
 
-	final private static Logger logger = LoggerFactory.getLogger(RelayPeersManager.class);
+	final private static Logger logger = LoggerFactory.getLogger(RelayManager.class);
 
 	// settings
 	private final int maxRelays;
@@ -43,7 +43,7 @@ public class RelayPeersManager {
 	private Collection<PeerAddress> relayAddresses;
 	private Collection<PeerAddress> failedRelays;
 
-	public RelayPeersManager(final Peer peer, PeerAddress peerAddress, int maxRelays) {
+	public RelayManager(final Peer peer, PeerAddress peerAddress, int maxRelays) {
 		this.peer = peer;
 		this.peerAddress = peerAddress;
 		this.relayCandidates = new ConcurrentLinkedQueue<PeerAddress>();
@@ -59,7 +59,7 @@ public class RelayPeersManager {
 		failedRelays = new ArrayList<>();
 	}
 
-	public RelayPeersManager(final Peer peer, PeerAddress peerAddress) {
+	public RelayManager(final Peer peer, PeerAddress peerAddress) {
 		this(peer, peerAddress, PeerAddress.MAX_RELAYS);
 	}
 
@@ -72,8 +72,7 @@ public class RelayPeersManager {
 
 		// Set firewalled flag to avoid that other peers add this peer to their
 		// routing tables
-		PeerAddress serverAddress = peer.getPeerBean().serverPeerAddress();
-		serverAddress.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		peer.getPeerBean().serverPeerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true);
 
 		// create channel creator
 		FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, maxRelays);
@@ -86,7 +85,6 @@ public class RelayPeersManager {
 					rf.setFailed(future);
 				}
 			}
-
 		});
 
 		return rf;
@@ -125,7 +123,7 @@ public class RelayPeersManager {
 			}
 		}
 		if (active == 0) {
-			updatePeer(rf);
+			updatePeerAddress(rf);
 		}
 
 		try {
@@ -151,7 +149,7 @@ public class RelayPeersManager {
 							failedRelays.add(relayAddress);
 						}
 					}
-					updatePeer(rf);
+					updatePeerAddress(rf);
 				} else {
 					relaySetupLoop(futureRelayConnections, relayCandidates, cc, numberOfRelays, rf);
 				}
@@ -162,7 +160,7 @@ public class RelayPeersManager {
 	/**
 	 * Adds the relay addresses to the peer address, updates the firewalled flags, and bootstraps
 	 */
-	private void updatePeer(final RelayFuture rf) {
+	private void updatePeerAddress(final RelayFuture rf) {
 		
 		//add relay addresses to peer address
 		ArrayList<PeerAddress> relayAddressList = (ArrayList<PeerAddress>) relayAddresses;
@@ -172,14 +170,13 @@ public class RelayPeersManager {
 			socketAddresses[i] = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
 		}
 
+		// update firewalled and isRelay Flags
 		PeerAddress pa = peer.getPeerAddress();
 		PeerSocketAddress psa = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
 		PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, false, false, pa.isRelay(), socketAddresses);
 		peer.getPeerBean().serverPeerAddress(newAddress);
 		
-		PeerAddress test = peer.getPeerAddress(); 
-		System.out.println(test.getPeerSocketAddresses().length);
-		
+		//bootstrap with the updated peer address
 		bootstrap(rf);
 	}
 	

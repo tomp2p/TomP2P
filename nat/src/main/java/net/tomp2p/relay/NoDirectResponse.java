@@ -1,4 +1,4 @@
-package relay;
+package net.tomp2p.relay;
 
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;

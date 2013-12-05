@@ -1,4 +1,4 @@
-package relay;
+package net.tomp2p.relay;
 
 import net.tomp2p.futures.BaseFutureImpl;
 
@@ -9,14 +9,14 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 	
 	private final static Logger logger = LoggerFactory.getLogger(RelayFuture.class);
 	
-	private RelayPeersManager relayManager;
+	private RelayManager relayManager;
 	
-	public RelayFuture(RelayPeersManager relayManager) {
+	public RelayFuture(RelayManager relayManager) {
 		self(this);
 		this.relayManager = relayManager;
 	}
 	
-	public RelayPeersManager relayPeersManager() {
+	public RelayManager relayManager() {
 		return relayManager;
 	}
 

@@ -1,4 +1,4 @@
-package relay;
+package net.tomp2p.relay;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -49,9 +49,12 @@ public class RelayRPC extends DispatchHandler {
 			@Override
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess() && future.getResponse().getType() == Type.OK) {
+					logger.debug("Peer {} is ready to act as a relay", other);
 					openPermanentConnection(connectionFuture, other);
+				} else if (future.getResponse() != null && future.getResponse().getType() == Type.DENIED){
+					connectionFuture.setFailed("Peer " + other + " denied to act as a relay. The peer is probably behind a relay, too");
 				} else {
-					connectionFuture.setFailed("Peer " + connectionFuture.relayAddress() + " denied to act as a relay");
+					connectionFuture.setFailed("Relay RPC failed: " + future.getFailedReason());
 				}
 			}
 

@@ -180,6 +180,7 @@ public class Encoder {
                 message.contentRefencencs().poll();
                 break;
             case BYTE_BUFFER:
+            	System.err.println("msg"+message );
                 Buffer buffer = message.getBuffer(next.number());
                 if (!resume) {
                     buf.writeInt(buffer.length());

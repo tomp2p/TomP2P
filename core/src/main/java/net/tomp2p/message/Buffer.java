@@ -101,4 +101,9 @@ public class Buffer {
         }
         return b.buffer.duplicate().readerIndex(0).equals(buffer.duplicate().readerIndex(0));
     }
+
+	public void reset() {
+		read=0;
+		
+	}
 }

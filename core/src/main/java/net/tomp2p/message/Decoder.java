@@ -164,6 +164,7 @@ public class Decoder {
             message = MessageHeaderCodec.decodeHeader(buf, recipient, sender);
             // we have set the content types already
             message.presetContentTypes(true);
+            message.restoreContentReferences();
 
             for (Content content : message.getContentTypes()) {
                 if (content == Content.EMPTY) {
@@ -439,6 +440,7 @@ public class Decoder {
                 message.setBuffer(buffer);
                 lastContent = contentTypes.poll();
                 bufferSize = -1;
+                buffer.reset();
                 buffer = null;
                 break;
             case SET_TRACKER_DATA:

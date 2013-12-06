@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.rpc;
+package net.tomp2p.replication;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -36,13 +36,10 @@ import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.KeyMap640;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.replication.Checksum;
-import net.tomp2p.replication.Instruction;
-import net.tomp2p.replication.Synchronization;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageLayer.PutStatus;
 

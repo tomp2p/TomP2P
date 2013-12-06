@@ -24,13 +24,9 @@
     	<version>5.0-Alpha1-SNAPSHOT</version>
   	</parent>
 	
-	<artifactId>tomp2p-core</artifactId>
-	<name>TomP2P Core</name>
+	<artifactId>tomp2p-replication</artifactId>
+	<name>TomP2P Replication</name>
 	<packaging>jar</packaging>
-
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-	</properties>
 
 	<licenses>
 		<license>
@@ -41,21 +37,10 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-transport</artifactId>
-			<version>4.0.13.Final</version>
-		</dependency>
-
-		<dependency>
-			<groupId>io.netty</groupId>
-			<artifactId>netty-codec</artifactId>
-			<version>4.0.13.Final</version>
-		</dependency>
-
-		<dependency>
-			<groupId>jdbm</groupId>
-			<artifactId>jdbm</artifactId>
-			<version>3.0-alpha</version>
+			<groupId>net.tomp2p</groupId>
+			<artifactId>tomp2p-core</artifactId>
+			<!-- TODO: do we need a version here? -->
+			<version>5.0-Alpha1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -69,14 +54,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- To generate osgi compatible jars -->
-		<dependency>
-			<groupId>org.apache.felix</groupId>
-			<artifactId>org.osgi.core</artifactId>
-			<version>1.4.0</version>
-			<optional>true</optional>
-		</dependency>
-
 		<!-- For testing-->
 		<dependency>
 			<groupId>junit</groupId>
@@ -84,21 +61,11 @@
 			<version>4.11</version>
 			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-all</artifactId>
 			<version>1.9.5</version>
 			<scope>test</scope>
-		</dependency>
-
-
-		<!-- Used for the examples only -->
-		<dependency>
-			<groupId>com.googlecode.json-simple</groupId>
-			<artifactId>json-simple</artifactId>
-			<version>1.1.1</version>
-			<optional>true</optional>
 		</dependency>
 
 	</dependencies>
@@ -115,14 +82,6 @@
         </configuration>
       </plugin>
     </plugins>
-    
-     <resources>
-      <resource>
-        <directory>src/main/config</directory>
-      </resource>
-    </resources>
-    
   </build>
-
-	
+  
 </project>

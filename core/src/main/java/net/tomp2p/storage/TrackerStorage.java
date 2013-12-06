@@ -31,7 +31,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.replication.Replication;
+import net.tomp2p.p2p.Replication;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.utils.ConcurrentCacheMap;

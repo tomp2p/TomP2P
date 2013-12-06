@@ -47,7 +47,6 @@ import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
-import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
@@ -59,7 +58,6 @@ import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
-import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
@@ -119,9 +117,7 @@ public class Peer {
     private TrackerRPC trackerRPC;
     // private TaskRPC taskRPC;
     private BroadcastRPC broadcastRPC;
-    private SynchronizationRPC synchronizationRPC;
 
-    //
     private boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = null;
@@ -270,17 +266,6 @@ public class Peer {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return broadcastRPC;
-    }
-    
-    public void setSynchronizationRPC(SynchronizationRPC synchronizationRPC) {
-    	this.synchronizationRPC = synchronizationRPC;
-    }
-    
-    public SynchronizationRPC getSynchronizationRPC() {
-    	if(synchronizationRPC == null) {
-    		throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-    	}
-    	return synchronizationRPC;
     }
 
     public DistributedRouting getDistributedRouting() {
@@ -539,10 +524,6 @@ public class Peer {
 
     public BroadcastBuilder broadcast(Number160 messageKey) {
         return new BroadcastBuilder(this, messageKey);
-    }
-    
-    public SynchronizationDirectBuilder synchronize(PeerAddress other) {
-        return new SynchronizationDirectBuilder(this, other);
     }
 
     /**

@@ -87,6 +87,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private final int relaySize;
     private final BitSet relayType;
     private static final BitSet EMPTY_RELAY_TYPE = new BitSet(0);
+    //relays
     private final PeerSocketAddress[] peerSocketAddresses;
     private static final PeerSocketAddress[] EMPTY_PEER_SOCKET_ADDRESSES = new PeerSocketAddress[0];
 

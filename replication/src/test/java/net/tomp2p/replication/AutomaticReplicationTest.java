@@ -15,7 +15,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
-import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -44,9 +43,9 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetXMean() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port1).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
-
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
+        
         ArrayList<Integer> x = new ArrayList<Integer>();
         x.add(5);
         x.add(10);
@@ -58,8 +57,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetYMean() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port2).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Double> y = new ArrayList<Double>();
         y.add(1.0);
@@ -72,8 +71,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetSumOfXVariationMultipliedYVariation() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port3).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> x = new ArrayList<Integer>();
         ArrayList<Double> y = new ArrayList<Double>();
@@ -99,8 +98,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetSumOfXVariationSquared() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port4).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> x = new ArrayList<Integer>();
 
@@ -120,8 +119,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetSumOfRegressionVariationSquared() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port5).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> x = new ArrayList<Integer>();
         ArrayList<Double> y = new ArrayList<Double>();
@@ -150,8 +149,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetSumOfYVariationSquared() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port6).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Double> y = new ArrayList<Double>();
 
@@ -171,8 +170,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetBestSmoothingFactor() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port7).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> x = new ArrayList<Integer>();
         ArrayList<Double> y = new ArrayList<Double>();
@@ -213,8 +212,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetAverage() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port8).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> observations = new ArrayList<Integer>();
         ArrayList<Double> averages = new ArrayList<Double>();
@@ -241,8 +240,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetStandardDeviation() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port9).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> observations = new ArrayList<Integer>();
         ArrayList<Double> averages = new ArrayList<Double>();
@@ -270,8 +269,8 @@ public class AutomaticReplicationTest {
     @Test
     public void testGetPredictedValue() throws IOException {
         Peer peer = new PeerMaker(new Number160(peerId)).ports(port10).makeAndListen();
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peer.getPeerBean()
-                .peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peer);
 
         ArrayList<Integer> observations = new ArrayList<Integer>();
         ArrayList<Double> averages = new ArrayList<Double>();
@@ -300,8 +299,8 @@ public class AutomaticReplicationTest {
         Peer[] peers = Utils2.createNodes(10, RND, port11, null, true);
         Utils2.perfectRouting(peers);
         Thread.sleep(1000);
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peers[2]
-                .getPeerBean().peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peers[2]);
 
         ArrayList<Integer> observations = new ArrayList<Integer>();
         ArrayList<Double> averages = new ArrayList<Double>();
@@ -342,8 +341,8 @@ public class AutomaticReplicationTest {
         Random RND = new Random();
         Peer[] peers = Utils2.createNodes(10, RND, port12, null, true);
         Utils2.perfectRouting(peers);
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peers[2]
-                .getPeerBean().peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peers[2]);
 
         int expectedValue = 9;
 
@@ -355,8 +354,8 @@ public class AutomaticReplicationTest {
         Random RND = new Random();
         Peer[] peers = Utils2.createNodes(10, RND, port13, null, true);
         Utils2.perfectRouting(peers);
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peers[2]
-                .getPeerBean().peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peers[2]);
 
         peers[3].announceShutdown().start().awaitUninterruptibly();
         peers[3].shutdown().awaitUninterruptibly();
@@ -376,8 +375,8 @@ public class AutomaticReplicationTest {
         Random RND = new Random();
         Peer[] peers = Utils2.createNodes(10, RND, port14, null, true);
         Utils2.perfectRouting(peers);
-        AutomaticReplication automaticReplication = new AutomaticReplication(reliability, peers[2]
-                .getPeerBean().peerMap());
+        AutomaticReplication automaticReplication = new AutomaticReplication(reliability);
+        automaticReplication.init(peers[2]);
 
         peers[3].announceShutdown().start().awaitUninterruptibly();
         peers[3].shutdown().awaitUninterruptibly();

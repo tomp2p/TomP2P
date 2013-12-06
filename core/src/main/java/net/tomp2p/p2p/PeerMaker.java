@@ -39,8 +39,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.replication.Replication;
-import net.tomp2p.replication.ReplicationExecutor;
+import net.tomp2p.p2p.Replication;
+import net.tomp2p.p2p.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -50,7 +50,6 @@ import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.StorageRPC;
-import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
@@ -128,6 +127,12 @@ public class PeerMaker {
     private Random random = null;
     private int delayMillis = -1;
     private int intervalMillis = -1;
+    
+    private ReplicationFactor replicationFactor = null;
+    
+    private ReplicationSender replicationSender = null;
+    
+    private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
 
     // private ReplicationExecutor replicationExecutor;
 
@@ -252,7 +257,6 @@ public class PeerMaker {
         }
 
         final Peer peer = new Peer(p2pID, peerId, peerCreator);
-        
 
         PeerBean peerBean = peerCreator.peerBean();
         peerBean.peerMap(peerMap);
@@ -296,7 +300,7 @@ public class PeerMaker {
 
         initRPC(peer, connectionBean, peerBean);
         initP2P(peer, connectionBean, peerBean);
-        
+
         if(maintenanceTask == null && isEnableMaintenance()) {
             maintenanceTask = new MaintenanceTask();
         }
@@ -317,13 +321,33 @@ public class PeerMaker {
             delayMillis = 30 * 1000;
         }
         
+        if (replicationFactor == null) {
+            replicationFactor = new ReplicationFactor() {
+                @Override
+                public int factor() {
+                    // Default is 6 as in the builders
+                    return 6;
+                }
+
+                @Override
+                public void init(Peer peer) {
+                }
+            };
+        }
+        replicationFactor.init(peer);
+        
+        if (replicationSender == null) {
+            replicationSender = new ReplicationExecutor.DefaultReplicationSender();
+        }
+        replicationSender.init(peer);
         
         // indirect replication
         if(replicationExecutor == null && isEnableIndirectReplication() && isEnableStorageRPC()) {
-            replicationExecutor = new ReplicationExecutor(peer, random, connectionBean.timer(), delayMillis); 
+            replicationExecutor = new ReplicationExecutor(peer, replicationFactor, replicationSender, 
+                    random, connectionBean.timer(), delayMillis); 
         }
         if (replicationExecutor != null) {
-            replicationExecutor.init(peer, intervalMillis);
+            replicationExecutor.init(intervalMillis);
         }
         peerBean.replicationExecutor(replicationExecutor);
         
@@ -333,6 +357,9 @@ public class PeerMaker {
 
         //set the ping builder for the heart beat
         connectionBean.sender().pingBuilder(peer.ping());
+        for(PeerInit peerInit: toInitialize) {
+            peerInit.init(peer);
+        }
         return peer;
     }
 
@@ -408,12 +435,7 @@ public class PeerMaker {
         if (isEnableBroadcast()) {
             BroadcastRPC broadcastRPC = new BroadcastRPC(peerBean, connectionBean, broadcastHandler);
             peer.setBroadcastRPC(broadcastRPC);
-        }
-        
-        if (isEnableSynchronizationRPC()) {
-        	SynchronizationRPC synchronizationRPC = new SynchronizationRPC(peerBean, connectionBean);
-        	peer.setSynchronizationRPC(synchronizationRPC);
-        }        
+        }   
          
     }
 
@@ -623,6 +645,36 @@ public class PeerMaker {
     
     public PeerMaker intervalMillis(int intervalMillis) {
         this.intervalMillis = intervalMillis;
+        return this;
+    }
+    
+    public ReplicationFactor replicationFactor() {
+        return replicationFactor;
+    }
+    
+    public PeerMaker replicationFactor(ReplicationFactor replicationFactor) {
+        this.replicationFactor = replicationFactor;
+        return this;
+    }
+    
+    public ReplicationSender replicationSender() {
+        return replicationSender;
+    }
+    
+    public PeerMaker replicationSender(ReplicationSender replicationSender) {
+        this.replicationSender = replicationSender;
+        return this;
+    }
+    
+    public PeerMaker init(PeerInit init) {
+        toInitialize.add(init);
+        return this;
+    }
+    
+    public PeerMaker init(PeerInit... inits) {
+        for(PeerInit init:inits) {
+            toInitialize.add(init);
+        }
         return this;
     }
     

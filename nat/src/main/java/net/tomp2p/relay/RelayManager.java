@@ -1,14 +1,11 @@
 package net.tomp2p.relay;
 
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
-
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -17,16 +14,10 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureForkJoin;
-import net.tomp2p.message.Buffer;
-import net.tomp2p.message.Decoder;
-import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.rpc.RawDataReply;
 
-import org.junit.Assert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +31,8 @@ public class RelayManager {
 	private final Peer peer;
 	private PeerAddress peerAddress;
 	private final Queue<PeerAddress> relayCandidates;
-	private Collection<PeerAddress> relayAddresses;
-	private Collection<PeerAddress> failedRelays;
+	private List<PeerAddress> relayAddresses;
+	private List<PeerAddress> failedRelays;
 
 	public RelayManager(final Peer peer, PeerAddress peerAddress, int maxRelays) {
 		this.peer = peer;
@@ -55,8 +46,8 @@ public class RelayManager {
 
 		this.maxRelays = maxRelays;
 
-		relayAddresses = new ArrayList<>(maxRelays);
-		failedRelays = new ArrayList<>();
+		relayAddresses = new CopyOnWriteArrayList<PeerAddress>();
+		failedRelays = new CopyOnWriteArrayList<PeerAddress>();
 	}
 
 	public RelayManager(final Peer peer, PeerAddress peerAddress) {
@@ -163,17 +154,17 @@ public class RelayManager {
 	private void updatePeerAddress(final RelayFuture rf) {
 		
 		//add relay addresses to peer address
-		ArrayList<PeerAddress> relayAddressList = (ArrayList<PeerAddress>) relayAddresses;
-		PeerSocketAddress[] socketAddresses = new PeerSocketAddress[relayAddressList.size()];
-		for (int i = 0; i < relayAddresses.size(); i++) {
-			PeerAddress pa = relayAddressList.get(i);
-			socketAddresses[i] = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
+		PeerSocketAddress[] socketAddresses = new PeerSocketAddress[relayAddresses.size()];
+		int index = 0;
+		for (PeerAddress pa : relayAddresses) {
+			socketAddresses[index] = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
+			index++;
 		}
 
 		// update firewalled and isRelay Flags
 		PeerAddress pa = peer.getPeerAddress();
 		PeerSocketAddress psa = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
-		PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, false, false, pa.isRelay(), socketAddresses);
+		PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, false, false, true, socketAddresses);
 		peer.getPeerBean().serverPeerAddress(newAddress);
 		
 		//bootstrap with the updated peer address

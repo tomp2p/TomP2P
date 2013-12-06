@@ -35,6 +35,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.connection.RelaySender;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -124,6 +125,8 @@ public class PeerMaker {
     private ReplicationExecutor replicationExecutor = null;
     
     private List<AutomaticFuture> automaticFutures = null;
+    
+    private RelaySender relaySender = null;
     
     private Random random = null;
     private int delayMillis = -1;
@@ -248,7 +251,7 @@ public class PeerMaker {
             peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
         } else {
             peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-                    channelClientConfiguration, peerStatusListeners, timer);
+                    channelClientConfiguration, peerStatusListeners, timer, relaySender);
         }
 
         final Peer peer = new Peer(p2pID, peerId, peerCreator);
@@ -806,6 +809,21 @@ public class PeerMaker {
         automaticFutures.add(automaticFuture);
         return this;
     }
+    
+    /**
+     * Set the relay sender that is responsible for sending messages via relay 
+     * peers to a peer that is not reachable from outside.
+     * @param relaySender
+     * @return
+     */
+    public PeerMaker relaySender(RelaySender relaySender) {
+    	this.relaySender = relaySender;
+    	return this;
+    }
+    
+    public RelaySender relaySender() {
+    	return relaySender;
+    }
 
     /**
      * The default filter is no filter, just return the same array.
@@ -819,5 +837,6 @@ public class PeerMaker {
                 final boolean client) {
         }
     }
+    
 
 }

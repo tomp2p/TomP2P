@@ -117,7 +117,7 @@ public class Sender {
             final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds,
                     handler == null);
             InetSocketAddress recipient = null;
-            if(message.getRecipient().getPeerSocketAddresses().length > 0) {
+            if(message.getRecipient().isRelay()) {
             	recipient = PeerSocketAddress.createSocketTCP(message.getRecipient().getPeerSocketAddresses()[0]);
             } else {
                 recipient = message.getRecipient().createSocketTCP();
@@ -267,7 +267,7 @@ public class Sender {
             handlers.put("handler", handler);
         }
         InetSocketAddress udpSocket = null;
-        if(message.getRecipient().getPeerSocketAddresses().length > 0) {
+        if(message.getRecipient().isRelay()) {
         	udpSocket = PeerSocketAddress.createSocketUDP(message.getRecipient().getPeerSocketAddresses()[0]);
         } else {
         	udpSocket = message.getRecipient().createSocketUDP();

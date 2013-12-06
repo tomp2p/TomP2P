@@ -84,7 +84,7 @@ public class PeerCreator {
     public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
             final ChannelServerConficuration channelServerConficuration,
             final ChannelClientConfiguration channelClientConfiguration,
-            final PeerStatusListener[] peerStatusListeners, Timer timer) throws IOException {
+            final PeerStatusListener[] peerStatusListeners, Timer timer, RelaySender relaySender) throws IOException {
         peerBean = new PeerBean(keyPair);
         peerBean.peerStatusListeners(peerStatusListeners);
         workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(
@@ -106,7 +106,7 @@ public class PeerCreator {
         Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher);
 
         NATUtils natUtils = new NATUtils();
-        connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
+        connectionBean = new ConnectionBean(p2pId, dispatcher, sender, relaySender, channelServer, reservation,
                 channelClientConfiguration, natUtils, timer);
         this.master = true;
     }

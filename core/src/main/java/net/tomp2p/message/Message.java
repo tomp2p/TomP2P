@@ -319,9 +319,12 @@ public class Message {
         throw new IllegalStateException("Already set 8 content types");
     }
     
+    /**
+     * restore the content references if only the content types array is present
+     */
     public void restoreContentReferences() {
     	Map<Content, Integer> refs = new HashMap<>();
-    	for(Content contentType:contentTypes) {
+    	for(Content contentType : contentTypes) {
     		if(contentType == Content.EMPTY) {
     			return;
     		}
@@ -332,8 +335,6 @@ public class Message {
     			index = refs.get(contentType);
     		}
     		contentRefencencs.add(new NumberType(index, contentType));
-    		System.err.println("index: " + index + ", content: " + contentType);
-
     		refs.put(contentType, index + 1);
     	}
     	

@@ -103,10 +103,10 @@ public class PeerCreator {
             LOG.info("Visible address to other peers: " + self);
         }
 
-        Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher);
+        Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher, relaySender);
 
         NATUtils natUtils = new NATUtils();
-        connectionBean = new ConnectionBean(p2pId, dispatcher, sender, relaySender, channelServer, reservation,
+        connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
                 channelClientConfiguration, natUtils, timer);
         this.master = true;
     }

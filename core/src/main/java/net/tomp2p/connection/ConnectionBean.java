@@ -37,7 +37,6 @@ public class ConnectionBean {
     private final int p2pId;
     private final Dispatcher dispatcher;
     private final Sender sender;
-    private final RelaySender relaySender;
     private final ChannelServer channelServer;
     private final Reservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
@@ -65,13 +64,12 @@ public class ConnectionBean {
      * @param timer
      *            The timer for the discovery process
      */
-    public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Sender sender, final RelaySender relaySender,
+    public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Sender sender,
             final ChannelServer channelServer, final Reservation reservation,
             final ChannelClientConfiguration resourceConfiguration, final NATUtils natUtils, final Timer timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
         this.sender = sender;
-        this.relaySender = relaySender;
         this.channelServer = channelServer;
         this.reservation = reservation;
         this.resourceConfiguration = resourceConfiguration;
@@ -100,13 +98,6 @@ public class ConnectionBean {
         return sender;
     }
     
-    /**
-     * @return The relay sender object that creates sockets to relay peers
-     */
-    public RelaySender relaySender() {
-        return relaySender;
-    }
-
     /**
      * @return The channel server that listens on incoming connections
      */

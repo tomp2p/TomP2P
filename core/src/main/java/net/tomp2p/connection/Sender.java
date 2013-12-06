@@ -53,6 +53,7 @@ public class Sender {
     private final PeerStatusListener[] peerStatusListeners;
     private final ChannelClientConfiguration channelClientConfiguration;
     private final Dispatcher dispatcher;
+    private final RelaySender relaySender;
 
     private PingBuilder pingBuilder;
 
@@ -66,10 +67,11 @@ public class Sender {
      * @param dispatcher
      */
     public Sender(final PeerStatusListener[] peerStatusListeners,
-            final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
+            final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, RelaySender relaySender) {
         this.peerStatusListeners = peerStatusListeners;
         this.channelClientConfiguration = channelClientConfiguration;
         this.dispatcher = dispatcher;
+        this.relaySender = relaySender;
     }
     
     public ChannelClientConfiguration channelClientConfiguration() {

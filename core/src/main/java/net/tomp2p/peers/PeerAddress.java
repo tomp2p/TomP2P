@@ -265,7 +265,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = peerSocketAddress.getInetAddress() instanceof Inet6Address;
         this.firewalledUDP = firewalledUDP;
         this.firewalledTCP = firewalledTCP;
-        this.isRelay = false;
+        this.isRelay = isRelay;
         // header + TCP port + UDP port
         size += HEADER_SIZE + PORTS_SIZE + (net6 ? Utils.IPV6_BYTES : Utils.IPV4_BYTES);
         if (peerSocketAddresses == null) {

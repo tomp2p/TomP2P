@@ -430,10 +430,9 @@ public class AutomaticReplicationTest {
                 public void futureCreated(BaseFuture future) {
                     if(future instanceof FutureDone) {
                         final FutureDone<SynchronizationStatistics> f = (FutureDone<SynchronizationStatistics>) future;
-                        f.addListener(new BaseFutureAdapter<FutureDone<SynchronizationStatistics>>() {
-
+                        f.addListener(new BaseFutureAdapter<BaseFuture>() {
                             @Override
-                            public void operationComplete(FutureDone<SynchronizationStatistics> future)
+                            public void operationComplete(BaseFuture future)
                                     throws Exception {
                                 testCopied.set(f.getObject().dataCopy() == 71 || f.getObject().dataCopy() == 36 || f.getObject().dataCopy() == 76);
                                 latch.countDown();
@@ -477,9 +476,9 @@ public class AutomaticReplicationTest {
 
             Assert.assertArrayEquals(valueOfA, valueOfB);
             Assert.assertArrayEquals(valueOfA, valueOfC);
-            
-            Assert.assertEquals(true, testCopied.get());
             latch.await();
+            Assert.assertEquals(true, testCopied.get());
+            
             
         } finally {
             if (master != null) {

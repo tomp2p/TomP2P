@@ -18,8 +18,6 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.swing.plaf.basic.BasicSplitPaneUI.KeyboardDownRightHandler;
-
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.BaseFuture;
@@ -417,7 +415,7 @@ public class TestDHT {
             rc = new RoutingConfiguration(4, 0, 10, 1);
             pc = new RequestP2PConfiguration(4, 0, 0);
             FutureRemove frem = peers[222].remove(peers[30].getPeerID())
-                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
+                    .setDomainKey(Number160.createHash("test")).contentKey(new Number160(5))
                     .setRoutingConfiguration(rc).setRequestP2PConfiguration(pc).start();
             frem.awaitUninterruptibly();
             Assert.assertEquals(true, frem.isSuccess());
@@ -460,7 +458,7 @@ public class TestDHT {
             pc = new RequestP2PConfiguration(4, 0, 0);
 
             FutureRemove frem = peers[222].remove(peers[30].getPeerID()).setReturnResults()
-                    .setDomainKey(Number160.createHash("test")).setContentKey(new Number160(5))
+                    .setDomainKey(Number160.createHash("test")).contentKey(new Number160(5))
                     .setRoutingConfiguration(rc).setRequestP2PConfiguration(pc).start();
             frem.awaitUninterruptibly();
             Assert.assertEquals(true, frem.isSuccess());
@@ -1066,7 +1064,7 @@ public class TestDHT {
             fget.awaitUninterruptibly();
             Assert.assertEquals(2, fget.getDataMap().size());
             // test (step 3)
-            FutureRemove frem = p1.remove(n1).setContentKey(d2.hash()).start();
+            FutureRemove frem = p1.remove(n1).contentKey(d2.hash()).start();
             frem.awaitUninterruptibly();
             Assert.assertEquals(true, frem.isSuccess());
             fget = p2.get(n1).setAll().start();
@@ -1080,9 +1078,9 @@ public class TestDHT {
             fget.awaitUninterruptibly();
             Assert.assertEquals(2, fget.getDataMap().size());
             // test (remove all)
-            frem = p1.remove(n1).setContentKey(d1.hash()).start();
+            frem = p1.remove(n1).contentKey(d1.hash()).start();
             frem.awaitUninterruptibly();
-            frem = p1.remove(n1).setContentKey(d2.hash()).start();
+            frem = p1.remove(n1).contentKey(d2.hash()).start();
             frem.awaitUninterruptibly();
             fget = p2.get(n1).setAll().start();
             fget.awaitUninterruptibly();
@@ -1442,15 +1440,6 @@ public class TestDHT {
         return counter;
     }
 
-    private void setData(Peer peer, String location, String domain, String content, Data data)
-            throws IOException {
-        final Number160 locationKey = Number160.createHash(location);
-        final Number160 domainKey = Number160.createHash(domain);
-        final Number160 contentKey = Number160.createHash(content);
-        final Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
-        peer.getPeerBean().storage().put(key, data, null, false, false);
-    }
-
     private void send2(final Peer p1, final Peer p2, final ByteBuf toStore1, final int count)
             throws IOException {
         if (count == 0) {
@@ -1506,17 +1495,4 @@ public class TestDHT {
         } else
             Assert.assertEquals(0, test.size());
     }
-
-    private Peer[] createNodes(Peer master, int nr, Random rnd) throws Exception {
-        Peer[] peers = new Peer[nr];
-        for (int i = 0; i < nr; i++) {
-            peers[i] = new PeerMaker(new Number160(rnd)).p2pId(1).masterPeer(master).makeAndListen();
-        }
-        return peers;
-    }
-
-    private Peer[] createNodes(Peer master, int nr) throws Exception {
-        return createNodes(master, nr, rnd);
-    }
-
 }

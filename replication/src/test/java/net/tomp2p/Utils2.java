@@ -115,7 +115,7 @@ public class Utils2 {
 
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
             boolean replication) throws Exception {
-        return createNodes(nrOfPeers, rnd, port, automaticFuture, false, true);
+        return createNodes(nrOfPeers, rnd, port, automaticFuture, replication, false);
     }
 
     /**

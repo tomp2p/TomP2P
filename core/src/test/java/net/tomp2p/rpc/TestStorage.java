@@ -464,7 +464,7 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
+            
             putBuilder.setDataMapContent(tmp);
             putBuilder.setVersionKey(Number160.ZERO);
 
@@ -473,7 +473,7 @@ public class TestStorage {
             // remove
             RemoveBuilder removeBuilder = new RemoveBuilder(recv1, new Number160(33));
             removeBuilder.setDomainKey(Number160.createHash("test"));
-            removeBuilder.setContentKeys(tmp.keySet());
+            removeBuilder.contentKeys(tmp.keySet());
             removeBuilder.setReturnResults();
             removeBuilder.setVersionKey(Number160.ZERO);
             fr = smmSender.remove(recv1.getPeerAddress(), removeBuilder, cc);
@@ -483,6 +483,7 @@ public class TestStorage {
 
             // check for returned results
             Map<Number640, Data> stored = m.getDataMap(0).dataMap();
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             compare(dataMap.convertToMap640(), stored);
 
             // get

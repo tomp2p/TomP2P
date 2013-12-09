@@ -446,8 +446,15 @@ public class StorageRPC extends DispatchHandler {
         if (removeBuilder.isSignMessage()) {
             message.setPublicKeyAndSign(peerBean().getKeyPair());
         }
-
-        if (removeBuilder.getKeys() == null) {
+        
+        if (removeBuilder.to() != null && removeBuilder.from() != null) {
+            final Collection<Number640> keys = new ArrayList<Number640>(2);
+            keys.add(removeBuilder.from());
+            keys.add(removeBuilder.to());
+            //marker
+            message.setInteger(0);
+            message.setKeyCollection(new KeyCollection(keys));
+        } else if (removeBuilder.keys() == null) {
 
             if (removeBuilder.getLocationKey() == null || removeBuilder.getDomainKey() == null) {
                 throw new IllegalArgumentException("Null not allowed in location or domain");
@@ -455,12 +462,12 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(removeBuilder.getLocationKey());
             message.setKey(removeBuilder.getDomainKey());
 
-            if (removeBuilder.getContentKeys() != null) {
+            if (removeBuilder.contentKeys() != null) {
                 message.setKeyCollection(new KeyCollection(removeBuilder.getLocationKey(), removeBuilder
-                        .getDomainKey(), removeBuilder.getVersionKey(), removeBuilder.getContentKeys()));
+                        .getDomainKey(), removeBuilder.getVersionKey(), removeBuilder.contentKeys()));
             }
         } else {
-            message.setKeyCollection(new KeyCollection(removeBuilder.getKeys()));
+            message.setKeyCollection(new KeyCollection(removeBuilder.keys()));
         }
 
         final FutureResponse futureResponse = new FutureResponse(message);
@@ -711,7 +718,13 @@ public class StorageRPC extends DispatchHandler {
         final KeyCollection keys = message.getKeyCollection(0);
         final PublicKey publicKey = message.getPublicKey();
         final Map<Number640, Data> result;
-        if (keys != null) {
+        final Integer returnNr = message.getInteger(0);
+        //used as a marker for the moment
+        //final int limit = returnNr == null ? -1 : returnNr;
+        final boolean isRange = keys != null && returnNr != null;
+        final boolean isCollection = keys != null && returnNr == null;
+               
+        if (isCollection) {
             result = new HashMap<Number640, Data>(keys.size());
             for (Number640 key : keys.keys()) {
                 Data data = peerBean().storage().remove(key, publicKey);
@@ -719,7 +732,13 @@ public class StorageRPC extends DispatchHandler {
                     result.put(key, data);
                 }
             }
-        } else if (locationKey != null && domainKey != null) {
+        } else if(isRange) {
+            Iterator<Number640> iterator = keys.keys().iterator();
+            Number640 min = iterator.next();
+            Number640 max = iterator.next();
+            result = peerBean().storage().remove(min, max, publicKey);
+        }
+        else if (locationKey != null && domainKey != null) {
             Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
             Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
             result = peerBean().storage().remove(min, max, publicKey);

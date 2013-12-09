@@ -38,35 +38,39 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     private boolean all = false;
 
     private boolean returnResults = false;
+    
+    private Number640 from;
+
+    private Number640 to;
 
     public RemoveBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
     }
 
-    public Collection<Number160> getContentKeys() {
+    public Collection<Number160> contentKeys() {
         return contentKeys;
     }
 
-    public RemoveBuilder setContentKeys(Collection<Number160> contentKeys) {
+    public RemoveBuilder contentKeys(Collection<Number160> contentKeys) {
         this.contentKeys = contentKeys;
         return this;
     }
 
-    public Collection<Number640> getKeys() {
+    public Collection<Number640> keys() {
         return keys;
     }
 
-    public RemoveBuilder setKeys(Collection<Number640> keys) {
+    public RemoveBuilder keys(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }
 
-    public Number160 getContentKey() {
+    public Number160 contentKey() {
         return contentKey;
     }
 
-    public RemoveBuilder setContentKey(Number160 contentKey) {
+    public RemoveBuilder contentKey(Number160 contentKey) {
         this.contentKey = contentKey;
         return this;
     }
@@ -89,7 +93,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
         return returnResults;
     }
 
-    public RemoveBuilder setReturnResults(boolean returnResults) {
+    public RemoveBuilder returnResults(boolean returnResults) {
         this.returnResults = returnResults;
         return this;
     }
@@ -97,6 +101,28 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     public RemoveBuilder setReturnResults() {
         this.returnResults = true;
         return this;
+    }
+    
+    public RemoveBuilder from(Number640 from) {
+        this.from = from;
+        return this;
+    }
+
+    public Number640 from() {
+        return from;
+    }
+
+    public RemoveBuilder to(Number640 to) {
+        this.to = to;
+        return this;
+    }
+
+    public Number640 to() {
+        return to;
+    }
+
+    public boolean isRange() {
+        return from != null && to != null;
     }
 
     public FutureRemove start() {

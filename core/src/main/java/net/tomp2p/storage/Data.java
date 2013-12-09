@@ -71,7 +71,7 @@ public class Data {
     // can be added later
     private Number160 hash;
     private int ttlSeconds = -1;
-    private Number160 basedOn = Number160.ZERO;
+    private Number160 basedOn = null;
 
     // never serialized over the network in this object
     private final long validFromMillis;

@@ -305,7 +305,8 @@ public class StorageLayer {
         try {
             Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                digestInfo.put(entry.getKey(), entry.getValue().basedOn());
+                Number160 basedOn = entry.getValue().basedOn();
+                digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
             }
             return digestInfo;
         } finally {
@@ -324,7 +325,8 @@ public class StorageLayer {
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                 if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
                     if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-                        digestInfo.put(entry.getKey(), entry.getValue().basedOn());
+                        Number160 basedOn = entry.getValue().basedOn();
+                        digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
                     }
                 }
             }
@@ -341,27 +343,13 @@ public class StorageLayer {
             try {
                 if (backend.contains(number640)) {
                     Data data = get(number640);
-                    digestInfo.put(number640, data.basedOn());
+                    Number160 basedOn = data.basedOn();
+                    digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
                 }
             } finally {
                 lock.unlock();
             }
         }
-        return digestInfo;
-    }
-
-    public DigestInfo digest(Number640 key) {
-        DigestInfo digestInfo = new DigestInfo();
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            if (backend.contains(key)) {
-                Data data = get(key);
-                digestInfo.put(key, data.hash());
-            }
-        } finally {
-            lock.unlock();
-        }
-
         return digestInfo;
     }
 

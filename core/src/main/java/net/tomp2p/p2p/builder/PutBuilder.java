@@ -36,7 +36,6 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     private Map<Number160, Data> dataMapConvert;
 
-    //
     private boolean putIfAbsent = false;
 
     public PutBuilder(Peer peer, Number160 locationKey) {

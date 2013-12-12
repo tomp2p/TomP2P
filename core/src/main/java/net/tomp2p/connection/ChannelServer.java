@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -198,18 +199,25 @@ public final class ChannelServer {
         b.childHandler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) throws Exception {
+                // b.option(ChannelOption.SO_BACKLOG, BACKLOG);
+                bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
+                bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
                 for (Map.Entry<String, ChannelHandler> entry : handlers(true).entrySet()) {
                     ch.pipeline().addLast(entry.getKey(), entry.getValue());
                 }
-            }
+            }            
         });
-        // b.option(ChannelOption.SO_BACKLOG, BACKLOG);
-        b.childOption(ChannelOption.SO_LINGER, 0);
-        b.childOption(ChannelOption.TCP_NODELAY, true);
-
         ChannelFuture future = b.bind(listenAddresses);
         channelTCP = future.channel();
         return handleFuture(future);
+    }
+    
+    private static <T> void bestEffortOptions(final Channel ch, ChannelOption<T> option, T value) {
+        try {
+            ch.config().setOption(option, value);
+        } catch (ChannelException e) {
+            // Ignore
+        }
     }
 
     /**

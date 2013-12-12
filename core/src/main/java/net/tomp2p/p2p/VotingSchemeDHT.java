@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -30,6 +32,9 @@ import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public class VotingSchemeDHT implements EvaluatingSchemeDHT {
+    
+    private static final NavigableMap<Number640, Number160> emptyMap = new TreeMap<Number640, Number160>();
+    
     @Override
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeysByte) {
         Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
@@ -127,7 +132,9 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
 
     @Override
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest) {
-        return evaluate0(rawDigest);
+        DigestResult retVal =  evaluate0(rawDigest);
+        //if its null, we know that we did not get any results. In order to return null, we return and empty digest result.
+        return retVal == null ? new DigestResult(emptyMap):retVal;
     }
 
     private static <K> K evaluate0(Map<PeerAddress, K> raw) {

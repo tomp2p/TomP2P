@@ -618,6 +618,38 @@ public class TestDHT {
             }
         }
     }
+    
+    @Test
+    public void removeTest() throws IOException, ClassNotFoundException {
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(true).ports(5000)
+                .makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(true).masterPeer(p1)
+                .makeAndListen();
+
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+
+        String locationKey = "location";
+        String contentKey = "content";
+
+        String data = "testme";
+        // data.generateVersionKey();
+
+        p2.put(Number160.createHash(locationKey)).setData(Number160.createHash(contentKey), new Data(data))
+                .setVersionKey(Number160.ONE).start().awaitUninterruptibly();
+
+        FutureRemove futureRemove = p1.remove(Number160.createHash(locationKey)).setDomainKey(Number160.ZERO)
+                .contentKey(Number160.createHash(contentKey)).setVersionKey(Number160.ONE).start();
+        futureRemove.awaitUninterruptibly();
+
+        FutureDigest futureDigest = p1.digest(Number160.createHash(locationKey)).setDomainKey(Number160.ZERO)
+                .setContentKey(Number160.createHash(contentKey)).setVersionKey(Number160.ONE).start();
+        futureDigest.awaitUninterruptibly();
+
+        Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
 
     @Test
     public void testDigest2() throws Exception {

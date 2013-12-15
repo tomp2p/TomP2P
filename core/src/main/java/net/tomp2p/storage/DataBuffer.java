@@ -6,22 +6,18 @@ import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class DataBuffer {
 
     private final List<ByteBuffer> buffers;
-    private final List<Integer> marks;
 
     private int alreadyTransferred = 0;
     private int bufferSize = 0;
 
     public DataBuffer(final byte[] buffer) {
         buffers = new ArrayList<ByteBuffer>(1);
-        marks = new ArrayList<Integer>(1);
         buffers.add(ByteBuffer.wrap(buffer));
-        marks.add(0);
     }
 
     public DataBuffer(final ByteBuf buf) {
@@ -31,28 +27,21 @@ public class DataBuffer {
             throw new IllegalArgumentException("cannot convert this netty buffer");
         }
         buffers = new ArrayList<ByteBuffer>(len);
-        marks = new ArrayList<Integer>(len);
         for (int i = 0; i < len; i++) {
             buffers.add(byteBuffers[i]);
-            marks.add(byteBuffers[i].position());
         }
     }
 
     public DataBuffer() {
         buffers = new ArrayList<ByteBuffer>(1);
-        marks = new ArrayList<Integer>(1);
     }
 
-    private DataBuffer(final List<ByteBuffer> buffers, final List<Integer> marks) {
+    private DataBuffer(final List<ByteBuffer> buffers) {
         final int len = buffers.size();
         this.buffers = new ArrayList<ByteBuffer>(len);
-        this.marks = new ArrayList<Integer>(marks);
-        final Iterator<ByteBuffer> iterator1 = buffers.iterator();
-        final Iterator<Integer> iterator2 = marks.iterator();
-        while (iterator1.hasNext() && iterator2.hasNext()) {
-            ByteBuffer buffer = iterator1.next().duplicate();
-            this.buffers.add(buffer);
-            buffer.position(iterator2.next());
+        for(ByteBuffer buffer : buffers) {
+            ByteBuffer buffer2 = buffer.duplicate();
+            this.buffers.add(buffer2);
         }
     }
 
@@ -68,13 +57,14 @@ public class DataBuffer {
     // from here, work with shallow copies
     public DataBuffer shallowCopy() {
         synchronized (buffers) {
-            return new DataBuffer(buffers, marks);
+            DataBuffer db = new DataBuffer(buffers);
+            return db;
         }
     }
 
     public ByteBuf toByteBuffer() {
         synchronized (buffers) {
-            return Unpooled.wrappedBuffer(shallowCopy().buffers.toArray(new ByteBuffer[0]));
+            return Unpooled.copiedBuffer(shallowCopy().buffers.toArray(new ByteBuffer[0]));
         }
     }
 
@@ -85,40 +75,71 @@ public class DataBuffer {
      *            The CompositeByteBuf, where the data from this buffer is trasfered to
      */
     public void transferTo(final CompositeByteBuf buf) {
-        // set the capacity of the last buffer, otherwise it will be filled with 0
-        buf.capacity(buf.writerIndex());
+        
+        //check if we have something stored in the last one, if not, get rid of it.
+        final int lastIndex = buf.numComponents() - 1;
+        ByteBuf last = null;
+        if(lastIndex>=0) {
+            last = buf.component(lastIndex);
+            if(!last.isReadable()) {
+                buf.removeComponent(lastIndex);
+            } else {
+            // set the capacity of the last buffer, otherwise it will be filled with 0
+                last.capacity(buf.writerIndex());
+                // create new last to be appended as we otherwise may overwrite the ByteBuffers
+                last = Unpooled.buffer(0, Integer.MAX_VALUE);
+            }
+        } else {
+            last = Unpooled.buffer(0, Integer.MAX_VALUE);
+        }
+        
         // TODO: add component only if we have enough bytes, otherwise copy.
         final DataBuffer copy = shallowCopy();
         for (ByteBuffer buffer : copy.bufferList()) {
-            buf.addComponent(Unpooled.wrappedBuffer(buffer));
-            int size = buffer.limit() - buffer.position();
+            //buf.addComponent(Unpooled.wrappedBuffer(buffer));
+            buf.addComponent(Unpooled.copiedBuffer(buffer));
+            int size = buffer.remaining();
             buf.writerIndex(buf.writerIndex() + size);
             alreadyTransferred += size;
+            /*buffer.rewind();
+            int read  = buffer.capacity();
+            //buffer.limit(read);
+            byte me[] = new byte[5];
+            buffer.get(me);
+            System.err.println("send array ("+System.identityHashCode(buffer)+"): "+Arrays.toString(me));*/
         }
+        buf.addComponent(last);
     }
 
     public int transferFrom(final ByteBuf buf, final int remaining) {
-        int size = 0;
+        final int readable = buf.readableBytes();
+        final int index = buf.readerIndex();
+        final int length = Math.min(remaining, readable);
+        //final ByteBuffer[] byteBuffers = buf.nioBuffers(index, length);
         final ByteBuffer[] byteBuffers = buf.nioBuffers();
         final int len = byteBuffers.length;
         if (len < 1) {
             throw new IllegalArgumentException("Buffer count must >= 1.");
         }
-
-        for (int i = 0; i < len && size < remaining; i++) {
-            int toTransfer = byteBuffers[i].limit() - byteBuffers[i].position();
-            if (size + toTransfer > remaining) {
-                byteBuffers[i].limit(byteBuffers[i].limit() - (size + toTransfer - remaining));
-            }
+        for (int i = 0; i < len ; i++) {
+            ByteBuffer byteBuffer = byteBuffers[i];
+            byteBuffer.limit(length);
             synchronized (buffers) {
-                buffers.add(byteBuffers[i]);
-                marks.add(byteBuffers[i].position());
+                buffers.add(byteBuffer);
             }
-            size += byteBuffers[i].limit() - byteBuffers[i].position();
+            
+            /*byte me[] = new byte[Math.min(5, length)];
+            byteBuffer.get(me);
+            byteBuffer.rewind();
+            System.err.print("make array ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
+            if(buffers.size()==1 && me[0] != -84) {
+                System.err.println("WTF?");
+            }*/
+            
         }
-        alreadyTransferred += size;
-        buf.readerIndex(buf.readerIndex() + size);
-        return size;
+        alreadyTransferred += length;
+        buf.readerIndex(buf.readerIndex() + length);
+        return length;
     }
 
     public int addBuf(final ByteBuf buf) {
@@ -132,7 +153,6 @@ public class DataBuffer {
             currentSize += size;
             synchronized (buffers) {
                 buffers.add(buffer);
-                marks.add(pos);
             }
         }
         buf.readerIndex(buf.readerIndex() + currentSize);

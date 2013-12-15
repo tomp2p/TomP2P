@@ -1,6 +1,7 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.DecoderException;
@@ -38,7 +39,12 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
         try {
             if (cumulation == null) {
-                cumulation = buf;
+                //cumulation = buf;
+                //TODO: changing this to directBuffer or uncommenting the above line, causes a StreamCorruption. I'm not sure where the direct buffer gets overwritten
+                cumulation = Unpooled.buffer(buf.readableBytes());
+                cumulation.writeBytes(buf);
+                buf.release();
+                //end of TODO
                 try {
                     decoding(ctx, sender);
                 } catch (Throwable t) {
@@ -53,7 +59,10 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
                 try {
                     if (cumulation.writerIndex() > cumulation.maxCapacity() - buf.readableBytes()) {
                         ByteBuf oldCumulation = cumulation;
-                        cumulation = ctx.alloc().buffer(oldCumulation.readableBytes() + buf.readableBytes());
+                        //TODO: direct buffer get somewhere overwritten
+                        //cumulation = ctx.alloc().buffer(oldCumulation.readableBytes() + buf.readableBytes());
+                        cumulation = Unpooled.buffer(oldCumulation.readableBytes() + buf.readableBytes());
+                        //end of TODO
                         cumulation.writeBytes(oldCumulation);
                         oldCumulation.release();
                     }
@@ -64,7 +73,8 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
                         cumulation.release();
                         cumulation = null;
                     } else {
-                        cumulation.discardSomeReadBytes();
+                        // TODO: not sure if we can use discard here if we want to keep data in the Data object
+                        //cumulation.discardSomeReadBytes();
                     }
                     buf.release();
                 }

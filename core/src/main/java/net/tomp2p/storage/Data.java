@@ -485,10 +485,9 @@ public class Data {
         if (remaining == 0) {
             return true;
         }
-        // make sure it gets not garbage collected
-        buf.retain();
-        // but we need to keep track of it and when this object gets collected, we need to release the buffer
-        releasing.add(buf);
+        // make sure it gets not garbage collected. But we need to keep track of it and when this object gets collected,
+        // we need to release the buffer
+        releasing.add(buf.retain());
         final int transfered = buffer.transferFrom(buf, remaining);
         return transfered == remaining;
     }

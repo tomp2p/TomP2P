@@ -1480,9 +1480,9 @@ public class TestDHT {
         }
         Buffer b = new Buffer(toStore1);
         FutureDirect fd = p1.sendDirect(p2.getPeerAddress()).setBuffer(b).start();
-        fd.addListener(new BaseFutureAdapter<FutureResponse>() {
+        fd.addListener(new BaseFutureAdapter<FutureDirect>() {
             @Override
-            public void operationComplete(FutureResponse future) throws Exception {
+            public void operationComplete(FutureDirect future) throws Exception {
                 if (future.isFailed()) {
                     // System.err.println(future.getFailedReason());
                     send2(p1, p2, toStore1, count - 1);
@@ -1498,9 +1498,9 @@ public class TestDHT {
             return;
         }
         FutureDirect fd = p1.sendDirect(p2.getPeerAddress()).setObject(toStore1).start();
-        fd.addListener(new BaseFutureAdapter<FutureResponse>() {
+        fd.addListener(new BaseFutureAdapter<FutureDirect>() {
             @Override
-            public void operationComplete(FutureResponse future) throws Exception {
+            public void operationComplete(FutureDirect future) throws Exception {
                 if (future.isFailed()) {
                     // System.err.println(future.getFailedReason());
                     send1(p1, p2, toStore1, count - 1);

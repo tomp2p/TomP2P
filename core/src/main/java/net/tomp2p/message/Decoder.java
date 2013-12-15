@@ -116,7 +116,8 @@ public class Decoder {
             boolean donePayload = decodePayload(buf);
             verifySignature(byteBuffers, pos, donePayload);
             // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
-            buf.discardSomeReadBytes();
+            // TODO: not sure if we can use discard here if we want to keep data in the Data object
+            //buf.discardSomeReadBytes();
             return donePayload;
 
         } catch (Exception e) {

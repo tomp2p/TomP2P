@@ -295,7 +295,8 @@ public class Utils {
         return obj;
     }
 
-    public static Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+    public static synchronized Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+        
         List<ByteBuffer> buffers = dataBuffer.shallowCopy().bufferList();
         int count = buffers.size();
         Vector<InputStream> is = new Vector<InputStream>(count);
@@ -304,6 +305,30 @@ public class Utils {
         }
         SequenceInputStream sis = new SequenceInputStream(is.elements());
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sis));
+        //TODO: investigate this issue
+        /*ObjectInputStream ois = null;
+        try {
+         ois = new ObjectInputStream(new BufferedInputStream(sis));
+        } catch (Throwable t) {
+            for (ByteBuffer byteBuffer : buffers) {
+                byteBuffer.rewind();
+                int read  = byteBuffer.capacity();
+                byteBuffer.limit(read);
+                byte me[] = new byte[read];
+                byteBuffer.get(me);
+                System.err.println("wrong array1 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
+                
+                if(dataBuffer.test!=null) {
+                dataBuffer.test.readerIndex(0);
+                dataBuffer.test.writerIndex(dataBuffer.test.capacity());
+                me = new byte[dataBuffer.test.readableBytes()];
+                dataBuffer.test.readBytes(me);
+                System.err.println("wrong array2 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
+                }
+                
+            }
+            t.printStackTrace();
+        }*/
         Object obj = ois.readObject();
         ois.close();
         return obj;

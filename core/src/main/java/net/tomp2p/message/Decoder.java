@@ -87,11 +87,6 @@ public class Decoder {
 
         // store positions for the verification
         ByteBuffer[] byteBuffers = buf.nioBuffers();
-        int len = byteBuffers.length;
-        int[] pos = new int[len];
-        for (int i = 0; i < len; i++) {
-            pos[i] = byteBuffers[i].position();
-        }
 
         try {
             // set the sender of this message for handling timeout
@@ -114,7 +109,7 @@ public class Decoder {
             }
 
             boolean donePayload = decodePayload(buf);
-            verifySignature(byteBuffers, pos, donePayload);
+            verifySignature(byteBuffers, donePayload);
             // see https://github.com/netty/netty/issues/1976 (TODO: enable again in 4.0.13)
             // TODO: not sure if we can use discard here if we want to keep data in the Data object
             //buf.discardSomeReadBytes();
@@ -127,13 +122,13 @@ public class Decoder {
         }
     }
 
-    private void verifySignature(final ByteBuffer[] byteBuffers, final int[] pos, final boolean donePayload)
+    private void verifySignature(final ByteBuffer[] byteBuffers, final boolean donePayload)
             throws SignatureException, IOException {
         final int len = byteBuffers.length;
         if (message.isSign()) {
             for (int i = 0; i < len; i++) {
                 // since we read the bytebuffer, the nio buffer also has a
-                byteBuffers[i].position(pos[i]);
+                byteBuffers[i].rewind();
                 if (donePayload && i + 1 == len) {
                     byteBuffers[i].limit(byteBuffers[i].limit()
                             - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE));

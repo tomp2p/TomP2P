@@ -31,8 +31,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
 
     private boolean expectAttachement = false;
 
-    private boolean signMessage = false;
-
     private boolean useSecondaryTrackers = false;
 
     public GetTrackerBuilder(Peer peer, Number160 locationKey) {
@@ -62,20 +60,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
 
     public GetTrackerBuilder setExpectAttachement(boolean expectAttachement) {
         this.expectAttachement = expectAttachement;
-        return this;
-    }
-
-    public boolean isSignMessage() {
-        return signMessage;
-    }
-
-    public GetTrackerBuilder setSignMessage() {
-        this.signMessage = true;
-        return this;
-    }
-
-    public GetTrackerBuilder setSignMessage(boolean signMessage) {
-        this.signMessage = signMessage;
         return this;
     }
 

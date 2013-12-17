@@ -16,6 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.security.KeyPair;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -31,7 +33,8 @@ import net.tomp2p.peers.Number160;
  * 
  * @param <K>
  */
-public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnectionConfiguration implements BasicBuilder<K>, ConnectionConfiguration {
+public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnectionConfiguration implements
+        BasicBuilder<K>, ConnectionConfiguration, SignatureBuilder<K> {
     // changed this to zero as for the content key its also zero
 
     protected final Peer peer;
@@ -39,7 +42,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     protected final Number160 locationKey;
 
     protected Number160 domainKey;
-    
+
     protected Number160 versionKey;
 
     protected RoutingConfiguration routingConfiguration;
@@ -47,16 +50,17 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     protected RequestP2PConfiguration requestP2PConfiguration;
 
     protected FutureChannelCreator futureChannelCreator;
-    
-    //private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    //private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
-    //private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+
+    // private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
+    // private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+    // private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 
     private boolean protectDomain = false;
-    private boolean signMessage = false;
+    // private boolean signMessage = false;
+    private KeyPair keyPair = null;
     private boolean streaming = false;
-    //private boolean forceUDP = false;
-    //private boolean forceTCP = false;
+    // private boolean forceUDP = false;
+    // private boolean forceTCP = false;
 
     private K self;
 
@@ -79,16 +83,16 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     public Number160 getDomainKey() {
         return domainKey;
     }
-    
+
     public K setDomainKey(Number160 domainKey) {
         this.domainKey = domainKey;
         return self;
     }
-    
+
     public Number160 getVersionKey() {
         return versionKey;
     }
-    
+
     public K setVersionKey(Number160 versionKey) {
         this.versionKey = versionKey;
         return self;
@@ -126,7 +130,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     public K setRequestP2PConfiguration(final RequestP2PConfiguration requestP2PConfiguration) {
         this.requestP2PConfiguration = requestP2PConfiguration;
         return self;
-    }    
+    }
 
     /**
      * @return The future of the created channel
@@ -144,7 +148,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         this.futureChannelCreator = futureChannelCreator;
         return self;
     }
-    
+
     /**
      * @return Set to true if the domain should be set to protected. This means that this domain is flagged an a public
      *         key is stored for this entry. An update or removal can only be made with the matching private key.
@@ -174,29 +178,51 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         return self;
     }
 
-    /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+    /* (non-Javadoc)
+     * @see net.tomp2p.p2p.builder.SignatureBuilder#isSignMessage()
      */
+    @Override
     public boolean isSignMessage() {
-        return signMessage;
+        return keyPair != null;
     }
 
-    /**
-     * @param signMessage
-     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     * @return This class
+    /* (non-Javadoc)
+     * @see net.tomp2p.p2p.builder.SignatureBuilder#setSignMessage(boolean)
      */
+    @Override
     public K setSignMessage(final boolean signMessage) {
-        this.signMessage = signMessage;
+        if (signMessage) {
+            setSignMessage();
+        } else {
+            this.keyPair = null;
+        }
         return self;
     }
 
-    /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+    /* (non-Javadoc)
+     * @see net.tomp2p.p2p.builder.SignatureBuilder#setSignMessage()
      */
+    @Override
     public K setSignMessage() {
-        this.signMessage = true;
+        this.keyPair = peer.getPeerBean().keyPair();
         return self;
+    }
+    
+    /* (non-Javadoc)
+     * @see net.tomp2p.p2p.builder.SignatureBuilder#keyPair(java.security.KeyPair)
+     */
+    @Override
+    public K keyPair(KeyPair keyPair) {
+        this.keyPair = keyPair;
+        return self;
+    }
+
+    /* (non-Javadoc)
+     * @see net.tomp2p.p2p.builder.SignatureBuilder#keyPair()
+     */
+    @Override
+    public KeyPair keyPair() {
+        return keyPair;
     }
 
     /**
@@ -228,6 +254,8 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         return self;
     }
 
+    
+
     protected void preBuild(String name) {
         if (domainKey == null) {
             domainKey = Number160.ZERO;
@@ -248,7 +276,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
                     .create(routingConfiguration, requestP2PConfiguration, this);
         }
     }
-    
+
     public RoutingBuilder createBuilder(RequestP2PConfiguration requestP2PConfiguration,
             RoutingConfiguration routingConfiguration) {
         RoutingBuilder routingBuilder = new RoutingBuilder();

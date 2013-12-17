@@ -198,7 +198,7 @@ public class StorageRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, PUT_COMMAND, type);
 
         if (putBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(putBuilder.keyPair());
         }
 
         message.setDataMap(dataMap);
@@ -279,7 +279,7 @@ public class StorageRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, ADD_COMMAND, type);
 
         if (addBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(addBuilder.keyPair());
         }
 
         message.setDataMap(new DataMap(addBuilder.getLocationKey(), addBuilder.getDomainKey(), addBuilder
@@ -312,7 +312,7 @@ public class StorageRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, DIGEST_COMMAND, type);
 
         if (getBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(getBuilder.keyPair());
         }
 
         if (getBuilder.to() != null && getBuilder.from() != null) {
@@ -372,7 +372,7 @@ public class StorageRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, GET_COMMAND, type);
 
         if (getBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(getBuilder.keyPair());
         }
 
         if (getBuilder.to() != null && getBuilder.from() != null) {
@@ -444,7 +444,7 @@ public class StorageRPC extends DispatchHandler {
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 
         if (removeBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(removeBuilder.keyPair());
         }
         
         if (removeBuilder.to() != null && removeBuilder.from() != null) {

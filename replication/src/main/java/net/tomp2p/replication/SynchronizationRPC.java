@@ -89,7 +89,7 @@ public class SynchronizationRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, INFO_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
         }
 
         KeyMap640 keyMap = new KeyMap640(synchronizationBuilder.dataMapHash());
@@ -120,7 +120,7 @@ public class SynchronizationRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+            message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
         }
 
         DataMap dataMap = synchronizationBuilder.dataMap();

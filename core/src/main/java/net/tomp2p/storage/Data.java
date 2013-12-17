@@ -355,15 +355,9 @@ public class Data {
         return buffer.toByteBuffer();
     }
 
-    private static Object lock = new Object();
-
     public Object object() throws ClassNotFoundException, IOException {
-        DataBuffer dataBuffer;
-        synchronized (lock) {
-            dataBuffer = buffer.shallowCopy();
-        }
+        DataBuffer dataBuffer = buffer.shallowCopy();
         return Utils.decodeJavaObject(dataBuffer);
-
     }
 
     public long validFromMillis() {

@@ -160,32 +160,4 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
         }
         return best;
     }
-    
-    @Override
-    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawKeysByte) {
-        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
-        Set<Number640> result = new HashSet<Number640>();
-
-        int size = rawKeysByte == null ? 0 : rawKeysByte.size();
-        int majority = (size + 1) / 2;
-
-        if (rawKeysByte != null) {
-            for (PeerAddress address : rawKeysByte.keySet()) {
-                Collection<Number640> keys480 = rawKeysByte.get(address).keySet();
-                if (keys480 != null) {
-                    for (Number640 key : keys480) {
-                        int c = 1;
-                        Integer count = counter.get(key);
-                        if (count != null)
-                            c = count + 1;
-                        counter.put(key, c);
-                        if (c >= majority)
-                            result.add(key);
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
 }

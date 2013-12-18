@@ -182,7 +182,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      * @see net.tomp2p.p2p.builder.SignatureBuilder#isSignMessage()
      */
     @Override
-    public boolean isSignMessage() {
+    public boolean isSign() {
         return keyPair != null;
     }
 
@@ -190,9 +190,9 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      * @see net.tomp2p.p2p.builder.SignatureBuilder#setSignMessage(boolean)
      */
     @Override
-    public K setSignMessage(final boolean signMessage) {
+    public K sign(final boolean signMessage) {
         if (signMessage) {
-            setSignMessage();
+            setSign();
         } else {
             this.keyPair = null;
         }
@@ -203,7 +203,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      * @see net.tomp2p.p2p.builder.SignatureBuilder#setSignMessage()
      */
     @Override
-    public K setSignMessage() {
+    public K setSign() {
         this.keyPair = peer.getPeerBean().keyPair();
         return self;
     }

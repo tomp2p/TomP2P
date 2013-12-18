@@ -16,12 +16,17 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+
+import net.tomp2p.p2p.PeerMaker;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,5 +64,33 @@ public class DefaultSignatureFactory implements SignatureFactory {
             LOG.error("wrong keyspec", e);
             return null;
         }
+    }
+
+    @Override
+    public PublicKey decodePublicKey(ByteBuf buf) {
+        if (buf.readableBytes() < 2) {
+            return null;
+        }
+        int len = buf.getUnsignedShort(buf.readerIndex());
+
+        if (buf.readableBytes() - 2 < len) {
+            return null;
+        }
+        buf.skipBytes(2);
+        
+        if (len <=0) {
+            return PeerMaker.EMPTY_PUBLICKEY;
+        }
+        
+        byte me[] = new byte[len];
+        buf.readBytes(me);
+        return decodePublicKey(me);
+    }
+
+    @Override
+    public void encodePublicKey(PublicKey publicKey, CompositeByteBuf buf) {
+        byte[] data = publicKey.getEncoded();
+        buf.writeShort(data.length);
+        buf.writeBytes(data);
     }
 }

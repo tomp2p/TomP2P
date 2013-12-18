@@ -25,6 +25,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.tomp2p.connection.DefaultSignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
@@ -59,7 +61,7 @@ public class Data {
     private final boolean isProtectedEntry;
 
     // these flags can be modified
-    private boolean hasVersion;
+    private boolean hasBasedOn;
     private boolean hasHash;
     private boolean hasTTL;
 
@@ -77,6 +79,7 @@ public class Data {
     private final long validFromMillis;
     private Number160 peerId;
     private AtomicReference<PublicKey> publicKeyReference;
+    private SignatureFactory signatureFactory;
 
     /**
      * Create a data object that does have the complete data.
@@ -95,7 +98,7 @@ public class Data {
     public Data(final DataBuffer buffer, final int length, final Number160 basedOn, final int ttlSeconds,
             final boolean hasHash, final boolean isProtectedEntry, final boolean isFlag1,
             final boolean isFlag2) {
-        this.hasVersion = basedOn != null;
+        this.hasBasedOn = basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
@@ -125,7 +128,7 @@ public class Data {
     public Data(final int header, final int length) {
         this.isFlag1 = isFlag1(header);
         this.isFlag2 = isFlag2(header);
-        this.hasVersion = hasVersion(header);
+        this.hasBasedOn = hasBasedOn(header);
         this.hasHash = hasHash(header);
         this.hasTTL = hasTTL(header);
         this.isProtectedEntry = isProtectedEntry(header);
@@ -146,6 +149,10 @@ public class Data {
 
     public Data(final Object object) throws IOException {
         this(Utils.encodeJavaObject(object));
+    }
+
+    public Data(final Object object, boolean isProtectedEntry) throws IOException {
+        this(Utils.encodeJavaObject(object), null, 0, false, isProtectedEntry);
     }
 
     /**
@@ -214,7 +221,7 @@ public class Data {
     public Data(final byte[] buffer, final int offest, final int length, final Number160 basedOn,
             final int ttlSeconds, final boolean hasHash, final boolean isProtectedEntry,
             final boolean isFlag1, final boolean isFlag2) {
-        this.hasVersion = basedOn != null;
+        this.hasBasedOn = basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
         this.isProtectedEntry = isProtectedEntry;
@@ -234,6 +241,14 @@ public class Data {
         this.basedOn = basedOn;
     }
 
+    private static boolean hasEnoughDataForPublicKey(final ByteBuf buf, final int toRead) {
+        final int len = buf.getUnsignedShort(buf.readerIndex() + toRead - 2);
+        if (len > 0 && buf.readableBytes() < toRead + len) {
+            return false;
+        }
+        return true;
+    }
+
     /**
      * Reads the header. Does not modify the buffer positions if header could not be fully read.
      * 
@@ -241,33 +256,52 @@ public class Data {
      *            The buffer to read from
      * @return The data object, may be partially filled
      */
-    public static Data decodeHeader(final ByteBuf buf) {
-        if (buf.readableBytes() < 1 + 1) {
+    public static Data decodeHeader(final ByteBuf buf, final SignatureFactory signatureFactory) {
+        // 2 is the smallest packet size, we could start if we know 1 byte to decode the header, but we need always need
+        // a second byte. Thus, we are waiting for at least 2 bytes.
+        if (buf.readableBytes() < Utils.BYTE_SIZE + Utils.BYTE_SIZE) {
             return null;
         }
         final int header = buf.getUnsignedByte(buf.readerIndex());
         final Data.Type type = Data.type(header);
         final int len;
+        final int toRead;
         final int meta = (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0)
-                + (hasVersion(header) ? Utils.INTEGER_BYTE_SIZE : 0);
+                + (hasBasedOn(header) ? Number160.BYTE_ARRAY_SIZE : 0) + (isProtectedEntry(header) ? 2 : 0);
+        // final int meta2 = ;
         switch (type) {
         case SMALL:
-            if (buf.readableBytes() < meta + Utils.BYTE_SIZE + Utils.BYTE_SIZE) {
+            toRead = meta + Utils.BYTE_SIZE + Utils.BYTE_SIZE;
+            if (buf.readableBytes() < toRead) {
                 return null;
             }
-            len = buf.skipBytes(1).readUnsignedByte();
+            // read the length of the public key
+            if (isProtectedEntry(header) && !hasEnoughDataForPublicKey(buf, toRead)) {
+                return null;
+            }
+            len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedByte();
             break;
         case MEDIUM:
-            if (buf.readableBytes() < meta + Utils.SHORT_BYTE_SIZE + Utils.BYTE_SIZE) {
+            toRead = meta + Utils.SHORT_BYTE_SIZE + Utils.BYTE_SIZE;
+            if (buf.readableBytes() < toRead) {
                 return null;
             }
-            len = buf.skipBytes(1).readUnsignedShort();
+            // read the length of the public key
+            if (isProtectedEntry(header) && !hasEnoughDataForPublicKey(buf, toRead)) {
+                return null;
+            }
+            len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedShort();
             break;
         case LARGE:
-            if (buf.readableBytes() < meta + Utils.INTEGER_BYTE_SIZE + Utils.BYTE_SIZE) {
+            toRead = meta + Utils.INTEGER_BYTE_SIZE + Utils.BYTE_SIZE;
+            if (buf.readableBytes() < toRead) {
                 return null;
             }
-            len = buf.skipBytes(1).readInt();
+            // read the length of the public key
+            if (isProtectedEntry(header) && !hasEnoughDataForPublicKey(buf, toRead)) {
+                return null;
+            }
+            len = buf.skipBytes(Utils.BYTE_SIZE).readInt();
             break;
         default:
             throw new IllegalArgumentException("unknown type");
@@ -276,10 +310,14 @@ public class Data {
         if (data.hasTTL) {
             data.ttlSeconds = buf.readInt();
         }
-        if (data.hasVersion) {
+        if (data.hasBasedOn) {
             byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
             buf.readBytes(me);
             data.basedOn = new Number160(me);
+        }
+        if (data.isProtectedEntry) {
+            PublicKey publicKey = signatureFactory.decodePublicKey(buf);
+            data.publicKey(new AtomicReference<PublicKey>(publicKey));
         }
         return data;
     }
@@ -313,7 +351,7 @@ public class Data {
         if (hasHash) {
             header |= 0x40;
         }
-        if (hasVersion) {
+        if (hasBasedOn) {
             header |= 0x80;
         }
 
@@ -336,8 +374,15 @@ public class Data {
         if (hasTTL) {
             buf.writeInt(ttlSeconds);
         }
-        if (hasVersion) {
+        if (hasBasedOn) {
             buf.writeBytes(basedOn.toByteArray());
+        }
+        if (isProtectedEntry) {
+            if (publicKeyReference == null) {
+                buf.writeShort(0);
+            } else {
+                signatureFactory().encodePublicKey(publicKeyReference.get(), buf);
+            }
         }
         buffer.transferTo(buf);
     }
@@ -400,7 +445,7 @@ public class Data {
 
     public Data basedOn(Number160 basedOn) {
         this.basedOn = basedOn;
-        this.hasVersion = true;
+        this.hasBasedOn = true;
         return this;
     }
 
@@ -421,7 +466,20 @@ public class Data {
         return this;
     }
 
-    public boolean protectedEntry() {
+    public SignatureFactory signatureFactory() {
+        if (signatureFactory == null) {
+            return new DefaultSignatureFactory();
+        } else {
+            return signatureFactory;
+        }
+    }
+
+    public Data signatureFactory(SignatureFactory signatureFactory) {
+        this.signatureFactory = signatureFactory;
+        return this;
+    }
+
+    public boolean isProtectedEntry() {
         return isProtectedEntry;
     }
 
@@ -498,8 +556,7 @@ public class Data {
      */
     public Data duplicate() {
         return new Data(buffer.shallowCopy(), length, basedOn, ttlSeconds, hasHash, isProtectedEntry,
-                isFlag1, isFlag2);
-
+                isFlag1, isFlag2).publicKey(publicKeyReference).signatureFactory(signatureFactory);
     }
 
     public static Type type(final int header) {
@@ -526,7 +583,7 @@ public class Data {
         return (header & 0x40) > 0;
     }
 
-    private static boolean hasVersion(final int header) {
+    private static boolean hasBasedOn(final int header) {
         return (header & 0x80) > 0;
     }
 
@@ -547,7 +604,7 @@ public class Data {
         BitSet bs = new BitSet(4);
         bs.set(0, hasHash);
         bs.set(1, hasTTL);
-        bs.set(2, hasVersion);
+        bs.set(2, hasBasedOn);
         bs.set(3, isProtectedEntry);
         int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
         if (basedOn != null) {
@@ -566,7 +623,7 @@ public class Data {
             return true;
         }
         Data d = (Data) obj;
-        if (d.hasHash != hasHash || d.hasTTL != hasTTL || d.hasVersion != hasVersion
+        if (d.hasHash != hasHash || d.hasTTL != hasTTL || d.hasBasedOn != hasBasedOn
                 || d.isProtectedEntry != isProtectedEntry) {
             return false;
         }

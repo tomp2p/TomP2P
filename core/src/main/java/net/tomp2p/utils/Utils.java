@@ -58,6 +58,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.TrackerData;
+import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -581,7 +582,7 @@ public class Utils {
 
     public static boolean checkEntryProtection(Map<?, Data> dataMap) {
         for (Data data : dataMap.values()) {
-            if (data.protectedEntry()) {
+            if (data.isProtectedEntry()) {
                 return true;
             }
         }
@@ -857,6 +858,14 @@ public class Utils {
             }
         }
         return true;
+    }
+
+    public static int dataSize(PutBuilder putBuilder) {
+        if(putBuilder.getDataMap()!=null) {
+            return putBuilder.getDataMap().size();
+        } else { 
+            return putBuilder.getDataMapContent().size();
+        }
     }
 
 }

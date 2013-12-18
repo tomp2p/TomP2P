@@ -197,7 +197,7 @@ public class StorageRPC extends DispatchHandler {
 
         final Message message = createMessage(remotePeer, PUT_COMMAND, type);
 
-        if (putBuilder.isSignMessage()) {
+        if (putBuilder.isSign()) {
             message.setPublicKeyAndSign(putBuilder.keyPair());
         }
 
@@ -278,7 +278,7 @@ public class StorageRPC extends DispatchHandler {
 
         final Message message = createMessage(remotePeer, ADD_COMMAND, type);
 
-        if (addBuilder.isSignMessage()) {
+        if (addBuilder.isSign()) {
             message.setPublicKeyAndSign(addBuilder.keyPair());
         }
 
@@ -311,7 +311,7 @@ public class StorageRPC extends DispatchHandler {
         }
         final Message message = createMessage(remotePeer, DIGEST_COMMAND, type);
 
-        if (getBuilder.isSignMessage()) {
+        if (getBuilder.isSign()) {
             message.setPublicKeyAndSign(getBuilder.keyPair());
         }
 
@@ -371,7 +371,7 @@ public class StorageRPC extends DispatchHandler {
         }
         final Message message = createMessage(remotePeer, GET_COMMAND, type);
 
-        if (getBuilder.isSignMessage()) {
+        if (getBuilder.isSign()) {
             message.setPublicKeyAndSign(getBuilder.keyPair());
         }
 
@@ -443,7 +443,7 @@ public class StorageRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, REMOVE_COMMAND,
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 
-        if (removeBuilder.isSignMessage()) {
+        if (removeBuilder.isSign()) {
             message.setPublicKeyAndSign(removeBuilder.keyPair());
         }
         

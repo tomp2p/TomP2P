@@ -20,6 +20,7 @@ import io.netty.channel.ChannelHandler;
 
 import java.io.IOException;
 import java.security.KeyPair;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +66,12 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class PeerMaker {
-    private static final KeyPair EMPTY_KEYPAIR = new KeyPair(null, null);
+    public static final PublicKey EMPTY_PUBLICKEY = new PublicKey() {
+        @Override public String getFormat() {return null;}
+        @Override public byte[] getEncoded() {return null;}
+        @Override public String getAlgorithm() {return null;}};
+        
+    private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLICKEY, null);
     // if the permits are chosen too high, then we might run into timeouts as we cant handle that many connections
     // withing the time limit
     private static final int MAX_PERMITS_PERMANENT_TCP = 250;

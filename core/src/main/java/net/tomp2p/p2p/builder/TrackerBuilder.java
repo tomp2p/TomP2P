@@ -142,7 +142,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public boolean isSignMessage() {
+    public boolean isSign() {
         return keyPair != null;
     }
 
@@ -151,9 +151,9 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
      *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      * @return This class
      */
-    public K setSignMessage(final boolean signMessage) {
+    public K sign(final boolean signMessage) {
         if (signMessage) {
-            setSignMessage();
+            setSign();
         } else {
             this.keyPair = null;
         }
@@ -163,7 +163,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public K setSignMessage() {
+    public K setSign() {
         this.keyPair = peer.getPeerBean().keyPair();
         return self;
     }

@@ -1,18 +1,15 @@
 package net.tomp2p.p2p;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PublicKey;
+import java.security.NoSuchAlgorithmException;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageLayer.ProtectionEnable;
-import net.tomp2p.storage.StorageLayer.ProtectionMode;
-import net.tomp2p.storage.StorageMemory;
-import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -403,4 +400,83 @@ public class TestSecurity {
             slave2.halt();
         }
     }*/
+    
+    @Test
+    public void testContentProtectoin() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPairPeer1 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPairPeer1).makeAndListen();
+        KeyPair keyPairPeer2 = gen.generateKeyPair();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).masterPeer(p1)
+                .keyPair(keyPairPeer2).makeAndListen();
+
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        KeyPair keyPair = gen.generateKeyPair();
+
+        String locationKey = "location";
+        Number160 lKey = Number160.createHash(locationKey);
+        String contentKey = "content";
+        Number160 cKey = Number160.createHash(contentKey);
+
+        String testData1 = "data1";
+        Data data = new Data(testData1, true);
+        // put trough peer 1 with key pair -------------------------------------------------------
+        FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
+        futurePut1.awaitUninterruptibly();
+        Assert.assertTrue(futurePut1.isSuccess());
+
+        FutureGet futureGet1a = p1.get(lKey).setContentKey(cKey).start();
+        futureGet1a.awaitUninterruptibly();
+
+        Assert.assertTrue(futureGet1a.isSuccess());
+        Assert.assertEquals(testData1, (String) futureGet1a.getData().object());
+        FutureGet futureGet1b = p2.get(lKey).setContentKey(cKey).start();
+        futureGet1b.awaitUninterruptibly();
+
+        Assert.assertTrue(futureGet1b.isSuccess());
+        Assert.assertEquals(testData1, (String) futureGet1b.getData().object());
+        // put trough peer 2 without key pair ----------------------------------------------------
+        String testData2 = "data2";
+        Data data2 = new Data(testData2);
+        FuturePut futurePut2 = p2.put(lKey).setData(cKey, data2).start();
+        futurePut2.awaitUninterruptibly();
+
+        /*
+         * Shouldn't the future fail here? And why answers a peer here with a PutStatus.OK? Should be not here something
+         * like PutStatus.FAILED_SECURITY?
+         */
+        
+        Assert.assertFalse(futurePut2.isSuccess());
+        
+        FutureGet futureGet2 = p2.get(lKey).setContentKey(cKey).start();
+        futureGet2.awaitUninterruptibly();
+        Assert.assertTrue(futureGet2.isSuccess());
+        // should have been not modified
+        Assert.assertEquals(testData1, (String) futureGet2.getData().object());
+        // put trough peer 1 without key pair ----------------------------------------------------
+        String testData3 = "data3";
+        Data data3 = new Data(testData3);
+        FuturePut futurePut3 = p2.put(lKey).setData(cKey, data3).start();
+        futurePut3.awaitUninterruptibly();
+
+        /*
+         * Shouldn't the future fail here? And why answers a peer here with PutStatus.OK from two peers? Should be not
+         * here something like PutStatus.FAILED_SECURITY?
+         */
+       
+        Assert.assertFalse(futurePut3.isSuccess());
+        
+        FutureGet futureGet3 = p2.get(lKey).setContentKey(cKey).start();
+        futureGet3.awaitUninterruptibly();
+        Assert.assertTrue(futureGet3.isSuccess());
+        // should have been not modified ---> why it has been modified without giving a key pair?
+        Assert.assertEquals(testData1, (String) futureGet3.getData().object());
+        Assert.assertEquals(keyPair.getPublic(), futureGet3.getData().publicKey());
+
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
 }

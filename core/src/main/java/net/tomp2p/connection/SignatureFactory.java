@@ -16,6 +16,9 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+
 import java.security.PublicKey;
 import java.security.Signature;
 
@@ -40,5 +43,9 @@ public interface SignatureFactory {
      * @return The decoded public key
      */
     PublicKey decodePublicKey(byte[] me);
+
+    PublicKey decodePublicKey(ByteBuf buf);
+
+    void encodePublicKey(PublicKey publicKey, CompositeByteBuf buf);
 
 }

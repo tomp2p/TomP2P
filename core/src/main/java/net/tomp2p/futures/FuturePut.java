@@ -16,13 +16,13 @@
 package net.tomp2p.futures;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.p2p.EvaluatingSchemeDHT;
-import net.tomp2p.p2p.VotingSchemeDHT;
 import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 
 /**
  * The future object for put() operations including routing.
@@ -30,26 +30,20 @@ import net.tomp2p.peers.PeerAddress;
  * @author Thomas Bocek
  */
 public class FuturePut extends FutureDHT<FuturePut> {
+    
     // The minimum number of expected results. This is also used for put()
     // operations to decide if a future failed or not.
     private final int min;
-
-    // Since we receive multiple results, we have an evaluation scheme to
-    // simplify the result
-    private final EvaluatingSchemeDHT evaluationScheme;
+    
+    private final int dataSize;
 
     // Storage of results
     private Map<PeerAddress, Map<Number640, Byte>> rawResult;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
-
-    /**
-     * Default constructor.
-     */
-    public FuturePut(final DHTBuilder<?> builder) {
-        this(builder, 0, new VotingSchemeDHT());
-    }
+    
+    private Map<Number640, Integer> result;
 
     /**
      * Creates a new DHT future object that keeps track of the status of the DHT operations.
@@ -59,10 +53,10 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FuturePut(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FuturePut(final DHTBuilder<?> builder, final int min, final int dataSize) {
         super(builder);
         this.min = min;
-        this.evaluationScheme = evaluationScheme;
+        this.dataSize = dataSize;
         self(this);
     }
 
@@ -138,9 +132,51 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * 
      * @return The keys that have been stored or removed
      */
-    public Collection<Number640> getResult() {
+    public Map<Number640, Integer> getResult() {
         synchronized (lock) {
-            return evaluationScheme.evaluate7(rawResult);
+            if(result == null) {
+                result = evaluate(rawResult); 
+            }
+            return result;
         }
+    }
+    
+    private Map<Number640, Integer> evaluate(Map<PeerAddress, Map<Number640, Byte>> rawResult2) {
+        Map<Number640, Integer> result = new HashMap<Number640, Integer>();
+        for(Map<Number640, Byte> map:rawResult2.values()) {
+            for(Map.Entry<Number640, Byte> entry: map.entrySet()) {
+                if(entry.getValue().intValue() == PutStatus.OK.ordinal()) {
+                    Integer integer = result.get(entry.getKey());
+                    if(integer == null) {
+                        result.put(entry.getKey(), 1);
+                    } else {
+                        result.put(entry.getKey(), integer + 1);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean isSuccess() {
+        if(!super.isSuccess()) {
+            return false;
+        }
+        return checkResults(getResult(), rawResult.size(), dataSize);
+    }
+    
+    private boolean checkResults(Map<Number640, Integer> result2, int peerReports, int dataSize) {
+        for(Map.Entry<Number640, Integer> entry:result2.entrySet()) {
+            if(entry.getValue() != peerReports) {
+                return false;
+            }
+        }
+        return result2.size() == dataSize;
+    }
+
+    public boolean isSuccessPartially() {
+        boolean networkSuccess = super.isSuccess();
+        return networkSuccess && getResult().size() > 0;
     }
 }

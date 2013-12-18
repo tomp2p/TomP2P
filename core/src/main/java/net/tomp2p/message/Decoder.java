@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -310,14 +311,15 @@ public class Decoder {
                     Number160 contentKey = new Number160(me3);
                     buf.readBytes(me3);
                     Number160 versionKey = new Number160(me3);
-                    data = Data.decodeHeader(buf);
+                    data = Data.decodeHeader(buf, signatureFactory);
                     if (data == null) {
                         return false;
                     }
                     dataMap.dataMap()
                             .put(new Number640(locationKey, domainKey, contentKey, versionKey), data);
 
-                    if (message.isSign()) {
+                    if (message.isSign() && data.isProtectedEntry() && data.publicKey() == null) {
+                        //only add public key from message signature when the user requested it and when no other public key was associated
                         data.publicKey(message.publicKeyReference());
                     }
 
@@ -472,7 +474,7 @@ public class Decoder {
                     }
                     PeerAddress pa = new PeerAddress(buf);
 
-                    currentTrackerData = Data.decodeHeader(buf);
+                    currentTrackerData = Data.decodeHeader(buf, signatureFactory);
                     if (currentTrackerData == null) {
                         return false;
                     }
@@ -497,19 +499,14 @@ public class Decoder {
                 break;
 
             case PUBLIC_KEY_SIGNATURE:
-                if (buf.readableBytes() < 2) {
+                PublicKey receivedPublicKey = signatureFactory.decodePublicKey(buf);
+                if(receivedPublicKey == null) {
                     return false;
                 }
-                int len = buf.getUnsignedShort(buf.readerIndex());
-
-                if (buf.readableBytes() + Utils.SHORT_BYTE_SIZE < len) {
-                    return false;
+                if (receivedPublicKey == PeerMaker.EMPTY_PUBLICKEY) {
+                    throw new InvalidKeyException("The public key cannot be empty");
                 }
-                me = new byte[len];
-                buf.skipBytes(2);
-                buf.readBytes(me);
                 Signature signature = signatureFactory.signatureInstance();
-                PublicKey receivedPublicKey = signatureFactory.decodePublicKey(me);
                 signature.initVerify(receivedPublicKey);
                 message.signatureForVerification(signature, receivedPublicKey);
                 lastContent = contentTypes.poll();

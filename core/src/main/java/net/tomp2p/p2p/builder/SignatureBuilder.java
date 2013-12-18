@@ -7,19 +7,19 @@ public interface SignatureBuilder<K extends SignatureBuilder<K>> {
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public abstract boolean isSignMessage();
+    public abstract boolean isSign();
 
     /**
      * @param signMessage
      *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      * @return This class
      */
-    public abstract K setSignMessage(boolean signMessage);
+    public abstract K sign(boolean signMessage);
 
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public abstract K setSignMessage();
+    public abstract K setSign();
 
     /**
      * @param keyPair

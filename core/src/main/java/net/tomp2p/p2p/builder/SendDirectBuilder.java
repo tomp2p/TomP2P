@@ -309,7 +309,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public boolean isSignMessage() {
+    public boolean isSign() {
         return keyPair != null;
     }
 
@@ -318,9 +318,9 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
      *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      * @return This class
      */
-    public SendDirectBuilder setSignMessage(final boolean signMessage) {
+    public SendDirectBuilder sign(final boolean signMessage) {
         if (signMessage) {
-            setSignMessage();
+            setSign();
         } else {
             this.keyPair = null;
         }
@@ -330,7 +330,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public SendDirectBuilder setSignMessage() {
+    public SendDirectBuilder setSign() {
         this.keyPair = peer.getPeerBean().keyPair();
         return this;
     }

@@ -88,7 +88,7 @@ public class SynchronizationRPC extends DispatchHandler {
             final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
         final Message message = createMessage(remotePeer, INFO_COMMAND, Type.REQUEST_1);
 
-        if (synchronizationBuilder.isSignMessage()) {
+        if (synchronizationBuilder.isSign()) {
             message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
         }
 
@@ -119,7 +119,7 @@ public class SynchronizationRPC extends DispatchHandler {
             throws IOException {
         final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 
-        if (synchronizationBuilder.isSignMessage()) {
+        if (synchronizationBuilder.isSign()) {
             message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
         }
 

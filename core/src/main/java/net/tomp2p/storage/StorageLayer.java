@@ -140,8 +140,7 @@ public class StorageLayer {
             }
             if (contains) {
                 Data oldData = get(key);
-                boolean protectEntry = newData.protectedEntry();
-                if (!canUpdateEntry(key.getContentKey(), oldData, newData, protectEntry)) {
+                if (!canProtectEntry(key.getContentKey(), oldData, newData)) {
                     return PutStatus.FAILED_SECURITY;
                 }
             }
@@ -409,13 +408,6 @@ public class StorageLayer {
             return isMine(entryKey, publicKey);
         }
         return false;
-    }
-
-    private boolean canUpdateEntry(Number160 contentKey, Data oldData, Data newData, boolean protectEntry) {
-        if (protectEntry) {
-            return canProtectEntry(contentKey, oldData, newData);
-        }
-        return true;
     }
 
     private boolean canProtectEntry(Number160 contentKey, Data oldData, Data newData) {

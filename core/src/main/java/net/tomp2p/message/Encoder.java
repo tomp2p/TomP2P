@@ -211,9 +211,7 @@ public class Encoder {
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                byte[] data = message.getPublicKey().getEncoded();
-                buf.writeShort(data.length);
-                buf.writeBytes(data);
+                signatureFactory.encodePublicKey(message.getPublicKey(), buf);
                 message.contentRefencencs().poll();
                 break;
             default:

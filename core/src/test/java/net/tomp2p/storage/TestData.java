@@ -6,6 +6,8 @@ import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 
+import net.tomp2p.connection.DefaultSignatureFactory;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -23,7 +25,7 @@ public class TestData {
         ByteBuf transfer2 = Unpooled.buffer();
         transfer2.writeBytes(transfer);
 
-        Data newData = Data.decodeHeader(transfer2);
+        Data newData = Data.decodeHeader(transfer2, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer2);
         newData.decodeDone(transfer2);
 
@@ -46,7 +48,7 @@ public class TestData {
         transfer.writeBytes(data.buffer());
         data.encodeDone(transfer);
 
-        Data newData = Data.decodeHeader(transfer);
+        Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer);
         newData.decodeDone(transfer);
 
@@ -69,7 +71,7 @@ public class TestData {
         data.encodeBuffer(transfer);
         data.encodeDone(transfer);
 
-        Data newData = Data.decodeHeader(transfer);
+        Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer);
         newData.decodeDone(transfer);
 
@@ -87,7 +89,7 @@ public class TestData {
         boolean done = data.fillBuffer(pa);
         Assert.assertEquals(false, done);
         
-        Data newData = Data.decodeHeader(transfer);
+        Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         
         ByteBuf pa1 = Unpooled.wrappedBuffer(new byte[50000]);
         boolean done1 = data.fillBuffer(pa1);

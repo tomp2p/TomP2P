@@ -12,7 +12,7 @@ public interface SendDirectBuilderI extends ConnectionConfiguration {
 
     ProgressListener progressListener();
 
-    boolean isSignMessage();
+    boolean isSign();
 
     boolean streaming();
 

@@ -17,10 +17,11 @@
 package net.tomp2p.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 
 import java.security.PublicKey;
 import java.security.Signature;
+
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 /**
  * This interface is used in the encoder and decoders. A user may set its own signature algorithm.
@@ -46,6 +47,6 @@ public interface SignatureFactory {
 
     PublicKey decodePublicKey(ByteBuf buf);
 
-    void encodePublicKey(PublicKey publicKey, CompositeByteBuf buf);
+    void encodePublicKey(PublicKey publicKey, AlternativeCompositeByteBuf buf);
 
 }

@@ -17,7 +17,6 @@
 package net.tomp2p.connection;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -27,6 +26,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
 import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,7 +88,7 @@ public class DefaultSignatureFactory implements SignatureFactory {
     }
 
     @Override
-    public void encodePublicKey(PublicKey publicKey, CompositeByteBuf buf) {
+    public void encodePublicKey(PublicKey publicKey, AlternativeCompositeByteBuf buf) {
         byte[] data = publicKey.getEncoded();
         buf.writeShort(data.length);
         buf.writeBytes(data);

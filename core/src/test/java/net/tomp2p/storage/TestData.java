@@ -1,7 +1,6 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
@@ -15,10 +14,10 @@ public class TestData {
     @Test
     public void testData1() throws IOException, ClassNotFoundException {
         Data data = new Data("test");
-        CompositeByteBuf transfer = Unpooled.compositeBuffer(0);
+        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         //no need to call encodeBuffer with Data(object) or Data(buffer)
-        //data.encodeBuffer(transfer);
+        data.encodeBuffer(transfer);
         data.encodeDone(transfer);
         
         //for the decoding we need a flat bytebuf
@@ -37,13 +36,13 @@ public class TestData {
     @Test
     public void testData2Copy() throws IOException, ClassNotFoundException {
         Data data = new Data(2, 100000);
-        CompositeByteBuf transfer = Unpooled.compositeBuffer(0);
+        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done = data.fillBuffer(pa);
+        boolean done = data.decodeBuffer(pa);
         Assert.assertEquals(false, done);
         ByteBuf pa1 = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done1 = data.fillBuffer(pa1);
+        boolean done1 = data.decodeBuffer(pa1);
         Assert.assertEquals(true, done1);
         transfer.writeBytes(data.buffer());
         data.encodeDone(transfer);
@@ -60,14 +59,17 @@ public class TestData {
     @Test
     public void testData2NoCopy() throws IOException, ClassNotFoundException {
         Data data = new Data(2, 100000);
-        CompositeByteBuf transfer = Unpooled.compositeBuffer(0);
+        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done = data.fillBuffer(pa);
+        boolean done = data.decodeBuffer(pa);
         Assert.assertEquals(false, done);
         ByteBuf pa1 = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done1 = data.fillBuffer(pa1);
+        boolean done1 = data.decodeBuffer(pa1);
         Assert.assertEquals(true, done1);
+        //now we need to reset, since our data is complete now
+        data.resetAlreadyTransferred();
+        
         data.encodeBuffer(transfer);
         data.encodeDone(transfer);
 
@@ -83,16 +85,16 @@ public class TestData {
     @Test
     public void testData3() throws IOException, ClassNotFoundException {
         Data data = new Data(2, 100000);
-        CompositeByteBuf transfer = Unpooled.compositeBuffer(0);
+        AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done = data.fillBuffer(pa);
+        boolean done = data.decodeBuffer(pa);
         Assert.assertEquals(false, done);
         
         Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         
         ByteBuf pa1 = Unpooled.wrappedBuffer(new byte[50000]);
-        boolean done1 = data.fillBuffer(pa1);
+        boolean done1 = data.decodeBuffer(pa1);
         Assert.assertEquals(true, done1);
         transfer.writeBytes(data.buffer());
         data.encodeDone(transfer);

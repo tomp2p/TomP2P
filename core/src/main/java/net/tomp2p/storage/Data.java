@@ -16,13 +16,10 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 
 import java.io.IOException;
 import java.security.PublicKey;
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.connection.DefaultSignatureFactory;
@@ -41,8 +38,6 @@ import net.tomp2p.utils.Utils;
 public class Data {
 
     private static final int MAX_BYTE_SIZE = 256;
-
-    private final List<ByteBuf> releasing = new ArrayList<ByteBuf>();
 
     /**
      * Tiny means 8 bit, small means 16bit, medium is 32bit.
@@ -101,6 +96,7 @@ public class Data {
         this.hasBasedOn = basedOn != null;
         this.hasHash = hasHash;
         this.hasTTL = ttlSeconds != -1;
+        this.ttlSeconds = ttlSeconds;
         this.isProtectedEntry = isProtectedEntry;
         this.length = length;
         this.isFlag1 = isFlag1;
@@ -334,7 +330,7 @@ public class Data {
         return true;
     }
 
-    public void encodeHeader(final CompositeByteBuf buf) {
+    public void encodeHeader(final AlternativeCompositeByteBuf buf) {
         int header = type.ordinal();
         if (isFlag1) {
             header |= 0x04;
@@ -506,12 +502,7 @@ public class Data {
         return sb.toString();
     }
 
-    public boolean fillBuffer(final ByteBuf buf) {
-        buffer.addBuf(buf);
-        return buffer.bufferSize() == length();
-    }
-
-    public boolean encodeBuffer(final CompositeByteBuf buf) {
+    public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
         int already = buffer.alreadyTransferred();
 
         int remaining = length() - already;
@@ -539,17 +530,15 @@ public class Data {
         }
         // make sure it gets not garbage collected. But we need to keep track of it and when this object gets collected,
         // we need to release the buffer
-        releasing.add(buf.retain());
         final int transfered = buffer.transferFrom(buf, remaining);
         return transfered == remaining;
     }
-
-    @Override
-    protected void finalize() throws Throwable {
-        for (ByteBuf buf : releasing) {
-            buf.release();
-        }
+    
+    public void resetAlreadyTransferred() {
+    	buffer.resetAlreadyTransferred();
     }
+
+   
 
     /**
      * @return A shallow copy where the data is shared but the reader and writer index is not shared

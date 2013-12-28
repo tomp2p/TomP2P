@@ -1,7 +1,5 @@
 package net.tomp2p.message;
 
-import io.netty.buffer.CompositeByteBuf;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -15,6 +13,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
 import org.slf4j.Logger;
@@ -34,7 +33,7 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final CompositeByteBuf buf, final Message message) throws InvalidKeyException,
+    public boolean write(final AlternativeCompositeByteBuf buf, final Message message) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
@@ -78,7 +77,7 @@ public class Encoder {
         return done;
     }
 
-    private boolean loop(CompositeByteBuf buf) {
+    private boolean loop(AlternativeCompositeByteBuf buf) {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
             switch (next.content()) {

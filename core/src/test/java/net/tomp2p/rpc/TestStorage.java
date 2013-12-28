@@ -399,6 +399,7 @@ public class TestStorage {
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            Assert.assertEquals(true, fr.isSuccess());
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));

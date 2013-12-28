@@ -67,7 +67,8 @@ import net.tomp2p.utils.Utils;
  */
 public class PeerMaker {
     public static final PublicKey EMPTY_PUBLICKEY = new PublicKey() {
-        @Override public String getFormat() {return null;}
+		private static final long serialVersionUID = 4041565007522454573L;
+		@Override public String getFormat() {return null;}
         @Override public byte[] getEncoded() {return null;}
         @Override public String getAlgorithm() {return null;}};
         

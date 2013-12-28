@@ -43,13 +43,13 @@
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
-			<version>4.0.13.Final</version>
+			<version>4.0.14.Final</version>
 		</dependency>
 
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-codec</artifactId>
-			<version>4.0.13.Final</version>
+			<version>4.0.14.Final</version>
 		</dependency>
 
 		<dependency>
@@ -65,7 +65,7 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.13</version>
 			<optional>true</optional>
 		</dependency>
 

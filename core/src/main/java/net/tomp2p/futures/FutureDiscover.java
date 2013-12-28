@@ -16,7 +16,8 @@
 package net.tomp2p.futures;
 
 
-import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.PeerAddress;
@@ -56,14 +57,14 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * @param delaySec
      *            The delay in seconds
      */
-    public void setTimeout(final Timer timer, final int delaySec) {
+    public void setTimeout(final ScheduledExecutorService timer, final int delaySec) {
         final DiscoverTimeoutTask task = new DiscoverTimeoutTask();
-        timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec));
+        final ScheduledFuture<?> scheduledFuture = timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec), TimeUnit.MILLISECONDS);
         addListener(new BaseFutureAdapter<FutureDiscover>() {
             @Override
             public void operationComplete(final FutureDiscover future) throws Exception {
                 // cancel timeout if we are done.
-                task.cancel();
+            	scheduledFuture.cancel(false);
             }
         });
     }
@@ -165,7 +166,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     /**
      * In case of no peer can contact us, we fire an failed.
      */
-    private final class DiscoverTimeoutTask extends java.util.TimerTask {
+    private final class DiscoverTimeoutTask implements Runnable {
         private final long start = Timings.currentTimeMillis();
         @Override
         public void run() {

@@ -210,6 +210,31 @@ public class TestDHT {
             }
         }
     }
+    
+    @Test
+    public void testPutTimeout() throws Exception {
+        Peer master = null;
+        try {
+            master = new PeerMaker(new Number160(rnd)).ports(4001).storageIntervalMillis(1).makeAndListen();
+            Data data = new Data("hallo");
+            data.ttlSeconds(1);
+            FuturePut fdht = master.put(Number160.ONE).setData(data).start();
+            fdht.awaitUninterruptibly();
+            fdht.getFutureRequests().awaitUninterruptibly();
+            Assert.assertEquals(true, fdht.isSuccess());
+            Thread.sleep(3000);
+            FutureGet fdht2 = master.get(Number160.ONE).start();
+            fdht2.awaitUninterruptibly();
+            System.err.println(fdht2.getFailedReason());
+            Assert.assertEquals(false, fdht2.isSuccess());
+            Data tmp = fdht2.getData();
+            Assert.assertNull(tmp);
+        } finally {
+            if (master != null) {
+                master.shutdown().await();
+            }
+        }
+    }
 
     @Test
     public void testPut2() throws Exception {

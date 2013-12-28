@@ -22,8 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedSet;
-import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -47,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Maxat Pernebayev
  * 
  */
-public class ReplicationExecutor extends TimerTask implements ResponsibilityListener {
+public class ReplicationExecutor implements ResponsibilityListener, Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationExecutor.class);
 
     private final StorageLayer storage;
@@ -60,7 +62,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     // default replication for put and add is 6
     private static final int REPLICATION = 6;
 
-    private final Timer timer;
+    private final ScheduledExecutorService timer;
     private final Random random;
 
     private final int delayMillis;
@@ -69,6 +71,8 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     private final ReplicationFactor replicationFactor;
     
     private final ReplicationSender replicationSender;
+    
+    private ScheduledFuture<?> scheduledFuture;
 
     /**
      * Constructor for the default indirect replication.
@@ -77,7 +81,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      *            The peer
      */
     public ReplicationExecutor(final Peer peer, final ReplicationFactor replicationFactor,
-            ReplicationSender replicationSender, final Random random, final Timer timer, final int delayMillis) {
+            ReplicationSender replicationSender, final Random random, final ScheduledExecutorService timer, final int delayMillis) {
         this.peer = peer;
         this.storage = peer.getPeerBean().storage();
         this.storageRPC = peer.getStoreRPC();
@@ -92,7 +96,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     }
 
     public void init(int intervalMillis) {
-        timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
+    	scheduledFuture = timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -113,7 +117,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 public void run() {
                     otherResponsible(locationKey, other, false);
                 }
-            }, random.nextInt(delayMillis));
+            }, random.nextInt(delayMillis), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -225,5 +229,11 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 }
             });
         }   
+    }
+    
+    public void shutdown() {
+    	if(scheduledFuture!=null) {
+    		scheduledFuture.cancel(false);
+    	}
     }
 }

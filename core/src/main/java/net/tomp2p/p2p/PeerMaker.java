@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Timer;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
@@ -40,8 +41,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.p2p.Replication;
-import net.tomp2p.p2p.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -123,7 +122,7 @@ public class PeerMaker {
 
     private BloomfilterFactory bloomfilterFactory;
     
-    private Timer timer = null;
+    private ScheduledExecutorService timer = null;
     
     private MaintenanceTask maintenanceTask = null;
     
@@ -134,6 +133,7 @@ public class PeerMaker {
     private Random random = null;
     private int delayMillis = -1;
     private int intervalMillis = -1;
+    private int storageIntervalMillis = -1;
     
     private ReplicationFactor replicationFactor = null;
     
@@ -246,13 +246,17 @@ public class PeerMaker {
         if (storage == null) {
             storage = new StorageMemory();
         }
+        
+        if (storageIntervalMillis == -1) {
+        	storageIntervalMillis = 60 * 1000;
+        }
 
         if (peerStatusListeners == null) {
             peerStatusListeners = new PeerStatusListener[] { peerMap };
         }
         
         if (masterPeer == null && timer == null) {
-            timer = new Timer();
+            timer = Executors.newScheduledThreadPool(1);
         }
 
         final PeerCreator peerCreator;
@@ -266,9 +270,13 @@ public class PeerMaker {
         final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
         PeerBean peerBean = peerCreator.peerBean();
+        ConnectionBean connectionBean = peerCreator.connectionBean();
+        
         peerBean.peerMap(peerMap);
         peerBean.keyPair(keyPair);
-        peerBean.storage(new StorageLayer(storage));
+        StorageLayer sl = new StorageLayer(storage);
+        peerBean.storage(sl);
+        sl.init(connectionBean.timer(), storageIntervalMillis);
 
         if (trackerStorage == null) {
             trackerStorage = new TrackerStorage(new IdentityManagement(peerBean.serverPeerAddress()), 300,
@@ -285,7 +293,7 @@ public class PeerMaker {
             broadcastHandler = new DefaultBroadcastHandler(peer, new Random());
         }
 
-        ConnectionBean connectionBean = peerCreator.connectionBean();
+        
         
         // peerBean.setStorage(getStorage());
         Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5);
@@ -652,6 +660,15 @@ public class PeerMaker {
     
     public PeerMaker intervalMillis(int intervalMillis) {
         this.intervalMillis = intervalMillis;
+        return this;
+    }
+    
+    public int storageIntervalMillis() {
+        return storageIntervalMillis;
+    }
+    
+    public PeerMaker storageIntervalMillis(int storageIntervalMillis) {
+        this.storageIntervalMillis = storageIntervalMillis;
         return this;
     }
     

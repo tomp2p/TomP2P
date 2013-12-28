@@ -15,7 +15,7 @@
  */
 package net.tomp2p.connection;
 
-import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * A bean that holds sharable configuration settings for the peer. The non-sharable configurations are stored in
@@ -41,7 +41,7 @@ public class ConnectionBean {
     private final Reservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
     private final NATUtils natUtils;
-    private final Timer timer;
+    private final ScheduledExecutorService timer;
 
     /**
      * The connection bean with unmodifiable objects. Once its set you cannot change it. If its required to change, then
@@ -66,7 +66,7 @@ public class ConnectionBean {
      */
     public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Sender sender,
             final ChannelServer channelServer, final Reservation reservation,
-            final ChannelClientConfiguration resourceConfiguration, final NATUtils natUtils, final Timer timer) {
+            final ChannelClientConfiguration resourceConfiguration, final NATUtils natUtils, final ScheduledExecutorService timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
         this.sender = sender;
@@ -129,7 +129,7 @@ public class ConnectionBean {
     /**
      * @return The timer used for the discovery
      */
-    public Timer timer() {
+    public ScheduledExecutorService timer() {
         return timer;
     }
 }

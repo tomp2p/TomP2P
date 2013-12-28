@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
@@ -448,5 +450,15 @@ public class StorageLayer {
     public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
         return backend.findContentForResponsiblePeerID(peerID);
     }
+    
+    private class StorageMaintenanceTask implements Runnable {
+		@Override
+		public void run() {
+			checkTimeout();
+		}
+    }
 
+	public void init(ScheduledExecutorService timer, int storageIntervalMillis) {
+		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis, TimeUnit.MILLISECONDS);
+	}
 }

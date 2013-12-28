@@ -27,7 +27,7 @@ import java.net.InetAddress;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Timer;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -84,7 +84,7 @@ public class PeerCreator {
     public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
             final ChannelServerConficuration channelServerConficuration,
             final ChannelClientConfiguration channelClientConfiguration,
-            final PeerStatusListener[] peerStatusListeners, Timer timer) throws IOException {
+            final PeerStatusListener[] peerStatusListeners, ScheduledExecutorService timer) throws IOException {
         peerBean = new PeerBean(keyPair);
         peerBean.peerStatusListeners(peerStatusListeners);
         workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(
@@ -145,10 +145,10 @@ public class PeerCreator {
         connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().getPeerId());
         // shutdown running tasks for this peer
         if(peerBean.maintenanceTask() != null) {
-            peerBean.maintenanceTask().cancel();
+            peerBean.maintenanceTask().shutdown();
         }
         if(peerBean.replicationExecutor()!=null) {
-            peerBean.replicationExecutor().cancel();
+            peerBean.replicationExecutor().shutdown();
         }
         // shutdown all children
         if (!master) {
@@ -158,7 +158,7 @@ public class PeerCreator {
             return shutdownFuture().setDone();
         }
         //shutdown the timer
-        connectionBean.timer().cancel();
+        connectionBean.timer().shutdown();
         // we have two things to shut down: the server that listens for incoming connections and the connection creator
         // that establishes connections
         final int maxListeners = 2;

@@ -122,7 +122,7 @@ public class PeerMaker {
 
     private BloomfilterFactory bloomfilterFactory;
     
-    private ScheduledExecutorService timer = null;
+    private ScheduledExecutorService scheduledExecutorService = null;
     
     private MaintenanceTask maintenanceTask = null;
     
@@ -255,8 +255,8 @@ public class PeerMaker {
             peerStatusListeners = new PeerStatusListener[] { peerMap };
         }
         
-        if (masterPeer == null && timer == null) {
-            timer = Executors.newScheduledThreadPool(1);
+        if (masterPeer == null && scheduledExecutorService == null) {
+            scheduledExecutorService = Executors.newScheduledThreadPool(1);
         }
 
         final PeerCreator peerCreator;
@@ -264,7 +264,7 @@ public class PeerMaker {
             peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
         } else {
             peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-                    channelClientConfiguration, peerStatusListeners, timer);
+                    channelClientConfiguration, peerStatusListeners, scheduledExecutorService);
         }
 
         final Peer peer = new Peer(p2pID, peerId, peerCreator);
@@ -700,6 +700,15 @@ public class PeerMaker {
             toInitialize.add(init);
         }
         return this;
+    }
+    
+    public ScheduledExecutorService timer() {
+    	return scheduledExecutorService;
+    }
+    
+    public PeerMaker timer(ScheduledExecutorService scheduledExecutorService) {
+    	this.scheduledExecutorService = scheduledExecutorService;
+    	return this;
     }
     
     // isEnabled methods

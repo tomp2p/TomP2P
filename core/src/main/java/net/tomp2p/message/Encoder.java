@@ -1,9 +1,7 @@
 package net.tomp2p.message;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,21 +54,8 @@ public class Encoder {
 
             // check if we need to sign the message
             if (message.isSign()) {
-                Signature signature = signatureFactory.signatureInstance();
-
-                signature.initSign(message.getPrivateKey());
-                // debug2 = message.getPublicKey();
-                ByteBuffer[] byteBuffers = buf.nioBuffers();
-                int len = byteBuffers.length;
-                for (int i = 0; i < len; i++) {
-                    ByteBuffer buffer = byteBuffers[i];
-                    signature.update(buffer);
-                }
-                byte[] signatureData = signature.sign();
-
-                SHA1Signature decodedSignature = new SHA1Signature();
-                decodedSignature.decode(signatureData);
-                buf.writeBytes(decodedSignature.getNumber1().toByteArray());
+            	SHA1Signature decodedSignature = signatureFactory.sign(message.getPrivateKey(), buf);
+            	buf.writeBytes(decodedSignature.getNumber1().toByteArray());
                 buf.writeBytes(decodedSignature.getNumber2().toByteArray());
             }
         }

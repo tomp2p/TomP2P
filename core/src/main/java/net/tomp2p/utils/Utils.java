@@ -84,6 +84,7 @@ public class Utils {
     public static final int BYTE_SIZE = 1;
     public static final int SHORT_BYTE_SIZE = 2;
     public static final int MASK_0F = 0xf;
+	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     public static ByteBuffer loadFile(File file) throws IOException {
         FileInputStream fis = null;
@@ -580,14 +581,14 @@ public class Utils {
         return debugArray(array, 0, array.length);
     }
 
-    public static boolean checkEntryProtection(Map<?, Data> dataMap) {
+    /*public static boolean checkEntryProtection(Map<?, Data> dataMap) {
         for (Data data : dataMap.values()) {
             if (data.isProtectedEntry()) {
                 return true;
             }
         }
         return false;
-    }
+    }*/
 
     public static TrackerData limitRandom(TrackerData activePeers, int trackerSize) {
         // TODO Auto-generated method stub
@@ -867,5 +868,17 @@ public class Utils {
             return putBuilder.getDataMapContent().size();
         }
     }
-
+    
+    public static<K> boolean equals(K o1, K o2) {
+    	if (o1!= null) {
+			if (!o1.equals(o2)) {
+				return false;
+			}
+		} else {
+			if (o2!= null) {
+				return false;
+			}
+		}
+    	return true;
+    }
 }

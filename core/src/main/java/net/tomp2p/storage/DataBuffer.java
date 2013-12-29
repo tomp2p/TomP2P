@@ -16,12 +16,16 @@ public class DataBuffer {
 	public DataBuffer() {
 		buffers = new ArrayList<ByteBuf>(1);
 	}
-
+	
 	public DataBuffer(final byte[] buffer) {
+		this(buffer, 0, buffer.length);
+	}
+
+	public DataBuffer(final byte[] buffer, final int offset, final int length) {
 		buffers = new ArrayList<ByteBuf>(1);
 		final ByteBuf buf = Unpooled.wrappedBuffer(buffer);
 		buffers.add(buf);
-		//no need to retain, as we initialized here and ref counter is set to 1
+		// no need to retain, as we initialized here and ref counter is set to 1
 	}
 
 	/**
@@ -70,9 +74,21 @@ public class DataBuffer {
 		return nioBuffers;
 	}
 
-	public ByteBuf toByteBuffer() {
+	/**
+	 * @return The ByteBuf backed by the buffers stored in here. The buffer is
+	 *         not copied here.
+	 */
+	public ByteBuf toByteBuf() {
 		final DataBuffer copy = shallowCopy();
 		return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
+	}
+
+	/**
+	 * @return The ByteBuffers backed by the buffers stored in here. The buffer
+	 *         is not copied here.
+	 */
+	public ByteBuffer[] toByteBuffer() {
+		return toByteBuf().nioBuffers();
 	}
 
 	/**
@@ -80,7 +96,7 @@ public class DataBuffer {
 	 * 
 	 * @param buf
 	 *            The CompositeByteBuf, where the data from this buffer is
-	 *            trasfered to
+	 *            transfered to
 	 */
 	public void transferTo(final AlternativeCompositeByteBuf buf) {
 		final DataBuffer copy = shallowCopy();
@@ -94,8 +110,8 @@ public class DataBuffer {
 		final int readable = buf.readableBytes();
 		final int index = buf.readerIndex();
 		final int length = Math.min(remaining, readable);
-		
-		if(length == 0) {
+
+		if (length == 0) {
 			return 0;
 		}
 
@@ -105,7 +121,7 @@ public class DataBuffer {
 
 			for (final ByteBuf decom : decoms) {
 				synchronized (buffers) {
-					//this is already a slice
+					// this is already a slice
 					buffers.add(decom);
 				}
 				decom.retain();
@@ -126,7 +142,7 @@ public class DataBuffer {
 	public int alreadyTransferred() {
 		return alreadyTransferred;
 	}
-	
+
 	public void resetAlreadyTransferred() {
 		alreadyTransferred = 0;
 	}
@@ -145,9 +161,9 @@ public class DataBuffer {
 			return true;
 		}
 		final DataBuffer m = (DataBuffer) obj;
-		return m.toByteBuffer().equals(toByteBuffer());
+		return m.toByteBuf().equals(toByteBuf());
 	}
-	
+
 	@Override
 	protected void finalize() throws Throwable {
 		final DataBuffer copy = shallowCopy();

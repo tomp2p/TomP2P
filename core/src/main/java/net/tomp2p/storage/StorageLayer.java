@@ -404,7 +404,7 @@ public class StorageLayer {
 
     private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey) {
         // we are in public key mode
-        if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
+        if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null && publicKey.getEncoded()!=null) {
             // if the hash of the public key is the same as the domain, we can
             // overwrite
             return isMine(entryKey, publicKey);

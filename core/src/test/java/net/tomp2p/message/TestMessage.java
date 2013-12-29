@@ -189,12 +189,9 @@ public class TestMessage {
 		m1.setPublicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }, true,
-				true));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6 }, true,
-				true));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7 }, true,
-				true));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }));
 		m1.setDataMap(new DataMap(dataMap));
 		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
 		keysMap.put(new Number640(rnd), new Number160(rnd));
@@ -207,6 +204,72 @@ public class TestMessage {
 		Assert.assertEquals(true, m2.getPublicKey() != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
 		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(true, m2.verified());
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testEncodeDecode5() throws Exception {
+		Message m1 = Utils2.createDummyMessage();
+		Random rnd = new Random(42);
+		m1.setType(Message.Type.PARTIALLY_OK);
+		m1.setHintSign();
+
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.setPublicKeyAndSign(pair1);
+
+		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1.getPrivate()));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate()));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate()));
+		m1.setDataMap(new DataMap(dataMap));
+		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		m1.setKeyMap640(new KeyMap640(keysMap));
+		//
+
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(false, m2.getDataMap(0) == null);
+		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(true, m2.verified());
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testEncodeDecode7() throws Exception {
+		Message m1 = Utils2.createDummyMessage();
+		Random rnd = new Random(42);
+		m1.setType(Message.Type.PARTIALLY_OK);
+		m1.setHintSign();
+
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair pair1 = gen.generateKeyPair();
+		m1.setPublicKeyAndSign(pair1);
+
+		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1));
+		m1.setDataMap(new DataMap(dataMap));
+		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		keysMap.put(new Number640(rnd), new Number160(rnd));
+		m1.setKeyMap640(new KeyMap640(keysMap));
+		//
+
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(false, m2.getDataMap(0) == null);
+		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
+		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
+		Assert.assertEquals(pair1.getPublic(), m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey());
+		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
 
@@ -244,7 +307,7 @@ public class TestMessage {
 		Random rnd = new Random(42);
 		Message m1 = Utils2.createDummyMessage();
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
-		Data data = new Data(new byte[size], true, false);
+		Data data = new Data(new byte[size]);
 		dataMap.put(new Number640(rnd), data);
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
@@ -265,7 +328,7 @@ public class TestMessage {
 					new Number160(rnd), new Number160(rnd)), new Data(
 					new byte[] { (byte) rnd.nextInt(), (byte) rnd.nextInt(),
 							(byte) rnd.nextInt(), (byte) rnd.nextInt(),
-							(byte) rnd.nextInt() }, true, true));
+							(byte) rnd.nextInt() }));
 		}
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
@@ -346,6 +409,7 @@ public class TestMessage {
 					}
 				});
 		
+		buf.retain();
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		encoder.write(ctx, m1, null);
 		Decoder decoder = new Decoder(new DefaultSignatureFactory());
@@ -387,6 +451,23 @@ public class TestMessage {
 				m2.set((Message) args[0]);
 				return null;
 			}
+		});
+		
+		when(ctx.fireExceptionCaught(any(Throwable.class))).then(new Answer<Void>() {
+
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				Object[] args = invocation.getArguments();
+				for(Object obj:args) {
+					if(obj instanceof Throwable) {
+						((Throwable)obj).printStackTrace();
+					} else {
+						System.err.println("Err: "+obj);
+					}
+				}
+				return null;
+			}
+		
 		});
 
 		return ctx;

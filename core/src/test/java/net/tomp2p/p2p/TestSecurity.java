@@ -1,15 +1,25 @@
 package net.tomp2p.p2p;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.SignatureException;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.StorageLayer;
+import net.tomp2p.storage.StorageLayer.ProtectionEnable;
+import net.tomp2p.storage.StorageLayer.ProtectionMode;
+import net.tomp2p.storage.StorageMemory;
+import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,7 +28,7 @@ public class TestSecurity {
     final private static Random rnd = new Random(42L);
 
     //TODO: enable this again
-    /*@Test
+    @Test
     public void testPublicKeyReceived() throws Exception {
         final Random rnd = new Random(43L);
         Peer master = null;
@@ -28,32 +38,32 @@ public class TestSecurity {
         KeyPair pair2 = gen.generateKeyPair();
         // make master
         try {
-            master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).makeAndListen();
+            master = new PeerMaker(new Number160(rnd)).keyPair(pair1).ports(4001).makeAndListen();
             // make slave
-            slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).makeAndListen();
+            slave1 = new PeerMaker(new Number160(rnd)).keyPair(pair2).masterPeer(master).makeAndListen();
             final AtomicBoolean gotPK = new AtomicBoolean(false);
             // set storage to test PK
-            slave1.getPeerBean().setStorage(new StorageMemory() {
-                @Override
-                public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data newData,
-                        PublicKey publicKey, boolean putIfAbsent, boolean domainProtection) {
-                    System.err.println("P is " + publicKey);
+            slave1.getPeerBean().storage(new StorageLayer(new StorageMemory()) {
+            	
+            	@Override
+            	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+            			boolean domainProtection) {
+            		System.err.println("P is " + publicKey);
                     gotPK.set(publicKey != null);
                     System.err.println("PK is " + gotPK);
-                    return super.put(locationKey, domainKey, contentKey, newData, publicKey, putIfAbsent,
-                            domainProtection);
-                }
+            		return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+            	}
             });
             // perfect routing
-            boolean peerInMap1 = master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
-            boolean peerInMap2 = slave1.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
+            boolean peerInMap1 = master.getPeerBean().peerMap().peerFound(slave1.getPeerAddress(), null);
+            boolean peerInMap2 = slave1.getPeerBean().peerMap().peerFound(master.getPeerAddress(), null);
             Assert.assertEquals(true, peerInMap1);
             Assert.assertEquals(true, peerInMap2);
             //
             Number160 locationKey = new Number160(50);
 
             RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 0);
-            master.put(locationKey).setData(new Data(new byte[100000])).setRequestP2PConfiguration(rc).setSignMessage()
+            master.put(locationKey).setData(new Data(new byte[100000])).setRequestP2PConfiguration(rc).setSign()
                     .start().awaitUninterruptibly();
             // master.put(locationKey, new Data("test"),
             // cs1).awaitUninterruptibly();
@@ -63,8 +73,8 @@ public class TestSecurity {
                     .awaitUninterruptibly();
             Assert.assertEquals(false, gotPK.get());
         } finally {
-            master.halt();
-            slave1.halt();
+            master.shutdown();
+            slave1.shutdown();
         }
     }
 
@@ -76,32 +86,31 @@ public class TestSecurity {
             KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
             KeyPair pair1 = gen.generateKeyPair();
             // make master
-            master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).makeAndListen();
+            master = new PeerMaker(new Number160(rnd)).keyPair(pair1).ports(4001).makeAndListen();
             // make slave
             final AtomicBoolean gotPK = new AtomicBoolean(false);
             // set storage to test PK
-            master.getPeerBean().setStorage(new StorageMemory() {
-                @Override
-                public PutStatus put(Number160 locationKey, Number160 domainKey, Number160 contentKey, Data newData,
-                        PublicKey publicKey, boolean putIfAbsent, boolean domainProtection) {
+            master.getPeerBean().storage(new StorageLayer(new StorageMemory()) {
+            	@Override
+            	public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+            			boolean domainProtection) {
                     gotPK.set(publicKey != null);
                     System.err.println("PK is " + gotPK);
-                    return super.put(locationKey, domainKey, contentKey, newData, publicKey, putIfAbsent,
-                            domainProtection);
+                    return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
                 }
             });
             //
             Number160 locationKey = new Number160(50);
             RequestP2PConfiguration rc = new RequestP2PConfiguration(1, 1, 0);
             master.put(locationKey).setData(Number160.ONE, new Data(new byte[2000])).setRequestP2PConfiguration(rc)
-                    .setDomainKey(Number160.ONE).setSignMessage().start().awaitUninterruptibly();
+                    .setDomainKey(Number160.ONE).setSign().start().awaitUninterruptibly();
             Assert.assertEquals(true, gotPK.get());
             // without PK
             master.put(locationKey).setData(Number160.ONE, new Data("test1")).setRequestP2PConfiguration(rc)
                     .setDomainKey(Number160.ONE).start().awaitUninterruptibly();
             Assert.assertEquals(false, gotPK.get());
         } finally {
-            master.halt();
+            master.shutdown();
         }
     }
 
@@ -119,42 +128,42 @@ public class TestSecurity {
         System.err.println("PPK2 " + pair2.getPublic());
         System.err.println("PPK3 " + pair3.getPublic());
         try {
-            master = new PeerMaker(new Number160(rnd)).setKeyPair(pair1).setPorts(4001).makeAndListen();
+            master = new PeerMaker(new Number160(rnd)).keyPair(pair1).ports(4001).makeAndListen();
             master.getPeerBean()
-                    .getStorage()
+                    .storage()
                     .setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave1 = new PeerMaker(new Number160(rnd)).setKeyPair(pair2).setMasterPeer(master).makeAndListen();
+            slave1 = new PeerMaker(new Number160(rnd)).keyPair(pair2).masterPeer(master).makeAndListen();
             slave1.getPeerBean()
-                    .getStorage()
+                    .storage()
                     .setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave2 = new PeerMaker(new Number160(rnd)).setKeyPair(pair3).setMasterPeer(master).makeAndListen();
+            slave2 = new PeerMaker(new Number160(rnd)).keyPair(pair3).masterPeer(master).makeAndListen();
             slave2.getPeerBean()
-                    .getStorage()
+                    .storage()
                     .setProtection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
             // perfect routing
-            master.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
-            master.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
+            master.getPeerBean().peerMap().peerFound(slave1.getPeerAddress(), null);
+            master.getPeerBean().peerMap().peerFound(slave2.getPeerAddress(), null);
             //
-            slave1.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
-            slave1.getPeerBean().getPeerMap().peerFound(slave2.getPeerAddress(), null);
+            slave1.getPeerBean().peerMap().peerFound(master.getPeerAddress(), null);
+            slave1.getPeerBean().peerMap().peerFound(slave2.getPeerAddress(), null);
             //
-            slave2.getPeerBean().getPeerMap().peerFound(master.getPeerAddress(), null);
-            slave2.getPeerBean().getPeerMap().peerFound(slave1.getPeerAddress(), null);
+            slave2.getPeerBean().peerMap().peerFound(master.getPeerAddress(), null);
+            slave2.getPeerBean().peerMap().peerFound(slave1.getPeerAddress(), null);
             Number160 locationKey = new Number160(50);
-            FutureDHT fdht1 = master.put(locationKey).setData(new Number160(10), new Data("test1"))
+            FuturePut fdht1 = master.put(locationKey).setData(new Number160(10), new Data("test1"))
                     .setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).setProtectDomain().start();
             fdht1.awaitUninterruptibly();
             Assert.assertEquals(true, fdht1.isSuccess());
             // try to insert in same domain from different peer
-            FutureDHT fdht2 = slave1.put(locationKey).setData(new Number160(11), new Data("tes2"))
+            FuturePut fdht2 = slave1.put(locationKey).setData(new Number160(11), new Data("tes2"))
                     .setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).setProtectDomain().start();
             fdht2.awaitUninterruptibly();
             Assert.assertEquals(false, fdht2.isSuccess());
             // insert from same peer but with public key protection
-            FutureDHT fdht3 = slave2.put(locationKey).setData(new Number160(12), new Data("tes2"))
+            FuturePut fdht3 = slave2.put(locationKey).setData(new Number160(12), new Data("tes2"))
                     .setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).setProtectDomain().start();
             fdht3.awaitUninterruptibly();
             Assert.assertEquals(true, fdht3.isSuccess());
@@ -162,19 +171,19 @@ public class TestSecurity {
             // get at least 3 results, because we want to test the domain
             // removel feature
             RequestP2PConfiguration rc = new RequestP2PConfiguration(3, 3, 3);
-            FutureDHT fdht4 = slave1.get(locationKey).setAll().setRequestP2PConfiguration(rc)
+            FutureGet fdht4 = slave1.get(locationKey).setAll().setRequestP2PConfiguration(rc)
                     .setDomainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).start();
             fdht4.awaitUninterruptibly();
             Assert.assertEquals(true, fdht4.isSuccess());
             Assert.assertEquals(2, fdht4.getDataMap().size());
         } finally {
-            master.halt();
-            slave1.halt();
-            slave2.halt();
+            master.shutdown();
+            slave1.shutdown();
+            slave2.shutdown();
         }
     }
 
-    @Test
+    /*@Test
     public void testProtectionWithRemove() throws Exception {
         final Random rnd = new Random(42L);
         Peer master = null;
@@ -402,7 +411,7 @@ public class TestSecurity {
     }*/
     
     @Test
-    public void testContentProtectoin() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException {
+    public void testContentProtectoin() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
         KeyPair keyPairPeer1 = gen.generateKeyPair();
@@ -422,7 +431,7 @@ public class TestSecurity {
         Number160 cKey = Number160.createHash(contentKey);
 
         String testData1 = "data1";
-        Data data = new Data(testData1, true);
+        Data data = new Data(testData1).setProtectedEntry();
         // put trough peer 1 with key pair -------------------------------------------------------
         FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
         futurePut1.awaitUninterruptibly();
@@ -474,9 +483,51 @@ public class TestSecurity {
         Assert.assertTrue(futureGet3.isSuccess());
         // should have been not modified ---> why it has been modified without giving a key pair?
         Assert.assertEquals(testData1, (String) futureGet3.getData().object());
-        Assert.assertEquals(keyPair.getPublic(), futureGet3.getData().publicKey());
+        Assert.assertEquals(null, futureGet3.getData().publicKey());
+        
+        //now we store a signed data object and we will get back the public key as well
+        data = new Data("Juhuu").setProtectedEntry().sign(keyPair);
+        FuturePut futurePut4 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
+        futurePut4.awaitUninterruptibly();
+        Assert.assertTrue(futurePut4.isSuccess());
+        FutureGet futureGet4 = p2.get(lKey).setContentKey(cKey).start();
+        futureGet4.awaitUninterruptibly();
+        Assert.assertTrue(futureGet4.isSuccess());
+        // should have been not modified ---> why it has been modified without giving a key pair?
+        Assert.assertEquals("Juhuu", (String) futureGet4.getData().object());
+        Assert.assertEquals(keyPair.getPublic(), futureGet4.getData().publicKey());
+        
 
         p1.shutdown().awaitUninterruptibly();
         p2.shutdown().awaitUninterruptibly();
+    }
+    
+    @Test
+    public void testContentProtectoinGeneric() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair).makeAndListen();
+        
+        String locationKey = "location";
+        Number160 lKey = Number160.createHash(locationKey);
+        String contentKey = "content";
+        Number160 cKey = Number160.createHash(contentKey);
+        
+        Data data = new Data("Juhuu").setProtectedEntry().sign(keyPair);
+        FuturePut futurePut4 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
+        futurePut4.awaitUninterruptibly();
+        System.err.println(futurePut4.getFailedReason());
+        Assert.assertTrue(futurePut4.isSuccess());
+        FutureGet futureGet4 = p1.get(lKey).setContentKey(cKey).start();
+        futureGet4.awaitUninterruptibly();
+        Assert.assertTrue(futureGet4.isSuccess());
+        // should have been not modified ---> why it has been modified without giving a key pair?
+        Assert.assertEquals("Juhuu", (String) futureGet4.getData().object());
+        Assert.assertEquals(keyPair.getPublic(), futureGet4.getData().publicKey());
+        
+        
+        p1.shutdown().awaitUninterruptibly();
     }
 }

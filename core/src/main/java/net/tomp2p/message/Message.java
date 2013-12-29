@@ -15,24 +15,17 @@
  */
 package net.tomp2p.message;
 
-import io.netty.buffer.ByteBuf;
-
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.InvalidKeyException;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
-import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -126,7 +119,6 @@ public class Message {
     private List<SimpleBloomFilter<Number160>> bloomFilterList = null;
     private List<DataMap> dataMapList = null;
     // private PublicKey publicKey = null; // there can only be one
-    private AtomicReference<PublicKey> publicKeyReference = null;
     private List<Integer> integerList = null;
     private List<Long> longList = null;
     private List<KeyCollection> keyCollectionList = null;
@@ -146,7 +138,8 @@ public class Message {
     private transient boolean content = false;
     private transient Signature signature = null;
     private transient SHA1Signature signatureEncode = null;
-    private transient PublicKey receivedPublicKey = null;
+    private transient PublicKey publicKey = null;
+    private boolean verified = false;
 
     /**
      * Creates message with a random ID.
@@ -526,7 +519,7 @@ public class Message {
         if (!presetContentTypes) {
             setContentType(Content.PUBLIC_KEY_SIGNATURE);
         }
-        this.publicKeyReference = new AtomicReference<PublicKey>(keyPair.getPublic());
+        this.publicKey = keyPair.getPublic();
         this.privateKey = keyPair.getPrivate();
         return this;
     }
@@ -706,20 +699,14 @@ public class Message {
         }
         return keyMapByteList.get(index);
     }
-    
-    
 
     public Message setPublicKey(final PublicKey publicKey) {
-        publicKeyReference();
-        publicKeyReference.set(publicKey);
+        this. publicKey = publicKey;
         return this;
     }
 
     public PublicKey getPublicKey() {
-        if (publicKeyReference == null) {
-            return null;
-        }
-        return publicKeyReference.get();
+        return publicKey;
     }
 
     public PrivateKey getPrivateKey() {
@@ -776,25 +763,16 @@ public class Message {
         return trackerDataList.get(index);
     }
     
-    public AtomicReference<PublicKey> publicKeyReference() {
-        if (publicKeyReference == null) {
-            publicKeyReference = new AtomicReference<PublicKey>();
-        }
-        return publicKeyReference;
-    }
+    
 
     public Message signatureForVerification(Signature signature, PublicKey receivedPublicKey) {
         this.signature = signature;
-        this.receivedPublicKey = receivedPublicKey;
+        this.publicKey = receivedPublicKey;
         return this;
     }
     
     public Signature signatureForVerification() {
         return signature;
-    }
-    
-    public PublicKey receivedPublicKey() {
-        return receivedPublicKey;
     }
 
     public Message receivedSignature(SHA1Signature signatureEncode) {
@@ -911,6 +889,20 @@ public class Message {
     public boolean isUdp() {
         return udp;
     }
+    
+    public Message verified(boolean verified) {
+    	this.verified = verified;
+    	return this;
+    }
+    
+    public boolean verified() {
+    	return verified;
+    }
+    
+    public Message setVerified() {
+    	this.verified = true;
+    	return this;
+	}
 
     /**
      * @param done
@@ -938,27 +930,5 @@ public class Message {
         return done;
     }
 
-    public static boolean decodeSignature(Signature signature, Message message, ByteBuf buffer)
-            throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException {
-        if (buffer.readableBytes() < 20 + 20)
-            return false;
-
-        byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-        buffer.readBytes(me);
-        Number160 number1 = new Number160(me);
-        buffer.readBytes(me);
-        Number160 number2 = new Number160(me);
-        SHA1Signature signatureEncode = new SHA1Signature(number1, number2);
-        byte[] signatureReceived = signatureEncode.encode();
-        if (!signature.verify(signatureReceived)) {
-            // set public key only if signature is correct
-            message.setPublicKey(null);
-        }
-        // set data maps
-        return true;
-    }
-
-   
-
-    
+	
 }

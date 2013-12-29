@@ -26,7 +26,7 @@ public class TestData {
 
         Data newData = Data.decodeHeader(transfer2, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer2);
-        newData.decodeDone(transfer2);
+        newData.decodeDone(transfer2, null);
 
         Assert.assertEquals(data, newData);
         Object test = newData.object();
@@ -49,7 +49,7 @@ public class TestData {
 
         Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer);
-        newData.decodeDone(transfer);
+        newData.decodeDone(transfer, null);
 
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
@@ -75,7 +75,7 @@ public class TestData {
 
         Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
         newData.decodeBuffer(transfer);
-        newData.decodeDone(transfer);
+        newData.decodeDone(transfer, null);
 
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
@@ -100,7 +100,7 @@ public class TestData {
         data.encodeDone(transfer);
 
         newData.decodeBuffer(transfer);
-        newData.decodeDone(transfer);
+        newData.decodeDone(transfer, null);
 
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();

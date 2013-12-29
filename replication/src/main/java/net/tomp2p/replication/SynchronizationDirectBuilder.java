@@ -109,7 +109,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
             if (key != null) {
                 Data data = peer.getPeerBean().storage().get(key);
                 if (data == null) {
-                    data = new Data(true);
+                    data = new Data().setFlag2();
                 }
                 newDataMap.put(key, data);
             }
@@ -117,7 +117,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                 for (Number640 key : keys) {
                     Data data = peer.getPeerBean().storage().get(key);
                     if (data == null) {
-                        data = new Data(true);
+                        data = new Data().setFlag2();
                     }
                     newDataMap.put(key, data);
                 }
@@ -228,7 +228,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                                 }
                                 byte[] endoced = Synchronization.encodeInstructionList(instructions,
                                         dataMapHash.get(entry.getKey()));
-                                Data data1 = new Data(endoced, true);
+                                Data data1 = new Data(endoced).setFlag1();
                                 retVal.put(entry.getKey(), data1);
                                 diffCount++;
                             }

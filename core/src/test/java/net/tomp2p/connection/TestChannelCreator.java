@@ -21,6 +21,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.utils.Pair;
 
 import org.junit.After;
 import org.junit.Before;
@@ -140,7 +142,7 @@ public class TestChannelCreator {
             }
 
             final CountDownLatch countDownLatch = new CountDownLatch(connections);
-            final Map<String, ChannelHandler> tmp = new HashMap<String, ChannelHandler>();
+            final Map<String, Pair<EventExecutorGroup, ChannelHandler>> tmp = new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 
             final GenericFutureListener<ChannelFuture> handler = new GenericFutureListener<ChannelFuture>() {
                 @Override
@@ -196,7 +198,7 @@ public class TestChannelCreator {
             }
 
             final CountDownLatch countDownLatch = new CountDownLatch(connections);
-            final Map<String, ChannelHandler> tmp = new HashMap<String, ChannelHandler>();
+            final Map<String, Pair<EventExecutorGroup, ChannelHandler>> tmp = new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 
             GenericFutureListener<ChannelFuture> handler = new GenericFutureListener<ChannelFuture>() {
                 @Override
@@ -229,8 +231,8 @@ public class TestChannelCreator {
     private static class MyPipeLine implements PipelineFilter {
 
         @Override
-        public void filter(Map<String, ChannelHandler> channelHandlers, boolean tcp, boolean client) {
-            for(Iterator<Map.Entry<String, ChannelHandler>> iterator = channelHandlers.entrySet().iterator();iterator.hasNext(); ) {
+        public void filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp, boolean client) {
+            for(Iterator<Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>>> iterator = channelHandlers.entrySet().iterator();iterator.hasNext(); ) {
                 if(iterator.next().getValue()==null) {
                     iterator.remove();
                 }

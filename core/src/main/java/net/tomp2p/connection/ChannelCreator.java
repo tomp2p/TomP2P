@@ -29,6 +29,7 @@ import io.netty.channel.group.ChannelGroupFuture;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
@@ -41,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -127,7 +129,7 @@ public class ChannelCreator {
      * @return The channel future object or null if we are shut down
      */
     public ChannelFuture createUDP(final SocketAddress recipient, final boolean broadcast,
-            final Map<String, ChannelHandler> channelHandlers) {
+            final Map<String, Pair<EventExecutorGroup,ChannelHandler>> channelHandlers) {
         readUDP.lock();
         try {
             if (shutdownUDP) {
@@ -175,7 +177,7 @@ public class ChannelCreator {
      * @return The channel future object or null if we are shut down.
      */
     public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-            final Map<String, ChannelHandler> channelHandlers) {
+            final Map<String, Pair<EventExecutorGroup,ChannelHandler>> channelHandlers) {
         readTCP.lock();
         try {
             if (shutdownTCP) {
@@ -214,12 +216,16 @@ public class ChannelCreator {
      * @param channelHandlers
      *            The handlers to be added.
      */
-    private void addHandlers(final Bootstrap b, final Map<String, ChannelHandler> channelHandlers) {
+    private void addHandlers(final Bootstrap b, final Map<String, Pair<EventExecutorGroup,ChannelHandler>> channelHandlers) {
         b.handler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) throws Exception {
-                for (Map.Entry<String, ChannelHandler> entry : channelHandlers.entrySet()) {
-                    ch.pipeline().addLast(entry.getKey(), entry.getValue());
+                for (Map.Entry<String, Pair<EventExecutorGroup,ChannelHandler>> entry : channelHandlers.entrySet()) {
+                	if(entry.getValue().element0()!=null) {
+                		ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
+                	} else {
+                		ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
+                	}
                 }
             }
         });

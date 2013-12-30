@@ -35,16 +35,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ChannelServer;
-import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.connection.PipelineFilter;
-import net.tomp2p.connection.Reservation;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.utils.Pair;
 
 import org.junit.After;
@@ -94,6 +89,9 @@ public class TestReservation {
 	 * 
 	 * @throws InterruptedException .
 	 */
+	
+	private static AtomicInteger counter = new AtomicInteger(0);
+	
 	@Test
 	public void testReservationTCP() throws InterruptedException {
 		EventLoopGroup ev = new NioEventLoopGroup();
@@ -103,7 +101,7 @@ public class TestReservation {
 		final int conn = 50;
 		final int tcpMax = 1000;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = new ChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
 			c.pipelineFilter(new MyPipeLine());
 			Reservation r = new Reservation(ev, c);
@@ -119,16 +117,19 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
+							counter.incrementAndGet();
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
 								public void operationComplete(final ChannelFuture future) throws Exception {
-									future.channel().close();
+									future.channel().close().awaitUninterruptibly();
 									countDownLatch.countDown();
 								}
 							});
 						}
 						countDownLatch.await();
-						cc.shutdown().awaitUninterruptibly();
+						cc.shutdown().awaitListenersUninterruptibly();
+						counter.addAndGet(-conn);
+						System.err.println("counter "+counter.get());
 					}
 				});
 				fcc.add(fc);
@@ -162,7 +163,7 @@ public class TestReservation {
 		final int conn = 50;
 		final int udpMax = 1000;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = new ChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsUDP(udpMax);
 			Reservation r = new Reservation(ev, c);
@@ -216,12 +217,12 @@ public class TestReservation {
 	public void testReservationTCPNonCleanShutdown() throws InterruptedException {
 		EventLoopGroup ev = new NioEventLoopGroup();
 		long start = System.currentTimeMillis();
-		final int round = 50;
+		final int round = 100;
 		final int inner = 100;
-		final int conn = 10;
-		final int tcpMax = 1000;
+		final int conn = 5;
+		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = new ChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(ev, c);
@@ -257,7 +258,7 @@ public class TestReservation {
 			for (FutureChannelCreator fcc1 : fcc) {
 				fcc1.awaitListeners();
 			}
-			r.shutdown().awaitUninterruptibly();
+			r.shutdown().awaitListenersUninterruptibly();
 		}
 		ev.shutdownGracefully().awaitUninterruptibly();
 		long time = System.currentTimeMillis() - start;
@@ -275,12 +276,12 @@ public class TestReservation {
 	@Test
 	public void testReservationTCPNonCleanShutdown2() throws InterruptedException {
 		EventLoopGroup ev = new NioEventLoopGroup();
-		final int round = 50;
+		final int round = 100;
 		final int inner = 100;
-		final int conn = 10;
-		final int tcpMax = 1000;
+		final int conn = 5;
+		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = new ChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(ev, c);
@@ -313,7 +314,7 @@ public class TestReservation {
 				});
 				fcc.add(fc);
 			}
-			r.shutdown().awaitUninterruptibly();
+			r.shutdown().awaitListenersUninterruptibly();
 		}
 		ev.shutdownGracefully().awaitUninterruptibly();
 	}

@@ -175,6 +175,9 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      */
     public K setProtectDomain() {
         this.protectDomain = true;
+        if(this.keyPair == null) {
+        	setSign();
+        }
         return self;
     }
 

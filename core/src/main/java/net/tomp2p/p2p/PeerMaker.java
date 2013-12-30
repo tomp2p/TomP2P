@@ -927,31 +927,39 @@ public class PeerMaker {
 	 * @author Thomas Bocek
 	 * 
 	 */
-	private static class DefaultPipelineFilter implements PipelineFilter {
+	public static class DefaultPipelineFilter implements PipelineFilter {
 		@Override
 		public void filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
 		        boolean client) {
 		}
 	}
-	
+
+	/**
+	 * A pipeline filter that executes handlers in a thread. If you plan to
+	 * block within listeners, then use this pipeline.
+	 * 
+	 * @author Thomas Bocek
+	 * 
+	 */
 	public static class EventExecutorGroupFilter implements PipelineFilter {
-		
+
 		private final EventExecutorGroup eventExecutorGroup;
-		
+
 		public EventExecutorGroupFilter(EventExecutorGroup eventExecutorGroup) {
 			this.eventExecutorGroup = eventExecutorGroup;
 		}
-		
+
 		@Override
 		public void filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
 		        boolean client) {
 			setExecutor("handler", channelHandlers);
 			setExecutor("dispatcher", channelHandlers);
 		}
-		
-		private void setExecutor(String handlerName, final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+
+		private void setExecutor(String handlerName,
+		        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
 			Pair<EventExecutorGroup, ChannelHandler> pair = channelHandlers.get(handlerName);
-			if(pair!=null) {
+			if (pair != null) {
 				channelHandlers.put(handlerName, pair.element0(eventExecutorGroup));
 			}
 		}

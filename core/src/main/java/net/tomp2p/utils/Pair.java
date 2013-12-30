@@ -31,6 +31,10 @@ public class Pair<K, V> {
 	public Pair<K, V> element1(V element1) {
 	    return new Pair<K, V>(element0, element1);
     }
+	
+	public boolean isEmpty() {
+		return element0 == null && element1 == null;
+	}
 
 	/**
 	 * Checks the two objects for equality by delegating to their respective

@@ -176,9 +176,9 @@ public final class ChannelServer {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(false).entrySet()) {
-					if (entry.getValue().element0() != null) {
+					if (!entry.getValue().isEmpty()) {
 						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else {
+					} else if (entry.getValue().element1() != null) {
 						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
 					}
 				}
@@ -210,9 +210,9 @@ public final class ChannelServer {
 				bestEffortOptions(ch, ChannelOption.SO_LINGER, 0);
 				bestEffortOptions(ch, ChannelOption.TCP_NODELAY, true);
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : handlers(true).entrySet()) {
-					if (entry.getValue().element0() != null) {
+					if (!entry.getValue().isEmpty()) {
 						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
-					} else {
+					} else if (entry.getValue().element1() != null) {
 						ch.pipeline().addLast(entry.getKey(), entry.getValue().element1());
 					}
 				}

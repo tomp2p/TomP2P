@@ -24,6 +24,7 @@
   <!--  <logger name="net.tomp2p.connection.TCPChannelCache" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.HeartBeat" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.PeerCreator" level="TRACE"/> -->
     
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->

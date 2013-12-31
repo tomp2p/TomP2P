@@ -353,6 +353,7 @@ public class TestStorage {
             Message m = fr.getResponse();
             Map<Number640, Data> stored = m.getDataMap(0).dataMap();
             compare(dataMap.convertToMap640(), stored);
+            System.err.println("done!");
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();

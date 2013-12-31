@@ -25,7 +25,7 @@ public class DropConnectionInboundHandler extends ChannelInboundHandlerAdapter {
 	final int limit;
 
 	public DropConnectionInboundHandler(int limit) {
-		this.limit = 100;//limit;
+		this.limit = limit;
 	}
 
 	@Override

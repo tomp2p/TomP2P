@@ -165,11 +165,7 @@ public class PeerCreator {
 		}
 		// shutdown the timer
 		connectionBean.timer().shutdown();
-		// we have two things to shut down: the server that listens for incoming
-		// connections and the connection creator
-		// that establishes connections
-		final int maxListeners = 2;
-		final AtomicInteger listenerCounter = new AtomicInteger(0);
+		
 		LOG.debug("starting shutdown done in client...");
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
@@ -181,15 +177,13 @@ public class PeerCreator {
 						workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
 							@Override
 							public void operationComplete(final Future future) throws Exception {
-								LOG.debug("shutdown done in client...");
+								LOG.debug("shutdown done in client / workerGroup...");
 								bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
 								        new GenericFutureListener() {
 									        @Override
 									        public void operationComplete(final Future future) throws Exception {
-										        LOG.debug("shutdown done in client...");
-										        if (listenerCounter.incrementAndGet() == maxListeners) {
-											        shutdownFuture().setDone();
-										        }
+										        LOG.debug("shutdown done in client / bossGroup...");
+										        shutdownFuture().setDone();
 									        }
 								        });
 							}

@@ -38,6 +38,7 @@ import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.DropConnectionInboundHandler;
@@ -308,18 +309,26 @@ public final class ChannelServer {
 	 *         worker and boss event loop
 	 */
 	public FutureDone<Void> shutdown() {
-		LOG.debug("shutdown UPD server");
+		// we have two things to shut down: UDP and TCP
+		final int maxListeners = 2;
+		final AtomicInteger listenerCounter = new AtomicInteger(0);
+		LOG.debug("shutdown servers");
 		channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				LOG.debug("shutdown TCP server");
-				channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-					@Override
-					public void operationComplete(final ChannelFuture future) throws Exception {
-						LOG.debug("shutdown TCP channels");
-						futureServerDone.setDone();
-					}
-				});
+				if(listenerCounter.incrementAndGet()==maxListeners) {
+					futureServerDone.setDone();
+				}
+			}
+		});
+		channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
+			@Override
+			public void operationComplete(final ChannelFuture future) throws Exception {
+				LOG.debug("shutdown TCP channels");
+				if(listenerCounter.incrementAndGet()==maxListeners) {
+					futureServerDone.setDone();
+				}
 			}
 		});
 		return shutdownFuture();

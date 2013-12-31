@@ -24,6 +24,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -138,11 +139,7 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
 		if (timeoutHandler != null) {
-			final int nrTCPHandlers = peerConnection != null ? 10 : 7; // 10 = 7
-																	   // / 0.75
-																	   // ** 7 =
-																	   // 5 /
-																	   // 0.75;
+			final int nrTCPHandlers = peerConnection != null ? 10 : 7; // 10 = 7 / 0.75 ** 7 = 5 / 0.75;
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			handlers.put("timeout0",
 			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
@@ -331,7 +328,10 @@ public class Sender {
 					futureResponse.progressFirst();
 				} else {
 					futureResponse.setFailed("Channel creation failed " + future.cause());
-					if (!(future.cause() instanceof CancellationException)) {
+					//may have been closed by the other side,
+					//or it may have been canceled from this side
+					if (!(future.cause() instanceof CancellationException) &&
+						!(future.cause() instanceof ClosedChannelException)) {
 						LOG.warn("Channel creation failed ", future.cause());
 					}
 				}

@@ -3,8 +3,8 @@ package net.tomp2p.message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.socket.DatagramPacket;
-import io.netty.handler.codec.DecoderException;
 
 import java.net.InetSocketAddress;
 
@@ -13,6 +13,7 @@ import net.tomp2p.connection.SignatureFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Sharable
 public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOG = LoggerFactory.getLogger(TomP2PSinglePacketUDP.class);
@@ -45,7 +46,8 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
                 LOG.warn("did not get the complete packet!");
             }
         } catch (Throwable t) {
-            throw new DecoderException(t);
+        	LOG.error("Error in UDP decoding", t);
+            throw t;
         } finally {
             buf.release();
         }

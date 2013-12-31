@@ -3,7 +3,6 @@ package net.tomp2p.message;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.DecoderException;
 
 import java.net.InetSocketAddress;
 
@@ -20,7 +19,6 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 
 	private final Decoder decoder;
 	private AlternativeCompositeByteBuf cumulation = null;
-	//private ByteBuf cumulation = null;
 
 	private int lastId = 0;
 
@@ -48,7 +46,8 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			}
 			decoding(ctx, sender);
 		} catch (Throwable t) {
-			throw new DecoderException(t);
+			LOG.error("Error in TCP decoding", t);
+            throw t;
 		} finally {
 			if (!cumulation.isReadable()) {
                 cumulation.release();
@@ -97,7 +96,8 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				decoding(ctx, sender);
 			}
 		} catch (Throwable t) {
-			throw new DecoderException(t);
+			LOG.error("Error in TCP (inactive) decoding", t);
+            throw t;
 		} finally {
 			if (cumulation != null) {
 				cumulation.release();

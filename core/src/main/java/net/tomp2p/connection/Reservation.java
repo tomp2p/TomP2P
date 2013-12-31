@@ -57,8 +57,10 @@ public class Reservation {
 
     private final ChannelClientConfiguration channelClientConfiguration;
 
-    private final ExecutorService executor;
+    
     private final BlockingQueue<Runnable> queue = new LinkedBlockingQueue<Runnable>();
+    // single thread
+    private final ExecutorService executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
     private final EventLoopGroup workerGroup;
 
     // we should be fair, otherwise we see connection timeouts due to unfairness if busy
@@ -84,8 +86,7 @@ public class Reservation {
      */
     public Reservation(final EventLoopGroup workerGroup,
             final ChannelClientConfiguration channelClientConfiguration) {
-        // single thread
-        this.executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, queue);
+        
         this.workerGroup = workerGroup;
         this.maxPermitsUDP = channelClientConfiguration.maxPermitsUDP();
         this.maxPermitsTCP = channelClientConfiguration.maxPermitsTCP();
@@ -219,20 +220,20 @@ public class Reservation {
         // fast shutdown for those that are in the queue is not required. We could let the executor finish since the
         // shutdown flag is set and the future will be set as well to "shutting down":
 
-        // for (Runnable r : executor.shutdownNow()) {
-        // if(r instanceof WaitReservation) {
-        // WaitReservation wr = (WaitReservation) r;
-        // wr.futureChannelCreator().setFailed("shutting down");
-        // } else {
-        // WaitReservationPermanent wr = (WaitReservationPermanent) r;
-        // wr.futureChannelCreator().setFailed("shutting down");
-        // }
-        // }
+		for (Runnable r : executor.shutdownNow()) {
+			if (r instanceof WaitReservation) {
+				WaitReservation wr = (WaitReservation) r;
+				wr.futureChannelCreator().setFailed("shutting down");
+			} else {
+				WaitReservationPermanent wr = (WaitReservationPermanent) r;
+				wr.futureChannelCreator().setFailed("shutting down");
+			}
+		}
 
         // the channelCreator does not change anymore from here on
         final int size = channelCreators.size();
         if (size == 0) {
-            complete();
+        	futureReservationDone.setDone();
         } else {
             final AtomicInteger completeCounter = new AtomicInteger(0);
             for (final ChannelCreator channelCreator : channelCreators) {
@@ -243,33 +244,19 @@ public class Reservation {
                     @Override
                     public void operationComplete(final FutureDone<Void> future) throws Exception {
                         if (completeCounter.incrementAndGet() == size) {
-                            complete();
+                        	//we can block here as we block in GlobalEventExecutor.INSTANCE
+                        	semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
+                            semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
+                            semaphorePermanentTCP.acquireUninterruptibly(maxPermitsPermanentTCP);
+                        	shutdownFuture().setDone();
                         }
                     }
                 });
                 channelCreator.shutdown();
             }
         }
+        //wait for completion
         return shutdownFuture();
-    }
-
-    /**
-     * Drain all semaphores and set the future to done.
-     */
-    private void complete() {
-        if (!semaphoreUPD.tryAcquire(maxPermitsUDP)) {
-            throw new RuntimeException("Cannot shutdown, as connections (UDP) are still alive: "
-                    + semaphoreUPD);
-        }
-        if (!semaphoreTCP.tryAcquire(maxPermitsTCP)) {
-            throw new RuntimeException("Cannot shutdown, as connections (TCP) are still alive: "
-                    + semaphoreTCP);
-        }
-        if (!semaphorePermanentTCP.tryAcquire(maxPermitsPermanentTCP)) {
-            throw new RuntimeException("Cannot shutdown, as connections (pTCP) are still alive: "
-                    + semaphorePermanentTCP);
-        }
-        futureReservationDone.setDone();
     }
 
     /**
@@ -369,7 +356,10 @@ public class Reservation {
                 read.unlock();
             }
             futureChannelCreator.reserved(channelCreator);
-
+        }
+        
+        private FutureChannelCreator futureChannelCreator() {
+        	return futureChannelCreator;
         }
 
     }
@@ -428,6 +418,10 @@ public class Reservation {
                 read.unlock();
             }
             futureChannelCreator.reserved(channelCreator);
+        }
+        
+        private FutureChannelCreator futureChannelCreator() {
+        	return futureChannelCreator;
         }
     }
 

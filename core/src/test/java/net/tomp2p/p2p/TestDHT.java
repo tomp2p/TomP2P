@@ -88,6 +88,7 @@ public class TestDHT {
 
 	@Test
 	public void testPutVersion() throws Exception {
+		final Random rnd = new Random(42L);
 		Peer master = null;
 		try {
 			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
@@ -105,7 +106,7 @@ public class TestDHT {
 			LOG.error("done");
 		} finally {
 			if (master != null) {
-				master.shutdown().await();
+				master.shutdown().awaitListenersUninterruptibly();
 			}
 		}
 	}
@@ -641,11 +642,19 @@ public class TestDHT {
 			}
 		}
 	}
+	
+	@Test
+	public void removeTestLoop() throws IOException, ClassNotFoundException {
+		for(int i=0;i<100;i++) {
+			System.err.println("removeTestLoop() call nr "+i);
+			removeTest();
+		}
+	}
 
 	@Test
 	public void removeTest() throws IOException, ClassNotFoundException {
-		Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(true).ports(5000).makeAndListen();
-		Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(true).masterPeer(p1)
+		Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(5000).makeAndListen();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).masterPeer(p1)
 		        .makeAndListen();
 
 		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
@@ -1249,10 +1258,9 @@ public class TestDHT {
 		Peer p2 = null;
 		try {
 			// setup (step 1)
-			Bindings b = new Bindings();
-			b.addInterface("eth0");
-			p1 = new PeerMaker(new Number160(rnd)).ports(4001).bindings(b).makeAndListen();
-			p2 = new PeerMaker(new Number160(rnd)).ports(4002).bindings(b).makeAndListen();
+			Bindings b = new Bindings().addInterface("lo");
+			p1 = new PeerMaker(new Number160(rnd)).ports(4001).externalBindings(b).makeAndListen();
+			p2 = new PeerMaker(new Number160(rnd)).ports(4002).externalBindings(b).makeAndListen();
 			FutureBootstrap fb = p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start();
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(true, fb.isSuccess());

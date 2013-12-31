@@ -21,6 +21,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -35,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -65,6 +65,9 @@ public class TestReservation {
 	 *             If the process could not be started
 	 * @throws InterruptedException
 	 */
+	
+	private EventLoopGroup workerGroup;
+	
 	@Before
 	public void createSink() throws IOException {
 		Bindings bindings = new Bindings().addAddress(InetAddress.getByName("127.0.0.1"));
@@ -72,7 +75,11 @@ public class TestReservation {
 		c.interfaceBindings(bindings);
 		c.ports(new Ports(PORT, PORT));
 		c.pipelineFilter(new MyPipeLine());
-		cs = new ChannelServer(c, null, null);
+		final EventLoopGroup bossGroup = new NioEventLoopGroup(0,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
+    	workerGroup = new NioEventLoopGroup(0,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+		cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
 		cs.startup();
 	}
 
@@ -90,11 +97,8 @@ public class TestReservation {
 	 * @throws InterruptedException .
 	 */
 	
-	private static AtomicInteger counter = new AtomicInteger(0);
-	
 	@Test
 	public void testReservationTCP() throws InterruptedException {
-		EventLoopGroup ev = new NioEventLoopGroup();
 		long start = System.currentTimeMillis();
 		final int round = 10;
 		final int inner = 200;
@@ -104,7 +108,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
 			c.pipelineFilter(new MyPipeLine());
-			Reservation r = new Reservation(ev, c);
+			Reservation r = new Reservation(workerGroup, c);
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);
@@ -117,19 +121,16 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
-							counter.incrementAndGet();
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
 								public void operationComplete(final ChannelFuture future) throws Exception {
-									future.channel().close().awaitUninterruptibly();
+									future.channel().close();
 									countDownLatch.countDown();
 								}
 							});
 						}
 						countDownLatch.await();
 						cc.shutdown().awaitListenersUninterruptibly();
-						counter.addAndGet(-conn);
-						System.err.println("counter "+counter.get());
 					}
 				});
 				fcc.add(fc);
@@ -139,7 +140,7 @@ public class TestReservation {
 			}
 			r.shutdown().awaitUninterruptibly();
 		}
-		ev.shutdownGracefully().awaitUninterruptibly();
+		//ev.shutdownGracefully().awaitUninterruptibly();
 		long time = System.currentTimeMillis() - start;
 		long mil = TimeUnit.SECONDS.toMillis(1);
 		System.err.println("BENCHMARK: opened and closed " + round + " x " + inner + " x " + conn
@@ -156,7 +157,6 @@ public class TestReservation {
 	 */
 	@Test
 	public void testReservationUDP() throws InterruptedException {
-		EventLoopGroup ev = new NioEventLoopGroup();
 		long start = System.currentTimeMillis();
 		final int round = 10;
 		final int inner = 200;
@@ -166,7 +166,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsUDP(udpMax);
-			Reservation r = new Reservation(ev, c);
+			Reservation r = new Reservation(workerGroup, c);
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(conn, 0);
@@ -199,7 +199,6 @@ public class TestReservation {
 			}
 			r.shutdown().awaitUninterruptibly();
 		}
-		ev.shutdownGracefully().awaitUninterruptibly();
 		long time = System.currentTimeMillis() - start;
 		long mil = TimeUnit.SECONDS.toMillis(1);
 		System.err.println("BENCHMARK: opened and closed " + round + " x " + inner + " x " + conn
@@ -215,7 +214,6 @@ public class TestReservation {
 	 */
 	@Test
 	public void testReservationTCPNonCleanShutdown() throws InterruptedException {
-		EventLoopGroup ev = new NioEventLoopGroup();
 		long start = System.currentTimeMillis();
 		final int round = 100;
 		final int inner = 100;
@@ -225,7 +223,7 @@ public class TestReservation {
 			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
-			Reservation r = new Reservation(ev, c);
+			Reservation r = new Reservation(workerGroup, c);
 			List<FutureChannelCreator> fcc = new ArrayList<FutureChannelCreator>();
 			for (int j = 0; j < inner; j++) {
 				FutureChannelCreator fc = r.create(0, conn);
@@ -260,7 +258,6 @@ public class TestReservation {
 			}
 			r.shutdown().awaitListenersUninterruptibly();
 		}
-		ev.shutdownGracefully().awaitUninterruptibly();
 		long time = System.currentTimeMillis() - start;
 		long mil = TimeUnit.SECONDS.toMillis(1);
 		System.err.println("BENCHMARK: opened and closed " + round + " x " + inner + " x " + conn

@@ -21,6 +21,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -86,7 +87,11 @@ public class TestChannelCreator {
         c.interfaceBindings(bindings);
         c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
-        cs = new ChannelServer(c, null, null);
+        final EventLoopGroup bossGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
+    	final EventLoopGroup workerGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+        cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         cs.startup();
     }
 
@@ -108,7 +113,11 @@ public class TestChannelCreator {
     @Ignore
     public void sink() throws InterruptedException, IOException {
         ChannelServerConficuration c = new ChannelServerConficuration();
-        ChannelServer cs = new ChannelServer(c, null, null);
+        final EventLoopGroup bossGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
+    	final EventLoopGroup workerGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+        ChannelServer cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         final int port = 4000;
         cs.startupTCP(new InetSocketAddress("127.0.0.1", port), new ChannelServerConficuration());
         // wait forever.

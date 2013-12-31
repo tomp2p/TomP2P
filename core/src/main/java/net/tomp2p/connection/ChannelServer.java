@@ -26,10 +26,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -42,6 +40,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.message.DropConnectionInboundHandler;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
@@ -62,12 +61,8 @@ public final class ChannelServer {
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelServer.class);
 	// private static final int BACKLOG = 128;
 
-	// important to keep them low, since a too high value results in connection
-	// degradation
-	private final EventLoopGroup bossGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() / 2,
-	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
-	private final EventLoopGroup workerGroup = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() / 2,
-	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+	private final EventLoopGroup bossGroup;
+	private final EventLoopGroup workerGroup;
 
 	private Channel channelUDP;
 	private Channel channelTCP;
@@ -81,6 +76,10 @@ public final class ChannelServer {
 	private final ChannelServerConficuration channelServerConfiguration;
 	private final Dispatcher dispatcher;
 	private final PeerStatusListener[] peerStatusListeners;
+	
+	private final DropConnectionInboundHandler tcpDropConnectionInboundHandler;
+	private final DropConnectionInboundHandler udpDropConnectionInboundHandler;
+	private final ChannelHandler udpDecoderHandler;
 
 	/**
 	 * Sets parameters and starts network device discovery.
@@ -94,8 +93,10 @@ public final class ChannelServer {
 	 * @throws IOException
 	 *             If device discovery failed.
 	 */
-	public ChannelServer(final ChannelServerConficuration channelServerConfiguration, final Dispatcher dispatcher,
+	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConficuration channelServerConfiguration, final Dispatcher dispatcher,
 	        final PeerStatusListener[] peerStatusListeners) throws IOException {
+		this.bossGroup = bossGroup;
+		this.workerGroup = workerGroup;
 		this.interfaceBindings = channelServerConfiguration.interfaceBindings();
 		this.ports = channelServerConfiguration.ports();
 		this.channelServerConfiguration = channelServerConfiguration;
@@ -105,6 +106,10 @@ public final class ChannelServer {
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of interface search: " + status);
 		}
+		
+		this.tcpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxTCPIncomingConnections());
+		this.udpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxUDPIncomingConnections());
+		this.udpDecoderHandler = new TomP2PSinglePacketUDP(channelServerConfiguration.signatureFactory());
 	}
 
 	/**
@@ -245,8 +250,9 @@ public final class ChannelServer {
 		        peerStatusListeners, "Server");
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 		if (tcp) {
-			final int nrTCPHandlers = 5;
+			final int nrTCPHandlers = 8; // 6 / 0.75 = 7;
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, tcpDropConnectionInboundHandler));
 			handlers.put("timeout0",
 			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutFactory.timeHandler()));
@@ -257,10 +263,10 @@ public final class ChannelServer {
 			// nothing. It is different than with TCP where we
 			// may get a stream and in the middle of it, the other peer goes
 			// offline. This cannot happen with UDP
-			final int nrUDPHandlers = 3;
+			final int nrUDPHandlers = 6; // 4 = 0.75 = 4 
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrUDPHandlers);
-			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(
-			        channelServerConfiguration.signatureFactory())));
+			handlers.put("dropconnection", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDropConnectionInboundHandler));
+			handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, udpDecoderHandler));
 		}
 		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false,
 		        channelServerConfiguration.signatureFactory())));
@@ -308,23 +314,10 @@ public final class ChannelServer {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				LOG.debug("shutdown TCP server");
 				channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-					@SuppressWarnings({ "unchecked", "rawtypes" })
 					@Override
 					public void operationComplete(final ChannelFuture future) throws Exception {
-						LOG.debug("shutdown TCP workergroup");
-						workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
-							@Override
-							public void operationComplete(final Future future) throws Exception {
-								LOG.debug("shutdown TCP workergroup done!");
-								bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
-								        new GenericFutureListener() {
-									        @Override
-									        public void operationComplete(final Future future) throws Exception {
-										        futureServerDone.setDone();
-									        }
-								        });
-							}
-						});
+						LOG.debug("shutdown TCP channels");
+						futureServerDone.setDone();
 					}
 				});
 			}

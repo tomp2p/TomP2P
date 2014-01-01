@@ -40,5 +40,5 @@ public interface PipelineFilter {
      *            True if this is the client side, false for the server side
      * @return The same, new, or changed array of handlers. It cannot have null elements
      */
-    void filter(Map<String,Pair<EventExecutorGroup,ChannelHandler>> channelHandlers, boolean tcp, boolean client);
+	Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(Map<String,Pair<EventExecutorGroup,ChannelHandler>> channelHandlers, boolean tcp, boolean client);
 }

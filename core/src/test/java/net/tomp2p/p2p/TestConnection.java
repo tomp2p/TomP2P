@@ -1,17 +1,26 @@
 package net.tomp2p.p2p;
 
+import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
+
 import java.net.InetAddress;
 import java.net.StandardProtocolFamily;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.utils.Pair;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,11 +34,31 @@ public class TestConnection {
         Peer peer1 = null;
         Peer peer2 = null;
         try {
+        	
+        	final CountConnectionOutboundHandler ccohTCP = new CountConnectionOutboundHandler();
+        	final CountConnectionOutboundHandler ccohUDP = new CountConnectionOutboundHandler();
+        	
+        	PipelineFilter pf = new PipelineFilter() {
+				@Override
+				public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
+				        boolean client) {
+					
+					Map<String, Pair<EventExecutorGroup, ChannelHandler>> retVal = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
+					retVal.put("counter", new Pair<EventExecutorGroup, ChannelHandler>(null, tcp? ccohTCP:ccohUDP));
+					retVal.putAll(channelHandlers);
+					return retVal;
+				}
+			};
+			ChannelServerConficuration csc = PeerMaker.createDefaultChannelServerConfiguration();
+			ChannelClientConfiguration ccc = PeerMaker.createDefaultChannelClientConfiguration();
+			csc.pipelineFilter(pf);
+			ccc.pipelineFilter(pf);
+        	
             Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
             Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
             
-            peer1 = new PeerMaker(new Number160(rnd)).ports(4005).bindings(b1).makeAndListen();
-            peer2 = new PeerMaker(new Number160(rnd)).ports(4006).bindings(b2).makeAndListen();
+            peer1 = new PeerMaker(new Number160(rnd)).ports(4005).bindings(b1).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
+            peer2 = new PeerMaker(new Number160(rnd)).ports(4006).bindings(b2).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
 
             peer2.setObjectDataReply(new ObjectDataReply() {
                 @Override
@@ -52,7 +81,7 @@ public class TestConnection {
             fd.awaitUninterruptibly();
             Assert.assertEquals(true, fd.isSuccess());
             System.out.println("received " + fd.object() + " connections: "
-                    + ChannelCreator.tcpConnectionCount());
+                    + ccohTCP.total());
             // we reuse the connection
             long start = System.currentTimeMillis();
             System.out.println("send " + sentObject);
@@ -62,7 +91,7 @@ public class TestConnection {
             Assert.assertEquals(true, fd.isSuccess());
             System.err.println(fd.getFailedReason());
             System.out.println("received " + fd.object() + " connections: "
-                    + ChannelCreator.tcpConnectionCount());
+                    + ccohTCP.total());
             // now we don't want to keep the connection open anymore:
             double duration = (System.currentTimeMillis() - start) / 1000d;
             System.out.println("Send and get in s:" + duration);

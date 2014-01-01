@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
  * Striped down version of the IdleStateHandler.
  */
 public class HeartBeat extends ChannelDuplexHandler {
+	
+	private static int MIN_TIME_TO_HEARTBEAT_MILLIS = 500;
     
     private static final Logger LOG = LoggerFactory.getLogger(HeartBeat.class);
 
@@ -37,18 +39,6 @@ public class HeartBeat extends ChannelDuplexHandler {
     //may be set from other threads
     private volatile PeerConnection peerConnection;
 
-
-    /**
-     * Creates a new instance firing {@link IdleStateEvent}s.
-     * 
-     * @param allIdleTimeSeconds
-     *            an {@link IdleStateEvent} whose state is {@link IdleState#ALL_IDLE} will be triggered when neither
-     *            read nor write was performed for the specified period of time. Specify {@code 0} to disable.
-     */
-    public HeartBeat(int allIdleTimeSeconds, PingBuilder builder) {
-        this(allIdleTimeSeconds, TimeUnit.SECONDS, builder);
-    }
-
     /**
      * Creates a new instance firing {@link IdleStateEvent}s.
      * 
@@ -65,7 +55,7 @@ public class HeartBeat extends ChannelDuplexHandler {
         if (allIdleTime <= 0) {
             timeToHeartBeatMillis = 0;
         } else {
-            timeToHeartBeatMillis = Math.max(unit.toMillis(allIdleTime), 1);
+            timeToHeartBeatMillis = Math.max(unit.toMillis(allIdleTime), MIN_TIME_TO_HEARTBEAT_MILLIS);
         }
         this.builder = builder;
     }

@@ -364,6 +364,10 @@ public class Peer {
     public void setObjectDataReply(final ObjectDataReply objectDataReply) {
         getDirectDataRPC().setReply(objectDataReply);
     }
+    
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    	return createPeerConnection(destination, PeerConnection.HEART_BEAT_MILLIS);
+    }
 
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
@@ -379,7 +383,7 @@ public class Peer {
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis) {
         final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
         final FutureChannelCreator fcc = getConnectionBean().reservation().createPermanent(1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -387,7 +391,7 @@ public class Peer {
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = fcc.getChannelCreator();
-                    final PeerConnection peerConnection = new PeerConnection(destination, cc);
+                    final PeerConnection peerConnection = new PeerConnection(destination, cc, heartBeatMillis);
                     futureDone.setDone(peerConnection);
                 } else {
                     futureDone.setFailed(future);

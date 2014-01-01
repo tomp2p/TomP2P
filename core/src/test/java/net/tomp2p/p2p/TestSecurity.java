@@ -28,7 +28,6 @@ import org.junit.Test;
 public class TestSecurity {
     final private static Random rnd = new Random(42L);
 
-    //TODO: enable this again
     @Test
     public void testPublicKeyReceived() throws Exception {
         final Random rnd = new Random(43L);
@@ -110,6 +109,9 @@ public class TestSecurity {
             master.put(locationKey).setData(Number160.ONE, new Data("test1")).setRequestP2PConfiguration(rc)
                     .setDomainKey(Number160.ONE).start().awaitUninterruptibly();
             Assert.assertEquals(false, gotPK.get());
+        } catch (Throwable t) {
+        	Assert.fail(t.getMessage());
+        	t.printStackTrace();
         } finally {
             master.shutdown();
         }

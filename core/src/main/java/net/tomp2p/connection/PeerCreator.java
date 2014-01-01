@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -95,7 +94,7 @@ public class PeerCreator {
 		        + "worker-client/server - "));
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
 
-		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean);
+		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 
 		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,

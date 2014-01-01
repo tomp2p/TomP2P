@@ -29,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureResponse;
@@ -165,7 +166,7 @@ public class Sender {
 
 		HeartBeat heartBeat = null;
 		if (peerConnection != null) {
-			heartBeat = new HeartBeat(2, pingBuilder);
+			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilder);
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 

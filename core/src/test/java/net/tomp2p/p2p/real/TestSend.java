@@ -3,9 +3,6 @@ package net.tomp2p.p2p.real;
 import java.io.IOException;
 import java.net.InetAddress;
 
-import org.junit.Test;
-
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureSend;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -13,6 +10,9 @@ import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 /**
  * Test send over network.
@@ -31,6 +31,7 @@ public class TestSend {
      * @throws InterruptedException .
      * @throws IOException .
      */
+    @Ignore
     @Test
     public void startSender() throws IOException, InterruptedException {
 
@@ -63,6 +64,7 @@ public class TestSend {
      * @throws InterruptedException .
      * @throws IOException .
      */
+    @Ignore
     @Test
     public void startReiver() throws IOException, InterruptedException {
 

@@ -16,7 +16,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
 
 public class PeerConnection {
-
+	final public static int HEART_BEAT_MILLIS = 2000;
     final private Semaphore oneConnection = new Semaphore(1);
 
     final private PeerAddress remotePeer;
@@ -24,9 +24,11 @@ public class PeerConnection {
 
     final private Map<FutureChannelCreator, FutureResponse> map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
     final private FutureDone<Void> closeFuture = new FutureDone<Void>();
+    private final int heartBeatMillis;
 
     // these may be called from different threads, but they will never be called concurrently within this library
     private volatile ChannelFuture channelFuture;
+    
 
     /**
      * If we don't have an open TCP connection, we first need a channel creator to open a channel.
@@ -36,9 +38,10 @@ public class PeerConnection {
      * @param cc
      *            The channel creator where we can open a TCP connection
      */
-    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc) {
+    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis) {
         this.remotePeer = remotePeer;
         this.cc = cc;
+        this.heartBeatMillis = heartBeatMillis;
     }
 
     /**
@@ -49,17 +52,22 @@ public class PeerConnection {
      * @param channelFuture
      *            The channel future of an already open TCP connection
      */
-    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture) {
+    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis) {
         this.remotePeer = remotePeer;
         this.channelFuture = channelFuture;
         addCloseListener(channelFuture);
         this.cc = null;
+        this.heartBeatMillis = heartBeatMillis;
     }
 
     public PeerConnection channelFuture(ChannelFuture channelFuture) {
         this.channelFuture = channelFuture;
         addCloseListener(channelFuture);
         return this;
+    }
+    
+    public int heartBeatMillis() {
+	    return heartBeatMillis;
     }
 
     public ChannelFuture channelFuture() {

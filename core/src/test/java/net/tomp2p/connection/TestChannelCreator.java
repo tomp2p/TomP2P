@@ -241,13 +241,13 @@ public class TestChannelCreator {
     private static class MyPipeLine implements PipelineFilter {
 
         @Override
-        public void filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp, boolean client) {
+        public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp, boolean client) {
             for(Iterator<Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>>> iterator = channelHandlers.entrySet().iterator();iterator.hasNext(); ) {
                 if(iterator.next().getValue()==null) {
                     iterator.remove();
                 }
             }
-            
+            return channelHandlers;
         }
         
     }

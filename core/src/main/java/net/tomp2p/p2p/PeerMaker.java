@@ -929,8 +929,9 @@ public class PeerMaker {
 	 */
 	public static class DefaultPipelineFilter implements PipelineFilter {
 		@Override
-		public void filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
+		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
 		        boolean client) {
+			return channelHandlers;
 		}
 	}
 
@@ -950,10 +951,11 @@ public class PeerMaker {
 		}
 
 		@Override
-		public void filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
+		public Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp,
 		        boolean client) {
 			setExecutor("handler", channelHandlers);
 			setExecutor("dispatcher", channelHandlers);
+			return channelHandlers;
 		}
 
 		private void setExecutor(String handlerName,

@@ -29,7 +29,6 @@ import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
@@ -37,7 +36,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.futures.FutureDone;
@@ -272,8 +270,7 @@ public final class ChannelServer {
 		handlers.put("encoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false,
 		        channelServerConfiguration.signatureFactory())));
 		handlers.put("dispatcher", new Pair<EventExecutorGroup, ChannelHandler>(null, dispatcher));
-		channelServerConfiguration.pipelineFilter().filter(handlers, tcp, false);
-		return handlers;
+		return channelServerConfiguration.pipelineFilter().filter(handlers, tcp, false);
 	}
 
 	/**

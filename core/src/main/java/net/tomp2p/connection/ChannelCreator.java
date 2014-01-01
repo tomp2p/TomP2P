@@ -36,13 +36,11 @@ import io.netty.util.concurrent.GlobalEventExecutor;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -58,9 +56,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ChannelCreator {
 	private static final Logger LOG = LoggerFactory.getLogger(ChannelCreator.class);
-	// statistics
-	private static final AtomicInteger CREATED_TCP_CONNECTIONS = new AtomicInteger(0);
-	private static final AtomicInteger CREATED_UDP_CONNECTIONS = new AtomicInteger(0);
 
 	private final EventLoopGroup workerGroup;
 	private final ChannelGroup recipients = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
@@ -151,8 +146,8 @@ public class ChannelCreator {
 			if (broadcast) {
 				b.option(ChannelOption.SO_BROADCAST, true);
 			}
-			channelClientConfiguration.pipelineFilter().filter(channelHandlers, false, true);
-			addHandlers(b, channelHandlers);
+			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, false, true);
+			addHandlers(b, channelHandlers2);
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
@@ -164,7 +159,6 @@ public class ChannelCreator {
 			}
 
 			setupCloseListener(channelFuture, semaphoreUPD);
-			CREATED_UDP_CONNECTIONS.incrementAndGet();
 			return channelFuture;
 		} finally {
 			readUDP.unlock();
@@ -201,13 +195,12 @@ public class ChannelCreator {
 			b.option(ChannelOption.TCP_NODELAY, true);
 			b.option(ChannelOption.SO_LINGER, 0);
 			b.option(ChannelOption.SO_REUSEADDR, true);
-			channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
-			addHandlers(b, channelHandlers);
+			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
+			addHandlers(b, channelHandlers2);
 
 			ChannelFuture channelFuture = b.connect(socketAddress, externalBindings.wildCardSocket());
 
 			setupCloseListener(channelFuture, semaphoreTCP);
-			CREATED_TCP_CONNECTIONS.incrementAndGet();
 			return channelFuture;
 		} finally {
 			readTCP.unlock();
@@ -302,29 +295,5 @@ public class ChannelCreator {
 	 */
 	public FutureDone<Void> shutdownFuture() {
 		return futureChannelCreationDone;
-	}
-
-	/**
-	 * @return The number of created TCP connections for *all* created TCP
-	 *         connection
-	 */
-	public static int tcpConnectionCount() {
-		return CREATED_TCP_CONNECTIONS.get();
-	}
-
-	/**
-	 * @return The number of created UDP connections for *all* created TCP
-	 *         connection
-	 */
-	public static int udpConnectionCount() {
-		return CREATED_UDP_CONNECTIONS.get();
-	}
-
-	/**
-	 * Resets the statistical data.
-	 */
-	public static void resetConnectionCounts() {
-		CREATED_TCP_CONNECTIONS.set(0);
-		CREATED_UDP_CONNECTIONS.set(0);
 	}
 }

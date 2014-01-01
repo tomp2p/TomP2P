@@ -1558,7 +1558,6 @@ public class TestDHT {
 
 	private void send2(final Peer p1, final Peer p2, final ByteBuf toStore1, final int count) throws IOException {
 		if (count == 0) {
-			System.err.println("failed miserably");
 			return;
 		}
 		Buffer b = new Buffer(toStore1);
@@ -1576,7 +1575,6 @@ public class TestDHT {
 
 	private void send1(final Peer p1, final Peer p2, final byte[] toStore1, final int count) throws IOException {
 		if (count == 0) {
-			System.err.println("failed miserably");
 			return;
 		}
 		FutureDirect fd = p1.sendDirect(p2.getPeerAddress()).setObject(toStore1).start();
@@ -1584,7 +1582,7 @@ public class TestDHT {
 			@Override
 			public void operationComplete(FutureDirect future) throws Exception {
 				if (future.isFailed()) {
-					// System.err.println(future.getFailedReason());
+					//System.err.println(future.getFailedReason());
 					send1(p1, p2, toStore1, count - 1);
 				}
 			}

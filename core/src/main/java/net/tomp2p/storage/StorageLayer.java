@@ -295,7 +295,14 @@ public class StorageLayer {
         Collection<Number640> toRemove = backend.subMapTimeout(time);
         if (toRemove.size() > 0) {
             for (Number640 key : toRemove) {
-                backend.remove(key);
+            	KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+                try {
+                	backend.remove(key);
+                	backend.removeTimeout(key);
+                	backend.removeResponsibility(key.getLocationKey());
+                } finally {
+                    lock.unlock();
+                }
             }
         }
     }

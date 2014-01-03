@@ -112,11 +112,8 @@ public class Decoder {
 
 			boolean donePayload = decodePayload(buf);
 			verifySignature(byteBuffers, donePayload);
-			// see https://github.com/netty/netty/issues/1976 (TODO: enable
-			// again in 4.0.13)
-			// TODO: not sure if we can use discard here if we want to keep data
-			// in the Data object
-			// buf.discardSomeReadBytes();
+			// see https://github.com/netty/netty/issues/1976
+			buf.discardSomeReadBytes();
 			return donePayload;
 
 		} catch (Exception e) {
@@ -298,6 +295,7 @@ public class Decoder {
 						return false;
 					}
 					data = null;
+					key = null;
 				}
 				for (int i = dataMap.size(); i < mapsSize; i++) {
 					if (key == null) {

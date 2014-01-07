@@ -21,7 +21,6 @@ public class RelayReply implements RawDataReply {
 		this.dispatcher = dispatcher;
 	}
 
-	@Override
 	public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) throws Exception {
 		
 		Message message = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));

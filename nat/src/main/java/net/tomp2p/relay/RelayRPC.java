@@ -47,7 +47,6 @@ public class RelayRPC extends DispatchHandler {
 		requestHandler.sendTCP(channelCreator);
 
 		futureResponse.addListener(new BaseFutureListener<FutureResponse>() {
-			@Override
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess() && future.getResponse().getType() == Type.OK) {
 					logger.debug("Peer {} is ready to act as a relay", other);
@@ -59,7 +58,6 @@ public class RelayRPC extends DispatchHandler {
 				}
 			}
 
-			@Override
 			public void exceptionCaught(Throwable t) throws Exception {
 				logger.error("Error creating connection to relay peer {}: {}", other, t);
 				connectionFuture.setFailed(t);
@@ -76,7 +74,6 @@ public class RelayRPC extends DispatchHandler {
 		final FuturePeerConnection fpc = peer.createPeerConnection(other);
 		FutureDirect fd = peer.sendDirect(fpc).setObject(true).start();
 		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
-			@Override
 			public void operationComplete(FutureDirect future) throws Exception {
 				if(future.isSuccess()) {
 					rcf.futurePeerConnection(fpc);

@@ -8,7 +8,6 @@ class NoDirectResponse implements Responder {
 	
 	private Message response;
 
-	@Override
 	public void response(Message responseMessage) {
 		this.response = responseMessage;
 	}
@@ -17,12 +16,10 @@ class NoDirectResponse implements Responder {
 		return response;
 	}
 
-	@Override
 	public void failed(Type type, String reason) {
 		
 	}
 
-	@Override
 	public void responseFireAndForget() {
 		
 	}

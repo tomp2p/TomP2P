@@ -120,7 +120,6 @@ public class RelayManager {
 		FutureForkJoin<RelayConnectionFuture> ffj = new FutureForkJoin<RelayConnectionFuture>(new AtomicReferenceArray<RelayConnectionFuture>(futureRelayConnections));
 
 		ffj.addListener(new BaseFutureAdapter<FutureForkJoin<RelayConnectionFuture>>() {
-			@Override
 			public void operationComplete(FutureForkJoin<RelayConnectionFuture> future) throws Exception {
 				if (future.isSuccess()) {
 					List<RelayConnectionFuture> reponses = future.getCompleted();

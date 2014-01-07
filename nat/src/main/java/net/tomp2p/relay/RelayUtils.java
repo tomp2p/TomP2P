@@ -7,18 +7,17 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 
-import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.Unpooled;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class RelayUtils {
 	
 	public static Buffer encodeMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(null);
-		CompositeByteBuf buf = Unpooled.compositeBuffer();
+		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		e.write(buf, message);
 		return new Buffer(buf);
 	}

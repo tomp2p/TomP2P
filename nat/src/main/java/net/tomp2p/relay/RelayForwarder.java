@@ -2,18 +2,15 @@ package net.tomp2p.relay;
 
 import java.net.InetSocketAddress;
 
-import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DirectDataRPC;
 
 import org.slf4j.Logger;
@@ -46,8 +43,7 @@ public class RelayForwarder extends DirectDataRPC {
 		Buffer buf = RelayUtils.encodeMessage(message);
 		FutureDirect fd = peer.sendDirect(futurePeerConnection).setBuffer(buf).start();
 		
-		fd.addListener(new BaseFutureListener<FutureDirect>() {
-			@Override
+		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 			public void operationComplete(FutureDirect future) throws Exception {
 				if(future.isSuccess()) {
 					//send response
@@ -58,10 +54,6 @@ public class RelayForwarder extends DirectDataRPC {
 				} else {
 					responder.failed(Type.USER1, "Relaying message failed: " + future.getFailedReason());
 				}
-			}
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				t.printStackTrace();
 			}
 		});
 	}

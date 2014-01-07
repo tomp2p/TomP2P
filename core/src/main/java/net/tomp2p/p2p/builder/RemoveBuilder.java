@@ -24,7 +24,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 
-public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
+public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements SearchableBuilder {
     
     private final static FutureRemove FUTURE_SHUTDOWN = new FutureRemove(null)
             .setFailed("remove builder - peer is shutting down");
@@ -104,6 +104,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     }
     
     public RemoveBuilder from(Number640 from) {
+    	//TODO: we will overwrite the domain key 
+    	this.domainKey = from.getDomainKey();
         this.from = from;
         return this;
     }
@@ -113,6 +115,8 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
     }
 
     public RemoveBuilder to(Number640 to) {
+    	//TODO: we will overwrite the domain key 
+    	this.domainKey = to.getDomainKey();
         this.to = to;
         return this;
     }
@@ -132,7 +136,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> {
         preBuild("remove-builder");
         if (all) {
             contentKeys = null;
-        } else if (contentKeys == null && !all) {
+        } else if (contentKeys == null && !all && !isRange()) {
             contentKeys = new ArrayList<Number160>(1);
             if (contentKey == null) {
                 contentKey = Number160.ZERO;

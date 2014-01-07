@@ -49,11 +49,13 @@ import net.tomp2p.p2p.builder.GetBuilder;
 import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
+import net.tomp2p.p2p.builder.SearchableBuilder;
 import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DefaultBloomfilterFactory;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.DirectDataRPC;
@@ -92,8 +94,9 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_1,
-                            future.getChannelCreator());
+                	final RoutingBuilder routingBuilder = createBuilder(builder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.getChannelCreator());
+                	
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
@@ -157,9 +160,9 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_1,
-                            future.getChannelCreator());
+                	
+                	final RoutingBuilder routingBuilder = createBuilder(builder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.getChannelCreator());
 
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -239,8 +242,10 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    final FutureRouting futureRouting = createRouting(putBuilder, Type.REQUEST_1,
-                            future.getChannelCreator());
+                	
+                	final RoutingBuilder routingBuilder = createBuilder(putBuilder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.getChannelCreator());
+                	
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
@@ -310,9 +315,10 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_2,
-                            future.getChannelCreator());
+                	
+                	final RoutingBuilder routingBuilder = createBuilder(builder);
+                	fillRoutingBuilder(builder, routingBuilder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.getChannelCreator());
 
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -385,8 +391,11 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_2,
-                            future.getChannelCreator());
+                	
+                	final RoutingBuilder routingBuilder = createBuilder(builder);
+                	fillRoutingBuilder(builder, routingBuilder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.getChannelCreator());
+                    
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
@@ -466,10 +475,10 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-
-                    final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_2,
-                            future.getChannelCreator());
-                    // TODO: add content keys to the routing builder
+                	
+                	final RoutingBuilder routingBuilder = createBuilder(builder);
+                    fillRoutingBuilder(builder, routingBuilder);
+                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.getChannelCreator());
 
                     futureDHT.setFutureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -532,6 +541,8 @@ public class DistributedHashTable {
                 }
 
             }
+
+			
         });
         return futureDHT;
     }
@@ -691,24 +702,29 @@ public class DistributedHashTable {
             }
         });
     }
-
-    private FutureRouting createRouting(BasicBuilder<?> builder, Type type, ChannelCreator channelCreator) {
-
-        // Number160 locationKey, Number160 domainKey,
-        // Collection<Number160> contentKeys, RoutingConfiguration routingConfiguration,
-        // RequestP2PConfiguration p2pConfiguration
-
-        RoutingBuilder routingBuilder = builder.createBuilder(builder.getRequestP2PConfiguration(),
+    
+    private static RoutingBuilder createBuilder(BasicBuilder<?> builder) {
+    	RoutingBuilder routingBuilder = builder.createBuilder(builder.getRequestP2PConfiguration(),
                 builder.getRoutingConfiguration());
         routingBuilder.setLocationKey(builder.getLocationKey());
         routingBuilder.setDomainKey(builder.getDomainKey());
-        /*
-         * if(contentKeys.size() == 1) { routingBuilder.setContentKey(contentKeys.iterator().next()); } else
-         * if(contentKeys.size() > 1) { DefaultBloomfilterFactory factory = new DefaultBloomfilterFactory();
-         * SimpleBloomFilter<Number160> bf = factory.createContentKeyBloomFilter(); for(Number160 contentKey:
-         * contentKeys) { bf.add(contentKey); } routingBuilder.setKeyBloomFilter(bf); }
-         */
-        return routing.route(routingBuilder, type, channelCreator);
+        return routingBuilder;
+    }
+    
+    private static void fillRoutingBuilder(final SearchableBuilder builder, final RoutingBuilder routingBuilder) {
+        if (builder.from()!=null && builder.to() !=null) {
+        	routingBuilder.setRange(builder.from(), builder.to());
+        } else if (builder.contentKeys().size() == 1) {
+        	routingBuilder.setContentKey(builder.contentKeys().iterator().next());
+        }
+        else if(builder.contentKeys().size() > 1) {
+        	DefaultBloomfilterFactory factory = new DefaultBloomfilterFactory();
+        	SimpleBloomFilter<Number160> bf = factory.createContentKeyBloomFilter();
+        	for (Number160 contentKey : builder.contentKeys()) {
+        		bf.add(contentKey);
+        	}
+        	routingBuilder.setKeyBloomFilter(bf);
+        }
     }
 
     /**

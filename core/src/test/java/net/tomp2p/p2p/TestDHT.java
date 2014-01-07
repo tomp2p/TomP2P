@@ -632,7 +632,7 @@ public class TestDHT {
 			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
 			Set<Number160> test2 = new HashSet<Number160>();
 			test2.add(test);
-			fget = peers[67].digest(nr).setContentKeys(test2).start();
+			fget = peers[67].digest(nr).contentKeys(test2).start();
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
@@ -1517,6 +1517,58 @@ public class TestDHT {
 				slave.shutdown().await();
 			}
 		}
+	}
+	
+	@Test
+	public void removeFromToTest3() throws IOException, ClassNotFoundException {
+		Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(true).ports(5000).makeAndListen();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(true).masterPeer(p1)
+		        .makeAndListen();
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+		Number160 lKey = Number160.createHash("location");
+		Number160 dKey = Number160.createHash("domain");
+		Number160 cKey = Number160.createHash("content");
+		String data = "test";
+		p2.put(lKey).setData(cKey, new Data(data)).setDomainKey(dKey).start().awaitUninterruptibly();
+		FutureRemove futureRemove = p1.remove(lKey).setDomainKey(dKey).contentKey(cKey).start();
+		futureRemove.awaitUninterruptibly();
+		// check with a normal digest
+		FutureDigest futureDigest = p1.digest(lKey).setContentKey(cKey).setDomainKey(dKey).start();
+		futureDigest.awaitUninterruptibly();
+		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		// check with a from/to digest
+		futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+		futureDigest.awaitUninterruptibly();
+		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+	
+
+	@Test
+	public void removeFromToTest4() throws IOException, ClassNotFoundException {
+		Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(true).ports(5000).makeAndListen();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(true).masterPeer(p1)
+		        .makeAndListen();
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+		Number160 lKey = Number160.createHash("location");
+		Number160 dKey = Number160.createHash("domain");
+		Number160 cKey = Number160.createHash("content");
+		String data = "test";
+		p2.put(lKey).setData(cKey, new Data(data)).setDomainKey(dKey).start().awaitUninterruptibly();
+		FutureRemove futureRemove = p1.remove(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+		futureRemove.awaitUninterruptibly();
+		FutureDigest futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
+		futureDigest.awaitUninterruptibly();
+		// should be empty
+		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
 	}
 
 	public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,

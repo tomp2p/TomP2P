@@ -104,6 +104,9 @@ public class NeighborRPC extends DispatchHandler {
             message.setBloomFilter(searchValues.contentBloomFilter());
         } else if (searchValues.contentKey() != null) {
             message.setKey(searchValues.contentKey());
+            if (searchValues.rangeKey() != null) {
+            	message.setKey(searchValues.rangeKey());
+            }
         }
 
         FutureResponse futureResponse = new FutureResponse(message);
@@ -140,6 +143,7 @@ public class NeighborRPC extends DispatchHandler {
         // check content length, 0 for content not here , > 0 content here
         // int contentLength = -1;
         Number160 contentKey = message.getKey(2);
+        Number160 rangeKey = message.getKey(3);
         SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
         SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
         // it is important to set an integer if a value is present
@@ -149,7 +153,12 @@ public class NeighborRPC extends DispatchHandler {
                 final DigestInfo digestInfo;
                 if (contentKey != null) {
                     Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
-                    Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
+                    Number640 to;
+                    if(rangeKey !=null) {
+                    	to = new Number640(locationAndDomainKey, rangeKey, Number160.MAX_VALUE);
+                    } else {
+                    	to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
+                    }
                     digestInfo = peerBean().storage().digest(from, to, -1, true);
                 } else if (keyBloomFilter != null || contentBloomFilter != null) {
                     digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
@@ -188,6 +197,7 @@ public class NeighborRPC extends DispatchHandler {
         private final SimpleBloomFilter<Number160> keyBloomFilter;
         private final SimpleBloomFilter<Number160> contentBloomFilter;
         private final Number160 contentKey;
+        private final Number160 rangeKey;
         private final Number160 locationKey;
         private final Number160 domainKey;
 
@@ -205,6 +215,7 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = null;
+            this.rangeKey = null;
         }
 
         /**
@@ -224,6 +235,16 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = contentKey;
+            this.rangeKey = null;
+        }
+        
+        public SearchValues(final Number160 locationKey, final Number160 domainKey, final Number160 from, Number160 to) {
+            this.locationKey = locationKey;
+            this.domainKey = domainKey;
+            this.keyBloomFilter = null;
+            this.contentBloomFilter = null;
+            this.contentKey = from;
+            this.rangeKey = to;
         }
 
         /**
@@ -244,6 +265,7 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = null;
             this.contentKey = null;
+            this.rangeKey = null;
         }
 
         /**
@@ -268,6 +290,7 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = contentBloomFilter;
             this.contentKey = null;
+            this.rangeKey = null;
         }
 
         /**
@@ -303,6 +326,10 @@ public class NeighborRPC extends DispatchHandler {
          */
         public Number160 contentKey() {
             return contentKey;
+        }
+        
+        public Number160 rangeKey() {
+        	return rangeKey;
         }
     }
 }

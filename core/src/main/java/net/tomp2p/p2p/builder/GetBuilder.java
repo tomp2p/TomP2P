@@ -27,7 +27,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
-public class GetBuilder extends DHTBuilder<GetBuilder> {
+public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuilder {
 
     private final static FutureGet FUTURE_SHUTDOWN = new FutureGet(null)
             .setFailed("get builder - peer is shutting down");
@@ -69,7 +69,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
         self(this);
     }
 
-    public Collection<Number160> getContentKeys() {
+    public Collection<Number160> contentKeys() {
         return contentKeys;
     }
 
@@ -82,7 +82,7 @@ public class GetBuilder extends DHTBuilder<GetBuilder> {
      * @param contentKeys
      * @return
      */
-    public GetBuilder setContentKeys(Collection<Number160> contentKeys) {
+    public GetBuilder contentKeys(Collection<Number160> contentKeys) {
         this.contentKeys = contentKeys;
         return this;
     }

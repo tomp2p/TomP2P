@@ -115,10 +115,11 @@ public class Encoder {
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.getDataMap(next.number());
+                
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
-                        buf.writeBytes(dataMap.locationKey().toByteArray());
+                    	buf.writeBytes(dataMap.locationKey().toByteArray());
                         buf.writeBytes(dataMap.domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().toByteArray());
                         buf.writeBytes(dataMap.versionKey().toByteArray());

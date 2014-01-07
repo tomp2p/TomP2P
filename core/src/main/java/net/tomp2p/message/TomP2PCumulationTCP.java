@@ -34,7 +34,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			ctx.fireChannelRead(msg);
 			return;
 		}
-
+		
 		final ByteBuf buf = (ByteBuf) msg;
 		final InetSocketAddress sender = (InetSocketAddress) ctx.channel().remoteAddress();
 
@@ -52,9 +52,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			if (!cumulation.isReadable()) {
                 cumulation.release();
                 cumulation = null;
-            } else {
-            	cumulation.discardSomeReadBytes();
-            }
+            } // no need to discard bytes as this was done in the decoder already
 		}
 	}
 

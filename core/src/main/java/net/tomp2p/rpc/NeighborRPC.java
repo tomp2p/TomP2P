@@ -24,7 +24,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -134,6 +134,7 @@ public class NeighborRPC extends DispatchHandler {
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         SortedSet<PeerAddress> neighbors = peerBean().peerMap().closePeers(locationKey, NEIGHBOR_SIZE);
+        LOG.debug("found the following neighbors {}", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);
         responseMessage.setNeighborsSet(neighborSet);
         // check for fastget, -1 if, no domain provided, so we cannot

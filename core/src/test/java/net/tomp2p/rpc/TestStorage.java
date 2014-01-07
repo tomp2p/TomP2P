@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,12 +13,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyMapByte;
@@ -1145,4 +1151,56 @@ public class TestStorage {
             }
         }
     }
+    
+    @Test
+	public void testData480() throws Exception {
+    	final Random rnd = new Random(42L);
+		Peer master = null;
+		Peer slave = null;
+		ChannelCreator cc = null;
+		try {
+
+			master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
+			slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
+			
+			Map<Number640,Data> tmp = new HashMap<>();
+			for(int i=0;i<5;i++) {
+				byte[] me = new byte[480];
+				Arrays.fill(me, (byte)(i-6));
+				Data test = new Data(me);
+				tmp.put(new Number640(rnd), test);
+			}
+			
+			PutBuilder pb = master.put(new Number160("0x51")).setDataMap(tmp);
+			
+			FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
+            fcc.awaitUninterruptibly();
+            cc = fcc.getChannelCreator();
+			
+			FutureResponse fr = master.getStoreRPC().put(slave.getPeerAddress(), pb, cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(true, fr.isSuccess());
+			
+			GetBuilder gb = master.get(new Number160("0x51")).setDomainKey(Number160.ZERO);
+
+			fr = master.getStoreRPC().get(slave.getPeerAddress(), gb, cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(true, fr.isSuccess());
+
+			System.err.println("done");
+			
+			
+
+		} finally {
+			if (cc != null) {
+                cc.shutdown().awaitListenersUninterruptibly();
+            }
+            if (master != null) {
+            	master.shutdown().await();
+            }
+            if (slave != null) {
+            	slave.shutdown().await();
+            }
+		}
+	}
 }

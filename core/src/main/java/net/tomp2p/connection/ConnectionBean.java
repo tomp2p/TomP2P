@@ -97,7 +97,7 @@ public class ConnectionBean {
     public Sender sender() {
         return sender;
     }
-
+    
     /**
      * @return The channel server that listens on incoming connections
      */

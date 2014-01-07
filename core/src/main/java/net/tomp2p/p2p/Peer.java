@@ -26,6 +26,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.connection.RelaySender;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -62,6 +63,7 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
+
 
 
 import org.slf4j.Logger;
@@ -561,4 +563,9 @@ public class Peer {
     public boolean isShutdown() {
         return shutdown;
     }
+
+	public void setRelaySender(RelaySender relaySender) {
+		// TODO Auto-generated method stub
+		
+	}
 }

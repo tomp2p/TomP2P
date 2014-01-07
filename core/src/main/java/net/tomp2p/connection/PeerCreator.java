@@ -63,6 +63,7 @@ public class PeerCreator {
 
 	private final boolean master;
 
+
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
 	/**

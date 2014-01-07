@@ -1,7 +1,6 @@
 package net.tomp2p.message;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.Attribute;
@@ -30,7 +29,9 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -68,7 +69,7 @@ public class Decoder {
 	private KeyMapByte keyMapByte = null;
 
 	private int bufferSize = -1;
-	private Buffer buffer = null;
+	private DataBuffer buffer = null;
 
 	private int trackerDataSize = -1;
 	private TrackerData trackerData = null;
@@ -417,27 +418,23 @@ public class Decoder {
 					bufferSize = buf.readInt();
 				}
 				if (buffer == null) {
-					ByteBuf tmp = Unpooled.compositeBuffer();
-					buffer = new Buffer(tmp, bufferSize);
+					buffer = new DataBuffer();
 				}
-				int already = buffer.alreadyRead();
-				int readable = buf.readableBytes();
-				int remaining = bufferSize - already;
-				int toread = Math.min(remaining, readable);
-				// Unpooled.copiedBuffer(buf.duplicate().writerIndex(writerIndex))
-				buffer.addComponent(buf.slice(buf.readerIndex(), toread));
-				// slice and addComponent do not modifie the reader or the
-				// writer, thus we need to do this on our own
-				buf.skipBytes(toread);
-				// buffer.buffer().writerIndex(buffer.buffer().writerIndex() +
-				// toread);
-				// increase writer index
-				if (buffer.incRead(toread) != bufferSize) {
-					LOG.debug("we are still looking for data, indicate that we are not finished yet, "
-							+ "read = {}, size = {}", buffer.alreadyRead(), bufferSize);
-					return false;
+				
+				final int already = buffer.alreadyTransferred();
+				final int remaining = bufferSize - already;
+				// already finished
+				if (remaining != 0) {
+					int read = buffer.transferFrom(buf, remaining);
+					if(read != remaining) {
+						LOG.debug("we are still looking for data, indicate that we are not finished yet, "
+								+ "read = {}, size = {}", buffer.alreadyTransferred(), bufferSize);
+						return false;
+					}
 				}
-				message.setBuffer(buffer);
+				
+				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(buffer.toByteBufs());
+				message.setBuffer(new Buffer(buf2, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				buffer = null;

@@ -75,12 +75,21 @@ public class DataBuffer {
 	}
 
 	/**
-	 * @return The ByteBuf backed by the buffers stored in here. The buffer is
+	 * @return The wrapped ByteBuf backed by the buffers stored in here. The buffer is
 	 *         not copied here.
 	 */
 	public ByteBuf toByteBuf() {
 		final DataBuffer copy = shallowCopy();
 		return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
+	}
+	
+	/**
+	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
+	 *         not copied here.
+	 */
+	public ByteBuf[] toByteBufs() {
+		final DataBuffer copy = shallowCopy();
+		return copy.buffers.toArray(new ByteBuf[0]);
 	}
 
 	/**

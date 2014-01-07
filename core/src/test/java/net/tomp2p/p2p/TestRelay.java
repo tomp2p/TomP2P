@@ -62,7 +62,7 @@ public class TestRelay {
         Thread.sleep(10000);
         pcSlave.close();
         pcMaster.close();
-        LOG.error("done");
+        System.err.println("done");
         
         } finally {
             if (master != null) {

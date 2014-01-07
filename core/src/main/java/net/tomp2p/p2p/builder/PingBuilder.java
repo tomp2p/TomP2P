@@ -146,17 +146,9 @@ public class PingBuilder {
         } else {
             if (peerAddress != null) {
                 if (tcpPing) {
-                	if(peerAddress.isRelay()) {
-                		return ping(PeerSocketAddress.createSocketTCP(peerAddress.getPeerSocketAddresses()[0]), peerAddress.getPeerId(), false);
-                	} else {
-                        return ping(peerAddress.createSocketTCP(), peerAddress.getPeerId(), false);
-                	}
+                	return ping(peerAddress, false);
                 } else {
-                	if(peerAddress.getPeerSocketAddresses().length > 0) {
-                		return ping(PeerSocketAddress.createSocketTCP(peerAddress.getPeerSocketAddresses()[0]), peerAddress.getPeerId(), true);
-                	} else {
-                		return ping(peerAddress.createSocketUDP(), peerAddress.getPeerId(), true);
-                	}
+                	return ping(peerAddress, true);
                 }
             } else if (inetAddress != null) {
                 if (tcpPing) {
@@ -228,8 +220,20 @@ public class PingBuilder {
      * @return The future response
      */
     public FutureResponse ping(final InetSocketAddress address, final Number160 peerId, final boolean isUDP) {
-        final RequestHandler<FutureResponse> request = peer.getHandshakeRPC().ping(
-                new PeerAddress(peerId, address), connectionConfiguration);
+        return ping(new PeerAddress(peerId, address), isUDP);
+    }
+    
+    /**
+     * Pings a peer.
+     * 
+     * @param peerAddress
+     *            The peer address of the remote peer.
+     * @param isUDP
+     *            Set to true if UDP should be used, false for TCP.
+     * @return The future response
+     */
+    public FutureResponse ping(PeerAddress peerAddress, final boolean isUDP) {
+        final RequestHandler<FutureResponse> request = peer.getHandshakeRPC().ping(peerAddress, connectionConfiguration);
         if (isUDP) {
             FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 0);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {

@@ -40,6 +40,9 @@ public class RelayForwarder extends DirectDataRPC {
 		// Send message via direct message through the open connection to the unreachable peer
 		final boolean udp = message.isUdp();
 		
+		System.err.println("active: "+ futurePeerConnection.getObject().channelFuture().channel().isActive());
+		System.err.println("open: " +futurePeerConnection.getObject().channelFuture().channel().isOpen());
+		
 		Buffer buf = RelayUtils.encodeMessage(message);
 		FutureDirect fd = peer.sendDirect(futurePeerConnection).setBuffer(buf).start();
 		

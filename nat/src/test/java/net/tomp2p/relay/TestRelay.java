@@ -103,17 +103,11 @@ public class TestRelay {
 			Assert.assertTrue(rf.isSuccess());
 			
 			//Check if flags are set correctly
-			//Assert.assertTrue(slave.getPeerAddress().isRelay()); //TODO
+			Assert.assertTrue(slave.getPeerAddress().isRelay());
 			Assert.assertFalse(slave.getPeerAddress().isFirewalledTCP());
 			Assert.assertFalse(slave.getPeerAddress().isFirewalledUDP());
 
 			// Ping the unreachable peer from any peer
-			System.out.print("Send UDP ping to unreachable peer");
-			BaseFuture f2 = peers[rnd.nextInt(nrOfNodes)].ping().setPeerAddress(slave.getPeerAddress()).start();
-			f2.awaitUninterruptibly();
-			Assert.assertTrue(f2.isSuccess());
-			System.out.println("...done");
-
 			System.out.print("Send TCP ping to unreachable peer");
 			BaseFuture f3 = peers[rnd.nextInt(nrOfNodes)].ping().setTcpPing().setPeerAddress(slave.getPeerAddress()).start();
 			f3.awaitUninterruptibly();

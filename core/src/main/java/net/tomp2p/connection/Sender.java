@@ -62,7 +62,7 @@ public class Sender {
 	private final PeerStatusListener[] peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
-	private PingBuilder pingBuilder;
+	private PingFactory pingFactory;
 
 	/**
 	 * Creates a new sender with the listeners for offline peers.
@@ -84,11 +84,11 @@ public class Sender {
 	}
 
 	public PingBuilder pingBuilder() {
-		return pingBuilder;
+		return pingFactory.ping();
 	}
 
-	public Sender pingBuilder(PingBuilder pingBuilder) {
-		this.pingBuilder = pingBuilder;
+	public Sender pingBuilder(PingFactory pingFactory) {
+		this.pingFactory = pingFactory;
 		return this;
 	}
 
@@ -211,7 +211,7 @@ public class Sender {
 
 		HeartBeat heartBeat = null;
 		if (peerConnection != null) {
-			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilder);
+			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingFactory.ping());
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 

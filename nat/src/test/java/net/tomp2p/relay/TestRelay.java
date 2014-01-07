@@ -124,7 +124,6 @@ public class TestRelay {
 			final String request = "Hello ";
 			final String response = "World!";
 			slave.setObjectDataReply(new ObjectDataReply() {
-				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					Assert.assertEquals(request.toString(), request);
 					return response;
@@ -132,12 +131,10 @@ public class TestRelay {
 			});
 			FutureDirect fd = peers[rnd.nextInt(nrOfNodes)].sendDirect(slave.getPeerAddress()).setObject(request).start();
 			fd.addListener(new BaseFutureListener<FutureDirect>() {
-				@Override
 				public void operationComplete(FutureDirect future) throws Exception {
 					Assert.assertEquals(response, future.object());
 				}
 
-				@Override
 				public void exceptionCaught(Throwable t) throws Exception {
 					Assert.fail(t.getMessage());
 				}

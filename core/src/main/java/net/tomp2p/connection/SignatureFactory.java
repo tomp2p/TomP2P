@@ -16,29 +16,49 @@
 
 package net.tomp2p.connection;
 
+import io.netty.buffer.ByteBuf;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.SignatureException;
+
+import net.tomp2p.message.SHA1Signature;
 
 /**
- * This interface is used in the encoder and decoders. A user may set its own signature algorithm.
+ * This interface is used in the encoder and decoders. A user may set its own
+ * signature algorithm.
  * 
  * @author Thomas Bocek
  * 
  */
 public interface SignatureFactory {
 
-    /**
-     * @return The signature mechanism
-     */
-    Signature signatureInstance();
+	/**
+	 * @return The signature mechanism
+	 */
+	Signature signatureInstance();
 
-    /**
-     * The public key is sent over the wire, thus the decoding of it needs special handling.
-     * 
-     * @param me
-     *            The byte array that contains the public key
-     * @return The decoded public key
-     */
-    PublicKey decodePublicKey(byte[] me);
+	/**
+	 * The public key is sent over the wire, thus the decoding of it needs
+	 * special handling.
+	 * 
+	 * @param me
+	 *            The byte array that contains the public key
+	 * @return The decoded public key
+	 */
+	PublicKey decodePublicKey(byte[] me);
+
+	PublicKey decodePublicKey(ByteBuf buf);
+
+	void encodePublicKey(PublicKey publicKey, ByteBuf buf);
+
+	SHA1Signature sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
+			SignatureException, IOException;
+
+	boolean verify(PublicKey publicKey, ByteBuf buf, SHA1Signature signatureEncoded)
+			throws SignatureException, InvalidKeyException, IOException;
 
 }

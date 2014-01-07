@@ -89,8 +89,8 @@ public class QuitRPC extends DispatchHandler {
     public FutureResponse quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
             final ChannelCreator channelCreator) {
         final Message message = createMessage(remotePeer, QUIT_COMMAND, Type.REQUEST_FF_1);
-        if (shutdownBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+        if (shutdownBuilder.isSign()) {
+            message.setPublicKeyAndSign(shutdownBuilder.keyPair());
         }
 
         FutureResponse futureResponse = new FutureResponse(message);

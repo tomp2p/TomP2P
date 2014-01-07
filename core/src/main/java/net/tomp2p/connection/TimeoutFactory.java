@@ -133,6 +133,10 @@ public class TimeoutFactory {
                     final Attribute<PeerAddress> pa = ctx.attr(Decoder.PEER_ADDRESS_KEY);
                     recipient = pa.get();
                 }
+                
+                if(peerStatusListeners == null) {
+                	return;
+                }
 
                 for (PeerStatusListener peerStatusListener : peerStatusListeners) {
                     if (recipient != null) {

@@ -4,12 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -18,7 +16,10 @@ import net.tomp2p.peers.Maintainable;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
 
-public class MaintenanceTask extends TimerTask {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MaintenanceTask implements Runnable {
     
     private static final Logger LOG = LoggerFactory.getLogger(MaintenanceTask.class);
     private static final int MAX_PING = 5;
@@ -35,10 +36,12 @@ public class MaintenanceTask extends TimerTask {
     private boolean shutdown = false;
 
     private final Object lock = new Object();
+    
+    private ScheduledFuture<?> scheduledFuture;
 
-    public void init(Peer peer, Timer timer) {
+    public void init(Peer peer, ScheduledExecutorService timer) {
         this.peer = peer;
-        timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
+        scheduledFuture = timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -72,7 +75,10 @@ public class MaintenanceTask extends TimerTask {
     }
 
     public FutureDone<Void> shutdown() {
-        cancel();
+    	if(scheduledFuture!=null) {
+    		scheduledFuture.cancel(false);
+    		//TODO: check if synchronized is really necessary here
+    	}
         final FutureDone<Void> futureShutdown = new FutureDone<Void>();
         synchronized (lock) {
             shutdown = true;
@@ -87,7 +93,6 @@ public class MaintenanceTask extends TimerTask {
                         }
                     }
                 });
-
             }
         }
         return futureShutdown;

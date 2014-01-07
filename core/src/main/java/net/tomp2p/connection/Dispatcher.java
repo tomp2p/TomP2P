@@ -53,7 +53,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     private final int p2pID;
     private final PeerBean peerBean;
+    private final int heartBeatMillis;
 
+    //copy on write map
     private volatile Map<Number160, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number160, Map<Integer, DispatchHandler>>();
 
     /**
@@ -64,9 +66,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerBean
      *            .
      */
-    public Dispatcher(final int p2pID, final PeerBean peerBean) {
+    public Dispatcher(final int p2pID, final PeerBean peerBean, final int heartBeatMillis) {
         this.p2pID = p2pID;
         this.peerBean = peerBean;
+        this.heartBeatMillis = heartBeatMillis;
     }
 
     /**
@@ -86,8 +89,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            will receive these messages!
      */
     public void registerIoHandler(final Number160 peerId, final DispatchHandler ioHandler, final int... names) {
-        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
-                : new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
+        Map<Number160, Map<Integer, DispatchHandler>> copy = new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
         Map<Integer, DispatchHandler> types = copy.get(peerId);
         if (types == null) {
             types = new HashMap<Integer, DispatchHandler>();
@@ -106,11 +108,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            The Id of the peer to remove the handlers .
      */
     public void removeIoHandler(final Number160 peerId) {
-        if (ioHandlers == null) {
-            return;
-        }
-        Map<Number160, Map<Integer, DispatchHandler>> copy = ioHandlers == null ? new HashMap<Number160, Map<Integer, DispatchHandler>>()
-                : new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
+        Map<Number160, Map<Integer, DispatchHandler>> copy = new HashMap<Number160, Map<Integer, DispatchHandler>>(ioHandlers);
         copy.remove(peerId);
         ioHandlers = Collections.unmodifiableMap(copy);
     }
@@ -139,7 +137,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);
-            PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess());
+            PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
             LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
@@ -242,9 +240,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return the handler for the given message or null if none has been found
      */
     private DispatchHandler searchHandler(final Number160 recipientID, final Integer command) {
-        if (ioHandlers == null) {
-            return null;
-        }
         Map<Integer, DispatchHandler> types = ioHandlers.get(recipientID);
         if (types != null && types.containsKey(command)) {
             return types.get(command);

@@ -21,6 +21,8 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.IOException;
@@ -34,6 +36,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.utils.Pair;
 
 import org.junit.After;
 import org.junit.Before;
@@ -83,7 +87,11 @@ public class TestChannelCreator {
         c.interfaceBindings(bindings);
         c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
-        cs = new ChannelServer(c, null, null);
+        final EventLoopGroup bossGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
+    	final EventLoopGroup workerGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+        cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         cs.startup();
     }
 
@@ -105,7 +113,11 @@ public class TestChannelCreator {
     @Ignore
     public void sink() throws InterruptedException, IOException {
         ChannelServerConficuration c = new ChannelServerConficuration();
-        ChannelServer cs = new ChannelServer(c, null, null);
+        final EventLoopGroup bossGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
+    	final EventLoopGroup workerGroup = new NioEventLoopGroup(2,
+    	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
+        ChannelServer cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
         final int port = 4000;
         cs.startupTCP(new InetSocketAddress("127.0.0.1", port), new ChannelServerConficuration());
         // wait forever.
@@ -130,7 +142,7 @@ public class TestChannelCreator {
         final int timeout = 4000;
         for (int j = 0; j < rounds; j++) {
 
-            ChannelClientConfiguration c = new ChannelClientConfiguration();
+            ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
             c.pipelineFilter(new MyPipeLine());
             
             final ChannelCreator channelCreator2 = new ChannelCreator(ev, new FutureDone<Void>(), 0,
@@ -140,7 +152,7 @@ public class TestChannelCreator {
             }
 
             final CountDownLatch countDownLatch = new CountDownLatch(connections);
-            final Map<String, ChannelHandler> tmp = new HashMap<String, ChannelHandler>();
+            final Map<String, Pair<EventExecutorGroup, ChannelHandler>> tmp = new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 
             final GenericFutureListener<ChannelFuture> handler = new GenericFutureListener<ChannelFuture>() {
                 @Override
@@ -186,7 +198,7 @@ public class TestChannelCreator {
 
         for (int j = 0; j < rounds; j++) {
 
-            ChannelClientConfiguration c = new ChannelClientConfiguration();
+            ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
             c.pipelineFilter(new MyPipeLine());
             final ChannelCreator channelCreator2 = new ChannelCreator(ev, new FutureDone<Void>(),
                     connections, 0, c);
@@ -196,7 +208,7 @@ public class TestChannelCreator {
             }
 
             final CountDownLatch countDownLatch = new CountDownLatch(connections);
-            final Map<String, ChannelHandler> tmp = new HashMap<String, ChannelHandler>();
+            final Map<String, Pair<EventExecutorGroup, ChannelHandler>> tmp = new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 
             GenericFutureListener<ChannelFuture> handler = new GenericFutureListener<ChannelFuture>() {
                 @Override
@@ -229,13 +241,13 @@ public class TestChannelCreator {
     private static class MyPipeLine implements PipelineFilter {
 
         @Override
-        public void filter(Map<String, ChannelHandler> channelHandlers, boolean tcp, boolean client) {
-            for(Iterator<Map.Entry<String, ChannelHandler>> iterator = channelHandlers.entrySet().iterator();iterator.hasNext(); ) {
+        public Map<String, Pair<EventExecutorGroup, ChannelHandler>> filter(Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, boolean tcp, boolean client) {
+            for(Iterator<Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>>> iterator = channelHandlers.entrySet().iterator();iterator.hasNext(); ) {
                 if(iterator.next().getValue()==null) {
                     iterator.remove();
                 }
             }
-            
+            return channelHandlers;
         }
         
     }

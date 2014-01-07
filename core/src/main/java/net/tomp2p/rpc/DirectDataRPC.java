@@ -73,8 +73,8 @@ public class DirectDataRPC extends DispatchHandler {
         final FutureResponse futureResponse = new FutureResponse(message,
                 sendDirectBuilder.progressListener());
 
-        if (sendDirectBuilder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+        if (sendDirectBuilder.isSign()) {
+            message.setPublicKeyAndSign(sendDirectBuilder.keyPair());
         }
         message.streaming(sendDirectBuilder.streaming());
 

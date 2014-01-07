@@ -27,7 +27,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
 public class AddBuilder extends DHTBuilder<AddBuilder> {
-    private final static FuturePut FUTURE_SHUTDOWN = new FuturePut(null)
+    private final static FuturePut FUTURE_SHUTDOWN = new FuturePut(null, 0, 0)
             .setFailed("add builder - peer is shutting down");
     private Collection<Data> dataSet;
 

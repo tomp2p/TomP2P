@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.p2p;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,16 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedSet;
-import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.PutBuilder;
-import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Maxat Pernebayev
  * 
  */
-public class ReplicationExecutor extends TimerTask implements ResponsibilityListener {
+public class ReplicationExecutor implements ResponsibilityListener, Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(ReplicationExecutor.class);
 
     private final StorageLayer storage;
@@ -63,12 +62,17 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
     // default replication for put and add is 6
     private static final int REPLICATION = 6;
 
-    private final Timer timer;
+    private final ScheduledExecutorService timer;
     private final Random random;
 
     private final int delayMillis;
 
-    private AutomaticReplication automaticReplication;
+    //
+    private final ReplicationFactor replicationFactor;
+    
+    private final ReplicationSender replicationSender;
+    
+    private ScheduledFuture<?> scheduledFuture;
 
     /**
      * Constructor for the default indirect replication.
@@ -76,7 +80,8 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
      * @param peer
      *            The peer
      */
-    public ReplicationExecutor(final Peer peer, final Random random, final Timer timer, final int delayMillis) {
+    public ReplicationExecutor(final Peer peer, final ReplicationFactor replicationFactor,
+            ReplicationSender replicationSender, final Random random, final ScheduledExecutorService timer, final int delayMillis) {
         this.peer = peer;
         this.storage = peer.getPeerBean().storage();
         this.storageRPC = peer.getStoreRPC();
@@ -86,11 +91,12 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         this.random = random;
         this.timer = timer;
         this.delayMillis = delayMillis;
-        this.automaticReplication = new AutomaticReplication(0.999999, peer.getPeerBean().peerMap());
+        this.replicationFactor = replicationFactor;
+        this.replicationSender = replicationSender;
     }
 
-    public void init(Peer peer, int intervalMillis) {
-        timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis);
+    public void init(int intervalMillis) {
+    	scheduledFuture = timer.scheduleAtFixedRate(this, intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -99,9 +105,10 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 .serverPeerAddress());
         if (!delayed) {
             Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
-            Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
+                    Number160.MAX_VALUE);
             final Map<Number640, Data> dataMap = storage.get(min, max, -1, true);
-            sendDirect(other, locationKey, dataMap);
+            replicationSender.sendDirect(other, locationKey, dataMap);
             LOG.debug("transfer from {} to {} for key {}", storageRPC.peerBean().serverPeerAddress(), other,
                     locationKey);
         } else {
@@ -110,7 +117,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
                 public void run() {
                     otherResponsible(locationKey, other, false);
                 }
-            }, random.nextInt(delayMillis));
+            }, random.nextInt(delayMillis), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -131,9 +138,8 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
             synchronizeData(locationKey);
         }
         // recalculate replication factor
-        int replicationFactor = automaticReplication.getReplicationFactor();
+        int replicationFactor = ReplicationExecutor.this.replicationFactor.factor();
         peer.getPeerBean().replicationStorage().setReplicationFactor(replicationFactor);
-
     }
 
     /**
@@ -172,11 +178,7 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         for (PeerAddress peerAddress : sortedSet) {
             count++;
             closePeers.add(peerAddress);
-            for (Map.Entry<Number640, Data> entry : dataMapConverted.entrySet()) {
-                FutureDone<SynchronizationStatistics> future = peer.synchronize(peerAddress)
-                        .key(entry.getKey()).start();
-                peer.notifyAutomaticFutures(future);
-            }
+            replicationSender.sendDirect(peerAddress, locationKey, dataMapConverted);
             if (count == replicationFactor) {
                 break;
             }
@@ -184,37 +186,54 @@ public class ReplicationExecutor extends TimerTask implements ResponsibilityList
         return closePeers;
     }
 
-    /**
-     * If an other peer is responsible, we send this peer our data, so that the other peer can take care of this.
-     * 
-     * @param other
-     *            The other peer
-     * @param locationKey
-     *            The location key
-     * @param domainKey
-     *            The domain key
-     * @param dataMapConvert
-     *            The data to store
-     */
-    protected void sendDirect(final PeerAddress other, final Number160 locationKey,
-            final Map<Number640, Data> dataMap) {
-        FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 1);
-        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future) throws Exception {
-                if (future.isSuccess()) {
-                    PutBuilder putBuilder = new PutBuilder(peer, locationKey);
-                    putBuilder.setDataMap(dataMap);
-                    FutureResponse futureResponse = storageRPC.put(other, putBuilder,
-                            future.getChannelCreator());
-                    Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
-                    peer.notifyAutomaticFutures(futureResponse);
-                } else {
-                    if (LOG.isErrorEnabled()) {
-                        LOG.error("otherResponsible failed " + future.getFailedReason());
+    public static class DefaultReplicationSender implements ReplicationSender {
+        private StorageRPC storageRPC;
+        private Peer peer;
+ 
+        @Override
+        public void init(Peer peer) {
+            this.peer = peer;
+            this.storageRPC = peer.getStoreRPC();
+        }
+
+        /**
+         * If an other peer is responsible, we send this peer our data, so that the other peer can take care of this.
+         * 
+         * @param other
+         *            The other peer
+         * @param locationKey
+         *            The location key
+         * @param domainKey
+         *            The domain key
+         * @param dataMapConvert
+         *            The data to store
+         */
+        public void sendDirect(final PeerAddress other, final Number160 locationKey,
+                final Map<Number640, Data> dataMap) {
+            FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 1);
+            futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                @Override
+                public void operationComplete(final FutureChannelCreator future) throws Exception {
+                    if (future.isSuccess()) {
+                        PutBuilder putBuilder = new PutBuilder(peer, locationKey);
+                        putBuilder.setDataMap(dataMap);
+                        FutureResponse futureResponse = storageRPC.put(other, putBuilder,
+                                future.getChannelCreator());
+                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                        peer.notifyAutomaticFutures(futureResponse);
+                    } else {
+                        if (LOG.isErrorEnabled()) {
+                            LOG.error("otherResponsible failed " + future.getFailedReason());
+                        }
                     }
                 }
-            }
-        });
+            });
+        }   
+    }
+    
+    public void shutdown() {
+    	if(scheduledFuture!=null) {
+    		scheduledFuture.cancel(false);
+    	}
     }
 }

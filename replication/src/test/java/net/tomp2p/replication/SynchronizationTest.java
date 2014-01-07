@@ -19,8 +19,6 @@ import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
-import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
-import net.tomp2p.p2p.builder.SynchronizationStatistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -235,8 +233,12 @@ public class SynchronizationTest {
         final AtomicReference<Type> ref = new AtomicReference<Type>(Type.UNKNOWN_ID);
         final AtomicReference<DataMap> ref2 = new AtomicReference<DataMap>();
 
-        final Peer sender = new PeerMaker(new Number160(1)).ports(4001).makeAndListen();
-        final Peer receiver = new PeerMaker(new Number160(2)).ports(4002).makeAndListen();
+        final PeerSync senderSync = new PeerSync();
+        final SyncSender syncSender = new SyncSender(senderSync);
+        final Peer sender = new PeerMaker(new Number160(1)).ports(4001).replicationSender(syncSender).makeAndListen();
+        final PeerSync receiverSync = new PeerSync();
+        final SyncSender syncReceiver = new SyncSender(receiverSync);
+        final Peer receiver = new PeerMaker(new Number160(2)).ports(4002).replicationSender(syncReceiver).makeAndListen();
 
         final Number160 locationKey = new Number160(100);
         final Number160 domainKey = Number160.ZERO;
@@ -258,9 +260,9 @@ public class SynchronizationTest {
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
                     SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
-                            sender, receiver.getPeerAddress());
+                            senderSync, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
-                    final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
+                    final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
                     futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                         @Override
@@ -284,9 +286,13 @@ public class SynchronizationTest {
     public void testInfoMessageNO() throws IOException, InterruptedException {
 
         final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
-
-        final Peer sender = new PeerMaker(new Number160(3)).ports(4003).makeAndListen();
-        final Peer receiver = new PeerMaker(new Number160(4)).ports(4004).makeAndListen();
+        
+        final PeerSync senderSync = new PeerSync();
+        final SyncSender syncSender = new SyncSender(senderSync);
+        final Peer sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+        final PeerSync receiverSync = new PeerSync();
+        final SyncSender syncReceiver = new SyncSender(receiverSync);
+        final Peer receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
 
         final Number160 locationKey = new Number160(200);
         final Number160 domainKey = Number160.ZERO;
@@ -307,9 +313,9 @@ public class SynchronizationTest {
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
                     SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
-                            sender, receiver.getPeerAddress());
+                            senderSync, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
-                    final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
+                    final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
                     futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                         @Override
@@ -332,8 +338,12 @@ public class SynchronizationTest {
 
         final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
-        final Peer sender = new PeerMaker(new Number160(5)).ports(4005).makeAndListen();
-        final Peer receiver = new PeerMaker(new Number160(6)).ports(4006).makeAndListen();
+        final PeerSync senderSync = new PeerSync();
+        final SyncSender syncSender = new SyncSender(senderSync);
+        final Peer sender = new PeerMaker(new Number160(5)).ports(4005).replicationSender(syncSender).makeAndListen();
+        final PeerSync receiverSync = new PeerSync();
+        final SyncSender syncReceiver = new SyncSender(receiverSync);
+        final Peer receiver = new PeerMaker(new Number160(6)).ports(4006).replicationSender(syncReceiver).makeAndListen();
 
         final Number160 locationKey = new Number160(300);
         final Number160 domainKey = Number160.ZERO;
@@ -357,9 +367,9 @@ public class SynchronizationTest {
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (future2.isSuccess()) {
                     SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(
-                            sender, receiver.getPeerAddress());
+                            senderSync, receiver.getPeerAddress());
                     synchronizationBuilder.dataMap(dataMap);
-                    final FutureResponse futureResponse = sender.getSynchronizationRPC().infoMessage(
+                    final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
                             receiver.getPeerAddress(), synchronizationBuilder, future2.getChannelCreator());
                     futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                         @Override
@@ -382,8 +392,12 @@ public class SynchronizationTest {
         Peer sender = null;
         Peer receiver = null;
         try {
-            sender = new PeerMaker(new Number160(9)).ports(4009).makeAndListen();
-            receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
+            final PeerSync senderSync = new PeerSync();
+            final SyncSender syncSender = new SyncSender(senderSync);
+            sender = new PeerMaker(new Number160(9)).ports(4009).replicationSender(syncSender).makeAndListen();
+            final PeerSync receiverSync = new PeerSync();
+            final SyncSender syncReceiver = new SyncSender(receiverSync);
+            receiver = new PeerMaker(new Number160(10)).ports(4010).replicationSender(syncReceiver).makeAndListen();
 
             final Number160 locationKey = new Number160(500);
             final Number160 domainKey = Number160.ZERO;
@@ -398,7 +412,7 @@ public class SynchronizationTest {
             sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
             receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-            FutureDone<SynchronizationStatistics> future = sender.synchronize(receiver.getPeerAddress())
+            FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress())
                     .key(key).start();
             future.awaitUninterruptibly();
 
@@ -422,8 +436,12 @@ public class SynchronizationTest {
         Peer sender = null;
         Peer receiver = null;
         try {
-            sender = new PeerMaker(new Number160(9)).ports(4009).makeAndListen();
-            receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
+            final PeerSync senderSync = new PeerSync();
+            final SyncSender syncSender = new SyncSender(senderSync);
+            sender = new PeerMaker(new Number160(9)).ports(4009).replicationSender(syncSender).makeAndListen();
+            final PeerSync receiverSync = new PeerSync();
+            final SyncSender syncReceiver = new SyncSender(receiverSync);
+            receiver = new PeerMaker(new Number160(10)).ports(4010).replicationSender(syncReceiver).makeAndListen();
 
             final Number160 locationKey = new Number160(500);
             final Number160 domainKey = Number160.ZERO;
@@ -438,7 +456,7 @@ public class SynchronizationTest {
             sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
             receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-            FutureDone<SynchronizationStatistics> future = sender.synchronize(receiver.getPeerAddress())
+            FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress())
                     .key(key).start();
             future.awaitUninterruptibly();
 
@@ -462,8 +480,12 @@ public class SynchronizationTest {
         Peer sender = null;
         Peer receiver = null;
         try {
-            sender = new PeerMaker(new Number160(9)).ports(4009).makeAndListen();
-            receiver = new PeerMaker(new Number160(10)).ports(4010).makeAndListen();
+            final PeerSync senderSync = new PeerSync();
+            final SyncSender syncSender = new SyncSender(senderSync);
+            sender = new PeerMaker(new Number160(9)).ports(4009).replicationSender(syncSender).makeAndListen();
+            final PeerSync receiverSync = new PeerSync();
+            final SyncSender syncReceiver = new SyncSender(receiverSync);
+            receiver = new PeerMaker(new Number160(10)).ports(4010).replicationSender(syncReceiver).makeAndListen();
 
             final Number160 locationKey = new Number160(600);
             final Number160 domainKey = Number160.ZERO;
@@ -475,7 +497,7 @@ public class SynchronizationTest {
 
             sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 
-            FutureDone<SynchronizationStatistics> future = sender.synchronize(receiver.getPeerAddress())
+            FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress())
                     .key(key).start();
             future.awaitUninterruptibly();
 

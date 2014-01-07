@@ -16,6 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.security.KeyPair;
+
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.RequestHandler;
@@ -31,7 +33,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SendDirectBuilderI;
 import net.tomp2p.utils.Utils;
 
-public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI{
+public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI, SignatureBuilder<SendDirectBuilder>{
     private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null)
             .setFailed0("Peer is shutting down");
 
@@ -51,7 +53,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
     private boolean forceUDP = false;
 
-    private boolean signMessage = false;
+    private KeyPair keyPair = null;
 
     private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
     private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
@@ -210,23 +212,6 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
         return this;
     }
 
-    /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     */
-    public boolean isSignMessage() {
-        return signMessage;
-    }
-
-    /**
-     * @param signMessage
-     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     * @return This class
-     */
-    public SendDirectBuilder setSignMessage(final boolean signMessage) {
-        this.signMessage = signMessage;
-        return this;
-    }
-
     /*
      * (non-Javadoc)
      * 
@@ -319,5 +304,52 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 
     public ProgressListener progressListener() {
         return progressListener;
+    }
+    
+    /**
+     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     */
+    public boolean isSign() {
+        return keyPair != null;
+    }
+
+    /**
+     * @param signMessage
+     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     * @return This class
+     */
+    public SendDirectBuilder sign(final boolean signMessage) {
+        if (signMessage) {
+            setSign();
+        } else {
+            this.keyPair = null;
+        }
+        return this;
+    }
+
+    /**
+     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     */
+    public SendDirectBuilder setSign() {
+        this.keyPair = peer.getPeerBean().keyPair();
+        return this;
+    }
+    
+    /**
+     * @param keyPair
+     *            The keyPair to sing the complete message. The key will be attached to the message and stored
+     *            potentially with a data object (if there is such an object in the message).
+     * @return This class
+     */
+    public SendDirectBuilder keyPair(KeyPair keyPair) {
+        this.keyPair = keyPair;
+        return this;
+    }
+
+    /**
+     * @return The current keypair to sign the message. If null, no signature is applied.
+     */
+    public KeyPair keyPair() {
+        return keyPair;
     }
 }

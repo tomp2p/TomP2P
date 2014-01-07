@@ -81,6 +81,13 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     protected void self(final K self2) {
         this.self = self2;
     }
+    
+    /**
+     * @return The object that stored this object. This is necessary for the builder pattern when using generics.
+     */
+    K self() {
+        return self;
+    }
 
     @Override
     public K await() throws InterruptedException {
@@ -320,6 +327,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
         } catch (final Exception e) {
             try {
                 listener.exceptionCaught(e);
+                listener.operationComplete(this);
             } catch (final Exception e1) {
                 LOG.error("Unexcpected exception in exceptionCaught()", e1);
             }

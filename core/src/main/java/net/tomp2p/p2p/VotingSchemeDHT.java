@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -30,6 +32,9 @@ import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 public class VotingSchemeDHT implements EvaluatingSchemeDHT {
+    
+    private static final NavigableMap<Number640, Number160> emptyMap = new TreeMap<Number640, Number160>();
+    
     @Override
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeysByte) {
         Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
@@ -127,7 +132,9 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
 
     @Override
     public DigestResult evaluate5(Map<PeerAddress, DigestResult> rawDigest) {
-        return evaluate0(rawDigest);
+        DigestResult retVal =  evaluate0(rawDigest);
+        //if its null, we know that we did not get any results. In order to return null, we return and empty digest result.
+        return retVal == null ? new DigestResult(emptyMap):retVal;
     }
 
     private static <K> K evaluate0(Map<PeerAddress, K> raw) {
@@ -152,33 +159,5 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
             }
         }
         return best;
-    }
-    
-    @Override
-    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawKeysByte) {
-        Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
-        Set<Number640> result = new HashSet<Number640>();
-
-        int size = rawKeysByte == null ? 0 : rawKeysByte.size();
-        int majority = (size + 1) / 2;
-
-        if (rawKeysByte != null) {
-            for (PeerAddress address : rawKeysByte.keySet()) {
-                Collection<Number640> keys480 = rawKeysByte.get(address).keySet();
-                if (keys480 != null) {
-                    for (Number640 key : keys480) {
-                        int c = 1;
-                        Integer count = counter.get(key);
-                        if (count != null)
-                            c = count + 1;
-                        counter.put(key, c);
-                        if (c >= majority)
-                            result.add(key);
-                    }
-                }
-            }
-        }
-
-        return result;
     }
 }

@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
@@ -140,8 +142,7 @@ public class StorageLayer {
             }
             if (contains) {
                 Data oldData = get(key);
-                boolean protectEntry = newData.protectedEntry();
-                if (!canUpdateEntry(key.getContentKey(), oldData, newData, protectEntry)) {
+                if (!canProtectEntry(key.getContentKey(), oldData, newData)) {
                     return PutStatus.FAILED_SECURITY;
                 }
             }
@@ -294,7 +295,14 @@ public class StorageLayer {
         Collection<Number640> toRemove = backend.subMapTimeout(time);
         if (toRemove.size() > 0) {
             for (Number640 key : toRemove) {
-                backend.remove(key);
+            	KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+                try {
+                	backend.remove(key);
+                	backend.removeTimeout(key);
+                	backend.removeResponsibility(key.getLocationKey());
+                } finally {
+                    lock.unlock();
+                }
             }
         }
     }
@@ -305,7 +313,8 @@ public class StorageLayer {
         try {
             Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                digestInfo.put(entry.getKey(), entry.getValue().basedOn());
+                Number160 basedOn = entry.getValue().basedOn();
+                digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
             }
             return digestInfo;
         } finally {
@@ -324,7 +333,8 @@ public class StorageLayer {
             for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                 if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
                     if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-                        digestInfo.put(entry.getKey(), entry.getValue().basedOn());
+                        Number160 basedOn = entry.getValue().basedOn();
+                        digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
                     }
                 }
             }
@@ -341,27 +351,13 @@ public class StorageLayer {
             try {
                 if (backend.contains(number640)) {
                     Data data = get(number640);
-                    digestInfo.put(number640, data.basedOn());
+                    Number160 basedOn = data.basedOn();
+                    digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
                 }
             } finally {
                 lock.unlock();
             }
         }
-        return digestInfo;
-    }
-
-    public DigestInfo digest(Number640 key) {
-        DigestInfo digestInfo = new DigestInfo();
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            if (backend.contains(key)) {
-                Data data = get(key);
-                digestInfo.put(key, data.hash());
-            }
-        } finally {
-            lock.unlock();
-        }
-
         return digestInfo;
     }
 
@@ -415,19 +411,12 @@ public class StorageLayer {
 
     private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey) {
         // we are in public key mode
-        if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
+        if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null && publicKey.getEncoded()!=null) {
             // if the hash of the public key is the same as the domain, we can
             // overwrite
             return isMine(entryKey, publicKey);
         }
         return false;
-    }
-
-    private boolean canUpdateEntry(Number160 contentKey, Data oldData, Data newData, boolean protectEntry) {
-        if (protectEntry) {
-            return canProtectEntry(contentKey, oldData, newData);
-        }
-        return true;
     }
 
     private boolean canProtectEntry(Number160 contentKey, Data oldData, Data newData) {
@@ -468,5 +457,15 @@ public class StorageLayer {
     public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
         return backend.findContentForResponsiblePeerID(peerID);
     }
+    
+    private class StorageMaintenanceTask implements Runnable {
+		@Override
+		public void run() {
+			checkTimeout();
+		}
+    }
 
+	public void init(ScheduledExecutorService timer, int storageIntervalMillis) {
+		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis, TimeUnit.MILLISECONDS);
+	}
 }

@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.p2p;
 
 import java.util.ArrayList;
 import java.util.Collection;

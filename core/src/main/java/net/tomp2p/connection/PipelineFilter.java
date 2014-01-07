@@ -18,7 +18,9 @@ package net.tomp2p.connection;
 
 import java.util.Map;
 
+import net.tomp2p.utils.Pair;
 import io.netty.channel.ChannelHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 /**
  * The user may modify the filter by adding, removing, or changing the handlers.
@@ -38,5 +40,5 @@ public interface PipelineFilter {
      *            True if this is the client side, false for the server side
      * @return The same, new, or changed array of handlers. It cannot have null elements
      */
-    void filter(Map<String,ChannelHandler> channelHandlers, boolean tcp, boolean client);
+	Map<String,Pair<EventExecutorGroup,ChannelHandler>> filter(Map<String,Pair<EventExecutorGroup,ChannelHandler>> channelHandlers, boolean tcp, boolean client);
 }

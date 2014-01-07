@@ -48,7 +48,6 @@ import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
-import net.tomp2p.p2p.builder.SynchronizationDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
@@ -60,7 +59,6 @@ import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 import net.tomp2p.rpc.StorageRPC;
-import net.tomp2p.rpc.SynchronizationRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
@@ -121,9 +119,7 @@ public class Peer {
     private TrackerRPC trackerRPC;
     // private TaskRPC taskRPC;
     private BroadcastRPC broadcastRPC;
-    private SynchronizationRPC synchronizationRPC;
 
-    //
     private boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = null;
@@ -273,17 +269,6 @@ public class Peer {
         }
         return broadcastRPC;
     }
-    
-    public void setSynchronizationRPC(SynchronizationRPC synchronizationRPC) {
-    	this.synchronizationRPC = synchronizationRPC;
-    }
-    
-    public SynchronizationRPC getSynchronizationRPC() {
-    	if(synchronizationRPC == null) {
-    		throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-    	}
-    	return synchronizationRPC;
-    }
 
     public DistributedRouting getDistributedRouting() {
         if (distributedRouting == null) {
@@ -381,6 +366,10 @@ public class Peer {
     public void setObjectDataReply(final ObjectDataReply objectDataReply) {
         getDirectDataRPC().setReply(objectDataReply);
     }
+    
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    	return createPeerConnection(destination, PeerConnection.HEART_BEAT_MILLIS);
+    }
 
     /**
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
@@ -396,7 +385,7 @@ public class Peer {
      * @return A class that needs to be passed to those methods that should use the already open connection. If the
      *         connection could not be reserved, maybe due to a shutdown, null is returned.
      */
-    public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
+    public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis) {
         final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
         final FutureChannelCreator fcc = getConnectionBean().reservation().createPermanent(1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -404,7 +393,7 @@ public class Peer {
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = fcc.getChannelCreator();
-                    final PeerConnection peerConnection = new PeerConnection(destination, cc);
+                    final PeerConnection peerConnection = new PeerConnection(destination, cc, heartBeatMillis);
                     futureDone.setDone(peerConnection);
                 } else {
                     futureDone.setFailed(future);
@@ -541,10 +530,6 @@ public class Peer {
 
     public BroadcastBuilder broadcast(Number160 messageKey) {
         return new BroadcastBuilder(this, messageKey);
-    }
-    
-    public SynchronizationDirectBuilder synchronize(PeerAddress other) {
-        return new SynchronizationDirectBuilder(this, other);
     }
 
     /**

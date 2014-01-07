@@ -195,13 +195,15 @@ public class TestReplication {
     @Test
     public void testDataloss() throws IOException, InterruptedException {
         Peer p1 = null;
+        Peer p2 = null;
+        Peer p3 = null;
         try {
             
             p1 = new PeerMaker(Number160.createHash("111")).setEnableIndirectReplication(true).ports(PORT)
                     .makeAndListen();
-            Peer p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
+            p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
                     .makeAndListen();
-            Peer p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
+            p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
                     .makeAndListen();
             Utils2.perfectRouting(p1, p2, p3);
             Number160 locationKey = Number160.createHash("test1");
@@ -226,22 +228,30 @@ public class TestReplication {
             Assert.assertEquals(1, count);
             
         } finally {
-            if (p1 != null) {
+            if (p1 != null && !p1.isShutdown()) {
                 p1.shutdown().awaitUninterruptibly();
+            }
+            if (p2 != null && !p2.isShutdown()) {
+                p2.shutdown().awaitUninterruptibly();
+            }
+            if (p3 != null && !p3.isShutdown()) {
+                p3.shutdown().awaitUninterruptibly();
             }
         }
     }
     
     @Test
     public void testDataloss2() throws IOException, InterruptedException {
-        Peer p1 = null;
+    	Peer p1 = null;
+        Peer p2 = null;
+        Peer p3 = null;
         try {
             
             p1 = new PeerMaker(Number160.createHash("111")).setEnableIndirectReplication(true).ports(PORT)
                     .makeAndListen();
-            Peer p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
+            p2 = new PeerMaker(Number160.createHash("22")).setEnableIndirectReplication(true).ports(PORT+1)
                     .makeAndListen();
-            Peer p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
+            p3 = new PeerMaker(Number160.createHash("33")).setEnableIndirectReplication(true).ports(PORT+2)
                     .makeAndListen();
             Utils2.perfectRouting(p1, p2, p3);
             Number160 locationKey = Number160.createHash("test1");
@@ -273,8 +283,14 @@ public class TestReplication {
             Assert.assertEquals(2, count);
             
         } finally {
-            if (p1 != null) {
+        	if (p1 != null && !p1.isShutdown()) {
                 p1.shutdown().awaitUninterruptibly();
+            }
+            if (p2 != null && !p2.isShutdown()) {
+                p2.shutdown().awaitUninterruptibly();
+            }
+            if (p3 != null && !p3.isShutdown()) {
+                p3.shutdown().awaitUninterruptibly();
             }
         }
     }

@@ -11,6 +11,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -712,8 +713,9 @@ public class TestRouting {
         Peer master = null;
         Peer client = null;
         try {
-            master = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
-            client = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
+        	Bindings b = new Bindings().addInterface("lo");
+        	master = new PeerMaker(new Number160(rnd)).externalBindings(b).ports(4002).makeAndListen();
+            client = new PeerMaker(new Number160(rnd)).externalBindings(b).ports(4001).makeAndListen();
             BaseFuture tmp = client.ping().setBroadcast().setPort(4001).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());

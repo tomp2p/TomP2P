@@ -42,6 +42,11 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     private boolean forceUDP;
     
     private Ports ports;
+    
+    private int maxTCPIncomingConnections = 1000;
+    private int maxUDPIncomingConnections = 1000;
+    
+    private int heartBeatMillis = PeerConnection.HEART_BEAT_MILLIS;
 
     /**
      * @return True if this peer is behind a firewall and cannot be accessed directly
@@ -221,5 +226,33 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     
     public Bindings interfaceBindings() {
         return interfaceBindings;
+    }
+    
+    
+    public int maxTCPIncomingConnections() {
+        return maxTCPIncomingConnections;
+    }
+
+    public ChannelServerConficuration maxTCPIncomingConnections(final int maxTCPIncomingConnections) {
+        this.maxTCPIncomingConnections = maxTCPIncomingConnections;
+        return this;
+    }
+    
+    public int maxUDPIncomingConnections() {
+        return maxUDPIncomingConnections;
+    }
+
+    public ChannelServerConficuration maxUDPIncomingConnections(final int maxUDPIncomingConnections) {
+        this.maxUDPIncomingConnections = maxUDPIncomingConnections;
+        return this;
+    }
+
+	public int heartBeatMillis() {
+	    return heartBeatMillis;
+    }
+	
+	public ChannelServerConficuration heartBeatMillis(int heartBeatMillis) {
+	    this.heartBeatMillis = heartBeatMillis;
+	    return this;
     }
 }

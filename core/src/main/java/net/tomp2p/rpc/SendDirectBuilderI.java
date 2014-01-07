@@ -1,5 +1,7 @@
 package net.tomp2p.rpc;
 
+import java.security.KeyPair;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.ProgressListener;
 import net.tomp2p.message.Buffer;
@@ -10,12 +12,14 @@ public interface SendDirectBuilderI extends ConnectionConfiguration {
 
     ProgressListener progressListener();
 
-    boolean isSignMessage();
+    boolean isSign();
 
     boolean streaming();
 
     Buffer getBuffer();
 
     Object getObject();
+
+    KeyPair keyPair();
 
 }

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,12 +13,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyMapByte;
@@ -34,8 +40,8 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
-import net.tomp2p.replication.Replication;
-import net.tomp2p.replication.ResponsibilityListener;
+import net.tomp2p.p2p.Replication;
+import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.storage.Data;
 //import net.tomp2p.storage.StorageDisk;
 import net.tomp2p.storage.StorageLayer;
@@ -353,6 +359,7 @@ public class TestStorage {
             Message m = fr.getResponse();
             Map<Number640, Data> stored = m.getDataMap(0).dataMap();
             compare(dataMap.convertToMap640(), stored);
+            System.err.println("done!");
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -399,6 +406,7 @@ public class TestStorage {
 
             FutureResponse fr = smmSender.put(recv1.getPeerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
+            Assert.assertEquals(true, fr.isSuccess());
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
@@ -464,7 +472,7 @@ public class TestStorage {
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
-            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
+            
             putBuilder.setDataMapContent(tmp);
             putBuilder.setVersionKey(Number160.ZERO);
 
@@ -473,7 +481,7 @@ public class TestStorage {
             // remove
             RemoveBuilder removeBuilder = new RemoveBuilder(recv1, new Number160(33));
             removeBuilder.setDomainKey(Number160.createHash("test"));
-            removeBuilder.setContentKeys(tmp.keySet());
+            removeBuilder.contentKeys(tmp.keySet());
             removeBuilder.setReturnResults();
             removeBuilder.setVersionKey(Number160.ZERO);
             fr = smmSender.remove(recv1.getPeerAddress(), removeBuilder, cc);
@@ -483,6 +491,7 @@ public class TestStorage {
 
             // check for returned results
             Map<Number640, Data> stored = m.getDataMap(0).dataMap();
+            DataMap dataMap = new DataMap(new Number160(33), Number160.createHash("test"), Number160.ZERO, tmp);
             compare(dataMap.convertToMap640(), stored);
 
             // get
@@ -1142,4 +1151,56 @@ public class TestStorage {
             }
         }
     }
+    
+    @Test
+	public void testData480() throws Exception {
+    	final Random rnd = new Random(42L);
+		Peer master = null;
+		Peer slave = null;
+		ChannelCreator cc = null;
+		try {
+
+			master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
+			slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
+			
+			Map<Number640,Data> tmp = new HashMap<>();
+			for(int i=0;i<5;i++) {
+				byte[] me = new byte[480];
+				Arrays.fill(me, (byte)(i-6));
+				Data test = new Data(me);
+				tmp.put(new Number640(rnd), test);
+			}
+			
+			PutBuilder pb = master.put(new Number160("0x51")).setDataMap(tmp);
+			
+			FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
+            fcc.awaitUninterruptibly();
+            cc = fcc.getChannelCreator();
+			
+			FutureResponse fr = master.getStoreRPC().put(slave.getPeerAddress(), pb, cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(true, fr.isSuccess());
+			
+			GetBuilder gb = master.get(new Number160("0x51")).setDomainKey(Number160.ZERO);
+
+			fr = master.getStoreRPC().get(slave.getPeerAddress(), gb, cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(true, fr.isSuccess());
+
+			System.err.println("done");
+			
+			
+
+		} finally {
+			if (cc != null) {
+                cc.shutdown().awaitListenersUninterruptibly();
+            }
+            if (master != null) {
+            	master.shutdown().await();
+            }
+            if (slave != null) {
+            	slave.shutdown().await();
+            }
+		}
+	}
 }

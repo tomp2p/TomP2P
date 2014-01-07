@@ -1,6 +1,5 @@
 package net.tomp2p.message;
 
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -8,6 +7,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,25 +17,31 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TomP2POutbound.class);
     private final boolean preferDirect;
     private final Encoder encoder;
-
+    private final CompByteBufAllocator alloc;
+    
     public TomP2POutbound(boolean preferDirect, SignatureFactory signatureFactory) {
+    	this(preferDirect, signatureFactory, new CompByteBufAllocator());
+    }
+
+    public TomP2POutbound(boolean preferDirect, SignatureFactory signatureFactory, CompByteBufAllocator alloc) {
         this.preferDirect = preferDirect;
         this.encoder = new Encoder(signatureFactory);
+        this.alloc = alloc;
     }
 
     @Override
     public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
             throws Exception {
-        CompositeByteBuf buf = null;
+        AlternativeCompositeByteBuf buf = null;
         try {
             boolean done = false;
             if (msg instanceof Message) {
                 Message message = (Message) msg;
                 
                 if (preferDirect) {
-                    buf = ctx.alloc().compositeDirectBuffer(0);
+                    buf = alloc.compDirectBuffer(); 
                 } else {
-                    buf = ctx.alloc().compositeHeapBuffer(0);
+                    buf = alloc.compBuffer(); 
                 }
                 done = encoder.write(buf, message);
             } else {

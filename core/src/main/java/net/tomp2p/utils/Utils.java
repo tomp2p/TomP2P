@@ -58,6 +58,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.TrackerData;
+import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -83,6 +84,7 @@ public class Utils {
     public static final int BYTE_SIZE = 1;
     public static final int SHORT_BYTE_SIZE = 2;
     public static final int MASK_0F = 0xf;
+	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     public static ByteBuffer loadFile(File file) throws IOException {
         FileInputStream fis = null;
@@ -295,7 +297,8 @@ public class Utils {
         return obj;
     }
 
-    public static Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+    public static synchronized Object decodeJavaObject(DataBuffer dataBuffer) throws ClassNotFoundException, IOException {
+        
         List<ByteBuffer> buffers = dataBuffer.shallowCopy().bufferList();
         int count = buffers.size();
         Vector<InputStream> is = new Vector<InputStream>(count);
@@ -304,6 +307,30 @@ public class Utils {
         }
         SequenceInputStream sis = new SequenceInputStream(is.elements());
         ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(sis));
+        //TODO: investigate this issue
+        /*ObjectInputStream ois = null;
+        try {
+         ois = new ObjectInputStream(new BufferedInputStream(sis));
+        } catch (Throwable t) {
+            for (ByteBuffer byteBuffer : buffers) {
+                byteBuffer.rewind();
+                int read  = byteBuffer.capacity();
+                byteBuffer.limit(read);
+                byte me[] = new byte[read];
+                byteBuffer.get(me);
+                System.err.println("wrong array1 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
+                
+                if(dataBuffer.test!=null) {
+                dataBuffer.test.readerIndex(0);
+                dataBuffer.test.writerIndex(dataBuffer.test.capacity());
+                me = new byte[dataBuffer.test.readableBytes()];
+                dataBuffer.test.readBytes(me);
+                System.err.println("wrong array2 ("+System.identityHashCode(byteBuffer)+"): "+Arrays.toString(me));
+                }
+                
+            }
+            t.printStackTrace();
+        }*/
         Object obj = ois.readObject();
         ois.close();
         return obj;
@@ -554,14 +581,14 @@ public class Utils {
         return debugArray(array, 0, array.length);
     }
 
-    public static boolean checkEntryProtection(Map<?, Data> dataMap) {
+    /*public static boolean checkEntryProtection(Map<?, Data> dataMap) {
         for (Data data : dataMap.values()) {
-            if (data.protectedEntry()) {
+            if (data.isProtectedEntry()) {
                 return true;
             }
         }
         return false;
-    }
+    }*/
 
     public static TrackerData limitRandom(TrackerData activePeers, int trackerSize) {
         // TODO Auto-generated method stub
@@ -834,4 +861,24 @@ public class Utils {
         return true;
     }
 
+    public static int dataSize(PutBuilder putBuilder) {
+        if(putBuilder.getDataMap()!=null) {
+            return putBuilder.getDataMap().size();
+        } else { 
+            return putBuilder.getDataMapContent().size();
+        }
+    }
+    
+    public static<K> boolean equals(K o1, K o2) {
+    	if (o1!= null) {
+			if (!o1.equals(o2)) {
+				return false;
+			}
+		} else {
+			if (o2!= null) {
+				return false;
+			}
+		}
+    	return true;
+    }
 }

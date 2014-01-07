@@ -77,8 +77,8 @@ public class TrackerRPC extends DispatchHandler {
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
         final Message message = createMessage(remotePeer, TRACKER_ADD_COMMAND,
                 builder.isPrimary() ? Type.REQUEST_3 : Type.REQUEST_1);
-        if (builder.isMessageSign()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+        if (builder.isSign()) {
+            message.setPublicKeyAndSign(builder.keyPair());
         }
         message.setKey(builder.getLocationKey());
         message.setKey(builder.getDomainKey());
@@ -110,8 +110,8 @@ public class TrackerRPC extends DispatchHandler {
         
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
         final Message message = createMessage(remotePeer, TRACKER_GET_COMMAND, Type.REQUEST_1);
-        if (builder.isSignMessage()) {
-            message.setPublicKeyAndSign(peerBean().getKeyPair());
+        if (builder.isSign()) {
+            message.setPublicKeyAndSign(builder.keyPair());
         }
         message.setKey(builder.getLocationKey());
         message.setKey(builder.getDomainKey());

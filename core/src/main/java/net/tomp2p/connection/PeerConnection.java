@@ -16,62 +16,112 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
 
 public class PeerConnection {
-
+	final public static int HEART_BEAT_MILLIS = 2000;
     final private Semaphore oneConnection = new Semaphore(1);
 
     final private PeerAddress remotePeer;
     final private ChannelCreator cc;
-    
+
     final private Map<FutureChannelCreator, FutureResponse> map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
+    final private FutureDone<Void> closeFuture = new FutureDone<Void>();
+    private final int heartBeatMillis;
 
     // these may be called from different threads, but they will never be called concurrently within this library
-    private volatile FutureResponse futureResponse;
     private volatile ChannelFuture channelFuture;
+    
 
-    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc) {
+    /**
+     * If we don't have an open TCP connection, we first need a channel creator to open a channel.
+     * 
+     * @param remotePeer
+     *            The remote peer to connect to
+     * @param cc
+     *            The channel creator where we can open a TCP connection
+     */
+    public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis) {
         this.remotePeer = remotePeer;
         this.cc = cc;
+        this.heartBeatMillis = heartBeatMillis;
     }
 
-    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture) {
+    /**
+     * If we already have an open TCP connection, we don't need a channel creator
+     * 
+     * @param remotePeer
+     *            The remote peer to connect to
+     * @param channelFuture
+     *            The channel future of an already open TCP connection
+     */
+    public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis) {
         this.remotePeer = remotePeer;
         this.channelFuture = channelFuture;
+        addCloseListener(channelFuture);
         this.cc = null;
+        this.heartBeatMillis = heartBeatMillis;
+    }
 
+    public PeerConnection channelFuture(ChannelFuture channelFuture) {
+        this.channelFuture = channelFuture;
+        addCloseListener(channelFuture);
+        return this;
+    }
+    
+    public int heartBeatMillis() {
+	    return heartBeatMillis;
+    }
+
+    public ChannelFuture channelFuture() {
+        return channelFuture;
+    }
+
+    public FutureDone<Void> closeFuture() {
+        return closeFuture;
+    }
+
+    private void addCloseListener(ChannelFuture channelFuture2) {
+        channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
+            @Override
+            public void operationComplete(Future<? super Void> arg0) throws Exception {
+                closeFuture.setDone();
+            }
+        });
     }
 
     public FutureDone<Void> close() {
         // cc is not null if we opened the connection
         if (cc != null) {
-            return cc.shutdown();
+            FutureDone<Void> future = cc.shutdown();
+            // Maybe done on arrival? Set close future in any case
+            future.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+                @Override
+                public void operationComplete(FutureDone<Void> future) throws Exception {
+                    closeFuture.setDone();
+                }
+            });        
         } else {
             // cc is null if its an incoming connection. We can close it here, or it will be closed when the dispatcher
             // is shutdown
-            final FutureDone<Void> futureDone = new FutureDone<Void>();
-            channelFuture.channel().close().addListener(new GenericFutureListener<Future<? super Void>>() {
-                @Override
-                public void operationComplete(Future<? super Void> future) throws Exception {
-                    futureDone.setDone();
-                }
-            });
-            return futureDone;
+            channelFuture.channel().close();
         }
+        return closeFuture;
     }
-    
+
     public FutureChannelCreator acquire(final FutureResponse futureResponse) {
         FutureChannelCreator futureChannelCreator = new FutureChannelCreator();
         return acquire(futureChannelCreator, futureResponse);
     }
-    
-    private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator, final FutureResponse futureResponse) {
+
+    private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator,
+            final FutureResponse futureResponse) {
         if (oneConnection.tryAcquire()) {
             futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                 @Override
                 public void operationComplete(FutureResponse future) throws Exception {
                     oneConnection.release();
                     synchronized (map) {
-                        Iterator<Map.Entry<FutureChannelCreator, FutureResponse>> iterator = map.entrySet().iterator();
-                        if(iterator.hasNext()) {
+                        Iterator<Map.Entry<FutureChannelCreator, FutureResponse>> iterator = map.entrySet()
+                                .iterator();
+                        if (iterator.hasNext()) {
                             Map.Entry<FutureChannelCreator, FutureResponse> entry = iterator.next();
                             iterator.remove();
                             acquire(entry.getKey(), entry.getValue());
@@ -79,7 +129,6 @@ public class PeerConnection {
                     }
                 }
             });
-            this.futureResponse = futureResponse;
             futureChannelCreator.reserved(cc);
             return futureChannelCreator;
         } else {
@@ -89,30 +138,12 @@ public class PeerConnection {
         }
         return futureChannelCreator;
     }
-    
+
     public ChannelCreator channelCreator() {
         return cc;
     }
 
     public PeerAddress remotePeer() {
         return remotePeer;
-    }
-
-    public ChannelFuture channelFuture() {
-        return channelFuture;
-    }
-
-    public PeerConnection channelFuture(ChannelFuture channelFuture) {
-        this.channelFuture = channelFuture;
-        return this;
-    }
-
-    /**
-     * @return The current future that is being used. If you try to call {@link #acquire(FutureResponse)} and the other
-     *         future has not finished yet, the new future will be ignored. This method may return null if no future has
-     *         been set. Once this connection is used, there will always be a future response.
-     */
-    public FutureResponse currentFutureResponse() {
-        return futureResponse;
     }
 }

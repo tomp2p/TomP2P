@@ -42,8 +42,6 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
 
     private FutureCreator<FutureLateJoin<FutureResponse>> defaultPEX;
 
-    private boolean messageSign = false;
-
     private boolean tcpPEX = false;
     
     private boolean primary = false;
@@ -116,20 +114,6 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         return this;
     }
 
-    public boolean isMessageSign() {
-        return messageSign;
-    }
-
-    public AddTrackerBuilder setMessageSign() {
-        this.messageSign = true;
-        return this;
-    }
-
-    public AddTrackerBuilder setMessageSign(boolean messageSign) {
-        this.messageSign = messageSign;
-        return this;
-    }
-
     public boolean isTcpPEX() {
         return tcpPEX;
     }
@@ -158,7 +142,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         // the tracker mesh as well.
         peer.getPeerBean()
                 .trackerStorage()
-                .put(locationKey, domainKey, peer.getPeerAddress(), peer.getPeerBean().getKeyPair().getPublic(),
+                .put(locationKey, domainKey, peer.getPeerAddress(), keyPair().getPublic(),
                         attachement);
         final FutureTracker futureTracker = peer.getDistributedTracker().add(this);
 

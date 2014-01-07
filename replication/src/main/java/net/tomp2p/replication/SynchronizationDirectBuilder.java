@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.p2p.builder;
+package net.tomp2p.replication;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,13 +29,10 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.replication.Checksum;
-import net.tomp2p.replication.Instruction;
-import net.tomp2p.replication.Synchronization;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
@@ -65,6 +62,8 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     private ArrayList<Instruction> instructions;
 
     private final PeerAddress other;
+    
+    private final PeerSync peerSync;
 
     /**
      * Constructor.
@@ -72,10 +71,11 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
      * @param peer
      *            The responsible peer that performs synchronization
      */
-    public SynchronizationDirectBuilder(final Peer peer, final PeerAddress other) {
-        super(peer, Number160.ZERO);
+    public SynchronizationDirectBuilder(final PeerSync peerSync, final PeerAddress other) {
+        super(peerSync.peer(), Number160.ZERO);
         self(this);
         this.other = other;
+        this.peerSync = peerSync;
     }
 
     public SynchronizationDirectBuilder dataMap(DataMap dataMap) {
@@ -109,7 +109,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
             if (key != null) {
                 Data data = peer.getPeerBean().storage().get(key);
                 if (data == null) {
-                    data = new Data(true);
+                    data = new Data().setFlag2();
                 }
                 newDataMap.put(key, data);
             }
@@ -117,7 +117,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                 for (Number640 key : keys) {
                     Data data = peer.getPeerBean().storage().get(key);
                     if (data == null) {
-                        data = new Data(true);
+                        data = new Data().setFlag2();
                     }
                     newDataMap.put(key, data);
                 }
@@ -171,7 +171,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                     LOG.error("checkDirect failed {}", future2.getFailedReason());
                     return;
                 }
-                final FutureResponse futureResponse = peer.getSynchronizationRPC().infoMessage(other,
+                final FutureResponse futureResponse = peerSync.getSynchronizationRPC().infoMessage(other,
                         SynchronizationDirectBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
@@ -228,7 +228,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                                 }
                                 byte[] endoced = Synchronization.encodeInstructionList(instructions,
                                         dataMapHash.get(entry.getKey()));
-                                Data data1 = new Data(endoced, true);
+                                Data data1 = new Data(endoced).setFlag1();
                                 retVal.put(entry.getKey(), data1);
                                 diffCount++;
                             }
@@ -241,7 +241,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                         SynchronizationDirectBuilder.this.dataMap = new DataMap(retVal);
 
                         if (secondMessageRequired) {
-                            FutureResponse fr = peer.getSynchronizationRPC().syncMessage(other,
+                            FutureResponse fr = peerSync.getSynchronizationRPC().syncMessage(other,
                                     SynchronizationDirectBuilder.this, future2.getChannelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 

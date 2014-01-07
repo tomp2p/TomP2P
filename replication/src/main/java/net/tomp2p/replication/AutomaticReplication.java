@@ -3,6 +3,8 @@ package net.tomp2p.replication;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.ReplicationFactor;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -17,8 +19,8 @@ import net.tomp2p.peers.PeerStatatistic;
  * @author Maxat Pernebayev
  *
  */
-public class AutomaticReplication implements PeerMapChangeListener {
-	private final PeerMap peerMap;	
+public class AutomaticReplication implements PeerMapChangeListener, ReplicationFactor {
+	private PeerMap peerMap;	
     private HashSet<Number160> removedPeers = null;
     private double reliability;
     private static final int minReplicationFactor = 2;
@@ -36,15 +38,20 @@ public class AutomaticReplication implements PeerMapChangeListener {
      * @param peerMap
      * 			The map of my neighbors
      */
-    public AutomaticReplication(double reliability, final PeerMap peerMap) {
-    	this.peerMap = peerMap;
+    public AutomaticReplication(double reliability) {
     	this.removedPeers = new HashSet<Number160>();
     	this.reliability = reliability;
     	
     	this.observations = new ArrayList<Integer>();
     	this.averages = new ArrayList<Double>();
 		this.averages.add(0.0);
-		peerMap.addPeerMapChangeListener(this);
+		
+    }
+    
+    @Override
+    public void init(Peer peer) {
+        this.peerMap = peer.getPeerBean().peerMap();
+        peerMap.addPeerMapChangeListener(this);
     }
     
     
@@ -75,7 +82,7 @@ public class AutomaticReplication implements PeerMapChangeListener {
     /**
      * @return The replication factor.
      */
-    public int getReplicationFactor() {
+    public int factor() {
     	observations.add(getRemovedPeersSize());
     	clearRemovedPeers();
     	double average = getAverage(observations, averages); 
@@ -314,5 +321,4 @@ public class AutomaticReplication implements PeerMapChangeListener {
 	public void peerUpdated(PeerAddress peerAddress,
 			PeerStatatistic storedPeerAddress) {
 	}
-
 }

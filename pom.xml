@@ -47,6 +47,7 @@
 	<modules>
 		<!-- <module>all</module> -->
 		<module>core</module>
+		<module>replication</module>
 		<!-- <module>examples</module> -->
 		<!-- <module>nat</module> -->
 		<!-- <module>storage</module> -->

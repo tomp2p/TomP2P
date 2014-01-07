@@ -190,6 +190,24 @@ public class TestStorage {
         Data tmp = storage.get(key1);
         Assert.assertEquals(true, tmp == null);
     }
+    
+    @Test
+    public void testTTLLeak() throws Exception {
+        StorageMemory storageM = new StorageMemory();
+        testTTLLeak(new StorageLayer(storageM));
+        Assert.assertEquals(0, storageM.subMapTimeout(Long.MAX_VALUE).size());
+        storageM.close();
+    }
+    
+    private void testTTLLeak(StorageLayer storage) throws Exception {
+        Data data = new Data("string");
+        data.ttlSeconds(1);
+        storage.put(key1, data, null, false, false);
+        Thread.sleep(2000);
+        storage.checkTimeout();
+        Data tmp = storage.get(key1);
+        Assert.assertEquals(true, tmp == null);
+    }
 
     @Test
     public void testResponsibility() throws Exception {

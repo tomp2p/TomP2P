@@ -1,169 +1,174 @@
 package net.tomp2p.storage;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 public class DataBuffer {
 
-    private final List<ByteBuffer> buffers;
-    private final List<Integer> marks;
+	private final List<ByteBuf> buffers;
 
-    private int alreadyTransferred = 0;
-    private int bufferSize = 0;
+	private int alreadyTransferred = 0;
 
-    public DataBuffer(final byte[] buffer) {
-        buffers = new ArrayList<ByteBuffer>(1);
-        marks = new ArrayList<Integer>(1);
-        buffers.add(ByteBuffer.wrap(buffer));
-        marks.add(0);
-    }
+	public DataBuffer() {
+		buffers = new ArrayList<ByteBuf>(1);
+	}
+	
+	public DataBuffer(final byte[] buffer) {
+		this(buffer, 0, buffer.length);
+	}
 
-    public DataBuffer(final ByteBuf buf) {
-        final ByteBuffer[] byteBuffers = buf.nioBuffers();
-        final int len = byteBuffers.length;
-        if (len < 1) {
-            throw new IllegalArgumentException("cannot convert this netty buffer");
-        }
-        buffers = new ArrayList<ByteBuffer>(len);
-        marks = new ArrayList<Integer>(len);
-        for (int i = 0; i < len; i++) {
-            buffers.add(byteBuffers[i]);
-            marks.add(byteBuffers[i].position());
-        }
-    }
+	public DataBuffer(final byte[] buffer, final int offset, final int length) {
+		buffers = new ArrayList<ByteBuf>(1);
+		final ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+		buffers.add(buf);
+		// no need to retain, as we initialized here and ref counter is set to 1
+	}
 
-    public DataBuffer() {
-        buffers = new ArrayList<ByteBuffer>(1);
-        marks = new ArrayList<Integer>(1);
-    }
+	/**
+	 * Creates a DataBuffer and adds the ByteBuf to this DataBuffer
+	 * 
+	 * @param buf
+	 *            The ByteBuf is only added, but no retain() is called!
+	 */
+	public DataBuffer(final ByteBuf buf) {
+		buffers = new ArrayList<ByteBuf>(1);
+		buffers.add(buf.slice());
+		buf.retain();
+	}
 
-    private DataBuffer(final List<ByteBuffer> buffers, final List<Integer> marks) {
-        final int len = buffers.size();
-        this.buffers = new ArrayList<ByteBuffer>(len);
-        this.marks = new ArrayList<Integer>(marks);
-        final Iterator<ByteBuffer> iterator1 = buffers.iterator();
-        final Iterator<Integer> iterator2 = marks.iterator();
-        while (iterator1.hasNext() && iterator2.hasNext()) {
-            ByteBuffer buffer = iterator1.next().duplicate();
-            this.buffers.add(buffer);
-            buffer.position(iterator2.next());
-        }
-    }
+	private DataBuffer(final List<ByteBuf> buffers) {
+		this.buffers = new ArrayList<ByteBuf>(buffers.size());
+		for (final ByteBuf buf : buffers) {
+			this.buffers.add(buf.duplicate());
+			buf.retain();
+		}
+	}
 
-    /**
-     * Always make a copy with shallowCopy before using the buffer directly. This buffer is not thread safe!
-     * 
-     * @return The backing list of byte buffers
-     */
-    public List<ByteBuffer> bufferList() {
-        return buffers;
-    }
+	// from here, work with shallow copies
+	public DataBuffer shallowCopy() {
+		synchronized (buffers) {
+			DataBuffer db = new DataBuffer(buffers);
+			return db;
+		}
+	}
 
-    // from here, work with shallow copies
-    public DataBuffer shallowCopy() {
-        synchronized (buffers) {
-            return new DataBuffer(buffers, marks);
-        }
-    }
+	/**
+	 * Always make a copy with shallowCopy before using the buffer directly.
+	 * This buffer is not thread safe!
+	 * 
+	 * @return The backing list of byte buffers
+	 */
+	public List<ByteBuffer> bufferList() {
+		final DataBuffer copy = shallowCopy();
+		final List<ByteBuffer> nioBuffers = new ArrayList<ByteBuffer>(
+				copy.buffers.size());
+		for (final ByteBuf buf : copy.buffers) {
+			for (final ByteBuffer bb : buf.nioBuffers()) {
+				nioBuffers.add(bb);
+			}
+		}
+		return nioBuffers;
+	}
 
-    public ByteBuf toByteBuffer() {
-        synchronized (buffers) {
-            return Unpooled.wrappedBuffer(shallowCopy().buffers.toArray(new ByteBuffer[0]));
-        }
-    }
+	/**
+	 * @return The ByteBuf backed by the buffers stored in here. The buffer is
+	 *         not copied here.
+	 */
+	public ByteBuf toByteBuf() {
+		final DataBuffer copy = shallowCopy();
+		return Unpooled.wrappedBuffer(copy.buffers.toArray(new ByteBuf[0]));
+	}
 
-    /**
-     * Transfers the data from this buffer the CompositeByteBuf.
-     * 
-     * @param buf
-     *            The CompositeByteBuf, where the data from this buffer is trasfered to
-     */
-    public void transferTo(final CompositeByteBuf buf) {
-        // set the capacity of the last buffer, otherwise it will be filled with 0
-        buf.capacity(buf.writerIndex());
-        // TODO: add component only if we have enough bytes, otherwise copy.
-        final DataBuffer copy = shallowCopy();
-        for (ByteBuffer buffer : copy.bufferList()) {
-            buf.addComponent(Unpooled.wrappedBuffer(buffer));
-            int size = buffer.limit() - buffer.position();
-            buf.writerIndex(buf.writerIndex() + size);
-            alreadyTransferred += size;
-        }
-    }
+	/**
+	 * @return The ByteBuffers backed by the buffers stored in here. The buffer
+	 *         is not copied here.
+	 */
+	public ByteBuffer[] toByteBuffer() {
+		return toByteBuf().nioBuffers();
+	}
 
-    public int transferFrom(final ByteBuf buf, final int remaining) {
-        int size = 0;
-        final ByteBuffer[] byteBuffers = buf.nioBuffers();
-        final int len = byteBuffers.length;
-        if (len < 1) {
-            throw new IllegalArgumentException("Buffer count must >= 1.");
-        }
+	/**
+	 * Transfers the data from this buffer the CompositeByteBuf.
+	 * 
+	 * @param buf
+	 *            The CompositeByteBuf, where the data from this buffer is
+	 *            transfered to
+	 */
+	public void transferTo(final AlternativeCompositeByteBuf buf) {
+		final DataBuffer copy = shallowCopy();
+		for (final ByteBuf buffer : copy.buffers) {
+			buf.addComponent(buffer);
+			alreadyTransferred += buffer.readableBytes();
+		}
+	}
 
-        for (int i = 0; i < len && size < remaining; i++) {
-            int toTransfer = byteBuffers[i].limit() - byteBuffers[i].position();
-            if (size + toTransfer > remaining) {
-                byteBuffers[i].limit(byteBuffers[i].limit() - (size + toTransfer - remaining));
-            }
-            synchronized (buffers) {
-                buffers.add(byteBuffers[i]);
-                marks.add(byteBuffers[i].position());
-            }
-            size += byteBuffers[i].limit() - byteBuffers[i].position();
-        }
-        alreadyTransferred += size;
-        buf.readerIndex(buf.readerIndex() + size);
-        return size;
-    }
+	public int transferFrom(final ByteBuf buf, final int remaining) {
+		final int readable = buf.readableBytes();
+		final int index = buf.readerIndex();
+		final int length = Math.min(remaining, readable);
 
-    public int addBuf(final ByteBuf buf) {
-        final ByteBuffer[] byteBuffers = buf.nioBuffers();
-        final int len = byteBuffers.length;
-        int currentSize = 0;
-        for (int i = 0; i < len; i++) {
-            ByteBuffer buffer = byteBuffers[i];
-            int pos = buffer.position();
-            int size = buffer.limit() - pos;
-            currentSize += size;
-            synchronized (buffers) {
-                buffers.add(buffer);
-                marks.add(pos);
-            }
-        }
-        buf.readerIndex(buf.readerIndex() + currentSize);
-        bufferSize += currentSize;
-        return currentSize;
-    }
+		if (length == 0) {
+			return 0;
+		}
 
-    public int alreadyTransferred() {
-        return alreadyTransferred;
-    }
+		if (buf instanceof AlternativeCompositeByteBuf) {
+			final List<ByteBuf> decoms = ((AlternativeCompositeByteBuf) buf)
+					.decompose(index, length);
 
-    public int bufferSize() {
-        return bufferSize;
-    }
+			for (final ByteBuf decom : decoms) {
+				synchronized (buffers) {
+					// this is already a slice
+					buffers.add(decom);
+				}
+				decom.retain();
+			}
 
-    @Override
-    public int hashCode() {
-        //This is a slow operation, use with care!
-        return toByteBuffer().hashCode();
-    }
+		} else {
+			synchronized (buffers) {
+				buffers.add(buf.slice(index, length));
+			}
+			buf.retain();
+		}
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof DataBuffer)) {
-            return false;
-        }
-        if (this == obj) {
-            return true;
-        }
-        final DataBuffer m = (DataBuffer) obj;
-        //This is a slow operation, use with care!
-        return m.toByteBuffer().equals(toByteBuffer());
-    }
+		alreadyTransferred += length;
+		buf.readerIndex(buf.readerIndex() + length);
+		return length;
+	}
+
+	public int alreadyTransferred() {
+		return alreadyTransferred;
+	}
+
+	public void resetAlreadyTransferred() {
+		alreadyTransferred = 0;
+	}
+
+	@Override
+	public int hashCode() {
+		return toByteBuffer().hashCode();
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (!(obj instanceof DataBuffer)) {
+			return false;
+		}
+		if (this == obj) {
+			return true;
+		}
+		final DataBuffer m = (DataBuffer) obj;
+		return m.toByteBuf().equals(toByteBuf());
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		final DataBuffer copy = shallowCopy();
+		for (ByteBuf buf : copy.buffers) {
+			buf.release();
+		}
+	}
 }

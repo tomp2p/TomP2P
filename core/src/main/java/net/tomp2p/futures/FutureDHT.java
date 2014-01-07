@@ -19,8 +19,6 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
     // A reference to the routing process that run before the DHT operations
     private FutureRouting futureRouting;
 
-    private K self;
-
     public FutureDHT(DHTBuilder<?> builder) {
         this.builder = builder;
     }
@@ -30,15 +28,6 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      */
     public DHTBuilder<?> builder() {
         return builder;
-    }
-
-    /**
-     * @param self2
-     *            Set the type so that we are able to return it to the user. This is for making the API much more
-     *            usable.
-     */
-    protected void self(final K self2) {
-        this.self = self2;
     }
 
     /**
@@ -72,7 +61,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
         synchronized (lock) {
             requests.add(futureResponse);
         }
-        return self;
+        return self();
     }
 
     /**

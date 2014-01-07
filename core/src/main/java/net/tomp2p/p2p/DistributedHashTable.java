@@ -86,8 +86,8 @@ public class DistributedHashTable {
     }
 
     public FuturePut add(final AddBuilder builder) {
-        final FuturePut futureDHT = new FuturePut(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
-                new VotingSchemeDHT());
+        final FuturePut futureDHT = new FuturePut(builder, builder.getRequestP2PConfiguration()
+                .getMinimumResults(), builder.getDataSet().size());
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -150,8 +150,8 @@ public class DistributedHashTable {
 
     public FutureSend direct(final SendBuilder builder) {
 
-        final FutureSend futureDHT = new FutureSend(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
-                new VotingSchemeDHT());
+        final FutureSend futureDHT = new FutureSend(builder, builder.getRequestP2PConfiguration()
+                .getMinimumResults(), new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -232,8 +232,9 @@ public class DistributedHashTable {
     }
 
     public FuturePut put(final PutBuilder putBuilder) {
-        final FuturePut futureDHT = new FuturePut(putBuilder, 
-                putBuilder.getRequestP2PConfiguration().getMinimumResults(), new VotingSchemeDHT());
+        final int dataSize = Utils.dataSize(putBuilder);
+        final FuturePut futureDHT = new FuturePut(putBuilder, putBuilder.getRequestP2PConfiguration()
+                .getMinimumResults(), dataSize);
         putBuilder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -302,8 +303,8 @@ public class DistributedHashTable {
 
     public FutureGet get(final GetBuilder builder) {
 
-        final FutureGet futureDHT = new FutureGet(builder, builder.getRequestP2PConfiguration().getMinimumResults(),
-                new VotingSchemeDHT());
+        final FutureGet futureDHT = new FutureGet(builder, builder.getRequestP2PConfiguration()
+                .getMinimumResults(), new VotingSchemeDHT());
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -323,9 +324,10 @@ public class DistributedHashTable {
                                 // 2
                                 // peers, we want to get it from one only. Unless its digest, then we want to know
                                 // exactly what is going on
-                                RequestP2PConfiguration p2pConfiguration2 = builder.isRange() ? builder.getRequestP2PConfiguration()
-                                        : adjustConfiguration(builder.getRequestP2PConfiguration(),
-                                                futureRouting.getDirectHitsDigest());
+                                RequestP2PConfiguration p2pConfiguration2 = builder.isRange() ? builder
+                                        .getRequestP2PConfiguration() : adjustConfiguration(
+                                        builder.getRequestP2PConfiguration(),
+                                        futureRouting.getDirectHitsDigest());
                                 // store in direct hits
                                 parallelRequests(
                                         p2pConfiguration2,

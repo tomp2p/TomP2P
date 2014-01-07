@@ -24,6 +24,7 @@
   <!--  <logger name="net.tomp2p.connection.TCPChannelCache" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.connection.HeartBeat" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.connection.PeerCreator" level="TRACE"/> -->
     
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
   <logger name="net.tomp2p.message.Decoder" level="TRACE"/>
@@ -69,6 +70,8 @@
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
   <logger name="net.tomp2p.relay" level="TRACE"/>
+  <!-- Disable Netty Warning that I'm aware of -->
+  <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
   
   <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
        See http://logback.qos.ch/manual/architecture.html for more information-->

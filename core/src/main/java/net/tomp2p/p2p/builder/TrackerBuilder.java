@@ -16,6 +16,7 @@
 
 package net.tomp2p.p2p.builder;
 
+import java.security.KeyPair;
 import java.util.Set;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -26,7 +27,8 @@ import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.peers.Number160;
 
-public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends DefaultConnectionConfiguration {
+public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends DefaultConnectionConfiguration
+        implements SignatureBuilder<K> {
     public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-tracker");
 
     protected final static FutureTracker FUTURE_TRACKER_SHUTDOWN = new FutureTracker()
@@ -43,10 +45,12 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     protected TrackerConfiguration trackerConfiguration;
 
     protected FutureChannelCreator futureChannelCreator;
-    
+
     private Set<Number160> knownPeers;
 
     private K self;
+
+    private KeyPair keyPair = null;
 
     public TrackerBuilder(Peer peer, Number160 locationKey) {
         this.peer = peer;
@@ -60,7 +64,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     public Number160 getDomainKey() {
         return domainKey;
     }
-    
+
     public Number160 getLocationKey() {
         return locationKey;
     }
@@ -96,7 +100,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
         this.futureChannelCreator = futureChannelCreator;
         return self;
     }
-    
+
     public Set<Number160> getKnownPeers() {
         return knownPeers;
     }
@@ -133,5 +137,52 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
         routingBuilder.setMaxFailures(routingConfiguration.getMaxFailures());
         routingBuilder.setMaxSuccess(routingConfiguration.getMaxSuccess());
         return routingBuilder;
+    }
+
+    /**
+     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     */
+    public boolean isSign() {
+        return keyPair != null;
+    }
+
+    /**
+     * @param signMessage
+     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     * @return This class
+     */
+    public K sign(final boolean signMessage) {
+        if (signMessage) {
+            setSign();
+        } else {
+            this.keyPair = null;
+        }
+        return self;
+    }
+
+    /**
+     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
+     */
+    public K setSign() {
+        this.keyPair = peer.getPeerBean().keyPair();
+        return self;
+    }
+
+    /**
+     * @param keyPair
+     *            The keyPair to sing the complete message. The key will be attached to the message and stored
+     *            potentially with a data object (if there is such an object in the message).
+     * @return This class
+     */
+    public K keyPair(KeyPair keyPair) {
+        this.keyPair = keyPair;
+        return self;
+    }
+
+    /**
+     * @return The current keypair to sign the message. If null, no signature is applied.
+     */
+    public KeyPair keyPair() {
+        return keyPair;
     }
 }

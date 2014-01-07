@@ -39,5 +39,4 @@ public interface EvaluatingSchemeDHT {
     
     public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480);
     
-    public Collection<Number640> evaluate7(Map<PeerAddress, Map<Number640, Byte>> rawResult);
 }

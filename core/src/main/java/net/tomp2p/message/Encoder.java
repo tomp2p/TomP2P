@@ -1,11 +1,7 @@
 package net.tomp2p.message;
 
-import io.netty.buffer.CompositeByteBuf;
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
-import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -15,6 +11,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 
 import org.slf4j.Logger;
@@ -34,7 +31,7 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final CompositeByteBuf buf, final Message message) throws InvalidKeyException,
+    public boolean write(final AlternativeCompositeByteBuf buf, final Message message) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
@@ -57,28 +54,15 @@ public class Encoder {
 
             // check if we need to sign the message
             if (message.isSign()) {
-                Signature signature = signatureFactory.signatureInstance();
-
-                signature.initSign(message.getPrivateKey());
-                // debug2 = message.getPublicKey();
-                ByteBuffer[] byteBuffers = buf.nioBuffers();
-                int len = byteBuffers.length;
-                for (int i = 0; i < len; i++) {
-                    ByteBuffer buffer = byteBuffers[i];
-                    signature.update(buffer);
-                }
-                byte[] signatureData = signature.sign();
-
-                SHA1Signature decodedSignature = new SHA1Signature();
-                decodedSignature.decode(signatureData);
-                buf.writeBytes(decodedSignature.getNumber1().toByteArray());
+            	SHA1Signature decodedSignature = signatureFactory.sign(message.getPrivateKey(), buf);
+            	buf.writeBytes(decodedSignature.getNumber1().toByteArray());
                 buf.writeBytes(decodedSignature.getNumber2().toByteArray());
             }
         }
         return done;
     }
 
-    private boolean loop(CompositeByteBuf buf) {
+    private boolean loop(AlternativeCompositeByteBuf buf) {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
             switch (next.content()) {
@@ -131,10 +115,11 @@ public class Encoder {
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.getDataMap(next.number());
+                
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
-                        buf.writeBytes(dataMap.locationKey().toByteArray());
+                    	buf.writeBytes(dataMap.locationKey().toByteArray());
                         buf.writeBytes(dataMap.domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().toByteArray());
                         buf.writeBytes(dataMap.versionKey().toByteArray());
@@ -211,9 +196,7 @@ public class Encoder {
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                byte[] data = message.getPublicKey().getEncoded();
-                buf.writeShort(data.length);
-                buf.writeBytes(data);
+                signatureFactory.encodePublicKey(message.getPublicKey(), buf);
                 message.contentRefencencs().poll();
                 break;
             default:

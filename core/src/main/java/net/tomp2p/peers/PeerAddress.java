@@ -412,6 +412,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
         return newOffset;
     }
+    
+    public PeerSocketAddress peerSocketAddress() {
+    	return peerSocketAddress;
+    }
 
     /**
      * Returns the address or null if no address set.

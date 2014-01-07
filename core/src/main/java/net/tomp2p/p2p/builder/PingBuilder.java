@@ -16,6 +16,8 @@
 
 package net.tomp2p.p2p.builder;
 
+import io.netty.channel.ChannelFuture;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
@@ -31,6 +33,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -143,7 +146,7 @@ public class PingBuilder {
         } else {
             if (peerAddress != null) {
                 if (tcpPing) {
-                	if(peerAddress.getPeerSocketAddresses().length > 0) {
+                	if(peerAddress.isRelay()) {
                 		return ping(PeerSocketAddress.createSocketTCP(peerAddress.getPeerSocketAddresses()[0]), peerAddress.getPeerId(), false);
                 	} else {
                         return ping(peerAddress.createSocketTCP(), peerAddress.getPeerId(), false);

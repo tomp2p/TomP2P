@@ -27,8 +27,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PCumulationTCP;
@@ -55,7 +60,7 @@ public class Sender {
     private final Dispatcher dispatcher;
     private final RelaySender relaySender;
 
-    private PingBuilder pingBuilder;
+    private PingFactory pingFactory;
 
     /**
      * Creates a new sender with the listeners for offline peers.
@@ -78,12 +83,12 @@ public class Sender {
         return channelClientConfiguration;
     }
 
-    public PingBuilder pingBuilder() {
-        return pingBuilder;
+    public PingFactory pingBuilder() {
+        return pingFactory;
     }
 
-    public Sender pingBuilder(PingBuilder pingBuilder) {
-        this.pingBuilder = pingBuilder;
+    public Sender pingBuilder(PingFactory pingFactory) {
+        this.pingFactory = pingFactory;
         return this;
     }
 
@@ -120,25 +125,80 @@ public class Sender {
                     handler == null);
             InetSocketAddress recipient = null;
             if(message.getRecipient().isRelay()) {
-            	recipient = PeerSocketAddress.createSocketTCP(message.getRecipient().getPeerSocketAddresses()[0]);
+            	FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(), pingFactory);
+            	futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
+					@Override
+					public void operationComplete(FutureDone<PeerSocketAddress> future) throws Exception {
+						if(future.isSuccess()) {
+							InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(future.getObject());
+							ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+	            					timeoutHandler, connectTimeoutMillis);
+	            			if (channelFuture == null) {
+	            				futureResponse.setFailed("could not create a TCP channel");
+	            			} else {
+	            				afterConnect(futureResponse, message, channelFuture, handler == null);
+	            			}
+	            			
+	            			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+
+	        					@Override
+	        					public void operationComplete(FutureResponse future)
+	        							throws Exception {
+	        						if(future.isFailed()) {
+	        							
+	        							if (future.getResponse().getType() != Message.Type.USER1) {
+	        								//find future.getObject() and set to null as below
+	        								message.getRecipient().getPeerSocketAddresses()[12] = null;
+	        								sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection);
+	        							}
+	        						}
+	        						
+	        					}
+	        				});
+	            			
+	            		} else {
+	            			futureResponse.setFailed("no relay could be contacted");
+	            		}
+						
+					}
+				});
+            	
             } else {
                 recipient = message.getRecipient().createSocketTCP();
+                channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+                        timeoutHandler, connectTimeoutMillis);
+                if (channelFuture == null) {
+                    futureResponse.setFailed("could not create a TCP channel");
+                } else {
+                    afterConnect(futureResponse, message, channelFuture, handler == null);
+                }
             }
-            channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
-                    timeoutHandler, connectTimeoutMillis);
-        } else {
-            channelFuture = null;
-        }
-        futureResponse.setChannelFuture(channelFuture);
-
-        if (channelFuture == null) {
-            futureResponse.setFailed("could not create a TCP channel");
-        } else {
-            afterConnect(futureResponse, message, channelFuture, handler == null);
         }
     }
 
-    private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
+    private FutureDone<PeerSocketAddress> pingFirst(PeerSocketAddress[] peerSocketAddresses, PingFactory pingFactory) {
+		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
+		
+		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.length];
+		for(int i=0;i<forks.length;i++) {
+			if(peerSocketAddresses[i]!=null) {
+				InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(peerSocketAddresses[i]);
+				forks[i] = pingFactory.ping().setInetAddress(inetSocketAddress.getAddress()).setPort(inetSocketAddress.getPort()).start();
+			}
+		}
+		FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<>(forks));
+		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<BaseFuture>>() {
+			@Override
+			public void operationComplete(FutureForkJoin<BaseFuture> future) throws Exception {
+				if(future.isSuccess()) {
+					futureDone.setDone(((FutureResponse) (future.getCompleted().get(0))).getResponse().getSender().peerSocketAddress());
+				}
+			}
+		});
+		return futureDone;
+	}
+
+	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
             PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
             int connectTimeoutMillis) {
 
@@ -168,7 +228,7 @@ public class Sender {
 
         HeartBeat heartBeat = null;
         if (peerConnection != null) {
-            heartBeat = new HeartBeat(2, pingBuilder);
+            heartBeat = new HeartBeat(2, pingFactory.ping());
             handlers.put("heartbeat", heartBeat);
         }
 

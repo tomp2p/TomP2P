@@ -6,6 +6,7 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
@@ -74,17 +75,13 @@ public class RelayRPC extends DispatchHandler {
 		// create permanent peer connection to relay peer
 		final FuturePeerConnection fpc = peer.createPeerConnection(other);
 		FutureDirect fd = peer.sendDirect(fpc).setObject(true).start();
-		fd.addListener(new BaseFutureListener<FutureDirect>() {
+		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 			@Override
 			public void operationComplete(FutureDirect future) throws Exception {
 				if(future.isSuccess()) {
 					rcf.futurePeerConnection(fpc);
 					rcf.done();
 				}
-			}
-			@Override
-			public void exceptionCaught(Throwable t) throws Exception {
-				rcf.setFailed(t);
 			}
 		});
 	}

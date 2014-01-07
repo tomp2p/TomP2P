@@ -114,15 +114,9 @@ public class RelayManager {
 			}
 		}
 		if (active == 0) {
-			updatePeerAddress(rf);
+			addRelays(rf);
 		}
-
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
+		
 		FutureForkJoin<RelayConnectionFuture> ffj = new FutureForkJoin<RelayConnectionFuture>(new AtomicReferenceArray<RelayConnectionFuture>(futureRelayConnections));
 
 		ffj.addListener(new BaseFutureAdapter<FutureForkJoin<RelayConnectionFuture>>() {
@@ -140,7 +134,7 @@ public class RelayManager {
 							failedRelays.add(relayAddress);
 						}
 					}
-					updatePeerAddress(rf);
+					addRelays(rf);
 				} else {
 					relaySetupLoop(futureRelayConnections, relayCandidates, cc, numberOfRelays, rf);
 				}
@@ -151,7 +145,7 @@ public class RelayManager {
 	/**
 	 * Adds the relay addresses to the peer address, updates the firewalled flags, and bootstraps
 	 */
-	private void updatePeerAddress(final RelayFuture rf) {
+	private void addRelays(final RelayFuture rf) {
 		
 		//add relay addresses to peer address
 		PeerSocketAddress[] socketAddresses = new PeerSocketAddress[relayAddresses.size()];
@@ -187,12 +181,9 @@ public class RelayManager {
 	}
 
 	private void setupPeerConnections(final RelayFuture rf, final ChannelCreator cc) {
-
-		// recursive loop to establish relay connection in parallel
 		final int targetRelayCount = Math.min(maxRelays, relayCandidates.size());
 		RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[targetRelayCount];
 		relaySetupLoop(relayConnectionFutures, relayCandidates, cc, targetRelayCount, rf);
-
 	}
 
 	public Queue<PeerAddress> getRelayCandidates() {

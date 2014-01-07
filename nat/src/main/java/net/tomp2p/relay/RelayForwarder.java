@@ -22,10 +22,11 @@ import org.slf4j.LoggerFactory;
 public class RelayForwarder extends DirectDataRPC {
 
 	private final static Logger logger = LoggerFactory.getLogger(RelayForwarder.class);
-	private final FuturePeerConnection futurePeerConnection; // connection to
-																// unreachable
-																// peer
+	
 	private final Peer peer;
+
+	//connection to unreachable peer
+	private final FuturePeerConnection futurePeerConnection;
 
 	public RelayForwarder(FuturePeerConnection fps, Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
@@ -55,7 +56,7 @@ public class RelayForwarder extends DirectDataRPC {
 					logger.debug("response from unreachable peer: " + response);
 					responder.response(response);
 				} else {
-					responder.failed(Type.EXCEPTION, "Relaying message failed: " + future.getFailedReason());
+					responder.failed(Type.USER1, "Relaying message failed: " + future.getFailedReason());
 				}
 			}
 			@Override

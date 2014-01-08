@@ -316,6 +316,7 @@ public class Message {
      * restore the content references if only the content types array is present
      */
     public void restoreContentReferences() {
+    	contentRefencencs.clear();
     	Map<Content, Integer> refs = new HashMap<>();
     	for(Content contentType : contentTypes) {
     		if(contentType == Content.EMPTY) {
@@ -330,7 +331,6 @@ public class Message {
     		contentRefencencs.add(new NumberType(index, contentType));
     		refs.put(contentType, index + 1);
     	}
-    	
     }
 
     /**

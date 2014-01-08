@@ -12,17 +12,18 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.rpc.DirectDataRPC;
+import net.tomp2p.rpc.DispatchHandler;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RelayForwarder extends DirectDataRPC {
+public class RelayForwarder extends DispatchHandler {
 
 	private final static Logger logger = LoggerFactory.getLogger(RelayForwarder.class);
-	
+
 	private final Peer peer;
 
-	//connection to unreachable peer
+	// connection to unreachable peer
 	private final FuturePeerConnection futurePeerConnection;
 
 	public RelayForwarder(FuturePeerConnection fps, Peer peer) {
@@ -36,22 +37,21 @@ public class RelayForwarder extends DirectDataRPC {
 	@Override
 	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, final Responder responder) throws Exception {
 		logger.debug("Received message {} to forward to unreachable peer {}", message, futurePeerConnection.getObject().remotePeer());
-		
+
 		// Send message via direct message through the open connection to the unreachable peer
 		final boolean udp = message.isUdp();
-		
-		System.err.println("active: "+ futurePeerConnection.getObject().channelFuture().channel().isActive());
-		System.err.println("open: " +futurePeerConnection.getObject().channelFuture().channel().isOpen());
-		
-		Buffer buf = RelayUtils.encodeMessage(message);
+		message.restoreContentReferences();
+		final Buffer buf = RelayUtils.encodeMessage(message);
+
 		FutureDirect fd = peer.sendDirect(futurePeerConnection).setBuffer(buf).start();
 		
 		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 			public void operationComplete(FutureDirect future) throws Exception {
-				if(future.isSuccess()) {
-					//send response
-					Message response = RelayUtils.decodeMessage(future.getBuffer(), new InetSocketAddress(0), message.senderSocket()); //sender socket irrelevant
+				if (future.isSuccess()) {
+					// send response
+					Message response = RelayUtils.decodeMessage(future.getBuffer(), new InetSocketAddress(0), message.senderSocket()); // sender
 					response.udp(udp);
+					response.restoreContentReferences();
 					logger.debug("response from unreachable peer: " + response);
 					responder.response(response);
 				} else {
@@ -59,5 +59,6 @@ public class RelayForwarder extends DirectDataRPC {
 				}
 			}
 		});
+
 	}
 }

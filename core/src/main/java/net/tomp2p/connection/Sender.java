@@ -101,6 +101,7 @@ public class Sender {
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null && peerConnection.channelFuture().channel().isActive()) {
 			channelFuture = sendTCPPeerConnection(peerConnection, handler);
+			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = null;
@@ -108,24 +109,24 @@ public class Sender {
 				FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(), pingFactory);
 				futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 					@Override
-					public void operationComplete(FutureDone<PeerSocketAddress> future) throws Exception {
-						if (future.isSuccess()) {
-							InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(future.getObject());
+					public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
+						if (futureDone.isSuccess()) {
+							InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.getObject());
 							ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler, connectTimeoutMillis);
-							if (channelFuture == null) {
-								futureResponse.setFailed("could not create a TCP channel");
-							} else {
-								afterConnect(futureResponse, message, channelFuture, handler == null);
-							}
+							afterConnect(futureResponse, message, channelFuture, handler == null);
 
 							futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 								@Override
 								public void operationComplete(FutureResponse future) throws Exception {
 									if (future.isFailed()) {
 
-										if (future.getResponse().getType() != Message.Type.USER1) {
-											// find future.getObject() and set
-											// to null as below
+										if (future.getResponse() != null && future.getResponse().getType() != Message.Type.USER1) {
+											for(int i = 0; i < message.getRecipient().getPeerSocketAddresses().length; i++) {
+												if(message.getRecipient().getPeerSocketAddresses()[i].equals(futureDone.getObject())) {
+													message.getRecipient().getPeerSocketAddresses()[i] = null;
+													break;
+												}
+											}
 											message.getRecipient().getPeerSocketAddresses()[12] = null;
 											sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection);
 										}
@@ -143,15 +144,11 @@ public class Sender {
 			} else {
 				recipient = message.getRecipient().createSocketTCP();
 				channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler, connectTimeoutMillis);
-				if (channelFuture == null) {
-					futureResponse.setFailed("could not create a TCP channel");
-				} else {
-					afterConnect(futureResponse, message, channelFuture, handler == null);
-				}
+				afterConnect(futureResponse, message, channelFuture, handler == null);
 			}
 		}
 	}
-
+	
 	private FutureDone<PeerSocketAddress> pingFirst(PeerSocketAddress[] peerSocketAddresses, PingFactory pingFactory) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
@@ -307,44 +304,7 @@ public class Sender {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
 		if(message.getRecipient().isRelay()) {
-			FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(), pingFactory);
-			futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
-				@Override
-				public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
-					if (futureDone.isSuccess()) {
-						InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.getObject());
-						final ChannelFuture channelFuture = channelCreator.createUDP(recipient, broadcast, handlers);
-						if (channelFuture == null) {
-							futureResponse.setFailed("could not create a UDP channel");
-						} else {
-							afterConnect(futureResponse, message, channelFuture, handler == null);
-						}
-
-						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-							@Override
-							public void operationComplete(FutureResponse futureResponse) throws Exception {
-								if (futureResponse.isFailed()) {
-									if (futureResponse.getResponse().getType() != Message.Type.USER1) {
-										LOG.debug("Relay peer {} failed", futureDone.getObject());
-										//Remove address from peer socket addresses
-										for(int i = 0; i < message.getRecipient().getPeerSocketAddresses().length; i++) {
-											if(message.getRecipient().getPeerSocketAddresses()[i].equals(futureDone.getObject())) {
-												message.getRecipient().getPeerSocketAddresses()[i] = null;
-												break;
-											}
-										}
-										sendUDP(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
-									}
-								}
-
-							}
-						});
-
-					} else {
-						futureResponse.setFailed("no relay could be contacted");
-					}
-				}
-			});
+			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
 			final ChannelFuture channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(), broadcast, handlers);
 			futureResponse.setChannelFuture(channelFuture);
@@ -386,6 +346,10 @@ public class Sender {
 	 *            True, if we don't expect a message
 	 */
 	private void afterConnect(final FutureResponse futureResponse, final Message message, final ChannelFuture channelFuture, final boolean fireAndForget) {
+		if(channelFuture == null) {
+			futureResponse.setFailed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
+			return;
+		}
 		final Cancel connectCancel = createCancel(channelFuture);
 		futureResponse.addCancel(connectCancel);
 		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {

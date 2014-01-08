@@ -1,8 +1,10 @@
 package net.tomp2p.relay;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.futures.BaseFuture;
@@ -10,6 +12,7 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -69,6 +72,7 @@ public class TestRelay {
 		final Random rnd = new Random(42);
 		final int nrOfNodes = 200;
 		Peer master = null;
+		Peer slave = null;
 		try {
 			// setup test peers
 			Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
@@ -87,14 +91,7 @@ public class TestRelay {
 			}
 
 			// Test setting up relay peers
-			Peer slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
-
-			// Ping peer before setting up relays
-			// System.out.println("Ping unreachable peer before setting up relays");
-			// BaseFuture f1 =
-			// peers[rnd.nextInt(nrOfNodes)].ping().setPeerAddress(slave.getPeerAddress()).start();
-			// f1.awaitUninterruptibly();
-			// Assert.assertFalse(f1.isSuccess());
+			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
 
 			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
 			RelayFuture rf = manager.setupRelays();
@@ -124,6 +121,7 @@ public class TestRelay {
 				}
 			});
 			FutureDirect fd = peers[rnd.nextInt(nrOfNodes)].sendDirect(slave.getPeerAddress()).setObject(request).start();
+			
 			fd.addListener(new BaseFutureListener<FutureDirect>() {
 				public void operationComplete(FutureDirect future) throws Exception {
 					Assert.assertEquals(response, future.object());
@@ -138,10 +136,76 @@ public class TestRelay {
 			Thread.sleep(100);
 
 		} finally {
+			if (slave != null) {
+				slave.shutdown().await();
+			}
 			if (master != null) {
 				master.shutdown().await();
 			}
+		}
+	}
+	
+	@Test
+	public void testRelayFailed() throws Exception{
+		final Random rnd = new Random(42);
+		final int nrOfNodes = 20;
+		Peer master = null;
+		Peer slave = null;
+		try {
+			// setup test peers
+			Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+			master = peers[0];
+			List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>(nrOfNodes);
+			for (int i = 0; i < peers.length; i++) {
+				new RelayRPC(peers[i]);
+				if (peers[i] != master) {
+					FutureBootstrap res = peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start();
+					tmp.add(res);
+				}
+			}
+			for (FutureBootstrap fm : tmp) {
+				fm.awaitUninterruptibly();
+				Assert.assertTrue("Bootrapping test peers failed", fm.isSuccess());
+			}
 
+			// Set up relays
+			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
+
+			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
+			RelayFuture rf = manager.setupRelays();
+			rf.awaitUninterruptibly();
+			Assert.assertTrue(rf.isSuccess());
+			
+			Set<PeerAddress> relays = new HashSet<PeerAddress>(manager.getRelayAddresses());
+			
+			//Shut down a random relay peer
+			Peer shutdownPeer = null;
+			for(Peer peer : peers) {
+				if(relays.contains(peer.getPeerAddress())) {
+					shutdownPeer = peer;
+					FutureDone<Void> fd = peer.shutdown();
+					fd.awaitUninterruptibly();
+					break;
+				}
+			}
+			
+			//needed because failure of a node is detected with periodic heartbeat
+			Thread.sleep(5000);
+			
+			Set<PeerAddress> newRelays = new HashSet<PeerAddress>(manager.getRelayAddresses());
+			Assert.assertNotNull(shutdownPeer);
+			Assert.assertTrue(newRelays.size() == manager.maxRelays());
+			Assert.assertTrue(!newRelays.contains(shutdownPeer.getPeerAddress()));
+			newRelays.removeAll(relays);
+			Assert.assertTrue(newRelays.size() == 1);
+
+		} finally {
+			if (slave != null) {
+				slave.shutdown().await();
+			}
+			if (master != null) {
+				master.shutdown().await();
+			}
 		}
 	}
 

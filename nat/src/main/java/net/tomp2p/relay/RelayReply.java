@@ -5,8 +5,8 @@ import java.net.InetSocketAddress;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.TestMessage;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RawDataReply;
 
 import org.slf4j.Logger;
@@ -22,10 +22,12 @@ public class RelayReply implements RawDataReply {
 	}
 
 	public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) throws Exception {
-		
 		Message message = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
-		//message.restoreContentReferences();
+		if(message.getCommand() == 7) {
+			System.err.println("relay reply");
+		}
 		logger.debug("Received message from relay peer: {}", message);
+		message.restoreContentReferences();
 
         NoDirectResponse responder = new NoDirectResponse();
         

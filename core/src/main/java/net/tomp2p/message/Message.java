@@ -22,8 +22,10 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 
@@ -308,6 +310,30 @@ public class Message {
         }
         throw new IllegalStateException("Already set 8 content types");
     }
+    
+	/**
+	 * Restore the content references if only the content types array is
+	 * present. The content references are removed when deconing a message. That
+	 * means if a message was received it cannot be used a second time as the
+	 * content references are not there anymore. This method restores the
+	 * content references based on the content types of the message.
+	 */
+	public void restoreContentReferences() {
+		Map<Content, Integer> refs = new HashMap<Content, Integer>(contentTypes.length * 2);
+		for (Content contentType : contentTypes) {
+			if (contentType == Content.EMPTY) {
+				return;
+			}
+			int index = 0;
+			if (!refs.containsKey(contentType)) {
+				refs.put(contentType, index);
+			} else {
+				index = refs.get(contentType);
+			}
+			contentRefencencs.add(new NumberType(index, contentType));
+			refs.put(contentType, index + 1);
+		}
+	}
 
     /**
      * Sets or replaces the content type at a specific index.

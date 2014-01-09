@@ -15,6 +15,7 @@
  */
 package net.tomp2p.peers;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -26,8 +27,11 @@ import net.tomp2p.utils.Timings;
  * @author Thomas Bocek
  * 
  */
-public class PeerStatatistic {
-    private final AtomicLong lastSeenOnline = new AtomicLong(0);
+public class PeerStatatistic implements Serializable {
+    
+	private static final long serialVersionUID = -6225586345726672194L;
+
+	private final AtomicLong lastSeenOnline = new AtomicLong(0);
 
     private final long created = Timings.currentTimeMillis();
 

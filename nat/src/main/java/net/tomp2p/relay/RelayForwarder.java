@@ -11,7 +11,7 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.rpc.DirectDataRPC;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 
 import org.slf4j.Logger;
@@ -28,10 +28,12 @@ public class RelayForwarder extends DispatchHandler {
 
 	public RelayForwarder(FuturePeerConnection fps, Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
-		peer.getConnectionBean().dispatcher().registerIoHandler(fps.getObject().remotePeer().getPeerId(), this, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + fps.getObject().remotePeer());
+		PeerAddress unreachablePeer = fps.getObject().remotePeer();
+		peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12);
 		this.futurePeerConnection = fps;
 		this.peer = peer;
+		new RelayRouting(peer, unreachablePeer);
+		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + fps.getObject().remotePeer());
 	}
 
 	@Override
@@ -59,6 +61,5 @@ public class RelayForwarder extends DispatchHandler {
 				}
 			}
 		});
-
 	}
 }

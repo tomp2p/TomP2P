@@ -146,6 +146,70 @@ public class TestRelay {
 	}
 	
 	@Test
+	public void testRelayRouting() throws Exception {
+		final Random rnd = new Random(42);
+		final int nrOfNodes = 20;
+		Peer master = null;
+		Peer slave = null;
+		try {
+			// setup test peers
+			Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+			master = peers[0];
+			List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>(nrOfNodes);
+			for (int i = 0; i < peers.length; i++) {
+				new RelayRPC(peers[i]);
+				if (peers[i] != master) {
+					FutureBootstrap res = peers[i].bootstrap().setPeerAddress(master.getPeerAddress()).start();
+					tmp.add(res);
+				}
+			}
+			for (FutureBootstrap fm : tmp) {
+				fm.awaitUninterruptibly();
+				Assert.assertTrue("Bootrapping test peers failed", fm.isSuccess());
+			}
+
+			// Set up relays
+			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
+
+			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
+			RelayFuture rf = manager.setupRelays();
+			rf.awaitUninterruptibly();
+			Assert.assertTrue(rf.isSuccess());
+			
+			Set<PeerAddress> relays = new HashSet<PeerAddress>(manager.getRelayAddresses());
+			
+			//Shut down a random relay peer
+			Peer shutdownPeer = null;
+			for(Peer peer : peers) {
+				if(relays.contains(peer.getPeerAddress())) {
+					shutdownPeer = peer;
+					FutureDone<Void> fd = peer.shutdown();
+					fd.awaitUninterruptibly();
+					break;
+				}
+			}
+			
+			//needed because failure of a node is detected with periodic heartbeat
+			Thread.sleep(50000);
+			
+			Set<PeerAddress> newRelays = new HashSet<PeerAddress>(manager.getRelayAddresses());
+			Assert.assertNotNull(shutdownPeer);
+			Assert.assertTrue(newRelays.size() == manager.maxRelays());
+			Assert.assertTrue(!newRelays.contains(shutdownPeer.getPeerAddress()));
+			newRelays.removeAll(relays);
+			Assert.assertTrue(newRelays.size() == 1);
+
+		} finally {
+			if (slave != null) {
+				slave.shutdown().await();
+			}
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+	
+	@Test
 	public void testRelayFailed() throws Exception{
 		final Random rnd = new Random(42);
 		final int nrOfNodes = 20;
@@ -239,5 +303,7 @@ public class TestRelay {
 			slave.shutdown().await();
 		}
 	}
+	
+	
 
 }

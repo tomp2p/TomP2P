@@ -226,6 +226,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     public Number160 self() {
         return self;
     }
+    
 
     /**
      * Adds a neighbor to the neighbor list. If the bag is full, the id zero or the same as our id, the neighbor is not
@@ -429,12 +430,16 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return A sorted set with close peers first in this set.
      */
     public NavigableSet<PeerAddress> closePeers(final Number160 id, final int atLeast) {
-        final NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(createComparator(id));
-        final int classMember = classMember(id);
+    	return closePeers(self(), id, atLeast, peerMapVerified);
+    }
+
+    public static NavigableSet<PeerAddress> closePeers(final Number160 self, final Number160 other, final int atLeast, List<Map<Number160, PeerStatatistic>> peerMap) {
+        final NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(createComparator(other));
+        final int classMember = classMember(self, other);
         // special treatment, as we can start iterating from 0
         if (classMember == -1) {
             for (int j = 0; j < Number160.BITS; j++) {
-                final Map<Number160, PeerStatatistic> tmp = peerMapVerified.get(j);
+                final Map<Number160, PeerStatatistic> tmp = peerMap.get(j);
                 if (fillSet(atLeast, set, tmp)) {
                     return set;
                 }
@@ -442,7 +447,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             return set;
         }
 
-        Map<Number160, PeerStatatistic> tmp = peerMapVerified.get(classMember);
+        Map<Number160, PeerStatatistic> tmp = peerMap.get(classMember);
         if (fillSet(atLeast, set, tmp)) {
             return set;
         }
@@ -450,7 +455,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // in this case we have to go over all the bags that are smaller
         boolean last = false;
         for (int i = 0; i < classMember; i++) {
-            tmp = peerMapVerified.get(i);
+            tmp = peerMap.get(i);
             last = fillSet(atLeast, set, tmp);
         }
         if (last) {
@@ -458,12 +463,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         // in this case we have to go over all the bags that are larger
         for (int i = classMember + 1; i < Number160.BITS; i++) {
-            tmp = peerMapVerified.get(i);
+            tmp = peerMap.get(i);
             fillSet(atLeast, set, tmp);
         }
         return set;
     }
-
+    
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("I'm node ");
@@ -508,6 +513,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         return all;
     }
+    
+    public List<Map<Number160, PeerStatatistic>> peerMapVerified() {
+    	return peerMapVerified;
+    }
+
 
     /**
      * Return all addresses from the overflow / non-verified list. The collection is a copy and it is partially sorted.

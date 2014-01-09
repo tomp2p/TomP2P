@@ -349,7 +349,7 @@ public class TestStorage {
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
-            getBuilder.setContentKeys(tmp.keySet());
+            getBuilder.contentKeys(tmp.keySet());
             getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);
@@ -410,7 +410,7 @@ public class TestStorage {
 
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
-            getBuilder.setContentKeys(tmp.keySet());
+            getBuilder.contentKeys(tmp.keySet());
             getBuilder.setForceUDP();
             getBuilder.setVersionKey(Number160.ZERO);
 
@@ -497,7 +497,7 @@ public class TestStorage {
             // get
             GetBuilder getBuilder = new GetBuilder(recv1, new Number160(33));
             getBuilder.setDomainKey(Number160.createHash("test"));
-            getBuilder.setContentKeys(tmp.keySet());
+            getBuilder.contentKeys(tmp.keySet());
             getBuilder.setVersionKey(Number160.ZERO);
 
             fr = smmSender.get(recv1.getPeerAddress(), getBuilder, cc);

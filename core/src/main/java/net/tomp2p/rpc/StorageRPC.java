@@ -329,9 +329,9 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(getBuilder.getLocationKey());
             message.setKey(getBuilder.getDomainKey());
 
-            if (getBuilder.getContentKeys() != null) {
+            if (getBuilder.contentKeys() != null) {
                 message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder
-                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.getContentKeys()));
+                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.contentKeys()));
             } else {
                 message.setInteger(getBuilder.returnNr());
                 if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
@@ -389,9 +389,9 @@ public class StorageRPC extends DispatchHandler {
             message.setKey(getBuilder.getLocationKey());
             message.setKey(getBuilder.getDomainKey());
 
-            if (getBuilder.getContentKeys() != null) {
+            if (getBuilder.contentKeys() != null) {
                 message.setKeyCollection(new KeyCollection(getBuilder.getLocationKey(), getBuilder
-                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.getContentKeys()));
+                        .getDomainKey(), getBuilder.getVersionKey(), getBuilder.contentKeys()));
             } else {
                 message.setInteger(getBuilder.returnNr());
                 if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {

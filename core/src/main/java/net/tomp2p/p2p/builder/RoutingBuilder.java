@@ -7,6 +7,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.RoutingMechanism;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
@@ -18,6 +19,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     private SimpleBloomFilter<Number160> keyBloomFilter;
     private SimpleBloomFilter<Number160> contentBloomFilter;
     private Number160 contentKey;
+    private Number160 rangeKey;
 
     private int maxDirectHits;
     private int maxNoNewInfo;
@@ -112,7 +114,11 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
      */
     public SearchValues searchValues() {
         if (getContentKey() != null) {
-            return new SearchValues(locationKey, domainKey, getContentKey());
+        	if(rangeKey !=null) {
+        		return new SearchValues(locationKey, domainKey, getContentKey(), rangeKey);
+        	} else {
+        		return new SearchValues(locationKey, domainKey, getContentKey());
+        	}
         } else if (getContentBloomFilter() == null && getKeyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, getKeyBloomFilter());
         } else if (getContentBloomFilter() != null && getKeyBloomFilter() != null) {
@@ -164,5 +170,10 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         routingMechanism.setMaxNoNewInfo(getMaxNoNewInfo());
         routingMechanism.setMaxSucess(getMaxSuccess());
         return routingMechanism;
+    }
+
+	public void setRange(Number640 from, Number640 to) {
+	    this.contentKey = from.getContentKey();
+	    this.rangeKey = to.getContentKey();
     }
 }

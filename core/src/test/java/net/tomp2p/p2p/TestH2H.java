@@ -7,8 +7,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.Arrays;
-import java.util.Date;
 
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.peers.Number160;

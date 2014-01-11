@@ -19,43 +19,70 @@ public class TestH2H {
 	@Test
 	public void testPut() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InvalidKeyException,
 	        SignatureException {
-		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		StringBuilder sb = new StringBuilder("2b51b720-7ae2-11e3-981f-0800200c9a66");
+		for (int i = 0; i < 10; i++) {
+			testPut(sb.toString());
+			sb.append("2b51b720-7ae2-11e3-981f-0800200c9a66");
+		}
+	}
 
-		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
-		        .setEnableIndirectReplication(true).makeAndListen();
-		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
-		        .setEnableIndirectReplication(true).makeAndListen();
+	@Test
+	public void testPut0() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InvalidKeyException,
+	        SignatureException {
+		testPut("2b51b720-7ae2-11e3-981f-0800200c9a662b51b720-7ae2-11e3-981f-0800200c9a66");
+	}
 
-		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
-		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
-		KeyPair keyPair = gen.generateKeyPair();
+	private void testPut(String s1) throws IOException, ClassNotFoundException, NoSuchAlgorithmException,
+	        InvalidKeyException, SignatureException {
+		Peer p1 = null;
+		Peer p2 = null;
+		try {
 
-		String locationKey = "location";
-		Number160 lKey = Number160.createHash(locationKey);
-		String domainKey = "domain";
-		Number160 dKey = Number160.createHash(domainKey);
-		String contentKey = "content";
-		Number160 cKey = Number160.createHash(contentKey);
-		String versionKey = "version";
-		Number160 vKey = Number160.createHash(versionKey);
-		String basedOnKey = "based on";
-		Number160 bKey = Number160.createHash(basedOnKey);
+			KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
-		H2HTestData testData = new H2HTestData("2b51b720-7ae2-11e3-981f-0800200c9a66");
+			KeyPair keyPairPeer1 = gen.generateKeyPair();
+			p1 = new PeerMaker(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
+			        .setEnableIndirectReplication(true).makeAndListen();
+			KeyPair keyPairPeer2 = gen.generateKeyPair();
+			p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+			        .setEnableIndirectReplication(true).makeAndListen();
 
-		Data data = new Data(testData);
-		data.ttlSeconds(10000);
-		data.basedOn(bKey);
-		data.setProtectedEntry().sign(keyPair);
-		FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).setDomainKey(dKey).setVersionKey(vKey).keyPair(keyPair)
-		        .start();
-		futurePut1.awaitUninterruptibly();
-		Assert.assertTrue(futurePut1.isSuccess());
+			p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+			p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+			KeyPair keyPair = gen.generateKeyPair();
 
-		p1.shutdown().awaitUninterruptibly();
-		p2.shutdown().awaitUninterruptibly();
+			String locationKey = "location";
+			Number160 lKey = Number160.createHash(locationKey);
+			String domainKey = "domain";
+			Number160 dKey = Number160.createHash(domainKey);
+			String contentKey = "content";
+			Number160 cKey = Number160.createHash(contentKey);
+			String versionKey = "version";
+			Number160 vKey = Number160.createHash(versionKey);
+			String basedOnKey = "based on";
+			Number160 bKey = Number160.createHash(basedOnKey);
+
+			H2HTestData testData = new H2HTestData(s1);
+
+			Data data = new Data(testData);
+			data.ttlSeconds(10000);
+			data.basedOn(bKey);
+			data.setProtectedEntry().sign(keyPair);
+			FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).setDomainKey(dKey).setVersionKey(vKey)
+			        .keyPair(keyPair).start();
+			futurePut1.awaitUninterruptibly();
+			Assert.assertTrue(futurePut1.isSuccess());
+
+		} catch (Throwable t) {
+			Assert.fail("no reason to fail");
+		} finally {
+			if (p1 != null) {
+				p1.shutdown().awaitUninterruptibly();
+			}
+			if (p2 != null) {
+				p2.shutdown().awaitUninterruptibly();
+			}
+		}
 	}
 
 }

@@ -173,8 +173,8 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     
     public FutureResponse setResponseNow() {
         synchronized (lock) {
-        	if (!reponseLater) {
-        		setFailed("No future set beforehand, use setFailedLater() or setResponseLater()");
+        	if (!reponseLater && !completed) {
+        		setFailed("No future set beforehand, probably an early shutdown, or use setFailedLater() or setResponseLater()");
         		return this;
         	}
             if (!super.setCompletedAndNotify()) {

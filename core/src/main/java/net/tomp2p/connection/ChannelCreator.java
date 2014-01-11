@@ -77,14 +77,16 @@ public class ChannelCreator {
 	private final Lock readTCP = readWriteLockTCP.readLock();
 	private final Lock writeTCP = readWriteLockTCP.writeLock();
 
-	private boolean shutdownUDP = false;
-	private boolean shutdownTCP = false;
-
 	private final FutureDone<Void> futureChannelCreationDone;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
 
 	private final Bindings externalBindings;
+	
+	private EventExecutorGroup handlerExecutor;
+
+	private boolean shutdownUDP = false;
+	private boolean shutdownTCP = false;
 
 	/**
 	 * Package private constructor, since this is created by
@@ -160,7 +162,7 @@ public class ChannelCreator {
 			}
 
 			recipients.add(channelFuture.channel());
-			setupCloseListener(futureResponse, channelFuture, semaphoreUPD);
+			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
 		} finally {
 			readUDP.unlock();
@@ -181,7 +183,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
+	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, final FutureResponse futureResponse) {
 		readTCP.lock();
 		try {
 			if (shutdownTCP) {
@@ -204,7 +206,7 @@ public class ChannelCreator {
 			ChannelFuture channelFuture = b.connect(socketAddress, externalBindings.wildCardSocket());
 
 			recipients.add(channelFuture.channel());
-			setupCloseListener(futureResponse, channelFuture, semaphoreTCP);
+			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);
 			return channelFuture;
 		} finally {
 			readTCP.unlock();
@@ -226,6 +228,9 @@ public class ChannelCreator {
 			@Override
 			protected void initChannel(final Channel ch) throws Exception {
 				for (Map.Entry<String, Pair<EventExecutorGroup, ChannelHandler>> entry : channelHandlers.entrySet()) {
+					if (entry.getKey().equals("handler")) {
+						handlerExecutor = entry.getValue().element0();
+					}
 					if (entry.getValue().element0() != null) {
 						ch.pipeline().addLast(entry.getValue().element0(), entry.getKey(), entry.getValue().element1());
 					} else {
@@ -247,12 +252,42 @@ public class ChannelCreator {
 	 *            The semaphore to decrease
 	 * @return The same future that was passed as an argument
 	 */
-	private ChannelFuture setupCloseListener(final FutureResponse futureResponse, final ChannelFuture channelFuture, final Semaphore semaphore) {
+	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
-				//it is important that the release of the semaphore and the set of the future happen sequentially.
-				semaphore.release();
+				// it is important that the release of the semaphore and the set
+				// of the future happen sequentially. If this is run in this
+				// thread it will be a netty thread, and this is not what the
+				// user may have wanted. The future respones should be executed
+				// in the thread of the handler.
+				Runnable runner = new Runnable() {
+					@Override
+					public void run() {
+						semaphore.release();
+						futureResponse.setResponseNow();
+					}
+				};
+				if (handlerExecutor == null) {
+					runner.run();
+				} else {
+					handlerExecutor.submit(runner);
+				}
+			}
+		});
+		return channelFuture;
+	}
+	
+	/**
+	 * Setup the close listener for a channel that was already created
+	 * @param channelFuture The channel future
+	 * @param futureResponse
+	 * @return The same future that was passed as an argument
+	 */
+	public ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final FutureResponse futureResponse) {
+		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
+			@Override
+			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.setResponseNow();
 			}
 		});
@@ -302,6 +337,14 @@ public class ChannelCreator {
 		return futureChannelCreationDone;
 	}
 	
+	public int availableUDPPermits() {
+	    return semaphoreUPD.availablePermits();
+    }
+	
+	public int availableTCPPermits() {
+	    return semaphoreTCP.availablePermits();
+    }
+	
 	@Override
 	public String toString() {
 	    StringBuilder sb = new StringBuilder("sem-udp:");
@@ -312,4 +355,6 @@ public class ChannelCreator {
 	    sb.append(semaphoreUPD);
 	    return sb.toString();
 	}
+
+	
 }

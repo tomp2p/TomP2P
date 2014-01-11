@@ -115,7 +115,7 @@ public class Sender {
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
 		        && peerConnection.channelFuture().channel().isActive()) {
-			channelFuture = sendTCPPeerConnection(peerConnection, handler);
+			channelFuture = sendTCPPeerConnection(peerConnection, handler, channelCreator, futureResponse);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = message.getRecipient().createSocketTCP();
@@ -178,8 +178,11 @@ public class Sender {
 		return channelFuture;
 	}
 
-	private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler) {
+	private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler, 
+			final ChannelCreator channelCreator, final FutureResponse futureResponse) {
+		//if the channel gets closed, the future should get notified
 		ChannelFuture channelFuture = peerConnection.channelFuture();
+		channelCreator.setupCloseListener(channelFuture, futureResponse);
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
 		// we need to replace the handler if this comes from the peer that

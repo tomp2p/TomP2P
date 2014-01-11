@@ -120,11 +120,10 @@ public class Sender {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = message.getRecipient().createSocketTCP();
 			channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
-			        connectTimeoutMillis);
+			        connectTimeoutMillis, futureResponse);
 		} else {
 			channelFuture = null;
 		}
-		futureResponse.setChannelFuture(channelFuture);
 
 		if (channelFuture == null) {
 			futureResponse.setFailed("could not create a TCP channel");
@@ -135,7 +134,7 @@ public class Sender {
 
 	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
 	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
-	        int connectTimeoutMillis) {
+	        int connectTimeoutMillis, FutureResponse futureResponse) {
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
@@ -170,7 +169,7 @@ public class Sender {
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 
-		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers);
+		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers, futureResponse);
 
 		if (peerConnection != null) {
 			peerConnection.channelFuture(channelFuture);
@@ -271,8 +270,7 @@ public class Sender {
 		}
 
 		final ChannelFuture channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
-		        broadcast, handlers);
-		futureResponse.setChannelFuture(channelFuture);
+		        broadcast, handlers, futureResponse);
 		if (channelFuture == null) {
 			futureResponse.setFailed("could not create a UDP channel");
 		} else {

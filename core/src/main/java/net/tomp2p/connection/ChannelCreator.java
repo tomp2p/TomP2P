@@ -41,6 +41,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -129,7 +130,7 @@ public class ChannelCreator {
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final SocketAddress recipient, final boolean broadcast,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -158,7 +159,8 @@ public class ChannelCreator {
 				channelFuture = b.connect(recipient, externalBindings.wildCardSocket());
 			}
 
-			setupCloseListener(channelFuture, semaphoreUPD);
+			recipients.add(channelFuture.channel());
+			setupCloseListener(futureResponse, channelFuture, semaphoreUPD);
 			return channelFuture;
 		} finally {
 			readUDP.unlock();
@@ -175,10 +177,11 @@ public class ChannelCreator {
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
 	 *            The handlers to set
+	 * @param futureResponse 
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers) {
+	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readTCP.lock();
 		try {
 			if (shutdownTCP) {
@@ -200,7 +203,8 @@ public class ChannelCreator {
 
 			ChannelFuture channelFuture = b.connect(socketAddress, externalBindings.wildCardSocket());
 
-			setupCloseListener(channelFuture, semaphoreTCP);
+			recipients.add(channelFuture.channel());
+			setupCloseListener(futureResponse, channelFuture, semaphoreTCP);
 			return channelFuture;
 		} finally {
 			readTCP.unlock();
@@ -243,14 +247,15 @@ public class ChannelCreator {
 	 *            The semaphore to decrease
 	 * @return The same future that was passed as an argument
 	 */
-	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore) {
+	private ChannelFuture setupCloseListener(final FutureResponse futureResponse, final ChannelFuture channelFuture, final Semaphore semaphore) {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
+				//it is important that the release of the semaphore and the set of the future happen sequentially.
 				semaphore.release();
+				futureResponse.setResponseNow();
 			}
 		});
-		recipients.add(channelFuture.channel());
 		return channelFuture;
 	}
 
@@ -295,5 +300,16 @@ public class ChannelCreator {
 	 */
 	public FutureDone<Void> shutdownFuture() {
 		return futureChannelCreationDone;
+	}
+	
+	@Override
+	public String toString() {
+	    StringBuilder sb = new StringBuilder("sem-udp:");
+	    sb.append(semaphoreUPD.availablePermits());
+	    sb.append(",sem-tcp:");
+	    sb.append(semaphoreTCP.availablePermits());
+	    sb.append(",addrUDP:");
+	    sb.append(semaphoreUPD);
+	    return sb.toString();
 	}
 }

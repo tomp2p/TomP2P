@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.utils.Pair;
 
@@ -168,7 +169,7 @@ public class TestChannelCreator {
             };
 
             for (int i = 0; i < connections; i++) {
-                final ChannelFuture channelFuture = channelCreator2.createTCP(SOCKET_ADDRESS, timeout, tmp);
+                final ChannelFuture channelFuture = channelCreator2.createTCP(SOCKET_ADDRESS, timeout, tmp, new FutureResponse(null));
                 channelFuture.addListener(handler);
             }
             countDownLatch.await();
@@ -224,7 +225,7 @@ public class TestChannelCreator {
             };
 
             for (int i = 0; i < connections; i++) {
-                final ChannelFuture channelFuture = channelCreator2.createUDP(SOCKET_ADDRESS, false, tmp);
+                final ChannelFuture channelFuture = channelCreator2.createUDP(SOCKET_ADDRESS, false, tmp, new FutureResponse(null));
                 channelFuture.addListener(handler);
             }
             countDownLatch.await();

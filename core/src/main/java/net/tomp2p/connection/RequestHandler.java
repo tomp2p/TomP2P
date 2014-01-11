@@ -15,10 +15,8 @@
  */
 package net.tomp2p.connection;
 
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.GenericFutureListener;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
@@ -222,12 +220,8 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
         
         LOG.debug("report failure", cause);
-        if(futureResponse.setFailedLater(cause)) {
-            reportFailed(ctx.close());
-        } else {
-        	ctx.close();
-        }
-        
+        futureResponse.setFailedLater(cause);
+        ctx.close();
     }
 
     @Override
@@ -273,53 +267,11 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
         if (!message.isKeepAlive()) {
             //set the success now, but trigger the notify when we closed the channel.
-            if (futureResponse.setResponseLater(responseMessage)) {
-                LOG.debug("close channel {}", responseMessage);
-                reportMessage(ctx.close(), responseMessage);
-            } else {
-            	ctx.close();
-            }
+            futureResponse.setResponseLater(responseMessage); 
+            //the channel creater adds a listener that sets futureResponse.setResponseNow, when the channel is closed
+            ctx.close();
         } else {
             futureResponse.setResponse(responseMessage);
         }
-    }
-
-    /**
-     * Report a successful response after the channel was closed.
-     * 
-     * @param close
-     *            The close future
-     * @param responseMessage
-     *            The response message
-     */
-    private void reportMessage(final ChannelFuture close, final Message responseMessage) {
-        close.addListener(new GenericFutureListener<ChannelFuture>() {
-            @Override
-            public void operationComplete(final ChannelFuture arg0) throws Exception {
-                LOG.debug("report success {}", responseMessage);
-                //trigger the notify when we closed the channel.
-                futureResponse.setResponseNow();
-            }
-        });
-    }
-
-    /**
-     * Report a failure after the channel was closed.
-     * 
-     * @param close
-     *            The close future
-     */
-    private void reportFailed(final ChannelFuture close) {
-        close.addListener(new GenericFutureListener<ChannelFuture>() {
-            @Override
-            public void operationComplete(final ChannelFuture arg0) throws Exception {
-                futureResponse.setResponseNow();
-            }
-        });
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) throws Exception {
-        futureResponse.setFailed("channel is inactive");
     }
 }

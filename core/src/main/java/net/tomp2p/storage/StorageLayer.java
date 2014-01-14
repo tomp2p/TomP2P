@@ -141,7 +141,7 @@ public class StorageLayer {
                 return PutStatus.FAILED_NOT_ABSENT;
             }
             if (contains) {
-                Data oldData = get(key);
+                Data oldData = getInternal(key);
                 if (!canProtectEntry(key.getContentKey(), oldData, newData)) {
                     return PutStatus.FAILED_SECURITY;
                 }
@@ -165,7 +165,7 @@ public class StorageLayer {
             if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
                 return null;
             }
-            Data data = get(key);
+            Data data = getInternal(key);
             if (data == null) {
                 return null;
             }
@@ -183,10 +183,14 @@ public class StorageLayer {
     public Data get(Number640 key) {
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
-            return backend.get(key);
+            return getInternal(key);
         } finally {
             dataLock640.unlock(lock);
         }
+    }
+    
+    private Data getInternal(Number640 key) {
+        return backend.get(key);
     }
 
     public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
@@ -299,13 +303,29 @@ public class StorageLayer {
                 try {
                 	backend.remove(key);
                 	backend.removeTimeout(key);
-                	backend.removeResponsibility(key.getLocationKey());
                 } finally {
                     lock.unlock();
+                }
+                //remove responsibility if we don't have any data stored under locationkey
+                Number160 locationKey = key.getLocationKey();
+                KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
+                try {
+                	if(isEmpty(locationKey)) {
+                		backend.removeResponsibility(locationKey);
+                	}
+                } finally {
+                	lock1.unlock();
                 }
             }
         }
     }
+    
+	private boolean isEmpty(Number160 locationKey) {
+		Number640 from = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+		Number640 to = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
+		Map<Number640, Data> tmp = backend.subMap(from, to, 1, false);
+		return tmp.size() == 0;
+	}
 
     public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
         DigestInfo digestInfo = new DigestInfo();
@@ -350,7 +370,7 @@ public class StorageLayer {
             KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(number640);
             try {
                 if (backend.contains(number640)) {
-                    Data data = get(number640);
+                    Data data = getInternal(number640);
                     Number160 basedOn = data.basedOn();
                     digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
                 }

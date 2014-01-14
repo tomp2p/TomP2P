@@ -517,7 +517,12 @@ public class TestSecurity {
         String contentKey = "content";
         Number160 cKey = Number160.createHash(contentKey);
         
-        Data data = new Data("Juhuu").setProtectedEntry().sign(keyPair);
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<1000;i++) {
+        	sb.append(i);
+        }
+        
+        Data data = new Data(sb.toString()).setProtectedEntry().sign(keyPair);
         FuturePut futurePut4 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
         futurePut4.awaitUninterruptibly();
         System.err.println(futurePut4.getFailedReason());
@@ -526,7 +531,7 @@ public class TestSecurity {
         futureGet4.awaitUninterruptibly();
         Assert.assertTrue(futureGet4.isSuccess());
         // should have been not modified ---> why it has been modified without giving a key pair?
-        Assert.assertEquals("Juhuu", (String) futureGet4.getData().object());
+        Assert.assertEquals(sb.toString(), (String) futureGet4.getData().object());
         Assert.assertEquals(keyPair.getPublic(), futureGet4.getData().publicKey());
         
         

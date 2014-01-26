@@ -131,7 +131,7 @@ public final class ChannelServer {
 	 * @throws IOException
 	 *             If the startup fails, e.g, ports already in use
 	 */
-	public void startup() throws IOException {
+	public boolean startup() throws IOException {
 		if (!channelServerConfiguration.disableBind()) {
 			final boolean listenAll = interfaceBindings.isListenAll();
 			if (listenAll) {
@@ -141,7 +141,8 @@ public final class ChannelServer {
 				}
 				if (!startupTCP(new InetSocketAddress(ports.externalTCPPort()), channelServerConfiguration)
 				        || !startupUDP(new InetSocketAddress(ports.externalUDPPort()), channelServerConfiguration)) {
-					throw new IOException("cannot bind TCP or UDP");
+					LOG.warn("cannot bind TCP or UDP");
+					return false;
 				}
 
 			} else {
@@ -153,11 +154,13 @@ public final class ChannelServer {
 					if (!startupTCP(new InetSocketAddress(addr, ports.externalTCPPort()), channelServerConfiguration)
 					        || !startupUDP(new InetSocketAddress(addr, ports.externalUDPPort()),
 					                channelServerConfiguration)) {
-						throw new IOException("cannot bind TCP or UDP");
+						LOG.warn("cannot bind TCP or UDP");
+						return false;
 					}
 				}
 			}
 		}
+		return true;
 	}
 
 	/**
@@ -306,28 +309,32 @@ public final class ChannelServer {
 	 *         worker and boss event loop
 	 */
 	public FutureDone<Void> shutdown() {
+		final int maxListeners = (channelUDP!=null && channelTCP!=null) ? 2 : 1;
 		// we have two things to shut down: UDP and TCP
-		final int maxListeners = 2;
 		final AtomicInteger listenerCounter = new AtomicInteger(0);
 		LOG.debug("shutdown servers");
-		channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture future) throws Exception {
-				LOG.debug("shutdown TCP server");
-				if(listenerCounter.incrementAndGet()==maxListeners) {
-					futureServerDone.setDone();
+		if(channelUDP != null) {
+			channelUDP.close().addListener(new GenericFutureListener<ChannelFuture>() {
+				@Override
+				public void operationComplete(final ChannelFuture future) throws Exception {
+					LOG.debug("shutdown TCP server");
+					if(listenerCounter.incrementAndGet()==maxListeners) {
+						futureServerDone.setDone();
+					}
 				}
-			}
-		});
-		channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
-			@Override
-			public void operationComplete(final ChannelFuture future) throws Exception {
-				LOG.debug("shutdown TCP channels");
-				if(listenerCounter.incrementAndGet()==maxListeners) {
-					futureServerDone.setDone();
+			});
+		}
+		if(channelTCP != null) {
+			channelTCP.close().addListener(new GenericFutureListener<ChannelFuture>() {
+				@Override
+				public void operationComplete(final ChannelFuture future) throws Exception {
+					LOG.debug("shutdown TCP channels");
+					if(listenerCounter.incrementAndGet()==maxListeners) {
+						futureServerDone.setDone();
+					}
 				}
-			}
-		});
+			});
+		}
 		return shutdownFuture();
 	}
 

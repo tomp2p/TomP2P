@@ -537,4 +537,45 @@ public class TestSecurity {
         
         p1.shutdown().awaitUninterruptibly();
     }
+    
+    @Test
+    public void testVersionContentProtectoinGeneric() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair1).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).ports(4839)
+                .keyPair(keyPair2).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        String locationKey = "location";
+        Number160 lKey = Number160.createHash(locationKey);
+        String contentKey = "content";
+        Number160 cKey = Number160.createHash(contentKey);
+        
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<1000;i++) {
+        	sb.append(i);
+        }
+        
+        Data data1 = new Data(sb.toString()).setProtectedEntry().sign(keyPair1);
+        
+        FuturePut futurePut4 = p1.put(lKey).setData(cKey, data1).keyPair(keyPair1).setVersionKey(Number160.ZERO).start();
+        futurePut4.awaitUninterruptibly();
+        Assert.assertTrue(futurePut4.isSuccess());
+        
+        Data data2 = new Data(sb.toString()).setProtectedEntry().sign(keyPair2);
+        
+        FuturePut futurePut5 = p2.put(lKey).setData(cKey, data2).keyPair(keyPair2).setVersionKey(Number160.ONE).start();
+        futurePut5.awaitUninterruptibly();
+        Assert.assertTrue(!futurePut5.isSuccess());
+        
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
 }

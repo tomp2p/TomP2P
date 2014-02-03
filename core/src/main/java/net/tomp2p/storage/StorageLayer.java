@@ -134,17 +134,15 @@ public class StorageLayer {
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
             if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, domainProtection)) {
-                return PutStatus.FAILED;
+                return PutStatus.FAILED_SECURITY;
             }
+            if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.isProtectedEntry())) {
+                return PutStatus.FAILED_SECURITY;
+            }
+            
             boolean contains = backend.contains(key);
             if (putIfAbsent && contains) {
                 return PutStatus.FAILED_NOT_ABSENT;
-            }
-            if (contains) {
-                Data oldData = getInternal(key);
-                if (!canProtectEntry(key.getContentKey(), oldData, newData)) {
-                    return PutStatus.FAILED_SECURITY;
-                }
             }
             retVal = backend.put(key, newData);
             if (retVal) {
@@ -381,24 +379,9 @@ public class StorageLayer {
         return digestInfo;
     }
 
-    private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
-        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
-        boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
-        return !domainProtectedByOthers || domainOverridableByMe;
-    }
+   
 
-    private boolean canProtectDomain(Number160 domainKey, PublicKey publicKey) {
-        if (isDomainRemoved(domainKey)) {
-            return false;
-        }
-        if (getProtectionDomainEnable() == ProtectionEnable.ALL) {
-            return true;
-        } else if (getProtectionDomainEnable() == ProtectionEnable.NONE) {
-            // only if we have the master key
-            return foreceOverrideDomain(domainKey, publicKey);
-        }
-        return false;
-    }
+    
 
     private boolean securityDomainCheck(Number320 key, PublicKey publicKey, boolean domainProtection) {
         boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
@@ -411,6 +394,25 @@ public class StorageLayer {
             if (canClaimDomain(key, publicKey)) {
                 if (canProtectDomain(key.getDomainKey(), publicKey)) {
                     return backend.protectDomain(key, publicKey);
+                } else {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    private boolean securityEntryCheck(Number480 key, PublicKey publicKey, boolean entryProtection) {
+        boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKey);
+        // I dont want to claim the entry
+        if (!entryProtection) {
+            // returns true if the entry is not protceted by others, otherwise
+            // false if the entry is protected
+            return !entryProtectedByOthers;
+        } else {
+            if (canClaimEntry(key, publicKey)) {
+                if (canProtectEntry(key.getDomainKey(), publicKey)) {
+                    return backend.protectEntry(key, publicKey);
                 } else {
                     return true;
                 }
@@ -438,20 +440,40 @@ public class StorageLayer {
         }
         return false;
     }
-
-    private boolean canProtectEntry(Number160 contentKey, Data oldData, Data newData) {
-        if (getProtectionEntryEnable() == ProtectionEnable.ALL) {
-            if (oldData == null)
-                return true;
-            else if (oldData.publicKey() == null)
-                return true;
-            else {
-                if (oldData.publicKey().equals(newData.publicKey()))
-                    return true;
-            }
+    
+    private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
+        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
+        boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
+        return !domainProtectedByOthers || domainOverridableByMe;
+    }
+    
+    private boolean canClaimEntry(Number480 key, PublicKey publicKey) {
+        boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKey);
+        boolean entryOverridableByMe = foreceOverrideEntry(key.getContentKey(), publicKey);
+        return !entryProtectedByOthers || entryOverridableByMe;
+    }
+    
+    private boolean canProtectDomain(Number160 domainKey, PublicKey publicKey) {
+        if (isDomainRemoved(domainKey)) {
+            return false;
         }
-        // we cannot protect, but maybe we have the rigth public key
-        return foreceOverrideEntry(contentKey, newData.publicKey());
+        if (getProtectionDomainEnable() == ProtectionEnable.ALL) {
+            return true;
+        } else if (getProtectionDomainEnable() == ProtectionEnable.NONE) {
+            // only if we have the master key
+            return foreceOverrideDomain(domainKey, publicKey);
+        }
+        return false;
+    }
+
+    private boolean canProtectEntry(Number160 contentKey, PublicKey publicKey) {
+    	 if (getProtectionEntryEnable() == ProtectionEnable.ALL) {
+             return true;
+         } else if (getProtectionEntryEnable() == ProtectionEnable.NONE) {
+             // only if we have the master key
+             return foreceOverrideEntry(contentKey, publicKey);
+         }
+         return false;
     }
 
     private static boolean isMine(Number160 key, PublicKey publicKey) {

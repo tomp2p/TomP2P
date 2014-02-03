@@ -136,7 +136,7 @@ public class StorageLayer {
             if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, domainProtection)) {
                 return PutStatus.FAILED_SECURITY;
             }
-            if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.isProtectedEntry())) {
+            if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(), newData.isProtectedEntry())) {
                 return PutStatus.FAILED_SECURITY;
             }
             
@@ -402,24 +402,25 @@ public class StorageLayer {
         return false;
     }
     
-    private boolean securityEntryCheck(Number480 key, PublicKey publicKey, boolean entryProtection) {
-        boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKey);
-        // I dont want to claim the entry
-        if (!entryProtection) {
-            // returns true if the entry is not protceted by others, otherwise
-            // false if the entry is protected
-            return !entryProtectedByOthers;
-        } else {
-            if (canClaimEntry(key, publicKey)) {
-                if (canProtectEntry(key.getDomainKey(), publicKey)) {
-                    return backend.protectEntry(key, publicKey);
-                } else {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+	private boolean securityEntryCheck(Number480 key, PublicKey publicKeyMessage, PublicKey publicKeyData,
+	        boolean entryProtection) {
+		boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKeyMessage);
+		// I dont want to claim the domain
+		if (!entryProtection) {
+			// returns true if the domain is not protceted by others, otherwise
+			// false if the domain is protected
+			return !entryProtectedByOthers;
+		} else {
+			if (canClaimEntry(key, publicKeyMessage)) {
+				if (canProtectEntry(key.getDomainKey(), publicKeyMessage)) {
+					return backend.protectEntry(key, publicKeyData);
+				} else {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
     private boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey) {
         // we are in public key mode

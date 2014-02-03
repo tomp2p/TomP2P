@@ -574,6 +574,15 @@ public class TestSecurity {
         futurePut5.awaitUninterruptibly();
         Assert.assertTrue(!futurePut5.isSuccess());
         
+        Data data3 = new Data(sb.toString()).setProtectedEntry().sign(keyPair2);
+        FuturePut futurePut6 = p1.put(lKey).setData(cKey, data3).keyPair(keyPair1).setVersionKey(Number160.MAX_VALUE).start();
+        futurePut6.awaitUninterruptibly();
+        Assert.assertTrue(futurePut6.isSuccess());
+        
+        FuturePut futurePut7 = p2.put(lKey).setData(cKey, data2).keyPair(keyPair2).setVersionKey(Number160.ONE).start();
+        futurePut7.awaitUninterruptibly();
+        Assert.assertTrue(futurePut7.isSuccess());
+        
         
         p1.shutdown().awaitUninterruptibly();
         p2.shutdown().awaitUninterruptibly();

@@ -17,6 +17,7 @@
 package net.tomp2p.p2p.builder;
 
 import java.io.IOException;
+import java.security.PublicKey;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,6 +38,8 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     private Map<Number160, Data> dataMapConvert;
 
     private boolean putIfAbsent = false;
+    
+    private PublicKey changePublicKey = null;
 
     public PutBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -153,6 +156,15 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     public PutBuilder setPutIfAbsent() {
         this.putIfAbsent = true;
         return this;
+    }
+    
+    public PutBuilder changePublicKey(PublicKey changePublicKey) {
+    	this.changePublicKey = changePublicKey;
+    	return this;
+    }
+    
+    public PublicKey changePublicKey() {
+    	return changePublicKey;
     }
 
     public FuturePut start() {

@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 
 public class StorageMemory implements Storage {
@@ -44,6 +45,7 @@ public class StorageMemory implements Storage {
 
     // Protection
     final private Map<Number320, PublicKey> protectedMap = new ConcurrentHashMap<Number320, PublicKey>();
+    final private Map<Number480, PublicKey> entryMap = new ConcurrentHashMap<Number480, PublicKey>();
     final private StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
 
     // Core
@@ -196,5 +198,20 @@ public class StorageMemory implements Storage {
         protectedMap.clear();
         timeoutMap.clear();
         timeoutMapRev.clear();
+    }
+
+	@Override
+    public boolean protectEntry(Number480 key, PublicKey publicKey) {
+		entryMap.put(key, publicKey);
+	    return true;
+    }
+
+	@Override
+    public boolean isEntryProtectedByOthers(Number480 key, PublicKey publicKey) {
+		PublicKey other = entryMap.get(key);
+        if (other == null) {
+            return false;
+        }
+        return !other.equals(publicKey);
     }
 }

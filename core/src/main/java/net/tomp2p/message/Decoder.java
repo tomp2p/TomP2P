@@ -88,10 +88,8 @@ public class Decoder {
 
 		LOG.debug("decode of TomP2P starts now");
 
-		// store positions for the verification
-		ByteBuffer[] byteBuffers = buf.nioBuffers();
-
 		try {
+			final int readerBefore = buf.readerIndex();
 			// set the sender of this message for handling timeout
 			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
 			attributeInet.set(sender);
@@ -110,9 +108,13 @@ public class Decoder {
 					return false;
 				}
 			}
-
-			boolean donePayload = decodePayload(buf);
-			verifySignature(byteBuffers, donePayload);
+			
+			final boolean donePayload = decodePayload(buf);
+			final int readerAfter = buf.readerIndex();
+			final int len = readerAfter - readerBefore;
+			if(len > 0) {
+				verifySignature(buf, readerBefore, len, donePayload);
+			}
 			// see https://github.com/netty/netty/issues/1976
 			buf.discardSomeReadBytes();
 			return donePayload;
@@ -124,29 +126,29 @@ public class Decoder {
 		}
 	}
 
-	private void verifySignature(final ByteBuffer[] byteBuffers, final boolean donePayload) throws SignatureException,
-			IOException {
-		final int len = byteBuffers.length;
-		if (message.isSign()) {
-			for (int i = 0; i < len; i++) {
-				// since we read the bytebuffer, the nio buffer also has a
-				byteBuffers[i].rewind();
-				if (donePayload && i + 1 == len) {
-					byteBuffers[i].limit(byteBuffers[i].limit()
-							- (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE));
-				}
-				message.signatureForVerification().update(byteBuffers[i]);
-			}
+	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
+	        throws SignatureException, IOException {
 
-			if (donePayload) {
-				byte[] signatureReceived = message.receivedSignature().encode();
-				if (message.signatureForVerification().verify(signatureReceived)) {
-					// set public key only if signature is correct
-					message.setVerified();
-					LOG.debug("signature check ok");
-				} else {
-					LOG.debug("wrong signature!");
-				}
+		if (!message.isSign()) {
+			return;
+		}
+		// if we read the complete data, we also read the signature. For the
+		// verification, we should not use this for the signature
+		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
+		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
+		int arrayLength = byteBuffers.length;
+		for (int i = 0; i < arrayLength; i++) {
+			message.signatureForVerification().update(byteBuffers[i]);
+		}
+
+		if (donePayload) {
+			byte[] signatureReceived = message.receivedSignature().encode();
+			if (message.signatureForVerification().verify(signatureReceived)) {
+				// set public key only if signature is correct
+				message.setVerified();
+				LOG.debug("signature check ok");
+			} else {
+				LOG.warn("wrong signature! {}", message);
 			}
 		}
 	}

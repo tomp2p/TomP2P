@@ -714,10 +714,12 @@ public class DistributedHashTable {
     private static void fillRoutingBuilder(final SearchableBuilder builder, final RoutingBuilder routingBuilder) {
         if (builder.from()!=null && builder.to() !=null) {
         	routingBuilder.setRange(builder.from(), builder.to());
-        } else if (builder.contentKeys().size() == 1) {
+        } else if (builder.contentKeys() != null && builder.contentKeys().size() == 1) {
+        	//builder.contentKeys() can be null if we search for all
         	routingBuilder.setContentKey(builder.contentKeys().iterator().next());
         }
-        else if(builder.contentKeys().size() > 1) {
+        else if(builder.contentKeys() != null && builder.contentKeys().size() > 1) {
+        	//builder.contentKeys() can be null if we search for all
         	DefaultBloomfilterFactory factory = new DefaultBloomfilterFactory();
         	SimpleBloomFilter<Number160> bf = factory.createContentKeyBloomFilter();
         	for (Number160 contentKey : builder.contentKeys()) {

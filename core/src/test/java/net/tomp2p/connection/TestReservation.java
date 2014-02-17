@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.utils.Pair;
 
@@ -120,7 +121,7 @@ public class TestReservation {
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
-							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>());
+							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(), new FutureResponse(null));
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
 								public void operationComplete(final ChannelFuture future) throws Exception {
@@ -178,7 +179,7 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS, false,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
-							        });
+							        }, new FutureResponse(null));
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
 								@Override
 								public void operationComplete(final ChannelFuture future) throws Exception {
@@ -238,7 +239,7 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
-							        });
+							        }, new FutureResponse(null));
 							if (channelFuture == null) {
 								return;
 							}
@@ -296,7 +297,7 @@ public class TestReservation {
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
-							        });
+							        }, new FutureResponse(null));
 							if (channelFuture == null) {
 								return;
 							}

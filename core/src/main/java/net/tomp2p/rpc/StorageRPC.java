@@ -200,6 +200,13 @@ public class StorageRPC extends DispatchHandler {
         if (putBuilder.isSign()) {
             message.setPublicKeyAndSign(putBuilder.keyPair());
         }
+        
+        if (putBuilder.changePublicKey()!=null) {
+        	if(!putBuilder.isSign()) {
+        		throw new IllegalAccessError("can only change public key if message is signed");
+        	}
+        	message.setPublicKey(putBuilder.changePublicKey());
+        }
 
         message.setDataMap(dataMap);
 

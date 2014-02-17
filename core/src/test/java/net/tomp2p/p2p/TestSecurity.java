@@ -517,7 +517,12 @@ public class TestSecurity {
         String contentKey = "content";
         Number160 cKey = Number160.createHash(contentKey);
         
-        Data data = new Data("Juhuu").setProtectedEntry().sign(keyPair);
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<1000;i++) {
+        	sb.append(i);
+        }
+        
+        Data data = new Data(sb.toString()).setProtectedEntry().sign(keyPair);
         FuturePut futurePut4 = p1.put(lKey).setData(cKey, data).keyPair(keyPair).start();
         futurePut4.awaitUninterruptibly();
         System.err.println(futurePut4.getFailedReason());
@@ -526,10 +531,60 @@ public class TestSecurity {
         futureGet4.awaitUninterruptibly();
         Assert.assertTrue(futureGet4.isSuccess());
         // should have been not modified ---> why it has been modified without giving a key pair?
-        Assert.assertEquals("Juhuu", (String) futureGet4.getData().object());
+        Assert.assertEquals(sb.toString(), (String) futureGet4.getData().object());
         Assert.assertEquals(keyPair.getPublic(), futureGet4.getData().publicKey());
         
         
         p1.shutdown().awaitUninterruptibly();
+    }
+    
+    @Test
+    public void testVersionContentProtectoinGeneric() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair1).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).ports(4839)
+                .keyPair(keyPair2).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        String locationKey = "location";
+        Number160 lKey = Number160.createHash(locationKey);
+        String contentKey = "content";
+        Number160 cKey = Number160.createHash(contentKey);
+        
+        StringBuilder sb = new StringBuilder();
+        for(int i=0;i<1000;i++) {
+        	sb.append(i);
+        }
+        
+        Data data1 = new Data(sb.toString()).setProtectedEntry().sign(keyPair1);
+        
+        FuturePut futurePut4 = p1.put(lKey).setData(cKey, data1).keyPair(keyPair1).setVersionKey(Number160.ZERO).start();
+        futurePut4.awaitUninterruptibly();
+        Assert.assertTrue(futurePut4.isSuccess());
+        
+        Data data2 = new Data(sb.toString()).setProtectedEntry().sign(keyPair2);
+        
+        FuturePut futurePut5 = p2.put(lKey).setData(cKey, data2).keyPair(keyPair2).setVersionKey(Number160.ONE).start();
+        futurePut5.awaitUninterruptibly();
+        Assert.assertTrue(!futurePut5.isSuccess());
+        
+        Data data3 = new Data(sb.toString()).setProtectedEntry().sign(keyPair2);
+        FuturePut futurePut6 = p1.put(lKey).setData(cKey, data3).keyPair(keyPair1).setVersionKey(Number160.MAX_VALUE).start();
+        futurePut6.awaitUninterruptibly();
+        Assert.assertTrue(futurePut6.isSuccess());
+        
+        FuturePut futurePut7 = p2.put(lKey).setData(cKey, data2).keyPair(keyPair2).setVersionKey(Number160.ONE).start();
+        futurePut7.awaitUninterruptibly();
+        Assert.assertTrue(futurePut7.isSuccess());
+        
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
     }
 }

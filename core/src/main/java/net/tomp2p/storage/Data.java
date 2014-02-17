@@ -290,6 +290,9 @@ public class Data {
 			if(publicKey == PeerMaker.EMPTY_PUBLICKEY) {
 				this.publicKey = publicKey;	
 			}
+			if(buf.readableBytes() < (Number160.BYTE_ARRAY_SIZE * 2)) {
+				return false;
+			}
 			byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
 			buf.readBytes(me);
 			Number160 number1 = new Number160(me);

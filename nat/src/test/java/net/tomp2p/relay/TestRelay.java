@@ -108,6 +108,7 @@ public class TestRelay {
 			System.out.print("Send TCP ping to unreachable peer");
 			BaseFuture f3 = peers[rnd.nextInt(nrOfNodes)].ping().setTcpPing().setPeerAddress(slave.getPeerAddress()).start();
 			f3.awaitUninterruptibly();
+			System.err.println(f3.getFailedReason());
 			Assert.assertTrue(f3.isSuccess());
 			System.out.println("...done");
 
@@ -258,10 +259,10 @@ public class TestRelay {
 			
 			Set<PeerAddress> newRelays = new HashSet<PeerAddress>(manager.getRelayAddresses());
 			Assert.assertNotNull(shutdownPeer);
-			Assert.assertTrue(newRelays.size() == manager.maxRelays());
+			Assert.assertEquals(manager.maxRelays(), newRelays.size());
 			Assert.assertTrue(!newRelays.contains(shutdownPeer.getPeerAddress()));
 			newRelays.removeAll(relays);
-			Assert.assertTrue(newRelays.size() == 1);
+			Assert.assertEquals(1, newRelays.size());
 
 		} finally {
 			if (slave != null) {

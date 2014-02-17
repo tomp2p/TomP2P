@@ -4,7 +4,6 @@ import java.util.Collection;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
 
 public interface SearchableBuilder {
 

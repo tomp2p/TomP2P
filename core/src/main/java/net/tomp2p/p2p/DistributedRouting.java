@@ -306,6 +306,11 @@ public class DistributedRouting {
                     final Number160 locationKey2 = randomSearch ? next.getPeerId().xor(Number160.MAX_VALUE)
                             : routingBuilder.getLocationKey();
                     routingBuilder.setLocationKey(locationKey2);
+                    if(LOG.isWarnEnabled()) {
+                    	if(channelCreator.availableUDPPermits()==0) {
+                    		LOG.warn("sanity check faild: {}, {}",i,Thread.currentThread().getName());
+                    	}
+                    }
                     routingMechanism.futureResponse(i, neighbors.closeNeighbors(next,
                             routingBuilder.searchValues(), type, channelCreator, routingBuilder));
                     LOG.debug("get close neighbors: {} on {}", next, i);

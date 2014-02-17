@@ -89,28 +89,29 @@ public class PeerCreator {
 	        final ChannelServerConficuration channelServerConficuration,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final PeerStatusListener[] peerStatusListeners, ScheduledExecutorService timer) throws IOException {
+		//peer bean
 		peerBean = new PeerBean(keyPair);
 		peerBean.peerStatusListeners(peerStatusListeners);
+		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
+		peerBean.serverPeerAddress(self);
+		LOG.info("Visible address to other peers: {}", self);
+		
+		//start server
 		workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(ConnectionBean.THREAD_NAME
 		        + "worker-client/server - "));
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
-
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
-		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
-
 		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,
 		        dispatcher, peerStatusListeners);
-		channelServer.startup();
-
-		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
-		peerBean.serverPeerAddress(self);
-		if (LOG.isInfoEnabled()) {
-			LOG.info("Visible address to other peers: " + self);
+		if(!channelServer.startup()) {
+			shutdownNetty();
+			throw new IOException("Cannot bind to TCP or UDP port.");
 		}
-
+		
+		//connection bean
 		Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher);
-
 		NATUtils natUtils = new NATUtils();
+		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
 		        channelClientConfiguration, natUtils, timer);
 		this.master = true;
@@ -170,32 +171,35 @@ public class PeerCreator {
 		connectionBean.reservation().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-					@SuppressWarnings({ "unchecked", "rawtypes" })
+				connectionBean.channelServer().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {		
                     @Override
 					public void operationComplete(final FutureDone<Void> future) throws Exception {
-						workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
-							@Override
-							public void operationComplete(final Future future) throws Exception {
-								LOG.debug("shutdown done in client / workerGroup...");
-								bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
-								        new GenericFutureListener() {
-									        @Override
-									        public void operationComplete(final Future future) throws Exception {
-										        LOG.debug("shutdown done in client / bossGroup...");
-										        shutdownFuture().setDone();
-									        }
-								        });
-							}
-						});
+						shutdownNetty();
 					}
 				});
-
 			}
 		});
 		// this is blocking
 		connectionBean.natUtils().shutdown();
 		return shutdownFuture();
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+    private void shutdownNetty() {
+		workerGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(new GenericFutureListener() {
+			@Override
+			public void operationComplete(final Future future) throws Exception {
+				LOG.debug("shutdown done in client / workerGroup...");
+				bossGroup.shutdownGracefully(0, 0, TimeUnit.SECONDS).addListener(
+				        new GenericFutureListener() {
+					        @Override
+					        public void operationComplete(final Future future) throws Exception {
+						        LOG.debug("shutdown done in client / bossGroup...");
+						        shutdownFuture().setDone();
+					        }
+				        });
+			}
+		});
 	}
 
 	/**
@@ -230,7 +234,7 @@ public class PeerCreator {
 	 * @throws IOException
 	 *             If the address could not be determined
 	 */
-	private PeerAddress findPeerAddress(final Number160 peerId,
+	private static PeerAddress findPeerAddress(final Number160 peerId,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ChannelServerConficuration channelServerConficuration) throws IOException {
 		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.externalBindings());

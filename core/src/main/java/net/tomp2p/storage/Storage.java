@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.NavigableMap;
 
 import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 
 /**
@@ -67,4 +68,8 @@ public interface Storage extends ReplicationStorage {
     public abstract boolean protectDomain(Number320 key, PublicKey publicKey);
 
     public abstract boolean isDomainProtectedByOthers(Number320 key, PublicKey publicKey);
+    
+    public abstract boolean protectEntry(Number480 key, PublicKey publicKey);
+
+    public abstract boolean isEntryProtectedByOthers(Number480 key, PublicKey publicKey);
 }

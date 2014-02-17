@@ -15,8 +15,6 @@
  */
 package net.tomp2p.futures;
 
-import io.netty.channel.ChannelFuture;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.concurrent.CountDownLatch;
@@ -45,8 +43,6 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
 
     private final CountDownLatch firstProgressHandler = new CountDownLatch(1);
     private final CountDownLatch secondProgressHandler = new CountDownLatch(1);
-    
-    private ChannelFuture channelFuture;
     
     private boolean reponseLater = false;
 
@@ -177,6 +173,10 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     
     public FutureResponse setResponseNow() {
         synchronized (lock) {
+        	if (!reponseLater && !completed) {
+        		setFailed("No future set beforehand, probably an early shutdown, or use setFailedLater() or setResponseLater()");
+        		return this;
+        	}
             if (!super.setCompletedAndNotify()) {
                 return this;
             }
@@ -279,17 +279,11 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
             }
         }
     }
-
-    public void setChannelFuture(ChannelFuture channelFuture) {
-        synchronized (lock) {
-           this.channelFuture = channelFuture;
-        }
-    }
     
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("future response state:");
-        sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.getCommand()).append(",reason:").append(reason).append(",ch.future:").append(channelFuture);
+        sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.getCommand()).append(",reason:").append(reason);
         return sb.toString();
     }
 }

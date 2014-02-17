@@ -65,6 +65,10 @@ public class RoutingMechanism {
         this.futureResponses = futureResponses;
         this.futureRoutingResponse = futureRoutingResponse;
     }
+    
+    public FutureRouting futureRoutingResponse() {
+    	return futureRoutingResponse;
+    }
 
     /**
      * @return The number of parallel requests. The number is determined by the length of the future response array

@@ -29,6 +29,12 @@ import net.tomp2p.peers.PeerAddress;
 public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<K> implements FutureBootstrap {
 
     private Collection<PeerAddress> bootstrapTo;
+    
+    //TODO: not a nice solutiion
+    public FutureWrappedBootstrap<K> setFailed0(String failed) {
+        setFailed(failed);
+        return this;
+    }
 
     /**
      * The addresses we boostrap to. If we broadcast, we don't know the addresses in advance.

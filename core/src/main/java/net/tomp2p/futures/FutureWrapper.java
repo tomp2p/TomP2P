@@ -27,7 +27,6 @@ package net.tomp2p.futures;
 public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
     
     private K wrappedFuture;
-    
 
     /**
      * Wait for the future, which will cause this future to complete if the

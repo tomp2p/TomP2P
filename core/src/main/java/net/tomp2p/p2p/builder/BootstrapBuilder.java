@@ -58,10 +58,10 @@ public class BootstrapBuilder {
     private static final Logger logger = LoggerFactory.getLogger(BootstrapBuilder.class);
 
     private static final FutureBootstrap FUTURE_BOOTSTRAP_SHUTDOWN = new FutureWrappedBootstrap<FutureBootstrap>()
-            .setFailed("Peer is shutting down");
+            .setFailed0("Peer is shutting down");
 
     private static final FutureBootstrap FUTURE_BOOTSTRAP_NO_ADDRESS = new FutureWrappedBootstrap<FutureBootstrap>()
-            .setFailed("You did not provide information where to bootstrap to. "
+            .setFailed0("You did not provide information where to bootstrap to. "
                     + "This could be also caused if you provided a peer address with a peer ID set to zero.");
 
     private final Peer peer;

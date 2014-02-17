@@ -182,7 +182,10 @@ public class Sender {
 			final ChannelCreator channelCreator, final FutureResponse futureResponse) {
 		//if the channel gets closed, the future should get notified
 		ChannelFuture channelFuture = peerConnection.channelFuture();
-		channelCreator.setupCloseListener(channelFuture, futureResponse);
+		//channelCreator can be null if we don't need to create any channels
+		if(channelCreator != null) {
+			channelCreator.setupCloseListener(channelFuture, futureResponse);
+		}
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
 		// we need to replace the handler if this comes from the peer that

@@ -59,7 +59,7 @@ public class TestRelay {
         System.err.println(futureResponse.getFailedReason());
         Assert.assertEquals("world!", futureResponse.object());
         
-        Thread.sleep(10000);
+        Thread.sleep(1000);
         pcSlave.close();
         pcMaster.close();
         System.err.println("done");

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.futures;
 
+
 /**
  * Wraps a future into an other future. This is useful for futures that are
  * created later on. You can create a wrapper, return it to the user, create an
@@ -26,8 +27,7 @@ package net.tomp2p.futures;
  */
 public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
     
-    private K wrappedFuture;
-    
+    private K wrappedFuture;  
 
     /**
      * Wait for the future, which will cause this future to complete if the

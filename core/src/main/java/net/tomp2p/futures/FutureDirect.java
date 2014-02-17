@@ -5,7 +5,6 @@ import java.io.IOException;
 import net.tomp2p.message.Buffer;
 
 
-//TODO: make two generics
 public class FutureDirect extends FutureWrapper<FutureResponse> {
     
     private final FutureResponse futureResponse;
@@ -16,11 +15,22 @@ public class FutureDirect extends FutureWrapper<FutureResponse> {
         }
     }
     
+    /**
+	 * Set failed that returns this class not not null.
+	 * 
+	 * @param failed
+	 *            The failure string
+	 * @return this class (never null)
+	 */
     public FutureDirect setFailed0(String failed) {
         setFailed(failed);
         return this;
     }
     
+    /**
+     * Used for testing only.
+     * @return this class (never null)
+     */
     public FutureDirect awaitUninterruptibly0() {
         futureResponse.awaitUninterruptibly();
         return this;

@@ -43,6 +43,7 @@ public class RelayManager {
 
 			// bootstrap to get updated peer map and then push it to the relay peers
 			FutureBootstrap fb = peer.bootstrap().setPeerAddress(peerAddress).start();
+			
 			fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
 				public void operationComplete(FutureBootstrap future) throws Exception {
 					if (future.isSuccess()) {
@@ -104,22 +105,23 @@ public class RelayManager {
 
 		Set<PeerAddress> relayAddressesCopy = new HashSet<PeerAddress>(relayAddresses);
 
-		FutureDone<Void> fd = new FutureDone<Void>();
-
 		// add relay addresses to peer address
 		boolean hasRelays = !relayAddressesCopy.isEmpty();
+		PeerSocketAddress[] socketAddresses = null;
 		if (hasRelays) {
-			PeerSocketAddress[] socketAddresses = new PeerSocketAddress[relayAddressesCopy.size()];
+			socketAddresses = new PeerSocketAddress[relayAddressesCopy.size()];
 			int index = 0;
 			for (PeerAddress pa : relayAddressesCopy) {
 				socketAddresses[index] = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
 				index++;
 			}
+		} else {
+			socketAddresses = new PeerSocketAddress[0]; 
 		}
 		// update firewalled and isRelay flags
 		PeerAddress pa = peer.getPeerAddress();
 		PeerSocketAddress psa = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
-		PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, !hasRelays, !hasRelays, hasRelays, new PeerSocketAddress[0]);
+		PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, !hasRelays, !hasRelays, hasRelays, socketAddresses);
 		peer.getPeerBean().serverPeerAddress(newAddress);
 	}
 
@@ -185,6 +187,7 @@ public class RelayManager {
 						if (fr.isSuccess()) {
 							logger.debug("Adding peer {} as a relay", relayAddress);
 							relayAddresses.add(relayAddress);
+							
 							FutureDone<Void> closeFuture = fr.futurePeerConnection().getObject().closeFuture();
 							closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 								public void operationComplete(FutureDone<Void> future) throws Exception {

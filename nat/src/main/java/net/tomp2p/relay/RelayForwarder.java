@@ -32,7 +32,7 @@ public class RelayForwarder extends DispatchHandler {
 		peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12);
 		this.futurePeerConnection = fps;
 		this.peer = peer;
-		new RelayRouting(peer, unreachablePeer);
+		new RelayNeighborRPC(peer, unreachablePeer);
 		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + fps.getObject().remotePeer());
 	}
 

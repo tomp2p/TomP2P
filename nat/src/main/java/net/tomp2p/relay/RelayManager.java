@@ -137,7 +137,6 @@ public class RelayManager {
                 if (future.isSuccess()) {
                     relayCandidates.addAll(peer.getDistributedRouting().peerMap().getAll());
                     logger.debug("Found {} peers that could act as relays", relayCandidates.size());
-
                 } else {
                     logger.error("Bootstrapping failed: {}", future.getFailedReason());
                     futureDone.setFailed(future.getFailedReason());

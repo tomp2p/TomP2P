@@ -136,7 +136,11 @@ public class NeighborRPC extends DispatchHandler {
         // Create response message and set neighbors
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
-        SortedSet<PeerAddress> neighbors = peerBean().peerMap().closePeers(locationKey, NEIGHBOR_SIZE);
+        SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
+        if(neighbors == null) {
+            responder.response(createResponseMessage(message, Type.NOT_FOUND));
+        }
+        
         LOG.debug("found the following neighbors {}", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);
         responseMessage.setNeighborsSet(neighborSet);
@@ -184,6 +188,10 @@ public class NeighborRPC extends DispatchHandler {
                */
         }
         responder.response(responseMessage);
+    }
+    
+    protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+        return peerBean().peerMap().closePeers(id, atLeast);
     }
 
     /**

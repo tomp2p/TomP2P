@@ -138,7 +138,8 @@ public class NeighborRPC extends DispatchHandler {
 
         SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
-            responder.response(createResponseMessage(message, Type.NOT_FOUND));
+            responder.response(createResponseMessage(message, Type.CANCEL));
+            return;
         }
         
         LOG.debug("found the following neighbors {}", neighbors);

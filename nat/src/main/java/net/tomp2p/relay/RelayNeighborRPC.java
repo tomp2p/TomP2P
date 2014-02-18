@@ -33,6 +33,7 @@ public class RelayNeighborRPC extends NeighborRPC {
     
     @Override
     protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+        logger.trace("Answering routing request on behalf of unreachable peer {}", unreachablePeer);
         if(peerMap == null) {
             return null;
         } else {

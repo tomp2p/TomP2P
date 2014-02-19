@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 public class RelayNeighborRPC extends NeighborRPC {
     
-    private final static Logger logger = LoggerFactory.getLogger(RelayRouting.class);
+    private final static Logger logger = LoggerFactory.getLogger(RelayNeighborRPC.class);
     
     private Peer peer;
     private PeerAddress unreachablePeer;

@@ -4,11 +4,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -42,9 +40,8 @@ public class RelayManager {
                 return;
             }
 
-            // bootstrap to get updated peer map and then push it to the relay
-            // peers
-            FutureBootstrap fb = peer.bootstrap().setPeerAddress(peerAddress).start();
+            // bootstrap to get updated peer map and then push it to the relay peers
+            FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
 
             fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
                 public void operationComplete(FutureBootstrap future) throws Exception {
@@ -75,19 +72,19 @@ public class RelayManager {
 
     private final int maxRelays;
     private final Peer peer;
-    private PeerAddress peerAddress;
+    private PeerAddress bootstrapAddress;
     private final LinkedHashSet<PeerAddress> relayCandidates;
     private Semaphore relaySemaphore;
 
     private Set<PeerAddress> relayAddresses;
 
-    public RelayManager(final Peer peer, PeerAddress peerAddress) {
-        this(peer, peerAddress, PeerAddress.MAX_RELAYS);
+    public RelayManager(final Peer peer, PeerAddress bootstrapAddress) {
+        this(peer, bootstrapAddress, PeerAddress.MAX_RELAYS);
     }
 
-    public RelayManager(final Peer peer, PeerAddress peerAddress, int maxRelays) {
+    public RelayManager(final Peer peer, PeerAddress bootstrapAddress, int maxRelays) {
         this.peer = peer;
-        this.peerAddress = peerAddress;
+        this.bootstrapAddress = bootstrapAddress;
         this.relayCandidates = new LinkedHashSet<PeerAddress>();
 
         if (maxRelays > PeerAddress.MAX_RELAYS || maxRelays < 0) {
@@ -102,8 +99,8 @@ public class RelayManager {
     }
 
     /**
-     * Adds the relay addresses to the peer address, updates the firewalled
-     * flags, and bootstraps
+     * Updates the peer's PeerAddress: Adds the relay addresses to the peer
+     * address, updates the firewalled flags, and bootstraps
      */
     private void updatePeerAddress() {
 
@@ -122,7 +119,7 @@ public class RelayManager {
         }
         // update firewalled and isRelay flags
         PeerAddress pa = peer.getPeerAddress();
-        
+
         PeerSocketAddress psa = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
         PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, !hasRelays, !hasRelays, hasRelays, socketAddresses);
         peer.getPeerBean().serverPeerAddress(newAddress);
@@ -133,7 +130,7 @@ public class RelayManager {
         final FutureDone<Void> futureDone = new FutureDone<Void>();
 
         // bootstrap to get neighbor peers
-        FutureBootstrap fb = peer.bootstrap().setPeerAddress(peerAddress).start();
+        FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
         fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
             public void operationComplete(FutureBootstrap future) throws Exception {
                 if (future.isSuccess()) {
@@ -167,9 +164,10 @@ public class RelayManager {
         try {
             relaySemaphore.acquire(numberOfRelays);
         } catch (InterruptedException e) {
-            //TODO: how to handle
+            futureDone.setFailed(e);
+            return futureDone;
         }
-        
+
         if (numberOfRelays == 0) {
             futureDone.setDone();
             return futureDone;
@@ -178,8 +176,8 @@ public class RelayManager {
         int active = 0;
         for (int i = 0; i < numberOfRelays; i++) {
             if (futureRelayConnections[i] == null) {
-            	PeerAddress candidate = relayCandidates.iterator().next();
-            	relayCandidates.remove(candidate);
+                PeerAddress candidate = relayCandidates.iterator().next();
+                relayCandidates.remove(candidate);
                 futureRelayConnections[i] = new RelayRPC(peer).setupRelay(candidate, cc);
                 if (futureRelayConnections[i] != null) {
                     active++;
@@ -209,7 +207,9 @@ public class RelayManager {
                             closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                                 public void operationComplete(FutureDone<Void> future) throws Exception {
                                     if (!peer.isShutdown()) {
-                                        // peer connection not open anymore -> remove and open a new relay connection
+                                        // peer connection not open
+                                        // anymore -> remove and open a
+                                        // new relay connection
                                         logger.debug("Relay " + fr.relayAddress() + " failed, setting up a new relay peer");
                                         removeRelay(fr.relayAddress());
                                         setupRelays();
@@ -240,12 +240,12 @@ public class RelayManager {
         FutureDone<Void> fd = new FutureDone<Void>();
 
         int nrOfRelays = relaySemaphore.availablePermits();
-        
-        if(nrOfRelays > 0) {
-        	RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[nrOfRelays];
+
+        if (nrOfRelays > 0) {
+            RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[nrOfRelays];
             relaySetupLoop(relayConnectionFutures, relayCandidates, cc, nrOfRelays, fd);
         } else {
-        	fd.setDone();
+            fd.setDone();
         }
 
         return fd;
@@ -286,7 +286,7 @@ public class RelayManager {
                                         if (future.isSuccess()) {
                                             // bootstrap with the updated peer
                                             // address
-                                            FutureBootstrap fb = peer.bootstrap().setPeerAddress(peerAddress).start();
+                                            FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
                                             fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
                                                 public void operationComplete(FutureBootstrap future) throws Exception {
                                                     if (future.isSuccess()) {

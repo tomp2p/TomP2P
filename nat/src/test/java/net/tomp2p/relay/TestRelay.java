@@ -207,14 +207,6 @@ public class TestRelay {
 		}
 	}
 	
-	private Collection<PeerAddress> getNeighbors(Peer peer) {
-	    Message request = new Message().setRecipient(peer.getPeerAddress()).setSender(peer.getPeerAddress()).setKey(new Number160("0x1")).setKey(new Number160("0x1"))
-                .setCommand(NeighborRPC.NEIGHBORS_COMMAND).setType(Type.REQUEST_1).setVersion(peer.getConnectionBean().p2pId());
-	    NoDirectResponse responder = new NoDirectResponse();
-	    peer.getConnectionBean().dispatcher().getAssociatedHandler(request).forwardMessage(request, null, responder);
-	    return responder.getResponse().getNeighborsSet(0).neighbors();
-	}
-	
 	@Test
 	public void testRelayFailed() throws Exception {
 		final Random rnd = new Random(42);
@@ -308,6 +300,14 @@ public class TestRelay {
 			master.shutdown().await();
 			slave.shutdown().await();
 		}
+	}
+
+	private Collection<PeerAddress> getNeighbors(Peer peer) {
+	    Message request = new Message().setRecipient(peer.getPeerAddress()).setSender(peer.getPeerAddress()).setKey(new Number160("0x1")).setKey(new Number160("0x1"))
+	            .setCommand(NeighborRPC.NEIGHBORS_COMMAND).setType(Type.REQUEST_1).setVersion(peer.getConnectionBean().p2pId());
+	    NoDirectResponse responder = new NoDirectResponse();
+	    peer.getConnectionBean().dispatcher().getAssociatedHandler(request).forwardMessage(request, null, responder);
+	    return responder.getResponse().getNeighborsSet(0).neighbors();
 	}
 	
 	

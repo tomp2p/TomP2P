@@ -6,7 +6,6 @@ import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RawDataReply;
 
 import org.slf4j.Logger;

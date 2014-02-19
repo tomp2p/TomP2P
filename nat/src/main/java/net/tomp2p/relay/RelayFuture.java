@@ -2,12 +2,7 @@ package net.tomp2p.relay;
 
 import net.tomp2p.futures.BaseFutureImpl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class RelayFuture extends BaseFutureImpl<RelayFuture> {
-	
-	private final static Logger logger = LoggerFactory.getLogger(RelayFuture.class);
 	
 	private RelayManager relayManager;
 	

@@ -68,7 +68,7 @@
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.nat.RelayReply" level="TRACE"/>
+  <logger name="net.tomp2p.nat.RelayReply" level="DEBUG"/>
   
   <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
        See http://logback.qos.ch/manual/architecture.html for more information-->

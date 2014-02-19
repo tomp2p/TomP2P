@@ -1,7 +1,7 @@
 package net.tomp2p.relay;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -10,6 +10,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -72,11 +73,11 @@ public class RelayManager {
 
     private final static long ROUTING_UPDATE_TIME = 10L * 1000;
 
-    // settings
     private final int maxRelays;
     private final Peer peer;
     private PeerAddress peerAddress;
-    private final Queue<PeerAddress> relayCandidates;
+    private final LinkedHashSet<PeerAddress> relayCandidates;
+    private Semaphore relaySemaphore;
 
     private Set<PeerAddress> relayAddresses;
 
@@ -87,7 +88,7 @@ public class RelayManager {
     public RelayManager(final Peer peer, PeerAddress peerAddress, int maxRelays) {
         this.peer = peer;
         this.peerAddress = peerAddress;
-        this.relayCandidates = new ConcurrentLinkedQueue<PeerAddress>();
+        this.relayCandidates = new LinkedHashSet<PeerAddress>();
 
         if (maxRelays > PeerAddress.MAX_RELAYS || maxRelays < 0) {
             logger.warn("at most {} relays are allowed.", PeerAddress.MAX_RELAYS);
@@ -95,6 +96,7 @@ public class RelayManager {
         }
 
         this.maxRelays = maxRelays;
+        this.relaySemaphore = new Semaphore(maxRelays);
 
         relayAddresses = new CopyOnWriteArraySet<PeerAddress>();
     }
@@ -105,15 +107,13 @@ public class RelayManager {
      */
     private void updatePeerAddress() {
 
-        Set<PeerAddress> relayAddressesCopy = new HashSet<PeerAddress>(relayAddresses);
-
         // add relay addresses to peer address
-        boolean hasRelays = !relayAddressesCopy.isEmpty();
+        boolean hasRelays = !relayAddresses.isEmpty();
         PeerSocketAddress[] socketAddresses = null;
         if (hasRelays) {
-            socketAddresses = new PeerSocketAddress[relayAddressesCopy.size()];
+            socketAddresses = new PeerSocketAddress[relayAddresses.size()];
             int index = 0;
-            for (PeerAddress pa : relayAddressesCopy) {
+            for (PeerAddress pa : relayAddresses) {
                 socketAddresses[index] = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
                 index++;
             }
@@ -122,9 +122,11 @@ public class RelayManager {
         }
         // update firewalled and isRelay flags
         PeerAddress pa = peer.getPeerAddress();
+        
         PeerSocketAddress psa = new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort());
         PeerAddress newAddress = new PeerAddress(pa.getPeerId(), psa, !hasRelays, !hasRelays, hasRelays, socketAddresses);
         peer.getPeerBean().serverPeerAddress(newAddress);
+
     }
 
     private FutureDone<Void> getNeighbors(final ChannelCreator cc) {
@@ -151,7 +153,7 @@ public class RelayManager {
         return relayAddresses;
     }
 
-    public Queue<PeerAddress> getRelayCandidates() {
+    public Collection<PeerAddress> getRelayCandidates() {
         return relayCandidates;
     }
 
@@ -159,12 +161,26 @@ public class RelayManager {
         return maxRelays;
     }
 
-    private FutureDone<Void> relaySetupLoop(final RelayConnectionFuture[] futureRelayConnections, final Queue<PeerAddress> relayCandidates, final ChannelCreator cc,
+    private FutureDone<Void> relaySetupLoop(final RelayConnectionFuture[] futureRelayConnections, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
             final int numberOfRelays, final FutureDone<Void> futureDone) {
+
+        try {
+            relaySemaphore.acquire(numberOfRelays);
+        } catch (InterruptedException e) {
+            //TODO: how to handle
+        }
+        
+        if (numberOfRelays == 0) {
+            futureDone.setDone();
+            return futureDone;
+        }
+
         int active = 0;
         for (int i = 0; i < numberOfRelays; i++) {
             if (futureRelayConnections[i] == null) {
-                futureRelayConnections[i] = new RelayRPC(peer).setupRelay(relayCandidates.poll(), cc);
+            	PeerAddress candidate = relayCandidates.iterator().next();
+            	relayCandidates.remove(candidate);
+                futureRelayConnections[i] = new RelayRPC(peer).setupRelay(candidate, cc);
                 if (futureRelayConnections[i] != null) {
                     active++;
                 }
@@ -217,18 +233,21 @@ public class RelayManager {
 
     private void removeRelay(PeerAddress pa) {
         relayAddresses.remove(pa);
-        PeerSocketAddress[] socketAddresses = new PeerSocketAddress[relayAddresses.size()];
-        int index = 0;
-        for (PeerAddress relay : relayAddresses) {
-            socketAddresses[index++] = new PeerSocketAddress(relay.getInetAddress(), relay.tcpPort(), relay.udpPort());
-        }
+        relaySemaphore.release();
     }
 
     private FutureDone<Void> setupPeerConnections(final ChannelCreator cc) {
-        final FutureDone<Void> fd = new FutureDone<Void>();
-        final int targetRelayCount = Math.min(maxRelays - relayAddresses.size(), relayCandidates.size());
-        RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[targetRelayCount];
-        relaySetupLoop(relayConnectionFutures, relayCandidates, cc, targetRelayCount, fd);
+        FutureDone<Void> fd = new FutureDone<Void>();
+
+        int nrOfRelays = relaySemaphore.availablePermits();
+        
+        if(nrOfRelays > 0) {
+        	RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[nrOfRelays];
+            relaySetupLoop(relayConnectionFutures, relayCandidates, cc, nrOfRelays, fd);
+        } else {
+        	fd.setDone();
+        }
+
         return fd;
     }
 
@@ -251,7 +270,7 @@ public class RelayManager {
         }
 
         // create channel creator
-        FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, maxRelays);
+        FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(0, maxRelays);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {

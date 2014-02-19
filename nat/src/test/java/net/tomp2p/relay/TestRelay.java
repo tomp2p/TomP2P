@@ -23,7 +23,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.rpc.NeighborRPC.SearchValues;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -179,24 +178,23 @@ public class TestRelay {
 
 			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
 			RelayFuture rf = manager.setupRelays();
-			System.out.println("1");
 			rf.awaitUninterruptibly();
 			Assert.assertTrue(rf.isSuccess());
 			
 			int nrOfNeighbors = getNeighbors(slave).size();
 			
-            //Shut down a random relay peer
+            //Shut down a peer
             peers[nrOfNodes-1].shutdown().await();
             peers[nrOfNodes-2].shutdown().await();
+            peers[nrOfNodes-3].shutdown().await();
             
             /* 
-             * needed because failure of a node is detected with periodic heartbeat, 
+             * needed because failure of a node is detected with periodic heartbeat 
              * and the routing table of the relay peers are also updated periodically
              */
-            
             Thread.sleep(15000);
 			
-            Assert.assertEquals(nrOfNeighbors - 2, getNeighbors(slave).size());
+            Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(slave).size());
 			
 
 		} finally {

@@ -34,7 +34,13 @@ import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StorageLayer {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(StorageLayer.class);
+	
     public enum ProtectionEnable {
         ALL, NONE
     };
@@ -133,7 +139,7 @@ public class StorageLayer {
         boolean retVal = false;
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
-            if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, domainProtection)) {
+            if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
                 return PutStatus.FAILED_SECURITY;
             }
             if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(), newData.isProtectedEntry())) {
@@ -383,17 +389,21 @@ public class StorageLayer {
 
     
 
-    private boolean securityDomainCheck(Number320 key, PublicKey publicKey, boolean domainProtection) {
+    private boolean securityDomainCheck(Number320 key, PublicKey publicKey, PublicKey newPublicKey, boolean domainProtection) {
+    	
         boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
         // I dont want to claim the domain
         if (!domainProtection) {
+        	LOG.debug("no domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
             // returns true if the domain is not protceted by others, otherwise
             // false if the domain is protected
             return !domainProtectedByOthers;
         } else {
+        	LOG.debug("domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
             if (canClaimDomain(key, publicKey)) {
                 if (canProtectDomain(key.getDomainKey(), publicKey)) {
-                    return backend.protectDomain(key, publicKey);
+                	LOG.debug("set domain protection");
+                    return backend.protectDomain(key, newPublicKey);
                 } else {
                     return true;
                 }
@@ -511,4 +521,42 @@ public class StorageLayer {
 	public void init(ScheduledExecutorService timer, int storageIntervalMillis) {
 		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis, TimeUnit.MILLISECONDS);
 	}
+
+	public Enum<?> updateMeta(Number320 locationAndDomainKey, PublicKey publicKey, PublicKey newPublicKey) {
+		if (!securityDomainCheck(locationAndDomainKey, publicKey, newPublicKey, true)) {
+            return PutStatus.FAILED_SECURITY;
+        }
+		return PutStatus.OK;
+    }
+
+	public Enum<?> updateMeta(PublicKey publicKey, Number640 key, Data newData) {
+		boolean retVal = true;
+        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+        try {
+        	if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(), newData.isProtectedEntry())) {
+                return PutStatus.FAILED_SECURITY;
+            }
+            
+            final Data data = backend.get(key);
+            boolean changed = false;
+            if(newData.publicKey()!=null) {
+            	data.publicKey(newData.publicKey());
+            	changed = true;
+            }
+            if(newData.isSigned()) {
+            	data.signature(newData.signature());
+            	changed = true;
+            }
+            if(changed) {
+            	retVal = backend.put(key, data);
+            }
+            
+            long expiration = newData.expirationMillis();
+            // handle timeout
+            backend.addTimeout(key, expiration);
+        } finally {
+            dataLock640.unlock(lock);
+        }
+        return retVal ? PutStatus.OK : PutStatus.FAILED;
+    }
 }

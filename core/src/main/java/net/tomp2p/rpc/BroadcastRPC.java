@@ -37,18 +37,16 @@ public class BroadcastRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(BroadcastRPC.class);
 
-    public static final byte BROADCAST_COMMAND = 12;
-
     private final BroadcastHandler broadcastHandler;
 
     public BroadcastRPC(PeerBean peerBean, ConnectionBean connectionBean, BroadcastHandler broadcastHandler) {
-        super(peerBean, connectionBean, BROADCAST_COMMAND);
+        super(peerBean, connectionBean, RPC.Commands.BROADCAST.getNr());
         this.broadcastHandler = broadcastHandler;
     }
 
     public FutureResponse send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        final Message message = createMessage(remotePeer, BROADCAST_COMMAND, Type.REQUEST_FF_1);
+        final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
         message.setInteger(broadcastBuilder.hopCounter());
         message.setKey(broadcastBuilder.messageKey());
         if (broadcastBuilder.dataMap() != null) {
@@ -66,7 +64,7 @@ public class BroadcastRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == BROADCAST_COMMAND)) {
+        if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         LOG.debug("received BRODACAST message: {}", message);

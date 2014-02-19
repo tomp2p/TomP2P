@@ -40,7 +40,6 @@ import org.slf4j.LoggerFactory;
 public class PeerExchangeRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(PeerExchangeRPC.class);
 
-    public static final byte PEX_COMMAND = 10;
     public static final int SENT_PEERS_CACHE_SIZE = 1000;
 
     // since PEX is push based, each peer needs to keep track what was sent to
@@ -56,7 +55,7 @@ public class PeerExchangeRPC extends DispatchHandler {
      *            The connection bean
      */
     public PeerExchangeRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, PEX_COMMAND);
+        super(peerBean, connectionBean, RPC.Commands.PEX.getNr());
         // sentPeers = new CacheMap<Number160, Set<PeerAddress>>(SENT_PEERS_CACHE_SIZE, true);
     }
 
@@ -82,7 +81,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     public FutureResponse peerExchange(final PeerAddress remotePeer, final Number160 locationKey,
             final Number160 domainKey, final boolean isReplication, final ChannelCreator channelCreator,
             final ConnectionConfiguration connectionConfiguration) {
-        final Message message = createMessage(remotePeer, PEX_COMMAND, isReplication ? Type.REQUEST_FF_2
+        final Message message = createMessage(remotePeer, RPC.Commands.PEX.getNr(), isReplication ? Type.REQUEST_FF_2
                 : Type.REQUEST_FF_1);
 
         TrackerData peers;
@@ -127,7 +126,7 @@ public class PeerExchangeRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_FF_2) && message
-                .getCommand() == PEX_COMMAND)) {
+                .getCommand() == RPC.Commands.PEX.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         Number160 locationKey = message.getKey(0);

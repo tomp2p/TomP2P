@@ -38,6 +38,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -862,7 +863,10 @@ public class Utils {
     }
 
     public static int dataSize(PutBuilder putBuilder) {
-        if(putBuilder.getDataMap()!=null) {
+    	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
+    		//we only send a marker
+    		return 1;
+    	} else if(putBuilder.getDataMap()!=null) {
             return putBuilder.getDataMap().size();
         } else { 
             return putBuilder.getDataMapContent().size();
@@ -880,5 +884,12 @@ public class Utils {
 			}
 		}
     	return true;
+    }
+
+	public static String hash(PublicKey publicKey) {
+		if(publicKey == null) {
+			return "null";
+		}
+		return String.valueOf(publicKey.hashCode());
     }
 }

@@ -10,6 +10,7 @@ import java.security.SignatureException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.tomp2p.Utils2;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureRemove;
@@ -587,4 +588,134 @@ public class TestSecurity {
         p1.shutdown().awaitUninterruptibly();
         p2.shutdown().awaitUninterruptibly();
     }
+    
+    @Test
+    public void testChangeDomainProtectionKey() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair1).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).ports(4839)
+                .keyPair(keyPair2).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        Data data = new Data("test");
+        FuturePut fp1 = p1.put(Number160.createHash("key1")).setProtectDomain().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp1.isSuccess());
+        FuturePut fp2 = p2.put(Number160.createHash("key1")).setProtectDomain().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(!fp2.isSuccess());
+        
+        FuturePut fp3 = p1.put(Number160.createHash("key1")).changePublicKey(keyPair2.getPublic()).start().awaitUninterruptibly();
+        Assert.assertTrue(fp3.isSuccess());
+        FuturePut fp4 = p2.put(Number160.createHash("key1")).setProtectDomain().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp4.isSuccess());
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
+    
+    @Test
+    public void testChangeEntryProtectionKey() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair1).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).ports(4839)
+                .keyPair(keyPair2).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        Data data = new Data("test").setProtectedEntry();
+        FuturePut fp1 = p1.put(Number160.createHash("key1")).setSign().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp1.isSuccess());
+        FuturePut fp2 = p2.put(Number160.createHash("key1")).setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(!fp2.isSuccess());
+        
+        Data data2 = new Data().setProtectedEntry();
+        data2.publicKey(keyPair2.getPublic());
+        FuturePut fp3 = p1.put(Number160.createHash("key1")).setSign().putMeta().setData(data2).start().awaitUninterruptibly();
+        Assert.assertTrue(fp3.isSuccess());
+        
+        FuturePut fp4 = p2.put(Number160.createHash("key1")).setSign().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp4.isSuccess());   
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
+    
+    @Test
+    public void testChangeEntryProtectionKeySignature() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).ports(4838)
+                .keyPair(keyPair1).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).ports(4839)
+                .keyPair(keyPair2).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        Data data = new Data("test1").setProtectedEntry().sign(keyPair1);
+        FuturePut fp1 = p1.put(Number160.createHash("key1")).setSign().setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp1.isSuccess());
+        FuturePut fp2 = p2.put(Number160.createHash("key1")).setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(!fp2.isSuccess());
+        
+        Data data2 = new Data("test1").setProtectedEntry().sign(keyPair2).duplicateMeta();
+        FuturePut fp3 = p1.put(Number160.createHash("key1")).setSign().putMeta().setData(data2).start().awaitUninterruptibly();
+        Assert.assertTrue(fp3.isSuccess());
+        
+        Data retData = p2.get(Number160.createHash("key1")).start().awaitUninterruptibly().getData();
+        Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
+    
+    @Test
+    public void testTTLUpdate() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InterruptedException, InvalidKeyException, SignatureException {
+       
+        Peer p1 = new PeerMaker(Number160.createHash(1)).setEnableIndirectReplication(false).storageIntervalMillis(1).ports(4838).makeAndListen();
+        Peer p2 = new PeerMaker(Number160.createHash(2)).setEnableIndirectReplication(false).storageIntervalMillis(1).ports(4839).makeAndListen();
+        
+        p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+        p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+        
+        Data data = new Data("test1");
+        data.ttlSeconds(1);
+        FuturePut fp1 = p1.put(Number160.createHash("key1")).setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp1.isSuccess());
+        
+        Thread.sleep(2000);
+        Data retData = p2.get(Number160.createHash("key1")).start().awaitUninterruptibly().getData();
+        Assert.assertNull(retData);
+        
+        FuturePut fp2 = p1.put(Number160.createHash("key1")).setData(data).start().awaitUninterruptibly();
+        Assert.assertTrue(fp2.isSuccess());
+        
+        Data update = data.duplicateMeta();
+        update.ttlSeconds(10);
+        
+        FuturePut fp3 = p1.put(Number160.createHash("key1")).putMeta().setData(update).start().awaitUninterruptibly();
+        Assert.assertTrue(fp3.isSuccess());
+        
+        Thread.sleep(1000);
+        retData = p2.get(Number160.createHash("key1")).start().awaitUninterruptibly().getData();
+        Assert.assertEquals("test1", retData.object());
+        
+        p1.shutdown().awaitUninterruptibly();
+        p2.shutdown().awaitUninterruptibly();
+    }
+    
+    
+        
 }

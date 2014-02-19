@@ -45,8 +45,6 @@ public class QuitRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(QuitRPC.class);
 
-    public static final byte QUIT_COMMAND = 6;
-
     private final List<PeerStatusListener> listeners = new ArrayList<PeerStatusListener>();
 
     /**
@@ -58,7 +56,7 @@ public class QuitRPC extends DispatchHandler {
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
     public QuitRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, QUIT_COMMAND);
+        super(peerBean, connectionBean, RPC.Commands.QUIT.getNr());
     }
 
     /**
@@ -88,7 +86,7 @@ public class QuitRPC extends DispatchHandler {
      */
     public FutureResponse quit(final PeerAddress remotePeer, final ShutdownBuilder shutdownBuilder,
             final ChannelCreator channelCreator) {
-        final Message message = createMessage(remotePeer, QUIT_COMMAND, Type.REQUEST_FF_1);
+        final Message message = createMessage(remotePeer, RPC.Commands.QUIT.getNr(), Type.REQUEST_FF_1);
         if (shutdownBuilder.isSign()) {
             message.setPublicKeyAndSign(shutdownBuilder.keyPair());
         }
@@ -106,7 +104,7 @@ public class QuitRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == QUIT_COMMAND)) {
+        if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == RPC.Commands.QUIT.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         LOG.debug("received QUIT message {}" + message);

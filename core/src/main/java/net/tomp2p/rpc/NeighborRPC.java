@@ -47,8 +47,6 @@ import org.slf4j.LoggerFactory;
 public class NeighborRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NeighborRPC.class);
 
-    public static final byte NEIGHBORS_COMMAND = 5;
-
     public static final int NEIGHBOR_SIZE = 30;
     public static final int NEIGHBOR_LIMIT = 1000;
 
@@ -61,7 +59,7 @@ public class NeighborRPC extends DispatchHandler {
      *            The connection bean
      */
     public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, NEIGHBORS_COMMAND);
+        super(peerBean, connectionBean, RPC.Commands.NEIGHBOR.getNr());
     }
 
     /**
@@ -89,7 +87,7 @@ public class NeighborRPC extends DispatchHandler {
      */
     public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        Message message = createMessage(remotePeer, NEIGHBORS_COMMAND, type);
+        Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
         }
@@ -127,7 +125,7 @@ public class NeighborRPC extends DispatchHandler {
         }
         if (!(message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2
                 || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4)
-                && (message.getCommand() == NEIGHBORS_COMMAND)) {
+                && (message.getCommand() == RPC.Commands.NEIGHBOR.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         Number160 locationKey = message.getKey(0);

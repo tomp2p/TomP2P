@@ -263,12 +263,11 @@ public class DistributedHashTable {
                                             @Override
                                             public FutureResponse create(final ChannelCreator channelCreator,
                                                     final PeerAddress address) {
-                                                // boolean protectEntry = Utils.checkEntryProtection(putBuilder
-                                                // .getDataMap());
-                                                // TODO: content protection
-                                                boolean putIfAbsent = putBuilder.isPutIfAbsent();
-                                                if (putIfAbsent) {
+                                                if (putBuilder.isPutIfAbsent()) {
                                                     return storeRCP.putIfAbsent(address, putBuilder,
+                                                            channelCreator);
+                                                } else if (putBuilder.isPutMeta()) {
+                                                	return storeRCP.putMeta(address, putBuilder,
                                                             channelCreator);
                                                 } else {
                                                     return storeRCP.put(address, putBuilder, channelCreator);

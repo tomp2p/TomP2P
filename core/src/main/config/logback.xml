@@ -61,6 +61,7 @@
   <!--  <logger name="net.tomp2p.rpc.HandshakeRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.TaskRPC" level="TRACE"/> -->
   
+  <!--  <logger name="net.tomp2p.storage.StorageLayer" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.storage.StorageMemoryReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.storage.TrackerStorage" level="TRACE"/> -->
    

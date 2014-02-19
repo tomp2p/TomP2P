@@ -27,10 +27,10 @@ import java.util.Random;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -64,12 +64,6 @@ public class StorageRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StorageRPC.class);
     private static final Random RND = new Random();
 
-    public static final byte PUT_COMMAND = 1;
-    public static final byte GET_COMMAND = 2;
-    public static final byte ADD_COMMAND = 3;
-    public static final byte REMOVE_COMMAND = 4;
-    public static final byte DIGEST_COMMAND = 11;
-
     private final BloomfilterFactory factory;
 
     /**
@@ -81,7 +75,10 @@ public class StorageRPC extends DispatchHandler {
      *            The connection bean
      */
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, PUT_COMMAND, GET_COMMAND, ADD_COMMAND, REMOVE_COMMAND, DIGEST_COMMAND);
+        super(peerBean, connectionBean, RPC.Commands.PUT.getNr(), 
+        		RPC.Commands.GET.getNr(), RPC.Commands.ADD.getNr(), 
+        		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
+        		RPC.Commands.PUT_META.getNr());
         this.factory = peerBean.bloomfilterFactory();
     }
 
@@ -195,20 +192,63 @@ public class StorageRPC extends DispatchHandler {
                     putBuilder.getVersionKey(), putBuilder.getDataMapContent());
         }
 
-        final Message message = createMessage(remotePeer, PUT_COMMAND, type);
+        final Message message = createMessage(remotePeer, RPC.Commands.PUT.getNr(), type);
 
         if (putBuilder.isSign()) {
             message.setPublicKeyAndSign(putBuilder.keyPair());
         }
-        
-        if (putBuilder.changePublicKey()!=null) {
-        	if(!putBuilder.isSign()) {
-        		throw new IllegalAccessError("can only change public key if message is signed");
-        	}
-        	message.setPublicKey(putBuilder.changePublicKey());
-        }
 
         message.setDataMap(dataMap);
+
+        final FutureResponse futureResponse = new FutureResponse(message);
+        final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+                peerBean(), connectionBean(), putBuilder);
+
+        if (!putBuilder.isForceUDP()) {
+            return request.sendTCP(channelCreator);
+        } else {
+            return request.sendUDP(channelCreator);
+        }
+
+    }
+    
+    public FutureResponse putMeta(final PeerAddress remotePeer, final PutBuilder putBuilder, 
+            final ChannelCreator channelCreator) {
+
+        Utils.nullCheck(remotePeer);
+
+        final DataMap dataMap;
+        if (putBuilder.getDataMap() != null) {
+            dataMap = new DataMap(putBuilder.getDataMap());
+        } else {
+            dataMap = new DataMap(putBuilder.getLocationKey(), putBuilder.getDomainKey(),
+                    putBuilder.getVersionKey(), putBuilder.getDataMapContent());
+        }
+        
+        final Type type;
+        if (putBuilder.changePublicKey()!=null) {
+        	//change domain protection key
+        	type = Type.REQUEST_2;
+        } else {
+        	//change entry protection key, or set timestamp
+        	type = Type.REQUEST_1;
+        }
+
+        final Message message = createMessage(remotePeer, RPC.Commands.PUT_META.getNr(), type);
+
+        if (putBuilder.isSign()) {
+            message.setPublicKeyAndSign(putBuilder.keyPair());
+        } else if (type == Type.REQUEST_2) {
+        	throw new IllegalAccessError("can only change public key if message is signed");
+        }
+        
+        if (putBuilder.changePublicKey()!=null) {
+        	message.setKey(putBuilder.getLocationKey());
+        	message.setKey(putBuilder.getDomainKey());
+        	message.setPublicKey(putBuilder.changePublicKey());
+        } else {
+        	message.setDataMap(dataMap);
+        }
 
         final FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
@@ -283,7 +323,7 @@ public class StorageRPC extends DispatchHandler {
             }
         }
 
-        final Message message = createMessage(remotePeer, ADD_COMMAND, type);
+        final Message message = createMessage(remotePeer, RPC.Commands.ADD.getNr(), type);
 
         if (addBuilder.isSign()) {
             message.setPublicKeyAndSign(addBuilder.keyPair());
@@ -316,7 +356,7 @@ public class StorageRPC extends DispatchHandler {
         } else {
             type = Type.REQUEST_4;
         }
-        final Message message = createMessage(remotePeer, DIGEST_COMMAND, type);
+        final Message message = createMessage(remotePeer, RPC.Commands.DIGEST.getNr(), type);
 
         if (getBuilder.isSign()) {
             message.setPublicKeyAndSign(getBuilder.keyPair());
@@ -376,7 +416,7 @@ public class StorageRPC extends DispatchHandler {
         } else {
             type = Type.REQUEST_4;
         }
-        final Message message = createMessage(remotePeer, GET_COMMAND, type);
+        final Message message = createMessage(remotePeer, RPC.Commands.GET.getNr(), type);
 
         if (getBuilder.isSign()) {
             message.setPublicKeyAndSign(getBuilder.keyPair());
@@ -447,7 +487,7 @@ public class StorageRPC extends DispatchHandler {
      */
     public FutureResponse remove(final PeerAddress remotePeer, final RemoveBuilder removeBuilder,
             final ChannelCreator channelCreator) {
-        final Message message = createMessage(remotePeer, REMOVE_COMMAND,
+        final Message message = createMessage(remotePeer, RPC.Commands.REMOVE.getNr(),
                 removeBuilder.isReturnResults() ? Type.REQUEST_2 : Type.REQUEST_1);
 
         if (removeBuilder.isSign()) {
@@ -492,29 +532,27 @@ public class StorageRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
             Responder responder) throws Exception {
 
-        if (!(message.getCommand() == ADD_COMMAND || message.getCommand() == PUT_COMMAND
-                || message.getCommand() == GET_COMMAND || message.getCommand() == REMOVE_COMMAND || message.getCommand() == DIGEST_COMMAND)) {
-            throw new IllegalArgumentException("Message content is wrong");
+        if (!(message.getCommand() == RPC.Commands.ADD.getNr() || message.getCommand() == RPC.Commands.PUT.getNr()
+                || message.getCommand() == RPC.Commands.GET.getNr() || message.getCommand() == RPC.Commands.REMOVE.getNr() || message.getCommand() == RPC.Commands.DIGEST.getNr()
+                || message.getCommand() == RPC.Commands.PUT_META.getNr())) {
+            throw new IllegalArgumentException("Message content is wrong "+message.getCommand());
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
-        switch (message.getCommand()) {
-        case ADD_COMMAND:
-            handleAdd(message, responseMessage, isDomainProtected(message));
-            break;
-        case PUT_COMMAND:
+        //switch/case does not work here out of the box, need to convert byte back to enum, not sure if thats worth it.
+        if (message.getCommand() == RPC.Commands.ADD.getNr()) {
+        	handleAdd(message, responseMessage, isDomainProtected(message));
+        } else if(message.getCommand() == RPC.Commands.PUT.getNr()) {
             handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message));
-            break;
-        case GET_COMMAND:
+        } else if (message.getCommand() == RPC.Commands.GET.getNr()) {
             handleGet(message, responseMessage);
-            break;
-        case DIGEST_COMMAND:
+        } else if (message.getCommand() == RPC.Commands.DIGEST.getNr()) {
             handleDigest(message, responseMessage);
-            break;
-        case REMOVE_COMMAND:
+        } else if (message.getCommand() == RPC.Commands.REMOVE.getNr()) {
             handleRemove(message, responseMessage, message.getType() == Type.REQUEST_2);
-            break;
-        default:
+        } else if (message.getCommand() == RPC.Commands.PUT_META.getNr()) {
+            handlePutMeta(message, responseMessage, message.getType() == Type.REQUEST_2);
+        }else {
             throw new IllegalArgumentException("Message content is wrong");
         }
         if (sign) {
@@ -523,7 +561,9 @@ public class StorageRPC extends DispatchHandler {
         responder.response(responseMessage);
     }
 
-    private boolean isDomainProtected(final Message message) {
+    
+
+	private boolean isDomainProtected(final Message message) {
         boolean protectDomain = message.getPublicKey() != null
                 && (message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4);
         return protectDomain;
@@ -547,6 +587,34 @@ public class StorageRPC extends DispatchHandler {
     private boolean isReturnBloomfilter(final Message message) {
         boolean partial = message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4;
         return partial;
+    }
+    
+    private void handlePutMeta(Message message, Message responseMessage, boolean isDomain) {
+    	final PublicKey publicKey = message.getPublicKey();
+        final DataMap toStore = message.getDataMap(0);
+        final Map<Number640, Byte> result;
+        final int dataSize;
+        if(isDomain) {
+        	dataSize = 1;
+        	result = new HashMap<Number640, Byte>(1);
+        	LOG.debug("received meta request to change domain");
+        	Number160 locationKey = message.getKey(0);
+        	Number160 domainKey = message.getKey(1);
+        	final Number640 key = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+        	PublicKey publicKeyChange = message.getPublicKey(0);
+        	Enum<?> status = peerBean().storage().updateMeta(key.locationAndDomainKey(), publicKey, publicKeyChange);
+        	result.put(key, (byte) status.ordinal());
+        } else {
+        	dataSize = toStore.size();
+            result = new HashMap<Number640, Byte>(dataSize);
+        	LOG.debug("received meta request to change entry");
+        	for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+        		Enum<?> status = peerBean().storage().updateMeta(publicKey, entry.getKey(), entry.getValue());
+        		result.put(entry.getKey(), (byte) status.ordinal());
+        	}
+        }
+        responseMessage.setType(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
+        responseMessage.setKeyMapByte(new KeyMapByte(result));
     }
 
     private Message handlePut(final Message message, final Message responseMessage,

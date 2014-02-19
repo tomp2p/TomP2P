@@ -39,6 +39,8 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
     private boolean putIfAbsent = false;
     
+    private boolean putMeta = false;
+    
     private PublicKey changePublicKey = null;
 
     public PutBuilder(Peer peer, Number160 locationKey) {
@@ -158,8 +160,24 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return this;
     }
     
+    public boolean isPutMeta() {
+        return putMeta;
+    }
+
+    public PutBuilder putMeta(boolean putMeta) {
+        this.putMeta = putMeta;
+        return this;
+    }
+
+    public PutBuilder putMeta() {
+        this.putMeta = true;
+        return this;
+    }
+    
     public PutBuilder changePublicKey(PublicKey changePublicKey) {
     	this.changePublicKey = changePublicKey;
+    	this.putMeta = true;
+    	setSign();
     	return this;
     }
     
@@ -178,7 +196,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             }
             getDataMap().put(getData().getKey(), getData().getValue());
         }
-        if (dataMap == null && dataMapConvert == null) {
+        if (!putMeta && dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
         }

@@ -51,7 +51,8 @@ public class Message {
      */
     public enum Content {
         EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEY, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
-        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, USER1, USER2, USER3
+        LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, 
+        PUBLIC_KEY, USER1, USER2
     };
 
     /**
@@ -128,7 +129,11 @@ public class Message {
     private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
-
+    private List<PublicKey> publicKeyList = null;
+    //these will be always sent together
+    private SHA1Signature signatureEncode = null;
+    private PublicKey publicKey = null;
+    
     // this will not be transferred, status variables
     private transient boolean presetContentTypes = false;
     private transient PrivateKey privateKey;
@@ -139,9 +144,7 @@ public class Message {
     private transient boolean sign = false;
     private transient boolean content = false;
     private transient Signature signature = null;
-    private transient SHA1Signature signatureEncode = null;
-    private transient PublicKey publicKey = null;
-    private boolean verified = false;
+    private transient boolean verified = false;
 
     /**
      * Creates message with a random ID.
@@ -727,10 +730,30 @@ public class Message {
     }
 
     public Message setPublicKey(final PublicKey publicKey) {
-        this. publicKey = publicKey;
+    	if (!presetContentTypes) {
+            setContentType(Content.PUBLIC_KEY);
+        }
+    	if(publicKeyList == null) {
+    		publicKeyList = new ArrayList<PublicKey>(1);
+    	}
+    	publicKeyList.add(publicKey);
         return this;
     }
 
+    public List<PublicKey> getPublicKeyList() {
+    	if (publicKeyList == null) {
+            return Collections.emptyList();
+        }
+        return publicKeyList;
+    }
+    
+    public PublicKey getPublicKey(final int index) {
+        if (publicKeyList == null || index > publicKeyList.size() - 1) {
+            return null;
+        }
+        return publicKeyList.get(index);
+    }
+    
     public PublicKey getPublicKey() {
         return publicKey;
     }

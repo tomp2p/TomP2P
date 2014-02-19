@@ -10,7 +10,6 @@ import java.security.SignatureException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import net.tomp2p.Utils2;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureRemove;
@@ -714,8 +713,5 @@ public class TestSecurity {
         
         p1.shutdown().awaitUninterruptibly();
         p2.shutdown().awaitUninterruptibly();
-    }
-    
-    
-        
+    }    
 }

@@ -20,6 +20,7 @@ import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
@@ -41,7 +42,7 @@ public class RelayManager {
             }
 
             // bootstrap to get updated peer map and then push it to the relay peers
-            FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
+            FutureBootstrap fb = bootstrapBuilder.start();
 
             fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
                 public void operationComplete(FutureBootstrap future) throws Exception {
@@ -70,21 +71,22 @@ public class RelayManager {
 
     private final static long ROUTING_UPDATE_TIME = 10L * 1000;
 
+    private final RelayManager self;
     private final int maxRelays;
     private final Peer peer;
-    private PeerAddress bootstrapAddress;
     private final LinkedHashSet<PeerAddress> relayCandidates;
     private Semaphore relaySemaphore;
-
     private Set<PeerAddress> relayAddresses;
+    private final BootstrapBuilder bootstrapBuilder;
 
-    public RelayManager(final Peer peer, PeerAddress bootstrapAddress) {
-        this(peer, bootstrapAddress, PeerAddress.MAX_RELAYS);
+    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder) {
+        this(peer, bootstrapBuilder, PeerAddress.MAX_RELAYS);
     }
 
-    public RelayManager(final Peer peer, PeerAddress bootstrapAddress, int maxRelays) {
+    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder, int maxRelays) {
+        this.self = this;
         this.peer = peer;
-        this.bootstrapAddress = bootstrapAddress;
+        this.bootstrapBuilder = bootstrapBuilder;
         this.relayCandidates = new LinkedHashSet<PeerAddress>();
 
         if (maxRelays > PeerAddress.MAX_RELAYS || maxRelays < 0) {
@@ -93,6 +95,7 @@ public class RelayManager {
         }
 
         this.maxRelays = maxRelays;
+        
         this.relaySemaphore = new Semaphore(maxRelays);
 
         relayAddresses = new CopyOnWriteArraySet<PeerAddress>();
@@ -130,7 +133,7 @@ public class RelayManager {
         final FutureDone<Void> futureDone = new FutureDone<Void>();
 
         // bootstrap to get neighbor peers
-        FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
+        FutureBootstrap fb = bootstrapBuilder.start();
         fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
             public void operationComplete(FutureBootstrap future) throws Exception {
                 if (future.isSuccess()) {
@@ -253,7 +256,7 @@ public class RelayManager {
 
     public RelayFuture setupRelays() {
 
-        final RelayFuture rf = new RelayFuture(this);
+        final RelayFuture rf = new RelayFuture();
 
         if (!peer.getPeerAddress().isRelay()) {
 
@@ -286,10 +289,11 @@ public class RelayManager {
                                         if (future.isSuccess()) {
                                             // bootstrap with the updated peer
                                             // address
-                                            FutureBootstrap fb = peer.bootstrap().setPeerAddress(bootstrapAddress).start();
+                                            FutureBootstrap fb = bootstrapBuilder.start();
                                             fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
                                                 public void operationComplete(FutureBootstrap future) throws Exception {
                                                     if (future.isSuccess()) {
+                                                        rf.relayManager(self);
                                                         rf.done();
                                                     } else {
                                                         future.setFailed(future);

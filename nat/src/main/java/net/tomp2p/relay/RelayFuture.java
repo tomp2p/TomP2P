@@ -6,17 +6,20 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 	
 	private RelayManager relayManager;
 	
-	public RelayFuture(RelayManager relayManager) {
+	public RelayFuture() {
 		self(this);
-		this.relayManager = relayManager;
 	}
 	
 	public RelayManager relayManager() {
 		return relayManager;
 	}
+	
+	public void relayManager(RelayManager relayManager) {
+        this.relayManager = relayManager;
+    }
 
 	public boolean done() {
-		if(relayManager.getRelayAddresses().size() > 0) {
+		if(relayManager != null && relayManager.getRelayAddresses().size() > 0) {
 			type = FutureType.OK;
 		}
 		synchronized (lock) {

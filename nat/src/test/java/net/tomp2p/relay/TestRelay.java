@@ -54,9 +54,9 @@ public class TestRelay {
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(5000).makeAndListen();
-			RelayManager manager = new RelayManager(unreachablePeer, master.getPeerAddress());
-			RelayFuture rf = manager.setupRelays();
+            RelayFuture rf = new RelayBuilder(unreachablePeer).bootstrapAddress(master.getPeerAddress()).start();
 			rf.awaitUninterruptibly();
+			RelayManager manager = rf.relayManager();
 			Assert.assertTrue(rf.isSuccess());
 			Assert.assertEquals(manager, rf.relayManager());
 			Assert.assertTrue(manager.getRelayAddresses().size() > 0);
@@ -97,9 +97,8 @@ public class TestRelay {
 			// Test setting up relay peers
 			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
 
-			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
-			RelayFuture rf = manager.setupRelays();
-			rf.awaitUninterruptibly();
+			RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
+            rf.awaitUninterruptibly();
 
 			Assert.assertTrue(rf.isSuccess());
 			
@@ -175,9 +174,8 @@ public class TestRelay {
 
 			// Set up relays
 			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
-
-			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
-			RelayFuture rf = manager.setupRelays();
+			
+			RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
 			rf.awaitUninterruptibly();
 			Assert.assertTrue(rf.isSuccess());
 			
@@ -233,10 +231,10 @@ public class TestRelay {
 			// Set up relays
 			slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
 
-			RelayManager manager = new RelayManager(slave, master.getPeerAddress());
-			RelayFuture rf = manager.setupRelays();
-			rf.awaitUninterruptibly();
+			RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
+            rf.awaitUninterruptibly();
 			Assert.assertTrue(rf.isSuccess());
+			RelayManager manager = rf.relayManager();
 			
 			Set<PeerAddress> relays = new HashSet<PeerAddress>(manager.getRelayAddresses());
 			

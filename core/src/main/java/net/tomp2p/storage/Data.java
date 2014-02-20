@@ -78,6 +78,7 @@ public class Data {
 	private final long validFromMillis;
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
+	private boolean meta;
 
 	/**
 	 * Create a data object that does have the complete data.
@@ -495,6 +496,20 @@ public class Data {
 
 	public Data setPublicKey() {
 		this.publicKeyFlag = true;
+		return this;
+	}
+	
+	public boolean isMeta() {
+		return meta;
+	}
+
+	public Data meta(boolean meta) {
+		this.meta = meta;
+		return this;
+	}
+
+	public Data setMeta() {
+		this.meta = true;
 		return this;
 	}
 

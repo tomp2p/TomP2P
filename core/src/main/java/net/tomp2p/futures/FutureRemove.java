@@ -16,6 +16,8 @@
 package net.tomp2p.futures;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.p2p.EvaluatingSchemeDHT;
@@ -24,6 +26,7 @@ import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.StorageLayer.PutStatus;
 
 /**
  * The future object for put() operations including routing.
@@ -40,17 +43,26 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     private final EvaluatingSchemeDHT evaluationScheme;
 
     // Storage of results
-    private Map<PeerAddress, Collection<Number640>> rawKeys640;
+    private Map<PeerAddress, Map<Number640, Byte>> rawKeys640;
     private Map<PeerAddress, Map<Number640, Data>> rawData;
 
     // Flag indicating if the minimum operations for put have been reached.
     private boolean minReached;
-
+    
+    private Map<Number640, Integer> result;
+    
+    private final int dataSize;
+    
+    public FutureRemove(final DHTBuilder<?> builder) {
+        this(builder, 0, new VotingSchemeDHT(), 1);
+    }
+    
+    
     /**
      * Default constructor.
      */
-    public FutureRemove(final DHTBuilder<?> builder) {
-        this(builder, 0, new VotingSchemeDHT());
+    public FutureRemove(final DHTBuilder<?> builder, int dataSize) {
+        this(builder, 0, new VotingSchemeDHT(), dataSize);
     }
 
     /**
@@ -61,10 +73,11 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param evaluationScheme
      *            The scheme to evaluate results from multiple peers
      */
-    public FutureRemove(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme) {
+    public FutureRemove(final DHTBuilder<?> builder, final int min, final EvaluatingSchemeDHT evaluationScheme, int dataSize) {
         super(builder);
         this.min = min;
         this.evaluationScheme = evaluationScheme;
+        this.dataSize = dataSize;
         self(this);
     }
 
@@ -83,7 +96,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys(final Map<PeerAddress, Collection<Number640>> rawKeys640) {
+    public void setStoredKeys(final Map<PeerAddress, Map<Number640, Byte>> rawKeys640) {
         synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return;
@@ -100,18 +113,18 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     /**
      * @return The average keys received from the DHT. Only evaluates rawKeys.
      */
-    public double getAvgStoredKeys() {
-        synchronized (lock) {
-            final int size = rawKeys640.size();
-            int total = 0;
-            for (Collection<Number640> collection : rawKeys640.values()) {
-                if (collection != null) {
-                    total += collection.size();
-                }
-            }
-            return total / (double) size;
-        }
-    }
+	public double getAvgStoredKeys() {
+		synchronized (lock) {
+			final int size = rawKeys640.size();
+			int total = 0;
+			for (Map<Number640, Byte> map : rawKeys640.values()) {
+				if (map != null) {
+					total += map.size();
+				}
+			}
+			return total / (double) size;
+		}
+	}
     
     /**
      * Finish the future and set the keys and data that have been received.
@@ -138,7 +151,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Collection<Number640>> getRawKeys() {
+    public Map<PeerAddress, Map<Number640, Byte>> getRawKeys() {
         synchronized (lock) {
             return rawKeys640;
         }
@@ -189,5 +202,82 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
         }
+    }
+    
+    /**
+     * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
+     * information, by either a majority vote or cumulation. Use {@link FuturePut#getEvalKeys()} instead of this method.
+     * 
+     * @return The keys that have been stored or removed
+     */
+    public Map<Number640, Integer> getResult() {
+        synchronized (lock) {
+            if(result == null) {
+            	 if(rawKeys640!=null) {
+            		 result = evaluate0(rawKeys640);
+            	 } else if(rawData!=null) {
+            		 result = evaluate1(rawData);
+            	 } else {
+            		 return Collections.<Number640, Integer>emptyMap();
+            	 }
+            }
+            return result;
+        }
+    }
+    
+    private Map<Number640, Integer> evaluate0(Map<PeerAddress, Map<Number640, Byte>> rawResult2) {
+        Map<Number640, Integer> result = new HashMap<Number640, Integer>();
+        for(Map<Number640, Byte> map:rawResult2.values()) {
+            for(Map.Entry<Number640, Byte> entry: map.entrySet()) {
+                if(entry.getValue().intValue() == PutStatus.OK.ordinal()) {
+                    Integer integer = result.get(entry.getKey());
+                    if(integer == null) {
+                        result.put(entry.getKey(), 1);
+                    } else {
+                        result.put(entry.getKey(), integer + 1);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    
+	private Map<Number640, Integer> evaluate1(Map<PeerAddress, Map<Number640, Data>> rawData) {
+		Map<Number640, Integer> result = new HashMap<Number640, Integer>();
+		for (Map<Number640, Data> map : rawData.values()) {
+			for (Map.Entry<Number640, Data> entry : map.entrySet()) {
+				// data is never null
+				Integer integer = result.get(entry.getKey());
+				if (integer == null) {
+					result.put(entry.getKey(), 1);
+				} else {
+					result.put(entry.getKey(), integer + 1);
+				}
+			}
+		}
+		return result;
+	}
+
+    @Override
+    public boolean isSuccess() {
+        if(!super.isSuccess()) {
+            return false;
+        }
+        if(rawKeys640 != null) {
+        	return checkResults(getResult(), rawKeys640.size(), dataSize);
+        } else if (rawData!=null) {
+        	return checkResults(getResult(), rawData.size(), dataSize);
+        } else {
+        	return false;
+        }
+    }
+    
+    private boolean checkResults(Map<Number640, Integer> result2, int peerReports, int dataSize) {
+        for(Map.Entry<Number640, Integer> entry:result2.entrySet()) {
+            if(entry.getValue() != peerReports) {
+                return false;
+            }
+        }
+        return result2.size() >= dataSize;
     }
 }

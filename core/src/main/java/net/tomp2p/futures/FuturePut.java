@@ -172,6 +172,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
                 return false;
             }
         }
+        //we know exactly how much data we need to store
         return result2.size() == dataSize;
     }
 

@@ -42,14 +42,11 @@ public class CumulativeScheme implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480) {
-        Set<Number640> result = new HashSet<Number640>();
-        if (rawKeys480 != null) {
-            for (Collection<Number640> tmp : rawKeys480.values()) {
-                result.addAll(tmp);
-            }
-        }
-        return result;
+    public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys480) {
+    	Map<Number640, Byte> result = new HashMap<Number640, Byte>();
+        for (Map<Number640, Byte> tmp : rawKeys480.values())
+            result.putAll(tmp);
+        return result.keySet();
     }
 
     @Override

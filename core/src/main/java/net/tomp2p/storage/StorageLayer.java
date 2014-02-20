@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +32,7 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.SimpleBloomFilter;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -51,7 +53,7 @@ public class StorageLayer {
 
     // The number of PutStatus should never exceed 255.
     public enum PutStatus {
-        OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT
+        OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT, NOT_FOUND
     };
 
     // Hash of public key is always preferred
@@ -162,26 +164,24 @@ public class StorageLayer {
         return retVal ? PutStatus.OK : PutStatus.FAILED;
     }
 
-    public Data remove(Number640 key, PublicKey publicKey) {
-        // Number480 lockKey = new Number480(locationKey, domainKey, contentKey);
+    public Pair<Data,Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
         KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
         try {
             if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
-                return null;
+                return new Pair<Data,Enum<?>>(null, PutStatus.FAILED_SECURITY);
             }
-            Data data = getInternal(key);
-            if (data == null) {
-                return null;
+            if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
+                return new Pair<Data,Enum<?>>(null, PutStatus.FAILED_SECURITY);
             }
-            if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
-                backend.removeTimeout(key);
-                backend.removeResponsibility(key.getLocationKey());
-                return backend.remove(key);
+            if (!backend.contains(key)) {
+                return new Pair<Data,Enum<?>>(null, PutStatus.NOT_FOUND);
             }
+            backend.removeTimeout(key);
+            backend.removeResponsibility(key.getLocationKey());
+            return new Pair<Data,Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
         } finally {
             dataLock640.unlock(lock);
         }
-        return null;
     }
 
     public Data get(Number640 key) {
@@ -270,27 +270,42 @@ public class StorageLayer {
         }
     }
 
-    public SortedMap<Number640, Data> remove(Number640 from, Number640 to, PublicKey publicKey) {
+    public SortedMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
         KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
         try {
             Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
-            Collection<Number320> locationAndDomains = new HashSet<Number320>();
+           
             for (Number640 key : tmp.keySet()) {
-                locationAndDomains.add(key.locationAndDomainKey());
-            }
-            for (Number320 locationAndDomain : locationAndDomains) {
                 // fail fast, as soon as we want to remove 1 domain that we cannot, abort
-                if (!canClaimDomain(locationAndDomain, publicKey)) {
+                if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
+                    return null;
+                }
+                if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
                     return null;
                 }
             }
-            SortedMap<Number640, Data> result = backend.remove(from, to);
+            SortedMap<Number640, Data> result = backend.remove(from, to, true);
             for (Map.Entry<Number640, Data> entry : result.entrySet()) {
                 Data data = entry.getValue();
                 if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
                     backend.removeTimeout(entry.getKey());
                     backend.removeResponsibility((entry.getKey().getLocationKey()));
                 }
+            }
+            return result;
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    public SortedMap<Number640, Byte> removeReturnStatus(Number640 from, Number640 to, PublicKey publicKey) {
+        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+        try {
+            Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+            SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
+            for (Number640 key : tmp.keySet()) {
+            	Pair<Data,Enum<?>> pair = remove(key, publicKey, false);
+            	result.put(key, (byte) pair.element1().ordinal());
             }
             return result;
         } finally {
@@ -305,7 +320,7 @@ public class StorageLayer {
             for (Number640 key : toRemove) {
             	KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
                 try {
-                	backend.remove(key);
+                	backend.remove(key, false);
                 	backend.removeTimeout(key);
                 } finally {
                     lock.unlock();

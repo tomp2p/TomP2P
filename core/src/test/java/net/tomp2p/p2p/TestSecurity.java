@@ -232,12 +232,12 @@ public class TestSecurity {
             FutureRemove fdht2 = slave1.remove(locationKey)
                     .setDomainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded())).setSign().start();
             fdht2.awaitUninterruptibly();
-            Assert.assertEquals(0, fdht2.getEvalKeys().size());
+            Assert.assertFalse(fdht2.isSuccess());
             // this should work
             FutureRemove fdht3 = master.remove(locationKey)
                     .setDomainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded())).setSign().start();
             fdht3.awaitUninterruptibly();
-            Assert.assertEquals(1, fdht3.getEvalKeys().size());
+            Assert.assertTrue(fdht3.isSuccess());
         } finally {
             master.shutdown();
             slave1.shutdown();
@@ -713,5 +713,141 @@ public class TestSecurity {
         
         p1.shutdown().awaitUninterruptibly();
         p2.shutdown().awaitUninterruptibly();
-    }    
+    }
+    
+    
+	@Test
+	public void testRemoveFromTo2() throws NoSuchAlgorithmException, IOException, InvalidKeyException,
+	        SignatureException, ClassNotFoundException {
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+		KeyPair keyPairPeer1 = gen.generateKeyPair();
+		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		KeyPair keyPairPeer2 = gen.generateKeyPair();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+		        .setEnableIndirectReplication(true).makeAndListen();
+
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+
+		KeyPair key1 = gen.generateKeyPair();
+
+		String locationKey = "location";
+		Number160 lKey = Number160.createHash(locationKey);
+		String domainKey = "domain";
+		Number160 dKey = Number160.createHash(domainKey);
+		String contentKey = "content";
+		Number160 cKey = Number160.createHash(contentKey);
+
+		String testData1 = "data1";
+		Data data = new Data(testData1).setProtectedEntry().sign(key1);
+
+		// put trough peer 1 with key pair
+		// -------------------------------------------------------
+
+		FuturePut futurePut1 = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).keyPair(key1).start();
+		futurePut1.awaitUninterruptibly();
+		Assert.assertTrue(futurePut1.isSuccess());
+
+		FutureGet futureGet1a = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).start();
+		futureGet1a.awaitUninterruptibly();
+		Assert.assertTrue(futureGet1a.isSuccess());
+		Assert.assertEquals(testData1, (String) futureGet1a.getData().object());
+
+		FutureGet futureGet1b = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start();
+		futureGet1b.awaitUninterruptibly();
+		Assert.assertTrue(futureGet1b.isSuccess());
+		Assert.assertEquals(testData1, (String) futureGet1b.getData().object());
+
+		// remove with correct key pair
+		// -----------------------------------------------------------
+
+		FutureRemove futureRemove4 = p1.remove(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
+		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).keyPair(key1).start();
+		futureRemove4.awaitUninterruptibly();
+		Assert.assertTrue(futureRemove4.isSuccess());
+
+		FutureGet futureGet4a = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start();
+		futureGet4a.awaitUninterruptibly();
+		// we did not find the data
+		Assert.assertTrue(futureGet4a.isFailed());
+		// should have been removed
+		Assert.assertNull(futureGet4a.getData());
+
+		FutureGet futureGet4b = p2.get(lKey).setContentKey(cKey).start();
+		futureGet4b.awaitUninterruptibly();
+		// we did not find the data
+		Assert.assertTrue(futureGet4b.isFailed());
+		// should have been removed
+		Assert.assertNull(futureGet4b.getData());
+
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+	
+	@Test
+	public void testRemoveFutureResponse() throws NoSuchAlgorithmException, IOException, InvalidKeyException,
+	        SignatureException, ClassNotFoundException {
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+
+		KeyPair keyPairPeer1 = gen.generateKeyPair();
+		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		KeyPair keyPairPeer2 = gen.generateKeyPair();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+		        .setEnableIndirectReplication(true).makeAndListen();
+
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+
+		KeyPair key1 = gen.generateKeyPair();
+
+		String locationKey = "location";
+		Number160 lKey = Number160.createHash(locationKey);
+		//String domainKey = "domain";
+		//Number160 dKey = Number160.createHash(domainKey);
+		String contentKey = "content";
+		Number160 cKey = Number160.createHash(contentKey);
+
+		String testData1 = "data1";
+		Data data = new Data(testData1).setProtectedEntry().sign(key1);
+		// put trough peer 1 with key pair
+		// -------------------------------------------------------
+
+		FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).keyPair(key1).start();
+		futurePut1.awaitUninterruptibly();
+		Assert.assertTrue(futurePut1.isSuccess());
+
+		FutureGet futureGet1a = p1.get(lKey).setContentKey(cKey).start();
+		futureGet1a.awaitUninterruptibly();
+		Assert.assertTrue(futureGet1a.isSuccess());
+		Assert.assertEquals(testData1, (String) futureGet1a.getData().object());
+
+		FutureGet futureGet1b = p2.get(lKey).setContentKey(cKey).start();
+		futureGet1b.awaitUninterruptibly();
+		Assert.assertTrue(futureGet1b.isSuccess());
+		Assert.assertEquals(testData1, (String) futureGet1b.getData().object());
+
+		// try to remove without key pair using the direct remove
+		// -------------------------------
+		// should fail
+
+		FutureRemove futureRemoveDirect = p1.remove(lKey).contentKey(cKey).start();
+		futureRemoveDirect.awaitUninterruptibly();
+		// try to remove without key pair using the from/to
+		// -------------------------------------
+		// should fail
+		FutureRemove futureRemoveFromTo = p1.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
+		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).start();
+		futureRemoveFromTo.awaitUninterruptibly();
+
+		Assert.assertEquals(futureRemoveDirect.isSuccess(), futureRemoveFromTo.isSuccess());
+		Assert.assertFalse(futureRemoveDirect.isSuccess());
+		Assert.assertFalse(futureRemoveFromTo.isSuccess());
+
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+    
 }

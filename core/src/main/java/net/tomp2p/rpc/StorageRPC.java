@@ -49,6 +49,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageLayer.PutStatus;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -609,6 +610,7 @@ public class StorageRPC extends DispatchHandler {
             result = new HashMap<Number640, Byte>(dataSize);
         	LOG.debug("received meta request to change entry");
         	for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+        		entry.getValue().setMeta();
         		Enum<?> status = peerBean().storage().updateMeta(publicKey, entry.getKey(), entry.getValue());
         		result.put(entry.getKey(), (byte) status.ordinal());
         	}
@@ -792,7 +794,8 @@ public class StorageRPC extends DispatchHandler {
         final Number160 domainKey = message.getKey(1);
         final KeyCollection keys = message.getKeyCollection(0);
         final PublicKey publicKey = message.getPublicKey();
-        final Map<Number640, Data> result;
+        Map<Number640, Data> result1 = null;
+        Map<Number640, Byte> result2 = null;
         final Integer returnNr = message.getInteger(0);
         //used as a marker for the moment
         //final int limit = returnNr == null ? -1 : returnNr;
@@ -800,34 +803,51 @@ public class StorageRPC extends DispatchHandler {
         final boolean isCollection = keys != null && returnNr == null;
                
         if (isCollection) {
-            result = new HashMap<Number640, Data>(keys.size());
-            for (Number640 key : keys.keys()) {
-                Data data = peerBean().storage().remove(key, publicKey);
-                if (data != null) {
-                    result.put(key, data);
+        	if(sendBackResults) {
+        		result1 = new HashMap<Number640, Data>(keys.size());
+        		for (Number640 key : keys.keys()) {
+                    Pair<Data,Enum<?>> data = peerBean().storage().remove(key, publicKey, sendBackResults);
+                    if(data.element0() != null) {
+                    	result1.put(key, data.element0());
+                    }
                 }
-            }
+        	} else {
+        		result2 = new HashMap<Number640, Byte>(keys.size());
+        		for (Number640 key : keys.keys()) {
+                    Pair<Data,Enum<?>> data = peerBean().storage().remove(key, publicKey, sendBackResults);
+                    result2.put(key, (byte) data.element1().ordinal());
+                }
+        	}
+            
         } else if(isRange) {
             Iterator<Number640> iterator = keys.keys().iterator();
-            Number640 min = iterator.next();
-            Number640 max = iterator.next();
-            result = peerBean().storage().remove(min, max, publicKey);
+            Number640 from = iterator.next();
+            Number640 to = iterator.next();
+            if(sendBackResults) {
+            	result1 = peerBean().storage().removeReturnData(from, to, publicKey);
+            } else {
+            	result2 = peerBean().storage().removeReturnStatus(from, to, publicKey);
+            }
         }
         else if (locationKey != null && domainKey != null) {
-            Number640 min = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
-            Number640 max = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            result = peerBean().storage().remove(min, max, publicKey);
+            Number640 from = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
+            Number640 to = new Number640(locationKey, domainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+            if(sendBackResults) {
+            	result1 = peerBean().storage().removeReturnData(from, to, publicKey);
+            } else {
+            	result2 = peerBean().storage().removeReturnStatus(from, to, publicKey);
+            }
         } else {
             throw new IllegalArgumentException("Either two keys or a key set are necessary");
         }
         if (!sendBackResults) {
             // make a copy, so the iterator in the codec wont conflict with
             // concurrent calls
-            responseMessage.setKeyCollection(new KeyCollection(result.keySet()));
+            responseMessage.setKeyMapByte(new KeyMapByte(result2));
         } else {
             // make a copy, so the iterator in the codec wont conflict with
             // concurrent calls
-            responseMessage.setDataMap(new DataMap(result));
+            responseMessage.setDataMap(new DataMap(result1));
         }
         return responseMessage;
     }

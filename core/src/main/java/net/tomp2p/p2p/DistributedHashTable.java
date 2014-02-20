@@ -18,7 +18,6 @@ package net.tomp2p.p2p;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -467,8 +466,9 @@ public class DistributedHashTable {
      * {
      */
     public FutureRemove remove(final RemoveBuilder builder) {
+    	final int dataSize = Utils.dataSize(builder);
         final FutureRemove futureDHT = new FutureRemove(builder, builder.getRequestP2PConfiguration()
-                .getMinimumResults(), new VotingSchemeDHT());
+                .getMinimumResults(), new VotingSchemeDHT(), dataSize);
 
         builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -497,7 +497,7 @@ public class DistributedHashTable {
                                         new OperationMapper<FutureRemove>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number640, Data>>();
 
-                                            Map<PeerAddress, Collection<Number640>> rawDataNoResult = new HashMap<PeerAddress, Collection<Number640>>();
+                                            Map<PeerAddress, Map<Number640, Byte>> rawDataNoResult = new HashMap<PeerAddress, Map<Number640, Byte>>();
 
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
@@ -525,7 +525,7 @@ public class DistributedHashTable {
                                                     } else {
                                                         rawDataNoResult.put(future.getRequest()
                                                                 .getRecipient(), future.getResponse()
-                                                                .getKeyCollection(0).keys());
+                                                                .getKeyMapByte(0).keysMap());
                                                     }
                                                 }
                                             }

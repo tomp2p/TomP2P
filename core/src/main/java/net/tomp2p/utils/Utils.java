@@ -60,6 +60,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.builder.PutBuilder;
+import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -873,6 +874,14 @@ public class Utils {
         }
     }
     
+    public static int dataSize(RemoveBuilder builder) {
+	    if (builder.contentKeys()!=null) {
+	    	return builder.contentKeys().size();
+	    }
+	    //we don't know how much, at least one.
+	    return 1;
+    }
+    
     public static<K> boolean equals(K o1, K o2) {
     	if (o1!= null) {
 			if (!o1.equals(o2)) {
@@ -892,4 +901,6 @@ public class Utils {
 		}
 		return String.valueOf(publicKey.hashCode());
     }
+
+	
 }

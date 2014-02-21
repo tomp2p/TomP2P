@@ -30,7 +30,8 @@ public class RelayRPC extends DispatchHandler {
 	private Peer peer;
 
 	public RelayRPC(Peer peer) {
-		super(peer.getPeerBean(), peer.getConnectionBean(), RELAY_COMMAND);
+		super(peer.getPeerBean(), peer.getConnectionBean());
+		register(RELAY_COMMAND);
 		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
 	}

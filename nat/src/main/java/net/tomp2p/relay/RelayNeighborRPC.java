@@ -24,7 +24,7 @@ public class RelayNeighborRPC extends NeighborRPC {
     private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
     public RelayNeighborRPC(Peer peer, PeerAddress unreachablePeer) {
-        super(peer.getPeerBean(), peer.getConnectionBean());
+        super(peer.getPeerBean(), peer.getConnectionBean(), false);
         peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, NeighborRPC.NEIGHBORS_COMMAND);
         this.peer = peer;
         this.unreachablePeer = unreachablePeer;
@@ -33,7 +33,7 @@ public class RelayNeighborRPC extends NeighborRPC {
     
     @Override
     protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
-        logger.trace("Answering routing request on behalf of unreachable peer {}", unreachablePeer);
+        logger.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeer, id);
         if(peerMap == null) {
             return null;
         } else {

@@ -56,7 +56,8 @@ public class PeerExchangeRPC extends DispatchHandler {
      *            The connection bean
      */
     public PeerExchangeRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, PEX_COMMAND);
+        super(peerBean, connectionBean);
+        register(PEX_COMMAND);
         // sentPeers = new CacheMap<Number160, Set<PeerAddress>>(SENT_PEERS_CACHE_SIZE, true);
     }
 

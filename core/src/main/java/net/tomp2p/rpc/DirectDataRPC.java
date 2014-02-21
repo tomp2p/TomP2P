@@ -45,7 +45,8 @@ public class DirectDataRPC extends DispatchHandler {
     private volatile ObjectDataReply objectDataReply;
 
     public DirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, DIRECT_DATA_COMMAND);
+        super(peerBean, connectionBean);
+        register(DIRECT_DATA_COMMAND);
     }
 
     /**

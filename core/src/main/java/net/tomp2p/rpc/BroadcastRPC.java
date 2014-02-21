@@ -42,7 +42,8 @@ public class BroadcastRPC extends DispatchHandler {
     private final BroadcastHandler broadcastHandler;
 
     public BroadcastRPC(PeerBean peerBean, ConnectionBean connectionBean, BroadcastHandler broadcastHandler) {
-        super(peerBean, connectionBean, BROADCAST_COMMAND);
+        super(peerBean, connectionBean);
+        register(BROADCAST_COMMAND);
         this.broadcastHandler = broadcastHandler;
     }
 

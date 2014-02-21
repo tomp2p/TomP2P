@@ -60,7 +60,8 @@ public class TrackerRPC extends DispatchHandler {
      * @param connectionBean
      */
     public TrackerRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, TRACKER_ADD_COMMAND, TRACKER_GET_COMMAND);
+        super(peerBean, connectionBean);
+        register(TRACKER_ADD_COMMAND, TRACKER_GET_COMMAND);
     }
 
     public static boolean isPrimary(FutureResponse response) {

@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class RelayManager {
 
     private class PeerMapUpdateTask extends TimerTask {
+        
         @Override
         public void run() {
             if (peer.isShutdown()) {
@@ -139,11 +140,16 @@ public class RelayManager {
                 if (future.isSuccess()) {
                     relayCandidates.addAll(peer.getDistributedRouting().peerMap().getAll());
                     logger.debug("Found {} peers that could act as relays", relayCandidates.size());
+                    
+                    if(relayCandidates.isEmpty()) {
+                        futureDone.setFailed("No other peers were found");
+                    }
+                    
+                    futureDone.setDone();
                 } else {
                     logger.error("Bootstrapping failed: {}", future.getFailedReason());
-                    futureDone.setFailed(future.getFailedReason());
+                    futureDone.setFailed(future);
                 }
-                futureDone.setDone();
             }
         });
         return futureDone;
@@ -205,6 +211,9 @@ public class RelayManager {
                         if (fr.isSuccess()) {
                             logger.debug("Adding peer {} as a relay", relayAddress);
                             relayAddresses.add(relayAddress);
+                            
+                            //update peer map
+                            
 
                             FutureDone<Void> closeFuture = fr.futurePeerConnection().getObject().closeFuture();
                             closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -242,7 +251,7 @@ public class RelayManager {
     private FutureDone<Void> setupPeerConnections(final ChannelCreator cc) {
         FutureDone<Void> fd = new FutureDone<Void>();
 
-        int nrOfRelays = relaySemaphore.availablePermits();
+        int nrOfRelays = Math.min(relaySemaphore.availablePermits(), relayCandidates.size());
 
         if (nrOfRelays > 0) {
             RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[nrOfRelays];
@@ -257,6 +266,15 @@ public class RelayManager {
     public RelayFuture setupRelays() {
 
         final RelayFuture rf = new RelayFuture();
+        
+        rf.addListener(new BaseFutureAdapter<RelayFuture>() {
+            public void operationComplete(RelayFuture future) throws Exception {
+                if(future.isSuccess()) {
+                    // Start routing table update thread
+                    startPeerMapUpdateTask();
+                }
+            }
+        });
 
         if (!peer.getPeerAddress().isRelay()) {
 
@@ -268,8 +286,6 @@ public class RelayManager {
             // their routing tables
             peer.getPeerBean().serverPeerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true);
 
-            // Start routing table update thread
-            startPeerMapUpdateTask();
         }
 
         // create channel creator
@@ -320,6 +336,9 @@ public class RelayManager {
     }
 
     private void startPeerMapUpdateTask() {
+        //Update peer maps of relay peers as soon as all relays are set up
+        TimerTask updateTask = new PeerMapUpdateTask();
+        updateTask.run();
         new Timer().schedule(new PeerMapUpdateTask(), 0, ROUTING_UPDATE_TIME);
     }
 

@@ -51,6 +51,11 @@ public class NeighborRPC extends DispatchHandler {
 
     public static final int NEIGHBOR_SIZE = 30;
     public static final int NEIGHBOR_LIMIT = 1000;
+    
+    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
+        this(peerBean, connectionBean, true);
+    }
+        
 
     /**
      * Setup the RPC and register for incoming messages.
@@ -60,8 +65,11 @@ public class NeighborRPC extends DispatchHandler {
      * @param connectionBean
      *            The connection bean
      */
-    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, NEIGHBORS_COMMAND);
+    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean, boolean register) {
+        super(peerBean, connectionBean);
+        if(register) {
+            register(NEIGHBORS_COMMAND);
+        }
     }
 
     /**
@@ -138,7 +146,10 @@ public class NeighborRPC extends DispatchHandler {
 
         SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
-            responder.response(createResponseMessage(message, Type.CANCEL));
+            //return empty neighbor set
+            Message response = createResponseMessage(message, Type.NOT_FOUND);
+            response.setNeighborsSet(new NeighborSet(-1));
+            responder.response(response);
             return;
         }
         

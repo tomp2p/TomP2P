@@ -81,7 +81,8 @@ public class StorageRPC extends DispatchHandler {
      *            The connection bean
      */
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, PUT_COMMAND, GET_COMMAND, ADD_COMMAND, REMOVE_COMMAND, DIGEST_COMMAND);
+        super(peerBean, connectionBean);
+        register(PUT_COMMAND, GET_COMMAND, ADD_COMMAND, REMOVE_COMMAND, DIGEST_COMMAND);
         this.factory = peerBean.bloomfilterFactory();
     }
 

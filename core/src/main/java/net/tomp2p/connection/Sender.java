@@ -92,6 +92,7 @@ public class Sender {
         return this;
     }
 
+    //TODO: if message.getRecipient() is me, than call dispatcher directly without sending over Internet. 
     public void sendTCP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
             final int idleTCPSeconds, final int connectTimeoutMillis, final PeerConnection peerConnection) {
         // no need to continue if we already finished
@@ -279,6 +280,7 @@ public class Sender {
      * @param broadcast
      *            True to send via layer 2 broadcast
      */
+    //TODO: if message.getRecipient() is me, than call dispatcher directly without sending over Internet. 
     public void sendUDP(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message, final ChannelCreator channelCreator,
             final int idleUDPSeconds, final boolean broadcast) {
         // no need to continue if we already finished
@@ -306,6 +308,7 @@ public class Sender {
         }
         if (message.getRecipient().isRelay()) {
             LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
+            futureResponse.setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
         } else {
             final ChannelFuture channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(), broadcast, handlers, futureResponse);
             if (channelFuture == null) {

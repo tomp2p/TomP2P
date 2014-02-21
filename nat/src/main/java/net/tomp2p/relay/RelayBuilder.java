@@ -14,6 +14,7 @@ public class RelayBuilder {
     private PeerAddress bootstrapAddress;
     private InetAddress bootstrapInetAddress;
     private int port = Ports.DEFAULT_PORT;
+    private BootstrapBuilder bootstrapBuilder;
     private int maxRelays = PeerAddress.MAX_RELAYS;
     private final Peer peer;
     
@@ -41,6 +42,11 @@ public class RelayBuilder {
         return this;
     }
     
+    public RelayBuilder bootstrapBuilder(BootstrapBuilder bootstrapBuilder) {
+        this.bootstrapBuilder = bootstrapBuilder;
+        return this;
+    }
+    
     public RelayFuture start() {
         
         BootstrapBuilder bootstrapBuilder = null;
@@ -49,9 +55,13 @@ public class RelayBuilder {
             bootstrapBuilder = peer.bootstrap().setPeerAddress(bootstrapAddress);
         } else if(bootstrapInetAddress != null) {
             bootstrapBuilder = peer.bootstrap().setInetAddress(bootstrapInetAddress).setPorts(port);
+        } else if(this.bootstrapBuilder != null) {
+            bootstrapBuilder = this.bootstrapBuilder;
         } else {
             return FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS;
         }
+        
+        //bootstrapBuilder.getRoutingConfiguration().isForceTCP()
         
         return new RelayManager(peer, bootstrapBuilder, maxRelays).setupRelays();
     }

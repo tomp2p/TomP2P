@@ -22,9 +22,6 @@ public class RelayReply implements RawDataReply {
 
 	public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete) throws Exception {
 		Message message = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
-		if(message.getCommand() == 7) {
-			System.err.println("relay reply");
-		}
 		logger.debug("Received message from relay peer: {}", message);
 		message.restoreContentReferences();
 

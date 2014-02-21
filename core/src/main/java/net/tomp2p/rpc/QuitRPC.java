@@ -58,7 +58,8 @@ public class QuitRPC extends DispatchHandler {
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
     public QuitRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, QUIT_COMMAND);
+        super(peerBean, connectionBean);
+        register(QUIT_COMMAND);
     }
 
     /**

@@ -61,7 +61,7 @@ public final class ExampleBloomFilter {
         } finally {
             // 0 is the master
             if (peers != null && peers[0] != null) {
-                peers[0].halt();
+                peers[0].shutdown();
             }
         }
     }

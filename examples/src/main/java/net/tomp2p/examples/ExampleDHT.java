@@ -22,28 +22,27 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureTracker;
+import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.storage.TrackerData;
-import net.tomp2p.utils.Utils;
+import net.tomp2p.storage.Data;
 
 /**
- * Example of storing friends in a Tracker.
+ * Example of storing friends in a DHT.
  * 
  * @author Thomas Bocek
  * 
  */
-public final class ExampleTracker {
-    
+public final class ExampleDHT {
+
     /**
      * Empty constructor.
      */
-    private ExampleTracker() {
+    private ExampleDHT() {
     }
-    
+
     /**
      * Start the examples.
      * 
@@ -63,7 +62,7 @@ public final class ExampleTracker {
         } finally {
             // 0 is the master
             if (peers != null && peers[0] != null) {
-                peers[0].halt();
+                peers[0].shutdown();
             }
         }
     }
@@ -95,15 +94,14 @@ public final class ExampleTracker {
         // 3 peers have files
         System.out.println("Setup: we have " + peers.length
                 + " peers; peers[12] (Leo) knows Jan, peers[24] (Tim) knows Urs, peers[42] (Pat) knows Tom");
-        
         final int peer12 = 12;
         final int peer24 = 24;
         final int peer42 = 42;
-        
+
         peers[peer12].announce("Urs", "Jan");
         peers[peer24].announce("Tom", "Urs");
         peers[peer42].announce("Urs", "Tom");
-        // peer 12 now searches for Song B
+        // peer 12 now searches for Urs
         System.out.println("peers[24] (Tom) wants to know the friends of Urs");
         peers[peer24].list("Urs");
     }
@@ -149,9 +147,13 @@ public final class ExampleTracker {
          */
         public void announce() throws IOException {
             for (Map.Entry<Number160, String> entry : friends.entrySet()) {
+                // announce it on DHT
                 Collection<String> tmp = new ArrayList<String>(friends.values());
-                peer.addTracker(entry.getKey()).setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0])))
-                        .start().awaitUninterruptibly();
+                Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+                for (String friend : tmp) {
+                    dataMap.put(peer.getPeerID().xor(Number160.createHash(friend)), new Data(friend));
+                }
+                peer.put(entry.getKey()).setDataMap(dataMap).start().awaitUninterruptibly();
             }
         }
 
@@ -165,22 +167,17 @@ public final class ExampleTracker {
          */
         public void list(final String nickName) throws IOException, ClassNotFoundException {
             Number160 key = Number160.createHash(nickName);
-            FutureTracker futureTracker = peer.getTracker(key).start();
-            // now we know which peer has this data, and we also know what other things this peer has
-            futureTracker.awaitUninterruptibly();
-            Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
-            for (TrackerData trackerData : trackerDatas) {
-                String[] attachement = (String[]) Utils.decodeJavaObject(trackerData.getAttachement(), 0,
-                        trackerData.getAttachement().length);
-                for (String s1 : attachement) {
-                    System.out.println("this peers' (" + nickName + ") friend:" + s1);
-                }
+            FutureDHT futureDHT = peer.get(key).setAll().start();
+            futureDHT.awaitUninterruptibly();
+            for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
+                System.out.println("this peers' (" + nickName + ") friend:" + entry.getValue().getObject());
             }
-            System.out.println("Tracker reports that " + trackerDatas.size() + " peer(s) are his friends");
+            System.out.println("DHT reports that " + futureDHT.getDataMap().size() + " peer(s) are his friends");
         }
 
-        /**  
-         * @param peer Set reply handler for peer.
+        /**
+         * @param peer
+         *            Set reply handler for peer.
          */
         private void setReplyHandler(final Peer peer) {
             peer.setObjectDataReply(new ObjectDataReply() {

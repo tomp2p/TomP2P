@@ -108,7 +108,7 @@ public class ExampleDiscover
         {
             System.out.println( "failed " + futureDiscover.getFailedReason() );
         }
-        client.halt();
+        client.shutdown();
 
         // Future Bootstrap - master
         // futureBootstrap = master.bootstrap(masterPA);

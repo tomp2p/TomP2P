@@ -48,7 +48,7 @@
 		<!-- <module>all</module> -->
 		<module>core</module>
 		<module>replication</module>
-		<!-- <module>examples</module> -->
+		<module>examples</module>
 		<!-- <module>nat</module> -->
 		<!-- <module>storage</module> -->
 		<!-- <module>task</module> -->
@@ -68,5 +68,29 @@
 			<url>http://tomp2p.net/dev/mvn</url>
 		</repository>
 	</repositories>
+	
+	<dependencyManagement>
+    	<dependencies>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.5</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.1</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

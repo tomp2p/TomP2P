@@ -10,11 +10,11 @@ import net.tomp2p.storage.Data;
 public class ExampleSimple {
     final private Peer peer;
     public ExampleSimple(int peerId) throws Exception {
-        peer = new PeerMaker(Number160.createHash(peerId)).setPorts(4000 + peerId).makeAndListen();
+        peer = new PeerMaker(Number160.createHash(peerId)).ports(4000 + peerId).makeAndListen();
         FutureBootstrap fb = peer.bootstrap().setBroadcast().setPorts(4001).start();
         fb.awaitUninterruptibly();
         if (fb.getBootstrapTo() != null) {
-            peer.discover().setPeerAddress(fb.getBootstrapTo().iterator().next()).start().awaitUninterruptibly();
+            peer.discover().peerAddress(fb.getBootstrapTo().iterator().next()).start().awaitUninterruptibly();
         }
     }
     public static void main(String[] args) throws NumberFormatException, Exception {

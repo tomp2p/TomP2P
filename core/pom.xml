@@ -51,12 +51,7 @@
 			<artifactId>jdbm</artifactId>
 			<version>3.0-alpha</version>
 		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-api</artifactId>
-			<version>1.7.5</version>
-			<optional>true</optional>
-		</dependency>
+		
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
@@ -85,15 +80,6 @@
 			<artifactId>mockito-all</artifactId>
 			<version>1.9.5</version>
 			<scope>test</scope>
-		</dependency>
-
-
-		<!-- Used for the examples only -->
-		<dependency>
-			<groupId>com.googlecode.json-simple</groupId>
-			<artifactId>json-simple</artifactId>
-			<version>1.1.1</version>
-			<optional>true</optional>
 		</dependency>
 
 	</dependencies>

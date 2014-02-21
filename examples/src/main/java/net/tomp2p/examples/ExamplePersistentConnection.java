@@ -92,10 +92,10 @@ public final class ExamplePersistentConnection {
             peerConnection.close();
         } finally {
             if (peer1 != null) {
-                peer1.halt();
+                peer1.shutdown();
             }
             if (peer2 != null) {
-                peer2.halt();
+                peer2.shutdown();
             }
         }
     }

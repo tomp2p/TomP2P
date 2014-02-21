@@ -74,7 +74,7 @@ public final class ExampleConsistency {
             e.printStackTrace();
         } finally {
             if (master != null) {
-                master.halt();
+                master.shutdown();
             }
         }
     }
@@ -111,9 +111,9 @@ public final class ExampleConsistency {
         System.out.println(peers[peerOffline1].getPeerAddress());
         System.out.println(peers[peerOffline2].getPeerAddress());
         System.out.println(peers[peerOffline3].getPeerAddress());
-        peers[peerOffline1].halt();
-        peers[peerOffline2].halt();
-        peers[peerOffline3].halt();
+        peers[peerOffline1].shutdown();
+        peers[peerOffline2].shutdown();
+        peers[peerOffline3].shutdown();
         // now lets store something else with the same key
         final int peerGet = 33;
         FutureDHT futureDHT = peers[peerStore1].put(key1).setRequestP2PConfiguration(REQUEST_3)

@@ -109,7 +109,7 @@ public class ExampleSecurity
     {
         for ( Peer peer : peers )
         {
-            peer.halt();
+            peer.shutdown();
         }
     }
 

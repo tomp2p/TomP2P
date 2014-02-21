@@ -57,7 +57,7 @@ public class ExampleHashMap
         }
         finally
         {
-            master.halt();
+            master.shutdown();
         }
     }
 

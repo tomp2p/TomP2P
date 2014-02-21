@@ -46,7 +46,7 @@ public class ExampleUtils
         List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
         for ( int i = 1; i < peers.length; i++ )
         {
-            FutureDiscover tmp = peers[i].discover().setPeerAddress( peers[0].getPeerAddress() ).start();
+            FutureDiscover tmp = peers[i].discover().peerAddress( peers[0].getPeerAddress() ).start();
             futures2.add( tmp );
         }
         for ( FutureDiscover future : futures2 )
@@ -84,11 +84,11 @@ public class ExampleUtils
         {
             if ( i == 0 )
             {
-                peers[0] = new PeerMaker( new Number160( RND ) ).setPorts( port ).makeAndListen();
+                peers[0] = new PeerMaker( new Number160( RND ) ).ports( port ).makeAndListen();
             }
             else
             {
-                peers[i] = new PeerMaker( new Number160( RND ) ).setMasterPeer( peers[0] ).makeAndListen();
+                peers[i] = new PeerMaker( new Number160( RND ) ).masterPeer( peers[0] ).makeAndListen();
             }
         }
         return peers;

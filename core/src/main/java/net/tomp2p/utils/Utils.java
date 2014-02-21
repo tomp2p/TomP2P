@@ -38,6 +38,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -59,6 +60,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.builder.PutBuilder;
+import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.PeerAddress;
@@ -862,11 +864,22 @@ public class Utils {
     }
 
     public static int dataSize(PutBuilder putBuilder) {
-        if(putBuilder.getDataMap()!=null) {
+    	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
+    		//we only send a marker
+    		return 1;
+    	} else if(putBuilder.getDataMap()!=null) {
             return putBuilder.getDataMap().size();
         } else { 
             return putBuilder.getDataMapContent().size();
         }
+    }
+    
+    public static int dataSize(RemoveBuilder builder) {
+	    if (builder.contentKeys()!=null) {
+	    	return builder.contentKeys().size();
+	    }
+	    //we don't know how much, at least one.
+	    return 1;
     }
     
     public static<K> boolean equals(K o1, K o2) {
@@ -881,4 +894,13 @@ public class Utils {
 		}
     	return true;
     }
+
+	public static String hash(PublicKey publicKey) {
+		if(publicKey == null) {
+			return "null";
+		}
+		return String.valueOf(publicKey.hashCode());
+    }
+
+	
 }

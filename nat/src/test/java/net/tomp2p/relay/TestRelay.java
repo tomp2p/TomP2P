@@ -23,6 +23,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.rpc.RPC;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -303,7 +304,7 @@ public class TestRelay {
 
     private Collection<PeerAddress> getNeighbors(Peer peer) {
         Message request = new Message().setRecipient(peer.getPeerAddress()).setSender(peer.getPeerAddress()).setKey(new Number160("0x1")).setKey(new Number160("0x1"))
-                .setCommand(NeighborRPC.NEIGHBORS_COMMAND).setType(Type.REQUEST_1).setVersion(peer.getConnectionBean().p2pId());
+                .setCommand(RPC.Commands.NEIGHBOR.getNr()).setType(Type.REQUEST_1).setVersion(peer.getConnectionBean().p2pId());
         NoDirectResponse responder = new NoDirectResponse();
         peer.getConnectionBean().dispatcher().getAssociatedHandler(request).forwardMessage(request, null, responder);
         return responder.getResponse().getNeighborsSet(0).neighbors();

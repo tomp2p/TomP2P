@@ -47,9 +47,9 @@ public interface Storage extends ReplicationStorage {
 
     public abstract int contains(Number640 from, Number640 to);
 
-    public abstract Data remove(Number640 key);
+    public abstract Data remove(Number640 key, boolean returnData);
 
-    public abstract NavigableMap<Number640, Data> remove(Number640 from, Number640 to);
+    public abstract NavigableMap<Number640, Data> remove(Number640 from, Number640 to, boolean returnData);
 
     public abstract NavigableMap<Number640, Data> subMap(Number640 from, Number640 to, int limit, boolean ascending);
 

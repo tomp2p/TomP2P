@@ -147,12 +147,12 @@ public class TestStorage {
 
     private void testRemove(StorageLayer storage) throws IOException, ClassNotFoundException {
         store(storage);
-        Data result1 = storage.remove(key1, null);
+        Data result1 = storage.remove(key1, null, true).element0();
         Assert.assertEquals("test1", result1.object());
         SortedMap<Number640, Data> result2 = storage.get(key1, key4, -1, true);
         Assert.assertEquals(1, result2.size());
         store(storage);
-        SortedMap<Number640, Data> result3 = storage.remove(key1, key4, null);
+        SortedMap<Number640, Data> result3 = storage.removeReturnData(key1, key4, null);
         Assert.assertEquals(2, result3.size());
         SortedMap<Number640, Data> result4 = storage.get(key1, key4, -1, true);
         Assert.assertEquals(0, result4.size());
@@ -247,7 +247,7 @@ public class TestStorage {
         // domain is protected by pair1
         Enum<?> result2 = storage.put(key3, new Data("test5"),
                 pair2.getPublic(), false, true);
-        Assert.assertEquals(PutStatus.FAILED, result2);
+        Assert.assertEquals(PutStatus.FAILED_SECURITY, result2);
     }
 
     @Test

@@ -2,6 +2,7 @@ package net.tomp2p.message;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -199,10 +200,14 @@ public class Encoder {
                 signatureFactory.encodePublicKey(message.getPublicKey(), buf);
                 message.contentRefencencs().poll();
                 break;
+            case PUBLIC_KEY:
+            	PublicKey publicKey = message.getPublicKey(next.number());
+            	signatureFactory.encodePublicKey(publicKey, buf);
+            	message.contentRefencencs().poll();
+            	break;
             default:
             case USER1:
             case USER2:
-            case USER3:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
 

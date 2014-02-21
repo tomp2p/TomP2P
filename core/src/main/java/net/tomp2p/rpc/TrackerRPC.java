@@ -48,9 +48,6 @@ import org.slf4j.LoggerFactory;
 public class TrackerRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TrackerRPC.class);
 
-    public static final byte TRACKER_ADD_COMMAND = 8;
-    public static final byte TRACKER_GET_COMMAND = 9;
-
     public static final int MAX_MSG_SIZE_UDP = 35;
 
     // final private ConnectionConfiguration p2pConfiguration;
@@ -61,7 +58,7 @@ public class TrackerRPC extends DispatchHandler {
      */
     public TrackerRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
         super(peerBean, connectionBean);
-        register(TRACKER_ADD_COMMAND, TRACKER_GET_COMMAND);
+        register(RPC.Commands.TRACKER_ADD.getNr(), RPC.Commands.TRACKER_GET.getNr());
     }
 
     public static boolean isPrimary(FutureResponse response) {
@@ -76,7 +73,7 @@ public class TrackerRPC extends DispatchHandler {
             ChannelCreator channelCreator) {
 
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
-        final Message message = createMessage(remotePeer, TRACKER_ADD_COMMAND,
+        final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(),
                 builder.isPrimary() ? Type.REQUEST_3 : Type.REQUEST_1);
         if (builder.isSign()) {
             message.setPublicKeyAndSign(builder.keyPair());
@@ -110,7 +107,7 @@ public class TrackerRPC extends DispatchHandler {
         //Set<Number160> knownPeers,
         
         Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
-        final Message message = createMessage(remotePeer, TRACKER_GET_COMMAND, Type.REQUEST_1);
+        final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_GET.getNr(), Type.REQUEST_1);
         if (builder.isSign()) {
             message.setPublicKeyAndSign(builder.keyPair());
         }
@@ -167,7 +164,7 @@ public class TrackerRPC extends DispatchHandler {
             responseMessage.setType(Message.Type.PARTIALLY_OK);
         }
 
-        if (message.getCommand() == TRACKER_ADD_COMMAND) {
+        if (message.getCommand() == RPC.Commands.TRACKER_ADD.getNr()) {
             TrackerData trackerData = message.getTrackerData(0);
             if (trackerData.size() != 1) {
                 responseMessage.setType(Message.Type.EXCEPTION);

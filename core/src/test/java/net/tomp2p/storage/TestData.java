@@ -4,6 +4,11 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 
 import net.tomp2p.connection.DefaultSignatureFactory;
 
@@ -35,7 +40,7 @@ public class TestData {
     
     @Test
     public void testData2Copy() throws IOException, ClassNotFoundException {
-        Data data = new Data(2, 100000);
+        Data data = new Data(1, 100000);
         AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
@@ -58,7 +63,7 @@ public class TestData {
     
     @Test
     public void testData2NoCopy() throws IOException, ClassNotFoundException {
-        Data data = new Data(2, 100000);
+        Data data = new Data(1, 100000);
         AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
@@ -84,7 +89,7 @@ public class TestData {
     
     @Test
     public void testData3() throws IOException, ClassNotFoundException {
-        Data data = new Data(2, 100000);
+        Data data = new Data(1, 100000);
         AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
         data.encodeHeader(transfer);
         ByteBuf pa = Unpooled.wrappedBuffer(new byte[50000]);
@@ -105,5 +110,52 @@ public class TestData {
         Assert.assertEquals(data, newData);
         ByteBuf test = newData.buffer();
         Assert.assertEquals(100000, test.readableBytes());
+    }
+    
+    @Test
+    public void testData4() throws IOException, ClassNotFoundException {
+        Data data = new Data(1, 100000);
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data, newData);
+    }
+    
+    @Test
+    public void testData5() throws IOException, ClassNotFoundException, NoSuchAlgorithmException {
+    	
+    	KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+        KeyPair keyPair1 = gen.generateKeyPair();
+    	
+        Data data = new Data(1, 100000);
+        data.publicKey(keyPair1.getPublic());
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data, newData);
+    }
+    
+    @Test
+    public void testData6() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+    	
+    	KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+        
+    	Data data = new Data(new byte[10000]);
+        data.sign(keyPair1);
+        Data newData = encodeDecode(data);
+        Assert.assertTrue(newData.verify(keyPair1.getPublic()));
+        Assert.assertFalse(newData.verify(keyPair2.getPublic()));
+        Assert.assertEquals(data, newData);
+    }
+
+	private Data encodeDecode(Data data) {
+	    
+		AlternativeCompositeByteBuf transfer = AlternativeCompositeByteBuf.compBuffer();
+        data.encodeHeader(transfer);
+        data.encodeBuffer(transfer);
+        data.encodeDone(transfer);
+        //
+        Data newData = Data.decodeHeader(transfer, new DefaultSignatureFactory());
+        newData.decodeBuffer(transfer);
+        newData.decodeDone(transfer, null);
+        return newData;
     }
 }

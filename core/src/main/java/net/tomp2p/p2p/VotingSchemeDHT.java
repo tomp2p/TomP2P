@@ -64,7 +64,7 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     }
     
     @Override
-    public Collection<Number640> evaluate6(Map<PeerAddress, Collection<Number640>> rawKeys480) {
+    public Collection<Number640> evaluate6(Map<PeerAddress, Map<Number640, Byte>> rawKeys480) {
         Map<Number640, Integer> counter = new HashMap<Number640, Integer>();
         Set<Number640> result = new HashSet<Number640>();
 
@@ -73,7 +73,7 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
 
         if (rawKeys480 != null) {
             for (PeerAddress address : rawKeys480.keySet()) {
-                Collection<Number640> keys480 = rawKeys480.get(address);
+                Collection<Number640> keys480 = rawKeys480.get(address).keySet();
                 if (keys480 != null) {
                     for (Number640 key : keys480) {
                         int c = 1;

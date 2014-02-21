@@ -25,6 +25,8 @@ package net.tomp2p.peers;
 public final class Number320 extends Number implements Comparable<Number320> {
     private static final long serialVersionUID = -7200924461230885512L;
 
+	public static final Number320 ZERO = new Number320(Number160.ZERO, Number160.ZERO);
+
     private final Number160 locationKey;
 
     private final Number160 domainKey;

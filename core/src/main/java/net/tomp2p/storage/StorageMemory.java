@@ -72,12 +72,12 @@ public class StorageMemory implements Storage {
     }
 
     @Override
-    public Data remove(Number640 key) {
-        return dataMap.remove(key);
+    public Data remove(Number640 key, boolean returnData) {
+    	return dataMap.remove(key);
     }
 
     @Override
-    public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey) {
+    public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey, boolean returnData) {
         NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
         NavigableMap<Number640, Data> copy = new TreeMap<Number640, Data>(tmp);
         tmp.clear();

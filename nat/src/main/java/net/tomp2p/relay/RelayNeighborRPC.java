@@ -11,6 +11,7 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ public class RelayNeighborRPC extends NeighborRPC {
 
     public RelayNeighborRPC(Peer peer, PeerAddress unreachablePeer) {
         super(peer.getPeerBean(), peer.getConnectionBean(), false);
-        peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, NeighborRPC.NEIGHBORS_COMMAND);
+        peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, RPC.Commands.NEIGHBOR.getNr());
         this.peer = peer;
         this.unreachablePeer = unreachablePeer;
         setObjectReply();

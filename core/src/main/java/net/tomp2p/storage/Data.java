@@ -47,14 +47,12 @@ public class Data {
 	private static final int MAX_BYTE_SIZE = 256;
 
 	/**
-	 * Tiny means 8 bit, small means 16bit, medium is 32bit.
+	 * small means 8 bit, medium is 32bit.
 	 * 
 	 * @author Thomas Bocek
 	 * 
 	 */
-	public enum Type {
-		SMALL, MEDIUM, LARGE
-	}
+	public enum Type {SMALL, LARGE}
 
 	private final Type type;
 	private final int length;
@@ -68,6 +66,7 @@ public class Data {
 	private boolean flag1;
 	private boolean flag2;
 	private boolean protectedEntry;
+	private boolean publicKeyFlag;
 
 	// can be added later
 	private SHA1Signature signature;
@@ -79,6 +78,7 @@ public class Data {
 	private final long validFromMillis;
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
+	private boolean meta;
 
 	/**
 	 * Create a data object that does have the complete data.
@@ -99,8 +99,6 @@ public class Data {
 		this.length = length;
 		if (length < MAX_BYTE_SIZE) {
 			this.type = Type.SMALL;
-		} else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {
-			this.type = Type.MEDIUM;
 		} else {
 			this.type = Type.LARGE;
 		}
@@ -118,6 +116,7 @@ public class Data {
 	 *            The length, which depends on the header values
 	 */
 	public Data(final int header, final int length) {
+		this.publicKeyFlag = hasPublicKey(header);
 		this.flag1 = isFlag1(header);
 		this.flag2 = isFlag2(header);
 		this.basedOnFlag = hasBasedOn(header);
@@ -128,9 +127,7 @@ public class Data {
 
 		if (type == Type.SMALL && length > 255) {
 			throw new IllegalArgumentException("Type is not small");
-		} else if (type == Type.MEDIUM && (length <= 255 || length > (255 * 255))) {
-			throw new IllegalArgumentException("Type is not medium");
-		} else if (type == Type.LARGE && (length <= 255 * 255)) {
+		} else if (type == Type.LARGE && (length <= 255)) {
 			throw new IllegalArgumentException("Type is not large");
 		}
 
@@ -170,8 +167,6 @@ public class Data {
 		this.length = length;
 		if (length < MAX_BYTE_SIZE) {
 			this.type = Type.SMALL;
-		} else if (length < MAX_BYTE_SIZE * MAX_BYTE_SIZE) {
-			this.type = Type.MEDIUM;
 		} else {
 			this.type = Type.LARGE;
 		}
@@ -208,7 +203,7 @@ public class Data {
 		final int toReadPublicKey;
 		final int meta1 = (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0)
 				+ (hasBasedOn(header) ? Number160.BYTE_ARRAY_SIZE : 0);
-		final int meta2 = (isSigned(header) ? 2 : 0);
+		final int meta2 = (hasPublicKey(header) ? 2 : 0);
 		switch (type) {
 		case SMALL:
 			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.BYTE_SIZE;
@@ -217,22 +212,10 @@ public class Data {
 				return null;
 			}
 			// read the length of the public key
-			if (isSigned(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
+			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
 				return null;
 			}
 			len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedByte();
-			break;
-		case MEDIUM:
-			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.SHORT_BYTE_SIZE;
-			toRead = toReadPublicKey + meta2;
-			if (buf.readableBytes() < toReadPublicKey) {
-				return null;
-			}
-			// read the length of the public key
-			if (isSigned(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
-				return null;
-			}
-			len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedShort();
 			break;
 		case LARGE:
 			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.INTEGER_BYTE_SIZE;
@@ -241,7 +224,7 @@ public class Data {
 				return null;
 			}
 			// read the length of the public key
-			if (isSigned(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
+			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
 				return null;
 			}
 			len = buf.skipBytes(Utils.BYTE_SIZE).readInt();
@@ -258,7 +241,7 @@ public class Data {
 			buf.readBytes(me);
 			data.basedOn = new Number160(me);
 		}
-		if (data.signed) {
+		if (data.publicKeyFlag) {
 			data.publicKey = signatureFactory.decodePublicKey(buf);
 		}
 		return data;
@@ -313,6 +296,9 @@ public class Data {
 
 	public void encodeHeader(final AlternativeCompositeByteBuf buf) {
 		int header = type.ordinal();
+		if (publicKeyFlag) {
+			header |= 0x02;
+		}
 		if (flag1) {
 			header |= 0x04;
 		}
@@ -337,10 +323,6 @@ public class Data {
 			buf.writeByte(header);
 			buf.writeByte(length);
 			break;
-		case MEDIUM:
-			buf.writeByte(header);
-			buf.writeShort(length);
-			break;
 		case LARGE:
 			buf.writeByte(header);
 			buf.writeInt(length);
@@ -354,7 +336,7 @@ public class Data {
 		if (basedOnFlag) {
 			buf.writeBytes(basedOn.toByteArray());
 		}
-		if (signed) {
+		if (publicKeyFlag) {
 			if (publicKey == null) {
 				buf.writeShort(0);
 			} else {
@@ -403,6 +385,7 @@ public class Data {
 			this.signed = true;
 			this.signature = signatureFactory().sign(keyPair.getPrivate(), buffer.toByteBuf());
 			this.publicKey = keyPair.getPublic();
+			this.publicKeyFlag = true;
 		}
 		return this;
 	}
@@ -501,6 +484,34 @@ public class Data {
 		this.flag2 = true;
 		return this;
 	}
+	
+	public boolean hasPublicKey() {
+		return publicKeyFlag;
+	}
+
+	public Data hasPublicKey(boolean publicKeyFlag) {
+		this.publicKeyFlag = publicKeyFlag;
+		return this;
+	}
+
+	public Data setPublicKey() {
+		this.publicKeyFlag = true;
+		return this;
+	}
+	
+	public boolean isMeta() {
+		return meta;
+	}
+
+	public Data meta(boolean meta) {
+		this.meta = meta;
+		return this;
+	}
+
+	public Data setMeta() {
+		this.meta = true;
+		return this;
+	}
 
 	@Override
 	public String toString() {
@@ -512,10 +523,6 @@ public class Data {
 		sb.append(signature).append("]");
 		return sb.toString();
 	}
-
-	
-
-	
 
 	public void resetAlreadyTransferred() {
 		buffer.resetAlreadyTransferred();
@@ -530,6 +537,22 @@ public class Data {
 				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
+		data.publicKeyFlag = publicKeyFlag;
+		data.flag1 = flag1;
+		data.flag2 = flag2;
+		data.basedOnFlag = basedOnFlag;
+		data.signed = signed;
+		data.ttl = ttl;
+		data.protectedEntry = protectedEntry;
+		return data;
+	}
+	
+	public Data duplicateMeta() {
+		Data data = new Data().publicKey(publicKey).signatureFactory(signatureFactory)
+				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
+		// set all the flags. Although signature, basedOn, and ttlSeconds set a
+		// flag, they will be overwritten with the data from this class
+		data.publicKeyFlag = publicKeyFlag;
 		data.flag1 = flag1;
 		data.flag2 = flag2;
 		data.basedOnFlag = basedOnFlag;
@@ -540,7 +563,11 @@ public class Data {
 	}
 
 	public static Type type(final int header) {
-		return Type.values()[header & 0x3];
+		return Type.values()[header & 0x1];
+	}
+	
+	private static boolean hasPublicKey(final int header) {
+		return (header & 0x02) > 0;
 	}
 
 	private static boolean isFlag1(final int header) {
@@ -590,6 +617,7 @@ public class Data {
 	}
 
 	public Data publicKey(PublicKey publicKey) {
+		this.publicKeyFlag = true;
 		this.publicKey = publicKey;
 		return this;
 	}
@@ -605,11 +633,12 @@ public class Data {
 
 	@Override
 	public int hashCode() {
-		BitSet bs = new BitSet(4);
+		BitSet bs = new BitSet(5);
 		bs.set(0, signed);
 		bs.set(1, ttl);
 		bs.set(2, basedOnFlag);
 		bs.set(3, protectedEntry);
+		bs.set(4, publicKeyFlag);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
 		if (basedOn != null) {
 			hashCode = hashCode ^ basedOn.hashCode();
@@ -627,7 +656,8 @@ public class Data {
 			return true;
 		}
 		Data d = (Data) obj;
-		if (d.signed != signed || d.ttl != ttl || d.basedOnFlag != basedOnFlag || d.protectedEntry != protectedEntry) {
+		if (d.signed != signed || d.ttl != ttl || d.basedOnFlag != basedOnFlag 
+				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag) {
 			return false;
 		}
 		if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {

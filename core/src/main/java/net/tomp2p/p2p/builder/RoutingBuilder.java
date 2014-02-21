@@ -15,11 +15,13 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
 
     private Number160 locationKey;
     private Number160 domainKey;
+    private Number160 contentKey;
 
     private SimpleBloomFilter<Number160> keyBloomFilter;
     private SimpleBloomFilter<Number160> contentBloomFilter;
-    private Number160 contentKey;
-    private Number160 rangeKey;
+    
+    private Number640 from;
+    private Number640 to;
 
     private int maxDirectHits;
     private int maxNoNewInfo;
@@ -114,11 +116,9 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
      */
     public SearchValues searchValues() {
         if (getContentKey() != null) {
-        	if(rangeKey !=null) {
-        		return new SearchValues(locationKey, domainKey, getContentKey(), rangeKey);
-        	} else {
-        		return new SearchValues(locationKey, domainKey, getContentKey());
-        	}
+        	return new SearchValues(locationKey, domainKey, getContentKey());
+        } else if(from !=null && to!=null) {
+        	return new SearchValues(locationKey, domainKey, from, to);
         } else if (getContentBloomFilter() == null && getKeyBloomFilter() != null) {
             return new SearchValues(locationKey, domainKey, getKeyBloomFilter());
         } else if (getContentBloomFilter() != null && getKeyBloomFilter() != null) {
@@ -173,7 +173,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     }
 
 	public void setRange(Number640 from, Number640 to) {
-	    this.contentKey = from.getContentKey();
-	    this.rangeKey = to.getContentKey();
+	    this.from = from;
+	    this.to = to;
     }
 }

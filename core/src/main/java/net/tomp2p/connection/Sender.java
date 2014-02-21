@@ -62,16 +62,13 @@ public class Sender {
     private final PeerStatusListener[] peerStatusListeners;
     private final ChannelClientConfiguration channelClientConfiguration;
     private final Dispatcher dispatcher;
-    private PingFactory pingFactory;
+    private PingBuilder pingBuilder;
 
     /**
-     * Creates a new sender with the listeners for offline peers.
-     * 
-     * @param peerStatusListeners
-     *            The listener for offline peers
-     * @param channelClientConfiguration
-     *            The configuration used to get the signature factory
-     * @param dispatcher
+     * * Creates a new sender with the listeners for offline peers. * * @param
+     * peerStatusListeners * The listener for offline peers * @param
+     * channelClientConfiguration * The configuration used to get the signature
+     * factory * @param dispatcher
      */
     public Sender(final PeerStatusListener[] peerStatusListeners, final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
         this.peerStatusListeners = peerStatusListeners;
@@ -84,11 +81,11 @@ public class Sender {
     }
 
     public PingBuilder pingBuilder() {
-        return pingFactory.ping();
+        return pingBuilder;
     }
 
-    public Sender pingBuilder(PingFactory pingFactory) {
-        this.pingFactory = pingFactory;
+    public Sender pingBuilder(PingBuilder pingBuilder) {
+        this.pingBuilder = pingBuilder;
         return this;
     }
 
@@ -107,7 +104,7 @@ public class Sender {
             final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
             InetSocketAddress recipient = null;
             if (message.getRecipient().isRelay()) {
-                FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(), pingFactory);
+                FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(), pingBuilder);
                 futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
                     @Override
                     public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -151,14 +148,14 @@ public class Sender {
         }
     }
 
-    private FutureDone<PeerSocketAddress> pingFirst(PeerSocketAddress[] peerSocketAddresses, PingFactory pingFactory) {
+    private FutureDone<PeerSocketAddress> pingFirst(PeerSocketAddress[] peerSocketAddresses, PingBuilder pingBuilder) {
         final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
         BaseFuture[] forks = new BaseFuture[peerSocketAddresses.length];
         for (int i = 0; i < forks.length; i++) {
             if (peerSocketAddresses[i] != null) {
                 InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(peerSocketAddresses[i]);
-                forks[i] = pingFactory.ping().setInetAddress(inetSocketAddress.getAddress()).setPort(inetSocketAddress.getPort()).start();
+                forks[i] = pingBuilder.setInetAddress(inetSocketAddress.getAddress()).setPort(inetSocketAddress.getPort()).start();
             }
         }
         FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<>(forks));
@@ -201,7 +198,7 @@ public class Sender {
 
         HeartBeat heartBeat = null;
         if (peerConnection != null) {
-            heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingFactory.ping());
+            heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilder);
             handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
         }
 
@@ -211,13 +208,14 @@ public class Sender {
             peerConnection.channelFuture(channelFuture);
             heartBeat.peerConnection(peerConnection);
         }
+
         return channelFuture;
     }
 
     private ChannelFuture sendTCPPeerConnection(PeerConnection peerConnection, ChannelHandler handler, final ChannelCreator channelCreator, final FutureResponse futureResponse) {
-        // if the channel gets closed, the future should get notified
+        //if the channel gets closed, the future should get notified
         ChannelFuture channelFuture = peerConnection.channelFuture();
-
+        //channelCreator can be null if we don't need to create any channels
         if (channelCreator != null) {
             channelCreator.setupCloseListener(channelFuture, futureResponse);
         }

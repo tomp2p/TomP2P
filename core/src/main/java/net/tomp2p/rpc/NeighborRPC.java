@@ -16,6 +16,9 @@
 package net.tomp2p.rpc;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.SortedSet;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -26,6 +29,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -47,8 +51,6 @@ import org.slf4j.LoggerFactory;
 public class NeighborRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NeighborRPC.class);
 
-    public static final byte NEIGHBORS_COMMAND = 5;
-
     public static final int NEIGHBOR_SIZE = 30;
     public static final int NEIGHBOR_LIMIT = 1000;
     
@@ -68,7 +70,7 @@ public class NeighborRPC extends DispatchHandler {
     public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean, boolean register) {
         super(peerBean, connectionBean);
         if(register) {
-            register(NEIGHBORS_COMMAND);
+            register(RPC.Commands.NEIGHBOR.getNr());
         }
     }
 
@@ -97,27 +99,38 @@ public class NeighborRPC extends DispatchHandler {
      */
     public FutureResponse closeNeighbors(final PeerAddress remotePeer, final SearchValues searchValues,
             final Type type, final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
-        Message message = createMessage(remotePeer, NEIGHBORS_COMMAND, type);
+        Message message = createMessage(remotePeer, RPC.Commands.NEIGHBOR.getNr(), type);
         if (!message.isRequest()) {
             throw new IllegalArgumentException("The type must be a request");
         }
+        
         message.setKey(searchValues.locationKey());
         message.setKey(searchValues.domainKey() == null ? Number160.ZERO : searchValues.domainKey());
-        // either we have one or two bloom filters or we have one content key
-
-        if (searchValues.keyBloomFilter() != null) {
-            message.setBloomFilter(searchValues.keyBloomFilter());
+        
+        if(searchValues.from() !=null && searchValues.to()!=null) {
+        	Collection<Number640> collection = new ArrayList<Number640>(2);
+        	collection.add(searchValues.from());
+        	collection.add(searchValues.to());
+        	KeyCollection keyCollection = new KeyCollection(collection);
+        	message.setKeyCollection(keyCollection);
+        } else {
+	        if (searchValues.contentKey() != null) {
+        		message.setKey(searchValues.contentKey());
+        	}
+        
+        	if (searchValues.keyBloomFilter() != null) {
+        		message.setBloomFilter(searchValues.keyBloomFilter());
+        	}
+        	if (searchValues.contentBloomFilter() != null) {
+        		message.setBloomFilter(searchValues.contentBloomFilter());
+        	}
         }
-        if (searchValues.contentBloomFilter() != null) {
-            message.setBloomFilter(searchValues.contentBloomFilter());
-        } else if (searchValues.contentKey() != null) {
-            message.setKey(searchValues.contentKey());
-            if (searchValues.rangeKey() != null) {
-            	message.setKey(searchValues.rangeKey());
-            }
-        }
-
-        FutureResponse futureResponse = new FutureResponse(message);
+        return send(message, configuration, channelCreator);
+    }
+    
+    private FutureResponse send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
+    	
+    	FutureResponse futureResponse = new FutureResponse(message);
         RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
                 peerBean(), connectionBean(), configuration);
 
@@ -126,6 +139,7 @@ public class NeighborRPC extends DispatchHandler {
         } else {
             return request.sendTCP(channelCreator);
         }
+    	
     }
 
     @Override
@@ -135,12 +149,12 @@ public class NeighborRPC extends DispatchHandler {
         }
         if (!(message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2
                 || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4)
-                && (message.getCommand() == NEIGHBORS_COMMAND)) {
+                && (message.getCommand() == RPC.Commands.NEIGHBOR.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         Number160 locationKey = message.getKey(0);
         Number160 domainKey = message.getKey(1);
-        Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
+        
         // Create response message and set neighbors
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
@@ -160,30 +174,36 @@ public class NeighborRPC extends DispatchHandler {
         // check content length, 0 for content not here , > 0 content here
         // int contentLength = -1;
         Number160 contentKey = message.getKey(2);
-        Number160 rangeKey = message.getKey(3);
         SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
         SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
+        KeyCollection keyCollection = message.getKeyCollection(0);
         // it is important to set an integer if a value is present
         boolean isDigest = message.getType() != Type.REQUEST_1;
         if (isDigest) {
             if (message.getType() == Type.REQUEST_2) {
                 final DigestInfo digestInfo;
-                if (contentKey != null) {
+                if (contentKey != null && locationKey!=null && domainKey!=null) {
+                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
-                    Number640 to;
-                    if(rangeKey !=null) {
-                    	to = new Number640(locationAndDomainKey, rangeKey, Number160.MAX_VALUE);
-                    } else {
-                    	to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
-                    }
+                    Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
                     digestInfo = peerBean().storage().digest(from, to, -1, true);
-                } else if (keyBloomFilter != null || contentBloomFilter != null) {
+                } else if ((keyBloomFilter != null || contentBloomFilter != null)  && locationKey!=null && domainKey!=null) {
+                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
                             contentBloomFilter, -1, true);
-                } else {
+                } else if (keyCollection!=null && keyCollection.keys().size() == 2) {
+                	Iterator<Number640> iterator = keyCollection.keys().iterator();
+                	Number640 from = iterator.next();
+                	Number640 to = iterator.next();
+                	digestInfo = peerBean().storage().digest(from, to, -1, true);
+                } else if (locationKey!=null && domainKey!=null){
+                	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
                     Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
                     digestInfo = peerBean().storage().digest(from, to, -1, true);
+                } else {
+                	LOG.warn("did not search for anything");
+                	digestInfo = new DigestInfo();
                 }
                 responseMessage.setInteger(digestInfo.getSize());
                 responseMessage.setKey(digestInfo.getKeyDigest());
@@ -217,10 +237,13 @@ public class NeighborRPC extends DispatchHandler {
     public static class SearchValues {
         private final SimpleBloomFilter<Number160> keyBloomFilter;
         private final SimpleBloomFilter<Number160> contentBloomFilter;
-        private final Number160 contentKey;
-        private final Number160 rangeKey;
+        
         private final Number160 locationKey;
         private final Number160 domainKey;
+        private final Number160 contentKey;
+        
+        private final Number640 from;
+        private final Number640 to;
 
         /**
          * Searches for all content keys.
@@ -236,7 +259,8 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = null;
-            this.rangeKey = null;
+            this.from = null;
+            this.to = null;
         }
 
         /**
@@ -256,16 +280,18 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
             this.contentKey = contentKey;
-            this.rangeKey = null;
+            this.from = null;
+            this.to = null;
         }
         
-        public SearchValues(final Number160 locationKey, final Number160 domainKey, final Number160 from, Number160 to) {
+        public SearchValues(Number160 locationKey, Number160 domainKey, Number640 from, Number640 to) {
             this.locationKey = locationKey;
             this.domainKey = domainKey;
             this.keyBloomFilter = null;
             this.contentBloomFilter = null;
-            this.contentKey = from;
-            this.rangeKey = to;
+            this.contentKey = null;
+            this.from = from;
+            this.to = to;
         }
 
         /**
@@ -286,7 +312,8 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = null;
             this.contentKey = null;
-            this.rangeKey = null;
+            this.from = null;
+            this.to = null;
         }
 
         /**
@@ -311,10 +338,11 @@ public class NeighborRPC extends DispatchHandler {
             this.keyBloomFilter = keyBloomFilter;
             this.contentBloomFilter = contentBloomFilter;
             this.contentKey = null;
-            this.rangeKey = null;
+            this.from = null;
+            this.to = null;
         }
 
-        /**
+		/**
          * @return The location key
          */
         public Number160 locationKey() {
@@ -349,8 +377,12 @@ public class NeighborRPC extends DispatchHandler {
             return contentKey;
         }
         
-        public Number160 rangeKey() {
-        	return rangeKey;
+        public Number640 from() {
+        	return from;
+        }
+        
+        public Number640 to() {
+        	return to;
         }
     }
 }

@@ -188,6 +188,7 @@ public class Decoder {
 
 		// payload comes here
 		int size;
+		PublicKey receivedPublicKey;
 		while (contentTypes.size() > 0) {
 			Content content = contentTypes.peek();
 			switch (content) {
@@ -501,7 +502,7 @@ public class Decoder {
 				break;
 
 			case PUBLIC_KEY_SIGNATURE:
-				PublicKey receivedPublicKey = signatureFactory.decodePublicKey(buf);
+				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if (receivedPublicKey == null) {
 					return false;
 				}
@@ -513,10 +514,18 @@ public class Decoder {
 				message.signatureForVerification(signature, receivedPublicKey);
 				lastContent = contentTypes.poll();
 				break;
+			case PUBLIC_KEY:
+				receivedPublicKey = signatureFactory.decodePublicKey(buf);
+				if (receivedPublicKey == null) {
+					return false;
+				}
+				message.setPublicKey(receivedPublicKey);
+				lastContent = contentTypes.poll();
+				break;
+				
 			default:
 			case USER1:
 			case USER2:
-			case USER3:
 			case EMPTY:
 				break;
 			}

@@ -27,6 +27,8 @@ import java.util.Random;
 public final class Number480 extends Number implements Comparable<Number480> {
     private static final long serialVersionUID = 1L;
 
+	public static final Number480 ZERO = new Number480(Number320.ZERO, Number160.ZERO);
+
     private final Number160 locationKey;
 
     private final Number160 domainKey;

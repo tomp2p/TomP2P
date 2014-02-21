@@ -219,7 +219,7 @@ public class SynchronizationRPC extends DispatchHandler {
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
 
             if (entry.getValue().isFlag2()) {
-                peerBean().storage().remove(entry.getKey(), publicKey);
+                peerBean().storage().remove(entry.getKey(), publicKey, false);
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff

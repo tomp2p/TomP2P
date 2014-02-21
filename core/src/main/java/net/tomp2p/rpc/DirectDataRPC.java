@@ -38,15 +38,13 @@ import org.slf4j.LoggerFactory;
 public class DirectDataRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(DirectDataRPC.class);
 
-    public static final byte DIRECT_DATA_COMMAND = 7;
-
     private volatile RawDataReply rawDataReply;
 
     private volatile ObjectDataReply objectDataReply;
 
     public DirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
         super(peerBean, connectionBean);
-        register(DIRECT_DATA_COMMAND);
+        register(RPC.Commands.BROADCAST.getNr());
     }
 
     /**
@@ -69,7 +67,7 @@ public class DirectDataRPC extends DispatchHandler {
 
     public RequestHandler<FutureResponse> sendInternal(final PeerAddress remotePeer,
             final SendDirectBuilderI sendDirectBuilder) {
-        final Message message = createMessage(remotePeer, DIRECT_DATA_COMMAND,
+        final Message message = createMessage(remotePeer, RPC.Commands.DIRECT_DATA.getNr(),
                 sendDirectBuilder.isRaw() ? Type.REQUEST_1 : Type.REQUEST_2);
         final FutureResponse futureResponse = new FutureResponse(message,
                 sendDirectBuilder.progressListener());
@@ -124,7 +122,7 @@ public class DirectDataRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) && message
-                .getCommand() == DIRECT_DATA_COMMAND)) {
+                .getCommand() == RPC.Commands.DIRECT_DATA.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);

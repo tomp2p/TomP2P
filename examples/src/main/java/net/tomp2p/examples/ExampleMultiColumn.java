@@ -22,8 +22,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 /**
@@ -113,31 +115,31 @@ public final class ExampleMultiColumn {
         Number160 contentKey = combine(rowKey1, col1);
         // get entry
         final int peerGet = 22;
-        FutureDHT futureDHT = peers[peerGet].get(locationKey).setContentKey(contentKey).start();
-        futureDHT.awaitUninterruptibly();
+        FutureGet futureGet = peers[peerGet].get(locationKey).setContentKey(contentKey).start();
+        futureGet.awaitUninterruptibly();
         System.out
-                .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureDHT.getData().getObject() + "]");
+                .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureGet.getData().object() + "]");
         // get list
         Set<Number160> range = new TreeSet<Number160>();
         range.add(createNr(rowKey1, 0));
         range.add(createNr(rowKey1, -1));
         // get can also be used with ranges for content keys
-        futureDHT = peers[peerGet].get(locationKey).setContentKeys(range).setRange().start();
-        futureDHT.awaitUninterruptibly();
+        FutureGet futureGet2 = peers[peerGet].get(locationKey).contentKeys(range).setRange().start();
+        futureGet2.awaitUninterruptibly();
         System.out.println("row fetch [" + rowKey1 + "]");
-        for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
-            System.out.println("multi fetch: " + entry.getValue().getObject());
+        for (Map.Entry<Number640, Data> entry : futureGet2.getDataMap().entrySet()) {
+            System.out.println("multi fetch: " + entry.getValue().object());
         }
         // column get
         String search = col1;
         range = new TreeSet<Number160>();
         range.add(createNr(search, 0));
         range.add(createNr(search, -1));
-        futureDHT = peers[peerGet].get(locationKey).setContentKeys(range).setRange().start();
-        futureDHT.awaitUninterruptibly();
+        FutureGet futureGet3 = peers[peerGet].get(locationKey).contentKeys(range).setRange().start();
+        futureGet3.awaitUninterruptibly();
         System.out.println("column fetch [" + search + "]");
-        for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
-            System.out.println("multi fetch: " + entry.getValue().getObject());
+        for (Map.Entry<Number640, Data> entry : futureGet3.getDataMap().entrySet()) {
+            System.out.println("multi fetch: " + entry.getValue().object());
         }
     }
 

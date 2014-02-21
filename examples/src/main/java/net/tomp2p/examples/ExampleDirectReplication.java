@@ -20,6 +20,8 @@ import java.io.IOException;
 
 import net.tomp2p.futures.FutureCreate;
 import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FuturePut;
+import net.tomp2p.futures.FutureRemove;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -78,11 +80,11 @@ public final class ExampleDirectReplication {
                 System.out.println("put again...");
             }
         };
-        FutureDHT futureDHT = peers[1].put(Number160.ONE).setData(new Data("test")).setFutureCreate(futureCreate1)
+        FuturePut futurePut = peers[1].put(Number160.ONE).setData(new Data("test")).setFutureCreate(futureCreate1)
                 .setRefreshSeconds(2).setDirectReplication().start();
         Timings.sleepUninterruptibly(NINE_SECONDS);
         System.out.println("stop replication");
-        futureDHT.shutdown();
+        //TODO: futurePut.shutdown();
         Timings.sleepUninterruptibly(NINE_SECONDS);
         FutureCreate<FutureDHT> futureCreate2 = new FutureCreate<FutureDHT>() {
             @Override
@@ -90,7 +92,7 @@ public final class ExampleDirectReplication {
                 System.out.println("remove again...");
             }
         };
-        futureDHT = peers[1].remove(Number160.ONE).setFutureCreate(futureCreate2).setRefreshSeconds(2)
+        FutureRemove futureRemove = peers[1].remove(Number160.ONE).setFutureCreate(futureCreate2).setRefreshSeconds(2)
                 .setRepetitions(2).setDirectReplication().start();
         Timings.sleepUninterruptibly(NINE_SECONDS);
     }

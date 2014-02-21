@@ -18,7 +18,8 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 
@@ -75,13 +76,13 @@ public final class ExampleSearch {
 
         Number160 key = Number160.createHash(TERM);
 
-        FutureDHT futureDHT = peers[peer60].put(key).setObject(TERM).start();
-        futureDHT.awaitUninterruptibly();
+        FuturePut futurePut = peers[peer60].put(key).setObject(TERM).start();
+        futurePut.awaitUninterruptibly();
 
-        futureDHT = peers[peer30].get(key).start();
-        futureDHT.awaitUninterruptibly();
+        FutureGet futureGet = peers[peer30].get(key).start();
+        futureGet.awaitUninterruptibly();
 
-        System.out.println("got: " + key + " = " + futureDHT.getData().getObject());
+        System.out.println("got: " + key + " = " + futureGet.getData().object());
 
     }
 
@@ -103,17 +104,16 @@ public final class ExampleSearch {
         // store a keyword
         for (String keyword : keywords) {
             Number160 keyKeyword = Number160.createHash(keyword);
-            FutureDHT futureDHT = peers[peer10].put(keyKeyword).setObject(keyTerm).start();
-            futureDHT.awaitUninterruptibly();
+            peers[peer10].put(keyKeyword).setObject(keyTerm).start().awaitUninterruptibly();
         }
 
         // search for a keyword
         Number160 termKey = findReference(peers[peer20], "Communication");
         // this will return a reference to the term stored in the method exampleSearch(), next, we have to search for
         // that.
-        FutureDHT futureDHT = peers[peer10].get(termKey).start();
-        futureDHT.awaitUninterruptibly();
-        System.out.println("searched for [Communication], found " + futureDHT.getData().getObject());
+        FutureGet futureGet = peers[peer10].get(termKey).start();
+        futureGet.awaitUninterruptibly();
+        System.out.println("searched for [Communication], found " + futureGet.getData().object());
     }
 
     /**
@@ -130,9 +130,9 @@ public final class ExampleSearch {
     private static Number160 findReference(final Peer peer, final String keyword) throws ClassNotFoundException,
             IOException {
         Number160 keyKeyword = Number160.createHash(keyword);
-        FutureDHT futureDHT = peer.get(keyKeyword).start();
-        futureDHT.awaitUninterruptibly();
-        Number160 termKey = (Number160) futureDHT.getData().getObject();
+        FutureGet futureGet = peer.get(keyKeyword).start();
+        futureGet.awaitUninterruptibly();
+        Number160 termKey = (Number160) futureGet.getData().object();
         return termKey;
     }
 

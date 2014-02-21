@@ -22,9 +22,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -153,7 +154,7 @@ public final class ExampleDHT {
                 for (String friend : tmp) {
                     dataMap.put(peer.getPeerID().xor(Number160.createHash(friend)), new Data(friend));
                 }
-                peer.put(entry.getKey()).setDataMap(dataMap).start().awaitUninterruptibly();
+                peer.put(entry.getKey()).setDataMapContent(dataMap).start().awaitUninterruptibly();
             }
         }
 
@@ -167,12 +168,12 @@ public final class ExampleDHT {
          */
         public void list(final String nickName) throws IOException, ClassNotFoundException {
             Number160 key = Number160.createHash(nickName);
-            FutureDHT futureDHT = peer.get(key).setAll().start();
-            futureDHT.awaitUninterruptibly();
-            for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
-                System.out.println("this peers' (" + nickName + ") friend:" + entry.getValue().getObject());
+            FutureGet futureGet = peer.get(key).setAll().start();
+            futureGet.awaitUninterruptibly();
+            for (Map.Entry<Number640, Data> entry : futureGet.getDataMap().entrySet()) {
+                System.out.println("this peers' (" + nickName + ") friend:" + entry.getValue().object());
             }
-            System.out.println("DHT reports that " + futureDHT.getDataMap().size() + " peer(s) are his friends");
+            System.out.println("DHT reports that " + futureGet.getDataMap().size() + " peer(s) are his friends");
         }
 
         /**

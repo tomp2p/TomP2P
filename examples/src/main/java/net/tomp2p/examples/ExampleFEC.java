@@ -21,7 +21,6 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Random;
 
-import ch.qos.logback.core.pattern.Converter;
 
 /**
  * Shows an FEC example based on XOR.

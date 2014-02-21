@@ -1,6 +1,6 @@
 package net.tomp2p.examples;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureSend;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
@@ -38,9 +38,9 @@ public class ExampleSend
     private static void exampleSendOne(Peer peer)
     {
         RequestP2PConfiguration requestP2PConfiguration = new RequestP2PConfiguration( 1, 10, 0 );
-        FutureDHT futureDHT = peer.send( Number160.createHash( "key" ) ).setObject( "hello" ).setRequestP2PConfiguration( requestP2PConfiguration ).start();
-        futureDHT.awaitUninterruptibly();
-        for(Object object:futureDHT.getRawDirectData2().values()) 
+        FutureSend futureSend = peer.send( Number160.createHash( "key" ) ).setObject( "hello" ).setRequestP2PConfiguration( requestP2PConfiguration ).start();
+        futureSend.awaitUninterruptibly();
+        for(Object object:futureSend.getRawDirectData2().values()) 
         {
             System.err.println("got:"+ object);    
         }
@@ -48,9 +48,9 @@ public class ExampleSend
 
     private static void exampleSendRedundant(Peer peer)
     {
-        FutureDHT futureDHT = peer.send( Number160.createHash( "key" ) ).setObject( "hello" ).start();
-        futureDHT.awaitUninterruptibly();
-        for(Object object:futureDHT.getRawDirectData2().values()) 
+    	FutureSend futureSend = peer.send( Number160.createHash( "key" ) ).setObject( "hello" ).start();
+    	futureSend.awaitUninterruptibly();
+        for(Object object:futureSend.getRawDirectData2().values()) 
         {
             System.err.println("got:"+ object);    
         }

@@ -17,7 +17,7 @@ package net.tomp2p.examples;
 
 import java.util.Random;
 
-import net.tomp2p.connection2.PeerConnection;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -65,8 +65,8 @@ public final class ExamplePersistentConnection {
             final int port1 = 4001;
             final int port2 = 4002;
             final int timeout = 20;
-            peer1 = new PeerMaker(new Number160(RND)).setPorts(port1).makeAndListen();
-            peer2 = new PeerMaker(new Number160(RND)).setPorts(port2).makeAndListen();
+            peer1 = new PeerMaker(new Number160(RND)).ports(port1).makeAndListen();
+            peer2 = new PeerMaker(new Number160(RND)).ports(port2).makeAndListen();
             //
             peer2.setObjectDataReply(new ObjectDataReply() {
                 @Override

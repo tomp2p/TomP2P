@@ -18,7 +18,7 @@ package net.tomp2p.examples;
 import java.io.IOException;
 
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
@@ -34,10 +34,10 @@ public class ExampleDNS
     public ExampleDNS( int nodeId )
         throws Exception
     {
-        peer = new PeerMaker( Number160.createHash( nodeId ) ).setPorts( 4000 + nodeId ).makeAndListen();
+        peer = new PeerMaker( Number160.createHash( nodeId ) ).ports( 4000 + nodeId ).makeAndListen();
         FutureBootstrap fb = this.peer.bootstrap().setBroadcast( true ).setPorts( 4001 ).start();
         fb.awaitUninterruptibly();
-        peer.discover().setPeerAddress( fb.getBootstrapTo().iterator().next() ).start().awaitUninterruptibly();
+        peer.discover().peerAddress( fb.getBootstrapTo().iterator().next() ).start().awaitUninterruptibly();
 
     }
 
@@ -58,11 +58,11 @@ public class ExampleDNS
     private String get( String name )
         throws ClassNotFoundException, IOException
     {
-        FutureDHT futureDHT = peer.get( Number160.createHash( name ) ).start();
-        futureDHT.awaitUninterruptibly();
-        if ( futureDHT.isSuccess() )
+        FutureGet futureGet = peer.get( Number160.createHash( name ) ).start();
+        futureGet.awaitUninterruptibly();
+        if ( futureGet.isSuccess() )
         {
-            return futureDHT.getDataMap().values().iterator().next().getObject().toString();
+            return futureGet.getDataMap().values().iterator().next().object().toString();
         }
         return "not found";
     }

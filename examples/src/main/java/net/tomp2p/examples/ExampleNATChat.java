@@ -6,16 +6,16 @@ import java.net.InetAddress;
 import java.util.Iterator;
 import java.util.Random;
 
-import net.tomp2p.connection2.Bindings;
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageDisk;
+
 
 public class ExampleNATChat
 {
@@ -35,27 +35,26 @@ public class ExampleNATChat
             b.addAddress(InetAddress.getByName(addr));
             //b.addAddress(InetAddress.getByAddress(addr));
             peer = new PeerMaker(
-                    new Number160(r)).setBindings(b).setPorts(serverPort).makeAndListen();
-            peer.getPeerBean().setStorage(new StorageDisk("storage"));
+                    new Number160(r)).bindings(b).ports(serverPort).makeAndListen();
             System.out.println("peer started.");
             for (;;) 
             {
                 Thread.sleep(5000);
-                FutureDHT fd = peer.get(new Number160(keyStore)).setAll().start();
-                fd.awaitUninterruptibly();
-                int size = fd.getDataMap().size();
+                FutureGet fg = peer.get(new Number160(keyStore)).setAll().start();
+                fg.awaitUninterruptibly();
+                int size = fg.getDataMap().size();
                 System.out.println("size " + size);
-                Iterator<Data> iterator = fd.getDataMap().values().iterator();
+                Iterator<Data> iterator = fg.getDataMap().values().iterator();
                 while( iterator.hasNext() )
                 {
                     Data d = iterator.next();
-                     System.out.println("got: " + d.getObject().toString());
+                     System.out.println("got: " + d.object().toString());
                 }
             }
         }
         finally 
         {
-            //peer.halt();
+            peer.shutdown();
         }
     }
     
@@ -81,11 +80,10 @@ public class ExampleNATChat
     public static void startClientNAT(String ip) throws Exception 
     {
         Random r = new Random(43L);
-        Peer peer = new PeerMaker(new Number160(r)).setPorts(clientPort).makeAndListen();
-        peer.getConfiguration().setBehindFirewall(true);
+        Peer peer = new PeerMaker(new Number160(r)).ports(clientPort).setBehindFirewall().makeAndListen();
         PeerAddress bootStrapServer = new PeerAddress(Number160.ZERO,
                 InetAddress.getByName(ip), serverPort, serverPort);
-        FutureDiscover fd = peer.discover().setPeerAddress(bootStrapServer).start();
+        FutureDiscover fd = peer.discover().peerAddress(bootStrapServer).start();
         System.out.println("About to wait...");
         fd.awaitUninterruptibly();
         if (fd.isSuccess()) 
@@ -114,23 +112,23 @@ public class ExampleNATChat
         {
             if (inLine.equals("show"))
             {
-                FutureDHT fdht = peer.get(new Number160(keyStore)).setAll().start();
-                fdht.awaitUninterruptibly();
-                Iterator<Data> iterator = fdht.getDataMap().values().iterator();
+                FutureGet fget = peer.get(new Number160(keyStore)).setAll().start();
+                fget.awaitUninterruptibly();
+                Iterator<Data> iterator = fget.getDataMap().values().iterator();
                 StringBuffer allString = new StringBuffer();
-                FutureDHT fg;
+                FutureGet fg;
                 while( iterator.hasNext() )
                 {
                     Data d = iterator.next();
-                    fg = peer.get(new Number160(((Integer)d.getObject()).intValue())).start();
+                    fg = peer.get(new Number160(((Integer)d.object()).intValue())).start();
                     fg.awaitUninterruptibly();
                     if (fg.getData() != null)
                     {
-                        allString.append(fg.getData().getObject().toString()).append("\n");
+                        allString.append(fg.getData().object().toString()).append("\n");
                     }
                     else
                     {
-                        System.err.println("Could not find key for val: " + d.getObject());
+                        System.err.println("Could not find key for val: " + d.object());
                     }
                 }
                 System.out.println("got: " + allString.toString());

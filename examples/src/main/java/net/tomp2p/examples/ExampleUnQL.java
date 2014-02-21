@@ -6,16 +6,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.tomp2p.examples.Query.QueryType;
+import net.tomp2p.examples.Query.ValueType;
+import net.tomp2p.futures.FutureGet;
+import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
+import net.tomp2p.storage.Data;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-
-import net.tomp2p.examples.Query.QueryType;
-import net.tomp2p.examples.Query.ValueType;
-import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.storage.Data;
 
 public class ExampleUnQL {
     final private static String QUERY_1 = "INSERT INTO abc VALUE 1234;";
@@ -72,14 +73,14 @@ public class ExampleUnQL {
                 for (Map.Entry<String, String> entry : query.getValueMap().entrySet()) {
                     dataMap.put(Number160.createHash(entry.getKey()), new Data(entry.getValue()));
                 }
-                peer.put(locationKey).setDataMap(dataMap).start().awaitUninterruptibly();
+                peer.put(locationKey).setDataMapContent(dataMap).start().awaitUninterruptibly();
             }
         } else if (query.getQueryType() == QueryType.SELECT) {
-            FutureDHT futureDHT = peer.get(locationKey).setAll().start();
+            FutureGet futureDHT = peer.get(locationKey).setAll().start();
             futureDHT.awaitUninterruptibly();
-            for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
+            for (Map.Entry<Number640, Data> entry : futureDHT.getDataMap().entrySet()) {
                 System.out.print("key: " + entry.getKey());
-                System.out.println(", value: " + entry.getValue().getObject());
+                System.out.println(", value: " + entry.getValue().object());
             }
         }
     }

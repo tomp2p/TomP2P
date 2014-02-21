@@ -19,9 +19,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 /**
@@ -44,13 +46,13 @@ public class ExampleHashMap
             ExampleUtils.bootstrap( peers );
             myPeer.put( "This is my location key", "This is my domain", "This is my content key",
                         "And here comes the data" ).awaitUninterruptibly();
-            FutureDHT futureDHT = myPeer.get( "This is my location key", "This is my domain", "This is my content key" );
-            futureDHT.awaitUninterruptibly();
-            System.err.println( futureDHT.getFailedReason() );
-            Map<Number160, Data> map = futureDHT.getDataMap();
+            FutureGet futureGet = myPeer.get( "This is my location key", "This is my domain", "This is my content key" );
+            futureGet.awaitUninterruptibly();
+            System.err.println( futureGet.getFailedReason() );
+            Map<Number640, Data> map = futureGet.getDataMap();
             for ( Data data : map.values() )
             {
-                MyData myData = (MyData) data.getObject();
+                MyData myData = (MyData) data.object();
                 System.out.println( "key: " + myData.getKey() + ", domain: " + myData.getDomain() + ", content: "
                     + myData.getContent() + ", data: " + myData.getData() );
             }
@@ -70,7 +72,7 @@ public class ExampleHashMap
             this.peer = peer;
         }
 
-        private FutureDHT get( String key, String domain, String content )
+        private FutureGet get( String key, String domain, String content )
         {
             Number160 locationKey = Number160.createHash( key );
             Number160 domainKey = Number160.createHash( domain );
@@ -78,7 +80,7 @@ public class ExampleHashMap
             return peer.get( locationKey ).setDomainKey( domainKey ).setContentKey( contentKey ).start();
         }
 
-        private FutureDHT put( String key, String domain, String content, String data )
+        private FuturePut put( String key, String domain, String content, String data )
             throws IOException
         {
             Number160 locationKey = Number160.createHash( key );

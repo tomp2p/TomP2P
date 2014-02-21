@@ -1,8 +1,9 @@
 package net.tomp2p.examples;
 
 import java.io.IOException;
-import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FutureBootstrap; 
+
+import net.tomp2p.futures.FutureBootstrap;
+import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
@@ -27,10 +28,10 @@ public class ExampleSimple {
         }
     }
     private String get(String name) throws ClassNotFoundException, IOException {
-        FutureDHT futureDHT = peer.get(Number160.createHash(name)).start();
-        futureDHT.awaitUninterruptibly();
-        if (futureDHT.isSuccess()) {
-            return futureDHT.getData().getObject().toString();
+        FutureGet futureGet = peer.get(Number160.createHash(name)).start();
+        futureGet.awaitUninterruptibly();
+        if (futureGet.isSuccess()) {
+            return futureGet.getData().object().toString();
         }
         return "not found";
     }

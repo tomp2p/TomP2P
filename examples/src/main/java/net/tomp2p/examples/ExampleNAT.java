@@ -18,8 +18,8 @@ package net.tomp2p.examples;
 import java.net.InetAddress;
 import java.util.Random;
 
-import net.tomp2p.connection2.Bindings;
-import net.tomp2p.connection2.ChannelCreator;
+import net.tomp2p.connection.Bindings;
+import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureResponse;
@@ -38,13 +38,12 @@ public class ExampleNAT
         {
             Random r = new Random( 42L );
             // peer.getP2PConfiguration().setBehindFirewall(true);
-            Bindings b = new Bindings();
-            b.addInterface( "eth0" );
-            peer = new PeerMaker( new Number160( r ) ).setBindings( b ).setPorts( 4000 ).makeAndListen();
+            Bindings b = new Bindings().addInterface( "eth0" );
+            peer = new PeerMaker( new Number160( r ) ).bindings( b ).ports( 4000 ).makeAndListen();
             System.out.println( "peer started." );
             for ( ;; )
             {
-                for ( PeerAddress pa : peer.getPeerBean().getPeerMap().getAll() )
+                for ( PeerAddress pa : peer.getPeerBean().peerMap().getAll() )
                 {
                     FutureChannelCreator fcc = peer.getConnectionBean().getConnectionReservation().reserve( 1 );
                     fcc.awaitUninterruptibly();
@@ -90,10 +89,9 @@ public class ExampleNAT
         throws Exception
     {
         Random r = new Random( 43L );
-        Peer peer = new PeerMaker( new Number160( r ) ).setPorts( 4000 ).makeAndListen();
-        peer.getConfiguration().setBehindFirewall( true );
+        Peer peer = new PeerMaker( new Number160( r ) ).ports( 4000 ).setBehindFirewall().makeAndListen();
         PeerAddress pa = new PeerAddress( Number160.ZERO, InetAddress.getByName( ip ), 4000, 4000 );
-        FutureDiscover fd = peer.discover().setPeerAddress( pa ).start();
+        FutureDiscover fd = peer.discover().peerAddress( pa ).start();
         fd.awaitUninterruptibly();
         if ( fd.isSuccess() )
         {

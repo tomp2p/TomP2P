@@ -43,6 +43,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 
     // each distance bit has its own bag this is the size of the verified peers (the ones that we know are reachable)
     private final int bagSizeVerified;
+    private final int bagSizeOverflow;
 
     // the id of this node
     private final Number160 self;
@@ -82,10 +83,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             throw new IllegalArgumentException("Zero or null are not a valid IDs");
         }
         this.bagSizeVerified = peerMapConfiguration.bagSizeVerified();
+        this.bagSizeOverflow = peerMapConfiguration.bagSizeOverflow();
         this.offlineCount = peerMapConfiguration.offlineCount();
         this.peerFilter = peerMapConfiguration.peerFilter();
         this.peerMapVerified = initFixedMap(bagSizeVerified, false);
-        this.peerMapOverflow = initFixedMap(peerMapConfiguration.bagSizeOverflow(), true);
+        this.peerMapOverflow = initFixedMap(bagSizeOverflow, true);
         // bagSizeVerified * Number160.BITS should be enough
         this.offlineMap = new ConcurrentCacheMap<Number160, PeerAddress>(
                 peerMapConfiguration.offlineTimeout(), bagSizeVerified * Number160.BITS);
@@ -505,6 +507,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         return all;
     }
+    
+    public List<Map<Number160, PeerStatatistic>> peerMapVerified() {
+    	return peerMapVerified;
+    }
+    
+    public List<Map<Number160, PeerStatatistic>> peerMapOverflow() {
+    	return peerMapOverflow;
+    }
 
     /**
      * Return all addresses from the overflow / non-verified list. The collection is a copy and it is partially sorted.
@@ -733,5 +743,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             }
         }
         return set.size() >= atLeast;
+    }
+
+	public int bagSizeVerified() {
+	    return bagSizeVerified;
+    }
+	
+	public int bagSizeOverflow() {
+	    return bagSizeOverflow;
     }
 }

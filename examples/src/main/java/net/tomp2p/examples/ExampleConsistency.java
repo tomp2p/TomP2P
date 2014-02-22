@@ -28,6 +28,7 @@ import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.p2p.RequestP2PConfiguration;
+import net.tomp2p.p2p.Statistics;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -112,14 +113,15 @@ public final class ExampleConsistency {
         System.out.println(peers[peerOffline1].getPeerAddress());
         System.out.println(peers[peerOffline2].getPeerAddress());
         System.out.println(peers[peerOffline3].getPeerAddress());
-        peers[peerOffline1].shutdown();
-        peers[peerOffline2].shutdown();
-        peers[peerOffline3].shutdown();
+        peers[peerOffline1].shutdown().awaitListenersUninterruptibly();
+        peers[peerOffline2].shutdown().awaitListenersUninterruptibly();
+        peers[peerOffline3].shutdown().awaitListenersUninterruptibly();
         // now lets store something else with the same key
         final int peerGet = 33;
         FuturePut futurePut = peers[peerStore1].put(key1).setRequestP2PConfiguration(REQUEST_3)
                 .setData(new Data("Test 2")).start();
         futurePut.awaitUninterruptibly();
+        System.out.println("stored [Test 2] on " + futurePut.getRawResult().keySet());
 
         FutureGet futureGet = peers[peerGet].get(key1).setAll().start();
         futureGet.awaitUninterruptibly();
@@ -144,7 +146,7 @@ public final class ExampleConsistency {
         FutureGet futureGet2 = peers[0].get(key1).setRequestP2PConfiguration(REQUEST_3).setAll().start();
         futureGet2.awaitUninterruptibly();
         System.out.println("peer[0] got [" + futureGet2.getData().object() + "] should be [Test 2]");
-        // we got Test 2!
+        // we got Test 1!
         FutureGet futureGet3 = peers[peerGet].get(key1).setRequestP2PConfiguration(REQUEST_3).setAll().start();
         futureGet3.awaitUninterruptibly();
         System.out.println("peer[" + peerGet + "] got [" + futureGet3.getData().object() + "] should be [Test 2]");
@@ -157,30 +159,36 @@ public final class ExampleConsistency {
      *            The key to attack
      * @param peers
      *            All the peers
+     * @throws InterruptedException 
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
     private static void exampleAttack(final Number160 key1, final Peer[] peers) throws IOException,
-            ClassNotFoundException {
+            ClassNotFoundException, InterruptedException {
         // lets attack!
         System.out.println("Lets ATTACK!");
         Peer mpeer1 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
                 .masterPeer(peers[0]).makeAndListen();
-        Peer mpeer2 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06894"))
+        Peer mpeer2 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06892"))
                 .masterPeer(peers[0]).makeAndListen();
         Peer mpeer3 = new PeerMaker(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
                 .masterPeer(peers[0]).makeAndListen();
         mpeer1.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
         mpeer2.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
-        // mpeer3.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
+        mpeer3.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start().awaitUninterruptibly();
         // load old data
         Number640 key = new Number640(key1, Number160.ZERO, Number160.ZERO, Number160.ZERO);
         mpeer1.getPeerBean().storage()
                 .put(key, new Data("attack, attack, attack!"), null, false, false);
         mpeer2.getPeerBean().storage()
                 .put(key, new Data("attack, attack, attack!"), null, false, false);
-        mpeer3.getPeerBean().storage()
-                .put(key, new Data("attack, attack, attack!"), null, false, false);
+        //uncomment below if you want to attack with 3 close peers
+        //mpeer3.getPeerBean().storage()
+        //        .put(key, new Data("attack, attack, attack!"), null, false, false);
+        
+        //wait for mainenance pings
+        Thread.sleep(3000);
+        
         // we got attack!
         FutureGet futureGet = peers[0].get(key1).setAll().setRequestP2PConfiguration(REQUEST_3).start();
         futureGet.awaitUninterruptibly();
@@ -195,9 +203,13 @@ public final class ExampleConsistency {
         System.out.println("peer[0] got " + futureGet1.getData().object());
 
         // countermeasure - statistics, pick not closest, but random peer that has the data - freshness vs. load
+        // also, check distances! 
+        Statistics statistics = new Statistics(peers[0].getPeerBean().peerMap().peerMapVerified(), peers[0].getPeerBean().peerMap().bagSizeVerified());
+        System.out.println("average distance: "+statistics.getAvgGap());
         for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet1.getRawData().entrySet()) {
             System.out.print("got from (6)" + entry.getKey());
-            System.out.println(entry.getValue());
+            System.out.print(" distance: "+key1.xor(entry.getKey().getPeerId()).doubleValue());
+            System.out.println(" "+entry.getValue());
         }
     }
 }

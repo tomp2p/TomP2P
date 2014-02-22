@@ -628,14 +628,14 @@ public class TestDHT {
 			fget.awaitUninterruptibly();
 			System.err.println(fget.getFailedReason());
 			Assert.assertEquals(true, fget.isSuccess());
-			Assert.assertEquals(3, fget.getDigest().getKeyDigest().size());
+			Assert.assertEquals(3, fget.getDigest().keyDigest().size());
 			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
 			Set<Number160> test2 = new HashSet<Number160>();
 			test2.add(test);
 			fget = peers[67].digest(nr).contentKeys(test2).start();
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
-			Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
+			Assert.assertEquals(1, fget.getDigest().keyDigest().size());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -676,7 +676,7 @@ public class TestDHT {
 		        .setContentKey(Number160.createHash(contentKey)).setVersionKey(Number160.ONE).start();
 		futureDigest.awaitUninterruptibly();
 
-		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		Assert.assertTrue(futureDigest.getDigest().keyDigest().isEmpty());
 
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
@@ -716,14 +716,14 @@ public class TestDHT {
 			fget.awaitUninterruptibly();
 			System.err.println(fget.getFailedReason());
 			Assert.assertEquals(true, fget.isSuccess());
-			Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
-			Assert.assertEquals(key1, fget.getDigest().getKeyDigest().keySet().iterator().next().getContentKey());
+			Assert.assertEquals(1, fget.getDigest().keyDigest().size());
+			Assert.assertEquals(key1, fget.getDigest().keyDigest().keySet().iterator().next().getContentKey());
 			fget = peers[67].digest(nr).from(from).to(to).returnNr(1).descending().start();
 			fget.awaitUninterruptibly();
 			System.err.println(fget.getFailedReason());
 			Assert.assertEquals(true, fget.isSuccess());
-			Assert.assertEquals(1, fget.getDigest().getKeyDigest().size());
-			Assert.assertEquals(key3, fget.getDigest().getKeyDigest().keySet().iterator().next().getContentKey());
+			Assert.assertEquals(1, fget.getDigest().keyDigest().size());
+			Assert.assertEquals(key3, fget.getDigest().keyDigest().keySet().iterator().next().getContentKey());
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -767,7 +767,7 @@ public class TestDHT {
 			FutureDigest fget = peers[77].digest(nr).setAll().start();
 			fget.awaitUninterruptibly();
 			DigestResult dr = fget.getDigest();
-			NavigableMap<Number640, Number160> map = dr.getKeyDigest();
+			NavigableMap<Number640, Number160> map = dr.keyDigest();
 			Entry<Number640, Number160> e1 = map.pollFirstEntry();
 			Assert.assertEquals(Number160.ONE, e1.getValue());
 			Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey1), e1.getKey());
@@ -1536,12 +1536,12 @@ public class TestDHT {
 		// check with a normal digest
 		FutureDigest futureDigest = p1.digest(lKey).setContentKey(cKey).setDomainKey(dKey).start();
 		futureDigest.awaitUninterruptibly();
-		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		Assert.assertTrue(futureDigest.getDigest().keyDigest().isEmpty());
 		// check with a from/to digest
 		futureDigest = p1.digest(lKey).from(new Number640(lKey, dKey, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
 		futureDigest.awaitUninterruptibly();
-		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		Assert.assertTrue(futureDigest.getDigest().keyDigest().isEmpty());
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
 	}
@@ -1566,7 +1566,7 @@ public class TestDHT {
 		        .to(new Number640(lKey, dKey, cKey, Number160.MAX_VALUE)).start();
 		futureDigest.awaitUninterruptibly();
 		// should be empty
-		Assert.assertTrue(futureDigest.getDigest().getKeyDigest().isEmpty());
+		Assert.assertTrue(futureDigest.getDigest().keyDigest().isEmpty());
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
 	}

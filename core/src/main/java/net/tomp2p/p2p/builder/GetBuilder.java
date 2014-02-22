@@ -57,6 +57,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
     private boolean returnBloomFilter = false;
 
     private boolean ascending = true;
+    
+    private boolean bloomFilterAnd = true;
 
     private int returnNr = -1;
 
@@ -150,12 +152,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return returnBloomFilter;
     }
 
-    public GetBuilder setReturnBloomFilter(boolean returnBloomFilter) {
+    public GetBuilder returnBloomFilter(boolean returnBloomFilter) {
         this.returnBloomFilter = returnBloomFilter;
         return this;
     }
 
-    public GetBuilder setReturnBloomFilter() {
+    public GetBuilder returnBloomFilter() {
         this.returnBloomFilter = true;
         return this;
     }
@@ -180,6 +182,29 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     public GetBuilder descending() {
         this.ascending = false;
+        return this;
+    }
+    
+    public boolean isBloomFilterAnd() {
+        return bloomFilterAnd;
+    }
+
+    public GetBuilder bloomFilterAnd(boolean bloomFilterAnd) {
+        this.bloomFilterAnd = bloomFilterAnd;
+        return this;
+    }
+
+    public GetBuilder bloomFilterAnd() {
+        this.bloomFilterAnd = true;
+        return this;
+    }
+    
+    public boolean isBloomFilterIntersect() {
+        return !bloomFilterAnd;
+    }
+    
+    public GetBuilder bloomFilterIntersect() {
+        this.bloomFilterAnd = false;
         return this;
     }
 

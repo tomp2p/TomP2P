@@ -73,9 +73,8 @@ public final class ExampleBloomFilter {
      */
     private static void bloomFilterBasics() {
         final int nrElements = 20;
-        final int bfLengthBits = 128;
         System.out.println("bloomfilter basics:");
-        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(bfLengthBits, nrElements);
+        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(0.05, nrElements);
         System.out.println("false-prob. rate: " + sbf.expectedFalsePositiveProbability());
         System.out.println("init: " + sbf);
         for (int i = 0; i < nrElements; i++) {
@@ -95,7 +94,6 @@ public final class ExampleBloomFilter {
         final int nrPeers = 1000;
         final int range1 = 800;
         final int range2 = 1800;
-        final int overlap = 200;
         final int peer10 = 10;
         final int peer20 = 20;
         final int peer30 = 30;
@@ -123,18 +121,25 @@ public final class ExampleBloomFilter {
                 .start();
         futurePut.awaitUninterruptibly();
         // digest the first entry
-        FutureDigest futureDigest = peers[peer20].digest(nr1).setAll().setReturnBloomFilter()
+        FutureDigest futureDigest = peers[peer20].digest(nr1).setAll().returnBloomFilter()
                 .setDomainKey(Number160.createHash("my_domain")).start();
         futureDigest.awaitUninterruptibly();
         // we have the bloom filter for the content keys:
-        SimpleBloomFilter<Number160> keyBF = futureDigest.getDigest().getKeyBloomFilter();
-        System.out.println("We got bloomfilter for the first key: " + keyBF);
+        SimpleBloomFilter<Number160> contentBF = futureDigest.getDigest().contentBloomFilter();
+                
+        System.out.println("We got bloomfilter for the first key: " + contentBF);
         //TODO: check keyBF.contains(new Number160(123));
         // query for nr2, but return only those that are in this bloom filter
-        FutureGet futureGet = peers[peer10].get(nr2).setAll().setKeyBloomFilter(keyBF)
+        FutureGet futureGet1 = peers[peer10].get(nr2).setAll().setKeyBloomFilter(contentBF)
                 .setDomainKey(Number160.createHash("my_domain")).start();
-        futureGet.awaitUninterruptibly();
+        futureGet1.awaitUninterruptibly();
         System.out.println("For the 2nd key we requested with this Bloom filer and we got "
-                + futureGet.getDataMap().size() + " items.");
+                + futureGet1.getDataMap().size() + " items.");
+        
+        FutureGet futureGet2 = peers[peer10].get(nr2).setAll().bloomFilterIntersect().setKeyBloomFilter(contentBF)
+                .setDomainKey(Number160.createHash("my_domain")).start();
+        futureGet2.awaitUninterruptibly();
+        System.out.println("For the 2nd key we requested with this Bloom filer and we got "
+                + futureGet2.getDataMap().size() + " items.");
     }
 }

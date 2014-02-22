@@ -126,4 +126,39 @@ public class TestBloomFilter {
 
         Assert.assertEquals(true, cbs.contains("abc"));
     }
+    
+    @Test 
+    public void intersect() {
+    	for(int i=1;i<100;i++) {
+    		intersect((0.001 * i));
+    	}
+    }
+    
+    @Test 
+    public void intersect1() {
+    	intersect(0.01);
+    }
+    
+    private void intersect(double falsePositive) {
+    	final int nrPeers = 1000;
+        final int range1 = 800;
+        final int range2 = 1800;
+        
+        SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(falsePositive, nrPeers);
+        
+        for(int i=0;i<nrPeers;i++) {
+        	sbf.add(new Number160(i));
+        }
+        
+        int counter = 0;
+        for(int i=range1;i<range2;i++) {
+        	Number160 test = new Number160(i);
+        	if(sbf.contains(test)) {
+        		counter ++;
+        	}
+        	
+        }
+        //System.err.println("counter "+counter);
+        Assert.assertEquals(true, counter>=nrPeers-range1);
+    }
 }

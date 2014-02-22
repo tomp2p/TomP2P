@@ -173,7 +173,7 @@ public class NeighborRPC extends DispatchHandler {
                 } else if ((keyBloomFilter != null || contentBloomFilter != null)  && locationKey!=null && domainKey!=null) {
                 	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
-                            contentBloomFilter, -1, true);
+                            contentBloomFilter, -1, true, true);
                 } else if (keyCollection!=null && keyCollection.keys().size() == 2) {
                 	Iterator<Number640> iterator = keyCollection.keys().iterator();
                 	Number640 from = iterator.next();

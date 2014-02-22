@@ -40,305 +40,319 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class StorageLayer {
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(StorageLayer.class);
-	
-    public enum ProtectionEnable {
-        ALL, NONE
-    };
 
-    public enum ProtectionMode {
-        NO_MASTER, MASTER_PUBLIC_KEY
-    };
+	public enum ProtectionEnable {
+		ALL, NONE
+	};
 
-    // The number of PutStatus should never exceed 255.
-    public enum PutStatus {
-        OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT, NOT_FOUND
-    };
+	public enum ProtectionMode {
+		NO_MASTER, MASTER_PUBLIC_KEY
+	};
 
-    // Hash of public key is always preferred
-    private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
+	// The number of PutStatus should never exceed 255.
+	public enum PutStatus {
+		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT, NOT_FOUND
+	};
 
-    // Domains can generallay be protected
-    private ProtectionEnable protectionDomainEnable = ProtectionEnable.ALL;
+	// Hash of public key is always preferred
+	private ProtectionMode protectionDomainMode = ProtectionMode.MASTER_PUBLIC_KEY;
 
-    // Hash of public key is always preferred
-    private ProtectionMode protectionEntryMode = ProtectionMode.MASTER_PUBLIC_KEY;
+	// Domains can generallay be protected
+	private ProtectionEnable protectionDomainEnable = ProtectionEnable.ALL;
 
-    // Entries can generallay be protected
-    private ProtectionEnable protectionEntryEnable = ProtectionEnable.ALL;
+	// Hash of public key is always preferred
+	private ProtectionMode protectionEntryMode = ProtectionMode.MASTER_PUBLIC_KEY;
 
-    // stores the domains that cannot be reserved and items can be added by
-    // anyone
-    final private Collection<Number160> removedDomains = new HashSet<Number160>();
+	// Entries can generallay be protected
+	private ProtectionEnable protectionEntryEnable = ProtectionEnable.ALL;
 
-    final private KeyLock<Storage> dataLock = new KeyLock<Storage>();
+	// stores the domains that cannot be reserved and items can be added by
+	// anyone
+	final private Collection<Number160> removedDomains = new HashSet<Number160>();
 
-    final private KeyLock<Number160> dataLock160 = new KeyLock<Number160>();
+	final private KeyLock<Storage> dataLock = new KeyLock<Storage>();
 
-    final private KeyLock<Number320> dataLock320 = new KeyLock<Number320>();
+	final private KeyLock<Number160> dataLock160 = new KeyLock<Number160>();
 
-    final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
+	final private KeyLock<Number320> dataLock320 = new KeyLock<Number320>();
 
-    final private KeyLock<Number640> dataLock640 = new KeyLock<Number640>();
+	final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
 
-    final private Storage backend;
+	final private KeyLock<Number640> dataLock640 = new KeyLock<Number640>();
 
-    public StorageLayer(Storage backend) {
-        this.backend = backend;
-    }
+	final private Storage backend;
 
-    public void setProtection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
-            ProtectionEnable protectionEntryEnable, ProtectionMode protectionEntryMode) {
-        setProtectionDomainEnable(protectionDomainEnable);
-        setProtectionDomainMode(protectionDomainMode);
-        setProtectionEntryEnable(protectionEntryEnable);
-        setProtectionEntryMode(protectionEntryMode);
-    }
+	public StorageLayer(Storage backend) {
+		this.backend = backend;
+	}
 
-    public void setProtectionDomainMode(ProtectionMode protectionDomainMode) {
-        this.protectionDomainMode = protectionDomainMode;
-    }
+	public void setProtection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
+	        ProtectionEnable protectionEntryEnable, ProtectionMode protectionEntryMode) {
+		setProtectionDomainEnable(protectionDomainEnable);
+		setProtectionDomainMode(protectionDomainMode);
+		setProtectionEntryEnable(protectionEntryEnable);
+		setProtectionEntryMode(protectionEntryMode);
+	}
 
-    public ProtectionMode getProtectionDomainMode() {
-        return protectionDomainMode;
-    }
+	public void setProtectionDomainMode(ProtectionMode protectionDomainMode) {
+		this.protectionDomainMode = protectionDomainMode;
+	}
 
-    public void setProtectionDomainEnable(ProtectionEnable protectionDomainEnable) {
-        this.protectionDomainEnable = protectionDomainEnable;
-    }
+	public ProtectionMode getProtectionDomainMode() {
+		return protectionDomainMode;
+	}
 
-    public ProtectionEnable getProtectionDomainEnable() {
-        return protectionDomainEnable;
-    }
+	public void setProtectionDomainEnable(ProtectionEnable protectionDomainEnable) {
+		this.protectionDomainEnable = protectionDomainEnable;
+	}
 
-    public void setProtectionEntryMode(ProtectionMode protectionEntryMode) {
-        this.protectionEntryMode = protectionEntryMode;
-    }
+	public ProtectionEnable getProtectionDomainEnable() {
+		return protectionDomainEnable;
+	}
 
-    public ProtectionMode getProtectionEntryMode() {
-        return protectionEntryMode;
-    }
+	public void setProtectionEntryMode(ProtectionMode protectionEntryMode) {
+		this.protectionEntryMode = protectionEntryMode;
+	}
 
-    public void setProtectionEntryEnable(ProtectionEnable protectionEntryEnable) {
-        this.protectionEntryEnable = protectionEntryEnable;
-    }
+	public ProtectionMode getProtectionEntryMode() {
+		return protectionEntryMode;
+	}
 
-    public ProtectionEnable getProtectionEntryEnable() {
-        return protectionEntryEnable;
-    }
+	public void setProtectionEntryEnable(ProtectionEnable protectionEntryEnable) {
+		this.protectionEntryEnable = protectionEntryEnable;
+	}
 
-    public void removeDomainProtection(Number160 removeDomain) {
-        removedDomains.add(removeDomain);
-    }
+	public ProtectionEnable getProtectionEntryEnable() {
+		return protectionEntryEnable;
+	}
 
-    boolean isDomainRemoved(Number160 domain) {
-        return removedDomains.contains(domain);
-    }
+	public void removeDomainProtection(Number160 removeDomain) {
+		removedDomains.add(removeDomain);
+	}
 
-    public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
-            boolean domainProtection) {
-        boolean retVal = false;
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
-                return PutStatus.FAILED_SECURITY;
-            }
-            if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(), newData.isProtectedEntry())) {
-                return PutStatus.FAILED_SECURITY;
-            }
-            
-            boolean contains = backend.contains(key);
-            if (putIfAbsent && contains) {
-                return PutStatus.FAILED_NOT_ABSENT;
-            }
-            retVal = backend.put(key, newData);
-            if (retVal) {
-                long expiration = newData.expirationMillis();
-                // handle timeout
-                backend.addTimeout(key, expiration);
-            }
-        } finally {
-            dataLock640.unlock(lock);
-        }
-        return retVal ? PutStatus.OK : PutStatus.FAILED;
-    }
+	boolean isDomainRemoved(Number160 domain) {
+		return removedDomains.contains(domain);
+	}
 
-    public Pair<Data,Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
-                return new Pair<Data,Enum<?>>(null, PutStatus.FAILED_SECURITY);
-            }
-            if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
-                return new Pair<Data,Enum<?>>(null, PutStatus.FAILED_SECURITY);
-            }
-            if (!backend.contains(key)) {
-                return new Pair<Data,Enum<?>>(null, PutStatus.NOT_FOUND);
-            }
-            backend.removeTimeout(key);
-            backend.removeResponsibility(key.getLocationKey());
-            return new Pair<Data,Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
-        } finally {
-            dataLock640.unlock(lock);
-        }
-    }
+	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+	        boolean domainProtection) {
+		boolean retVal = false;
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
+				return PutStatus.FAILED_SECURITY;
+			}
+			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+			        newData.isProtectedEntry())) {
+				return PutStatus.FAILED_SECURITY;
+			}
 
-    public Data get(Number640 key) {
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            return getInternal(key);
-        } finally {
-            dataLock640.unlock(lock);
-        }
-    }
-    
-    private Data getInternal(Number640 key) {
-        return backend.get(key);
-    }
+			boolean contains = backend.contains(key);
+			if (putIfAbsent && contains) {
+				return PutStatus.FAILED_NOT_ABSENT;
+			}
+			retVal = backend.put(key, newData);
+			if (retVal) {
+				long expiration = newData.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
+			}
+		} finally {
+			dataLock640.unlock(lock);
+		}
+		return retVal ? PutStatus.OK : PutStatus.FAILED;
+	}
 
-    public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
-        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
-        try {
-            return backend.subMap(from, to, limit, ascending);
-        } finally {
-            lock.unlock();
-        }
-    }
+	public Pair<Data, Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
+				return new Pair<Data, Enum<?>>(null, PutStatus.FAILED_SECURITY);
+			}
+			if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
+				return new Pair<Data, Enum<?>>(null, PutStatus.FAILED_SECURITY);
+			}
+			if (!backend.contains(key)) {
+				return new Pair<Data, Enum<?>>(null, PutStatus.NOT_FOUND);
+			}
+			backend.removeTimeout(key);
+			backend.removeResponsibility(key.getLocationKey());
+			return new Pair<Data, Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
+		} finally {
+			dataLock640.unlock(lock);
+		}
+	}
 
-    public NavigableMap<Number640, Data> get() {
-        KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
-        try {
-            return backend.map();
-        } finally {
-            lock.unlock();
-        }
-    }
+	public Data get(Number640 key) {
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			return getInternal(key);
+		} finally {
+			dataLock640.unlock(lock);
+		}
+	}
 
-    public boolean contains(Number640 key) {
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-            return backend.contains(key);
-        } finally {
-            dataLock640.unlock(lock);
-        }
-    }
+	private Data getInternal(Number640 key) {
+		return backend.get(key);
+	}
 
-    public Map<Number640, Data> get(Number640 from, Number640 to,
-            SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter,
-            int limit, boolean ascending) {
-        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
-        try {
-            NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
-            Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Number640, Data> entry = iterator.next();
-                if (keyBloomFilter != null && !keyBloomFilter.contains(entry.getKey().getContentKey())) {
-                    iterator.remove();
-                    continue;
-                }
-                if (contentBloomFilter != null && !contentBloomFilter.contains(entry.getValue().hash())) {
-                    iterator.remove();
-                }
-            }
-            return tmp;
-        } finally {
-            lock.unlock();
-        }
-    }
+	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			return backend.subMap(from, to, limit, ascending);
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    private KeyLock<?>.RefCounterLock findAndLock(Number640 from, Number640 to) {
-        if (!from.getLocationKey().equals(to.getLocationKey())) {
-            // everything is different, return a 640 lock
-            KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
-            return lock;
-        } else if (!from.getDomainKey().equals(to.getDomainKey())) {
-            // location key is the same, rest is different
-            KeyLock<Number160>.RefCounterLock lock = dataLock160.lock(from.getLocationKey());
-            return lock;
-        } else if (!from.getContentKey().equals(to.getContentKey())) {
-            // location and domain key are same, rest is different
-            KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(from.locationAndDomainKey());
-            return lock;
-        } else if (!from.getVersionKey().equals(to.getVersionKey())) {
-            // location, domain, and content key are the same, rest is different
-            KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationDomainAndContentKey());
-            return lock;
-        } else {
-            KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(from);
-            return lock;
-        }
-    }
+	public NavigableMap<Number640, Data> get() {
+		KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
+		try {
+			return backend.map();
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    public SortedMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
-        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
-        try {
-            Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
-           
-            for (Number640 key : tmp.keySet()) {
-                // fail fast, as soon as we want to remove 1 domain that we cannot, abort
-                if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
-                    return null;
-                }
-                if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
-                    return null;
-                }
-            }
-            SortedMap<Number640, Data> result = backend.remove(from, to, true);
-            for (Map.Entry<Number640, Data> entry : result.entrySet()) {
-                Data data = entry.getValue();
-                if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
-                    backend.removeTimeout(entry.getKey());
-                    backend.removeResponsibility((entry.getKey().getLocationKey()));
-                }
-            }
-            return result;
-        } finally {
-            lock.unlock();
-        }
-    }
-    
-    public SortedMap<Number640, Byte> removeReturnStatus(Number640 from, Number640 to, PublicKey publicKey) {
-        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
-        try {
-            Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
-            SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
-            for (Number640 key : tmp.keySet()) {
-            	Pair<Data,Enum<?>> pair = remove(key, publicKey, false);
-            	result.put(key, (byte) pair.element1().ordinal());
-            }
-            return result;
-        } finally {
-            lock.unlock();
-        }
-    }
+	public boolean contains(Number640 key) {
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			return backend.contains(key);
+		} finally {
+			dataLock640.unlock(lock);
+		}
+	}
 
-    public void checkTimeout() {
-        long time = Timings.currentTimeMillis();
-        Collection<Number640> toRemove = backend.subMapTimeout(time);
-        if (toRemove.size() > 0) {
-            for (Number640 key : toRemove) {
-            	KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-                try {
-                	backend.remove(key, false);
-                	backend.removeTimeout(key);
-                } finally {
-                    lock.unlock();
-                }
-                //remove responsibility if we don't have any data stored under locationkey
-                Number160 locationKey = key.getLocationKey();
-                KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
-                try {
-                	if(isEmpty(locationKey)) {
-                		backend.removeResponsibility(locationKey);
-                	}
-                } finally {
-                	lock1.unlock();
-                }
-            }
-        }
-    }
-    
+	public Map<Number640, Data> get(Number640 from, Number640 to, SimpleBloomFilter<Number160> contentBloomFilter,
+	        SimpleBloomFilter<Number160> versionBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+
+			while (iterator.hasNext()) {
+				Map.Entry<Number640, Data> entry = iterator.next();
+				if (isBloomFilterAnd) {
+					if (contentBloomFilter != null && !contentBloomFilter.contains(entry.getKey().getContentKey())) {
+						iterator.remove();
+						continue;
+					}
+					if (versionBloomFilter != null && !versionBloomFilter.contains(entry.getValue().hash())) {
+						iterator.remove();
+					}
+				} else {
+					if (contentBloomFilter != null && contentBloomFilter.contains(entry.getKey().getContentKey())) {
+						iterator.remove();
+						continue;
+					}
+					if (versionBloomFilter != null && versionBloomFilter.contains(entry.getValue().hash())) {
+						iterator.remove();
+					}
+				}
+			}
+
+			return tmp;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private KeyLock<?>.RefCounterLock findAndLock(Number640 from, Number640 to) {
+		if (!from.getLocationKey().equals(to.getLocationKey())) {
+			// everything is different, return a 640 lock
+			KeyLock<Storage>.RefCounterLock lock = dataLock.lock(backend);
+			return lock;
+		} else if (!from.getDomainKey().equals(to.getDomainKey())) {
+			// location key is the same, rest is different
+			KeyLock<Number160>.RefCounterLock lock = dataLock160.lock(from.getLocationKey());
+			return lock;
+		} else if (!from.getContentKey().equals(to.getContentKey())) {
+			// location and domain key are same, rest is different
+			KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(from.locationAndDomainKey());
+			return lock;
+		} else if (!from.getVersionKey().equals(to.getVersionKey())) {
+			// location, domain, and content key are the same, rest is different
+			KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationDomainAndContentKey());
+			return lock;
+		} else {
+			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(from);
+			return lock;
+		}
+	}
+
+	public SortedMap<Number640, Data> removeReturnData(Number640 from, Number640 to, PublicKey publicKey) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+
+			for (Number640 key : tmp.keySet()) {
+				// fail fast, as soon as we want to remove 1 domain that we
+				// cannot, abort
+				if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
+					return null;
+				}
+				if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
+					return null;
+				}
+			}
+			SortedMap<Number640, Data> result = backend.remove(from, to, true);
+			for (Map.Entry<Number640, Data> entry : result.entrySet()) {
+				Data data = entry.getValue();
+				if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
+					backend.removeTimeout(entry.getKey());
+					backend.removeResponsibility((entry.getKey().getLocationKey()));
+				}
+			}
+			return result;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	public SortedMap<Number640, Byte> removeReturnStatus(Number640 from, Number640 to, PublicKey publicKey) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			Map<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			SortedMap<Number640, Byte> result = new TreeMap<Number640, Byte>();
+			for (Number640 key : tmp.keySet()) {
+				Pair<Data, Enum<?>> pair = remove(key, publicKey, false);
+				result.put(key, (byte) pair.element1().ordinal());
+			}
+			return result;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	public void checkTimeout() {
+		long time = Timings.currentTimeMillis();
+		Collection<Number640> toRemove = backend.subMapTimeout(time);
+		if (toRemove.size() > 0) {
+			for (Number640 key : toRemove) {
+				KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+				try {
+					backend.remove(key, false);
+					backend.removeTimeout(key);
+				} finally {
+					lock.unlock();
+				}
+				// remove responsibility if we don't have any data stored under
+				// locationkey
+				Number160 locationKey = key.getLocationKey();
+				KeyLock<Number160>.RefCounterLock lock1 = dataLock160.lock(locationKey);
+				try {
+					if (isEmpty(locationKey)) {
+						backend.removeResponsibility(locationKey);
+					}
+				} finally {
+					lock1.unlock();
+				}
+			}
+		}
+	}
+
 	private boolean isEmpty(Number160 locationKey) {
 		Number640 from = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
 		Number640 to = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE);
@@ -346,87 +360,93 @@ public class StorageLayer {
 		return tmp.size() == 0;
 	}
 
-    public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
-        DigestInfo digestInfo = new DigestInfo();
-        KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
-        try {
-            Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
-            for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                Number160 basedOn = entry.getValue().basedOn();
-                digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
-            }
-            return digestInfo;
-        } finally {
-            lock.unlock();
-        }
-    }
+	public DigestInfo digest(Number640 from, Number640 to, int limit, boolean ascending) {
+		DigestInfo digestInfo = new DigestInfo();
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
+				Number160 basedOn = entry.getValue().basedOn();
+				digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+			}
+			return digestInfo;
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter,
-            SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending) {
-        DigestInfo digestInfo = new DigestInfo();
-        KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(locationAndDomainKey);
-        try {
-            Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
-            Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-            Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
-            for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-                if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
-                    if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-                        Number160 basedOn = entry.getValue().basedOn();
-                        digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
-                    }
-                }
-            }
-            return digestInfo;
-        } finally {
-            lock.unlock();
-        }
-    }
+	public DigestInfo digest(Number320 locationAndDomainKey, SimpleBloomFilter<Number160> keyBloomFilter,
+	        SimpleBloomFilter<Number160> contentBloomFilter, int limit, boolean ascending, boolean isBloomFilterAnd) {
+		DigestInfo digestInfo = new DigestInfo();
+		KeyLock<Number320>.RefCounterLock lock = dataLock320.lock(locationAndDomainKey);
+		try {
+			Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
+			Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
+			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
+				if (isBloomFilterAnd) {
+					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
+						if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
+							Number160 basedOn = entry.getValue().basedOn();
+							digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+						}
+					}
+				} else {
+					if (keyBloomFilter == null || !keyBloomFilter.contains(entry.getKey().getContentKey())) {
+						if (contentBloomFilter == null || !contentBloomFilter.contains(entry.getValue().hash())) {
+							Number160 basedOn = entry.getValue().basedOn();
+							digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+						}
+					}
+				}
+			}
+			return digestInfo;
+		} finally {
+			lock.unlock();
+		}
+	}
 
-    public DigestInfo digest(Collection<Number640> number640s) {
-        DigestInfo digestInfo = new DigestInfo();
-        for (Number640 number640 : number640s) {
-            KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(number640);
-            try {
-                if (backend.contains(number640)) {
-                    Data data = getInternal(number640);
-                    Number160 basedOn = data.basedOn();
-                    digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
-                }
-            } finally {
-                lock.unlock();
-            }
-        }
-        return digestInfo;
-    }
+	public DigestInfo digest(Collection<Number640> number640s) {
+		DigestInfo digestInfo = new DigestInfo();
+		for (Number640 number640 : number640s) {
+			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(number640);
+			try {
+				if (backend.contains(number640)) {
+					Data data = getInternal(number640);
+					Number160 basedOn = data.basedOn();
+					digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
+				}
+			} finally {
+				lock.unlock();
+			}
+		}
+		return digestInfo;
+	}
 
-   
+	private boolean securityDomainCheck(Number320 key, PublicKey publicKey, PublicKey newPublicKey,
+	        boolean domainProtection) {
 
-    
+		boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
+		// I dont want to claim the domain
+		if (!domainProtection) {
+			LOG.debug("no domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
+			// returns true if the domain is not protceted by others, otherwise
+			// false if the domain is protected
+			return !domainProtectedByOthers;
+		} else {
+			LOG.debug("domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
+			if (canClaimDomain(key, publicKey)) {
+				if (canProtectDomain(key.getDomainKey(), publicKey)) {
+					LOG.debug("set domain protection");
+					return backend.protectDomain(key, newPublicKey);
+				} else {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 
-    private boolean securityDomainCheck(Number320 key, PublicKey publicKey, PublicKey newPublicKey, boolean domainProtection) {
-    	
-        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
-        // I dont want to claim the domain
-        if (!domainProtection) {
-        	LOG.debug("no domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
-            // returns true if the domain is not protceted by others, otherwise
-            // false if the domain is protected
-            return !domainProtectedByOthers;
-        } else {
-        	LOG.debug("domain protection requested {} for domain {}", Utils.hash(newPublicKey), key);
-            if (canClaimDomain(key, publicKey)) {
-                if (canProtectDomain(key.getDomainKey(), publicKey)) {
-                	LOG.debug("set domain protection");
-                    return backend.protectDomain(key, newPublicKey);
-                } else {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    
 	private boolean securityEntryCheck(Number480 key, PublicKey publicKeyMessage, PublicKey publicKeyData,
 	        boolean entryProtection) {
 		boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKeyMessage);
@@ -447,131 +467,134 @@ public class StorageLayer {
 		return false;
 	}
 
-    private boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey) {
-        // we are in public key mode
-        if (getProtectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
-            // if the hash of the public key is the same as the domain, we can
-            // overwrite
-            return isMine(domainKey, publicKey);
-        }
-        return false;
-    }
+	private boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey) {
+		// we are in public key mode
+		if (getProtectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
+			// if the hash of the public key is the same as the domain, we can
+			// overwrite
+			return isMine(domainKey, publicKey);
+		}
+		return false;
+	}
 
-    private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey) {
-        // we are in public key mode
-        if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null && publicKey.getEncoded()!=null) {
-            // if the hash of the public key is the same as the domain, we can
-            // overwrite
-            return isMine(entryKey, publicKey);
-        }
-        return false;
-    }
-    
-    private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
-        boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
-        boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
-        return !domainProtectedByOthers || domainOverridableByMe;
-    }
-    
-    private boolean canClaimEntry(Number480 key, PublicKey publicKey) {
-        boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKey);
-        boolean entryOverridableByMe = foreceOverrideEntry(key.getContentKey(), publicKey);
-        return !entryProtectedByOthers || entryOverridableByMe;
-    }
-    
-    private boolean canProtectDomain(Number160 domainKey, PublicKey publicKey) {
-        if (isDomainRemoved(domainKey)) {
-            return false;
-        }
-        if (getProtectionDomainEnable() == ProtectionEnable.ALL) {
-            return true;
-        } else if (getProtectionDomainEnable() == ProtectionEnable.NONE) {
-            // only if we have the master key
-            return foreceOverrideDomain(domainKey, publicKey);
-        }
-        return false;
-    }
+	private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey) {
+		// we are in public key mode
+		if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null
+		        && publicKey.getEncoded() != null) {
+			// if the hash of the public key is the same as the domain, we can
+			// overwrite
+			return isMine(entryKey, publicKey);
+		}
+		return false;
+	}
 
-    private boolean canProtectEntry(Number160 contentKey, PublicKey publicKey) {
-    	 if (getProtectionEntryEnable() == ProtectionEnable.ALL) {
-             return true;
-         } else if (getProtectionEntryEnable() == ProtectionEnable.NONE) {
-             // only if we have the master key
-             return foreceOverrideEntry(contentKey, publicKey);
-         }
-         return false;
-    }
+	private boolean canClaimDomain(Number320 key, PublicKey publicKey) {
+		boolean domainProtectedByOthers = backend.isDomainProtectedByOthers(key, publicKey);
+		boolean domainOverridableByMe = foreceOverrideDomain(key.getDomainKey(), publicKey);
+		return !domainProtectedByOthers || domainOverridableByMe;
+	}
 
-    private static boolean isMine(Number160 key, PublicKey publicKey) {
-        return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
-    }
+	private boolean canClaimEntry(Number480 key, PublicKey publicKey) {
+		boolean entryProtectedByOthers = backend.isEntryProtectedByOthers(key, publicKey);
+		boolean entryOverridableByMe = foreceOverrideEntry(key.getContentKey(), publicKey);
+		return !entryProtectedByOthers || entryOverridableByMe;
+	}
 
-    public KeyLock<Storage> getLockStorage() {
-        return dataLock;
-    }
+	private boolean canProtectDomain(Number160 domainKey, PublicKey publicKey) {
+		if (isDomainRemoved(domainKey)) {
+			return false;
+		}
+		if (getProtectionDomainEnable() == ProtectionEnable.ALL) {
+			return true;
+		} else if (getProtectionDomainEnable() == ProtectionEnable.NONE) {
+			// only if we have the master key
+			return foreceOverrideDomain(domainKey, publicKey);
+		}
+		return false;
+	}
 
-    public KeyLock<Number160> getLockNumber160() {
-        return dataLock160;
-    }
+	private boolean canProtectEntry(Number160 contentKey, PublicKey publicKey) {
+		if (getProtectionEntryEnable() == ProtectionEnable.ALL) {
+			return true;
+		} else if (getProtectionEntryEnable() == ProtectionEnable.NONE) {
+			// only if we have the master key
+			return foreceOverrideEntry(contentKey, publicKey);
+		}
+		return false;
+	}
 
-    public KeyLock<Number320> getLockNumber320() {
-        return dataLock320;
-    }
+	private static boolean isMine(Number160 key, PublicKey publicKey) {
+		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
+	}
 
-    public KeyLock<Number480> getLockNumber480() {
-        return dataLock480;
-    }
+	public KeyLock<Storage> getLockStorage() {
+		return dataLock;
+	}
 
-    public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
-        return backend.findContentForResponsiblePeerID(peerID);
-    }
-    
-    private class StorageMaintenanceTask implements Runnable {
+	public KeyLock<Number160> getLockNumber160() {
+		return dataLock160;
+	}
+
+	public KeyLock<Number320> getLockNumber320() {
+		return dataLock320;
+	}
+
+	public KeyLock<Number480> getLockNumber480() {
+		return dataLock480;
+	}
+
+	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
+		return backend.findContentForResponsiblePeerID(peerID);
+	}
+
+	private class StorageMaintenanceTask implements Runnable {
 		@Override
 		public void run() {
 			checkTimeout();
 		}
-    }
+	}
 
 	public void init(ScheduledExecutorService timer, int storageIntervalMillis) {
-		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis, TimeUnit.MILLISECONDS);
+		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis,
+		        TimeUnit.MILLISECONDS);
 	}
 
 	public Enum<?> updateMeta(Number320 locationAndDomainKey, PublicKey publicKey, PublicKey newPublicKey) {
 		if (!securityDomainCheck(locationAndDomainKey, publicKey, newPublicKey, true)) {
-            return PutStatus.FAILED_SECURITY;
-        }
+			return PutStatus.FAILED_SECURITY;
+		}
 		return PutStatus.OK;
-    }
+	}
 
 	public Enum<?> updateMeta(PublicKey publicKey, Number640 key, Data newData) {
 		boolean retVal = true;
-        KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
-        try {
-        	if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(), newData.isProtectedEntry())) {
-                return PutStatus.FAILED_SECURITY;
-            }
-            
-            final Data data = backend.get(key);
-            boolean changed = false;
-            if(newData.publicKey()!=null) {
-            	data.publicKey(newData.publicKey());
-            	changed = true;
-            }
-            if(newData.isSigned()) {
-            	data.signature(newData.signature());
-            	changed = true;
-            }
-            if(changed) {
-            	retVal = backend.put(key, data);
-            }
-            
-            long expiration = newData.expirationMillis();
-            // handle timeout
-            backend.addTimeout(key, expiration);
-        } finally {
-            dataLock640.unlock(lock);
-        }
-        return retVal ? PutStatus.OK : PutStatus.FAILED;
-    }
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+			        newData.isProtectedEntry())) {
+				return PutStatus.FAILED_SECURITY;
+			}
+
+			final Data data = backend.get(key);
+			boolean changed = false;
+			if (newData.publicKey() != null) {
+				data.publicKey(newData.publicKey());
+				changed = true;
+			}
+			if (newData.isSigned()) {
+				data.signature(newData.signature());
+				changed = true;
+			}
+			if (changed) {
+				retVal = backend.put(key, data);
+			}
+
+			long expiration = newData.expirationMillis();
+			// handle timeout
+			backend.addTimeout(key, expiration);
+		} finally {
+			dataLock640.unlock(lock);
+		}
+		return retVal ? PutStatus.OK : PutStatus.FAILED;
+	}
 }

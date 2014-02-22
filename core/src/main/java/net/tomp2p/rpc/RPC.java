@@ -15,7 +15,8 @@ public class RPC {
 		PEX(10), 
 		DIGEST(11), 
 		BROADCAST(12),
-		PUT_META(13);
+		PUT_META(13), 
+		DIGEST_BLOOMFILTER(14);
 
 	private final byte nr; 
 	Commands(int nr) {

@@ -25,345 +25,397 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
+import net.tomp2p.peers.Number160;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
- * A simple Bloom Filter (see http://en.wikipedia.org/wiki/Bloom_filter) that uses java.util.Random as a primitive hash
- * function, and which implements Java's Set interface for convenience. Only the add(), addAll(), contains(), and
- * containsAll() methods are implemented. Calling any other method will yield an UnsupportedOperationException. This
- * code may be used, modified, and redistributed provided that the author tag below remains intact.
+ * A simple Bloom Filter (see http://en.wikipedia.org/wiki/Bloom_filter) that
+ * uses java.util.Random as a primitive hash function, and which implements
+ * Java's Set interface for convenience. Only the add(), addAll(), contains(),
+ * and containsAll() methods are implemented. Calling any other method will
+ * yield an UnsupportedOperationException. This code may be used, modified, and
+ * redistributed provided that the author tag below remains intact.
  * 
  * @author Ian Clarke <ian@uprizer.com>
- * @author Thomas Bocek <tom@tomp2p.net> Added methods to get and create a SimpleBloomFilter from existing data. The
- *         data can be either a BitSet or a bye[].
+ * @author Thomas Bocek <tom@tomp2p.net> Added methods to get and create a
+ *         SimpleBloomFilter from existing data. The data can be either a BitSet
+ *         or a bye[].
  * @param <E>
  *            The type of object the BloomFilter should contain
  */
 public class SimpleBloomFilter<E> implements Set<E>, Serializable {
-    private static final long serialVersionUID = 3527833617516722215L;
 
-    private static final int SIZE_HEADER_LENGTH = 2;
+	private static final Logger LOG = LoggerFactory.getLogger(SimpleBloomFilter.class);
 
-    private static final int SIZE_HEADER_ELEMENTS = 4;
+	private static final long serialVersionUID = 3527833617516722215L;
 
-    public static final int SIZE_HEADER = SIZE_HEADER_LENGTH + SIZE_HEADER_ELEMENTS;
+	private static final int SIZE_HEADER_LENGTH = 2;
 
-    private final int k;
+	private static final int SIZE_HEADER_ELEMENTS = 4;
 
-    private final BitSet bitSet;
+	public static final int SIZE_HEADER = SIZE_HEADER_LENGTH + SIZE_HEADER_ELEMENTS;
 
-    private final int byteArraySize, bitArraySize, expectedElements;
+	private final int k;
 
-    /**
-     * Construct an empty SimpleBloomFilter. You must specify the number of bits in the Bloom Filter, and also you
-     * should specify the number of items you expect to add. The latter is used to choose some optimal internal values
-     * to minimize the false-positive rate (which can be estimated with expectedFalsePositiveRate()).
-     * 
-     * @param byteArraySize
-     *            The number of bits in multiple of 8 in the bit array (often called 'm' in the context of bloom
-     *            filters).
-     * @param expectedElements
-     *            The typical number of items you expect to be added to the SimpleBloomFilter (often called 'n').
-     */
-    public SimpleBloomFilter(final int byteArraySize, final int expectedElements) {
-        this(byteArraySize, expectedElements, new BitSet(byteArraySize * Byte.SIZE));
-    }
+	private final BitSet bitSet;
 
-    /**
-     * Constructs a SimpleBloomFilter out of existing data. You must specify the number of bits in the Bloom Filter, and
-     * also you should specify the number of items you expect to add. The latter is used to choose some optimal internal
-     * values to minimize the false-positive rate (which can be estimated with expectedFalsePositiveRate()).
-     * 
-     * @param channelBuffer
-     *            The byte buffer with the data
-     */
-    public SimpleBloomFilter(final ByteBuf channelBuffer) {
-        this.byteArraySize = channelBuffer.readUnsignedShort() - (SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
-        this.bitArraySize = byteArraySize * Byte.SIZE;
-        int expectedElements = channelBuffer.readInt();
-        this.expectedElements = expectedElements;
-        this.k = (int) Math.ceil((bitArraySize / (double) expectedElements) * Math.log(2.0));
-        if (byteArraySize > 0) {
-            byte[] me = new byte[byteArraySize];
-            channelBuffer.readBytes(me);
-            this.bitSet = BitSet.valueOf(me);
-        } else {
-            this.bitSet = new BitSet();
-        }
-    }
+	private final int byteArraySize, bitArraySize, expectedElements;
 
-    /**
-     * Constructs a SimpleBloomFilter out of existing data. You must specify the number of bits in the Bloom Filter, and
-     * also you should specify the number of items you expect to add. The latter is used to choose some optimal internal
-     * values to minimize the false-positive rate (which can be estimated with expectedFalsePositiveRate()).
-     * 
-     * @param byteArraySize
-     *            The number of bits in multiple of 8 in the bit array (often called 'm' in the context of bloom
-     *            filters).
-     * @param expectedElements
-     *            he typical number of items you expect to be added to the SimpleBloomFilter (often called 'n').
-     * @param bitSet
-     *            The data that will be used in the backing BitSet
-     */
-    public SimpleBloomFilter(final int byteArraySize, final int expectedElements, final BitSet bitSet) {
-        this.byteArraySize = byteArraySize;
-        this.bitArraySize = byteArraySize * Byte.SIZE;
-        this.expectedElements = expectedElements;
-        this.k = (int) Math.ceil((bitArraySize / (double) expectedElements) * Math.log(2.0));
-        this.bitSet = bitSet;
-    }
+	/**
+	 * Construct an empty SimpleBloomFilter. You must specify the number of bits
+	 * in the Bloom Filter, and also you should specify the number of items you
+	 * expect to add. The latter is used to choose some optimal internal values
+	 * to minimize the false-positive rate (which can be estimated with
+	 * expectedFalsePositiveRate()).
+	 * 
+	 * @param byteArraySize
+	 *            The number of bits in multiple of 8 in the bit array (often
+	 *            called 'm' in the context of bloom filters).
+	 * @param expectedElements
+	 *            The typical number of items you expect to be added to the
+	 *            SimpleBloomFilter (often called 'n').
+	 */
+	public SimpleBloomFilter(final int byteArraySize, final int expectedElements) {
+		this(byteArraySize, expectedElements, new BitSet(byteArraySize * Byte.SIZE));
+	}
 
-    /**
-     * Calculates the approximate probability of the contains() method returning true for an object that had not
-     * previously been inserted into the bloom filter. This is known as the "false positive probability".
-     * 
-     * @return The estimated false positive rate
-     */
-    public double expectedFalsePositiveProbability() {
-        return Math.pow((1 - Math.exp(-k * (double) expectedElements / bitArraySize)), k);
-    }
+	// inspired by https://github.com/magnuss/java-bloomfilter
+	public SimpleBloomFilter(final double falsePositiveProbability, final int expectedElements) {
+		final double c = Math.ceil(-(Math.log(falsePositiveProbability) / Math.log(2))) / Math.log(2);
+		this.expectedElements = expectedElements;
+		int tmpBitArraySize = (int) Math.ceil(c * expectedElements);
+		this.byteArraySize = ((tmpBitArraySize + 7) / 8);
+		this.bitArraySize = byteArraySize * Byte.SIZE;
+		double hf = (bitArraySize / (double) expectedElements) * Math.log(2.0);
+		// k may be larger as we may have increased the byte array size to match
+		// a byte
+		this.k = (int) Math.ceil(hf);
+		this.bitSet = new BitSet(bitArraySize);
+	}
 
-    /**
-     * Returns the expected elements that was provided by the user.
-     * 
-     * @return The expected elements that was provided by the user
-     */
-    public int getExpectedElements() {
-        return expectedElements;
-    }
+	/**
+	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
+	 * number of bits in the Bloom Filter, and also you should specify the
+	 * number of items you expect to add. The latter is used to choose some
+	 * optimal internal values to minimize the false-positive rate (which can be
+	 * estimated with expectedFalsePositiveRate()).
+	 * 
+	 * @param channelBuffer
+	 *            The byte buffer with the data
+	 */
+	public SimpleBloomFilter(final ByteBuf channelBuffer) {
+		this.byteArraySize = channelBuffer.readUnsignedShort() - (SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
+		this.bitArraySize = byteArraySize * Byte.SIZE;
+		int expectedElements = channelBuffer.readInt();
+		this.expectedElements = expectedElements;
+		double hf = (bitArraySize / (double) expectedElements) * Math.log(2.0);
+		this.k = (int) Math.ceil(hf);
+		if (byteArraySize > 0) {
+			byte[] me = new byte[byteArraySize];
+			channelBuffer.readBytes(me);
+			this.bitSet = BitSet.valueOf(me);
+		} else {
+			this.bitSet = new BitSet();
+		}
+	}
 
-    /**
-     * @param o
-     *            Add element
-     * @return This method will always return false
-     * 
-     * @see java.util.Set#add(java.lang.Object)
-     */
-    @Override
-    public boolean add(final E o) {
-        Random r = new Random(o.hashCode());
-        for (int x = 0; x < k; x++) {
-            bitSet.set(r.nextInt(bitArraySize), true);
-        }
-        return false;
-    }
+	/**
+	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
+	 * number of bits in the Bloom Filter, and also you should specify the
+	 * number of items you expect to add. The latter is used to choose some
+	 * optimal internal values to minimize the false-positive rate (which can be
+	 * estimated with expectedFalsePositiveRate()).
+	 * 
+	 * @param byteArraySize
+	 *            The number of bits in multiple of 8 in the bit array (often
+	 *            called 'm' in the context of bloom filters).
+	 * @param expectedElements
+	 *            he typical number of items you expect to be added to the
+	 *            SimpleBloomFilter (often called 'n').
+	 * @param bitSet
+	 *            The data that will be used in the backing BitSet
+	 */
+	public SimpleBloomFilter(final int byteArraySize, final int expectedElements, final BitSet bitSet) {
+		this.byteArraySize = byteArraySize;
+		this.bitArraySize = byteArraySize * Byte.SIZE;
+		this.expectedElements = expectedElements;
+		double hf = (bitArraySize / (double) expectedElements) * Math.log(2.0);
+		this.k = (int) Math.ceil(hf);
+		if (hf < 1.0) {
+			LOG.warn(
+			        "bit size too small for storing all expected elements. For optimum result increase bf length to {}",
+			        expectedElements / Math.log(2.0));
+		}
+		this.bitSet = bitSet;
+	}
 
-    /**
-     * @param c
-     *            The elements to add
-     * @return This method will always return false
-     */
-    @Override
-    public boolean addAll(final Collection<? extends E> c) {
-        for (E o : c) {
-            add(o);
-        }
-        return false;
-    }
+	/**
+	 * Calculates the approximate probability of the contains() method returning
+	 * true for an object that had not previously been inserted into the bloom
+	 * filter. This is known as the "false positive probability".
+	 * 
+	 * @return The estimated false positive rate
+	 */
+	public double expectedFalsePositiveProbability() {
+		return Math.pow((1 - Math.exp(-k * (double) expectedElements / bitArraySize)), k);
+	}
 
-    /**
-     * Clear the Bloom Filter.
-     */
-    @Override
-    public void clear() {
-        for (int x = 0; x < bitSet.length(); x++) {
-            bitSet.set(x, false);
-        }
-    }
+	/**
+	 * Returns the expected elements that was provided by the user.
+	 * 
+	 * @return The expected elements that was provided by the user
+	 */
+	public int getExpectedElements() {
+		return expectedElements;
+	}
 
-    /**
-     * @param o
-     *            The object to compare
-     * @return False indicates that o was definitely not added to this Bloom Filter, true indicates that it probably
-     *         was. The probability can be estimated using the expectedFalsePositiveProbability() method.
-     */
-    @Override
-    public boolean contains(final Object o) {
-        Random r = new Random(o.hashCode());
-        for (int x = 0; x < k; x++) {
-            if (!bitSet.get(r.nextInt(bitArraySize))) {
-                return false;
-            }
-        }
-        return true;
-    }
+	/**
+	 * @param o
+	 *            Add element
+	 * @return This method will always return false
+	 * 
+	 * @see java.util.Set#add(java.lang.Object)
+	 */
+	@Override
+	public boolean add(final E o) {
+		Random r = new Random(o.hashCode());
+		for (int x = 0; x < k; x++) {
+			bitSet.set(r.nextInt(bitArraySize), true);
+		}
+		return false;
+	}
 
-    /**
-     * @param c
-     *            The collection to check
-     * @return true if all elements of the collection are in this bloom filter
-     */
-    @Override
-    public boolean containsAll(final Collection<?> c) {
-        for (Object o : c) {
-            if (!contains(o)) {
-                return false;
-            }
-        }
-        return true;
-    }
+	/**
+	 * @param c
+	 *            The elements to add
+	 * @return This method will always return false
+	 */
+	@Override
+	public boolean addAll(final Collection<? extends E> c) {
+		for (E o : c) {
+			add(o);
+		}
+		return false;
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @return nothing
-     */
-    @Override
-    public boolean isEmpty() {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Clear the Bloom Filter.
+	 */
+	@Override
+	public void clear() {
+		for (int x = 0; x < bitSet.length(); x++) {
+			bitSet.set(x, false);
+		}
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @return nothing
-     */
-    @Override
-    public Iterator<E> iterator() {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * @param o
+	 *            The object to compare
+	 * @return False indicates that o was definitely not added to this Bloom
+	 *         Filter, true indicates that it probably was. The probability can
+	 *         be estimated using the expectedFalsePositiveProbability() method.
+	 */
+	@Override
+	public boolean contains(final Object o) {
+		Random r = new Random(o.hashCode());
+		for (int x = 0; x < k; x++) {
+			if (!bitSet.get(r.nextInt(bitArraySize))) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @param o
-     *            nothing
-     * @return nothing
-     */
-    @Override
-    public boolean remove(final Object o) {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * @param c
+	 *            The collection to check
+	 * @return true if all elements of the collection are in this bloom filter
+	 */
+	@Override
+	public boolean containsAll(final Collection<?> c) {
+		for (Object o : c) {
+			if (!contains(o)) {
+				return false;
+			}
+		}
+		return true;
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @param c
-     *            nothing
-     * @return nothing
-     */
-    @Override
-    public boolean removeAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @return nothing
+	 */
+	@Override
+	public boolean isEmpty() {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @param c
-     *            nothing
-     * @return nothing
-     */
-    @Override
-    public boolean retainAll(final Collection<?> c) {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @return nothing
+	 */
+	@Override
+	public Iterator<E> iterator() {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @return nothing
-     */
-    @Override
-    public int size() {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @param o
+	 *            nothing
+	 * @return nothing
+	 */
+	@Override
+	public boolean remove(final Object o) {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @return nothing
-     */
-    @Override
-    public Object[] toArray() {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @param c
+	 *            nothing
+	 * @return nothing
+	 */
+	@Override
+	public boolean removeAll(final Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Not implemented.
-     * 
-     * @param a
-     *            nothing
-     * @param <T>
-     *            nothing
-     * @return nothing
-     */
-    @Override
-    public <T> T[] toArray(final T[] a) {
-        throw new UnsupportedOperationException();
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @param c
+	 *            nothing
+	 * @return nothing
+	 */
+	@Override
+	public boolean retainAll(final Collection<?> c) {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Returns the bitset that backs the bloom filter.
-     * 
-     * @return bloom filter as a bitset
-     */
-    public BitSet getBitSet() {
-        return bitSet;
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @return nothing
+	 */
+	@Override
+	public int size() {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * Converts data to a byte buffer. The first two bytes contain the size of this simple bloom filter. Thus, the bloom
-     * filter can only be of length 65536.
-     * 
-     * @param buf
-     *            The byte buffer where the bloom filter will be written.
-     */
-    public void toByteBuf(final ByteBuf buf) {
-        byte[] tmp = bitSet.toByteArray();
-        int currentByteArraySize = tmp.length;
-        buf.writeShort(byteArraySize + SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
-        buf.writeInt(expectedElements);
-        buf.writeBytes(bitSet.toByteArray());
-        buf.writeZero(byteArraySize - currentByteArraySize);
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @return nothing
+	 */
+	@Override
+	public Object[] toArray() {
+		throw new UnsupportedOperationException();
+	}
 
-    /**
-     * @param toMerge
-     *            Merge to bloom filters using OR
-     * @return A new bloom filter that contains both sets.
-     */
-    public SimpleBloomFilter<E> merge(final SimpleBloomFilter<E> toMerge) {
-        if (toMerge.bitArraySize != bitArraySize) {
-            throw new RuntimeException("this is not supposed to happen");
-        }
-        BitSet mergedBitSet = (BitSet) bitSet.clone();
-        mergedBitSet.or(toMerge.bitSet);
-        return new SimpleBloomFilter<E>(bitArraySize, expectedElements, mergedBitSet);
-    }
+	/**
+	 * Not implemented.
+	 * 
+	 * @param a
+	 *            nothing
+	 * @param <T>
+	 *            nothing
+	 * @return nothing
+	 */
+	@Override
+	public <T> T[] toArray(final T[] a) {
+		throw new UnsupportedOperationException();
+	}
 
-    @Override
-    public boolean equals(final Object obj) {
-        if (!(obj instanceof SimpleBloomFilter)) {
-            return false;
-        }
-        if (this == obj) {
-            return true;
-        }
-        @SuppressWarnings("unchecked")
-        SimpleBloomFilter<E> o = (SimpleBloomFilter<E>) obj;
-        return o.k == k && o.bitArraySize == bitArraySize && expectedElements == o.expectedElements
-                && bitSet.equals(o.bitSet);
-    }
+	/**
+	 * Returns the bitset that backs the bloom filter.
+	 * 
+	 * @return bloom filter as a bitset
+	 */
+	public BitSet getBitSet() {
+		return bitSet;
+	}
 
-    @Override
-    public int hashCode() {
-        final int magic = 31;
-        // CHECKSTYLE:OFF
-        int hash = 7;
-        // CHECKSTYLE:ON
-        hash = magic * hash + bitSet.hashCode();
-        hash = magic * hash + k;
-        hash = magic * hash + expectedElements;
-        hash = magic * hash + bitArraySize;
-        return hash;
-    }
+	/**
+	 * Converts data to a byte buffer. The first two bytes contain the size of
+	 * this simple bloom filter. Thus, the bloom filter can only be of length
+	 * 65536.
+	 * 
+	 * @param buf
+	 *            The byte buffer where the bloom filter will be written.
+	 */
+	public void toByteBuf(final ByteBuf buf) {
+		byte[] tmp = bitSet.toByteArray();
+		int currentByteArraySize = tmp.length;
+		buf.writeShort(byteArraySize + SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
+		buf.writeInt(expectedElements);
+		buf.writeBytes(bitSet.toByteArray());
+		buf.writeZero(byteArraySize - currentByteArraySize);
+	}
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        int length = bitSet.length();
-        for (int i = 0; i < length; i++) {
-            sb.append(bitSet.get(i) ? "1" : "0");
-        }
-        return sb.toString();
-    }
+	/**
+	 * @param toMerge
+	 *            Merge to bloom filters using OR
+	 * @return A new bloom filter that contains both sets.
+	 */
+	public SimpleBloomFilter<E> merge(final SimpleBloomFilter<E> toMerge) {
+		if (toMerge.bitArraySize != bitArraySize) {
+			throw new RuntimeException("this is not supposed to happen");
+		}
+		BitSet mergedBitSet = (BitSet) bitSet.clone();
+		mergedBitSet.or(toMerge.bitSet);
+		return new SimpleBloomFilter<E>(bitArraySize, expectedElements, mergedBitSet);
+	}
+
+	@Override
+	public boolean equals(final Object obj) {
+		if (!(obj instanceof SimpleBloomFilter)) {
+			return false;
+		}
+		if (this == obj) {
+			return true;
+		}
+		@SuppressWarnings("unchecked")
+		SimpleBloomFilter<E> o = (SimpleBloomFilter<E>) obj;
+		return o.k == k && o.bitArraySize == bitArraySize && expectedElements == o.expectedElements
+		        && bitSet.equals(o.bitSet);
+	}
+
+	@Override
+	public int hashCode() {
+		final int magic = 31;
+		// CHECKSTYLE:OFF
+		int hash = 7;
+		// CHECKSTYLE:ON
+		hash = magic * hash + bitSet.hashCode();
+		hash = magic * hash + k;
+		hash = magic * hash + expectedElements;
+		hash = magic * hash + bitArraySize;
+		return hash;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		int length = bitSet.length();
+		for (int i = 0; i < length; i++) {
+			sb.append(bitSet.get(i) ? "1" : "0");
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Invert the bloom filter
+	 */
+	public SimpleBloomFilter<Number160> not() {
+		BitSet copy = BitSet.valueOf(bitSet.toByteArray());
+		copy.flip(0, copy.length());
+		return new SimpleBloomFilter<>(byteArraySize, expectedElements, copy);
+	}
 }

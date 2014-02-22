@@ -882,17 +882,8 @@ public class Utils {
 	    return 1;
     }
     
-    public static<K> boolean equals(K o1, K o2) {
-    	if (o1!= null) {
-			if (!o1.equals(o2)) {
-				return false;
-			}
-		} else {
-			if (o2!= null) {
-				return false;
-			}
-		}
-    	return true;
+    public static boolean equals(Object a, Object b) {
+    	return (a == b) || (a != null && a.equals(b));
     }
 
 	public static String hash(PublicKey publicKey) {

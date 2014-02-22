@@ -20,46 +20,39 @@ import java.util.NavigableMap;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.utils.Utils;
 
 public class DigestResult {
-    private SimpleBloomFilter<Number160> keyBloomFilter;
+    final private SimpleBloomFilter<Number160> contentBloomFilter;
+    final private SimpleBloomFilter<Number160> versoinBloomFilter;
 
-    private SimpleBloomFilter<Number160> contentBloomFilter;
+    final private NavigableMap<Number640, Number160> keyDigest;
 
-    private NavigableMap<Number640, Number160> keyDigest;
-
-    public DigestResult(SimpleBloomFilter<Number160> keyBloomFilter, SimpleBloomFilter<Number160> contentBloomFilter) {
-        this.keyBloomFilter = keyBloomFilter;
+    public DigestResult(SimpleBloomFilter<Number160> contentBloomFilter, SimpleBloomFilter<Number160> versoinBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
+        this.versoinBloomFilter = versoinBloomFilter;
+        this.keyDigest = null;
     }
 
     public DigestResult(NavigableMap<Number640, Number160> keyDigest) {
         this.keyDigest = keyDigest;
+        this.contentBloomFilter = null;
+        this.versoinBloomFilter = null;
     }
 
-    public SimpleBloomFilter<Number160> getKeyBloomFilter() {
-        return keyBloomFilter;
-    }
-
-    public void setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
-        this.keyBloomFilter = keyBloomFilter;
-    }
-
-    public SimpleBloomFilter<Number160> getContentBloomFilter() {
+    public SimpleBloomFilter<Number160> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public void setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
-        this.contentBloomFilter = contentBloomFilter;
+    public SimpleBloomFilter<Number160> versoinBloomFilter() {
+        return versoinBloomFilter;
     }
 
-    public NavigableMap<Number640, Number160> getKeyDigest() {
+    public NavigableMap<Number640, Number160> keyDigest() {
         return keyDigest;
     }
 
-    public void setKeyDigest(NavigableMap<Number640, Number160> keyDigest) {
-        this.keyDigest = keyDigest;
-    }
+    
 
     @Override
     public int hashCode() {
@@ -67,11 +60,11 @@ public class DigestResult {
         if (keyDigest != null) {
             hashCode ^= keyDigest.hashCode();
         }
-        if (keyBloomFilter != null) {
-            hashCode ^= keyBloomFilter.hashCode();
-        }
         if (contentBloomFilter != null) {
             hashCode ^= contentBloomFilter.hashCode();
+        }
+        if (versoinBloomFilter != null) {
+            hashCode ^= versoinBloomFilter.hashCode();
         }
         return hashCode;
     }
@@ -85,18 +78,9 @@ public class DigestResult {
             return true;
         }
         DigestResult o = (DigestResult) obj;
-        boolean test1 = keyDigest == o.keyDigest;
-        if (!test1 && keyDigest != null && o.keyDigest != null) {
-            test1 = keyDigest.equals(o.keyDigest);
-        }
-        boolean test2 = keyBloomFilter == o.keyBloomFilter;
-        if (!test2 && keyBloomFilter != null && o.keyBloomFilter != null) {
-            test2 = keyBloomFilter.equals(o.keyBloomFilter);
-        }
-        boolean test3 = contentBloomFilter == o.contentBloomFilter;
-        if (!test3 && contentBloomFilter != null && o.contentBloomFilter != null) {
-            test3 = contentBloomFilter.equals(o.contentBloomFilter);
-        }
-        return test1 && test2 && test3;
+        
+        return 	Utils.equals(keyDigest, o.keyDigest) &&
+        		Utils.equals(contentBloomFilter, o.contentBloomFilter) &&
+        		Utils.equals(versoinBloomFilter, o.versoinBloomFilter);
     }
 }

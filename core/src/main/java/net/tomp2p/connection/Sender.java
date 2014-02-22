@@ -39,6 +39,7 @@ import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -333,6 +334,9 @@ public class Sender {
 					futureResponse.progressFirst();
 				} else {
 					futureResponse.setFailed("Channel creation failed " + future.cause());
+					for(PeerStatusListener peerStatusListener:peerStatusListeners) {
+						peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
+					}
 					//may have been closed by the other side,
 					//or it may have been canceled from this side
 					if (!(future.cause() instanceof CancellationException) &&

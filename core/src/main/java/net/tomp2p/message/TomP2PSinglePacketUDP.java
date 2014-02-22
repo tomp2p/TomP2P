@@ -63,6 +63,6 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
             LOG.error("exception in decoding UDP, decoding started", cause);
             cause.printStackTrace();
         }*/
-        cause.printStackTrace();
+        //cause.printStackTrace();
     }
 }

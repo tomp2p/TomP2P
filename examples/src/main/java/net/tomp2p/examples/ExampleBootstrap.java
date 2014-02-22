@@ -23,43 +23,45 @@ import net.tomp2p.p2p.Peer;
 /**
  * See http://tomp2p.net/doc/quick/ for more information
  */
-public class ExampleBootstrap
-{
-    private static final int PORT = 4001;
+public class ExampleBootstrap {
+	private static final int PORT = 4001;
 
-    /**
-     * Starts the boostrap example.
-     * 
-     * @param args No arguments needed
-     * @throws IOException 
-     * @throws Exception
-     */  
-    public static void main( String[] args ) throws IOException
-    {
-        Peer[] peers = null;
-        try
-        {
-            peers = ExampleUtils.createAndAttachNodes( 3, PORT );
-            
-            for ( int i = 0; i < peers.length; i++ )
-            {
-                System.out.println( "peer[" + i + "]: " + peers[i].getPeerAddress() );
-            }
-            
-            FutureBootstrap futureBootstrap1 = peers[1].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start();
-            futureBootstrap1.awaitUninterruptibly();
-            FutureBootstrap futureBootstrap2 = peers[2].bootstrap().setPeerAddress( peers[0].getPeerAddress() ).start();
-            futureBootstrap2.awaitUninterruptibly();
-            // list all the peers C knows by now:
-            System.out.println( "peer[2] knows: " + peers[2].getPeerBean().peerMap().getAll() );
-        }
-        finally
-        {
-            // 0 is the master
-            if ( peers != null && peers[0] != null ) 
-            {
-                peers[0].shutdown();
-            }
-        }
-    }
+	/**
+	 * Starts the boostrap example.
+	 * 
+	 * @param args
+	 *            No arguments needed
+	 * @throws IOException
+	 * @throws InterruptedException
+	 * @throws Exception
+	 */
+	public static void main(String[] args) throws IOException, InterruptedException {
+		Peer[] peers = null;
+		try {
+			peers = ExampleUtils.createAndAttachNodes(3, PORT);
+
+			for (int i = 0; i < peers.length; i++) {
+				System.out.println("peer[" + i + "]: " + peers[i].getPeerAddress());
+			}
+
+			FutureBootstrap futureBootstrap1 = peers[1].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+			futureBootstrap1.awaitUninterruptibly();
+			System.out.println("peer[0] knows: " + peers[0].getPeerBean().peerMap().getAll() + " unverified: "
+			        + peers[0].getPeerBean().peerMap().getAllOverflow());
+			System.out.println("wait for maintenace ping");
+			Thread.sleep(2000);
+			System.out.println("peer[0] knows: " + peers[0].getPeerBean().peerMap().getAll() + " unverified: "
+			        + peers[0].getPeerBean().peerMap().getAllOverflow());
+			FutureBootstrap futureBootstrap2 = peers[2].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+			futureBootstrap2.awaitUninterruptibly();
+			// list all the peers C knows by now:
+			System.out.println("peer[2] knows: " + peers[2].getPeerBean().peerMap().getAll());
+
+		} finally {
+			// 0 is the master
+			if (peers != null && peers[0] != null) {
+				peers[0].shutdown();
+			}
+		}
+	}
 }

@@ -36,12 +36,12 @@ import net.tomp2p.storage.Data;
  * @author Thomas Bocek
  * 
  */
-public final class ExampleDHT {
+public final class ExampleSimpleRecommondation {
 
     /**
      * Empty constructor.
      */
-    private ExampleDHT() {
+    private ExampleSimpleRecommondation() {
     }
 
     /**
@@ -94,17 +94,20 @@ public final class ExampleDHT {
     private static void example(final MyPeer[] peers) throws IOException, ClassNotFoundException {
         // 3 peers have files
         System.out.println("Setup: we have " + peers.length
-                + " peers; peers[12] (Leo) knows Jan, peers[24] (Tim) knows Urs, peers[42] (Pat) knows Tom");
+                + " peers; peers[12] (Leo) knows Jan, peers[24] (Tom) knows Urs and Pat, peers[42] (Urs) knows Pat and Tim");
         final int peer12 = 12;
         final int peer24 = 24;
         final int peer42 = 42;
 
-        peers[peer12].announce("Urs", "Jan");
+        peers[peer12].announce("Leo", "Jan");
         peers[peer24].announce("Tom", "Urs");
-        peers[peer42].announce("Urs", "Tom");
+        peers[peer24].announce("Tom", "Pat");
+        peers[peer42].announce("Urs", "Pat");
+        peers[peer42].announce("Urs", "Tim");
         // peer 12 now searches for Urs
         System.out.println("peers[24] (Tom) wants to know the friends of Urs");
         peers[peer24].list("Urs");
+        System.out.println("peers[24] (Tom) does not know Tim yet, but Urs does");
     }
 
     /**

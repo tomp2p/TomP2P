@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -112,6 +114,7 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		removePeerIfFailed(futureResponse, message);
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
@@ -132,6 +135,8 @@ public class Sender {
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
 	}
+
+	
 
 	private ChannelFuture sendTCPCreateChannel(InetSocketAddress recipient, ChannelCreator channelCreator,
 	        PeerConnection peerConnection, ChannelHandler handler, TimeoutFactory timeoutHandler,
@@ -253,6 +258,8 @@ public class Sender {
 		if (futureResponse.isCompleted()) {
 			return;
 		}
+		removePeerIfFailed(futureResponse, message);
+		
 		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
@@ -334,9 +341,6 @@ public class Sender {
 					futureResponse.progressFirst();
 				} else {
 					futureResponse.setFailed("Channel creation failed " + future.cause());
-					for(PeerStatusListener peerStatusListener:peerStatusListeners) {
-						peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
-					}
 					//may have been closed by the other side,
 					//or it may have been canceled from this side
 					if (!(future.cause() instanceof CancellationException) &&
@@ -434,4 +438,17 @@ public class Sender {
 			}
 		};
 	}
+	
+	private void removePeerIfFailed(final FutureResponse futureResponse, final Message message) {
+	    futureResponse.addListener(new BaseFutureAdapter<BaseFuture>() {
+			@Override
+            public void operationComplete(BaseFuture future) throws Exception {
+	            if(future.isFailed()) {
+	            	for(PeerStatusListener peerStatusListener:peerStatusListeners) {
+						peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
+					}
+	            }
+            }
+		});
+    }
 }

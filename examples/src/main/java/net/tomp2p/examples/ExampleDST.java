@@ -23,15 +23,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.futures.FutureDHT;
+import net.tomp2p.futures.FutureGet;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
 
 /**
@@ -82,39 +85,36 @@ public final class ExampleDST {
      */
     private static void setupStorage(final Peer[] peers, final int max) {
         for (Peer peer : peers) {
-            StorageMemory sm = new StorageMemory() {
-                @Override
-                public PutStatus put(final Number160 locationKey, final Number160 domainKey,
-                        final Number160 contentKey, final Data newData, final PublicKey publicKey,
-                        final boolean putIfAbsent, final boolean domainProtection) {
-                    Map<Number480, Data> map = subMap(locationKey, domainKey, Number160.ZERO, Number160.MAX_VALUE);
-                    if (map.size() < max) {
-                        return super.put(locationKey, domainKey, contentKey, newData, publicKey, putIfAbsent,
-                                domainProtection);
-                    } else {
-                        return PutStatus.FAILED;
-                    }
-                }
-
-                @Override
-                public SortedMap<Number480, Data> get(final Number160 locationKey, final Number160 domainKey,
-                        final Number160 fromContentKey, final Number160 toContentKey) {
-                    SortedMap<Number480, Data> tmp = super.get(locationKey, domainKey, fromContentKey, toContentKey);
-                    return wrap(tmp);
-                }
-
-                /**
+        	StorageLayer sl = new StorageLayer(new StorageMemory()) {
+        		@Override
+        		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
+        		        boolean domainProtection) {
+        			Map<Number640, Data> map = get(key.minContentKey(), key.maxContentKey(), -1, false);
+        			if (map.size() < max) {
+        				return super.put(key, newData, publicKey, putIfAbsent, domainProtection);
+        			} else {
+        				return PutStatus.FAILED;
+        			}
+        		}
+        		
+        		@Override
+        		public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
+        			NavigableMap<Number640, Data> tmp = super.get(from, to, limit, ascending);
+        			return wrap(tmp);
+        		}
+        		
+        		 /**
                  * We need to tell if our bag is full and if the peer should contact other peers.
                  * 
                  * @param tmp
                  *            The original data
                  * @return The enriched data with a boolean flag
                  */
-                private SortedMap<Number480, Data> wrap(final SortedMap<Number480, Data> tmp) {
-                    SortedMap<Number480, Data> retVal = new TreeMap<Number480, Data>();
-                    for (Map.Entry<Number480, Data> entry : tmp.entrySet()) {
+        		private NavigableMap<Number640, Data> wrap(final SortedMap<Number640, Data> tmp) {
+        			NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+                    for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
                         try {
-                            String data = (String) entry.getValue().getObject();
+                            String data = (String) entry.getValue().object();
                             retVal.put(entry.getKey(), new Data(new StringBoolean(tmp.size() < max, data)));
                         } catch (ClassNotFoundException e) {
                             e.printStackTrace();
@@ -124,8 +124,8 @@ public final class ExampleDST {
                     }
                     return retVal;
                 }
-            };
-            peer.getPeerBean().setStorage(sm);
+        	};
+            peer.getPeerBean().storage(sl);
         }
     }
 
@@ -139,7 +139,7 @@ public final class ExampleDST {
      */
     private static void exampleDST(final Peer[] peers) throws IOException, ClassNotFoundException {
         final int n = 2;
-        final int m = 8; // 1024*1024; // 2 items per peer
+        final int m = 8; //1024*1024; // 2 items per peer
         final int peer16 = 16;
         final int peer55 = 55;
         //
@@ -147,6 +147,7 @@ public final class ExampleDST {
         final int index2 = 2;
         final int index3 = 3;
         final int index5 = 5;
+        final int index7 = 7;
         setupStorage(peers, n);
         int width = m / n;
         int height = (int) log2(width);
@@ -155,6 +156,7 @@ public final class ExampleDST {
         putDST(peers[peer16], index2, "hallo", inter, height);
         putDST(peers[peer16], index3, "world", inter, height);
         putDST(peers[peer16], index5, "sys", inter, height);
+        putDST(peers[peer16], index7, "communication", inter, height);
         // search [1..5]
         Collection<Interval> inters = splitSegment(index1, index5, index1, m, height);
         Collection<String> result = getDST(peers[peer55], inters, n);
@@ -215,13 +217,13 @@ public final class ExampleDST {
             already.add(inter2.toString());
             // get the interval
             System.out.println("get for " + inter2);
-            FutureDHT futureDHT = peer.get(key).setAll().start();
-            futureDHT.awaitUninterruptibly();
+            FutureGet futureGet = peer.get(key).setAll().start();
+            futureGet.awaitUninterruptibly();
             dhtCounter.incrementAndGet();
-            for (Map.Entry<Number160, Data> entry : futureDHT.getDataMap().entrySet()) {
+            for (Map.Entry<Number640, Data> entry : futureGet.getDataMap().entrySet()) {
                 // with each result we get a flag if we should query the children (this should be returned in the
                 // future, e.g., partially_ok)
-                StringBoolean stringBoolean = (StringBoolean) entry.getValue().getObject();
+                StringBoolean stringBoolean = (StringBoolean) entry.getValue().object();
                 result.add(stringBoolean.string);
                 if (!stringBoolean.bool && inter2.size() > bagSize) {
                     // we need to query our children
@@ -251,9 +253,9 @@ public final class ExampleDST {
         Interval inter = interval;
         for (int i = 0; i <= height; i++) {
             Number160 key = Number160.createHash(inter.toString());
-            FutureDHT futureDHT = peer.put(key).setData(new Number160(index), new Data(word)).start();
-            futureDHT.awaitUninterruptibly();
-            System.out.println("stored " + word + " in " + inter + " status: " + futureDHT.getAvgStoredKeys());
+            FuturePut futurePut = peer.put(key).setData(new Number160(index), new Data(word)).start();
+            futurePut.awaitUninterruptibly();
+            System.out.println("stored " + word + " in " + inter + " status: " + futurePut.getAvgStoredKeys());
             inter = inter.split(index);
         }
         System.out.println("for DHT.put() we used " + (height + 1) + " DHT calls");

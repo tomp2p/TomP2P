@@ -27,125 +27,106 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 /**
- * This example shows how TomP2P can be used to have Objects instead of Number160. While Number160 are deeply integrated
- * in TomP2P, a wrapper around the {@link Data} object can store the Object for the locationKey and domainKey.
+ * This example shows how TomP2P can be used to have Objects instead of
+ * Number160. While Number160 are deeply integrated in TomP2P, a wrapper around
+ * the {@link Data} object can store the Object for the locationKey and
+ * domainKey.
  * 
  * @author Thomas Bocek
  */
-public class ExampleHashMap
-{
-    public static void main( String[] args )
-        throws Exception
-    {
-        Peer master = null;
-        try
-        {
-            Peer[] peers = ExampleUtils.createAndAttachNodes( 100, 4001 );
-            master = peers[0];
-            MyPeer myPeer = new MyPeer( master );
-            ExampleUtils.bootstrap( peers );
-            myPeer.put( "This is my location key", "This is my domain", "This is my content key",
-                        "And here comes the data" ).awaitUninterruptibly();
-            FutureGet futureGet = myPeer.get( "This is my location key", "This is my domain", "This is my content key" );
-            futureGet.awaitUninterruptibly();
-            System.err.println( futureGet.getFailedReason() );
-            Map<Number640, Data> map = futureGet.getDataMap();
-            for ( Data data : map.values() )
-            {
-                MyData myData = (MyData) data.object();
-                System.out.println( "key: " + myData.getKey() + ", domain: " + myData.getDomain() + ", content: "
-                    + myData.getContent() + ", data: " + myData.getData() );
-            }
-        }
-        finally
-        {
-            master.shutdown();
-        }
-    }
+public class ExampleHashMap {
+	public static void main(String[] args) throws Exception {
+		Peer master = null;
+		try {
+			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
+			master = peers[0];
+			MyPeer myPeer1 = new MyPeer(peers[0]);
+			ExampleUtils.bootstrap(peers);
+			myPeer1.put("This is my location key", "This is my domain", "This is my content key",
+			        "And here comes the data").awaitUninterruptibly();
+			MyPeer myPeer2 = new MyPeer(peers[5]);
+			FutureGet futureGet = myPeer2.get("This is my location key", "This is my domain", "This is my content key");
+			futureGet.awaitUninterruptibly();
+			Map<Number640, Data> map = futureGet.getDataMap();
+			for (Data data : map.values()) {
+				@SuppressWarnings("unchecked")
+                MyData<String> myData = (MyData<String>) data.object();
+				System.out.println("key: " + myData.key() + ", domain: " + myData.domain() + ", content: "
+				        + myData.content() + ", data: " + myData.data());
+			}
+		} finally {
+			master.shutdown();
+		}
+	}
 
-    private static class MyPeer
-    {
-        final private Peer peer;
+	private static class MyPeer {
+		final private Peer peer;
 
-        private MyPeer( Peer peer )
-        {
-            this.peer = peer;
-        }
+		private MyPeer(Peer peer) {
+			this.peer = peer;
+		}
 
-        private FutureGet get( String key, String domain, String content )
-        {
-            Number160 locationKey = Number160.createHash( key );
-            Number160 domainKey = Number160.createHash( domain );
-            Number160 contentKey = Number160.createHash( content );
-            return peer.get( locationKey ).setDomainKey( domainKey ).setContentKey( contentKey ).start();
-        }
+		private FutureGet get(String key, String domain, String content) {
+			Number160 locationKey = Number160.createHash(key);
+			Number160 domainKey = Number160.createHash(domain);
+			Number160 contentKey = Number160.createHash(content);
+			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).start();
+		}
 
-        private FuturePut put( String key, String domain, String content, String data )
-            throws IOException
-        {
-            Number160 locationKey = Number160.createHash( key );
-            Number160 domainKey = Number160.createHash( domain );
-            Number160 contentKey = Number160.createHash( content );
-            MyData myData = new MyData();
-            myData.setKey( key );
-            myData.setDomain( domain );
-            myData.setContent( content );
-            myData.setData( data );
-            return peer.put( locationKey ).setDomainKey( domainKey ).setData( contentKey, new Data( myData ) ).start();
-        }
-    }
+		private FuturePut put(String key, String domain, String content, String data) throws IOException {
+			Number160 locationKey = Number160.createHash(key);
+			Number160 domainKey = Number160.createHash(domain);
+			Number160 contentKey = Number160.createHash(content);
+			MyData<String> myData = new MyData<String>().key(key).domain(domain).content(content).data(data);
+			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).start();
+		}
+	}
 
-    private static class MyData
-        implements Serializable
-    {
-        private static final long serialVersionUID = 2098774660703812030L;
+	private static class MyData<K> implements Serializable {
+		private static final long serialVersionUID = 2098774660703812030L;
 
-        private Object key;
+		private K key;
 
-        private Object domain;
+		private K domain;
 
-        private Object content;
+		private K content;
 
-        private Object data;
+		private K data;
 
-        public Object getKey()
-        {
-            return key;
-        }
+		public K key() {
+			return key;
+		}
 
-        public void setKey( Object key )
-        {
-            this.key = key;
-        }
+		public MyData<K> key(K key) {
+			this.key = key;
+			return this;
+		}
 
-        public Object getDomain()
-        {
-            return domain;
-        }
+		public Object domain() {
+			return domain;
+		}
 
-        public void setDomain( Object domain )
-        {
-            this.domain = domain;
-        }
+		public MyData<K> domain(K domain) {
+			this.domain = domain;
+			return this;
+		}
 
-        public Object getContent()
-        {
-            return content;
-        }
+		public K content() {
+			return content;
+		}
 
-        public void setContent( Object content )
-        {
-            this.content = content;
-        }
+		public MyData<K> content(K content) {
+			this.content = content;
+			return this;
+		}
 
-        public Object getData()
-        {
-            return data;
-        }
+		public K data() {
+			return data;
+		}
 
-        public void setData( Object data )
-        {
-            this.data = data;
-        }
-    }
+		public MyData<K> data(K data) {
+			this.data = data;
+			return this;
+		}
+	}
 }

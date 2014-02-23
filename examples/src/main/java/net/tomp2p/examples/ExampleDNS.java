@@ -26,50 +26,41 @@ import net.tomp2p.storage.Data;
 
 /**
  * See http://tomp2p.net/doc/quick/ for more information on this
+ * 
+ * start with arguments "1 test 127.0.0.1" for the server and "2 test" for the client 
  */
-public class ExampleDNS
-{
-    final private Peer peer;
+public class ExampleDNS {
+	final private Peer peer;
 
-    public ExampleDNS( int nodeId )
-        throws Exception
-    {
-        peer = new PeerMaker( Number160.createHash( nodeId ) ).ports( 4000 + nodeId ).makeAndListen();
-        FutureBootstrap fb = this.peer.bootstrap().setBroadcast( true ).setPorts( 4001 ).start();
-        fb.awaitUninterruptibly();
-        peer.discover().peerAddress( fb.getBootstrapTo().iterator().next() ).start().awaitUninterruptibly();
+	public ExampleDNS(int nodeId) throws Exception {
+		peer = new PeerMaker(Number160.createHash(nodeId)).ports(4000 + nodeId).makeAndListen();
+		FutureBootstrap fb = this.peer.bootstrap().setBroadcast(true).setPorts(4001).start();
+		fb.awaitUninterruptibly();
+		if(fb.isSuccess()) {
+			peer.discover().peerAddress(fb.getBootstrapTo().iterator().next()).start().awaitUninterruptibly();
+		}
+	}
 
-    }
+	public static void main(String[] args) throws NumberFormatException, Exception {
+		ExampleDNS dns = new ExampleDNS(Integer.parseInt(args[0]));
+		if (args.length == 3) {
+			dns.store(args[1], args[2]);
+		}
+		if (args.length == 2) {
+			System.out.println("Name:" + args[1] + " IP:" + dns.get(args[1]));
+		}
+	}
 
-    public static void main( String[] args )
-        throws NumberFormatException, Exception
-    {
-        ExampleDNS dns = new ExampleDNS( Integer.parseInt( args[0] ) );
-        if ( args.length == 3 )
-        {
-            dns.store( args[1], args[2] );
-        }
-        if ( args.length == 2 )
-        {
-            System.out.println( "Name:" + args[1] + " IP:" + dns.get( args[1] ) );
-        }
-    }
+	private String get(String name) throws ClassNotFoundException, IOException {
+		FutureGet futureGet = peer.get(Number160.createHash(name)).start();
+		futureGet.awaitUninterruptibly();
+		if (futureGet.isSuccess()) {
+			return futureGet.getDataMap().values().iterator().next().object().toString();
+		}
+		return "not found";
+	}
 
-    private String get( String name )
-        throws ClassNotFoundException, IOException
-    {
-        FutureGet futureGet = peer.get( Number160.createHash( name ) ).start();
-        futureGet.awaitUninterruptibly();
-        if ( futureGet.isSuccess() )
-        {
-            return futureGet.getDataMap().values().iterator().next().object().toString();
-        }
-        return "not found";
-    }
-
-    private void store( String name, String ip )
-        throws IOException
-    {
-        peer.put( Number160.createHash( name ) ).setData( new Data( ip ) ).start().awaitUninterruptibly();
-    }
+	private void store(String name, String ip) throws IOException {
+		peer.put(Number160.createHash(name)).setData(new Data(ip)).start().awaitUninterruptibly();
+	}
 }

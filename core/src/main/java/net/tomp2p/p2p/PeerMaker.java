@@ -395,12 +395,7 @@ public class PeerMaker {
 		}
 
 		// set the ping builder for the heart beat
-		connectionBean.sender().pingBuilder(new PingFactory() {
-			@Override
-			public PingBuilder ping() {
-				return peer.ping();
-			}
-		});
+		connectionBean.sender().pingBuilder(peer.ping());
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}

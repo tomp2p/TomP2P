@@ -44,7 +44,7 @@ public class DirectDataRPC extends DispatchHandler {
 
     public DirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
         super(peerBean, connectionBean);
-        register(RPC.Commands.BROADCAST.getNr());
+        register(RPC.Commands.DIRECT_DATA.getNr());
     }
 
     /**

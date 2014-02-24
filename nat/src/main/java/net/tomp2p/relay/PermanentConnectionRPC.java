@@ -13,12 +13,14 @@ public class PermanentConnectionRPC extends DirectDataRPC {
 	private FuturePeerConnection futurePeerConnection = null;
 	private final Peer peer;
 	private final PeerAddress unreachablePeer;
+	private final DirectDataRPC originalDirectDataRPC;
 	
 
 	public PermanentConnectionRPC(Peer peer, PeerAddress unreachablePeer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
 		this.peer = peer;
 		this.unreachablePeer = unreachablePeer;
+		this.originalDirectDataRPC = peer.getDirectDataRPC();
 	}
 	
     @Override
@@ -28,6 +30,9 @@ public class PermanentConnectionRPC extends DirectDataRPC {
     		futurePeerConnection = new FuturePeerConnection(message.getSender());
             futurePeerConnection.setDone(peerConnection);
             new RelayForwarder(futurePeerConnection, peer);
+            
+            // "restore" original direct data RPC
+            peer.setDirectDataRPC(originalDirectDataRPC);
     	}
         super.handleResponse(message, peerConnection, sign, responder);
     }

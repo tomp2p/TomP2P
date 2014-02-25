@@ -274,7 +274,8 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         }
         int size = peer.getPeerBean().peerMap().size() + 1;
         requestP2PConfiguration = requestP2PConfiguration.adjustMinimumResult(size);
-        if (futureChannelCreator == null) {
+        if (futureChannelCreator == null || 
+        		(futureChannelCreator.getChannelCreator()!=null && futureChannelCreator.getChannelCreator().isShutdown())) {
             futureChannelCreator = peer.getConnectionBean().reservation()
                     .create(routingConfiguration, requestP2PConfiguration, this);
         }

@@ -33,6 +33,8 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
     private OperationMapper<K> operation;
 
     private boolean cancelOnFinish = false;
+    
+    private K futureDHT;
 
     public ParallelRequestBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -78,8 +80,17 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         this.cancelOnFinish = cancelOnFinish;
         return this;
     }
+    
+    public ParallelRequestBuilder<K> futureDHT(K futureDHT) {
+    	this.futureDHT = futureDHT;
+    	return this;
+    }
+    
+    public K futureDHT() {
+    	return futureDHT;
+    }
 
-    public K start(K futureDHT) {
+    public K start() {
 
         preBuild("parallel-builder");
         if (queue == null || queue.size() == 0) {

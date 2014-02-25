@@ -16,6 +16,7 @@
 package net.tomp2p.p2p;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.builder.AddBuilder;
@@ -62,7 +64,6 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,6 +122,7 @@ public class Peer {
     private boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = null;
+    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>());
 
     //
     // final private ConnectionConfiguration configuration;
@@ -540,16 +542,26 @@ public class Peer {
     }
 
     /**
-     * Shuts down everything.
+     * Shuts down everything. TODO: test in ExampleDirectReplication, when the direct replication was not yet shut down.
      * 
      * @return The future, when shutdown is completed
      */
-    public FutureDone<Void> shutdown() {
+    public BaseFuture shutdown() {
         //prevent the shutdown from being called twice
         if (!shutdown) {
             shutdown = true;
-            return peerCreator.shutdown();
             
+            final List<Shutdown> copy;
+            synchronized (shutdownListeners) {
+            	copy = new ArrayList<Shutdown>(shutdownListeners);
+            }
+            final FutureLateJoin<BaseFuture> futureLateJoin = new FutureLateJoin<BaseFuture>(shutdownListeners.size() + 1);
+            for(Shutdown shutdown:copy) {
+            	futureLateJoin.add(shutdown.shutdown());
+            	removeShutdownListener(shutdown);
+            }
+            futureLateJoin.add(peerCreator.shutdown());
+            return futureLateJoin;
         } else {
             return new FutureDone<Void>().setFailed("already shutting / shut down");
         }
@@ -561,4 +573,12 @@ public class Peer {
     public boolean isShutdown() {
         return shutdown;
     }
+
+	public void addShutdownListener(Shutdown shutdown) {
+		shutdownListeners.add(shutdown);
+    }
+	
+	public void removeShutdownListener(Shutdown shutdown) {
+		shutdownListeners.remove(shutdown);
+	}
 }

@@ -18,12 +18,14 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
-import net.tomp2p.futures.FutureCreate;
-import net.tomp2p.futures.FutureDHT;
-import net.tomp2p.futures.FuturePut;
-import net.tomp2p.futures.FutureRemove;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.Shutdown;
+import net.tomp2p.p2p.builder.PutBuilder;
+import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.replication.DirectReplication;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Timings;
 
@@ -74,27 +76,26 @@ public final class ExampleDirectReplication {
      * @throws IOException .
      */
     private static void exmpleDirectReplication(final Peer[] peers) throws IOException {
-        FutureCreate<FutureDHT> futureCreate1 = new FutureCreate<FutureDHT>() {
-            @Override
-            public void repeated(final FutureDHT future) {
-                System.out.println("put again...");
-            }
-        };
-        FuturePut futurePut = peers[1].put(Number160.ONE).setData(new Data("test")).setFutureCreate(futureCreate1)
-                .setRefreshSeconds(2).setDirectReplication().start();
+        PutBuilder putBuilder = peers[1].put(Number160.ONE).setData(new Data("test"));
+        DirectReplication replication = new DirectReplication(peers[1]);
+        Shutdown shutdown = replication.direct(putBuilder, 1000, -1, new AutomaticFuture() {
+			@Override
+			public void futureCreated(BaseFuture future) {
+				System.out.println("put again...");
+			}
+		});
         Timings.sleepUninterruptibly(NINE_SECONDS);
         System.out.println("stop replication");
-        //TODO: futurePut.shutdown();
+        shutdown.shutdown();
+        RemoveBuilder removeBuilder = peers[1].remove(Number160.ONE);
+        replication.direct(removeBuilder, 1000, 9, new AutomaticFuture() {
+			@Override
+			public void futureCreated(BaseFuture future) {
+				System.out.println("remove again...");
+			}
+		});
         Timings.sleepUninterruptibly(NINE_SECONDS);
-        FutureCreate<FutureDHT> futureCreate2 = new FutureCreate<FutureDHT>() {
-            @Override
-            public void repeated(final FutureDHT future) {
-                System.out.println("remove again...");
-            }
-        };
-        FutureRemove futureRemove = peers[1].remove(Number160.ONE).setFutureCreate(futureCreate2).setRefreshSeconds(2)
-                .setRepetitions(2).setDirectReplication().start();
-        Timings.sleepUninterruptibly(NINE_SECONDS);
+        System.out.println("done");
+        replication.shutdown().awaitUninterruptibly();
     }
-
 }

@@ -28,7 +28,7 @@ import net.tomp2p.peers.Number160;
  *
  * @param <K>
  */
-public interface BasicBuilder<K> extends ConnectionConfiguration {
+public interface BasicBuilder<K> extends ConnectionConfiguration, Builder {
 
     public Number160 getLocationKey();
 

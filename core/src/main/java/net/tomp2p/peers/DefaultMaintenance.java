@@ -198,6 +198,12 @@ public class DefaultMaintenance implements Maintenance {
         } else {
         	index = intervalSeconds.length - 1;
         	for(int i=0;i<intervalSeconds.length;i++) {
+        		//interval is 2,4,8,16,32,64
+        		//examples
+        		//I have seen a peer online for 5 sec -> next interval to check is 8
+        		//I have seen a peer online for 4 sec -> next interval to check is 4
+        		//I have seen a peer online for 17 sec -> next interval to check is 32
+        		//I have seen a peer online for 112321 sec -> next interval to check is 64
         		if(intervalSeconds[i]>=onlineSec) {
         			index=i;
         			break;

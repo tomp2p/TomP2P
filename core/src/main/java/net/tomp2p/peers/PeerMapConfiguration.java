@@ -33,6 +33,7 @@ public class PeerMapConfiguration {
     private int offlineCount;
     private PeerFilter peerFilter;
     private Maintenance maintenance;
+    private boolean peerVerification;
 
     /**
      * Constructor with reasonable defaults.
@@ -51,6 +52,7 @@ public class PeerMapConfiguration {
         offlineCount = 3;
         peerFilter = new DefaultPeerFilter();
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
+        peerVerification = true;
         // CHECKSTYLE:ON
     }
 
@@ -215,5 +217,19 @@ public class PeerMapConfiguration {
     public PeerMapConfiguration exceptionTimeout(final int exceptionTimeout) {
         this.exceptionTimeout = exceptionTimeout;
         return this;
+    }
+    
+    public boolean isPeerVerification() {
+    	return peerVerification;
+    }
+    
+    public PeerMapConfiguration peerNoVerification() {
+    	peerVerification = false;
+    	return this;
+    }
+
+    public PeerMapConfiguration peerVerification(boolean reerVerification) {
+    	this.peerVerification = reerVerification;
+    	return this;
     }
 }

@@ -63,6 +63,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     // network information
     private final Number160 peerId;
+    //TODO: this may be used as a sixth relay peer
     private final PeerSocketAddress peerSocketAddress;
 
     // connection info

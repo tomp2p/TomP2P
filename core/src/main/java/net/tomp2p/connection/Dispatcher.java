@@ -132,7 +132,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         //Message responseMessage = null;
-        Responder responder = new Responder(ctx, message);
+        Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
@@ -146,20 +146,26 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
     }
     
-    public class Responder {
+    public class DirectResponder implements Responder {
         final ChannelHandlerContext ctx;
         final Message requestMessage;
-        Responder(final ChannelHandlerContext ctx, final Message requestMessage) {
+        DirectResponder(final ChannelHandlerContext ctx, final Message requestMessage) {
             this.ctx = ctx;
             this.requestMessage = requestMessage;
         }
+        
+        @Override
         public void response(Message responseMessage) {
             Dispatcher.this.response(ctx, responseMessage);
         }
+        
+        @Override
         public void failed(Message.Type type, String reason) {
             Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBean.serverPeerAddress());
             Dispatcher.this.response(ctx, responseMessage);
         }
+        
+        @Override
         public void responseFireAndForget() {
             LOG.debug("The reply handler was a fire-and-forget handler, "
                     + "we don't send any message back! {}", requestMessage);    
@@ -211,7 +217,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            the message a handler should be found for
      * @return the handler for the given message, null if none has been registered for that message.
      */
-    private DispatchHandler getAssociatedHandler(final Message message) {
+    public DispatchHandler getAssociatedHandler(final Message message) {
         if (message == null || !(message.isRequest())) {
             return null;
         }

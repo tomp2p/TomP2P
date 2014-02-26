@@ -18,10 +18,7 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
 
-import net.tomp2p.futures.FutureDHT;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
@@ -120,11 +117,12 @@ public final class ExampleMultiColumn {
         System.out
                 .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureGet.getData().object() + "]");
         // get list
-        Set<Number160> range = new TreeSet<Number160>();
-        range.add(createNr(rowKey1, 0));
-        range.add(createNr(rowKey1, -1));
+        
+        Number640 from = new Number640(locationKey, Number160.ZERO, createNr(rowKey1, 0), Number160.ZERO);
+        Number640 to = new Number640(locationKey, Number160.ZERO, createNr(rowKey1, -1), Number160.MAX_VALUE);
+        
         // get can also be used with ranges for content keys
-        FutureGet futureGet2 = peers[peerGet].get(locationKey).contentKeys(range).setRange().start();
+        FutureGet futureGet2 = peers[peerGet].get(locationKey).from(from).to(to).start();
         futureGet2.awaitUninterruptibly();
         System.out.println("row fetch [" + rowKey1 + "]");
         for (Map.Entry<Number640, Data> entry : futureGet2.getDataMap().entrySet()) {
@@ -132,10 +130,11 @@ public final class ExampleMultiColumn {
         }
         // column get
         String search = col1;
-        range = new TreeSet<Number160>();
-        range.add(createNr(search, 0));
-        range.add(createNr(search, -1));
-        FutureGet futureGet3 = peers[peerGet].get(locationKey).contentKeys(range).setRange().start();
+        
+        from = new Number640(locationKey, Number160.ZERO, createNr(search, 0), Number160.ZERO);
+        to = new Number640(locationKey, Number160.ZERO, createNr(search, -1), Number160.MAX_VALUE);
+        
+        FutureGet futureGet3 = peers[peerGet].get(locationKey).from(from).to(to).start();
         futureGet3.awaitUninterruptibly();
         System.out.println("column fetch [" + search + "]");
         for (Map.Entry<Number640, Data> entry : futureGet3.getDataMap().entrySet()) {

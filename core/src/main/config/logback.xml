@@ -28,6 +28,7 @@
     
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.p2p.DefaultBroadcastHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
@@ -70,6 +71,7 @@
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
+  <logger name="net.tomp2p.relay" level="TRACE"/>
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
   

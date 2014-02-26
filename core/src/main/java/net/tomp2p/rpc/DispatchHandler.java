@@ -16,9 +16,9 @@
 package net.tomp2p.rpc;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
@@ -52,9 +52,12 @@ public abstract class DispatchHandler {
      * @param names
      *            The command names
      */
-    public DispatchHandler(final PeerBean peerBean, final ConnectionBean connectionBean, final int... names) {
+    public DispatchHandler(final PeerBean peerBean, final ConnectionBean connectionBean) {
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
+    }
+    
+    public void register(final int... names) {
         connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().getPeerId(), this, names);
     }
 

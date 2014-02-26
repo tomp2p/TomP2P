@@ -27,10 +27,10 @@ import java.util.Random;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -76,7 +76,8 @@ public class StorageRPC extends DispatchHandler {
      *            The connection bean
      */
     public StorageRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.PUT.getNr(), 
+        super(peerBean, connectionBean);
+        register(RPC.Commands.PUT.getNr(), 
         		RPC.Commands.GET.getNr(), RPC.Commands.ADD.getNr(), 
         		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
         		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), RPC.Commands.PUT_META.getNr());

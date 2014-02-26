@@ -24,7 +24,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -43,7 +43,8 @@ public class DirectDataRPC extends DispatchHandler {
     private volatile ObjectDataReply objectDataReply;
 
     public DirectDataRPC(PeerBean peerBean, ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.DIRECT_DATA.getNr());
+        super(peerBean, connectionBean);
+        register(RPC.Commands.DIRECT_DATA.getNr());
     }
 
     /**
@@ -141,7 +142,7 @@ public class DirectDataRPC extends DispatchHandler {
             // returning the request buffer, which means nothing is
             // returned. Or an exception can be thrown
             if (message.getType() == Type.REQUEST_1) {
-                LOG.debug("handling requet1");
+                LOG.debug("handling request1");
                 final Buffer replyBuffer = rawDataReply2.reply(message.getSender(), requestBuffer,
                         message.isDone());
                 if (replyBuffer == null && message.isDone()) {

@@ -28,7 +28,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -57,7 +57,8 @@ public class TrackerRPC extends DispatchHandler {
      * @param connectionBean
      */
     public TrackerRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.TRACKER_ADD.getNr(), RPC.Commands.TRACKER_GET.getNr());
+        super(peerBean, connectionBean);
+        register(RPC.Commands.TRACKER_ADD.getNr(), RPC.Commands.TRACKER_GET.getNr());
     }
 
     public static boolean isPrimary(FutureResponse response) {

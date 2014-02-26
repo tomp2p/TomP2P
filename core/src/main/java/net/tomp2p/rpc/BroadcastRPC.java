@@ -18,10 +18,10 @@ package net.tomp2p.rpc;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.Dispatcher.Responder;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
@@ -40,7 +40,8 @@ public class BroadcastRPC extends DispatchHandler {
     private final BroadcastHandler broadcastHandler;
 
     public BroadcastRPC(PeerBean peerBean, ConnectionBean connectionBean, BroadcastHandler broadcastHandler) {
-        super(peerBean, connectionBean, RPC.Commands.BROADCAST.getNr());
+        super(peerBean, connectionBean);
+        register(RPC.Commands.BROADCAST.getNr());
         this.broadcastHandler = broadcastHandler;
     }
 

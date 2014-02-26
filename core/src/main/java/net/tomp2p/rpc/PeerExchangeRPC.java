@@ -23,7 +23,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -55,7 +55,8 @@ public class PeerExchangeRPC extends DispatchHandler {
      *            The connection bean
      */
     public PeerExchangeRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.PEX.getNr());
+        super(peerBean, connectionBean);
+        register(RPC.Commands.PEX.getNr());
         // sentPeers = new CacheMap<Number160, Set<PeerAddress>>(SENT_PEERS_CACHE_SIZE, true);
     }
 

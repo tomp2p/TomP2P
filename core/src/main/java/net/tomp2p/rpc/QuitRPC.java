@@ -23,7 +23,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -56,7 +56,8 @@ public class QuitRPC extends DispatchHandler {
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
     public QuitRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.QUIT.getNr());
+        super(peerBean, connectionBean);
+        register(RPC.Commands.QUIT.getNr());
     }
 
     /**

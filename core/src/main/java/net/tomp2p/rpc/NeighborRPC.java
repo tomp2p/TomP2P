@@ -27,7 +27,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
@@ -54,6 +54,11 @@ public class NeighborRPC extends DispatchHandler {
     public static final int NEIGHBOR_SIZE = 30;
     public static final int NEIGHBOR_LIMIT = 1000;
 
+    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
+        this(peerBean, connectionBean, true);
+    }
+        
+
     /**
      * Setup the RPC and register for incoming messages.
      * 
@@ -62,8 +67,11 @@ public class NeighborRPC extends DispatchHandler {
      * @param connectionBean
      *            The connection bean
      */
-    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, RPC.Commands.NEIGHBOR.getNr());
+    public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean, boolean register) {
+        super(peerBean, connectionBean);
+        if(register) {
+            register(RPC.Commands.NEIGHBOR.getNr());
+        }
     }
 
     /**
@@ -150,7 +158,16 @@ public class NeighborRPC extends DispatchHandler {
         // Create response message and set neighbors
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
-        SortedSet<PeerAddress> neighbors = peerBean().peerMap().closePeers(locationKey, NEIGHBOR_SIZE);
+        SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
+        if(neighbors == null) {
+            //return empty neighbor set
+            Message response = createResponseMessage(message, Type.NOT_FOUND);
+            response.setNeighborsSet(new NeighborSet(-1));
+            responder.response(response);
+            return;
+        }
+        
+        LOG.debug("found the following neighbors {}", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);
         responseMessage.setNeighborsSet(neighborSet);
         // check for fastget, -1 if, no domain provided, so we cannot
@@ -203,6 +220,13 @@ public class NeighborRPC extends DispatchHandler {
                */
         }
         responder.response(responseMessage);
+    }
+
+    /**
+     * TODO: explain why protected method here.
+     */
+    protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+        return peerBean().peerMap().closePeers(id, atLeast);
     }
 
     /**

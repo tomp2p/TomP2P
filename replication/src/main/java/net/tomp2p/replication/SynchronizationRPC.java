@@ -29,7 +29,7 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
-import net.tomp2p.connection.Dispatcher.Responder;
+import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -69,7 +69,8 @@ public class SynchronizationRPC extends DispatchHandler {
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
     public SynchronizationRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, INFO_COMMAND, SYNC_COMMAND);
+        super(peerBean, connectionBean);
+        register(INFO_COMMAND, SYNC_COMMAND);
     }
 
     /**

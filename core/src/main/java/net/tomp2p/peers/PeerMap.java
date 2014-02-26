@@ -68,8 +68,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 
     private final Maintenance maintenance;
 
-    private final boolean peerVerification;
-
     /**
      * Creates the bag for the peers. This peer knows a lot about close peers and the further away the peers are, the
      * less known they are. Distance is measured with XOR of the peer ID. The distance of peer with ID 0x12 and peer
@@ -99,7 +97,6 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 peerMapConfiguration.exceptionTimeout(), bagSizeVerified * Number160.BITS);
         this.maintenance = peerMapConfiguration.maintenance().init(peerMapVerified, peerMapOverflow,
                 offlineMap, shutdownMap, exceptionMap);
-        this.peerVerification = peerMapConfiguration.isPeerVerification();
     }
 
     /**
@@ -242,7 +239,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
-        boolean firstHand = referrer == null || !peerVerification;
+        boolean firstHand = referrer == null;
         // always trust first hand information
         if (firstHand) {
             offlineMap.remove(remotePeer.getPeerId());

@@ -142,13 +142,13 @@ public class Utils2 {
         Peer[] peers = new Peer[nrOfPeers];
         if (automaticFuture != null) {
         	Number160 peerId = new Number160(rnd);
-        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
                     .addAutomaticFuture(automaticFuture).ports(port).setEnableMaintenance(false)
                     .externalBindings(bindings).peerMap(peerMap).setEnableMaintenance(false).makeAndListen();
         } else {
         	Number160 peerId = new Number160(rnd);
-        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerMaker(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
                     .setEnableIndirectReplication(false).setEnableMaintenance(false).peerMap(peerMap).ports(port).makeAndListen();
         }
@@ -156,13 +156,13 @@ public class Utils2 {
         for (int i = 1; i < nrOfPeers; i++) {
             if (automaticFuture != null) {
             	Number160 peerId = new Number160(rnd);
-            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
                         .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
                         .setEnableMaintenance(maintenance).setEnableMaintenance(false).peerMap(peerMap).externalBindings(bindings).makeAndListen();
             } else {
             	Number160 peerId = new Number160(rnd);
-            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerMaker(peerId).setEnableMaintenance(maintenance)
                         .externalBindings(bindings).setEnableMaintenance(false).setEnableIndirectReplication(replication).peerMap(peerMap).masterPeer(peers[0])
                         .makeAndListen();

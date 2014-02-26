@@ -28,6 +28,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -43,9 +44,11 @@ import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -63,6 +66,7 @@ public class Sender {
 	private final PeerStatusListener[] peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
+	private final Random random;
 
 	private PingBuilder pingBuilder;
 
@@ -75,11 +79,12 @@ public class Sender {
 	 *            The configuration used to get the signature factory
 	 * @param dispatcher
 	 */
-	public Sender(final PeerStatusListener[] peerStatusListeners,
+	public Sender(final Number160 peerId, final PeerStatusListener[] peerStatusListeners,
 	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
+		this.random = new Random(peerId.hashCode());
 	}
 
 	public ChannelClientConfiguration channelClientConfiguration() {
@@ -382,13 +387,20 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.getRecipient().isRelay()) {
+		if (message.getRecipient().isRelay() && message.getCommand() != RPC.Commands.NEIGHBOR.getNr()) {
 			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 			futureResponse
 			        .setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
-			final ChannelFuture channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
-			        broadcast, handlers, futureResponse);
+			final ChannelFuture channelFuture;
+			if(message.getRecipient().isRelay()) {
+				PeerSocketAddress[] psa = message.getRecipient().getPeerSocketAddresses();
+				 channelFuture = channelCreator.createUDP
+						(PeerSocketAddress.createSocketUDP(psa[random.nextInt(psa.length-1)]), broadcast, handlers, futureResponse);
+			} else {
+				channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
+						broadcast, handlers, futureResponse);
+			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
 	}
@@ -549,8 +561,12 @@ public class Sender {
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isFailed()) {
-					for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-						peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
+					if(message.getRecipient().isRelay()) {
+						//TODO: make the relay go away if failed
+					} else {
+						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
+							peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
+						}
 					}
 				}
 			}

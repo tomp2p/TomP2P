@@ -108,7 +108,7 @@ public class PeerCreator {
 		}
 		
 		//connection bean
-		Sender sender = new Sender(peerStatusListeners, channelClientConfiguration, dispatcher);
+		Sender sender = new Sender(peerId, peerStatusListeners, channelClientConfiguration, dispatcher);
 		NATUtils natUtils = new NATUtils();
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,

@@ -250,4 +250,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return null;
         }
     }
+    
+    /**
+     * May take longer.. used for testing
+     * @param command
+     * @return
+     */
+    public Map<Number160, DispatchHandler> searchHandler(final Integer command) {
+    	Map<Number160, DispatchHandler> result = new HashMap<Number160, DispatchHandler>();
+    	for(Map.Entry<Number160, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
+    		for(Map.Entry<Integer, DispatchHandler> entry2:entry.getValue().entrySet()) {
+    			DispatchHandler handlerh = entry.getValue().get(command);
+    			if(handlerh!=null && entry2.getKey().equals(command)) {
+    				result.put(entry.getKey(), handlerh);
+    			}
+    		}
+    	}
+    	return result;
+    }
 }

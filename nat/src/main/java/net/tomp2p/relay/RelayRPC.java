@@ -16,13 +16,12 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RelayRPC extends DispatchHandler {
-
-	public static final byte RELAY_COMMAND = 77;
 
 	private static final Logger logger = LoggerFactory.getLogger(RelayRPC.class);
 	private ConnectionConfiguration config;
@@ -31,7 +30,7 @@ public class RelayRPC extends DispatchHandler {
 
 	public RelayRPC(Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
-		register(RELAY_COMMAND);
+		register(RPC.Commands.RELAY.getNr());
 		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
 	}
@@ -41,7 +40,7 @@ public class RelayRPC extends DispatchHandler {
 
 		final RelayConnectionFuture connectionFuture = new RelayConnectionFuture(other);
 
-		final Message message = createMessage(other, RELAY_COMMAND, Type.REQUEST_1);
+		final Message message = createMessage(other, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
 		logger.debug("send RPC message {}", message);
@@ -86,7 +85,7 @@ public class RelayRPC extends DispatchHandler {
 
 	@Override
 	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-		if (!(message.getType() == Type.REQUEST_1 && message.getCommand() == RELAY_COMMAND)) {
+		if (!(message.getType() == Type.REQUEST_1 && message.getCommand() == RPC.Commands.RELAY.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 

@@ -61,8 +61,6 @@ public class RelayBuilder {
             return FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS;
         }
         
-        //bootstrapBuilder.getRoutingConfiguration().isForceTCP()
-        
         return new RelayManager(peer, bootstrapBuilder, maxRelays).setupRelays();
     }
 

@@ -31,7 +31,7 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
 
 public class ExampleFastSS {
-    public static void main(String[] args) throws Exception {
+    1public static void main(String[] args) throws Exception {
         Peer[] peers = null;
         try {
             peers = ExampleUtils.createAndAttachNodes(100, 4001);

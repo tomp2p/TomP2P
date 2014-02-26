@@ -16,7 +16,7 @@ import net.tomp2p.storage.StorageLayer.ProtectionEnable;
 import net.tomp2p.storage.StorageLayer.ProtectionMode;
 import net.tomp2p.utils.Utils;
 
-public class ExampleSecurity
+public class ExampleDomainProtection
 {
     final Random rnd = new Random( 42L );
 

@@ -21,6 +21,7 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 			if (!setCompletedAndNotify()) {
 				return this;
 			}
+			this.relayManager = relayManager;
 			if (relayManager != null && relayManager.getRelayAddresses().size() > 0) {
 				type = FutureType.OK;
 			} else {

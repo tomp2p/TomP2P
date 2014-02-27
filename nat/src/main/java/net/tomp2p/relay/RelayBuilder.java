@@ -20,15 +20,11 @@ public class RelayBuilder implements Builder {
     private BootstrapBuilder bootstrapBuilder;
     private int maxRelays = PeerAddress.MAX_RELAYS;
     private RelayManager relayManager;
+    private RelayRPC relayRPC;
     
-    
-    /**
-     * 
-     * @param peer
-     *            The unreachable peer
-     */
-    public RelayBuilder(Peer peer) {
-        this.peer = peer;
+    public RelayBuilder(RelayPeer relayPeer) {
+        this.peer = relayPeer.peer();
+        this.relayRPC = relayPeer.relayRPC();
     }
     
     /**
@@ -119,7 +115,7 @@ public class RelayBuilder implements Builder {
         }
         
         //TODO: can we create the releaymananger in the constructor? can we reuse it?
-        relayManager = new RelayManager(peer, bootstrapBuilder, maxRelays);
+        relayManager = new RelayManager(peer, bootstrapBuilder, maxRelays, relayRPC);
         return relayManager.setupRelays();
     }
 

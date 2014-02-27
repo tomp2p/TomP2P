@@ -27,6 +27,7 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 				type = FutureType.FAILED;
 			}
 		}
+		this.relayManager = relayManager;
 		notifyListeners();
 		return this;
 	}

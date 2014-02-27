@@ -265,9 +265,6 @@ public class RelayManager {
                             logger.debug("Adding peer {} as a relay", relayAddress);
                             relayAddresses.add(relayAddress);
                             
-                            //update peer map
-                            
-
                             FutureDone<Void> closeFuture = fr.futurePeerConnection().getObject().closeFuture();
                             closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                                 public void operationComplete(FutureDone<Void> future) throws Exception {

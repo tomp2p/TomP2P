@@ -8,10 +8,12 @@ import java.util.Random;
 import java.util.Set;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
@@ -273,12 +275,12 @@ public class TestRelay {
             FutureChannelCreator fcc = slave.getConnectionBean().reservation().create(1, PeerAddress.MAX_RELAYS);
             fcc.awaitUninterruptibly();
 
-            RelayConnectionFuture rcf = RelayRPC.setup(slave).setupRelay(master.getPeerAddress(), fcc.getChannelCreator());
+            final FuturePeerConnection fpc = slave.createPeerConnection(master.getPeerAddress());
+            FutureDone<PeerConnection> rcf = RelayRPC.setup(slave).setupRelay(fcc.getChannelCreator(), fpc);
             rcf.awaitUninterruptibly();
 
             //Check if permanent peer connection was created
             Assert.assertTrue(rcf.isSuccess());
-            FuturePeerConnection fpc = rcf.futurePeerConnection();
             Assert.assertEquals(master.getPeerAddress(), fpc.getObject().remotePeer());
             Assert.assertTrue(fpc.getObject().channelFuture().channel().isActive());
             Assert.assertTrue(fpc.getObject().channelFuture().channel().isOpen());
@@ -309,6 +311,7 @@ public class TestRelay {
              RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start();
              
              rf.awaitUninterruptibly();
+             System.err.println("ERRERO:"+rf.getFailedReason());
              Assert.assertTrue(rf.isSuccess());
              RelayManager manager = rf.relayManager();
              System.err.println("relays: "+manager.getRelayAddresses());
@@ -318,10 +321,11 @@ public class TestRelay {
              FuturePut futurePut = peers[33].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
              Assert.assertTrue(futurePut.isSuccess());
              Assert.assertTrue(futurePut.getRawResult().containsKey(slave.getPeerAddress()));
+             System.err.println("here!!!!!");
              
          } finally {
              master.shutdown().await();
-             slave.shutdown().await();
+             //lave.shutdown().await();
          }
     }
 

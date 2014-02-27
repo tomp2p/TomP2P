@@ -20,6 +20,7 @@ import java.security.KeyPair;
 
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -33,323 +34,359 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SendDirectBuilderI;
 import net.tomp2p.utils.Utils;
 
-public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI, SignatureBuilder<SendDirectBuilder>{
-    private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null)
-            .setFailed0("Peer is shutting down");
+public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI,
+        SignatureBuilder<SendDirectBuilder> {
+	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null)
+	        .setFailed0("Peer is shutting down");
 
-    private final Peer peer;
+	private final Peer peer;
 
-    private final PeerAddress recipientAddress;
+	private final PeerAddress recipientAddress;
 
-    private Buffer buffer;
+	private Buffer buffer;
 
-    private FuturePeerConnection recipientConnection;
+	private FuturePeerConnection recipientConnection;
+	private PeerConnection peerConnection;
 
-    private Object object;
+	private Object object;
 
-    private FutureChannelCreator futureChannelCreator;
+	private FutureChannelCreator futureChannelCreator;
 
-    private boolean streaming = false;
+	private boolean streaming = false;
 
-    private boolean forceUDP = false;
+	private boolean forceUDP = false;
 
-    private KeyPair keyPair = null;
+	private KeyPair keyPair = null;
 
-    private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
-    private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
-    private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+	private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
+	private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
+	private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
 
-    private boolean forceTCP = false;
+	private boolean forceTCP = false;
 
-    private ProgressListener progressListener;
+	private ProgressListener progressListener;
 
-    public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
-        this.peer = peer;
-        this.recipientAddress = recipientAddress;
-        this.recipientConnection = null;
+	public SendDirectBuilder(Peer peer, PeerAddress recipientAddress) {
+		this.peer = peer;
+		this.recipientAddress = recipientAddress;
+		this.recipientConnection = null;
+	}
+
+	public SendDirectBuilder(Peer peer, FuturePeerConnection recipientConnection) {
+		this.peer = peer;
+		this.recipientAddress = null;
+		this.recipientConnection = recipientConnection;
+	}
+
+	public SendDirectBuilder(Peer peer, PeerConnection peerConnection) {
+		this.peer = peer;
+		this.recipientAddress = null;
+		this.peerConnection = peerConnection;
     }
 
-    public SendDirectBuilder(Peer peer, FuturePeerConnection recipientConnection) {
-        this.peer = peer;
-        this.recipientAddress = null;
-        this.recipientConnection = recipientConnection;
-    }
+	public PeerAddress getRecipient() {
+		return recipientAddress;
+	}
 
-    public PeerAddress getRecipient() {
-        return recipientAddress;
-    }
+	public Buffer getBuffer() {
+		return buffer;
+	}
 
-    public Buffer getBuffer() {
-        return buffer;
-    }
+	public SendDirectBuilder setBuffer(Buffer buffer) {
+		this.buffer = buffer;
+		return this;
+	}
 
-    public SendDirectBuilder setBuffer(Buffer buffer) {
-        this.buffer = buffer;
-        return this;
-    }
+	public FuturePeerConnection getConnection() {
+		return recipientConnection;
+	}
 
-    public FuturePeerConnection getConnection() {
-        return recipientConnection;
-    }
+	public SendDirectBuilder setConnection(FuturePeerConnection connection) {
+		this.recipientConnection = connection;
+		return this;
+	}
 
-    public SendDirectBuilder setConnection(FuturePeerConnection connection) {
-        this.recipientConnection = connection;
-        return this;
-    }
+	public PeerConnection peerConnection() {
+		return peerConnection;
+	}
 
-    public Object getObject() {
-        return object;
-    }
+	public SendDirectBuilder peerConnection(PeerConnection peerConnection) {
+		this.peerConnection = peerConnection;
+		return this;
+	}
 
-    public SendDirectBuilder setObject(Object object) {
-        this.object = object;
-        return this;
-    }
+	public Object getObject() {
+		return object;
+	}
 
-    public FutureChannelCreator getFutureChannelCreator() {
-        return futureChannelCreator;
-    }
+	public SendDirectBuilder setObject(Object object) {
+		this.object = object;
+		return this;
+	}
 
-    public SendDirectBuilder setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
-        this.futureChannelCreator = futureChannelCreator;
-        return this;
-    }
+	public FutureChannelCreator getFutureChannelCreator() {
+		return futureChannelCreator;
+	}
 
-    public SendDirectBuilder streaming(boolean streaming) {
-        this.streaming = streaming;
-        return this;
-    }
+	public SendDirectBuilder setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
+		this.futureChannelCreator = futureChannelCreator;
+		return this;
+	}
 
-    public boolean streaming() {
-        return streaming;
-    }
+	public SendDirectBuilder streaming(boolean streaming) {
+		this.streaming = streaming;
+		return this;
+	}
 
-    public SendDirectBuilder setStreaming() {
-        this.streaming = true;
-        return this;
-    }
+	public boolean streaming() {
+		return streaming;
+	}
 
-    public boolean isRaw() {
-        return object == null;
-    }
+	public SendDirectBuilder setStreaming() {
+		this.streaming = true;
+		return this;
+	}
 
-    public FutureDirect start() {
-        if (peer.isShutdown()) {
-            return FUTURE_REQUEST_SHUTDOWN;
-        }
+	public boolean isRaw() {
+		return object == null;
+	}
 
-        final boolean keepAlive;
-        final PeerAddress remotePeer;
-        if (recipientAddress != null && recipientConnection == null) {
-            keepAlive = false;
-            remotePeer = recipientAddress;
-        } else if (recipientAddress == null && recipientConnection != null) {
-            keepAlive = true;
-            remotePeer = recipientConnection.remotePeer();
-        } else {
-            throw new IllegalArgumentException("either remotePeer or connection has to be set");
-        }
-        
-        if (futureChannelCreator == null) {
-            futureChannelCreator = peer.getConnectionBean().reservation().create(isForceUDP()?1:0, isForceUDP()?0:1);
-        }
-        
-        final RequestHandler<FutureResponse> request = peer.getDirectDataRPC().sendInternal(remotePeer, this);
-        if (keepAlive) {
-            recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-                @Override
-                public void operationComplete(final FuturePeerConnection future) throws Exception {
-                    if (future.isSuccess()) {
-                        FutureChannelCreator futureChannelCreator2 = recipientConnection.getObject().acquire(request.futureResponse());
-                        futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-                            @Override
-                            public void operationComplete(FutureChannelCreator future) throws Exception {
-                                if(future.isSuccess()) {
-                                    request.futureResponse().getRequest().setKeepAlive(true);
-                                    request.sendTCP(recipientConnection.getObject().channelCreator(), recipientConnection.getObject());
-                                } else {
-                                    request.futureResponse().setFailed("Could not acquire channel (2)", future);
-                                }
-                            }
-                            
-                        });
-                        
-                    } else {
-                        request.futureResponse().setFailed("Could not acquire channel (1)", future);
-                    }
+	public FutureDirect start() {
+		if (peer.isShutdown()) {
+			return FUTURE_REQUEST_SHUTDOWN;
+		}
 
-                }
-            });
+		final boolean keepAlive;
+		final PeerAddress remotePeer;
+		if (recipientAddress != null && recipientConnection == null) {
+			keepAlive = false;
+			remotePeer = recipientAddress;
+		} else if (recipientAddress == null && recipientConnection != null) {
+			keepAlive = true;
+			remotePeer = recipientConnection.remotePeer();
+		} else {
+			throw new IllegalArgumentException("either remotePeer or connection has to be set");
+		}
 
-        } else {
-            futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-                @Override
-                public void operationComplete(final FutureChannelCreator future) throws Exception {
-                    if (future.isSuccess()) {
-                        final FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
-                    } else {
-                        request.futureResponse().setFailed("could not create channel", future);
-                    }
-                }
-            });
-        }
-       
-        return new FutureDirect(request.futureResponse());
-    }
+		if (futureChannelCreator == null) {
+			futureChannelCreator = peer.getConnectionBean().reservation()
+			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
+		}
 
-    public boolean isForceUDP() {
-        return forceUDP;
-    }
+		final RequestHandler<FutureResponse> request = peer.getDirectDataRPC().sendInternal(remotePeer, this);
+		if (keepAlive) {
+			if (peerConnection != null) {
+				sendDirectRequest(request);
+			} else {
+				recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+					@Override
+					public void operationComplete(final FuturePeerConnection future) throws Exception {
+						if (future.isSuccess()) {
+							sendDirectRequest(request);
+						} else {
+							request.futureResponse().setFailed("Could not acquire channel (1)", future);
+						}
+					}
+				});
+			}
 
-    public SendDirectBuilder setForceUDP(final boolean forceUDP) {
-        this.forceUDP = forceUDP;
-        return this;
-    }
+		} else {
+			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+				@Override
+				public void operationComplete(final FutureChannelCreator future) throws Exception {
+					if (future.isSuccess()) {
+						final FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
+						Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+					} else {
+						request.futureResponse().setFailed("could not create channel", future);
+					}
+				}
+			});
+		}
 
-    public SendDirectBuilder setForceUDP() {
-        this.forceUDP = true;
-        return this;
-    }
+		return new FutureDirect(request.futureResponse());
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleTCPSeconds()
-     */
-    @Override
-    public int idleTCPSeconds() {
-        return idleTCPSeconds;
-    }
+	private void sendDirectRequest(final RequestHandler<FutureResponse> request) {
+		FutureChannelCreator futureChannelCreator2 = recipientConnection.getObject().acquire(request.futureResponse());
+		futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+			@Override
+			public void operationComplete(FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					request.futureResponse().getRequest().setKeepAlive(true);
+					request.sendTCP(recipientConnection.getObject().channelCreator(), recipientConnection.getObject());
+				} else {
+					request.futureResponse().setFailed("Could not acquire channel (2)", future);
+				}
+			}
 
-    /**
-     * @param idleTCPSeconds
-     *            The time that a connection can be idle before its considered not active for short-lived connections
-     * @return This class
-     */
-    public SendDirectBuilder idleTCPSeconds(final int idleTCPSeconds) {
-        this.idleTCPSeconds = idleTCPSeconds;
-        return this;
-    }
+		});
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleUDPSeconds()
-     */
-    @Override
-    public int idleUDPSeconds() {
-        return idleUDPSeconds;
-    }
+	public boolean isForceUDP() {
+		return forceUDP;
+	}
 
-    /**
-     * @param idleUDPSeconds
-     *            The time that a connection can be idle before its considered not active for short-lived connections
-     * @return This class
-     */
-    public SendDirectBuilder idleUDPSeconds(final int idleUDPSeconds) {
-        this.idleUDPSeconds = idleUDPSeconds;
-        return this;
-    }
+	public SendDirectBuilder setForceUDP(final boolean forceUDP) {
+		this.forceUDP = forceUDP;
+		return this;
+	}
 
-    /**
-     * @param connectionTimeoutTCPMillis
-     *            The time a TCP connection is allowed to be established
-     * @return This class
-     */
-    public SendDirectBuilder connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
-        this.connectionTimeoutTCPMillis = connectionTimeoutTCPMillis;
-        return this;
-    }
+	public SendDirectBuilder setForceUDP() {
+		this.forceUDP = true;
+		return this;
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see net.tomp2p.p2p.builder.ConnectionConfiguration#connectionTimeoutTCPMillis()
-     */
-    @Override
-    public int connectionTimeoutTCPMillis() {
-        return connectionTimeoutTCPMillis;
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleTCPSeconds()
+	 */
+	@Override
+	public int idleTCPSeconds() {
+		return idleTCPSeconds;
+	}
 
-    /**
-     * @return Set to true if the communication should be TCP, default is UDP for routing
-     */
-    public boolean isForceTCP() {
-        return forceTCP;
-    }
+	/**
+	 * @param idleTCPSeconds
+	 *            The time that a connection can be idle before its considered
+	 *            not active for short-lived connections
+	 * @return This class
+	 */
+	public SendDirectBuilder idleTCPSeconds(final int idleTCPSeconds) {
+		this.idleTCPSeconds = idleTCPSeconds;
+		return this;
+	}
 
-    /**
-     * @param forceTCP
-     *            Set to true if the communication should be TCP, default is UDP for routing
-     * @return This class
-     */
-    public SendDirectBuilder setForceTCP(final boolean forceTCP) {
-        this.forceTCP = forceTCP;
-        return this;
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see net.tomp2p.p2p.builder.ConnectionConfiguration#idleUDPSeconds()
+	 */
+	@Override
+	public int idleUDPSeconds() {
+		return idleUDPSeconds;
+	}
 
-    /**
-     * @return Set to true if the communication should be TCP, default is UDP for routing
-     */
-    public SendDirectBuilder setForceTCP() {
-        this.forceTCP = true;
-        return this;
-    }
+	/**
+	 * @param idleUDPSeconds
+	 *            The time that a connection can be idle before its considered
+	 *            not active for short-lived connections
+	 * @return This class
+	 */
+	public SendDirectBuilder idleUDPSeconds(final int idleUDPSeconds) {
+		this.idleUDPSeconds = idleUDPSeconds;
+		return this;
+	}
 
-    public SendDirectBuilder progressListener(ProgressListener progressListener) {
-        this.progressListener = progressListener;
-        return this;
-    }
+	/**
+	 * @param connectionTimeoutTCPMillis
+	 *            The time a TCP connection is allowed to be established
+	 * @return This class
+	 */
+	public SendDirectBuilder connectionTimeoutTCPMillis(final int connectionTimeoutTCPMillis) {
+		this.connectionTimeoutTCPMillis = connectionTimeoutTCPMillis;
+		return this;
+	}
 
-    public ProgressListener progressListener() {
-        return progressListener;
-    }
-    
-    /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     */
-    public boolean isSign() {
-        return keyPair != null;
-    }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * net.tomp2p.p2p.builder.ConnectionConfiguration#connectionTimeoutTCPMillis
+	 * ()
+	 */
+	@Override
+	public int connectionTimeoutTCPMillis() {
+		return connectionTimeoutTCPMillis;
+	}
 
-    /**
-     * @param signMessage
-     *            Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     * @return This class
-     */
-    public SendDirectBuilder sign(final boolean signMessage) {
-        if (signMessage) {
-            setSign();
-        } else {
-            this.keyPair = null;
-        }
-        return this;
-    }
+	/**
+	 * @return Set to true if the communication should be TCP, default is UDP
+	 *         for routing
+	 */
+	public boolean isForceTCP() {
+		return forceTCP;
+	}
 
-    /**
-     * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
-     */
-    public SendDirectBuilder setSign() {
-        this.keyPair = peer.getPeerBean().keyPair();
-        return this;
-    }
-    
-    /**
-     * @param keyPair
-     *            The keyPair to sing the complete message. The key will be attached to the message and stored
-     *            potentially with a data object (if there is such an object in the message).
-     * @return This class
-     */
-    public SendDirectBuilder keyPair(KeyPair keyPair) {
-        this.keyPair = keyPair;
-        return this;
-    }
+	/**
+	 * @param forceTCP
+	 *            Set to true if the communication should be TCP, default is UDP
+	 *            for routing
+	 * @return This class
+	 */
+	public SendDirectBuilder setForceTCP(final boolean forceTCP) {
+		this.forceTCP = forceTCP;
+		return this;
+	}
 
-    /**
-     * @return The current keypair to sign the message. If null, no signature is applied.
-     */
-    public KeyPair keyPair() {
-        return keyPair;
-    }
+	/**
+	 * @return Set to true if the communication should be TCP, default is UDP
+	 *         for routing
+	 */
+	public SendDirectBuilder setForceTCP() {
+		this.forceTCP = true;
+		return this;
+	}
+
+	public SendDirectBuilder progressListener(ProgressListener progressListener) {
+		this.progressListener = progressListener;
+		return this;
+	}
+
+	public ProgressListener progressListener() {
+		return progressListener;
+	}
+
+	/**
+	 * @return Set to true if the message should be signed. For protecting an
+	 *         entry, this needs to be set to true.
+	 */
+	public boolean isSign() {
+		return keyPair != null;
+	}
+
+	/**
+	 * @param signMessage
+	 *            Set to true if the message should be signed. For protecting an
+	 *            entry, this needs to be set to true.
+	 * @return This class
+	 */
+	public SendDirectBuilder sign(final boolean signMessage) {
+		if (signMessage) {
+			setSign();
+		} else {
+			this.keyPair = null;
+		}
+		return this;
+	}
+
+	/**
+	 * @return Set to true if the message should be signed. For protecting an
+	 *         entry, this needs to be set to true.
+	 */
+	public SendDirectBuilder setSign() {
+		this.keyPair = peer.getPeerBean().keyPair();
+		return this;
+	}
+
+	/**
+	 * @param keyPair
+	 *            The keyPair to sing the complete message. The key will be
+	 *            attached to the message and stored potentially with a data
+	 *            object (if there is such an object in the message).
+	 * @return This class
+	 */
+	public SendDirectBuilder keyPair(KeyPair keyPair) {
+		this.keyPair = keyPair;
+		return this;
+	}
+
+	/**
+	 * @return The current keypair to sign the message. If null, no signature is
+	 *         applied.
+	 */
+	public KeyPair keyPair() {
+		return keyPair;
+	}
 }

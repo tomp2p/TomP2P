@@ -65,8 +65,7 @@ public class MaintenanceTask implements Runnable {
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {
                     @Override
                     public void operationComplete(BaseFuture future) throws Exception {
-                    	System.err.println(future.getFailedReason());
-                        synchronized (lock) {
+                    	synchronized (lock) {
                             runningFutures.remove(future);
                             COUNTER.decrementAndGet();
                         }

@@ -6,7 +6,6 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -24,29 +23,31 @@ public class RelayForwarder extends DispatchHandler {
 	private final Peer peer;
 
 	// connection to unreachable peer
-	private final FuturePeerConnection futurePeerConnection;
+	private final PeerConnection peerConnection;
 
-	public RelayForwarder(FuturePeerConnection fps, Peer peer) {
+	public RelayForwarder(PeerConnection peerConnection, Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
-		PeerAddress unreachablePeer = fps.getObject().remotePeer();
+		PeerAddress unreachablePeer = peerConnection.remotePeer();
+		this.peerConnection = peerConnection;
 		//TODO: use enum iteration
 		peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14);
-		this.futurePeerConnection = fps;
+		//this.futurePeerConnection = fps;
 		this.peer = peer;
 		new RelayNeighborRPC(peer, unreachablePeer);
 		//TODO: RelayPing
-		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + fps.getObject().remotePeer());
+		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + peerConnection.remotePeer());
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, final Responder responder) throws Exception {
-		logger.debug("Received message {} to forward to unreachable peer {}", message, futurePeerConnection.getObject().remotePeer());
+	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign, final Responder responder) throws Exception {
+		//PeerConnection will not be used from the arguments, as this connection is from the sender to the relay, not from the unreachable peer
+		logger.debug("Received message {} to forward to unreachable peer {}", message, peerConnection.remotePeer());
 
 		// Send message via direct message through the open connection to the unreachable peer
 		message.restoreContentReferences();
 		final Buffer buf = RelayUtils.encodeMessage(message);
 
-		FutureDirect fd = peer.sendDirect(futurePeerConnection).setBuffer(buf).start();
+		FutureDirect fd = peer.sendDirect(peerConnection).setBuffer(buf).start();
 		
 		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 			public void operationComplete(FutureDirect future) throws Exception {

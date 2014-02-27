@@ -8,6 +8,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DirectDataRPC;
 
+//TODO: can this be combined with RelayRPC? Is there a need for having this separate?
 public class PermanentConnectionRPC extends DirectDataRPC {
 	
 	private FuturePeerConnection futurePeerConnection = null;

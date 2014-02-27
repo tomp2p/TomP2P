@@ -38,7 +38,7 @@ public class RelayManager {
             if (peer.isShutdown()) {
                 this.cancel();
             }
-            if (!peer.getPeerAddress().isRelay()) {
+            if (!peer.getPeerAddress().isRelayed()) {
                 return;
             }
 
@@ -275,7 +275,7 @@ public class RelayManager {
             }
         });
 
-        if (!peer.getPeerAddress().isRelay()) {
+        if (!peer.getPeerAddress().isRelayed()) {
 
             // set data object reply to answer incoming messages from the relay
             // peers

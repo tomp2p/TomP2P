@@ -89,7 +89,7 @@ public class RelayRPC extends DispatchHandler {
 
 		logger.debug("received RPC message {}", message);
 
-		if (peerBean().serverPeerAddress().isRelay()) {
+		if (peerBean().serverPeerAddress().isRelayed()) {
 			// peer is behind a NAT as well -> deny request
 			responder.response(createResponseMessage(message, Type.DENIED));
 		} else {

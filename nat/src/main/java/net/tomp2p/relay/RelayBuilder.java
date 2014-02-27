@@ -5,18 +5,22 @@ import java.net.InetAddress;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
+import net.tomp2p.p2p.builder.Builder;
 import net.tomp2p.peers.PeerAddress;
 
-public class RelayBuilder {
+public class RelayBuilder implements Builder {
     
-    private static final RelayFuture FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS= new RelayFuture().setFailed("No bootrap address has been set");
+	final private static RelayFuture FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS= new RelayFuture().setFailed("No bootrap address has been set");
+    
+    final private Peer peer;
     
     private PeerAddress bootstrapAddress;
     private InetAddress bootstrapInetAddress;
     private int port = Ports.DEFAULT_PORT;
     private BootstrapBuilder bootstrapBuilder;
     private int maxRelays = PeerAddress.MAX_RELAYS;
-    private final Peer peer;
+    private RelayManager relayManager;
+    
     
     public RelayBuilder(Peer peer) {
         this.peer = peer;
@@ -47,6 +51,10 @@ public class RelayBuilder {
         return this;
     }
     
+    public RelayManager relayManager() {
+    	return relayManager;
+    }
+    
     public RelayFuture start() {
         
         BootstrapBuilder bootstrapBuilder = null;
@@ -61,7 +69,9 @@ public class RelayBuilder {
             return FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS;
         }
         
-        return new RelayManager(peer, bootstrapBuilder, maxRelays).setupRelays();
+        //TODO: can we create the releaymananger in the constructor? can we reuse it?
+        relayManager = new RelayManager(peer, bootstrapBuilder, maxRelays);
+        return relayManager.setupRelays();
     }
 
 }

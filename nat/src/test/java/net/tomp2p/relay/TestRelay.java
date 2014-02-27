@@ -109,7 +109,7 @@ public class TestRelay {
             Assert.assertTrue(rf.isSuccess());
 
             //Check if flags are set correctly
-            Assert.assertTrue(slave.getPeerAddress().isRelay());
+            Assert.assertTrue(slave.getPeerAddress().isRelayed());
             Assert.assertFalse(slave.getPeerAddress().isFirewalledTCP());
             Assert.assertFalse(slave.getPeerAddress().isFirewalledUDP());
 

@@ -25,6 +25,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +135,7 @@ public class Sender {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = null;
 			//TODO: say what we will do here
-			if (message.getRecipient().isRelay()) {
+			if (message.getRecipient().isRelayed()) {
 				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 				        peerConnection, timeoutHandler);
 			} else {
@@ -387,15 +388,16 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.getRecipient().isRelay() && message.getCommand() != RPC.Commands.NEIGHBOR.getNr()) {
+		if (message.getRecipient().isRelayed() && message.getCommand() != RPC.Commands.NEIGHBOR.getNr()) {
 			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 			futureResponse
 			        .setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
 			final ChannelFuture channelFuture;
-			if(message.getRecipient().isRelay()) {
+			if(message.getRecipient().isRelayed()) {
 				PeerSocketAddress[] psa = message.getRecipient().getPeerSocketAddresses();
-				 channelFuture = channelCreator.createUDP
+				LOG.debug("send neighbor request to random relay peer {}", Arrays.toString(psa));
+				channelFuture = channelCreator.createUDP
 						(PeerSocketAddress.createSocketUDP(psa[random.nextInt(psa.length-1)]), broadcast, handlers, futureResponse);
 			} else {
 				channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
@@ -561,7 +563,7 @@ public class Sender {
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isFailed()) {
-					if(message.getRecipient().isRelay()) {
+					if(message.getRecipient().isRelayed()) {
 						//TODO: make the relay go away if failed
 					} else {
 						for (PeerStatusListener peerStatusListener : peerStatusListeners) {

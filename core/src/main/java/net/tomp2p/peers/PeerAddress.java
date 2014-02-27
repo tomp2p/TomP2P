@@ -59,7 +59,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private static final int FIREWALL_UDP = 2;
     private static final int FIREWALL_TCP = 4;
     // indicates that a relay is used.
-    private static final int IS_RELAY = 8;
+    private static final int IS_RELAYED = 8;
 
     // network information
     private final Number160 peerId;
@@ -70,7 +70,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private final boolean net6;
     private final boolean firewalledUDP;
     private final boolean firewalledTCP;
-    private final boolean isRelay;
+    private final boolean isRelayed;
 
     // we can make the hash final as it never changes, and this class is used
     // multiple times in maps. A new peer is always added to the peermap, so
@@ -130,7 +130,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = (options & NET6) > 0;
         this.firewalledUDP = (options & FIREWALL_UDP) > 0;
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
-        this.isRelay = (options & IS_RELAY) > 0;
+        this.isRelayed = (options & IS_RELAYED) > 0;
         final int relays = me[offset++] & Utils.MASK_FF;
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -182,7 +182,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = (options & NET6) > 0;
         this.firewalledUDP = (options & FIREWALL_UDP) > 0;
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
-        this.isRelay = (options & IS_RELAY) > 0;
+        this.isRelayed = (options & IS_RELAYED) > 0;
         final int relays = channelBuffer.readUnsignedByte();
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -258,7 +258,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      *            the relay peers
      */
     public PeerAddress(final Number160 id, final PeerSocketAddress peerSocketAddress,
-            final boolean firewalledTCP, final boolean firewalledUDP, final boolean isRelay,
+            final boolean firewalledTCP, final boolean firewalledUDP, final boolean isRelayed,
             final PeerSocketAddress[] peerSocketAddresses) {
         this.peerId = id;
         int size = Number160.BYTE_ARRAY_SIZE;
@@ -267,7 +267,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = peerSocketAddress.getInetAddress() instanceof Inet6Address;
         this.firewalledUDP = firewalledUDP;
         this.firewalledTCP = firewalledTCP;
-        this.isRelay = isRelay;
+        this.isRelayed = isRelayed;
         // header + TCP port + UDP port
         size += HEADER_SIZE + PORTS_SIZE + (net6 ? Utils.IPV6_BYTES : Utils.IPV4_BYTES);
         if (peerSocketAddresses == null) {
@@ -469,8 +469,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if (firewalledTCP) {
             result |= FIREWALL_TCP;
         }
-        if (isRelay) {
-            result |= IS_RELAY;
+        if (isRelayed) {
+            result |= IS_RELAYED;
         }
         return result;
     }
@@ -565,8 +565,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     /**
      * @return If this peer address is used as a relay
      */
-    public boolean isRelay() {
-        return isRelay;
+    public boolean isRelayed() {
+        return isRelayed;
     }
 
     /**
@@ -577,7 +577,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledUDP(final boolean firewalledUDP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelay,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
                 peerSocketAddresses);
     }
 
@@ -589,7 +589,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledTCP(final boolean firewalledTCP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelay,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
                 peerSocketAddresses);
     }
 
@@ -604,7 +604,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changePorts(final int tcpPort, final int udpPort) {
         return new PeerAddress(peerId, new PeerSocketAddress(peerSocketAddress.getInetAddress(), tcpPort,
-                udpPort), firewalledTCP, firewalledUDP, isRelay, peerSocketAddresses);
+                udpPort), firewalledTCP, firewalledUDP, isRelayed, peerSocketAddresses);
     }
 
     /**
@@ -616,7 +616,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changeAddress(final InetAddress inetAddress) {
         return new PeerAddress(peerId, new PeerSocketAddress(inetAddress, peerSocketAddress.getTcpPort(),
-                peerSocketAddress.getUdpPort()), firewalledTCP, firewalledUDP, isRelay, peerSocketAddresses);
+                peerSocketAddress.getUdpPort()), firewalledTCP, firewalledUDP, isRelayed, peerSocketAddresses);
     }
 
     /**
@@ -627,7 +627,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changePeerId(final Number160 peerId) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelay,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
                 peerSocketAddresses);
     }
 
@@ -679,7 +679,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return True if it is used as a relay
      */
     private static boolean isRelay(final int options) {
-        return ((options & Utils.MASK_FF) & IS_RELAY) > 0;
+        return ((options & Utils.MASK_FF) & IS_RELAYED) > 0;
     }
 
     /**

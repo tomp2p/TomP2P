@@ -207,7 +207,7 @@ public class TestPeerAddress {
         Assert.assertEquals(pa1.isFirewalledTCP(), pa2.isFirewalledTCP());
         Assert.assertEquals(pa1.isFirewalledUDP(), pa2.isFirewalledUDP());
         Assert.assertEquals(pa1.isIPv6(), pa2.isIPv6());
-        Assert.assertEquals(pa1.isRelay(), pa2.isRelay());
+        Assert.assertEquals(pa1.isRelayed(), pa2.isRelayed());
         Assert.assertEquals(pa1.getOptions(), pa2.getOptions());
         Assert.assertEquals(pa1.getRelays(), pa2.getRelays());
         PeerSocketAddress[] psa1 = pa1.getPeerSocketAddresses();

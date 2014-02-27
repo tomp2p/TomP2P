@@ -239,6 +239,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
+    	if(remotePeer.peerSocketAddress().getTcpPort()==13337) {
+    		System.err.println("so reported the unreachable peer!");
+    	}
         boolean firstHand = referrer == null;
         // always trust first hand information
         if (firstHand) {

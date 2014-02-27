@@ -58,12 +58,14 @@ public class MaintenanceTask implements Runnable {
                 }
                 BaseFuture future = peer.ping().setPeerAddress(peerStatatistic.getPeerAddress()).start();
                 LOG.debug("maintenance ping from {} to {}", peer.getPeerAddress(), peerStatatistic.getPeerAddress());
+                
                 peer.notifyAutomaticFutures(future);
                 runningFutures.put(future, peerStatatistic.getPeerAddress());
                 COUNTER.incrementAndGet();
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {
                     @Override
                     public void operationComplete(BaseFuture future) throws Exception {
+                    	System.err.println(future.getFailedReason());
                         synchronized (lock) {
                             runningFutures.remove(future);
                             COUNTER.decrementAndGet();

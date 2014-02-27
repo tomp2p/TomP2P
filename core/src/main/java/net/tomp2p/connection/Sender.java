@@ -389,17 +389,20 @@ public class Sender {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
 		if (message.getRecipient().isRelayed() && message.getCommand() != RPC.Commands.NEIGHBOR.getNr()) {
+			System.err.println("is relayed");
 			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 			futureResponse
 			        .setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
 			final ChannelFuture channelFuture;
 			if(message.getRecipient().isRelayed()) {
+				
 				PeerSocketAddress[] psa = message.getRecipient().getPeerSocketAddresses();
 				LOG.debug("send neighbor request to random relay peer {}", Arrays.toString(psa));
 				channelFuture = channelCreator.createUDP
 						(PeerSocketAddress.createSocketUDP(psa[random.nextInt(psa.length-1)]), broadcast, handlers, futureResponse);
 			} else {
+				System.err.println("is relayedQQ " + message.getRecipient());
 				channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
 						broadcast, handlers, futureResponse);
 			}

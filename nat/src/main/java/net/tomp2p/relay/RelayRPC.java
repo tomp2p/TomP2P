@@ -28,11 +28,15 @@ public class RelayRPC extends DispatchHandler {
 
 	private Peer peer;
 
-	public RelayRPC(Peer peer) {
+	private RelayRPC(Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
 		register(RPC.Commands.RELAY.getNr());
 		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
+	}
+	
+	public static RelayRPC setup(Peer peer) {
+		return new RelayRPC(peer);
 	}
 
 	public RelayConnectionFuture setupRelay(final PeerAddress other, final ChannelCreator channelCreator) {

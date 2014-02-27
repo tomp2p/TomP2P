@@ -23,6 +23,7 @@ public class RelayConnectionFuture extends BaseFutureImpl<RelayConnectionFuture>
 			if (!setCompletedAndNotify()) {
 				return this;
 			}
+			this.futurePeerConnection = futurePeerConnection;
 			//TODO: no further checks?
 			type = FutureType.OK;
 		}

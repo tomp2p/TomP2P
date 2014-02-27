@@ -78,12 +78,13 @@ public class RelayManager {
     private Semaphore relaySemaphore;
     private Set<PeerAddress> relayAddresses;
     private final BootstrapBuilder bootstrapBuilder;
+    private final RelayRPC relayRPC;
 
-    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder) {
-        this(peer, bootstrapBuilder, PeerAddress.MAX_RELAYS);
+    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder, RelayRPC relayRPC) {
+        this(peer, bootstrapBuilder, PeerAddress.MAX_RELAYS, relayRPC);
     }
 
-    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder, int maxRelays) {
+    public RelayManager(final Peer peer, BootstrapBuilder bootstrapBuilder, int maxRelays, RelayRPC relayRPC) {
         this.self = this;
         this.peer = peer;
         this.bootstrapBuilder = bootstrapBuilder;
@@ -99,6 +100,7 @@ public class RelayManager {
         this.relaySemaphore = new Semaphore(maxRelays);
 
         relayAddresses = new CopyOnWriteArraySet<PeerAddress>();
+        this.relayRPC = relayRPC;
     }
 
     /**
@@ -186,7 +188,7 @@ public class RelayManager {
             if (futureRelayConnections[i] == null) {
                 PeerAddress candidate = relayCandidates.iterator().next();
                 relayCandidates.remove(candidate);
-                futureRelayConnections[i] = new RelayRPC(peer).setupRelay(candidate, cc);
+                futureRelayConnections[i] = relayRPC.setupRelay(candidate, cc);
                 if (futureRelayConnections[i] != null) {
                     active++;
                 }

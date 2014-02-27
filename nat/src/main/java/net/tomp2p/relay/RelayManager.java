@@ -309,7 +309,6 @@ public class RelayManager {
                                                 public void operationComplete(FutureBootstrap future) throws Exception {
                                                     if (future.isSuccess()) {
                                                         rf.relayManager(self);
-                                                        rf.done();
                                                     } else {
                                                         future.setFailed(future);
                                                     }

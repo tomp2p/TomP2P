@@ -5,37 +5,34 @@ import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.peers.PeerAddress;
 
 public class RelayConnectionFuture extends BaseFutureImpl<RelayConnectionFuture> {
-	
-	private final PeerAddress relayAddress;
-	FuturePeerConnection futurePeerConnection = null;
-	
-	public RelayConnectionFuture(PeerAddress relayAddress) {
+
+	final private PeerAddress relayAddress;
+	private FuturePeerConnection futurePeerConnection = null;
+
+	public RelayConnectionFuture(final PeerAddress relayAddress) {
 		this.relayAddress = relayAddress;
+		self(this);
 	}
-	
+
 	public PeerAddress relayAddress() {
 		return relayAddress;
 	}
-	
-	public void futurePeerConnection(FuturePeerConnection futurePeerConnection) {
-		this.futurePeerConnection = futurePeerConnection;
-	}
-	
-	public FuturePeerConnection futurePeerConnection() {
-		return futurePeerConnection;
-	}
-	
-	public void setSuccess() {
-		type = FutureType.OK;
-	}
-	
-	public void done() {
-		type = futurePeerConnection == null ? FutureType.FAILED : FutureType.OK;
+
+	public RelayConnectionFuture futurePeerConnection(final FuturePeerConnection futurePeerConnection) {
 		synchronized (lock) {
-			setCompletedAndNotify();
+			if (!setCompletedAndNotify()) {
+				return this;
+			}
+			//TODO: no further checks?
+			type = FutureType.OK;
 		}
 		notifyListeners();
+		return this;
 	}
 
-
+	public FuturePeerConnection futurePeerConnection() {
+		synchronized (lock) {
+			return futurePeerConnection;
+		}
+	}
 }

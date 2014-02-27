@@ -18,15 +18,8 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 
 	public RelayFuture relayManager(RelayManager relayManager) {
 		synchronized (lock) {
-			this.relayManager = relayManager;
-		}
-		return this;
-	}
-
-	public void done() {
-		synchronized (lock) {
 			if (!setCompletedAndNotify()) {
-				return;
+				return this;
 			}
 			if (relayManager != null && relayManager.getRelayAddresses().size() > 0) {
 				type = FutureType.OK;
@@ -35,5 +28,6 @@ public class RelayFuture extends BaseFutureImpl<RelayFuture> {
 			}
 		}
 		notifyListeners();
+		return this;
 	}
 }

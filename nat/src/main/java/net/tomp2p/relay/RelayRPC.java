@@ -61,7 +61,6 @@ public class RelayRPC extends DispatchHandler {
 			public void exceptionCaught(Throwable t) throws Exception {
 				logger.error("Error creating connection to relay peer {}: {}", other, t);
 				connectionFuture.setFailed(t);
-				connectionFuture.done();
 			}
 		});
 
@@ -77,7 +76,6 @@ public class RelayRPC extends DispatchHandler {
 			public void operationComplete(FutureDirect future) throws Exception {
 				if(future.isSuccess()) {
 					rcf.futurePeerConnection(fpc);
-					rcf.done();
 				}
 			}
 		});

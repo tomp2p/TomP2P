@@ -27,7 +27,8 @@
   <!--  <logger name="net.tomp2p.connection.PeerCreator" level="TRACE"/> -->
     
   <!--  <logger name="net.tomp2p.message.TomP2PDecoderTCP" level="TRACE"/> -->
-  <!-- <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.message.TomP2PDecoderUDP" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.message.Decoder" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.p2p.DefaultBroadcastHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->

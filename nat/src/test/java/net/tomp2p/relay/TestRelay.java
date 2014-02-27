@@ -1,9 +1,11 @@
 package net.tomp2p.relay;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -13,17 +15,20 @@ import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FuturePut;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.NeighborRPC;
+import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -104,7 +109,7 @@ public class TestRelay {
             Assert.assertTrue(rf.isSuccess());
 
             //Check if flags are set correctly
-            Assert.assertTrue(slave.getPeerAddress().isRelay());
+            Assert.assertTrue(slave.getPeerAddress().isRelayed());
             Assert.assertFalse(slave.getPeerAddress().isFirewalledTCP());
             Assert.assertFalse(slave.getPeerAddress().isFirewalledUDP());
 
@@ -173,14 +178,29 @@ public class TestRelay {
                 Assert.assertTrue("Bootrapping test peers failed", fm.isSuccess());
             }
 
-            // Set up relays
-            slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
+            // Set up unreachable peer
+            slave = new PeerMaker(Number160.createHash("urp")).ports(13337).makeAndListen();
 
             RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
             rf.awaitUninterruptibly();
             Assert.assertTrue(rf.isSuccess());
+            
+            PeerAddress relayPeer = rf.relayManager().getRelayAddresses().iterator().next();
+            Peer found = null;
+            for(Peer p:peers) {
+            	if(p.getPeerAddress().equals(relayPeer)) {
+            		found = p;
+            		break;
+            	}
+            }
+            
+            Thread.sleep(1000);
 
-            int nrOfNeighbors = getNeighbors(slave).size();
+            int nrOfNeighbors = getNeighbors(found).size();
+            //we have in total 9 peers, we should find 8 as neighbors
+            Assert.assertEquals(8, nrOfNeighbors);
+            
+            System.err.println("neighbors: "+nrOfNeighbors);
 
             //Shut down a peer
             Thread.sleep(3000);
@@ -195,7 +215,7 @@ public class TestRelay {
              */
             Thread.sleep(15000);
 
-            Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(slave).size());
+            Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(found).size());
 
         } finally {
             if (slave != null) {
@@ -245,7 +265,7 @@ public class TestRelay {
             for (Peer peer : peers) {
                 if (relays.contains(peer.getPeerAddress())) {
                     shutdownPeer = peer;
-                    FutureDone<Void> fd = peer.shutdown();
+                    BaseFuture fd = peer.shutdown();
                     fd.awaitUninterruptibly();
                     break;
                 }
@@ -301,13 +321,46 @@ public class TestRelay {
             slave.shutdown().await();
         }
     }
+    
+    @Test
+    public void testRelayDHT() throws Exception {
+    	final Random rnd = new Random(42);
+    	 Peer master = null;
+         Peer slave = null;
+         try {
+             Peer[] peers = Utils2.createNodes(100, rnd, 4000);
+             master = peers[0]; // the relay peer
+             for (int i = 0; i < peers.length; i++) {
+                 new RelayRPC(peers[i]);
+             }
+             Utils2.perfectRouting(peers);
+             PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
+            
+             slave = new PeerMaker(Number160.createHash(rnd.nextInt())).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
+             
+             RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
+             rf.awaitUninterruptibly();
+             Assert.assertTrue(rf.isSuccess());
+             RelayManager manager = rf.relayManager();
+             System.err.println("relays: "+manager.getRelayAddresses());
+             System.err.println("psa: "+Arrays.toString(slave.getPeerAddress().getPeerSocketAddresses()));
+             manager.publishNeighbors();
+             Thread.sleep(3000);
+             FuturePut futurePut = peers[33].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
+             Assert.assertTrue(futurePut.isSuccess());
+             Assert.assertTrue(futurePut.getRawResult().containsKey(slave.getPeerAddress()));
+             
+         } finally {
+             master.shutdown().await();
+             slave.shutdown().await();
+         }
+    }
 
     private Collection<PeerAddress> getNeighbors(Peer peer) {
-        Message request = new Message().setRecipient(peer.getPeerAddress()).setSender(peer.getPeerAddress()).setKey(new Number160("0x1")).setKey(new Number160("0x1"))
-                .setCommand(RPC.Commands.NEIGHBOR.getNr()).setType(Type.REQUEST_1).setVersion(peer.getConnectionBean().p2pId());
-        NoDirectResponse responder = new NoDirectResponse();
-        peer.getConnectionBean().dispatcher().getAssociatedHandler(request).forwardMessage(request, null, responder);
-        return responder.getResponse().getNeighborsSet(0).neighbors();
+    	Map<Number160, DispatchHandler> handlers = peer.getConnectionBean().dispatcher().searchHandler(5);
+    	handlers.remove(peer.getPeerID());
+    	DispatchHandler dh = handlers.values().iterator().next();
+    	return ((RelayNeighborRPC)dh).getAll(); 
     }
 
 }

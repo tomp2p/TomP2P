@@ -57,7 +57,6 @@ public class NeighborRPC extends DispatchHandler {
     public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
         this(peerBean, connectionBean, true);
     }
-        
 
     /**
      * Setup the RPC and register for incoming messages.
@@ -190,7 +189,7 @@ public class NeighborRPC extends DispatchHandler {
                 } else if ((keyBloomFilter != null || contentBloomFilter != null)  && locationKey!=null && domainKey!=null) {
                 	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
-                            contentBloomFilter, -1, true);
+                            contentBloomFilter, -1, true, true);
                 } else if (keyCollection!=null && keyCollection.keys().size() == 2) {
                 	Iterator<Number640> iterator = keyCollection.keys().iterator();
                 	Number640 from = iterator.next();
@@ -221,7 +220,10 @@ public class NeighborRPC extends DispatchHandler {
         }
         responder.response(responseMessage);
     }
-    
+
+    /**
+     * TODO: explain why protected method here.
+     */
     protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
         return peerBean().peerMap().closePeers(id, atLeast);
     }

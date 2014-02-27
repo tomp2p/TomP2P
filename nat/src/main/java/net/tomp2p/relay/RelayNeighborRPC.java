@@ -1,5 +1,7 @@
 package net.tomp2p.relay;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -53,6 +55,18 @@ public class RelayNeighborRPC extends NeighborRPC {
                 return true;
             }
         });
+    }
+
+	public Collection<PeerAddress> getAll() {
+		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
+		for(Map<Number160, PeerStatatistic> map:peerMap) {
+			result1.addAll(map.values());
+		}
+		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
+	    for(PeerStatatistic peerStatatistic:result1) {
+	    	result2.add(peerStatatistic.getPeerAddress());
+	    }
+	    return result2;
     }
 
 }

@@ -57,6 +57,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     private boolean returnBloomFilter = false;
 
     private boolean ascending = true;
+    
+    private boolean bloomFilterAnd = true;
 
     private int returnNr = -1;
 
@@ -150,12 +152,12 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return returnBloomFilter;
     }
 
-    public DigestBuilder setReturnBloomFilter(boolean returnBloomFilter) {
+    public DigestBuilder returnBloomFilter(boolean returnBloomFilter) {
         this.returnBloomFilter = returnBloomFilter;
         return this;
     }
 
-    public DigestBuilder setReturnBloomFilter() {
+    public DigestBuilder returnBloomFilter() {
         this.returnBloomFilter = true;
         return this;
     }
@@ -173,13 +175,27 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         this.ascending = true;
         return this;
     }
-
+    
     public boolean isDescending() {
         return !ascending;
     }
 
     public DigestBuilder descending() {
         this.ascending = false;
+        return this;
+    }
+    
+    public boolean isBloomFilterAnd() {
+        return bloomFilterAnd;
+    }
+
+    public DigestBuilder bloomFilterAnd(boolean bloomFilterAnd) {
+        this.bloomFilterAnd = bloomFilterAnd;
+        return this;
+    }
+
+    public DigestBuilder bloomFilterAnd() {
+        this.bloomFilterAnd = true;
         return this;
     }
 

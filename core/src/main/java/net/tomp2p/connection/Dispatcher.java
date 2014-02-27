@@ -156,12 +156,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         
         @Override
-		public void response(Message responseMessage) {
+        public void response(Message responseMessage) {
             Dispatcher.this.response(ctx, responseMessage);
         }
         
         @Override
-		public void failed(Message.Type type, String reason) {
+        public void failed(Message.Type type, String reason) {
             Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBean.serverPeerAddress());
             Dispatcher.this.response(ctx, responseMessage);
         }
@@ -251,5 +251,23 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
                     recipientID);
             return null;
         }
+    }
+    
+    /**
+     * May take longer.. used for testing
+     * @param command
+     * @return
+     */
+    public Map<Number160, DispatchHandler> searchHandler(final Integer command) {
+    	Map<Number160, DispatchHandler> result = new HashMap<Number160, DispatchHandler>();
+    	for(Map.Entry<Number160, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
+    		for(Map.Entry<Integer, DispatchHandler> entry2:entry.getValue().entrySet()) {
+    			DispatchHandler handlerh = entry.getValue().get(command);
+    			if(handlerh!=null && entry2.getKey().equals(command)) {
+    				result.put(entry.getKey(), handlerh);
+    			}
+    		}
+    	}
+    	return result;
     }
 }

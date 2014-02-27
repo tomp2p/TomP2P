@@ -663,7 +663,7 @@ public class Data {
 		if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
 			return false;
 		}
-		return Utils.<Number160> equals(basedOn, d.basedOn) && Utils.<SHA1Signature> equals(signature, d.signature)
+		return Utils.equals(basedOn, d.basedOn) && Utils.equals(signature, d.signature)
 				&& d.buffer.equals(buffer); // This is a slow operation, use
 											// with care!
 	}

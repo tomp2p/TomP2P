@@ -123,6 +123,6 @@ public class SHA1Signature {
 			return true;
 		}
 		SHA1Signature s = (SHA1Signature) obj;
-		return Utils.<Number160> equals(number1, s.number1) && Utils.<Number160> equals(number2, s.number2);
+		return Utils.equals(number1, s.number1) && Utils.equals(number2, s.number2);
 	}
 }

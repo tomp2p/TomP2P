@@ -28,7 +28,7 @@ import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.peers.Number160;
 
 public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends DefaultConnectionConfiguration
-        implements SignatureBuilder<K> {
+        implements SignatureBuilder<K>, Builder {
     public final static Number160 DEFAULT_DOMAIN = Number160.createHash("default-tracker");
 
     protected final static FutureTracker FUTURE_TRACKER_SHUTDOWN = new FutureTracker()

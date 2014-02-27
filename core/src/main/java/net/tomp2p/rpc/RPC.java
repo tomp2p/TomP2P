@@ -1,6 +1,7 @@
 package net.tomp2p.rpc;
 
 public class RPC {
+	//Max. 255 Commands
 	public enum Commands{
 		PING(0), 
 		PUT(1), 
@@ -15,8 +16,9 @@ public class RPC {
 		PEX(10), 
 		DIGEST(11), 
 		BROADCAST(12),
-        PUT_META(13),
-        RELAY(14);
+		PUT_META(13), 
+		DIGEST_BLOOMFILTER(14),
+		RELAY(15);
 
 	private final byte nr; 
 	Commands(int nr) {

@@ -69,7 +69,8 @@ public class SynchronizationRPC extends DispatchHandler {
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
     public SynchronizationRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
-        super(peerBean, connectionBean, INFO_COMMAND, SYNC_COMMAND);
+        super(peerBean, connectionBean);
+        register(INFO_COMMAND, SYNC_COMMAND);
     }
 
     /**

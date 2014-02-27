@@ -191,14 +191,24 @@ public class DefaultMaintenance implements Maintenance {
      * @return True if the peer needs a maintenance check
      */
     protected boolean needMaintenance(final PeerStatatistic peerStatatistic) {
-        // go for the time 5, 10, 20, 40, 80, 160
-        final int divide = 5;
-        final int online = peerStatatistic.onlineTime() / divide;
-        final int index;
-        if (online <= 0) {
+        final int onlineSec = peerStatatistic.onlineTime() / 1000;
+        int index;
+        if (onlineSec <= 0) {
             index = 0;
         } else {
-            index = Math.min(intervalSeconds.length - 1, log2(online) + 1);
+        	index = intervalSeconds.length - 1;
+        	for(int i=0;i<intervalSeconds.length;i++) {
+        		//interval is 2,4,8,16,32,64
+        		//examples
+        		//I have seen a peer online for 5 sec -> next interval to check is 8
+        		//I have seen a peer online for 4 sec -> next interval to check is 4
+        		//I have seen a peer online for 17 sec -> next interval to check is 32
+        		//I have seen a peer online for 112321 sec -> next interval to check is 64
+        		if(intervalSeconds[i]>=onlineSec) {
+        			index=i;
+        			break;
+        		}
+        	}
         }
         final int time = intervalSeconds[index];
         final long lastTimeWhenChecked = Timings.currentTimeMillis() - peerStatatistic.getLastSeenOnline();

@@ -45,19 +45,18 @@ public class RelayManager {
      * 
      */
     private class PeerMapUpdateTask extends TimerTask {
-
+        
         @Override
         public void run() {
             if (peer.isShutdown()) {
                 this.cancel();
             }
-            if (!peer.getPeerAddress().isRelay()) {
+            if (!peer.getPeerAddress().isRelayed()) {
                 return;
             }
 
             // bootstrap to get updated peer map and then push it to the relay peers
             FutureBootstrap fb = bootstrapBuilder.start();
-
             fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
                 public void operationComplete(FutureBootstrap future) throws Exception {
                     if (future.isSuccess()) {
@@ -83,7 +82,6 @@ public class RelayManager {
 
     final private static Logger logger = LoggerFactory.getLogger(RelayManager.class);
 
-    //Frequency of updating peer map on unreachable peers
     private final static long ROUTING_UPDATE_TIME = 10L * 1000;
 
     private final RelayManager self;
@@ -123,15 +121,15 @@ public class RelayManager {
         }
 
         this.maxRelays = maxRelays;
-
+        
         this.relaySemaphore = new Semaphore(maxRelays);
 
         relayAddresses = new CopyOnWriteArraySet<PeerAddress>();
     }
 
     /**
-     * Updates the unreachable peer's PeerAddress: Adds the relay addresses to
-     * the peer address, updates the firewalled flags, and bootstraps
+     * Updates the peer's PeerAddress: Adds the relay addresses to the peer
+     * address, updates the firewalled flags, and bootstraps
      */
     private void updatePeerAddress() {
 
@@ -167,11 +165,11 @@ public class RelayManager {
                 if (future.isSuccess()) {
                     relayCandidates.addAll(peer.getDistributedRouting().peerMap().getAll());
                     logger.debug("Found {} peers that could act as relays", relayCandidates.size());
-
-                    if (relayCandidates.isEmpty()) {
+                    
+                    if(relayCandidates.isEmpty()) {
                         futureDone.setFailed("No other peers were found");
                     }
-
+                    
                     futureDone.setDone();
                 } else {
                     logger.error("Bootstrapping failed: {}", future.getFailedReason());
@@ -225,7 +223,14 @@ public class RelayManager {
     private FutureDone<Void> relaySetupLoop(final RelayConnectionFuture[] futureRelayConnections, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
             final int numberOfRelays, final FutureDone<Void> futureDone) {
 
-        if (!relaySemaphore.tryAcquire(numberOfRelays) || numberOfRelays == 0) {
+        try {
+            relaySemaphore.acquire(numberOfRelays);
+        } catch (InterruptedException e) {
+            futureDone.setFailed(e);
+            return futureDone;
+        }
+
+        if (numberOfRelays == 0) {
             futureDone.setDone();
             return futureDone;
         }
@@ -259,8 +264,9 @@ public class RelayManager {
                         if (fr.isSuccess()) {
                             logger.debug("Adding peer {} as a relay", relayAddress);
                             relayAddresses.add(relayAddress);
-
+                            
                             //update peer map
+                            
 
                             FutureDone<Void> closeFuture = fr.futurePeerConnection().getObject().closeFuture();
                             closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -296,7 +302,7 @@ public class RelayManager {
      * existing peer, but only update the unreachable peer's PeerAddress if a
      * relay peer failed.
      * 
-     * @param pa
+     * @param pa the PeerAddress of the relay that has been removed
      */
     private void removeRelay(PeerAddress pa) {
         relayAddresses.remove(pa);
@@ -333,17 +339,17 @@ public class RelayManager {
     public RelayFuture setupRelays() {
 
         final RelayFuture rf = new RelayFuture();
-
+        
         rf.addListener(new BaseFutureAdapter<RelayFuture>() {
             public void operationComplete(RelayFuture future) throws Exception {
-                if (future.isSuccess()) {
+                if(future.isSuccess()) {
                     // Start routing table update thread
                     startPeerMapUpdateTask();
                 }
             }
         });
 
-        if (!peer.getPeerAddress().isRelay()) {
+        if (!peer.getPeerAddress().isRelayed()) {
 
             // set data object reply to answer incoming messages from the relay
             // peers
@@ -377,7 +383,6 @@ public class RelayManager {
                                                 public void operationComplete(FutureBootstrap future) throws Exception {
                                                     if (future.isSuccess()) {
                                                         rf.relayManager(self);
-                                                        rf.done();
                                                     } else {
                                                         future.setFailed(future);
                                                     }
@@ -410,6 +415,11 @@ public class RelayManager {
         TimerTask updateTask = new PeerMapUpdateTask();
         updateTask.run();
         new Timer().schedule(new PeerMapUpdateTask(), 0, ROUTING_UPDATE_TIME);
+    }
+
+	public BaseFuture publishNeighbors() {
+	    return null;
+	    
     }
 
 }

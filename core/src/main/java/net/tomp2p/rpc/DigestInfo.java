@@ -167,11 +167,11 @@ public class DigestInfo {
      * 
      * @param key
      *            The key of the content
-     * @param content
+     * @param basedOn
      *            The hash of the content
      */
-    public void put(final Number640 key, final Number160 content) {
-        mapDigests.put(key, content);
+    public void put(final Number640 key, final Number160 basedOn) {
+        mapDigests.put(key, basedOn);
     }
 
     /**

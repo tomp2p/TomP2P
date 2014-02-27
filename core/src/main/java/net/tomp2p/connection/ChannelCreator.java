@@ -293,6 +293,10 @@ public class ChannelCreator {
 		});
 		return channelFuture;
 	}
+	
+	public boolean isShutdown() {
+		return shutdownTCP || shutdownUDP;
+	}
 
 	/**
 	 * Shutdown this channel creator. This means that no TCP or UDP connection

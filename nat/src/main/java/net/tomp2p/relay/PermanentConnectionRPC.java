@@ -28,7 +28,7 @@ public class PermanentConnectionRPC extends DirectDataRPC {
      * @param unreachablePeer
      *            PeerAddress of the unreachable peer
      */
-	public PermanentConnectionRPC(Peer peer, PeerAddress unreachablePeer) {
+	public PermanentConnectionRPC(Peer peer, PeerAddress unreachablePeer, int bla) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
 		this.peer = peer;
 		this.unreachablePeer = unreachablePeer;
@@ -41,7 +41,7 @@ public class PermanentConnectionRPC extends DirectDataRPC {
     	if(message.getSender().equals(unreachablePeer) && futurePeerConnection == null) {
     		futurePeerConnection = new FuturePeerConnection(message.getSender());
             futurePeerConnection.setDone(peerConnection);
-            new RelayForwarder(futurePeerConnection, peer);
+            //new RelayForwarder(futurePeerConnection, peer);
             
             // "restore" original direct data RPC
             peer.setDirectDataRPC(originalDirectDataRPC);

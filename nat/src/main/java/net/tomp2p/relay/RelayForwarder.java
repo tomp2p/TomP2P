@@ -42,16 +42,24 @@ public class RelayForwarder extends DispatchHandler {
      * @param peer
      *            The relay peer
      */
-	public RelayForwarder(FuturePeerConnection fps, Peer peer) {
+	private RelayForwarder(PeerConnection peerConnection, Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
-		PeerAddress unreachablePeer = fps.getObject().remotePeer();
+		PeerAddress unreachablePeer = peerConnection.remotePeer();
+		
 		//TODO: use enum iteration
 		peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, 0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14);
-		this.futurePeerConnection = fps;
+		
+		this.futurePeerConnection = new FuturePeerConnection(peerConnection.remotePeer());
+		futurePeerConnection.setDone(peerConnection);
+		
 		this.peer = peer;
 		new RelayNeighborRPC(peer, unreachablePeer);
 		//TODO: RelayPing
-		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + fps.getObject().remotePeer());
+		logger.debug("created forwarder from peer " + peer.getPeerAddress() + " to peer " + peerConnection.remotePeer());
+	}
+	
+	public static RelayForwarder setup(PeerConnection peerConnection, Peer peer) {
+	    return new RelayForwarder(peerConnection, peer);
 	}
 
 	@Override

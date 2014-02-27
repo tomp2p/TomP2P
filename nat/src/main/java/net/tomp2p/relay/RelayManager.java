@@ -220,7 +220,7 @@ public class RelayManager {
      * @param futureDone
      * @return
      */
-    private FutureDone<Void> relaySetupLoop(final RelayConnectionFuture[] futureRelayConnections, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
+    private FutureDone<Void> relaySetupLoop(final FutureDone<Void>[] futures, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
             final int numberOfRelays, final FutureDone<Void> futureDone) {
 
         try {
@@ -237,14 +237,14 @@ public class RelayManager {
 
         int active = 0;
         for (int i = 0; i < numberOfRelays; i++) {
-            if (futureRelayConnections[i] == null) {
+            if (futures[i] == null) {
                 PeerAddress candidate = relayCandidates.iterator().next();
                 relayCandidates.remove(candidate);
-                futureRelayConnections[i] = new RelayRPC(peer).setupRelay(candidate, cc);
-                if (futureRelayConnections[i] != null) {
+                futures[i] = new RelayRPC(peer).setupRelay(candidate, cc);
+                if (futures[i] != null) {
                     active++;
                 }
-            } else if (futureRelayConnections[i] != null) {
+            } else if (futures[i] != null) {
                 active++;
             }
         }
@@ -253,7 +253,7 @@ public class RelayManager {
             futureDone.setDone();
         }
 
-        FutureForkJoin<RelayConnectionFuture> ffj = new FutureForkJoin<RelayConnectionFuture>(new AtomicReferenceArray<RelayConnectionFuture>(futureRelayConnections));
+        FutureForkJoin<FutureDone<Void>> ffj = new FutureForkJoin<FutureDone<Void>>(new AtomicReferenceArray<FutureDone<Void>>(futures));
 
         ffj.addListener(new BaseFutureAdapter<FutureForkJoin<RelayConnectionFuture>>() {
             public void operationComplete(FutureForkJoin<RelayConnectionFuture> future) throws Exception {
@@ -286,7 +286,7 @@ public class RelayManager {
                     updatePeerAddress();
                     futureDone.setDone();
                 } else {
-                    relaySetupLoop(futureRelayConnections, relayCandidates, cc, numberOfRelays, futureDone);
+                    relaySetupLoop(futures, relayCandidates, cc, numberOfRelays, futureDone);
                 }
             }
         });
@@ -319,7 +319,7 @@ public class RelayManager {
         int nrOfRelays = Math.min(relaySemaphore.availablePermits(), relayCandidates.size());
 
         if (nrOfRelays > 0) {
-            RelayConnectionFuture[] relayConnectionFutures = new RelayConnectionFuture[nrOfRelays];
+            FutureDone<Void>[] relayConnectionFutures = new FutureDone[nrOfRelays];
             relaySetupLoop(relayConnectionFutures, relayCandidates, cc, nrOfRelays, fd);
         } else {
             fd.setDone();

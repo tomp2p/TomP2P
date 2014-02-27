@@ -7,9 +7,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -35,10 +33,10 @@ public class RelayRPC extends DispatchHandler {
 		config = new DefaultConnectionConfiguration();
 	}
 
-	public RelayConnectionFuture setupRelay(final PeerAddress other, final ChannelCreator channelCreator) {
+	public FutureDone<Void> setupRelay(final PeerAddress other, final ChannelCreator channelCreator) {
 		logger.debug("Setting up relay connection to peer {}", other);
 
-		final RelayConnectionFuture connectionFuture = new RelayConnectionFuture(other);
+		final FutureDone<Void> futureDone = new FutureDone<Void>();
 
 		final Message message = createMessage(other, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
 		FutureResponse futureResponse = new FutureResponse(message);
@@ -46,39 +44,20 @@ public class RelayRPC extends DispatchHandler {
 		logger.debug("send RPC message {}", message);
 		requestHandler.sendTCP(channelCreator);
 
-		futureResponse.addListener(new BaseFutureListener<FutureResponse>() {
+		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess() && future.getResponse().getType() == Type.OK) {
 					logger.debug("Peer {} is ready to act as a relay", other);
-					openPermanentConnection(connectionFuture, other);
 				} else if (future.getResponse() != null && future.getResponse().getType() == Type.DENIED){
-					connectionFuture.setFailed("Peer " + other + " denied to act as a relay. The peer is probably behind a relay, too");
+				    futureDone.setFailed("Peer " + other + " denied to act as a relay. The peer is probably behind a relay, too");
 				} else {
-					connectionFuture.setFailed("Relay RPC failed: " + future.getFailedReason());
-				}
-			}
-
-			public void exceptionCaught(Throwable t) throws Exception {
-				logger.error("Error creating connection to relay peer {}: {}", other, t);
-				connectionFuture.setFailed(t);
-			}
-		});
-
-		return connectionFuture;
-
-	}
-
-	private void openPermanentConnection(final RelayConnectionFuture rcf, final PeerAddress other) {
-		// create permanent peer connection to relay peer
-		final FuturePeerConnection fpc = peer.createPeerConnection(other);
-		FutureDirect fd = peer.sendDirect(fpc).setObject(true).start();
-		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
-			public void operationComplete(FutureDirect future) throws Exception {
-				if(future.isSuccess()) {
-					rcf.futurePeerConnection(fpc);
+				    futureDone.setFailed("Relay RPC failed: " + future.getFailedReason());
 				}
 			}
 		});
+
+		return futureDone;
+
 	}
 
 	@Override
@@ -93,8 +72,7 @@ public class RelayRPC extends DispatchHandler {
 			// peer is behind a NAT as well -> deny request
 			responder.response(createResponseMessage(message, Type.DENIED));
 		} else {
-			PermanentConnectionRPC permanentConnection = new PermanentConnectionRPC(peer, message.getSender());
-			peer.setDirectDataRPC(permanentConnection);
+		    RelayForwarder.setup(peerConnection, peer);
 			responder.response(createResponseMessage(message, Type.OK));
 		}
 	}

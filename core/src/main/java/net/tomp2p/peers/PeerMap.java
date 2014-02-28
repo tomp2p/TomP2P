@@ -243,7 +243,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
-        boolean firstHand = referrer == null || !peerVerification;
+        boolean firstHand = referrer == null;
         // always trust first hand information
         if (firstHand) {
             offlineMap.remove(remotePeer.getPeerId());

@@ -12,6 +12,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -19,6 +20,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
@@ -87,8 +89,10 @@ public class RelayManager {
     private final RelayManager self;
     private final int maxRelays;
     private final Peer peer;
+    
     private final LinkedHashSet<PeerAddress> relayCandidates;
     private Semaphore relaySemaphore;
+    //maybe store PeerConnection
     private Set<PeerAddress> relayAddresses;
     private final BootstrapBuilder bootstrapBuilder;
     private final RelayRPC relayRPC;
@@ -157,7 +161,7 @@ public class RelayManager {
 
     }
 
-    private FutureDone<Void> getNeighbors(final ChannelCreator cc) {
+    private FutureDone<Void> getNeighbors() {
         final FutureDone<Void> futureDone = new FutureDone<Void>();
 
         // bootstrap to get neighbor peers
@@ -165,6 +169,7 @@ public class RelayManager {
         fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
             public void operationComplete(FutureBootstrap future) throws Exception {
                 if (future.isSuccess()) {
+                	//TODO: only add those that are not currently active
                     relayCandidates.addAll(peer.getDistributedRouting().peerMap().getAll());
                     logger.debug("Found {} peers that could act as relays", relayCandidates.size());
                     
@@ -222,7 +227,8 @@ public class RelayManager {
      * @param futureDone
      * @return
      */
-    private FutureDone<Void> relaySetupLoop(final FutureDone<Void>[] futures, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
+    //TODO: use List
+    private FutureDone<Void> relaySetupLoop(final FutureDone[] futures, final LinkedHashSet<PeerAddress> relayCandidates, final ChannelCreator cc,
             final int numberOfRelays, final FutureDone<Void> futureDone) {
 
         try {
@@ -242,7 +248,8 @@ public class RelayManager {
             if (futures[i] == null) {
                 PeerAddress candidate = relayCandidates.iterator().next();
                 relayCandidates.remove(candidate);
-                futures[i] = relayRPC.setupRelay(candidate, cc);
+                final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
+                futures[i] = relayRPC.setupRelay(cc, fpc);
                 if (futures[i] != null) {
                     active++;
                 }
@@ -254,33 +261,20 @@ public class RelayManager {
             updatePeerAddress();
             futureDone.setDone();
         }
+        
+        FutureForkJoin<FutureDone<PeerConnection>> ffj = new FutureForkJoin<FutureDone<PeerConnection>>(new AtomicReferenceArray<FutureDone<PeerConnection>>(futures));
 
-        FutureForkJoin<FutureDone<Void>> ffj = new FutureForkJoin<FutureDone<Void>>(new AtomicReferenceArray<FutureDone<Void>>(futures));
-
-        ffj.addListener(new BaseFutureAdapter<FutureForkJoin<RelayConnectionFuture>>() {
-            public void operationComplete(FutureForkJoin<RelayConnectionFuture> future) throws Exception {
+        ffj.addListener(new BaseFutureAdapter<FutureForkJoin<FutureDone<PeerConnection>>>() {
+            public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> future) throws Exception {
                 if (future.isSuccess()) {
-                    List<RelayConnectionFuture> reponses = future.getCompleted();
-                    for (final RelayConnectionFuture fr : reponses) {
-                        PeerAddress relayAddress = fr.relayAddress();
+                    List<FutureDone<PeerConnection>> reponses = future.getCompleted();
+                    for (final FutureDone<PeerConnection> fr : reponses) {
+                    	PeerConnection peerConnection = fr.getObject();
+                        PeerAddress relayAddress = peerConnection.remotePeer();
                         if (fr.isSuccess()) {
                             logger.debug("Adding peer {} as a relay", relayAddress);
                             relayAddresses.add(relayAddress);
-                            
-                            FutureDone<Void> closeFuture = fr.futurePeerConnection().getObject().closeFuture();
-                            closeFuture.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-                                public void operationComplete(FutureDone<Void> future) throws Exception {
-                                    if (!peer.isShutdown()) {
-                                        // peer connection not open
-                                        // anymore -> remove and open a
-                                        // new relay connection
-                                        logger.debug("Relay " + fr.relayAddress() + " failed, setting up a new relay peer");
-                                        removeRelay(fr.relayAddress());
-                                        setupRelays();
-                                        futureDone.setDone();
-                                    }
-                                }
-                            });
+                            addCloseListener(peerConnection);
                         } else {
                             logger.debug("Peer {} denied relay request", relayAddress);
                         }
@@ -293,6 +287,21 @@ public class RelayManager {
             }
         });
         return futureDone;
+    }
+    
+    private void addCloseListener(final PeerConnection peerConnection) {
+    	peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+            public void operationComplete(FutureDone<Void> future) throws Exception {
+                if (!peer.isShutdown()) {
+                    // peer connection not open
+                    // anymore -> remove and open a
+                    // new relay connection
+                    logger.debug("Relay " + peerConnection.remotePeer() + " failed, setting up a new relay peer");
+                    removeRelay(peerConnection.remotePeer());
+                    setupRelays();
+                }
+            }
+        });
     }
 
     /**
@@ -321,7 +330,7 @@ public class RelayManager {
         int nrOfRelays = Math.min(relaySemaphore.availablePermits(), relayCandidates.size());
 
         if (nrOfRelays > 0) {
-            FutureDone<Void>[] relayConnectionFutures = new FutureDone[nrOfRelays];
+        	FutureDone[] relayConnectionFutures = new FutureDone[nrOfRelays];
             relaySetupLoop(relayConnectionFutures, relayCandidates, cc, nrOfRelays, fd);
         } else {
             fd.setDone();
@@ -366,7 +375,7 @@ public class RelayManager {
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = future.getChannelCreator();
-                    FutureDone<Void> fd = getNeighbors(future.getChannelCreator());
+                    FutureDone<Void> fd = getNeighbors();
                     fd.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                         public void operationComplete(FutureDone<Void> future) throws Exception {
                             if (future.isSuccess()) {

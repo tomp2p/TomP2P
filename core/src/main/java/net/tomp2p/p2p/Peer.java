@@ -502,6 +502,10 @@ public class Peer {
     public SendDirectBuilder sendDirect(FuturePeerConnection recipientConnection) {
         return new SendDirectBuilder(this, recipientConnection);
     }
+    
+    public SendDirectBuilder sendDirect(PeerConnection peerConnection) {
+        return new SendDirectBuilder(this, peerConnection);
+    }
 
     public BootstrapBuilder bootstrap() {
         return new BootstrapBuilder(this);

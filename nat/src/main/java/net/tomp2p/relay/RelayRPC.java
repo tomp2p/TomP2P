@@ -8,11 +8,11 @@ import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -32,40 +32,46 @@ public class RelayRPC extends DispatchHandler {
 		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
 	}
-	
+
 	public static RelayRPC setup(Peer peer) {
 		return new RelayRPC(peer);
 	}
 
-	public FutureDone<Void> setupRelay(final PeerAddress other, final ChannelCreator channelCreator) {
-		logger.debug("Setting up relay connection to peer {}", other);
+	public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc) {
+		logger.debug("Setting up relay connection to peer {}", fpc.remotePeer());
 
-		final FutureDone<Void> futureDone = new FutureDone<Void>();
+		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
 
-		final Message message = createMessage(other, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+		final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
 		FutureResponse futureResponse = new FutureResponse(message);
-		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
+		        peerBean(), connectionBean(), config);
 		logger.debug("send RPC message {}", message);
-		requestHandler.sendTCP(channelCreator);
 
-		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-			public void operationComplete(FutureResponse future) throws Exception {
-				if (future.isSuccess() && future.getResponse().getType() == Type.OK) {
-					logger.debug("Peer {} is ready to act as a relay", other);
-				} else if (future.getResponse() != null && future.getResponse().getType() == Type.DENIED){
-				    futureDone.setFailed("Peer " + other + " denied to act as a relay. The peer is probably behind a relay, too");
+		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+			public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
+				if (futurePeerConnection.isSuccess()) {
+					requestHandler.sendTCP(channelCreator, futurePeerConnection.getObject()).addListener(
+					        new BaseFutureAdapter<FutureResponse>() {
+						        public void operationComplete(FutureResponse future) throws Exception {
+							        if (future.isSuccess()) {
+								        futureDone.setDone(futurePeerConnection.getObject());
+							        } else {
+								        futureDone.setFailed(future);
+							        }
+						        }
+					        });
 				} else {
-				    futureDone.setFailed("Relay RPC failed: " + future.getFailedReason());
+					futureDone.setFailed(futurePeerConnection);
 				}
 			}
 		});
-
 		return futureDone;
-
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
+	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
+	        Responder responder) throws Exception {
 		if (!(message.getType() == Type.REQUEST_1 && message.getCommand() == RPC.Commands.RELAY.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
@@ -76,7 +82,7 @@ public class RelayRPC extends DispatchHandler {
 			// peer is behind a NAT as well -> deny request
 			responder.response(createResponseMessage(message, Type.DENIED));
 		} else {
-		    RelayForwarder.setup(peerConnection, peer);
+			new RelayForwarder(peerConnection, peer);
 			responder.response(createResponseMessage(message, Type.OK));
 		}
 	}

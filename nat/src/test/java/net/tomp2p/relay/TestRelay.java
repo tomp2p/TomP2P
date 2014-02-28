@@ -8,11 +8,13 @@ import java.util.Random;
 import java.util.Set;
 
 import net.tomp2p.Utils2;
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
@@ -272,16 +274,16 @@ public class TestRelay {
             // create channel creator
             FutureChannelCreator fcc = slave.getConnectionBean().reservation().create(1, PeerAddress.MAX_RELAYS);
             fcc.awaitUninterruptibly();
-            FutureDone<Void> futureDone = RelayRPC.setup(slave).setupRelay(master.getPeerAddress(), fcc.getChannelCreator());
-            futureDone.awaitUninterruptibly();
+
+            final FuturePeerConnection fpc = slave.createPeerConnection(master.getPeerAddress());
+            FutureDone<PeerConnection> rcf = RelayRPC.setup(slave).setupRelay(fcc.getChannelCreator(), fpc);
+            rcf.awaitUninterruptibly();
 
             //Check if permanent peer connection was created
-            Assert.assertTrue(futureDone.isSuccess());
-            //TODO: 
-//            FuturePeerConnection fpc = rcf.futurePeerConnection();
-//            Assert.assertEquals(master.getPeerAddress(), fpc.getObject().remotePeer());
-//            Assert.assertTrue(fpc.getObject().channelFuture().channel().isActive());
-//            Assert.assertTrue(fpc.getObject().channelFuture().channel().isOpen());
+            Assert.assertTrue(rcf.isSuccess());
+            Assert.assertEquals(master.getPeerAddress(), fpc.getObject().remotePeer());
+            Assert.assertTrue(fpc.getObject().channelFuture().channel().isActive());
+            Assert.assertTrue(fpc.getObject().channelFuture().channel().isOpen());
 
         } finally {
             master.shutdown().await();
@@ -309,6 +311,7 @@ public class TestRelay {
              RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start();
              
              rf.awaitUninterruptibly();
+             System.err.println("ERRERO:"+rf.getFailedReason());
              Assert.assertTrue(rf.isSuccess());
              RelayManager manager = rf.relayManager();
              System.err.println("relays: "+manager.getRelayAddresses());
@@ -318,10 +321,11 @@ public class TestRelay {
              FuturePut futurePut = peers[33].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
              Assert.assertTrue(futurePut.isSuccess());
              Assert.assertTrue(futurePut.getRawResult().containsKey(slave.getPeerAddress()));
+             System.err.println("here!!!!!");
              
          } finally {
              master.shutdown().await();
-             slave.shutdown().await();
+             //lave.shutdown().await();
          }
     }
 

@@ -430,9 +430,4 @@ public class RelayManager {
         //Update peer maps of relay peers as soon as all relays are set up
         new Timer().schedule(new PeerMapUpdateTask(relayRPC, bootstrapBuilder), 0, ROUTING_UPDATE_TIME);
     }
-
-	public BaseFuture publishNeighbors() {
-	    return null;
-    }
-
 }

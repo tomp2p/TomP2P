@@ -236,7 +236,7 @@ public class TestRelay {
             	}
             }
             
-            Thread.sleep(1000);
+            Thread.sleep(3000);
 
             int nrOfNeighbors = getNeighbors(found).size();
             //we have in total 9 peers, we should find 8 as neighbors
@@ -355,7 +355,10 @@ public class TestRelay {
             master.shutdown().await();
             slave.shutdown().await();
         }
+    }	public BaseFuture publishNeighbors() {
+	    return null;
     }
+
     
     @Test
     public void testNoRelayDHT() throws Exception {
@@ -420,7 +423,6 @@ public class TestRelay {
              RelayManager manager = rf.relayManager();
              System.err.println("relays: "+manager.getRelayAddresses());
              System.err.println("psa: "+Arrays.toString(slave.getPeerAddress().getPeerSocketAddresses()));
-             manager.publishNeighbors();
              //wait for maintenance to kick in
              Thread.sleep(4000);
              

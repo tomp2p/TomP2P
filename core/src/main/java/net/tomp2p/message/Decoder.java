@@ -18,6 +18,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.TreeMap;
 
@@ -28,6 +29,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -53,6 +55,9 @@ public class Decoder {
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
+	
+	private int peerSocketAddressSize = -1;
+	private List<PeerSocketAddress> peerSocketAddresses = null;
 
 	private int keyCollectionSize = -1;
 	private KeyCollection keyCollection = null;
@@ -237,6 +242,9 @@ public class Decoder {
 					neighborSet = new NeighborSet(-1, new ArrayList<PeerAddress>(neighborSize));
 				}
 				for (int i = neighborSet.size(); i < neighborSize; i++) {
+					if (buf.readableBytes() < Utils.SHORT_BYTE_SIZE) {
+						return false;
+					}
 					int header = buf.getUnsignedShort(buf.readerIndex());
 					size = PeerAddress.size(header);
 					if (buf.readableBytes() < size) {
@@ -250,6 +258,37 @@ public class Decoder {
 				neighborSize = -1;
 				neighborSet = null;
 				break;
+				
+				
+			case SET_PEER_SOCKET:
+				if (peerSocketAddressSize == -1 && buf.readableBytes() < Utils.BYTE_SIZE) {
+					return false;
+				}
+				if (peerSocketAddressSize == -1) {
+					peerSocketAddressSize = buf.readUnsignedByte();
+				}
+				if (peerSocketAddresses == null) {
+					peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddressSize);
+				}
+				for (int i = peerSocketAddresses.size(); i < peerSocketAddressSize; i++) {
+					if (buf.readableBytes() < Utils.BYTE_SIZE) {
+						return false;
+					}
+					int header = buf.readUnsignedByte();
+					boolean isIPv4 = header == 0;
+					size = PeerSocketAddress.size(header);
+					if (buf.readableBytes() < size) {
+						return false;
+					}
+					peerSocketAddresses.add(PeerSocketAddress.create(buf, isIPv4));
+				}
+				message.setPeerSocketAddresses(peerSocketAddresses);
+				lastContent = contentTypes.poll();
+				peerSocketAddressSize = -1;
+				peerSocketAddresses = null;
+				break;
+				
+				
 			case SET_KEY640:
 				if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
@@ -330,8 +369,8 @@ public class Decoder {
 					if (!data.decodeDone(buf, message.getPublicKey())) {
 						return false;
 					}
-					// if we have signed the message, set the public key anyway
-					if (message.isSign() && message.getPublicKey() != null
+					// if we have signed the message, set the public key anyway, but only if we indicated so
+					if (message.isSign() && message.getPublicKey() != null && data.hasPublicKey() 
 							&& (data.publicKey() == null || data.publicKey() == PeerMaker.EMPTY_PUBLICKEY)) {
 						data.publicKey(message.getPublicKey());
 					}
@@ -525,7 +564,6 @@ public class Decoder {
 				
 			default:
 			case USER1:
-			case USER2:
 			case EMPTY:
 				break;
 			}

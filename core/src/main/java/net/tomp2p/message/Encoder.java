@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -11,6 +12,7 @@ import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -85,6 +87,16 @@ public class Encoder {
                 buf.writeByte(neighborSet.size());
                 for (PeerAddress neighbor : neighborSet.neighbors()) {
                     buf.writeBytes(neighbor.toByteArray());
+                }
+                message.contentRefencencs().poll();
+                break;
+            case SET_PEER_SOCKET:
+                List<PeerSocketAddress> list = message.getPeerSocketAddresses();
+                // length
+                buf.writeByte(list.size());
+                for (PeerSocketAddress addr : list) {
+                	buf.writeByte(addr.isIPv4() ? 0:1);
+                    buf.writeBytes(addr.toByteArray());
                 }
                 message.contentRefencencs().poll();
                 break;
@@ -207,7 +219,6 @@ public class Encoder {
             	break;
             default:
             case USER1:
-            case USER2:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
 

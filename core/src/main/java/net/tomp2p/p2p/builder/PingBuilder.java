@@ -16,16 +16,14 @@
 
 package net.tomp2p.p2p.builder;
 
-import io.netty.channel.ChannelFuture;
-
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -33,11 +31,9 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.utils.Utils;
 
 public class PingBuilder {

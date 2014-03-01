@@ -99,6 +99,25 @@ public class PeerSocketAddress implements Serializable {
     public int getOffset() {
         return offset;
     }
+    
+    public byte[] toByteArray() {
+    	int size = size();
+    	byte[] retVal = new byte[size];
+    	int size2 = toByteArray(retVal, 0);
+    	if(size!=size2) {
+    		throw new RuntimeException("sizes do not match");
+    	}
+    	return retVal;
+    }
+    
+    public int size() {
+    	return 2 + 2 + (isIPv4()?Utils.IPV4_BYTES:Utils.IPV6_BYTES);
+    }
+    
+    public static int size(int header) {
+    	boolean isIPv4 = header == 0;
+    	return 2 + 2 + (isIPv4 ? Utils.IPV4_BYTES:Utils.IPV6_BYTES);
+    }
 
     /**
      * Serializes a peer socket address to a byte array. First the ports are serialized: TCP and UDP, then the address.
@@ -124,6 +143,10 @@ public class PeerSocketAddress implements Serializable {
             offset2 += Utils.IPV6_BYTES;
         }
         return offset2;
+    }
+    
+    public boolean isIPv4() {
+    	return inetAddress instanceof Inet4Address;
     }
 
     @Override

@@ -20,6 +20,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
@@ -252,6 +254,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
         // We got a good answer, let's mark the sender as alive
         if (responseMessage.isOk() || responseMessage.isNotOk()) {
+        	
             peerBean.peerMap().peerFound(responseMessage.getSender(), null);
         }
         
@@ -264,6 +267,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         // Now we now we have the right message
         LOG.debug("perfect: {}", responseMessage);
+        
+        if(message.getSender().isRelayed()) {
+        	PeerSocketAddress[] tmp = new PeerSocketAddress[message.getPeerSocketAddresses().size()];
+        	PeerAddress sender = message.getSender().changePeerSocketAddresses(
+        			message.getPeerSocketAddresses().toArray(tmp));
+        	message.setSender(sender);
+        }
 
         if (!message.isKeepAlive()) {
             //set the success now, but trigger the notify when we closed the channel.

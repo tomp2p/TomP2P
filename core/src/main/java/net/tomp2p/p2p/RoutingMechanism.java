@@ -158,7 +158,6 @@ public class RoutingMechanism {
      */
     public NavigableSet<PeerAddress> potentialHits() {
         synchronized (this) {
-
             return potentialHits;
         }
     }

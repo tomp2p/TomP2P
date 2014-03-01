@@ -46,6 +46,7 @@ import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
@@ -125,6 +126,11 @@ public class Sender {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
+		//we need to set the neighbors if we use relays
+		if(message.getSender().isRelayed()) {
+			message.setPeerSocketAddresses(Arrays.asList(message.getSender().getPeerSocketAddresses()));
+		}
+		
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
@@ -365,6 +371,10 @@ public class Sender {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
+		
+		if(message.getSender().isRelayed()) {
+			message.setPeerSocketAddresses(Arrays.asList(message.getSender().getPeerSocketAddresses()));
+		}
 
 		boolean isFireAndForget = handler == null;
 
@@ -388,8 +398,9 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.getRecipient().isRelayed() && message.getCommand() != RPC.Commands.NEIGHBOR.getNr()) {
-			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
+		if (message.getRecipient().isRelayed() && 
+				message.getCommand() != RPC.Commands.NEIGHBOR.getNr() && message.getCommand() != RPC.Commands.PING.getNr()) {
+			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}", message);
 			futureResponse
 			        .setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
@@ -398,8 +409,18 @@ public class Sender {
 				
 				PeerSocketAddress[] psa = message.getRecipient().getPeerSocketAddresses();
 				LOG.debug("send neighbor request to random relay peer {}", Arrays.toString(psa));
-				channelFuture = channelCreator.createUDP
-						(PeerSocketAddress.createSocketUDP(psa[random.nextInt(psa.length-1)]), broadcast, handlers, futureResponse);
+				if(psa.length > 0) {
+					PeerSocketAddress ps = psa[random.nextInt(psa.length)];
+					PeerAddress recipient = message.getRecipient();
+					message.setRecipient(recipient.changePeerSocketAddress(ps));
+				
+					channelFuture = channelCreator.createUDP
+							(PeerSocketAddress.createSocketUDP(ps), broadcast, handlers, futureResponse);
+				} else {
+					futureResponse
+			        	.setFailed("Peer is relayed, but no relay given");
+					return;
+				}
 			} else {
 				channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
 						broadcast, handlers, futureResponse);

@@ -146,4 +146,12 @@ public class PeerConnection {
     public PeerAddress remotePeer() {
         return remotePeer;
     }
+    
+    public boolean isOpen() {
+    	if(channelFuture!=null) {
+    		return channelFuture.channel().isOpen();
+    	} else {
+    		return false;
+    	}
+    }
 }

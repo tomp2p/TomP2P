@@ -189,6 +189,29 @@ public class TestPeerAddress {
 
         compare(pa3, pa4);
     }
+    
+    @Test
+    public void testPeerAddress7() throws UnknownHostException {
+
+        PeerSocketAddress[] psa = new PeerSocketAddress[PeerAddress.MAX_RELAYS];
+        int i = 0;
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("3123:4567:89ab:cdef:0123:4567:89ab:cde3"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("5123:4567:89ab:cdef:0123:4567:89ab:cde5"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
+                InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)), true, true, true, psa);
+        
+        Assert.assertEquals(142, pa3.toByteArray().length);
+
+    }
 
     /**
      * Compare two PeerAddress.

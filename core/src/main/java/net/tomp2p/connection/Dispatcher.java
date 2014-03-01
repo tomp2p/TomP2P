@@ -21,6 +21,7 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +30,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
@@ -137,6 +139,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         final DispatchHandler myHandler = getAssociatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
+            boolean isRelay = message.getSender().isRelayed();
+            if(isRelay) {
+            	PeerSocketAddress[] tmp = new PeerSocketAddress[message.getPeerSocketAddresses().size()];
+            	PeerAddress sender = message.getSender().changePeerSocketAddresses(
+            			message.getPeerSocketAddresses().toArray(tmp));
+            	message.setSender(sender);
+            }
             LOG.debug("about to respond to {}", message);
             PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
@@ -157,6 +166,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
         public void response(Message responseMessage) {
+        	
+        	if(responseMessage.getSender().isRelayed()) {
+        		responseMessage.setPeerSocketAddresses(Arrays.asList(responseMessage.getSender().getPeerSocketAddresses()));
+    		}
+        	
             Dispatcher.this.response(ctx, responseMessage);
         }
         

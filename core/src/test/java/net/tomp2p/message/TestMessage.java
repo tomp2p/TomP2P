@@ -29,6 +29,7 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
@@ -39,6 +40,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -51,6 +53,8 @@ import net.tomp2p.connection.DefaultSignatureFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
@@ -59,6 +63,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import com.cedarsoftware.util.DeepEquals;
 
 /**
  * Tests encoding of an empty message. These tests should not be used for
@@ -75,6 +81,10 @@ import org.mockito.stubbing.Answer;
  * 
  */
 public class TestMessage {
+	
+	private static final int SEED = 1;
+    private static final int BIT_16 = 256 * 256;
+    private static final Random RND = new Random(SEED);
 
 	@Test
 	public void compositeBufferTest1() {
@@ -385,6 +395,90 @@ public class TestMessage {
 			// nada
 		}
 	}
+	
+	@Test
+	public void testRelayAddresses1() throws Exception { // encode
+		Message m1 = Utils2.createDummyMessage();
+		m1.setType(Message.Type.NOT_FOUND);
+		List<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
+		tmp.add(new PeerSocketAddress(InetAddress.getLocalHost(), 15, 17));
+		tmp.add(new PeerSocketAddress(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
+		m1.setPeerSocketAddresses(tmp);
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(tmp, m2.getPeerSocketAddresses());
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testRelay() throws Exception {
+		PeerSocketAddress[] psa = new PeerSocketAddress[PeerAddress.MAX_RELAYS];
+        int i = 0;
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
+                psa);
+        
+        Message m1 = Utils2.createDummyMessage();
+        Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
+        tmp.add(pa3);
+        m1.setNeighborsSet(new NeighborSet(-1, tmp));
+        
+        Message m2 = encodeDecode(m1);
+		Assert.assertArrayEquals(psa, m2.getNeighborsSet(0).neighbors().iterator().next().getPeerSocketAddresses());
+		compareMessage(m1, m2);
+		
+	}
+	
+	@Test
+	public void testRelay2() throws Exception {	
+		PeerSocketAddress[] psa = new PeerSocketAddress[PeerAddress.MAX_RELAYS];
+        int i = 0;
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
+        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16));
+        PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
+                InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
+                psa);
+        
+        Message m1 = Utils2.createDummyMessage();
+        Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
+        tmp.add(pa3);
+        m1.setNeighborsSet(new NeighborSet(10, tmp));
+        
+        Message m2 = encodeDecode(m1);
+		Assert.assertEquals(tmp, m2.getPeerSocketAddresses());
+		compareMessage(m1, m2);
+		
+	}
+	
+//	@Test
+//	public void testRelayAddresses3() throws Exception { // encode
+//		Message m1 = Utils2.createDummyMessage();
+//		m1.setType(Message.Type.NOT_FOUND);
+//		PeerSocketAddress psa[] = {new PeerSocketAddress(InetAddress.getLocalHost(), 15, 17)};
+//		PeerAddress pa = new PeerAddress(Number160.ZERO, new PeerSocketAddress(InetAddress.getByName("localhost"), 13, 14), 
+//				true, true, true, psa);
+//		m1.setSender(pa);
+//		Message m2 = encodeDecode(m1);
+//		Assert.assertArrayEquals(m1.getSender().getPeerSocketAddresses(), m2.getSender().getPeerSocketAddresses());
+//		compareMessage(m1, m2);
+//	}
 
 	/**
 	 * Encodes and decodes a message.
@@ -496,8 +590,19 @@ public class TestMessage {
 						m2.getBloomFilterList()));
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.getBufferList(), m2.getBufferList()));
-		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getDataMapList(), m2.getDataMapList()));
+		
+		
+		Assert.assertEquals(m1.getDataMapList().size(), m2.getDataMapList().size());
+		
+		//;
+		for(Iterator<DataMap> iter1 = m1.getDataMapList().iterator(), 
+				iter2 = m2.getDataMapList().iterator();iter1.hasNext() && iter2.hasNext();) {
+			Assert.assertEquals(true,
+					DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
+		}
+		
+		
+		
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.getIntegerList(), m2.getIntegerList()));
 		Assert.assertEquals(true,
@@ -510,10 +615,17 @@ public class TestMessage {
 				Utils.isSameSets(m1.getKeyMap480List(), m2.getKeyMap480List()));
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.getLongList(), m2.getLongList()));
-		Assert.assertEquals(
-				true,
-				Utils.isSameSets(m1.getNeighborsSetList(),
-						m2.getNeighborsSetList()));
+		
+		Assert.assertEquals(m1.getNeighborsSetList().size(), m2.getNeighborsSetList().size()); 
+		for(Iterator<NeighborSet> iter1 = m1.getNeighborsSetList().iterator(), 
+				iter2 = m2.getNeighborsSetList().iterator();iter1.hasNext() && iter2.hasNext();) {
+			Assert.assertEquals(
+					true,
+					Utils.isSameSets(iter1.next().neighbors(),
+							iter2.next().neighbors()));	
+		}
+		
+		
 
 		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender()
 				.isFirewalledTCP());

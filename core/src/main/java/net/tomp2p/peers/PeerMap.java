@@ -243,7 +243,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
-        boolean firstHand = referrer == null;
+        boolean firstHand = referrer == null || !peerVerification;
         // always trust first hand information
         if (firstHand) {
             offlineMap.remove(remotePeer.getPeerId());
@@ -255,7 +255,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 || shutdownMap.containsKey(remotePeer.getPeerId()) || exceptionMap.containsKey(remotePeer.getPeerId())) {
             return false;
         }
-
+        
+        if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
+        	return false;
+        }
+        
         final int classMember = classMember(remotePeer.getPeerId());
 
         // the peer might have a new port

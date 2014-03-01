@@ -11,20 +11,19 @@ import net.tomp2p.peers.PeerAddress;
 public class RelayBuilder implements Builder {
     
 	final private static RelayFuture FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS= new RelayFuture().setFailed("No bootrap address has been set");
-    
+   
     final private Peer peer;
+    final private RelayManager relayManager;
     
     private PeerAddress bootstrapAddress;
     private InetAddress bootstrapInetAddress;
     private int port = Ports.DEFAULT_PORT;
     private BootstrapBuilder bootstrapBuilder;
-    private int maxRelays = PeerAddress.MAX_RELAYS;
-    private RelayManager relayManager;
-    private RelayRPC relayRPC;
+   
     
     public RelayBuilder(RelayPeer relayPeer) {
         this.peer = relayPeer.peer();
-        this.relayRPC = relayPeer.relayRPC();
+        this.relayManager = relayPeer.relayManager();
     }
     
     /**
@@ -53,21 +52,7 @@ public class RelayBuilder implements Builder {
         return this;
     }
     
-    /**
-     * Sets the maximum number of peers. A peer can currently have up to 5 relay
-     * peers (specified in {@link PeerAddress#MAX_RELAYS}). Any number higher
-     * than 5 will result in 5 relay peers.
-     * 
-     * @param maxRelays
-     *            maximum number of relay peers (maximum specified in
-     *            {@link PeerAddress#MAX_RELAYS}). Currently up to 5 relay peers
-     *            are allowed
-     * @return this instance
-     */
-    public RelayBuilder maxRelays(int maxRelays) {
-        this.maxRelays = maxRelays;
-        return this;
-    }
+    
     
     /**
      * Sets the ports of the bootstrap peer. For more specific bootstrap
@@ -113,10 +98,8 @@ public class RelayBuilder implements Builder {
         } else {
             return FUTURE_RELAY_NO_BOOTSTRAP_ADDRESS;
         }
-        
-        //TODO: can we create the releaymananger in the constructor? can we reuse it?
-        relayManager = new RelayManager(peer, bootstrapBuilder, maxRelays, relayRPC);
-        return relayManager.setupRelays();
+                
+        return relayManager.setupRelays(bootstrapBuilder);
     }
 
 }

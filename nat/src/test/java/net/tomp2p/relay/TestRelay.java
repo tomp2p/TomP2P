@@ -19,6 +19,7 @@ import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -58,6 +59,71 @@ public class TestRelay {
             Assert.assertTrue(manager.getRelayAddresses().size() > 0);
             Assert.assertTrue(manager.getRelayAddresses().size() == PeerAddress.MAX_RELAYS);
             Assert.assertEquals(manager.getRelayAddresses().size(), unreachablePeer.getPeerAddress().getPeerSocketAddresses().length);
+
+        } finally {
+            if (master != null) {
+                unreachablePeer.shutdown().await();
+                master.shutdown().await();
+            }
+        }
+    }
+    
+    @Test
+    public void testBoostrap() throws Exception {
+        final Random rnd = new Random(42);
+        final int nrOfNodes = 10;
+        Peer master = null;
+        Peer unreachablePeer = null;
+        try {
+            // setup test peers
+            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            master = peers[0];
+            Utils2.perfectRouting(peers);
+            for(Peer peer:peers) {
+            	RelayRPC.setup(peer);
+            }
+
+            // Test setting up relay peers
+            unreachablePeer = new PeerMaker(Number160.ONE).ports(5000).makeAndListen();
+            RelayPeer rp = new RelayPeer(unreachablePeer);
+            
+            RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start();
+            rf.awaitUninterruptibly();
+            boolean otherPeersHaveRelay = false;
+            
+            
+            for(Peer peer:peers) {
+            	if(peer.getPeerBean().peerMap().getAllOverflow().contains(unreachablePeer.getPeerAddress())) {
+            		for(PeerAddress pa: peer.getPeerBean().peerMap().getAllOverflow()) {
+            			if(pa.getPeerId().equals(unreachablePeer.getPeerID())) {
+            				if(pa.getPeerSocketAddresses().length > 0) {
+            					otherPeersHaveRelay = true;
+            				}
+            				System.err.println("-->"+Arrays.toString(pa.getPeerSocketAddresses()));
+            				System.err.println("relay="+pa.isRelayed());
+            			}
+            		}
+            		System.err.println("check 1! "+peer.getPeerAddress());
+            	}
+            	
+            	
+            	
+            }
+            Assert.assertTrue(otherPeersHaveRelay);
+            
+            //wait for maintenance
+            Thread.sleep(3000);
+            
+            boolean otherPeersMe = false;
+            for(Peer peer:peers) {
+            	
+            	if(peer.getPeerBean().peerMap().getAll().contains(unreachablePeer.getPeerAddress())) {
+            		System.err.println("check 2! "+peer.getPeerAddress());
+            		otherPeersMe = true;
+            	}
+            }
+            Assert.assertTrue(otherPeersMe);
+            
 
         } finally {
             if (master != null) {
@@ -292,12 +358,54 @@ public class TestRelay {
     }
     
     @Test
+    public void testNoRelayDHT() throws Exception {
+    	final Random rnd = new Random(42);
+    	 Peer master = null;
+         Peer slave = null;
+         try {
+             Peer[] peers = Utils2.createNodes(10, rnd, 4000);
+             master = peers[0]; // the relay peer
+             Utils2.perfectRouting(peers);
+             for(Peer peer:peers) {
+             	RelayRPC.setup(peer);
+             }
+             PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
+             slave = new PeerMaker(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
+             printMapStatus(slave, peers);
+             FuturePut futurePut = peers[8].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
+             futurePut.getFutureRequests().awaitUninterruptibly();
+             Assert.assertTrue(futurePut.isSuccess());
+             Assert.assertFalse(slave.getPeerBean().storage().contains(
+            		 new Number640(slave.getPeerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
+             System.err.println("DONE!");
+             
+         } finally {
+             master.shutdown().await();
+             slave.shutdown().await();
+         }
+    }
+
+	private void printMapStatus(Peer slave, Peer[] peers) {
+	    for(Peer peer:peers) {
+	    	 if(peer.getPeerBean().peerMap().getAllOverflow().contains(slave.getPeerAddress())) {
+	    		 System.err.println("found relayed peer in overflow bag " + peer.getPeerAddress());
+	    	 }
+	     }
+	     
+	     for(Peer peer:peers) {
+	    	 if(peer.getPeerBean().peerMap().getAll().contains(slave.getPeerAddress())) {
+	    		 System.err.println("found relayed peer in regular bag" + peer.getPeerAddress());
+	    	 }
+	     }
+    }
+    
+    @Test
     public void testRelayDHT() throws Exception {
     	final Random rnd = new Random(42);
     	 Peer master = null;
          Peer slave = null;
          try {
-             Peer[] peers = Utils2.createNodes(100, rnd, 4000);
+             Peer[] peers = Utils2.createNodes(10, rnd, 4000);
              master = peers[0]; // the relay peer
              Utils2.perfectRouting(peers);
              for(Peer peer:peers) {
@@ -305,27 +413,30 @@ public class TestRelay {
              }
              PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
             
-             slave = new PeerMaker(Number160.createHash(rnd.nextInt())).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
+             slave = new PeerMaker(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
              RelayPeer rp = new RelayPeer(slave);
-             
-             RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start();
-             
-             rf.awaitUninterruptibly();
-             System.err.println("ERRERO:"+rf.getFailedReason());
+             RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
              Assert.assertTrue(rf.isSuccess());
              RelayManager manager = rf.relayManager();
              System.err.println("relays: "+manager.getRelayAddresses());
              System.err.println("psa: "+Arrays.toString(slave.getPeerAddress().getPeerSocketAddresses()));
              manager.publishNeighbors();
-             Thread.sleep(3000);
-             FuturePut futurePut = peers[33].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
+             //wait for maintenance to kick in
+             Thread.sleep(4000);
+             
+             printMapStatus(slave, peers);
+             
+             FuturePut futurePut = peers[8].put(slave.getPeerID()).setData(new Data("hello")).start().awaitUninterruptibly();
+             //the releayed one is the slowest, so we need to wait for it!
+             futurePut.getFutureRequests().awaitUninterruptibly();
              Assert.assertTrue(futurePut.isSuccess());
-             Assert.assertTrue(futurePut.getRawResult().containsKey(slave.getPeerAddress()));
-             System.err.println("here!!!!!");
+             //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
+             Assert.assertTrue(slave.getPeerBean().storage().contains(new Number640(slave.getPeerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
+             System.err.println("DONE!");
              
          } finally {
              master.shutdown().await();
-             //lave.shutdown().await();
+             slave.shutdown().await();
          }
     }
 

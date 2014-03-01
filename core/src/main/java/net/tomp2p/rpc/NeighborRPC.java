@@ -154,9 +154,6 @@ public class NeighborRPC extends DispatchHandler {
         Number160 locationKey = message.getKey(0);
         Number160 domainKey = message.getKey(1);
         
-        // Create response message and set neighbors
-        final Message responseMessage = createResponseMessage(message, Type.OK);
-
         SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
             //return empty neighbor set
@@ -165,6 +162,9 @@ public class NeighborRPC extends DispatchHandler {
             responder.response(response);
             return;
         }
+        
+        // Create response message and set neighbors
+        final Message responseMessage = createResponseMessage(message, Type.OK);
         
         LOG.debug("found the following neighbors {}", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);

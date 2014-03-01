@@ -207,7 +207,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if (relaySize > 0) {
             this.peerSocketAddresses = new PeerSocketAddress[relaySize];
             for (int i = 0; i < relaySize; i++) {
-                peerSocketAddresses[i] = PeerSocketAddress.create(channelBuffer, relayType.get(i));
+                peerSocketAddresses[i] = PeerSocketAddress.create(channelBuffer, !relayType.get(i));
             }
         } else {
             this.peerSocketAddresses = EMPTY_PEER_SOCKET_ADDRESSES;
@@ -285,6 +285,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         for (int i = 0; i < relaySize; i++) {
             boolean isIPV6 = peerSocketAddresses[i].getInetAddress() instanceof Inet6Address;
             this.relayType.set(i, isIPV6);
+            size += peerSocketAddresses[i].size();
         }
         this.size = size;
         // unused here
@@ -409,7 +410,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         newOffset = peerSocketAddress.toByteArray(me, newOffset);
 
         for (int i = 0; i < relaySize; i++) {
-            newOffset = peerSocketAddresses[0].toByteArray(me, newOffset);
+            newOffset = peerSocketAddresses[i].toByteArray(me, newOffset);
         }
 
         return newOffset;
@@ -628,6 +629,16 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changePeerId(final Number160 peerId) {
         return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+                peerSocketAddresses);
+    }
+    
+    public PeerAddress changePeerSocketAddresses(PeerSocketAddress[] peerSocketAddresses) {
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+                peerSocketAddresses);
+    }
+    
+    public PeerAddress changePeerSocketAddress(PeerSocketAddress peerSocketAddress) {
+    	return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
                 peerSocketAddresses);
     }
 

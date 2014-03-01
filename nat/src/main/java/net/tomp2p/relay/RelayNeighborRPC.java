@@ -6,13 +6,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
-import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -22,16 +24,20 @@ public class RelayNeighborRPC extends NeighborRPC {
     
     private final static Logger logger = LoggerFactory.getLogger(RelayNeighborRPC.class);
     
-    private Peer peer;
     private PeerAddress unreachablePeer;
     private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
     public RelayNeighborRPC(Peer peer, PeerAddress unreachablePeer) {
         super(peer.getPeerBean(), peer.getConnectionBean(), false);
         peer.getConnectionBean().dispatcher().registerIoHandler(unreachablePeer.getPeerId(), this, RPC.Commands.NEIGHBOR.getNr());
-        this.peer = peer;
         this.unreachablePeer = unreachablePeer;
-        setObjectReply();
+    }
+    
+    @Override
+    public Message createResponseMessage(Message requestMessage, Type replyType) {
+    	//we need to create a recipient that has the IP/port of the relay peer, but the ID of the unreachable peer
+        return DispatchHandler.createResponseMessage(requestMessage, 
+        		replyType, peerBean().serverPeerAddress().changePeerId(unreachablePeer.getPeerId()));
     }
     
     @Override
@@ -42,19 +48,6 @@ public class RelayNeighborRPC extends NeighborRPC {
         } else {
             return PeerMap.closePeers(unreachablePeer.getPeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
         }
-    }
-    
-    private void setObjectReply() {
-        peer.setObjectDataReply(new ObjectDataReply() {
-            @SuppressWarnings("unchecked")
-            public Object reply(PeerAddress sender, Object request) throws Exception {
-                if(request instanceof List<?>) {
-                    peerMap = (List<Map<Number160, PeerStatatistic>>) request;
-                    logger.trace("Peer map of unreachable peer {} was updated", sender);
-                }
-                return true;
-            }
-        });
     }
 
 	public Collection<PeerAddress> getAll() {
@@ -69,4 +62,7 @@ public class RelayNeighborRPC extends NeighborRPC {
 	    return result2;
     }
 
+	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
+	    this.peerMap = peerMap;
+    }
 }

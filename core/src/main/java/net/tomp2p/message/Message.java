@@ -31,6 +31,7 @@ import java.util.Random;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
@@ -52,7 +53,7 @@ public class Message {
     public enum Content {
         EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEY, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
         LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, 
-        PUBLIC_KEY, USER1, USER2
+        PUBLIC_KEY, SET_PEER_SOCKET, USER1
     };
 
     /**
@@ -130,6 +131,7 @@ public class Message {
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
+    private List<PeerSocketAddress> peerSocketAddresses = null;
     //these will be always sent together
     private SHA1Signature signatureEncode = null;
     private PublicKey publicKey = null;
@@ -752,6 +754,24 @@ public class Message {
             return null;
         }
         return publicKeyList.get(index);
+    }
+    
+    public Message setPeerSocketAddresses(List<PeerSocketAddress> peerSocketAddresses) {
+    	if (!presetContentTypes) {
+            setContentType(Content.SET_PEER_SOCKET);
+        }
+    	if(this.peerSocketAddresses == null) {
+    		this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
+    	}
+    	this.peerSocketAddresses.addAll(peerSocketAddresses);
+        return this;
+    }
+
+    public List<PeerSocketAddress> getPeerSocketAddresses() {
+    	if (peerSocketAddresses == null) {
+            return Collections.emptyList();
+        }
+        return peerSocketAddresses;
     }
     
     public PublicKey getPublicKey() {

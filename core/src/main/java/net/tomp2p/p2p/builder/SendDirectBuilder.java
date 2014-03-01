@@ -164,6 +164,9 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		} else if (recipientAddress == null && recipientConnection != null) {
 			keepAlive = true;
 			remotePeer = recipientConnection.remotePeer();
+		} else if (peerConnection != null) {
+			keepAlive = true;
+			remotePeer = peerConnection.remotePeer();
 		} else {
 			throw new IllegalArgumentException("either remotePeer or connection has to be set");
 		}
@@ -176,13 +179,13 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		final RequestHandler<FutureResponse> request = peer.getDirectDataRPC().sendInternal(remotePeer, this);
 		if (keepAlive) {
 			if (peerConnection != null) {
-				sendDirectRequest(request);
+				sendDirectRequest(request, peerConnection);
 			} else {
 				recipientConnection.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
 					@Override
 					public void operationComplete(final FuturePeerConnection future) throws Exception {
 						if (future.isSuccess()) {
-							sendDirectRequest(request);
+							sendDirectRequest(request, future.peerConnection());
 						} else {
 							request.futureResponse().setFailed("Could not acquire channel (1)", future);
 						}
@@ -207,14 +210,14 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return new FutureDirect(request.futureResponse());
 	}
 
-	private void sendDirectRequest(final RequestHandler<FutureResponse> request) {
-		FutureChannelCreator futureChannelCreator2 = recipientConnection.getObject().acquire(request.futureResponse());
+	private static void sendDirectRequest(final RequestHandler<FutureResponse> request, final PeerConnection peerConnection) {
+		FutureChannelCreator futureChannelCreator2 = peerConnection.acquire(request.futureResponse());
 		futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
 					request.futureResponse().getRequest().setKeepAlive(true);
-					request.sendTCP(recipientConnection.getObject().channelCreator(), recipientConnection.getObject());
+					request.sendTCP(peerConnection.channelCreator(), peerConnection);
 				} else {
 					request.futureResponse().setFailed("Could not acquire channel (2)", future);
 				}

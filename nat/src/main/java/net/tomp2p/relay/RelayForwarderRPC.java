@@ -78,6 +78,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 		relayForwarderRPC.register(peer);
 	}
 	
+	//TODO: make sure if a peerconnection is dead, unregister is called
 	public static void unregister(Peer peer, Number160 unreachablePeer) {
 		peer.getConnectionBean().dispatcher().removeIoHandler(unreachablePeer);
 	}

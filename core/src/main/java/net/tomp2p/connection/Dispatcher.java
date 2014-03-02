@@ -254,7 +254,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            The type of the message to be filtered
      * @return the handler for the given message or null if none has been found
      */
-    private DispatchHandler searchHandler(final Number160 recipientID, final Integer command) {
+    public DispatchHandler searchHandler(final Number160 recipientID, final Integer command) {
         Map<Integer, DispatchHandler> types = ioHandlers.get(recipientID);
         
         if (types != null && types.containsKey(command)) {

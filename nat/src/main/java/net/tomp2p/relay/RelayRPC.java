@@ -35,9 +35,6 @@ public class RelayRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
 	private final ConnectionConfiguration config;
 	private final Peer peer;
-	
-	private RelayNeighborRPC relayNeighborRPC;
-	private RelayForwarderRPC relayForwarderRPC;
 
 	private RelayRPC(Peer peer) {
 		super(peer.getPeerBean(), peer.getConnectionBean());
@@ -119,7 +116,7 @@ public class RelayRPC extends DispatchHandler {
 		if(message.getType() == Type.REQUEST_1 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
 			handleSetup(message, peerConnection, responder);
 		} else if (message.getType() == Type.REQUEST_2 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
-			handleData(message, responder);
+			handlePiggyBackMessage(message, responder);
 		} else if (message.getType() == Type.REQUEST_3 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
 			handleMap(message, responder);
 		} else {
@@ -132,13 +129,13 @@ public class RelayRPC extends DispatchHandler {
 			// peer is behind a NAT as well -> deny request
 			responder.response(createResponseMessage(message, Type.DENIED));
 		} else {
-			relayNeighborRPC = new RelayNeighborRPC(peer, peerConnection.remotePeer());
-			relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, this);
+			RelayForwarderRPC.register(peerConnection, peer, this);
 			responder.response(createResponseMessage(message, Type.OK));
 		}
 	}
 	
-	private void handleData(Message message, Responder responderToRelay) throws Exception {
+	private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
+		//TODO: check if we have right setup
 		Buffer requestBuffer = message.getBuffer(0);
 		Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
 		LOG.debug("Received message from relay peer: {}", realMessage);
@@ -154,20 +151,13 @@ public class RelayRPC extends DispatchHandler {
 	
 	private void handleMap(Message message, Responder responder) {
 		Collection<PeerAddress> map = message.getNeighborsSet(0).neighbors();
-		if(relayNeighborRPC == null) {
-			relayNeighborRPC.setMap(RelayUtils.unflatten(map, message.getSender()));
+		RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.getSender().getPeerId());
+		if(relayForwarderRPC != null) {
+			relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.getSender()));
 		} else {
 			LOG.error("need to call setup relay first");
 		}
 		Message response = createResponseMessage(message, Type.OK);
 		responder.response(response);
     }
-	
-	public RelayNeighborRPC relayNeighborRPC() {
-		return relayNeighborRPC;
-	}
-	
-	public RelayForwarderRPC relayForwarderRPC() {
-		return relayForwarderRPC;
-	}
 }

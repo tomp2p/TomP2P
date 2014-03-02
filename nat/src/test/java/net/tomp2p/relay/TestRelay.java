@@ -446,7 +446,7 @@ public class TestRelay {
     	Map<Number160, DispatchHandler> handlers = peer.getConnectionBean().dispatcher().searchHandler(5);
     	handlers.remove(peer.getPeerID());
     	DispatchHandler dh = handlers.values().iterator().next();
-    	return ((RelayNeighborRPC)dh).getAll(); 
+    	return ((RelayForwarderRPC)dh).getAll(); 
     }
 
 }

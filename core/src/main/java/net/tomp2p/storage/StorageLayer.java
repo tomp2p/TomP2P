@@ -567,7 +567,7 @@ public class StorageLayer {
 	}
 
 	public Enum<?> updateMeta(PublicKey publicKey, Number640 key, Data newData) {
-		boolean retVal = true;
+		boolean found = false;
 		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
 		try {
 			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
@@ -577,16 +577,16 @@ public class StorageLayer {
 
 			final Data data = backend.get(key);
 			boolean changed = false;
-			if (newData.publicKey() != null) {
+			if (data!=null && newData.publicKey() != null) {
 				data.publicKey(newData.publicKey());
 				changed = true;
 			}
-			if (newData.isSigned()) {
+			if (data!=null && newData.isSigned()) {
 				data.signature(newData.signature());
 				changed = true;
 			}
 			if (changed) {
-				retVal = backend.put(key, data);
+				found = backend.put(key, data);
 			}
 
 			long expiration = newData.expirationMillis();
@@ -595,6 +595,6 @@ public class StorageLayer {
 		} finally {
 			dataLock640.unlock(lock);
 		}
-		return retVal ? PutStatus.OK : PutStatus.FAILED;
+		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 }

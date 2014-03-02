@@ -849,5 +849,143 @@ public class TestSecurity {
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
 	}
-    
+	
+	
+	@Test
+	public void testChangeProtectionKey() throws NoSuchAlgorithmException, IOException, InvalidKeyException,
+	        SignatureException, ClassNotFoundException {
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair keyPairPeer1 = gen.generateKeyPair();
+		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		KeyPair keyPairPeer2 = gen.generateKeyPair();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+		KeyPair keyPair1 = gen.generateKeyPair();
+		KeyPair keyPair2 = gen.generateKeyPair();
+		Number160 lKey = Number160.createHash("location");
+		Number160 dKey = Number160.createHash("domain");
+		Number160 cKey = Number160.createHash("content");
+		// initial put
+		String testData = "data";
+		Data data = new Data(testData).setProtectedEntry().sign(keyPair1);
+		FuturePut futurePut1 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1).start();
+		futurePut1.awaitUninterruptibly();
+		Assert.assertTrue(futurePut1.isSuccess());
+		Data retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair1.getPublic()));
+		retData = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair1.getPublic()));
+		// change the key pair to the new one using an empty data object
+		data = new Data(testData).setProtectedEntry().sign(keyPair2).duplicateMeta();
+		// use the old protection key to sign the message
+		FuturePut futurePut2 = p1.put(lKey).setDomainKey(dKey).setSign().putMeta().setData(cKey, data)
+		        .keyPair(keyPair1).start();
+		futurePut2.awaitUninterruptibly();
+		Assert.assertTrue(futurePut2.isSuccess());
+		retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		retData = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		// should be not possible to modify
+		data = new Data().setProtectedEntry().sign(keyPair1);
+		FuturePut futurePut3 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1).start();
+		futurePut3.awaitUninterruptibly();
+		Assert.assertFalse(futurePut3.isSuccess());
+		retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		retData = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(testData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		// modify with new protection key
+		String newTestData = "new data";
+		data = new Data(newTestData).setProtectedEntry().sign(keyPair2);
+		FuturePut futurePut4 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair2).start();
+		futurePut4.awaitUninterruptibly();
+		Assert.assertTrue(futurePut4.isSuccess());
+		retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(newTestData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		retData = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).start().awaitUninterruptibly().getData();
+		Assert.assertEquals(newTestData, (String) retData.object());
+		Assert.assertTrue(retData.verify(keyPair2.getPublic()));
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+
+	@Test
+	public void testChangeProtectionKeyWithVersions() throws NoSuchAlgorithmException, IOException,
+	        ClassNotFoundException, InvalidKeyException, SignatureException {
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair keyPairPeer1 = gen.generateKeyPair();
+		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		KeyPair keyPairPeer2 = gen.generateKeyPair();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+		        .setEnableIndirectReplication(true).makeAndListen();
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+		KeyPair keyPair1 = gen.generateKeyPair();
+		KeyPair keyPair2 = gen.generateKeyPair();
+		Number160 lKey = Number160.createHash("location");
+		Number160 dKey = Number160.createHash("domain");
+		Number160 cKey = Number160.createHash("content");
+		// put the first version of the content with key pair 1
+		Number160 vKey1 = Number160.createHash("version1");
+		Data data = new Data("data1v1").setProtectedEntry().sign(keyPair1);
+		data.basedOn(Number160.ZERO);
+		FuturePut futurePut1 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1)
+		        .setVersionKey(vKey1).start();
+		futurePut1.awaitUninterruptibly();
+		Assert.assertTrue(futurePut1.isSuccess());
+		// add another version with the correct key pair 1
+		Number160 vKey2 = Number160.createHash("version2");
+		data = new Data("data1v2").setProtectedEntry().sign(keyPair1);
+		data.basedOn(vKey1);
+		FuturePut futurePut2 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1)
+		        .setVersionKey(vKey2).start();
+		futurePut2.awaitUninterruptibly();
+		Assert.assertTrue(futurePut2.isSuccess());
+		// put new version with other key pair 2 (expected to fail)
+		Number160 vKey3 = Number160.createHash("version3");
+		data = new Data("data1v3").setProtectedEntry().sign(keyPair2);
+		data.basedOn(vKey2);
+		FuturePut futurePut3 = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).keyPair(keyPair2)
+		        .setVersionKey(vKey3).start();
+		futurePut3.awaitUninterruptibly();
+		Assert.assertFalse(futurePut3.isSuccess());
+		// change the key pair to the new one using an empty data object
+		data = new Data().setProtectedEntry().sign(keyPair2).duplicateMeta();
+		// use the old protection key to sign the message
+		FuturePut futurePut4 = p1.put(lKey).setDomainKey(dKey).setSign().putMeta().setData(cKey, data)
+		        .keyPair(keyPair1).start();
+		futurePut4.awaitUninterruptibly();
+		Assert.assertFalse(futurePut4.isSuccess());
+		// verify if the two versions have the new protection key
+		Data retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).setVersionKey(vKey1).start()
+		        .awaitUninterruptibly().getData();
+		Assert.assertEquals("data1v1", (String) retData.object());
+		Assert.assertFalse(retData.verify(keyPair2.getPublic()));
+		retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).setVersionKey(vKey2).start()
+		        .awaitUninterruptibly().getData();
+		//Assert.assertEquals("data1v2", (String) retData.object());
+		Assert.assertFalse(retData.verify(keyPair2.getPublic()));
+		// add another version with the new protection key
+		Number160 vKey4 = Number160.createHash("version4");
+		data = new Data("data1v4").setProtectedEntry().sign(keyPair2);
+		data.basedOn(vKey2);
+		FuturePut futurePut5 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair2)
+		        .setVersionKey(vKey4).start();
+		futurePut5.awaitUninterruptibly();
+		Assert.assertTrue(futurePut5.isSuccess());
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
 }

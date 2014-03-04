@@ -55,8 +55,13 @@ public class TestRelay {
             rf.awaitUninterruptibly();
             RelayManager manager = rf.relayManager();
             Assert.assertTrue(rf.isSuccess());
+            
+            //Check if flags are set correctly
+            Assert.assertTrue(unreachablePeer.getPeerAddress().isRelayed());
+            Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledTCP());
+            Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledUDP());
+            
             Assert.assertEquals(manager, rf.relayManager());
-            Assert.assertTrue(manager.getRelayAddresses().size() > 0);
             Assert.assertTrue(manager.getRelayAddresses().size() == PeerAddress.MAX_RELAYS);
             Assert.assertEquals(manager.getRelayAddresses().size(), unreachablePeer.getPeerAddress().getPeerSocketAddresses().length);
 
@@ -134,9 +139,9 @@ public class TestRelay {
     }
 
     @Test
-    public void testRelay() throws Exception {
+    public void testRelaySendDirect() throws Exception {
         final Random rnd = new Random(42);
-        final int nrOfNodes = 200;
+        final int nrOfNodes = 100;
         Peer master = null;
         Peer slave = null;
         try {
@@ -148,51 +153,27 @@ public class TestRelay {
             	RelayRPC.setup(peer);
             }
 
-            // Test setting up relay peers
             slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
             RelayPeer rp = new RelayPeer(slave);
 
-            RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start();
-            rf.awaitUninterruptibly();
+            RelayFuture rf = new RelayBuilder(rp).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
 
             Assert.assertTrue(rf.isSuccess());
-
-            //Check if flags are set correctly
-            Assert.assertTrue(slave.getPeerAddress().isRelayed());
-            Assert.assertFalse(slave.getPeerAddress().isFirewalledTCP());
-            Assert.assertFalse(slave.getPeerAddress().isFirewalledUDP());
-
-            // Ping the unreachable peer from any peer
-            System.out.print("Send TCP ping to unreachable peer");
-            BaseFuture f3 = peers[rnd.nextInt(nrOfNodes)].ping().setTcpPing().setPeerAddress(slave.getPeerAddress()).start();
-            f3.awaitUninterruptibly();
-            System.err.println(f3.getFailedReason());
-            Assert.assertTrue(f3.isSuccess());
-            System.out.println("...done");
 
             System.out.print("Send direct message to unreachable peer");
             final String request = "Hello ";
             final String response = "World!";
+            
             slave.setObjectDataReply(new ObjectDataReply() {
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     Assert.assertEquals(request.toString(), request);
                     return response;
                 }
             });
-            FutureDirect fd = peers[rnd.nextInt(nrOfNodes)].sendDirect(slave.getPeerAddress()).setObject(request).start();
-
-            fd.addListener(new BaseFutureListener<FutureDirect>() {
-                public void operationComplete(FutureDirect future) throws Exception {
-                    Assert.assertEquals(response, future.object());
-                }
-
-                public void exceptionCaught(Throwable t) throws Exception {
-                    Assert.fail(t.getMessage());
-                }
-            });
-            fd.awaitUninterruptibly();
-            System.out.println("...done");
-            Thread.sleep(100);
+            
+            FutureDirect fd = peers[42].sendDirect(slave.getPeerAddress()).setObject(request).start().awaitUninterruptibly0();
+            Assert.assertEquals(response, fd.object());
+            
 
         } finally {
             if (slave != null) {

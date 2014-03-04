@@ -86,6 +86,11 @@
 				<artifactId>netty-transport</artifactId>
 				<version>4.0.14.Final</version>
 			</dependency>
+			<dependency>
+				<groupId>io.netty</groupId>
+				<artifactId>netty-buffer</artifactId>
+				<version>4.0.14.Final</version>
+			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	

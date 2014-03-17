@@ -23,10 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.futures.FutureTracker;
+import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -149,7 +151,7 @@ public final class ExampleTracker {
         public void announce() throws IOException {
             for (Map.Entry<Number160, String> entry : friends.entrySet()) {
                 Collection<String> tmp = new ArrayList<String>(friends.values());
-                peer.addTracker(entry.getKey()).setAttachement(Utils.encodeJavaObject(tmp.toArray(new String[0])))
+                peer.addTracker(entry.getKey()).setAttachement(new Data(Utils.encodeJavaObject(tmp.toArray(new String[0]))))
                         .start().awaitUninterruptibly();
             }
         }
@@ -169,11 +171,14 @@ public final class ExampleTracker {
             futureTracker.awaitUninterruptibly();
             Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
             for (TrackerData trackerData : trackerDatas) {
-                String[] attachement = (String[]) Utils.decodeJavaObject(trackerData.getAttachement(), 0,
-                        trackerData.getAttachement().length);
-                for (String s1 : attachement) {
+            	
+            	for(Data attachement:trackerData.getPeerAddresses().values()) {
+            	
+                String[] attachements = (String[]) attachement.object();
+                for (String s1 : attachements) {
                     System.out.println("this peers' (" + nickName + ") friend:" + s1);
                 }
+            	}
             }
             System.out.println("Tracker reports that " + trackerDatas.size() + " peer(s) are his friends");
         }

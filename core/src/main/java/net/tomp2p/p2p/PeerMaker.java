@@ -488,12 +488,14 @@ public class PeerMaker {
 			        peer.getDirectDataRPC(), peer.getQuitRPC());
 			peer.setDistributedHashMap(dht);
 		}
-		/*
-		 * if (isEnableRouting() && isEnableTrackerRPC() &&
-		 * isEnablePeerExchangeRPC()) { DistributedTracker tracker = new
-		 * DistributedTracker(peerBean, peer.getDistributedRouting(),
-		 * peer.getTrackerRPC(), peer.getPeerExchangeRPC());
-		 * peer.setDistributedTracker(tracker); } if (isEnableTaskRPC() &&
+		
+		if (isEnableRouting() && isEnableTrackerRPC() && isEnablePeerExchangeRPC()) {
+			DistributedTracker tracker = new DistributedTracker(peerBean, peer.getDistributedRouting(),
+			        peer.getTrackerRPC(), peer.getPeerExchangeRPC());
+			peer.setDistributedTracker(tracker);
+		}
+		  
+		  /*if (isEnableTaskRPC() &&
 		 * isEnableTask() && isEnableRouting()) { // the task manager needs to
 		 * use the rpc to send the result back. //TODO: enable again
 		 * //peerBean.getTaskManager().init(peer.getTaskRPC()); //AsyncTask

@@ -336,9 +336,11 @@ public class DistributedTracker {
                         successAsked.add(futureResponse.getRequest().getRecipient());
                     }
                     TrackerData newDataMap = futureResponse.getResponse().getTrackerData(0);
-                    Collection<PeerAddress> newPeers = newDataMap.getPeerAddresses().keySet();
-                    mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
-                    storeResult(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
+                    if(newDataMap !=null) {
+                    	Collection<PeerAddress> newPeers = newDataMap.getPeerAddresses().keySet();
+                    	mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
+                    	storeResult(peerOnTracker, newDataMap, futureResponse.getRequest().getRecipient(), knownPeers);
+                    }
                     int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
                     finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
                             atLeastEntriesFromTrackers, isGet);
@@ -428,7 +430,9 @@ public class DistributedTracker {
      */
     private static void storeResult(Map<PeerAddress, TrackerData> peerOnTracker,
             TrackerData newDataMap, PeerAddress newDataProvider, Set<Number160> knownPeers) {
-        knownPeers.add(newDataProvider.getPeerId());
+    	if(knownPeers != null) {
+    		knownPeers.add(newDataProvider.getPeerId());
+    	}
         peerOnTracker.put(newDataProvider, newDataMap);
     }
 

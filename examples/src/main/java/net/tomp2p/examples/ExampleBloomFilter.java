@@ -76,7 +76,7 @@ public final class ExampleBloomFilter {
         System.out.println("bloomfilter basics:");
         SimpleBloomFilter<Number160> sbf = new SimpleBloomFilter<Number160>(0.05, nrElements);
         System.out.println("false-prob. rate: " + sbf.expectedFalsePositiveProbability());
-        System.out.println("init: " + sbf);
+        System.out.println("init: " + sbf.getBitSet().size());
         for (int i = 0; i < nrElements; i++) {
             sbf.add(new Number160(i));
             System.out.printf("after %2d insert %s\n", (i + 1), sbf);

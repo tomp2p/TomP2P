@@ -255,7 +255,7 @@ public final class ExampleDST {
             Number160 key = Number160.createHash(inter.toString());
             FuturePut futurePut = peer.put(key).setData(new Number160(index), new Data(word)).start();
             futurePut.awaitUninterruptibly();
-            System.out.println("stored " + word + " in " + inter + " status: " + futurePut.getAvgStoredKeys());
+            System.out.println("stored " + word + " in " + inter + " status: " + futurePut.isSuccess());
             inter = inter.split(index);
         }
         System.out.println("for DHT.put() we used " + (height + 1) + " DHT calls");

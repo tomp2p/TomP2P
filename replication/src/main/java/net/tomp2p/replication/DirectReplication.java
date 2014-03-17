@@ -44,8 +44,12 @@ public class DirectReplication implements Shutdown {
 
 		@Override
 		public void run() {
+			boolean shutdownNow = false;
+			synchronized (DirectReplication.this) {
+				shutdownNow = shutdown;
+            }
 			try {
-				if (shutdown || ( !(repetitions<0) && counter++ > repetitions)) {
+				if (shutdownNow || ( !(repetitions<0) && counter++ > repetitions)) {
 					shutdown();
 				} else {
 					BaseFuture baseFuture = builder.start();

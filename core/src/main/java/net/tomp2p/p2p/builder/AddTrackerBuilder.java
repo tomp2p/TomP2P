@@ -142,26 +142,12 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         // the tracker mesh as well.
         peer.getPeerBean()
                 .trackerStorage()
-                .put(locationKey, domainKey, peer.getPeerAddress(), keyPair().getPublic(),
+                .put(locationKey, domainKey, peer.getPeerAddress(), keyPair() == null? null: keyPair().getPublic(),
                         attachement);
         final FutureTracker futureTracker = peer.getDistributedTracker().add(this);
 
-        /*if (trackerTimeoutSec > 0) {
-            if (defaultDirectReplication == null) {
-                defaultDirectReplication = new DefaultDirectReplication();
-            }
-            Runnable runner = new Runnable() {
-                @Override
-                public void run() {
-                    FutureTracker futureTracker2 = defaultDirectReplication.create();
-                    futureTracker.repeated(futureTracker2);
-                }
-            };
-            ScheduledFuture<?> tmp = peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication()
-                    .scheduleAtFixedRate(runner, trackerTimeoutSec / 2, trackerTimeoutSec / 2, TimeUnit.SECONDS);
-            setupCancel(futureTracker, tmp);
-        }
-        if (pexWaitSec > 0) {
+        
+        /*if (pexWaitSec > 0) {
             if (defaultPEX == null) {
                 defaultPEX = new DefaultPEX();
             }
@@ -201,9 +187,9 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
                     getBloomFilter(), futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
             return futureTracker;
         }
-    }
+    }*/
 
-    private class DefaultPEX implements FutureCreator<FutureLateJoin<FutureResponse>> {
+    /*private class DefaultPEX implements FutureCreator<FutureLateJoin<FutureResponse>> {
         @Override
         public FutureLateJoin<FutureResponse> create() {
             final FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation()

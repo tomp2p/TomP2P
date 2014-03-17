@@ -2,7 +2,6 @@ package net.tomp2p.p2p;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;

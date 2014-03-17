@@ -10,7 +10,6 @@ import java.util.Set;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;

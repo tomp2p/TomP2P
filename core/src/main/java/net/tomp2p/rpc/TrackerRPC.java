@@ -89,7 +89,11 @@ public class TrackerRPC extends DispatchHandler {
                 builder.getDomainKey(), builder);
 
         TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>(), null);
-        trackerData.put(peerBean().serverPeerAddress(), builder.getAttachement());
+        PeerAddress peerAddressToAnnounce = builder.peerAddressToAnnounce();
+        if(peerAddressToAnnounce == null) {
+        	peerAddressToAnnounce = peerBean().serverPeerAddress();
+        }
+        trackerData.put(peerAddressToAnnounce, builder.getAttachement());
         message.setTrackerData(trackerData);
 
         if (builder.isForceTCP()) {

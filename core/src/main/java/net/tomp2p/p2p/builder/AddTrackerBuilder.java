@@ -24,6 +24,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 
@@ -45,6 +46,8 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
     private boolean tcpPEX = false;
     
     private boolean primary = false;
+    
+    private PeerAddress peerAddressToAnnounce;
 
     public AddTrackerBuilder(Peer peer, Number160 locationKey) {
         super(peer, locationKey);
@@ -125,6 +128,15 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
 
     public AddTrackerBuilder setTcpPEX(boolean tcpPEX) {
         this.tcpPEX = tcpPEX;
+        return this;
+    }
+    
+    public PeerAddress peerAddressToAnnounce() {
+        return peerAddressToAnnounce;
+    }
+
+    public AddTrackerBuilder peerAddressToAnnounce(PeerAddress peerAddressToAnnounce) {
+        this.peerAddressToAnnounce = peerAddressToAnnounce;
         return this;
     }
 

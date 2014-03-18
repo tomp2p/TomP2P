@@ -172,13 +172,13 @@ public final class ExampleTracker {
             Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
             for (TrackerData trackerData : trackerDatas) {
             	
-            	for(Data attachement:trackerData.getPeerAddresses().values()) {
-            	
-                String[] attachements = (String[]) attachement.object();
-                for (String s1 : attachements) {
-                    System.out.println("this peers' (" + nickName + ") friend:" + s1);
-                }
-            	}
+				for (Data attachement : trackerData.getPeerAddresses().values()) {
+
+					String[] attachements = (String[]) attachement.object();
+					for (String s1 : attachements) {
+						System.out.println("this peers' (" + nickName + ") friend:" + s1);
+					}
+				}
             }
             System.out.println("Tracker reports that " + trackerDatas.size() + " peer(s) are his friends");
         }

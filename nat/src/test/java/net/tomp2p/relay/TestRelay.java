@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import net.tomp2p.Utils2;
+import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -15,6 +15,7 @@ import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePut;
+import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
@@ -39,9 +40,9 @@ public class TestRelay {
         Peer unreachablePeer = null;
         try {
             // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            Peer[] peers = createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
-            Utils2.perfectRouting(peers);
+            perfectRouting(peers);
             for(Peer peer:peers) {
             	RelayRPC.setup(peer);
             }
@@ -80,9 +81,9 @@ public class TestRelay {
         Peer unreachablePeer = null;
         try {
             // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            Peer[] peers = createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
-            Utils2.perfectRouting(peers);
+            perfectRouting(peers);
             for(Peer peer:peers) {
             	RelayRPC.setup(peer);
             }
@@ -145,9 +146,9 @@ public class TestRelay {
         Peer slave = null;
         try {
             // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            Peer[] peers = createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
-            Utils2.perfectRouting(peers);
+            perfectRouting(peers);
             for(Peer peer:peers) {
             	RelayRPC.setup(peer);
             }
@@ -192,9 +193,9 @@ public class TestRelay {
         Peer slave = null;
         try {
             // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            Peer[] peers = createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
-            Utils2.perfectRouting(peers);
+            perfectRouting(peers);
             for(Peer peer:peers) {
             	RelayRPC.setup(peer);
             }
@@ -257,9 +258,9 @@ public class TestRelay {
         Peer slave = null;
         try {
             // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+            Peer[] peers = createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
-            Utils2.perfectRouting(peers);
+            perfectRouting(peers);
             for(Peer peer:peers) {
             	RelayRPC.setup(peer);
             }
@@ -312,7 +313,7 @@ public class TestRelay {
         Peer slave = null;
         try {
             final Random rnd = new Random(42);
-            Peer[] peers = Utils2.createNodes(2, rnd, 4000);
+            Peer[] peers = createNodes(2, rnd, 4000);
             master = peers[0]; // the relay peer
             RelayRPC.setup(master); // register relayRPC ioHandler
             slave = peers[1];
@@ -346,9 +347,9 @@ public class TestRelay {
     	 Peer master = null;
          Peer slave = null;
          try {
-             Peer[] peers = Utils2.createNodes(10, rnd, 4000);
+             Peer[] peers = createNodes(10, rnd, 4000);
              master = peers[0]; // the relay peer
-             Utils2.perfectRouting(peers);
+             perfectRouting(peers);
              for(Peer peer:peers) {
              	RelayRPC.setup(peer);
              }
@@ -388,9 +389,9 @@ public class TestRelay {
     	 Peer master = null;
          Peer slave = null;
          try {
-             Peer[] peers = Utils2.createNodes(10, rnd, 4000);
+             Peer[] peers = createNodes(10, rnd, 4000);
              master = peers[0]; // the relay peer
-             Utils2.perfectRouting(peers);
+             perfectRouting(peers);
              for(Peer peer:peers) {
              	RelayRPC.setup(peer);
              }
@@ -427,6 +428,57 @@ public class TestRelay {
     	handlers.remove(peer.getPeerID());
     	DispatchHandler dh = handlers.values().iterator().next();
     	return ((RelayForwarderRPC)dh).getAll(); 
+    }
+    
+    public static void perfectRouting(Peer... peers) {
+        for (int i = 0; i < peers.length; i++) {
+            for (int j = 0; j < peers.length; j++)
+                peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), null);
+        }
+        System.err.println("perfect routing done.");
+    }
+    
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
+        return createNodes(nrOfPeers, rnd, port, null, false, true);
+    }
+    
+    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+            boolean replication, boolean maintenance) throws Exception {
+        if (nrOfPeers < 1) {
+            throw new IllegalArgumentException("Cannot create less than 1 peer");
+        }
+        Bindings bindings = new Bindings().addInterface("lo");
+        Peer[] peers = new Peer[nrOfPeers];
+        if (automaticFuture != null) {
+        	Number160 peerId = new Number160(rnd);
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
+            peers[0] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
+                    .addAutomaticFuture(automaticFuture).ports(port).setEnableMaintenance(maintenance)
+                    .externalBindings(bindings).peerMap(peerMap).makeAndListen();
+        } else {
+        	Number160 peerId = new Number160(rnd);
+        	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
+            peers[0] = new PeerMaker(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+                    .setEnableIndirectReplication(false).peerMap(peerMap).ports(port).makeAndListen();
+        }
+
+        for (int i = 1; i < nrOfPeers; i++) {
+            if (automaticFuture != null) {
+            	Number160 peerId = new Number160(rnd);
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
+                peers[i] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
+                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
+                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).makeAndListen();
+            } else {
+            	Number160 peerId = new Number160(rnd);
+            	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
+                peers[i] = new PeerMaker(peerId).setEnableMaintenance(maintenance)
+                        .externalBindings(bindings).setEnableIndirectReplication(replication).peerMap(peerMap).masterPeer(peers[0])
+                        .makeAndListen();
+            }
+        }
+        System.err.println("peers created.");
+        return peers;
     }
 
 }

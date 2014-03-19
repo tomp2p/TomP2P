@@ -9,3 +9,4 @@ bin
 *.iml
 *~
 p2p.log
+/target

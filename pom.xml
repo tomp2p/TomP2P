@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-	* Copyright 2013 Thomas Bocek
-	*
-	* Licensed under the Apache License, Version 2.0 (the "License"); you may not
-	* use this file except in compliance with the License. You may obtain a copy of
-	* the License at
-	*
-	* http://www.apache.org/licenses/LICENSE-2.0
-	*
-	* Unless required by applicable law or agreed to in writing, software
-	* distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-	* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-	* License for the specific language governing permissions and limitations under
-	* the License.
--->
+<!-- * Copyright 2013 Thomas Bocek * * Licensed under the Apache License, 
+	Version 2.0 (the "License"); you may not * use this file except in compliance 
+	with the License. You may obtain a copy of * the License at * * http://www.apache.org/licenses/LICENSE-2.0 
+	* * Unless required by applicable law or agreed to in writing, software * 
+	distributed under the License is distributed on an "AS IS" BASIS, WITHOUT 
+	* WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the 
+	* License for the specific language governing permissions and limitations 
+	under * the License. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
@@ -50,13 +43,14 @@
 		<module>replication</module>
 		<module>examples</module>
 		<module>nat</module>
+		<module>all</module>
 		<!-- <module>storage</module> -->
 		<!-- <module>task</module> -->
 	</modules>
 
 	<distributionManagement>
 		<repository>
-			<id>ssh-tomp2p</id>
+			<id>ssh.tomp2p</id>
 			<!-- The URL is CMS specific -->
 			<url>scp://tomp2p.net/home/draft/maven</url>
 		</repository>
@@ -68,9 +62,9 @@
 			<url>http://tomp2p.net/dev/mvn</url>
 		</repository>
 	</repositories>
-	
+
 	<dependencyManagement>
-    	<dependencies>
+		<dependencies>
 			<dependency>
 				<groupId>org.slf4j</groupId>
 				<artifactId>slf4j-api</artifactId>
@@ -93,8 +87,15 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
-	
+
 	<build>
+	    <extensions>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh</artifactId>
+				<version>2.6</version>
+			</extension>
+		</extensions>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -103,6 +104,54 @@
 				<configuration>
 					<source>1.6</source>
 					<target>1.6</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.1.2</version>
+				<executions>
+					<execution>
+						<id>attach-source</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<attach>true</attach>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.9.1</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<version>2.3.7</version>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<Export-Package>
+							${project.groupId}.*;version=${project.version}
+						</Export-Package>
+						<Import-Package>
+							*;resolution:=optional
+						</Import-Package>
+						<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
+						<Include-Resource>META-INF/license/ = ${basedir}/LICENSE.txt</Include-Resource>
+					</instructions>
 				</configuration>
 			</plugin>
 		</plugins>

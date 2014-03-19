@@ -56,6 +56,12 @@
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
 		</dependency>
+		
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tomp2p-core</artifactId>
+			<version>${project.version}</version>
+		</dependency>
 
 		<!-- For testing-->
 		<dependency>

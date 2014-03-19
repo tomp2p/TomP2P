@@ -3,10 +3,9 @@
 .settings
 .checkstyle
 .cache
-target
-bin
 .idea
 *.iml
 *~
 p2p.log
 /target
+/bin

@@ -14,14 +14,13 @@
 	* License for the specific language governing permissions and limitations under
 	* the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha1-SNAPSHOT</version>
+    	<version>5.0-Alpha2-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-examples</artifactId>
@@ -44,21 +43,21 @@
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha1-SNAPSHOT</version>
+			<version>5.0-Alpha2-SNAPSHOT</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-replication</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha1-SNAPSHOT</version>
+			<version>5.0-Alpha2-SNAPSHOT</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-nat</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha1-SNAPSHOT</version>
+			<version>5.0-Alpha2-SNAPSHOT</version>
 		</dependency>
 		
 		<!-- Used for the examples only -->

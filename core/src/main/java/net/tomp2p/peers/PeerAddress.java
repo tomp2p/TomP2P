@@ -156,7 +156,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if (relaySize > 0) {
             this.peerSocketAddresses = new PeerSocketAddress[relaySize];
             for (int i = 0; i < relaySize; i++) {
-                peerSocketAddresses[i] = PeerSocketAddress.create(me, relayType.get(i), offset);
+                peerSocketAddresses[i] = PeerSocketAddress.create(me, !relayType.get(i), offset);
                 offset = peerSocketAddresses[i].getOffset();
             }
         } else {

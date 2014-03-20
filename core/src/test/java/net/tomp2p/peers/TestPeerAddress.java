@@ -234,7 +234,7 @@ public class TestPeerAddress {
         Assert.assertEquals(pa1.getOptions(), pa2.getOptions());
         Assert.assertEquals(pa1.getRelays(), pa2.getRelays());
         PeerSocketAddress[] psa1 = pa1.getPeerSocketAddresses();
-        PeerSocketAddress[] psa2 = pa1.getPeerSocketAddresses();
+        PeerSocketAddress[] psa2 = pa2.getPeerSocketAddresses();
         Assert.assertEquals(psa1.length, psa2.length);
         for (int i = 0; i < psa1.length; i++) {
             Assert.assertEquals(psa1[i], psa2[i]);

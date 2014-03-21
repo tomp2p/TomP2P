@@ -55,6 +55,8 @@ public class RelayManager {
     private boolean searchRelaysTaskRunning = false;
     private final PeerMapUpdateTask peerMapUpdateTask;
     private boolean peerMapUpdateTaskRunning = false;
+    
+    final private FutureChannelCreator futureChannelCreator;
 
     /**
      * @param peer
@@ -87,6 +89,8 @@ public class RelayManager {
 
         searchRelaysTask = new SearchRelaysTask(this);
         peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder, relayAddresses);
+        
+        futureChannelCreator = peer.getConnectionBean().reservation().create(0, maxRelays);
     }
 
     /**
@@ -339,8 +343,8 @@ public class RelayManager {
         }
 
         // create channel creator
-        FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(0, maxRelays);
-        fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        
+        futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = future.getChannelCreator();
@@ -375,7 +379,6 @@ public class RelayManager {
                             }
                         }
                     });
-                    // Utils.addReleaseListener(cc, rf);
                 } else {
                     rf.setFailed(future);
                 }

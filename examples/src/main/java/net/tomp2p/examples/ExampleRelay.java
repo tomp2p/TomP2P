@@ -12,7 +12,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.relay.RelayBuilder;
 import net.tomp2p.relay.RelayFuture;
-import net.tomp2p.relay.RelayPeer;
+import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.storage.Data;
 
 public class ExampleRelay {
@@ -33,8 +33,7 @@ public class ExampleRelay {
             Bindings b = new Bindings();
             Peer peer = new PeerMaker(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).makeAndListen();
             System.err.println("bootstrap peer id: " + peer.getPeerAddress().getPeerId());
-            new RelayPeer(peer);
-
+            RelayRPC.setup(peer);
             System.err.println("bootstrap peer is running");
             while(true) {
                 Thread.sleep(10000);
@@ -45,12 +44,12 @@ public class ExampleRelay {
             int port = (rnd.nextInt() % 10000) + 10000;
             Peer peer = new PeerMaker(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).makeAndListen();
             System.err.println("put peer id: " + peer.getPeerAddress().getPeerId());
-            RelayPeer rp = new RelayPeer(peer);
+            RelayRPC.setup(peer);
 
             InetAddress address = Inet4Address.getByName(args[0]);
 
             //RelayManager manager = new RelayManager(peer, new PeerAddress(bootstrapId, InetSocketAddress.createUnresolved(args[0], PORT)));
-            RelayFuture rf = new RelayBuilder(rp).bootstrapInetAddress(address).ports(PORT).start();
+            RelayFuture rf = new RelayBuilder(peer).bootstrapInetAddress(address).ports(PORT).start();
             rf.awaitUninterruptibly();
 
             if (rf.isSuccess()) {
@@ -72,9 +71,7 @@ public class ExampleRelay {
             System.err.println("hash:" + Number160.createHash(args[1]));
             
             InetAddress address = Inet4Address.getByName(args[0]);
-            
-            RelayPeer rp = new RelayPeer(peer);
-            RelayFuture rf = new RelayBuilder(rp).bootstrapInetAddress(address).ports(PORT).start();
+            RelayFuture rf = new RelayBuilder(peer).bootstrapInetAddress(address).ports(PORT).start();
             rf.awaitUninterruptibly();
 
             if (rf.isSuccess()) {

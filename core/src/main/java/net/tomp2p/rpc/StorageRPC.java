@@ -575,7 +575,7 @@ public class StorageRPC extends DispatchHandler {
     
 
 	private boolean isDomainProtected(final Message message) {
-        boolean protectDomain = message.getPublicKey() != null
+        boolean protectDomain = message.getPublicKey(0) != null
                 && (message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_4);
         return protectDomain;
     }
@@ -601,7 +601,7 @@ public class StorageRPC extends DispatchHandler {
     }
     
     private void handlePutMeta(Message message, Message responseMessage, boolean isDomain) {
-    	final PublicKey publicKey = message.getPublicKey();
+    	final PublicKey publicKey = message.getPublicKey(0);
         final DataMap toStore = message.getDataMap(0);
         final Map<Number640, Byte> result;
         final int dataSize;
@@ -612,7 +612,7 @@ public class StorageRPC extends DispatchHandler {
         	Number160 locationKey = message.getKey(0);
         	Number160 domainKey = message.getKey(1);
         	final Number640 key = new Number640(locationKey, domainKey, Number160.ZERO, Number160.ZERO);
-        	PublicKey publicKeyChange = message.getPublicKey(0);
+        	PublicKey publicKeyChange = message.getPublicKey(1);
         	Enum<?> status = peerBean().storage().updateMeta(key.locationAndDomainKey(), publicKey, publicKeyChange);
         	result.put(key, (byte) status.ordinal());
         } else {
@@ -631,7 +631,7 @@ public class StorageRPC extends DispatchHandler {
 
     private Message handlePut(final Message message, final Message responseMessage,
             final boolean putIfAbsent, final boolean protectDomain) throws IOException {
-        final PublicKey publicKey = message.getPublicKey();
+        final PublicKey publicKey = message.getPublicKey(0);
         final DataMap toStore = message.getDataMap(0);
         final int dataSize = toStore.size();
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
@@ -658,7 +658,7 @@ public class StorageRPC extends DispatchHandler {
 
         final Map<Number640, Byte> result = new HashMap<Number640, Byte>();
         final DataMap dataMap = message.getDataMap(0);
-        final PublicKey publicKey = message.getPublicKey();
+        final PublicKey publicKey = message.getPublicKey(0);
         final boolean list = isList(message);
         // here we set the map with the close peers. If we get data by a
         // sender and the sender is closer than us, we assume that the sender has
@@ -799,7 +799,7 @@ public class StorageRPC extends DispatchHandler {
         final Number160 locationKey = message.getKey(0);
         final Number160 domainKey = message.getKey(1);
         final KeyCollection keys = message.getKeyCollection(0);
-        final PublicKey publicKey = message.getPublicKey();
+        final PublicKey publicKey = message.getPublicKey(0);
         Map<Number640, Data> result1 = null;
         Map<Number640, Byte> result2 = null;
         final Integer returnNr = message.getInteger(0);

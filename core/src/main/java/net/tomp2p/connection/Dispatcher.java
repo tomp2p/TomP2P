@@ -141,9 +141,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             boolean isRelay = message.getSender().isRelayed();
             if(isRelay) {
-            	PeerSocketAddress[] tmp = new PeerSocketAddress[message.getPeerSocketAddresses().size()];
-            	PeerAddress sender = message.getSender().changePeerSocketAddresses(
-            			message.getPeerSocketAddresses().toArray(tmp));
+            	PeerAddress sender = message.getSender().changePeerSocketAddresses(message.getPeerSocketAddresses());
             	message.setSender(sender);
             }
             LOG.debug("about to respond to {}", message);
@@ -168,7 +166,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         public void response(Message responseMessage) {
         	
         	if(responseMessage.getSender().isRelayed()) {
-        		responseMessage.setPeerSocketAddresses(Arrays.asList(responseMessage.getSender().getPeerSocketAddresses()));
+        		responseMessage.setPeerSocketAddresses(responseMessage.getSender().getPeerSocketAddresses());
     		}
         	
             Dispatcher.this.response(ctx, responseMessage);

@@ -146,7 +146,7 @@ public class TrackerRPC extends DispatchHandler {
         Number160 domainKey = message.getKey(1);
         SimpleBloomFilter<Number160> knownPeers = message.getBloomFilter(0);
 
-        PublicKey publicKey = message.getPublicKey();
+        PublicKey publicKey = message.getPublicKey(0);
         //
         final TrackerStorage trackerStorage = peerBean().trackerStorage();
 

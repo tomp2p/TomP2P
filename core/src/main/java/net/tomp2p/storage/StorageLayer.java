@@ -585,13 +585,17 @@ public class StorageLayer {
 				data.signature(newData.signature());
 				changed = true;
 			}
+			if (data!=null) {
+				data.validFromMillis(newData.validFromMillis());
+				data.ttlSeconds(newData.ttlSeconds());
+				changed = true;
+			}
 			if (changed) {
+				long expiration = data.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
 				found = backend.put(key, data);
 			}
-
-			long expiration = newData.expirationMillis();
-			// handle timeout
-			backend.addTimeout(key, expiration);
 		} finally {
 			dataLock640.unlock(lock);
 		}

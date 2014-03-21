@@ -22,7 +22,10 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.Collections;
 
 import net.tomp2p.utils.Utils;
 
@@ -89,8 +92,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private final BitSet relayType;
     private static final BitSet EMPTY_RELAY_TYPE = new BitSet(0);
     //relays
-    private final PeerSocketAddress[] peerSocketAddresses;
-    private static final PeerSocketAddress[] EMPTY_PEER_SOCKET_ADDRESSES = new PeerSocketAddress[0];
+    private final Collection<PeerSocketAddress> peerSocketAddresses;
+    public static final Collection<PeerSocketAddress> EMPTY_PEER_SOCKET_ADDRESSES = Collections.emptySet();
 
     private static final int TYPE_BIT_SIZE = 5;
     private static final int HEADER_SIZE = 2;
@@ -154,10 +157,11 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.peerSocketAddress = PeerSocketAddress.create(me, isIPv4(), offset);
         offset = this.peerSocketAddress.getOffset();
         if (relaySize > 0) {
-            this.peerSocketAddresses = new PeerSocketAddress[relaySize];
+            this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(relaySize);
             for (int i = 0; i < relaySize; i++) {
-                peerSocketAddresses[i] = PeerSocketAddress.create(me, !relayType.get(i), offset);
-                offset = peerSocketAddresses[i].getOffset();
+                PeerSocketAddress psa = PeerSocketAddress.create(me, !relayType.get(i), offset);
+                peerSocketAddresses.add(psa);
+                offset = psa.getOffset();
             }
         } else {
             this.peerSocketAddresses = EMPTY_PEER_SOCKET_ADDRESSES;
@@ -205,9 +209,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.peerSocketAddress = PeerSocketAddress.create(channelBuffer, isIPv4());
 
         if (relaySize > 0) {
-            this.peerSocketAddresses = new PeerSocketAddress[relaySize];
+            this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(relaySize);
             for (int i = 0; i < relaySize; i++) {
-                peerSocketAddresses[i] = PeerSocketAddress.create(channelBuffer, !relayType.get(i));
+                this.peerSocketAddresses.add(PeerSocketAddress.create(channelBuffer, !relayType.get(i)));
             }
         } else {
             this.peerSocketAddresses = EMPTY_PEER_SOCKET_ADDRESSES;
@@ -259,7 +263,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress(final Number160 id, final PeerSocketAddress peerSocketAddress,
             final boolean firewalledTCP, final boolean firewalledUDP, final boolean isRelayed,
-            final PeerSocketAddress[] peerSocketAddresses) {
+            final Collection<PeerSocketAddress> peerSocketAddresses) {
         this.peerId = id;
         int size = Number160.BYTE_ARRAY_SIZE;
         this.peerSocketAddress = peerSocketAddress;
@@ -275,17 +279,19 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             this.relayType = EMPTY_RELAY_TYPE;
             relaySize = 0;
         } else {
-            relaySize = peerSocketAddresses.length;
+            relaySize = peerSocketAddresses.size();
             if (relaySize > TYPE_BIT_SIZE) {
                 throw new IllegalArgumentException("Can only store up to 5 relay peers");
             }
             this.peerSocketAddresses = peerSocketAddresses;
             this.relayType = new BitSet(relaySize);
         }
-        for (int i = 0; i < relaySize; i++) {
-            boolean isIPV6 = peerSocketAddresses[i].getInetAddress() instanceof Inet6Address;
-            this.relayType.set(i, isIPV6);
-            size += peerSocketAddresses[i].size();
+        int index = 0;
+        for(PeerSocketAddress psa : peerSocketAddresses) {
+            boolean isIPV6 = psa.getInetAddress() instanceof Inet6Address;
+            this.relayType.set(index, isIPV6);
+            size += psa.size();
+            index++;
         }
         this.size = size;
         // unused here
@@ -409,8 +415,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // asymmetric relays. But in future we may.
         newOffset = peerSocketAddress.toByteArray(me, newOffset);
 
-        for (int i = 0; i < relaySize; i++) {
-            newOffset = peerSocketAddresses[i].toByteArray(me, newOffset);
+        for (PeerSocketAddress psa : peerSocketAddresses) {
+            newOffset = psa.toByteArray(me, newOffset);
         }
 
         return newOffset;
@@ -569,6 +575,18 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public boolean isRelayed() {
         return isRelayed;
     }
+    
+    /**
+     * Create a new PeerAddress and change the relayed status.
+
+     * @param isRelayed 
+     *           the new status
+     * @return The newly created peer address
+     */
+    public PeerAddress changeRelayed(final boolean isRelayed) {
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+                peerSocketAddresses);
+    }
 
     /**
      * Create a new PeerAddress and change the firewallUDP status.
@@ -632,7 +650,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
                 peerSocketAddresses);
     }
     
-    public PeerAddress changePeerSocketAddresses(PeerSocketAddress[] peerSocketAddresses) {
+    public PeerAddress changePeerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
         return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
                 peerSocketAddresses);
     }
@@ -645,7 +663,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     /**
      * @return The relay peers
      */
-    public PeerSocketAddress[] getPeerSocketAddresses() {
+    public Collection<PeerSocketAddress> getPeerSocketAddresses() {
         return peerSocketAddresses;
     }
 

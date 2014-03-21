@@ -84,7 +84,7 @@ public class Utils2 {
         InetAddress inetSend = InetAddress.getByName(inetSender);
         PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
         PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false,
-                new PeerSocketAddress[] {});
+                PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
         return n1;
     }
 

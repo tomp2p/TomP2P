@@ -213,7 +213,7 @@ public class SynchronizationRPC extends DispatchHandler {
                 .getPeerId());
 
         final DataMap dataMap = message.getDataMap(0);
-        final PublicKey publicKey = message.getPublicKey();
+        final PublicKey publicKey = message.getPublicKey(0);
 
         List<Number640> retVal = new ArrayList<Number640>(dataMap.size());
 
@@ -245,7 +245,7 @@ public class SynchronizationRPC extends DispatchHandler {
                     // copy
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = peerBean().storage().put(entry.getKey(), entry.getValue(),
-                            message.getPublicKey(), false, false);
+                            message.getPublicKey(0), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }

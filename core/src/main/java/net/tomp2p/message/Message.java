@@ -19,8 +19,8 @@ import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.Signature;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -132,9 +132,7 @@ public class Message {
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
     private List<PeerSocketAddress> peerSocketAddresses = null;
-    //these will be always sent together
     private SHA1Signature signatureEncode = null;
-    private PublicKey publicKey = null;
     
     // this will not be transferred, status variables
     private transient boolean presetContentTypes = false;
@@ -145,7 +143,6 @@ public class Message {
     private transient boolean done = false;
     private transient boolean sign = false;
     private transient boolean content = false;
-    private transient Signature signature = null;
     private transient boolean verified = false;
 
     /**
@@ -308,9 +305,13 @@ public class Message {
                 contentTypes[i] = contentType;
                 contentRefencencs.add(new NumberType(reference, contentType));
                 return this;
-            }
-            if (contentTypes[i] == contentType) {
+            } else if (contentTypes[i] == contentType) {
                 reference++;
+            } else if (contentTypes[i] == Content.PUBLIC_KEY_SIGNATURE || contentTypes[i] == Content.PUBLIC_KEY) {
+            	//special handling for public key as we store both in the same list
+            	if (contentType == Content.PUBLIC_KEY_SIGNATURE || contentType == Content.PUBLIC_KEY) {
+            		 reference++;
+            	}
             }
         }
         throw new IllegalStateException("Already set 8 content types");
@@ -318,7 +319,7 @@ public class Message {
     
 	/**
 	 * Restore the content references if only the content types array is
-	 * present. The content references are removed when deconing a message. That
+	 * present. The content references are removed when decoding a message. That
 	 * means if a message was received it cannot be used a second time as the
 	 * content references are not there anymore. This method restores the
 	 * content references based on the content types of the message.
@@ -329,12 +330,26 @@ public class Message {
 			if (contentType == Content.EMPTY) {
 				return;
 			}
+			
 			int index = 0;
+			if (contentType == Content.PUBLIC_KEY_SIGNATURE || contentType == Content.PUBLIC_KEY) {
+				Integer i1 = refs.get(Content.PUBLIC_KEY_SIGNATURE);
+				if(i1 != null) {
+					index = i1.intValue();
+				} else {
+					i1 = refs.get(Content.PUBLIC_KEY);
+					if(i1 != null) {
+						index = i1.intValue();
+					}
+				}
+			}
+			
 			if (!refs.containsKey(contentType)) {
 				refs.put(contentType, index);
 			} else {
 				index = refs.get(contentType);
 			}
+			
 			contentRefencencs.add(new NumberType(index, contentType));
 			refs.put(contentType, index + 1);
 		}
@@ -550,7 +565,7 @@ public class Message {
         if (!presetContentTypes) {
             setContentType(Content.PUBLIC_KEY_SIGNATURE);
         }
-        this.publicKey = keyPair.getPublic();
+        setPublicKey0(keyPair.getPublic());
         this.privateKey = keyPair.getPrivate();
         return this;
     }
@@ -741,6 +756,14 @@ public class Message {
     	publicKeyList.add(publicKey);
         return this;
     }
+    
+    private Message setPublicKey0(final PublicKey publicKey) {
+    	if(publicKeyList == null) {
+    		publicKeyList = new ArrayList<PublicKey>(1);
+    	}
+    	publicKeyList.add(publicKey);
+        return this;
+    }
 
     public List<PublicKey> getPublicKeyList() {
     	if (publicKeyList == null) {
@@ -756,7 +779,7 @@ public class Message {
         return publicKeyList.get(index);
     }
     
-    public Message setPeerSocketAddresses(List<PeerSocketAddress> peerSocketAddresses) {
+    public Message setPeerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
     	if (!presetContentTypes) {
             setContentType(Content.SET_PEER_SOCKET);
         }
@@ -774,9 +797,9 @@ public class Message {
         return peerSocketAddresses;
     }
     
-    public PublicKey getPublicKey() {
+    /*public PublicKey getPublicKey() {
         return publicKey;
-    }
+    }*/
 
     public PrivateKey getPrivateKey() {
         return privateKey;
@@ -830,18 +853,6 @@ public class Message {
             return null;
         }
         return trackerDataList.get(index);
-    }
-    
-    
-
-    public Message signatureForVerification(Signature signature, PublicKey receivedPublicKey) {
-        this.signature = signature;
-        this.publicKey = receivedPublicKey;
-        return this;
-    }
-    
-    public Signature signatureForVerification() {
-        return signature;
     }
 
     public Message receivedSignature(SHA1Signature signatureEncode) {

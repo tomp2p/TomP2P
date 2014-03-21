@@ -46,9 +46,10 @@ public class DefaultSignatureFactory implements SignatureFactory {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DefaultSignatureFactory.class);
 
-	//TODO: check if needed
-	@Override
-	public Signature signatureInstance() {
+	/**
+	 * @return The signature mechanism
+	 */
+	private Signature signatureInstance() {
 		try {
 			return Signature.getInstance("SHA1withDSA");
 		} catch (NoSuchAlgorithmException e) {
@@ -133,4 +134,15 @@ public class DefaultSignatureFactory implements SignatureFactory {
         byte[] signatureReceived = signatureEncoded.encode();
 		return signature.verify(signatureReceived);
 	}
+
+	@Override
+    public Signature update(PublicKey receivedPublicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException {
+		Signature signature = signatureInstance();
+		signature.initVerify(receivedPublicKey);
+		int arrayLength = byteBuffers.length;
+		for (int i = 0; i < arrayLength; i++) {
+			signature.update(byteBuffers[i]);
+		}
+	    return signature;
+    }
 }

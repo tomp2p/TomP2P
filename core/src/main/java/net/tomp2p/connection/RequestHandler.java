@@ -269,9 +269,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         LOG.debug("perfect: {}", responseMessage);
         
         if(message.getSender().isRelayed()) {
-        	PeerSocketAddress[] tmp = new PeerSocketAddress[message.getPeerSocketAddresses().size()];
-        	PeerAddress sender = message.getSender().changePeerSocketAddresses(
-        			message.getPeerSocketAddresses().toArray(tmp));
+        	PeerAddress sender = message.getSender().changePeerSocketAddresses(message.getPeerSocketAddresses());
         	message.setSender(sender);
         }
 

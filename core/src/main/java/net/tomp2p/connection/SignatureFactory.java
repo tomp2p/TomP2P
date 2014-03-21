@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -35,11 +36,6 @@ import net.tomp2p.message.SHA1Signature;
  * 
  */
 public interface SignatureFactory {
-
-	/**
-	 * @return The signature mechanism
-	 */
-	Signature signatureInstance();
 
 	/**
 	 * The public key is sent over the wire, thus the decoding of it needs
@@ -60,5 +56,7 @@ public interface SignatureFactory {
 
 	boolean verify(PublicKey publicKey, ByteBuf buf, SHA1Signature signatureEncoded)
 			throws SignatureException, InvalidKeyException, IOException;
+
+	Signature update(PublicKey publicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException;
 
 }

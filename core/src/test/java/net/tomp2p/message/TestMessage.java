@@ -211,7 +211,7 @@ public class TestMessage {
 		//
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
 		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
 		Assert.assertEquals(true, m2.verified());
@@ -242,7 +242,7 @@ public class TestMessage {
 		//
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
 		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
 		Assert.assertEquals(true, m2.verified());
@@ -273,7 +273,7 @@ public class TestMessage {
 		//
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
 		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
 		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
@@ -342,7 +342,7 @@ public class TestMessage {
 		}
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		compareMessage(m1, m2);
 	}
 
@@ -361,7 +361,7 @@ public class TestMessage {
 		}
 		m1.setKeyCollection(new KeyCollection(list));
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey() != null);
+		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		compareMessage(m1, m2);
 	}
 
@@ -411,18 +411,18 @@ public class TestMessage {
 	
 	@Test
 	public void testRelay() throws Exception {
-		PeerSocketAddress[] psa = new PeerSocketAddress[PeerAddress.MAX_RELAYS];
+		Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
         int i = 0;
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
                 psa);
@@ -433,25 +433,25 @@ public class TestMessage {
         m1.setNeighborsSet(new NeighborSet(-1, tmp));
         
         Message m2 = encodeDecode(m1);
-		Assert.assertArrayEquals(psa, m2.getNeighborsSet(0).neighbors().iterator().next().getPeerSocketAddresses());
+		Assert.assertArrayEquals(psa.toArray(), m2.getNeighborsSet(0).neighbors().iterator().next().getPeerSocketAddresses().toArray());
 		compareMessage(m1, m2);
 		
 	}
 	
 	@Test
 	public void testRelay2() throws Exception {	
-		PeerSocketAddress[] psa = new PeerSocketAddress[PeerAddress.MAX_RELAYS];
+        Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
         int i = 0;
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
-                RND.nextInt(BIT_16), RND.nextInt(BIT_16));
-        psa[i++] = new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.231"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("4123:4567:89ab:cdef:0123:4567:89ab:cde4"),
+                RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
+        psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.232"), RND.nextInt(BIT_16),
+                RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
                 psa);

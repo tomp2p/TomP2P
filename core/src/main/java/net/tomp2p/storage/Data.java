@@ -75,7 +75,7 @@ public class Data {
 	private PublicKey publicKey;
 
 	// never serialized over the network in this object
-	private final long validFromMillis;
+	private long validFromMillis;
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
 	private boolean meta;
@@ -380,6 +380,11 @@ public class Data {
 		return validFromMillis;
 	}
 	
+	Data validFromMillis(long validFromMillis) {
+	    this.validFromMillis = validFromMillis;
+	    return this;
+    }
+	
 	public Data sign(KeyPair keyPair) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
@@ -449,11 +454,13 @@ public class Data {
 
 	public Data protectedEntry(boolean protectedEntry) {
 		this.protectedEntry = protectedEntry;
+		this.publicKeyFlag = protectedEntry;
 		return this;
 	}
 
 	public Data setProtectedEntry() {
 		protectedEntry = true;
+		publicKeyFlag = true;
 		return this;
 	}
 

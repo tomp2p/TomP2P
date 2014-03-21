@@ -132,7 +132,7 @@ public class Decoder {
 	}
 
 	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
-	        throws SignatureException, IOException {
+	        throws SignatureException, IOException, InvalidKeyException {
 
 		if (!message.isSign()) {
 			return;
@@ -141,14 +141,12 @@ public class Decoder {
 		// verification, we should not use this for the signature
 		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
 		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
-		int arrayLength = byteBuffers.length;
-		for (int i = 0; i < arrayLength; i++) {
-			message.signatureForVerification().update(byteBuffers[i]);
-		}
+		
+		Signature signature = signatureFactory.update(message.getPublicKey(0), byteBuffers);
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
-			if (message.signatureForVerification().verify(signatureReceived)) {
+			if (signature.verify(signatureReceived)) {
 				// set public key only if signature is correct
 				message.setVerified();
 				LOG.debug("signature check ok");
@@ -334,7 +332,7 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey())) {
+					if (!data.decodeDone(buf, message.getPublicKey(0))) {
 						return false;
 					}
 					data = null;
@@ -366,13 +364,13 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey())) {
+					if (!data.decodeDone(buf, message.getPublicKey(0))) {
 						return false;
 					}
 					// if we have signed the message, set the public key anyway, but only if we indicated so
-					if (message.isSign() && message.getPublicKey() != null && data.hasPublicKey() 
+					if (message.isSign() && message.getPublicKey(0) != null && data.hasPublicKey() 
 							&& (data.publicKey() == null || data.publicKey() == PeerMaker.EMPTY_PUBLICKEY)) {
-						data.publicKey(message.getPublicKey());
+						data.publicKey(message.getPublicKey(0));
 					}
 					data = null;
 					key = null;
@@ -496,7 +494,7 @@ public class Decoder {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey())) {
+					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0))) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -522,13 +520,13 @@ public class Decoder {
 					}
 					trackerData.map().put(pa, currentTrackerData);
 					if (message.isSign()) {
-						currentTrackerData.publicKey(message.getPublicKey());
+						currentTrackerData.publicKey(message.getPublicKey(0));
 					}
 
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey())) {
+					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0))) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -540,21 +538,14 @@ public class Decoder {
 				trackerData = null;
 				break;
 
+			case PUBLIC_KEY:
 			case PUBLIC_KEY_SIGNATURE:
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
-				if (receivedPublicKey == null) {
-					return false;
+				if(content == Content.PUBLIC_KEY_SIGNATURE) {
+					if (receivedPublicKey == PeerMaker.EMPTY_PUBLICKEY) {
+						throw new InvalidKeyException("The public key cannot be empty");
+					}
 				}
-				if (receivedPublicKey == PeerMaker.EMPTY_PUBLICKEY) {
-					throw new InvalidKeyException("The public key cannot be empty");
-				}
-				Signature signature = signatureFactory.signatureInstance();
-				signature.initVerify(receivedPublicKey);
-				message.signatureForVerification(signature, receivedPublicKey);
-				lastContent = contentTypes.poll();
-				break;
-			case PUBLIC_KEY:
-				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if (receivedPublicKey == null) {
 					return false;
 				}

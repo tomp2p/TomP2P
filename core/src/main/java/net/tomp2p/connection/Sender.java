@@ -25,7 +25,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +129,7 @@ public class Sender {
 		removePeerIfFailed(futureResponse, message);
 		//we need to set the neighbors if we use relays
 		if(message.getSender().isRelayed()) {
-			message.setPeerSocketAddresses(Arrays.asList(message.getSender().getPeerSocketAddresses()));
+			message.setPeerSocketAddresses(message.getSender().getPeerSocketAddresses());
 		}
 		
 
@@ -193,15 +194,15 @@ public class Sender {
 						}
 
 						private void clearInactivePeerSocketAddress(final FutureDone<PeerSocketAddress> futureDone) {
-							for (int i = 0; i < message.getRecipient().getPeerSocketAddresses().length; i++) {
-								if (message.getRecipient().getPeerSocketAddresses()[i] != null) {
-									if (message.getRecipient().getPeerSocketAddresses()[i].equals(futureDone
-									        .getObject())) {
-										message.getRecipient().getPeerSocketAddresses()[i] = null;
-										break;
+						    Collection<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
+                            for (PeerSocketAddress psa : message.getRecipient().getPeerSocketAddresses()) {
+								if (psa != null) {
+									if (!psa.equals(futureDone.getObject())) {
+										tmp.add(psa);
 									}
 								}
 							}
+                            message.setPeerSocketAddresses(tmp);
 						}
 					});
 
@@ -218,17 +219,18 @@ public class Sender {
 	 * @param pingBuilder
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(PeerSocketAddress[] peerSocketAddresses, PingBuilder pingBuilder) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses, PingBuilder pingBuilder) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
-		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.length];
-		for (int i = 0; i < forks.length; i++) {
-			if (peerSocketAddresses[i] != null) {
-				InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(peerSocketAddresses[i]);
-				forks[i] = pingBuilder.setInetAddress(inetSocketAddress.getAddress())
-				        .setPort(inetSocketAddress.getPort()).start();
-			}
-		}
+		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.size()];
+		int index = 0;
+		for (PeerSocketAddress psa : peerSocketAddresses) {
+            if (psa != null) {
+                InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
+                forks[index++] = pingBuilder.setInetAddress(inetSocketAddress.getAddress())
+                        .setPort(inetSocketAddress.getPort()).start();
+            }
+        }
 		FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<BaseFuture>(
 		        forks));
 		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<BaseFuture>>() {
@@ -373,7 +375,7 @@ public class Sender {
 		removePeerIfFailed(futureResponse, message);
 		
 		if(message.getSender().isRelayed()) {
-			message.setPeerSocketAddresses(Arrays.asList(message.getSender().getPeerSocketAddresses()));
+			message.setPeerSocketAddresses(message.getSender().getPeerSocketAddresses());
 		}
 
 		boolean isFireAndForget = handler == null;
@@ -407,10 +409,10 @@ public class Sender {
 			final ChannelFuture channelFuture;
 			if(message.getRecipient().isRelayed()) {
 				
-				PeerSocketAddress[] psa = message.getRecipient().getPeerSocketAddresses();
-				LOG.debug("send neighbor request to random relay peer {}", Arrays.toString(psa));
-				if(psa.length > 0) {
-					PeerSocketAddress ps = psa[random.nextInt(psa.length)];
+				List<PeerSocketAddress> psa = new ArrayList<>(message.getRecipient().getPeerSocketAddresses());
+				LOG.debug("send neighbor request to random relay peer {}", psa);
+				if(psa.size() > 0) {
+					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 					PeerAddress recipient = message.getRecipient();
 					message.setRecipient(recipient.changePeerSocketAddress(ps));
 				

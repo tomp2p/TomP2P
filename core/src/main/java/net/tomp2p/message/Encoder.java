@@ -209,9 +209,7 @@ public class Encoder {
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                signatureFactory.encodePublicKey(message.getPublicKey(), buf);
-                message.contentRefencencs().poll();
-                break;
+                // then do the regular public key stuff
             case PUBLIC_KEY:
             	PublicKey publicKey = message.getPublicKey(next.number());
             	signatureFactory.encodePublicKey(publicKey, buf);

@@ -136,9 +136,7 @@ public class Encoder {
                         buf.writeBytes(dataMap.domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().toByteArray());
                         buf.writeBytes(dataMap.versionKey().toByteArray());
-                        Data data = entry.getValue().duplicate();
-                        data.encodeHeader(buf);
-                        data.encodeDone(buf);
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta());
                     }
                 } else {
                     for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
@@ -146,9 +144,8 @@ public class Encoder {
                         buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                         buf.writeBytes(entry.getKey().getContentKey().toByteArray());
                         buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
-                        Data data = entry.getValue().duplicate();
-                        data.encodeHeader(buf);
-                        data.encodeDone(buf);
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta());
+                        
                     }
                 }
                 message.contentRefencencs().poll();
@@ -222,6 +219,16 @@ public class Encoder {
 
         }
         return true;
+    }
+
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta) {
+		if(isConvertMeta) {
+			data = data.duplicateMeta();
+		} else {
+			data = data.duplicate();
+		}
+	    data.encodeHeader(buf);
+	    data.encodeDone(buf);
     }
 
     public Message message() {

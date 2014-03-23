@@ -61,6 +61,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     private boolean bloomFilterAnd = true;
 
     private int returnNr = -1;
+    
+    private boolean returnMetaValues = false;
 
     static {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
@@ -197,6 +199,20 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     public DigestBuilder bloomFilterAnd() {
         this.bloomFilterAnd = true;
         return this;
+    }
+    
+    public DigestBuilder returnMetaValues(boolean returnMetaValues) {
+        this.returnMetaValues = returnMetaValues;
+        return this;
+    }
+
+    public DigestBuilder returnMetaValues() {
+    	this.returnMetaValues = true;
+        return this;
+    }
+    
+    public boolean isReturnMetaValues() {
+        return returnMetaValues;
     }
 
     public DigestBuilder returnNr(int returnNr) {

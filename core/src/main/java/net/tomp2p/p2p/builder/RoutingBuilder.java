@@ -176,4 +176,12 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
 	    this.from = from;
 	    this.to = to;
     }
+	
+	public Number640 from() {
+		return from;
+	}
+	
+	public Number640 to() {
+		return to;
+	}
 }

@@ -425,22 +425,24 @@ public class DistributedHashTable {
                                                 // the future tells us that the communication was successful, which is
                                                 // ok for digest
                                                 if (future.isSuccess()) {
-
-                                                    SimpleBloomFilter<Number160> sbf1 = future.getResponse()
-                                                            .getBloomFilter(0);
-                                                    SimpleBloomFilter<Number160> sbf2 = future.getResponse()
-                                                            .getBloomFilter(1);
-                                                    final DigestResult digest;
-                                                    if (sbf1 == null && sbf2 == null) {
-                                                        NavigableMap<Number640, Number160> keyDigest = future
-                                                                .getResponse().getKeyMap640(0).keysMap();
-                                                        digest = new DigestResult(keyDigest);
-                                                    } else {
-                                                        digest = new DigestResult(sbf1, sbf2);
-                                                    }
-                                                    rawDigest.put(future.getRequest().getRecipient(), digest);
-                                                    logger.debug("set data from {}", future.getRequest()
-                                                            .getRecipient());
+											        final DigestResult digest;
+											        if (builder.isReturnMetaValues()) {
+												        Map<Number640, Data> dataMap = future.getResponse()
+												                .getDataMap(0).dataMap();
+												        digest = new DigestResult(dataMap);
+											        } else if (builder.isReturnBloomFilter()) {
+												        SimpleBloomFilter<Number160> sbf1 = future.getResponse()
+												                .getBloomFilter(0);
+												        SimpleBloomFilter<Number160> sbf2 = future.getResponse()
+												                .getBloomFilter(1);
+												        digest = new DigestResult(sbf1, sbf2);
+											        } else {
+												        NavigableMap<Number640, Number160> keyDigest = future
+												                .getResponse().getKeyMap640(0).keysMap();
+												        digest = new DigestResult(keyDigest);
+											        }
+											        rawDigest.put(future.getRequest().getRecipient(), digest);
+											        logger.debug("set data from {}", future.getRequest().getRecipient());
                                                 }
                                             }
                                         });

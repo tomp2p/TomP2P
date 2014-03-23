@@ -183,7 +183,10 @@ public class DistributedRouting {
         if (type == Type.REQUEST_2 && routingBuilder.getDomainKey() != null && !randomSearch) {
             final Number640 from;
             final Number640 to;
-            if (routingBuilder.getDomainKey() == null) {
+            if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
+            	from = routingBuilder.from();
+            	to = routingBuilder.to();
+            } else if (routingBuilder.getDomainKey() == null) {
                 from = new Number640(routingBuilder.getLocationKey(), Number160.ZERO, Number160.ZERO,
                         Number160.ZERO);
                 to = new Number640(routingBuilder.getLocationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,

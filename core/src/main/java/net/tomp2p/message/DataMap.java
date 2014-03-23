@@ -14,22 +14,38 @@ public class DataMap {
     private final Number160 locationKey;
     private final Number160 domainKey;
     private final Number160 versionKey;
-
+    private final boolean convertMeta;
+    
     public DataMap(final Map<Number640, Data> dataMap) {
+    	this(dataMap, false);
+    }
+
+    public DataMap(final Map<Number640, Data> dataMap, boolean convertMeta) {
         this.dataMap = dataMap;
         this.dataMapConvert = null;
         this.locationKey = null;
         this.domainKey = null;
         this.versionKey = null;
+        this.convertMeta = convertMeta;
+    }
+    
+    public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
+            final Map<Number160, Data> dataMapConvert) {
+    	this(locationKey, domainKey, versionKey, dataMapConvert, false);
     }
 
     public DataMap(final Number160 locationKey, final Number160 domainKey, final Number160 versionKey,
-            final Map<Number160, Data> dataMapConvert) {
+            final Map<Number160, Data> dataMapConvert, boolean convertMeta) {
         this.dataMap = null;
         this.dataMapConvert = dataMapConvert;
         this.locationKey = locationKey;
         this.domainKey = domainKey;
         this.versionKey = versionKey;
+        this.convertMeta = convertMeta;
+    }
+    
+    public boolean isConvertMeta() {
+    	return convertMeta;
     }
 
     public Map<Number640, Data> dataMap() {

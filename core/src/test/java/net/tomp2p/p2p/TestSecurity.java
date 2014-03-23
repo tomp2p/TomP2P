@@ -10,6 +10,7 @@ import java.security.SignatureException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import net.tomp2p.futures.FutureDigest;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureRemove;
@@ -359,12 +360,11 @@ public class TestSecurity {
             Assert.assertEquals(0, fdht2.getResult().size());
             Assert.assertEquals(false, fdht2.isSuccess());
             // Utils.sleep(1000000);
-            // try to removze it
+            // try to remove it, will fail since we do not sign
             FutureRemove fdht3 = slave2.remove(locationKey).start();
             fdht3.awaitUninterruptibly();
-            // true, since we have domain protection yet
-            Assert.assertEquals(true, fdht3.isSuccess());
-            Assert.assertEquals(0, fdht3.getEvalKeys().size());
+            // false, since we have domain protection yet
+            Assert.assertEquals(false, fdht3.isSuccess());
             // try to put another thing
             Data data3 = new Data("test2");
             data3.setProtectedEntry();
@@ -454,12 +454,7 @@ public class TestSecurity {
         Data data2 = new Data(testData2);
         FuturePut futurePut2 = p2.put(lKey).setData(cKey, data2).start();
         futurePut2.awaitUninterruptibly();
-
-        /*
-         * Shouldn't the future fail here? And why answers a peer here with a PutStatus.OK? Should be not here something
-         * like PutStatus.FAILED_SECURITY?
-         */
-        
+        //PutStatus.FAILED_SECURITY
         Assert.assertFalse(futurePut2.isSuccess());
         
         FutureGet futureGet2 = p2.get(lKey).setContentKey(cKey).start();
@@ -473,11 +468,7 @@ public class TestSecurity {
         FuturePut futurePut3 = p2.put(lKey).setData(cKey, data3).start();
         futurePut3.awaitUninterruptibly();
 
-        /*
-         * Shouldn't the future fail here? And why answers a peer here with PutStatus.OK from two peers? Should be not
-         * here something like PutStatus.FAILED_SECURITY?
-         */
-       
+        // FAILED_SECURITY?
         Assert.assertFalse(futurePut3.isSuccess());
         
         FutureGet futureGet3 = p2.get(lKey).setContentKey(cKey).start();
@@ -485,7 +476,7 @@ public class TestSecurity {
         Assert.assertTrue(futureGet3.isSuccess());
         // should have been not modified ---> why it has been modified without giving a key pair?
         Assert.assertEquals(testData1, (String) futureGet3.getData().object());
-        Assert.assertEquals(null, futureGet3.getData().publicKey());
+        Assert.assertEquals(keyPair.getPublic(), futureGet3.getData().publicKey());
         
         //now we store a signed data object and we will get back the public key as well
         data = new Data("Juhuu").setProtectedEntry().sign(keyPair);
@@ -997,5 +988,44 @@ public class TestSecurity {
 		Assert.assertTrue(futurePut5.isSuccess());
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
+	}
+	
+	@Test
+	public void testGetMeta() throws NoSuchAlgorithmException, IOException, ClassNotFoundException,
+	        InvalidKeyException, SignatureException {
+		Peer p1 = null;
+		Peer p2 = null;
+		try {
+			KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+			KeyPair keyPairPeer1 = gen.generateKeyPair();
+			p1 = new PeerMaker(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+			        .setEnableIndirectReplication(true).makeAndListen();
+			KeyPair keyPairPeer2 = gen.generateKeyPair();
+			p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+			        .setEnableIndirectReplication(true).makeAndListen();
+			p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+			p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+
+			KeyPair keyPair1 = gen.generateKeyPair();
+
+			Number160 lKey = Number160.createHash("location");
+			Data data = new Data("data1v11").setProtectedEntry().sign(keyPair1);
+
+			FuturePut futurePut = p1.put(lKey).setSign().setData(data).keyPair(keyPair1).start();
+			futurePut.awaitUninterruptibly();
+			Assert.assertTrue(futurePut.isSuccess());
+
+			FutureDigest futureDigest = p1.digest(lKey).returnMetaValues().start();
+			futureDigest.awaitUninterruptibly();
+			Assert.assertTrue(futureDigest.isSuccess());
+			Data dataMeta = futureDigest.getDigest().dataMap().values().iterator().next();
+
+			Assert.assertEquals(keyPair1.getPublic(), dataMeta.publicKey());
+			Assert.assertEquals(data.signature(), dataMeta.signature());
+			Assert.assertEquals(0, dataMeta.length());
+		} finally {
+			p1.shutdown().awaitUninterruptibly();
+			p2.shutdown().awaitUninterruptibly();
+		}
 	}
 }

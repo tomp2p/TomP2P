@@ -18,7 +18,8 @@ public class RPC {
 		BROADCAST(12),
 		PUT_META(13), 
 		DIGEST_BLOOMFILTER(14),
-		RELAY(15);
+		RELAY(15),
+		DIGEST_META_VALUES(16);
 
 	private final byte nr; 
 	Commands(int nr) {

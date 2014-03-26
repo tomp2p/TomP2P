@@ -578,6 +578,8 @@ public class Data {
 		data.signed = signed;
 		data.ttl = ttl;
 		data.protectedEntry = protectedEntry;
+		data.privateKey = privateKey;
+		data.validFromMillis = validFromMillis;
 		return data;
 	}
 	
@@ -593,6 +595,8 @@ public class Data {
 		data.signed = signed;
 		data.ttl = ttl;
 		data.protectedEntry = protectedEntry;
+		data.privateKey = privateKey;
+		data.validFromMillis = validFromMillis;
 		return data;
 	}
 

@@ -132,7 +132,7 @@ public class Message {
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
     private List<PeerSocketAddress> peerSocketAddresses = null;
-    private SHA1Signature signatureEncode = null;
+    private SignatureCodec signatureEncode = null;
     
     // this will not be transferred, status variables
     private transient boolean presetContentTypes = false;
@@ -855,12 +855,12 @@ public class Message {
         return trackerDataList.get(index);
     }
 
-    public Message receivedSignature(SHA1Signature signatureEncode) {
+    public Message receivedSignature(SignatureCodec signatureEncode) {
         this.signatureEncode = signatureEncode;
         return this;
     }
     
-    public SHA1Signature receivedSignature() {
+    public SignatureCodec receivedSignature() {
         return signatureEncode;
     }
     

@@ -33,7 +33,7 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConficuration;
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.DefaultSignatureFactory;
+import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
 import net.tomp2p.connection.PipelineFilter;
@@ -405,7 +405,7 @@ public class PeerMaker {
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
 		channelServerConfiguration.setBehindFirewall(false);
 		channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
-		channelServerConfiguration.signatureFactory(new DefaultSignatureFactory());
+		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
 		return channelServerConfiguration;
 	}
 
@@ -416,7 +416,7 @@ public class PeerMaker {
 		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
 		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
-		channelClientConfiguration.signatureFactory(new DefaultSignatureFactory());
+		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
 		return channelClientConfiguration;
 	}
 

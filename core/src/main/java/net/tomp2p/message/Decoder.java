@@ -332,7 +332,7 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0))) {
+					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					data = null;
@@ -364,7 +364,7 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0))) {
+					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					// if we have signed the message, set the public key anyway, but only if we indicated so
@@ -494,7 +494,7 @@ public class Decoder {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0))) {
+					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -526,7 +526,7 @@ public class Decoder {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0))) {
+					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -560,15 +560,13 @@ public class Decoder {
 			}
 		}
 		if (message.isSign()) {
-			if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+			SignatureCodec signatureEncode = signatureFactory.signatureCodec();
+			size = signatureEncode.signatureSize();
+			if (buf.readableBytes() < size) {
 				return false;
 			}
-			byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-			buf.readBytes(me);
-			Number160 number1 = new Number160(me);
-			buf.readBytes(me);
-			Number160 number2 = new Number160(me);
-			SHA1Signature signatureEncode = new SHA1Signature(number1, number2);
+			
+			signatureEncode.read(buf);
 			message.receivedSignature(signatureEncode);
 		}
 		return true;

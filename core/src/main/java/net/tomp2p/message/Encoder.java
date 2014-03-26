@@ -16,6 +16,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
+import net.tomp2p.utils.Timings;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,15 +58,14 @@ public class Encoder {
 
             // check if we need to sign the message
             if (message.isSign()) {
-            	SHA1Signature decodedSignature = signatureFactory.sign(message.getPrivateKey(), buf);
-            	buf.writeBytes(decodedSignature.getNumber1().toByteArray());
-                buf.writeBytes(decodedSignature.getNumber2().toByteArray());
+            	SignatureCodec decodedSignature = signatureFactory.sign(message.getPrivateKey(), buf);
+            	decodedSignature.write(buf);
             }
         }
         return done;
     }
 
-    private boolean loop(AlternativeCompositeByteBuf buf) {
+    private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
             switch (next.content()) {
@@ -136,7 +136,7 @@ public class Encoder {
                         buf.writeBytes(dataMap.domainKey().toByteArray());
                         buf.writeBytes(entry.getKey().toByteArray());
                         buf.writeBytes(dataMap.versionKey().toByteArray());
-                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta());
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 } else {
                     for (Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
@@ -144,8 +144,7 @@ public class Encoder {
                         buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                         buf.writeBytes(entry.getKey().getContentKey().toByteArray());
                         buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
-                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta());
-                        
+                        encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 }
                 message.contentRefencencs().poll();
@@ -198,8 +197,7 @@ public class Encoder {
                 for (Map.Entry<PeerAddress, Data> entry : trackerData.getPeerAddresses().entrySet()) {
                     buf.writeBytes(entry.getKey().toByteArray());
                     Data data = entry.getValue().duplicate();
-                    data.encodeHeader(buf);
-                    data.encodeDone(buf);
+                    encodeData(buf, data, false, !message.isRequest());
                 }
                 message.contentRefencencs().poll();
                 break;
@@ -221,14 +219,18 @@ public class Encoder {
         return true;
     }
 
-	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta) {
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
 		if(isConvertMeta) {
 			data = data.duplicateMeta();
 		} else {
 			data = data.duplicate();
 		}
-	    data.encodeHeader(buf);
-	    data.encodeDone(buf);
+		if(isReply) {
+			int ttl = (int) (data.expirationMillis() - Timings.currentTimeMillis()) / 1000;
+			data.ttlSeconds(ttl < 0 ? 0:ttl);
+		}
+	    data.encodeHeader(buf, signatureFactory);
+	    data.encodeDone(buf, signatureFactory);
     }
 
     public Message message() {

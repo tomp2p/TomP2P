@@ -26,9 +26,9 @@ import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.BitSet;
 
-import net.tomp2p.connection.DefaultSignatureFactory;
+import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.message.SHA1Signature;
+import net.tomp2p.message.SignatureCodec;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.utils.Timings;
@@ -69,10 +69,12 @@ public class Data {
 	private boolean publicKeyFlag;
 
 	// can be added later
-	private SHA1Signature signature;
+	private SignatureCodec signature;
 	private int ttlSeconds = -1;
 	private Number160 basedOn = null;
 	private PublicKey publicKey;
+	//this goes never over the network! If this is set, we have to sign lazy
+	private transient PrivateKey privateKey;
 
 	// never serialized over the network in this object
 	private long validFromMillis;
@@ -268,33 +270,29 @@ public class Data {
 		return transfered == remaining;
 	}
 
-	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey) {
+	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
 		if (signed) {
 			if(publicKey == PeerMaker.EMPTY_PUBLICKEY) {
 				this.publicKey = publicKey;	
 			}
-			if(buf.readableBytes() < (Number160.BYTE_ARRAY_SIZE * 2)) {
+			signature = signatureFactory.signatureCodec();
+			if(buf.readableBytes() < signature.signatureSize()) {
 				return false;
 			}
-			byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-			buf.readBytes(me);
-			Number160 number1 = new Number160(me);
-			buf.readBytes(me);
-			Number160 number2 = new Number160(me);
-			signature = new SHA1Signature(number1, number2);
+			signature.read(buf);
 		}
 		return true;
 	}
 
-	public boolean verify() throws InvalidKeyException, SignatureException, IOException {
-		return verify(publicKey);
+	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return verify(publicKey, signatureFactory);
 	}
 
-	public boolean verify(PublicKey publicKey) throws InvalidKeyException, SignatureException, IOException {
-		return signatureFactory().verify(publicKey, buffer.toByteBuf(), signature);
+	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
 	}
 
-	public void encodeHeader(final AlternativeCompositeByteBuf buf) {
+	public void encodeHeader(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) {
 		int header = type.ordinal();
 		if (publicKeyFlag) {
 			header |= 0x02;
@@ -340,7 +338,7 @@ public class Data {
 			if (publicKey == null) {
 				buf.writeShort(0);
 			} else {
-				signatureFactory().encodePublicKey(publicKey, buf);
+				signatureFactory.encodePublicKey(publicKey, buf);
 			}
 		}
 		buffer.transferTo(buf);
@@ -358,13 +356,14 @@ public class Data {
 		return buffer.alreadyTransferred() == length();
 	}
 
-	public void encodeDone(final ByteBuf buf) {
+	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
-			if (signature == null) {
+			if (signature == null && privateKey == null) {
 				throw new IllegalArgumentException("you need to sign the data object first and add a public key!");
+			} else if(privateKey != null) {
+				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
 			}
-			buf.writeBytes(signature.getNumber1().toByteArray());
-			buf.writeBytes(signature.getNumber2().toByteArray());
+			signature.write(buf);
 		}
 	}
 
@@ -385,20 +384,38 @@ public class Data {
 	    return this;
     }
 	
-	public Data sign(KeyPair keyPair) throws InvalidKeyException, SignatureException, IOException {
+	public Data sign(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory().sign(keyPair.getPrivate(), buffer.toByteBuf());
+			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 		}
 		return this;
 	}
 
-	public Data sign(PrivateKey privateKey) throws InvalidKeyException, SignatureException, IOException {
+	public Data sign(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory().sign(privateKey, buffer.toByteBuf());
+			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+		}
+		return this;
+	}
+	
+	public Data lazySign(KeyPair keyPair) {
+		if (this.signature == null) {
+			this.signed = true;
+			this.privateKey = keyPair.getPrivate();
+			this.publicKey = keyPair.getPublic();
+			this.publicKeyFlag = true;
+		}
+		return this;
+	}
+	
+	public Data lazySign(PrivateKey privateKey) {
+		if (this.signature == null) {
+			this.signed = true;
+			this.privateKey = privateKey;
 		}
 		return this;
 	}
@@ -433,7 +450,7 @@ public class Data {
 
 	public SignatureFactory signatureFactory() {
 		if (signatureFactory == null) {
-			return new DefaultSignatureFactory();
+			return new DSASignatureFactory();
 		} else {
 			return signatureFactory;
 		}
@@ -450,6 +467,16 @@ public class Data {
 
 	public boolean isSigned() {
 		return signed;
+	}
+	
+	public Data signed(boolean signed) {
+		this.signed = signed;
+		return this;
+	}
+	
+	public Data signed() {
+		this.signed = true;
+		return this;
 	}
 
 	public Data protectedEntry(boolean protectedEntry) {
@@ -540,7 +567,7 @@ public class Data {
 	 *         index is not shared
 	 */
 	public Data duplicate() {
-		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey).signatureFactory(signatureFactory)
+		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)
 				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
@@ -555,7 +582,7 @@ public class Data {
 	}
 	
 	public Data duplicateMeta() {
-		Data data = new Data().publicKey(publicKey).signatureFactory(signatureFactory)
+		Data data = new Data().publicKey(publicKey)
 				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
@@ -622,6 +649,13 @@ public class Data {
 	public PublicKey publicKey() {
 		return publicKey;
 	}
+	
+	/**
+	 * @return A private key if we want to sign it lazy (during encoding).
+	 */
+	public PrivateKey privateKey() {
+		return privateKey;
+	}
 
 	public Data publicKey(PublicKey publicKey) {
 		this.publicKeyFlag = true;
@@ -629,11 +663,11 @@ public class Data {
 		return this;
 	}
 
-	public SHA1Signature signature() {
+	public SignatureCodec signature() {
 		return signature;
 	}
 
-	public Data signature(SHA1Signature signature) {
+	public Data signature(SignatureCodec signature) {
 		this.signature = signature;
 		return this;
 	}

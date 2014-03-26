@@ -16,6 +16,8 @@
 
 package net.tomp2p.message;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.IOException;
 
 import net.tomp2p.peers.Number160;
@@ -27,20 +29,24 @@ import net.tomp2p.utils.Utils;
  * @author Thomas Bocek
  * 
  */
-public class SHA1Signature {
+public class DSASignatureCodec implements SignatureCodec {
 	private Number160 number1;
 
 	private Number160 number2;
 
-	public SHA1Signature() {
+	public DSASignatureCodec() {
 	}
 
-	public SHA1Signature(Number160 number1, Number160 number2) {
+	public DSASignatureCodec(Number160 number1, Number160 number2) {
 		this.number1 = number1;
 		this.number2 = number2;
 	}
 
-	public void decode(byte[] encodedData) throws IOException {
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.SignatureCodec#decode(byte[])
+	 */
+	@Override
+    public DSASignatureCodec decode(byte[] encodedData) throws IOException {
 		if (encodedData[0] != 0x30) {
 			throw new IOException("expected sequence with value 48, but got " + encodedData[0]);
 		}
@@ -65,6 +71,7 @@ public class SHA1Signature {
 			throw new IOException("cannot handle int legth > than 127, got " + intLen2);
 		}
 		number2 = encodeNumber(encodedData, 6 + intLen1, intLen2);
+		return this;
 	}
 
 	private Number160 encodeNumber(byte[] encodedData, int offset, int len) throws IOException {
@@ -81,11 +88,11 @@ public class SHA1Signature {
 		}
 	}
 
-	/**
-	 * @return ASN1 encoded signature
-	 * @throws IOException
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.SignatureCodec#encode()
 	 */
-	public byte[] encode() throws IOException {
+	@Override
+    public byte[] encode() throws IOException {
 		byte me[] = new byte[2 + (2 * (20 + 2))];
 		me[0] = 0x30;
 		me[1] = 2 * (20 + 2);
@@ -97,12 +104,22 @@ public class SHA1Signature {
 		number2.toByteArray(me, 26);
 		return me;
 	}
+	
+	/* (non-Javadoc)
+	 * @see net.tomp2p.message.SignatureCodec#write(io.netty.buffer.ByteBuf)
+	 */
+	@Override
+    public SignatureCodec write(ByteBuf buf) {
+		buf.writeBytes(number1.toByteArray());
+		buf.writeBytes(number2.toByteArray());
+		return this;
+	}
 
-	public Number160 getNumber1() {
+	public Number160 number1() {
 		return number1;
 	}
 
-	public Number160 getNumber2() {
+	public Number160 number2() {
 		return number2;
 	}
 
@@ -116,13 +133,28 @@ public class SHA1Signature {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof SHA1Signature)) {
+		if (!(obj instanceof DSASignatureCodec)) {
 			return false;
 		}
 		if (obj == this) {
 			return true;
 		}
-		SHA1Signature s = (SHA1Signature) obj;
+		DSASignatureCodec s = (DSASignatureCodec) obj;
 		return Utils.equals(number1, s.number1) && Utils.equals(number2, s.number2);
 	}
+
+	@Override
+    public SignatureCodec read(ByteBuf buf) {
+		byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+		buf.readBytes(me);
+		number1 = new Number160(me);
+		buf.readBytes(me);
+		number2 = new Number160(me);
+	    return this;
+    }
+	
+	@Override
+    public int signatureSize() {
+	    return Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE;
+    }
 }

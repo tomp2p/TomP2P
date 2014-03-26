@@ -26,7 +26,7 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 
-import net.tomp2p.message.SHA1Signature;
+import net.tomp2p.message.SignatureCodec;
 
 /**
  * This interface is used in the encoder and decoders. A user may set its own
@@ -51,12 +51,14 @@ public interface SignatureFactory {
 
 	void encodePublicKey(PublicKey publicKey, ByteBuf buf);
 
-	SHA1Signature sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
+	SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
 			SignatureException, IOException;
 
-	boolean verify(PublicKey publicKey, ByteBuf buf, SHA1Signature signatureEncoded)
+	boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
 			throws SignatureException, InvalidKeyException, IOException;
 
 	Signature update(PublicKey publicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException;
+
+	SignatureCodec signatureCodec();
 
 }

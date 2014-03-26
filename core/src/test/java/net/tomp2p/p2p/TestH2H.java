@@ -8,6 +8,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
+import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureRemove;
@@ -19,6 +20,9 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestH2H {
+	
+	private static final DSASignatureFactory factory = new DSASignatureFactory();
+	
 	@Test
 	public void testPut() throws IOException, ClassNotFoundException, NoSuchAlgorithmException, InvalidKeyException,
 	        SignatureException {
@@ -70,7 +74,7 @@ public class TestH2H {
 			Data data = new Data(testData);
 			data.ttlSeconds(10000);
 			data.basedOn(bKey);
-			data.setProtectedEntry().sign(keyPair);
+			data.setProtectedEntry().sign(keyPair, factory);
 			FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).setDomainKey(dKey).setVersionKey(vKey)
 			        .keyPair(keyPair).start();
 			futurePut1.awaitUninterruptibly();
@@ -110,7 +114,7 @@ public class TestH2H {
 		Number160 cKey = Number160.createHash(contentKey);
 
 		String testData1 = "data1";
-		Data data = new Data(testData1).setProtectedEntry().sign(keyPair1);
+		Data data = new Data(testData1).setProtectedEntry().sign(keyPair1, factory);
 
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------
@@ -222,7 +226,7 @@ public class TestH2H {
 		Number160 cKey = Number160.createHash(contentKey);
 
 		String testData1 = "data1";
-		Data data = new Data(testData1).setProtectedEntry().sign(key1);
+		Data data = new Data(testData1).setProtectedEntry().sign(key1, factory);
 
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------

@@ -1,20 +1,4 @@
-/*
- * Copyright 2013 Thomas Bocek
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not
- * use this file except in compliance with the License. You may obtain a copy of
- * the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations under
- * the License.
- */
-
-package net.tomp2p.connection;
+package net.tomp2p.p2p;
 
 import io.netty.buffer.ByteBuf;
 
@@ -30,28 +14,27 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 
-import net.tomp2p.message.SHA1Signature;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.message.SignatureCodec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The default signature is done with SHA1withDSA.
+ * The signature is done with SHA1withRSA.
  * 
- * @author Thomas Bocek
- * 
+ * @author Seppi
  */
-public class DefaultSignatureFactory implements SignatureFactory {
-
-	private static final Logger LOG = LoggerFactory.getLogger(DefaultSignatureFactory.class);
-
+public class RSASignatureFactory implements SignatureFactory {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(RSASignatureFactory.class);
+	
 	/**
 	 * @return The signature mechanism
 	 */
 	private Signature signatureInstance() {
 		try {
-			return Signature.getInstance("SHA1withDSA");
+			return Signature.getInstance("SHA1withRSA");
 		} catch (NoSuchAlgorithmException e) {
 			LOG.error("could not find algorithm", e);
 			return null;
@@ -62,7 +45,7 @@ public class DefaultSignatureFactory implements SignatureFactory {
 	public PublicKey decodePublicKey(final byte[] me) {
 		X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(me);
 		try {
-			KeyFactory keyFactory = KeyFactory.getInstance("DSA");
+			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
 			return keyFactory.generatePublic(pubKeySpec);
 		} catch (NoSuchAlgorithmException e) {
 			LOG.error("could not find algorithm", e);
@@ -73,7 +56,7 @@ public class DefaultSignatureFactory implements SignatureFactory {
 		}
 	}
 
-	//decodes with header
+	// decodes with header
 	@Override
 	public PublicKey decodePublicKey(ByteBuf buf) {
 		if (buf.readableBytes() < 2) {
@@ -103,7 +86,7 @@ public class DefaultSignatureFactory implements SignatureFactory {
 	}
 
 	@Override
-	public SHA1Signature sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
+	public SignatureCodec sign(PrivateKey privateKey, ByteBuf buf) throws InvalidKeyException,
 			SignatureException, IOException {
 		Signature signature = signatureInstance();
 		signature.initSign(privateKey);
@@ -113,15 +96,16 @@ public class DefaultSignatureFactory implements SignatureFactory {
 			ByteBuffer buffer = byteBuffers[i];
 			signature.update(buffer);
 		}
+		
 		byte[] signatureData = signature.sign();
 
-		SHA1Signature decodedSignature = new SHA1Signature();
+		SignatureCodec decodedSignature = new RSASignatureCodec();
 		decodedSignature.decode(signatureData);
 		return decodedSignature;
 	}
 
 	@Override
-	public boolean verify(PublicKey publicKey, ByteBuf buf, SHA1Signature signatureEncoded)
+	public boolean verify(PublicKey publicKey, ByteBuf buf, SignatureCodec signatureEncoded)
 			throws SignatureException, InvalidKeyException, IOException {
 		Signature signature = signatureInstance();
 		signature.initVerify(publicKey);
@@ -131,18 +115,24 @@ public class DefaultSignatureFactory implements SignatureFactory {
 			ByteBuffer buffer = byteBuffers[i];
 			signature.update(buffer);
 		}
-        byte[] signatureReceived = signatureEncoded.encode();
+		byte[] signatureReceived = signatureEncoded.encode();
 		return signature.verify(signatureReceived);
 	}
 
 	@Override
-    public Signature update(PublicKey receivedPublicKey, ByteBuffer[] byteBuffers) throws InvalidKeyException, SignatureException {
+	public Signature update(PublicKey receivedPublicKey, ByteBuffer[] byteBuffers)
+			throws InvalidKeyException, SignatureException {
 		Signature signature = signatureInstance();
 		signature.initVerify(receivedPublicKey);
 		int arrayLength = byteBuffers.length;
 		for (int i = 0; i < arrayLength; i++) {
 			signature.update(byteBuffers[i]);
 		}
-	    return signature;
+		return signature;
+	}
+
+	@Override
+    public SignatureCodec signatureCodec() {
+	    return new RSASignatureCodec();
     }
 }

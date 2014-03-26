@@ -49,7 +49,7 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.connection.DefaultSignatureFactory;
+import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -85,6 +85,7 @@ public class TestMessage {
 	private static final int SEED = 1;
     private static final int BIT_16 = 256 * 256;
     private static final Random RND = new Random(SEED);
+    private static final DSASignatureFactory factory = new DSASignatureFactory();
 
 	@Test
 	public void compositeBufferTest1() {
@@ -230,9 +231,10 @@ public class TestMessage {
 		m1.setPublicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1.getPrivate()));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate()));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate()));
+		
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1.getPrivate(), factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate(), factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate(), factory));
 		m1.setDataMap(new DataMap(dataMap));
 		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
 		keysMap.put(new Number640(rnd), new Number160(rnd));
@@ -261,9 +263,9 @@ public class TestMessage {
 		m1.setPublicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1, factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1, factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1, factory));
 		m1.setDataMap(new DataMap(dataMap));
 		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
 		keysMap.put(new Number640(rnd), new Number160(rnd));
@@ -492,7 +494,7 @@ public class TestMessage {
 		AtomicReference<Message> m2 = new AtomicReference<Message>();
 		final AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		TomP2POutbound encoder = new TomP2POutbound(true,
-				new DefaultSignatureFactory(), new CompByteBufAllocator() {
+				new DSASignatureFactory(), new CompByteBufAllocator() {
 					@Override
 					public AlternativeCompositeByteBuf compBuffer() {
 						return buf;
@@ -506,7 +508,7 @@ public class TestMessage {
 		buf.retain();
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		encoder.write(ctx, m1, null);
-		Decoder decoder = new Decoder(new DefaultSignatureFactory());
+		Decoder decoder = new Decoder(new DSASignatureFactory());
 		decoder.decode(ctx, buf, m1.getRecipient().createSocketTCP(), m1
 				.getSender().createSocketTCP());
 		return decoder.message();

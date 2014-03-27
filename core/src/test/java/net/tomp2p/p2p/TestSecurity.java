@@ -10,6 +10,10 @@ import java.security.SignatureException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.crypto.Cipher;
+
+import net.tomp2p.connection.ChannelClientConfiguration;
+import net.tomp2p.connection.ChannelServerConficuration;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.FutureDigest;
@@ -1111,6 +1115,94 @@ public class TestSecurity {
 		Data retData = p2.get(lKey).setDomainKey(dKey).setContentKey(cKey).setVersionKey(vKey).start()
 		        .awaitUninterruptibly().getData();
 		Assert.assertNull(retData);
+
+		p1.shutdown().awaitUninterruptibly();
+		p2.shutdown().awaitUninterruptibly();
+	}
+	
+	@Test
+	public void testChangeProtectionKeyWithReusedSignature() throws Exception {
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+
+		// create custom RSA factories
+		SignatureFactory factory = new RSASignatureFactory();
+		SignatureCodec codec = new RSASignatureCodec();
+
+		// replace default signature factories
+		ChannelClientConfiguration clientConfig = PeerMaker.createDefaultChannelClientConfiguration();
+		clientConfig.signatureFactory(factory);
+		ChannelServerConficuration serverConfig = PeerMaker.createDefaultChannelServerConfiguration();
+		serverConfig.signatureFactory(factory);
+
+		KeyPair keyPairPeer1 = gen.generateKeyPair();
+		Peer p1 = new PeerMaker(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .setEnableIndirectReplication(true).channelClientConfiguration(clientConfig)
+		        .channelServerConfiguration(serverConfig).makeAndListen();
+		KeyPair keyPairPeer2 = gen.generateKeyPair();
+		Peer p2 = new PeerMaker(Number160.createHash(2)).masterPeer(p1).keyPair(keyPairPeer2)
+		        .setEnableIndirectReplication(true).channelClientConfiguration(clientConfig)
+		        .channelServerConfiguration(serverConfig).makeAndListen();
+
+		p2.bootstrap().setPeerAddress(p1.getPeerAddress()).start().awaitUninterruptibly();
+		p1.bootstrap().setPeerAddress(p2.getPeerAddress()).start().awaitUninterruptibly();
+
+		KeyPair keyPairOld = gen.generateKeyPair();
+		KeyPair keyPairNew = gen.generateKeyPair();
+
+		Number160 lKey = Number160.createHash("location");
+		Number160 dKey = Number160.createHash("domain");
+		Number160 cKey = Number160.createHash("content");
+		Number160 vKey = Number160.createHash("version");
+		Number160 bKey = Number160.ZERO;
+
+		int ttl = 10;
+
+		String testData = "data";
+		Data data = new Data(testData).setProtectedEntry().sign(keyPairOld, factory);
+		data.ttlSeconds(ttl).basedOn(bKey);
+
+		// initial put of some test data
+		FuturePut futurePut = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).setVersionKey(vKey)
+		        .keyPair(keyPairOld).start();
+		futurePut.awaitUninterruptibly();
+		Assert.assertTrue(futurePut.isSuccess());
+
+		// create signature with old key pair having the data object
+		byte[] signature1 = factory.sign(keyPairOld.getPrivate(), data.buffer()).encode();
+
+		// decrypt signature to get hash of the object
+		Cipher rsa = Cipher.getInstance("RSA");
+		rsa.init(Cipher.DECRYPT_MODE, keyPairOld.getPublic());
+		byte[] hash = rsa.doFinal(signature1);
+
+		// encrypt hash with new key pair to get the new signature (without
+		// having the data object)
+		rsa = Cipher.getInstance("RSA");
+		rsa.init(Cipher.ENCRYPT_MODE, keyPairNew.getPrivate());
+		byte[] signatureNew = rsa.doFinal(hash);
+
+		// verify old content protection keys
+		Data retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).setVersionKey(vKey).start()
+		        .awaitUninterruptibly().getData();
+		Assert.assertTrue(retData.verify(keyPairOld.getPublic(), factory));
+
+		// create a dummy data object for changing the content protection key
+		// through a put meta
+		Data dummyData = new Data();
+		dummyData.basedOn(bKey).ttlSeconds(ttl);
+		// assign the reused hash from signature (don't forget to set the
+		// signedflag)
+		dummyData.signature(codec.decode(signatureNew)).signed(true).duplicateMeta();
+		// change content protection key through a put meta
+		FuturePut futurePutMeta = p1.put(lKey).setDomainKey(dKey).putMeta().setData(cKey, dummyData)
+		        .setVersionKey(vKey).keyPair(keyPairOld).start();
+		futurePutMeta.awaitUninterruptibly();
+		Assert.assertTrue(futurePutMeta.isSuccess());
+
+		// verify new content protection keys
+		retData = p1.get(lKey).setDomainKey(dKey).setContentKey(cKey).setVersionKey(vKey).start()
+		        .awaitUninterruptibly().getData();
+		Assert.assertTrue(retData.verify(keyPairNew.getPublic(), factory));
 
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();

@@ -350,7 +350,7 @@ public class DistributedRouting {
                             : resultSize);
                     LOG.debug("Peer ({}) {} reported {}", (digestBean.getSize() > 0 ? "direct" : "none"),
                             remotePeer, newNeighbors);
-                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last);
+                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.getLocationKey());
                     LOG.debug("Routing finished {} / {}", finished,
                             routingMechanism.isStopCreatingNewFutures());
                 } else {

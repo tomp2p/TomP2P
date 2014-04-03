@@ -16,6 +16,9 @@
 
 package net.tomp2p.peers;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 /**
  * The class that holds configuration settings for the {@link PeerMap}.
  * 
@@ -31,7 +34,8 @@ public class PeerMapConfiguration {
     private int shutdownTimeout;
     private int exceptionTimeout;
     private int offlineCount;
-    private PeerFilter peerFilter;
+    //we'll add 1-2 filters
+    private Collection<PeerFilter> peerFilters = new ArrayList<PeerFilter>(2);
     private Maintenance maintenance;
     private boolean peerVerification;
 
@@ -50,7 +54,6 @@ public class PeerMapConfiguration {
         shutdownTimeout = 20;
         exceptionTimeout = 120;
         offlineCount = 3;
-        peerFilter = new DefaultPeerFilter();
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
         peerVerification = true;
         // CHECKSTYLE:ON
@@ -142,8 +145,8 @@ public class PeerMapConfiguration {
     /**
      * @return This filter can be set to not accept certain peers
      */
-    public PeerFilter peerFilter() {
-        return peerFilter;
+    public Collection<PeerFilter> peerFilters() {
+        return peerFilters;
     }
 
     /**
@@ -151,8 +154,8 @@ public class PeerMapConfiguration {
      *            This filter can be set to not accept certain peers
      * @return this class
      */
-    public PeerMapConfiguration peerFilter(final PeerFilter peerFilter) {
-        this.peerFilter = peerFilter;
+    public PeerMapConfiguration addPeerFilter(final PeerFilter peerFilter) {
+        peerFilters.add(peerFilter);
         return this;
     }
 

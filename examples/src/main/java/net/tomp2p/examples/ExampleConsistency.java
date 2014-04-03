@@ -204,7 +204,7 @@ public final class ExampleConsistency {
 
         // countermeasure - statistics, pick not closest, but random peer that has the data - freshness vs. load
         // also, check distances! 
-        Statistics statistics = new Statistics(peers[0].getPeerBean().peerMap().peerMapVerified(), peers[0].getPeerBean().peerMap().bagSizeVerified());
+        Statistics statistics = new Statistics(peers[0].getPeerBean().peerMap());
         System.out.println("average distance: "+statistics.getAvgGap());
         for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet1.getRawData().entrySet()) {
             System.out.print("got from (6)" + entry.getKey());

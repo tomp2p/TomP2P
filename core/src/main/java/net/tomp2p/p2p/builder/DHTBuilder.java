@@ -17,6 +17,8 @@
 package net.tomp2p.p2p.builder;
 
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -25,6 +27,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerFilter;
 
 /**
  * Every DHT builder has those methods in common.
@@ -61,6 +64,8 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     private boolean streaming = false;
     // private boolean forceUDP = false;
     // private boolean forceTCP = false;
+    
+    private Collection<PeerFilter> peerFilters;
 
     private K self;
 
@@ -256,8 +261,19 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         this.streaming = true;
         return self;
     }
-
     
+    public K addPeerFilter(PeerFilter peerFilter) {
+    	if(peerFilters == null) {
+    		//most likely we have 1-2 filters
+    		peerFilters = new ArrayList<PeerFilter>(2);
+    	}
+    	peerFilters.add(peerFilter);
+    	return self;
+    }
+    
+    public Collection<PeerFilter> peerFilters() {
+    	return peerFilters;
+    }
 
     protected void preBuild(String name) {
         if (domainKey == null) {

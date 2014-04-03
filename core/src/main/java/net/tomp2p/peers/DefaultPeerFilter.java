@@ -16,6 +16,8 @@
 
 package net.tomp2p.peers;
 
+import java.util.Collection;
+
 /**
  * The default filter accepts all peers.
  * 
@@ -24,10 +26,10 @@ package net.tomp2p.peers;
  */
 public class DefaultPeerFilter implements PeerFilter {
 
-    @Override
-    public boolean reject(final PeerAddress peerAddress) {
-        // by default, don't reject anything
-        return false;
+	@Override
+    public boolean reject(PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {
+		// by default, don't reject anything
+	    return false;
     }
 
 }

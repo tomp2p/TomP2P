@@ -74,7 +74,7 @@ public class TestRouting {
         neighbors.add(Utils2.createAddress(12));
         neighbors.add(Utils2.createAddress(16));
         already.add(Utils2.createAddress(16));
-        RoutingMechanism routingMechanism = new RoutingMechanism(null, null);
+        RoutingMechanism routingMechanism = new RoutingMechanism(null, null, null);
         // do testing and verification
         // AtomicInteger nrNoNewInformation = new AtomicInteger();
         boolean testb = routingMechanism.evaluateInformation(neighbors, queue, already, 0);

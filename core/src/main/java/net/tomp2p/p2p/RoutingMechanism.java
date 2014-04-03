@@ -1,6 +1,8 @@
 package net.tomp2p.p2p;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Random;
@@ -14,7 +16,9 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.builder.RoutingBuilder;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerFilter;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.utils.Utils;
 
@@ -36,7 +40,8 @@ public class RoutingMechanism {
     
     private final AtomicReferenceArray<FutureResponse> futureResponses;
     private final FutureRouting futureRoutingResponse;
-
+    private final Collection<PeerFilter> peerFilters;
+    
     private NavigableSet<PeerAddress> queueToAsk;
     private SortedSet<PeerAddress> alreadyAsked;
     private SortedMap<PeerAddress, DigestInfo> directHits;
@@ -61,9 +66,10 @@ public class RoutingMechanism {
      *            The reponse future from this routing request
      */
     public RoutingMechanism(final AtomicReferenceArray<FutureResponse> futureResponses,
-            final FutureRouting futureRoutingResponse) {
+            final FutureRouting futureRoutingResponse, final Collection<PeerFilter> peerFilters) {
         this.futureResponses = futureResponses;
         this.futureRoutingResponse = futureRoutingResponse;
+        this.peerFilters = peerFilters;
     }
     
     public FutureRouting futureRoutingResponse() {
@@ -270,9 +276,10 @@ public class RoutingMechanism {
     }
 
     public boolean evaluateSuccess(PeerAddress remotePeer, DigestInfo digestBean,
-            Collection<PeerAddress> newNeighbors, boolean last) {
+            Collection<PeerAddress> newNeighbors, boolean last, Number160 locationkey) {
         boolean finished;
         synchronized (this) {
+        	filterPeers(newNeighbors, alreadyAsked, queueToAsk, locationkey);
             if (evaluateDirectHits(remotePeer, directHits, digestBean, getMaxDirectHits())) {
                 // stop immediately
                 LOG.debug("we have enough direct hits {}", directHits);
@@ -297,7 +304,25 @@ public class RoutingMechanism {
         return finished;
     }
 
-    /**
+	private void filterPeers(Collection<PeerAddress> newNeighbors, SortedSet<PeerAddress> alreadyAsked,
+	        NavigableSet<PeerAddress> queueToAsk, Number160 locationkey) {
+		if (peerFilters == null || peerFilters.size() == 0) {
+			return;
+		}
+		Collection<PeerAddress> all = new ArrayList<PeerAddress>();
+		all.addAll(alreadyAsked);
+		all.addAll(queueToAsk);
+		for (Iterator<PeerAddress> iterator = newNeighbors.iterator(); iterator.hasNext();) {
+			PeerAddress newNeighbor = iterator.next();
+			for (PeerFilter peerFilter : peerFilters) {
+				if (peerFilter.reject(newNeighbor, all, locationkey)) {
+					iterator.remove();
+				}
+			}
+		}
+	}
+
+	/**
      * For get requests we can finish earlier if we found the data we were looking for. This checks if we reached the
      * end of our search.
      * 

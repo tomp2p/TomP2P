@@ -410,6 +410,7 @@ public class DistributedTracker {
         RoutingBuilder routingBuilder = builder.createBuilder(builder.getRoutingConfiguration());
         routingBuilder.setLocationKey(builder.getLocationKey());
         routingBuilder.setDomainKey(builder.getDomainKey());
+        routingBuilder.peerFilters(builder.peerFilters());
         return routing.route(routingBuilder, type, channelCreator);
     }
 

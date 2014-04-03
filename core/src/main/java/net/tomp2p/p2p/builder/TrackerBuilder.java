@@ -17,6 +17,8 @@
 package net.tomp2p.p2p.builder;
 
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Set;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -26,6 +28,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerFilter;
 
 public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends DefaultConnectionConfiguration
         implements SignatureBuilder<K>, Builder {
@@ -51,6 +54,9 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     private K self;
 
     private KeyPair keyPair = null;
+    
+    private Collection<PeerFilter> peerFilters;
+
 
     public TrackerBuilder(Peer peer, Number160 locationKey) {
         this.peer = peer;
@@ -184,5 +190,18 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
      */
     public KeyPair keyPair() {
         return keyPair;
+    }
+
+	public K addPeerFilter(PeerFilter peerFilter) {
+    	if(peerFilters == null) {
+    		//most likely we have 1-2 filters
+    		peerFilters = new ArrayList<PeerFilter>(2);
+    	}
+    	peerFilters.add(peerFilter);
+    	return self;
+    }
+    
+    public Collection<PeerFilter> peerFilters() {
+    	return peerFilters;
     }
 }

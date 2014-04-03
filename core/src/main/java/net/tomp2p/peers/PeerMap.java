@@ -61,7 +61,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     // stores listeners that will be notified if a peer gets removed or added
     private final List<PeerMapChangeListener> peerMapChangeListeners = new ArrayList<PeerMapChangeListener>();
 
-    private final PeerFilter peerFilter;
+    private final Collection<PeerFilter> peerFilters;
 
     // the number of failures until a peer is considered offline
     private final int offlineCount;
@@ -87,7 +87,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         this.bagSizeVerified = peerMapConfiguration.bagSizeVerified();
         this.bagSizeOverflow = peerMapConfiguration.bagSizeOverflow();
         this.offlineCount = peerMapConfiguration.offlineCount();
-        this.peerFilter = peerMapConfiguration.peerFilter();
+        this.peerFilters = peerMapConfiguration.peerFilters();
         this.peerMapVerified = initFixedMap(bagSizeVerified, false);
         this.peerMapOverflow = initFixedMap(bagSizeOverflow, true);
         // bagSizeVerified * Number160.BITS should be enough
@@ -229,6 +229,19 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         return self;
     }
     
+    private boolean reject (PeerAddress peerAddress) {
+    	if(peerFilters == null || peerFilters.size() ==0) {
+    		return false;
+    	}
+    	final Collection<PeerAddress> all = getAll();
+    	for(PeerFilter peerFilter:peerFilters) {
+    		if(peerFilter.reject(peerAddress, all, self)) {
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
 
     /**
      * Adds a neighbor to the neighbor list. If the bag is full, the id zero or the same as our id, the neighbor is not
@@ -251,7 +264,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
         if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId())
-                || offlineMap.containsKey(remotePeer.getPeerId()) || peerFilter.reject(remotePeer) 
+                || offlineMap.containsKey(remotePeer.getPeerId()) || reject(remotePeer)
                 || shutdownMap.containsKey(remotePeer.getPeerId()) || exceptionMap.containsKey(remotePeer.getPeerId())) {
             return false;
         }

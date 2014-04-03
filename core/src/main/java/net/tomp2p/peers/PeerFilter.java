@@ -16,6 +16,8 @@
 
 package net.tomp2p.peers;
 
+import java.util.Collection;
+
 /**
  * A filter that can prevent peers from being stored in the map.
  * 
@@ -31,6 +33,6 @@ public interface PeerFilter {
      *            The peer address that is going to be added to the map
      * @return True if the peer address should not be added, false otherwise
      */
-    boolean reject(PeerAddress peerAddress);
+	boolean reject(PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target);
 
 }

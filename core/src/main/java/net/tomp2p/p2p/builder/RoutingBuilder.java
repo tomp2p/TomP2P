@@ -1,5 +1,6 @@
 package net.tomp2p.p2p.builder;
 
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -8,6 +9,7 @@ import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.RoutingMechanism;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerFilter;
 import net.tomp2p.rpc.NeighborRPC.SearchValues;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
@@ -22,6 +24,8 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     
     private Number640 from;
     private Number640 to;
+    
+    private Collection<PeerFilter> peerFilters;
 
     private int maxDirectHits;
     private int maxNoNewInfo;
@@ -85,8 +89,6 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         this.parallel = parallel;
     }
 
-    
-
     public boolean isBootstrap() {
         return isBootstrap;
     }
@@ -109,6 +111,15 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     
     public void setDomainKey(Number160 domainKey) {
         this.domainKey = domainKey;
+    }
+    
+    public RoutingBuilder peerFilters(Collection<PeerFilter> peerFilters) {
+    	this.peerFilters = peerFilters;
+    	return this;
+    }
+    
+    public Collection<PeerFilter> peerFilters() {
+    	return peerFilters;
     }
 
     /**
@@ -164,7 +175,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     public RoutingMechanism createRoutingMechanism(FutureRouting futureRouting) {
         final FutureResponse[] futureResponses = new FutureResponse[getParallel()];
         RoutingMechanism routingMechanism = new RoutingMechanism(
-                new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting);
+                new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting, peerFilters);
         routingMechanism.setMaxDirectHits(getMaxDirectHits());
         routingMechanism.setMaxFailures(getMaxFailures());
         routingMechanism.setMaxNoNewInfo(getMaxNoNewInfo());

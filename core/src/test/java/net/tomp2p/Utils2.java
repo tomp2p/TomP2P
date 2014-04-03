@@ -340,4 +340,8 @@ public class Utils2 {
         br.close();
     }
 
+	public static PeerAddress createAddressIP(String inet) throws UnknownHostException {
+	    return createAddress(Number160.createHash(inet), inet, 8005, 8006, false, false);
+    }
+
 }

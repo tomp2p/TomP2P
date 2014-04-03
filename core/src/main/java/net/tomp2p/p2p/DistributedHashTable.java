@@ -709,6 +709,7 @@ public class DistributedHashTable {
                 builder.getRoutingConfiguration());
         routingBuilder.setLocationKey(builder.getLocationKey());
         routingBuilder.setDomainKey(builder.getDomainKey());
+        routingBuilder.peerFilters(builder.peerFilters());
         return routingBuilder;
     }
     

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
 
 public class Statistics {
@@ -29,21 +30,21 @@ public class Statistics {
 	private double estimatedNumberOfPeers = 1;
 
 	private double avgGap = MAX / 2;
+	
+	final private PeerMap peerMap;
 
-	private final List<Map<Number160, PeerStatatistic>> peerMap;
-	private final int bagSize;
-
-	public Statistics(List<Map<Number160, PeerStatatistic>> peerMap, int bagSize) {
+	public Statistics(final PeerMap peerMap) {
 		this.peerMap = peerMap;
-		this.bagSize = bagSize;
 	}
-
+	
 	public double getEstimatedNumberOfNodes() {
+		final int bagSize = peerMap.bagSizeVerified();
+		final List<Map<Number160, PeerStatatistic>> map = peerMap.peerMapVerified();
 		// assume we are full
 		double gap = 0D;
 		int gapCount = 0;
 		for (int i = 0; i < Number160.BITS; i++) {
-			Map<Number160, PeerStatatistic> peers = peerMap.get(i);
+			Map<Number160, PeerStatatistic> peers = map.get(i);
 			final int numPeers = peers.size();
 
 			if (numPeers > 0 && numPeers < bagSize) {

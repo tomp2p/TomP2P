@@ -42,10 +42,10 @@ public class TestStatistics {
 			PeerMapConfiguration conf = new PeerMapConfiguration(ID);
 			conf.bagSizeVerified(20).bagSizeOverflow(20);
 			conf.offlineCount(1000).offlineTimeout(60);
-			conf.peerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
+			conf.addPeerFilter(new DefaultPeerFilter()).maintenance(new DefaultMaintenance(0, new int[] {}));
 			PeerMap peerMap = new PeerMap(conf);
 
-			Statistics statistics = new Statistics(peerMap.peerMapVerified(), peerMap.bagSizeVerified());
+			Statistics statistics = new Statistics(peerMap);
 			for (int i = 0; i < nr; i++) {
 				PeerAddress pa = Utils2.createAddress(new Number160(rnd));
 				peerMap.peerFound(pa, null);

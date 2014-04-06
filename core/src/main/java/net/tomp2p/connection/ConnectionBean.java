@@ -40,7 +40,6 @@ public class ConnectionBean {
     private final ChannelServer channelServer;
     private final Reservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
-    private final NATUtils natUtils;
     private final ScheduledExecutorService timer;
 
     /**
@@ -66,14 +65,13 @@ public class ConnectionBean {
      */
     public ConnectionBean(final int p2pId, final Dispatcher dispatcher, final Sender sender,
             final ChannelServer channelServer, final Reservation reservation,
-            final ChannelClientConfiguration resourceConfiguration, final NATUtils natUtils, final ScheduledExecutorService timer) {
+            final ChannelClientConfiguration resourceConfiguration, final ScheduledExecutorService timer) {
         this.p2pId = p2pId;
         this.dispatcher = dispatcher;
         this.sender = sender;
         this.channelServer = channelServer;
         this.reservation = reservation;
         this.resourceConfiguration = resourceConfiguration;
-        this.natUtils = natUtils;
         this.timer = timer;
     }
 
@@ -117,13 +115,6 @@ public class ConnectionBean {
      */
     public ChannelClientConfiguration resourceConfiguration() {
         return resourceConfiguration;
-    }
-
-    /**
-     * @return The NAT helper tools
-     */
-    public NATUtils natUtils() {
-        return natUtils;
     }
 
     /**

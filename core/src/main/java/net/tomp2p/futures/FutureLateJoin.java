@@ -33,6 +33,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl<FutureL
     private final int minSuccess;
 
     private final List<K> futuresDone;
+    private final List<K> futuresSubmitted;
 
     private K lastSuceessFuture;
 
@@ -61,6 +62,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl<FutureL
         this.nrMaxFutures = nrMaxFutures;
         this.minSuccess = minSuccess;
         this.futuresDone = new ArrayList<K>(nrMaxFutures);
+        this.futuresSubmitted = new ArrayList<K>(nrMaxFutures);
         self(this);
     }
 
@@ -78,6 +80,7 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl<FutureL
             if (completed) {
                 return false;
             }
+            futuresSubmitted.add(future);
             future.addListener(new BaseFutureAdapter<K>() {
                 @Override
                 public void operationComplete(final K future) throws Exception {
@@ -137,6 +140,15 @@ public class FutureLateJoin<K extends BaseFuture> extends BaseFutureImpl<FutureL
     public K getLastSuceessFuture() {
         synchronized (lock) {
             return lastSuceessFuture;
+        }
+    }
+    
+    /**
+     * @return the all submitted futures.
+     */
+    public List<K> futuresSubmitted() {
+        synchronized (lock) {
+            return futuresSubmitted;
         }
     }
 }

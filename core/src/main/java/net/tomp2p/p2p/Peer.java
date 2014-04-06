@@ -15,7 +15,6 @@
  */
 package net.tomp2p.p2p;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,14 +25,12 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerCreator;
-import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
@@ -64,8 +61,7 @@ import net.tomp2p.rpc.StorageRPC;
 import net.tomp2p.rpc.TrackerRPC;
 //import net.tomp2p.task.AsyncTask;
 //import net.tomp2p.task.Worker;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
  * This is the main class to start DHT operations. This class makes use of the build pattern and for each DHT operation,
@@ -90,8 +86,6 @@ import org.slf4j.LoggerFactory;
  * @author Thomas Bocek
  */
 public class Peer {
-    // domain used if no domain provided
-    private static final Logger LOG = LoggerFactory.getLogger(Peer.class);
     // As soon as the user calls listen, this connection handler is set
     private final PeerCreator peerCreator;
     // the id of this node
@@ -400,50 +394,6 @@ public class Peer {
             }
         });
         return futureDone;
-    }
-
-    /**
-     * The Dynamic and/or Private Ports are those from 49152 through 65535
-     * (http://www.iana.org/assignments/port-numbers).
-     * 
-     * @param internalHost
-     *            The IP of the internal host
-     * @return The new external ports if port forwarding seemed to be successful, otherwise null
-     */
-    public Ports setupPortForwanding(final String internalHost) {
-        //new random ports
-        Ports ports = new Ports();
-        boolean success;
-
-        try {
-            success = getConnectionBean().natUtils().mapUPNP(internalHost, getPeerAddress().tcpPort(),
-                    getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
-        } catch (IOException e) {
-            success = false;
-        }
-
-        if (!success) {
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("cannot find UPNP devices");
-            }
-            try {
-                success = getConnectionBean().natUtils().mapPMP(getPeerAddress().tcpPort(),
-                        getPeerAddress().udpPort(), ports.externalUDPPort(), ports.externalTCPPort());
-                if (!success) {
-                    if (LOG.isWarnEnabled()) {
-                        LOG.warn("cannot find NAT-PMP devices");
-                    }
-                }
-            } catch (NatPmpException e1) {
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("cannot find NAT-PMP devices ", e1);
-                }
-            }
-        }
-        if(success) {
-            return ports;
-        }
-        return null;
     }
 
     // New API - builder pattern

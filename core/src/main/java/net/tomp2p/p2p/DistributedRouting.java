@@ -27,10 +27,10 @@ import java.util.TreeSet;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
-import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.RoutingBuilder;
@@ -40,6 +40,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.NeighborRPC;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,28 +88,34 @@ public class DistributedRouting {
      *            The channel creator
      * @return a FutureRouting object, is set to complete if the route has been found
      */
-    public FutureWrapper<FutureRouting> bootstrap(final Collection<PeerAddress> peerAddresses,
+    public FutureDone<Pair<FutureRouting,FutureRouting>> bootstrap(final Collection<PeerAddress> peerAddresses,
             final RoutingBuilder routingBuilder, final ChannelCreator cc) {
         // search close peers
         LOG.debug("broadcast to {}", peerAddresses);
+        final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
 
         // first we find close peers to us
         routingBuilder.setBootstrap(true);
 
-        final FutureRouting futureRouting = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
-        final FutureWrapper<FutureRouting> futureWrapper = new FutureWrapper<FutureRouting>();
+        final FutureRouting futureRouting0 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
         // to not become a Fachidiot (expert idiot), we need to know other peers
         // as well. This is important if this peer is passive and only replies on requests from other peers
-        futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
+        futureRouting0.addListener(new BaseFutureAdapter<FutureRouting>() {
             @Override
             public void operationComplete(final FutureRouting future) throws Exception {
                 // setting this to null causes to search for a random number
                 routingBuilder.setLocationKey(null);
-                FutureRouting futureRouting = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
-                futureWrapper.waitFor(futureRouting);
+                final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
+                futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
+					@Override
+                    public void operationComplete(FutureRouting future) throws Exception {
+						final Pair<FutureRouting,FutureRouting> pair = new Pair<FutureRouting, FutureRouting>(futureRouting0, futureRouting1);
+						futureDone.setDone(pair);
+                    }
+				});
             }
         });
-        return futureWrapper;
+        return futureDone;
     }
 
     /**
@@ -157,8 +164,6 @@ public class DistributedRouting {
             throw new IllegalArgumentException("you need to specify some nodes");
         }
         boolean randomSearch = routingBuilder.getLocationKey() == null;
-
-        final FutureRouting futureRouting = new FutureRouting();
         //
         final Comparator<PeerAddress> comparator;
         if (randomSearch) {
@@ -226,6 +231,7 @@ public class DistributedRouting {
         // }
         // peerAddresses is typically only 0 for routing. However, the user may
         // bootstrap with an empty List<PeerAddress>, which will then also be 0.
+        final FutureRouting futureRouting = new FutureRouting();
         if (peerAddresses.size() == 0) {
             futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
                     false);

@@ -1,19 +1,22 @@
-package net.tomp2p.relay;
+package net.tomp2p.nat;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TimerTask;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.relay.DistributedRelay;
+import net.tomp2p.relay.RelayRPC;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The PeerMapUpdateTask is responsible for periodically sending the unreachable
@@ -22,10 +25,12 @@ import net.tomp2p.peers.PeerStatatistic;
  * 
  */
 class PeerMapUpdateTask extends TimerTask {
+	
+	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
 
     private RelayRPC relayRPC;
     private BootstrapBuilder bootstrapBuilder;
-    private Set<PeerAddress> relayAddresses;
+    private DistributedRelay distributedRelay;
 
     /**
      * Create a new peer map update task.
@@ -34,13 +39,13 @@ class PeerMapUpdateTask extends TimerTask {
      *            the RelayRPC of this peer
      * @param bootstrapBuilder
      *            bootstrap builder used to find neighbors of this peer
-     * @param relayAddresses
+     * @param distributedRelay
      *            set of the relay addresses
      */
-    public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, Set<PeerAddress> relayAddresses) {
+    public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay) {
         this.relayRPC = relayRPC;
         this.bootstrapBuilder = bootstrapBuilder;
-        this.relayAddresses = relayAddresses;
+        this.distributedRelay = distributedRelay;
 
     }
 
@@ -51,23 +56,20 @@ class PeerMapUpdateTask extends TimerTask {
             return;
         }
 
-        // bootstrap to get updated peer map and then push it to the relay
-        // peers
+        // bootstrap to get updated peer map and then push it to the relay peers
         FutureBootstrap fb = bootstrapBuilder.start();
         fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
             public void operationComplete(FutureBootstrap future) throws Exception {
                 if (future.isSuccess()) {
                     List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().getPeerBean().peerMap().peerMapVerified();
-                    //TODO: synchronized?
-                    for (final PeerAddress relay : relayAddresses) {
-                        FutureChannelCreator fcc = relayRPC.peer().getConnectionBean().reservation().create(0, 1);
-                        FutureResponse fr = relayRPC.sendPeerMap(relay, peerMapVerified, fcc);
+                    for (final PeerConnection pc : distributedRelay.relayAddresses()) {
+                        final FutureResponse fr = relayRPC.sendPeerMap(pc.remotePeer(), peerMapVerified, pc);
                         fr.addListener(new BaseFutureAdapter<BaseFuture>() {
                             public void operationComplete(BaseFuture future) throws Exception {
                                 if (future.isFailed()) {
-                                    RelayManager.LOG.warn("failed to update peer map on relay peer {}: {}", relay, future.getFailedReason());
+                                    LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(), future.getFailedReason());
                                 } else {
-                                    RelayManager.LOG.trace("Updated peer map on relay {}", relay);
+                                    LOG.trace("Updated peer map on relay {}", pc.remotePeer());
                                 }
                             }
                         });

@@ -56,6 +56,8 @@ public class DiscoverBuilder {
     private int discoverTimeoutSec = 5;
 
     private ConnectionConfiguration configuration;
+    
+    private FutureDiscover futureDiscover;
 
     public DiscoverBuilder(Peer peer) {
         this.peer = peer;
@@ -125,6 +127,15 @@ public class DiscoverBuilder {
         this.discoverTimeoutSec = discoverTimeoutSec;
         return this;
     }
+    
+    public FutureDiscover futureDiscover() {
+        return futureDiscover;
+    }
+
+    public DiscoverBuilder futureDiscover(FutureDiscover futureDiscover) {
+        this.futureDiscover = futureDiscover;
+        return this;
+    }
 
     public FutureDiscover start() {
         if (peer.isShutdown()) {
@@ -140,7 +151,10 @@ public class DiscoverBuilder {
         if (configuration == null) {
             configuration = new DefaultConnectionConfiguration();
         }
-        return discover(peerAddress, configuration);
+        if (futureDiscover == null) {
+        	futureDiscover = new FutureDiscover();
+        }
+        return discover(peerAddress, configuration, futureDiscover);
     }
 
     /**
@@ -152,8 +166,8 @@ public class DiscoverBuilder {
      *            The peer address. Since pings are used the peer ID can be Number160.ZERO
      * @return The future discover. This future holds also the real ID of the peer we send the discover request
      */
-    private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration) {
-        final FutureDiscover futureDiscover = new FutureDiscover();
+    private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
+    		final FutureDiscover futureDiscover) {
         FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 2);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -226,24 +240,16 @@ public class DiscoverBuilder {
                                 // now we know our internal IP, where we receive
                                 // packets
                                 final Ports ports = peer.getConnectionBean().channelServer().ports();
-                                final Ports externalPorts;
                                 if (ports.isSetExternalPortsManually()) {
                                     serverAddress = serverAddress.changePorts(ports.externalTCPPort(),
                                             ports.externalUDPPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
                                     peer.getPeerBean().serverPeerAddress(serverAddress);
-                                } else if ((externalPorts = peer.setupPortForwanding(futureResponseTCP.getResponse()
-                                        .getRecipient().getInetAddress().getHostAddress()))!=null) {
-                                    serverAddress = serverAddress.changePorts(externalPorts.externalTCPPort(),
-                                            externalPorts.externalUDPPort());
-                                    serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-                                    peer.getPeerBean().serverPeerAddress(serverAddress);
-                                }
-                                else {
+                                } else {
                                     // we need to find a relay, because there is a NAT in the way.
                                     futureDiscover
-                                            .setFailedRelayPossible("UPNP, NATPMP could not be setup and the user did not provide any "
-                                                    + "port forwarded ports for " + peerAddress);
+                                            .setExternalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay " + peerAddress, futureResponseTCP.getResponse()
+                                                    .getRecipient().getInetAddress(), seenAs.getInetAddress());
                                     return;
                                 }
                             }

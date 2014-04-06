@@ -12,7 +12,6 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
@@ -36,13 +35,6 @@ public class RelayRPC extends DispatchHandler {
     private final ConnectionConfiguration config;
     private final Peer peer;
 
-    private RelayRPC(Peer peer) {
-        super(peer.getPeerBean(), peer.getConnectionBean());
-        register(RPC.Commands.RELAY.getNr());
-        this.peer = peer;
-        config = new DefaultConnectionConfiguration();
-    }
-
     /**
      * Register the RelayRPC. After the setup, the peer is ready to act as a
      * relay if asked by an unreachable peer.
@@ -51,8 +43,11 @@ public class RelayRPC extends DispatchHandler {
      *            The peer to register the RelayRPC
      * @return
      */
-    public static RelayRPC setup(Peer peer) {
-        return new RelayRPC(peer);
+    public RelayRPC(Peer peer) {
+        super(peer.getPeerBean(), peer.getConnectionBean());
+        register(RPC.Commands.RELAY.getNr());
+        this.peer = peer;
+        config = new DefaultConnectionConfiguration();
     }
 
     /**
@@ -67,7 +62,7 @@ public class RelayRPC extends DispatchHandler {
      * @param fcc
      * @return
      */
-    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, FutureChannelCreator fcc) {
+    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, PeerConnection pc) {
         final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
         message.setKeepAlive(true);
         // TODO: neighbor size limit is 256, we might have more here
@@ -75,17 +70,8 @@ public class RelayRPC extends DispatchHandler {
 
         final FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
-
-        fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            public void operationComplete(FutureChannelCreator future) throws Exception {
-                if (future.isSuccess()) {
-                    requestHandler.sendTCP(future.getChannelCreator());
-                } else {
-                    futureResponse.setFailed(future);
-                }
-            }
-        });
-        return futureResponse;
+        
+        return requestHandler.sendTCP(pc);
     }
 
     /**

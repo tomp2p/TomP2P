@@ -9,13 +9,17 @@ import java.util.Set;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FuturePut;
+import net.tomp2p.nat.PeerNAT;
+import net.tomp2p.nat.RelayConf;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -30,45 +34,50 @@ import org.junit.Test;
 
 public class TestRelay {
 
-    @Test
-    public void testSetupRelayPeers() throws Exception {
-        final Random rnd = new Random(42);
-        final int nrOfNodes = 200;
-        Peer master = null;
-        Peer unreachablePeer = null;
-        try {
-            // setup test peers
-            Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
-            master = peers[0];
-            Utils2.perfectRouting(peers);
-            for(Peer peer:peers) {
-            	RelayRPC.setup(peer);
-            }
+	@Test
+	public void testSetupRelayPeers() throws Exception {
+		final Random rnd = new Random(42);
+		final int nrOfNodes = 200;
+		Peer master = null;
+		Peer unreachablePeer = null;
+		try {
+			// setup test peers
+			Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			for (Peer peer : peers) {
+				new PeerNAT(peer);
+			}
 
-            // Test setting up relay peers
-            unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(5000).makeAndListen();
-            
-            RelayFuture rf = new RelayBuilder(unreachablePeer).bootstrapAddress(master.getPeerAddress()).start();
-            rf.awaitUninterruptibly();
-            RelayManager manager = rf.relayManager();
-            Assert.assertTrue(rf.isSuccess());
-            
-            //Check if flags are set correctly
-            Assert.assertTrue(unreachablePeer.getPeerAddress().isRelayed());
-            Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledTCP());
-            Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledUDP());
-            
-            Assert.assertEquals(manager, rf.relayManager());
-            Assert.assertTrue(manager.getRelayAddresses().size() == PeerAddress.MAX_RELAYS);
-            Assert.assertEquals(manager.getRelayAddresses().size(), unreachablePeer.getPeerAddress().getPeerSocketAddresses().size());
+			// Test setting up relay peers
+			unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(5000).makeAndListen();
+			PeerAddress pa = unreachablePeer.getPeerBean().serverPeerAddress();
+			pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+			unreachablePeer.getPeerBean().serverPeerAddress(pa);
+			// find neighbors
+			FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+			futureBootstrap.awaitUninterruptibly();
+			Assert.assertTrue(futureBootstrap.isSuccess());
+			//setup relay
+			PeerNAT uNat = new PeerNAT(unreachablePeer);
+			RelayConf conf = new RelayConf();
+			FutureRelay fr = uNat.setupRelay(conf);
+			fr.awaitUninterruptibly();
+			Assert.assertTrue(fr.isSuccess());
+			Assert.assertEquals(2, fr.relays().size());
 
-        } finally {
-            if (master != null) {
-                unreachablePeer.shutdown().await();
-                master.shutdown().await();
-            }
-        }
-    }
+			// Check if flags are set correctly
+			Assert.assertTrue(unreachablePeer.getPeerAddress().isRelayed());
+			Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledTCP());
+			Assert.assertFalse(unreachablePeer.getPeerAddress().isFirewalledUDP());
+
+		} finally {
+			if (master != null) {
+				unreachablePeer.shutdown().await();
+				master.shutdown().await();
+			}
+		}
+	}
     
     @Test
     public void testBoostrap() throws Exception {
@@ -82,14 +91,29 @@ public class TestRelay {
             master = peers[0];
             Utils2.perfectRouting(peers);
             for(Peer peer:peers) {
-            	RelayRPC.setup(peer);
+            	new PeerNAT(peer);
             }
 
             // Test setting up relay peers
-            unreachablePeer = new PeerMaker(Number160.ONE).ports(5000).makeAndListen();
-            RelayFuture rf = new RelayBuilder(unreachablePeer).bootstrapAddress(master.getPeerAddress()).start();
-            rf.awaitUninterruptibly();
-            boolean otherPeersHaveRelay = false;
+         	unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(5000).makeAndListen();
+         	PeerAddress upa = unreachablePeer.getPeerBean().serverPeerAddress();
+         	upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+         	unreachablePeer.getPeerBean().serverPeerAddress(upa);
+         	// find neighbors
+         	FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+         	//setup relay
+			PeerNAT uNat = new PeerNAT(unreachablePeer);
+			RelayConf conf = new RelayConf();
+			FutureRelay fr = uNat.setupRelay(conf);
+			fr.awaitUninterruptibly();
+			// find neighbors again
+         	futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+            
+         	boolean otherPeersHaveRelay = false;
             
             
             for(Peer peer:peers) {
@@ -138,39 +162,56 @@ public class TestRelay {
         final Random rnd = new Random(42);
         final int nrOfNodes = 100;
         Peer master = null;
-        Peer slave = null;
+        Peer unreachablePeer = null;
         try {
             // setup test peers
             Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
             Utils2.perfectRouting(peers);
             for(Peer peer:peers) {
-            	RelayRPC.setup(peer);
+            	new PeerNAT(peer);
             }
 
-            slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
-            RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
-
-            Assert.assertTrue(rf.isSuccess());
-
-            System.out.print("Send direct message to unreachable peer");
+            // Test setting up relay peers
+         	unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
+         	PeerAddress upa = unreachablePeer.getPeerBean().serverPeerAddress();
+         	upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+         	unreachablePeer.getPeerBean().serverPeerAddress(upa);
+         	// find neighbors
+         	FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+         	//setup relay
+			PeerNAT uNat = new PeerNAT(unreachablePeer);
+			RelayConf conf = new RelayConf();
+			FutureRelay fr = uNat.setupRelay(conf);
+			fr.awaitUninterruptibly();
+			// find neighbors again
+         	futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+            
+            
+         	System.out.print("Send direct message to unreachable peer");
             final String request = "Hello ";
             final String response = "World!";
             
-            slave.setObjectDataReply(new ObjectDataReply() {
+            unreachablePeer.setObjectDataReply(new ObjectDataReply() {
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     Assert.assertEquals(request.toString(), request);
                     return response;
                 }
             });
             
-            FutureDirect fd = peers[42].sendDirect(slave.getPeerAddress()).setObject(request).start().awaitUninterruptibly0();
+            FutureDirect fd = peers[42].sendDirect(unreachablePeer.getPeerAddress()).setObject(request).start().awaitUninterruptibly0();
             Assert.assertEquals(response, fd.object());
+            //make sure we did not receive it from the unreachable peer with port 13337
+            Assert.assertEquals(fd.getWrappedFuture().getResponse().getSender().tcpPort(), 4001);
             
 
         } finally {
-            if (slave != null) {
-                slave.shutdown().await();
+            if (unreachablePeer != null) {
+            	unreachablePeer.shutdown().await();
             }
             if (master != null) {
                 master.shutdown().await();
@@ -183,23 +224,39 @@ public class TestRelay {
         final Random rnd = new Random(42);
         final int nrOfNodes = 8; //test only works if total nr of nodes is < 8
         Peer master = null;
-        Peer slave = null;
+        Peer unreachablePeer = null;
         try {
             // setup test peers
             Peer[] peers = Utils2.createNodes(nrOfNodes, rnd, 4001);
             master = peers[0];
             Utils2.perfectRouting(peers);
             for(Peer peer:peers) {
-            	RelayRPC.setup(peer);
+            	new PeerNAT(peer);
             }
 
-            // Set up unreachable peer
-            slave = new PeerMaker(Number160.createHash("urp")).ports(13337).makeAndListen();
-            RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
-            rf.awaitUninterruptibly();
-            Assert.assertTrue(rf.isSuccess());
-            
-            PeerAddress relayPeer = rf.relayManager().getRelayAddresses().iterator().next();
+            // Test setting up relay peers
+         	unreachablePeer = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
+         	PeerAddress upa = unreachablePeer.getPeerBean().serverPeerAddress();
+         	upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+         	unreachablePeer.getPeerBean().serverPeerAddress(upa);
+         	// find neighbors
+         	FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+         	//setup relay
+			PeerNAT uNat = new PeerNAT(unreachablePeer);
+			RelayConf conf = new RelayConf();
+			FutureRelay fr = uNat.setupRelay(conf);
+			fr.awaitUninterruptibly();
+			// find neighbors again
+         	futureBootstrap = unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+         	futureBootstrap.awaitUninterruptibly();
+         	Assert.assertTrue(futureBootstrap.isSuccess());
+         	//
+         	conf.bootstrapBuilder(unreachablePeer.bootstrap().setPeerAddress(peers[0].getPeerAddress()));
+         	Shutdown shutdown = uNat.relayMaintenance(fr, conf);
+         	
+            PeerAddress relayPeer = fr.distributedRelay().relayAddresses().iterator().next().remotePeer();
             Peer found = null;
             for(Peer p:peers) {
             	if(p.getPeerAddress().equals(relayPeer)) {
@@ -230,10 +287,11 @@ public class TestRelay {
             Thread.sleep(15000);
 
             Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(found).size());
+            shutdown.shutdown();
 
         } finally {
-            if (slave != null) {
-                slave.shutdown().await();
+            if (unreachablePeer != null) {
+            	unreachablePeer.shutdown().await();
             }
             if (master != null) {
                 master.shutdown().await();
@@ -258,7 +316,7 @@ public class TestRelay {
 
             // Set up relays
             slave = new PeerMaker(Number160.createHash(rnd.nextInt())).ports(13337).makeAndListen();
-            RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start();
+            FutureRelay rf = new RelayConf(slave).bootstrapAddress(master.getPeerAddress()).start();
             rf.awaitUninterruptibly();
             Assert.assertTrue(rf.isSuccess());
             RelayManager manager = rf.relayManager();
@@ -387,7 +445,7 @@ public class TestRelay {
              PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
             
              slave = new PeerMaker(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
-             RelayFuture rf = new RelayBuilder(slave).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
+             FutureRelay rf = new RelayConf(slave).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
              Assert.assertTrue(rf.isSuccess());
              RelayManager manager = rf.relayManager();
              System.err.println("relays: "+manager.getRelayAddresses());
@@ -426,7 +484,7 @@ public class TestRelay {
              PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
             
              slave = new PeerMaker(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
-             RelayFuture rf = new RelayBuilder(slave).minRelays(5).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
+             FutureRelay rf = new RelayConf(slave).minRelays(5).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
              Assert.assertFalse(rf.isSuccess());
              
          } finally {
@@ -438,9 +496,12 @@ public class TestRelay {
 
     private Collection<PeerAddress> getNeighbors(Peer peer) {
     	Map<Number160, DispatchHandler> handlers = peer.getConnectionBean().dispatcher().searchHandler(5);
-    	handlers.remove(peer.getPeerID());
-    	DispatchHandler dh = handlers.values().iterator().next();
-    	return ((RelayForwarderRPC)dh).getAll(); 
+    	for(Map.Entry<Number160, DispatchHandler> entry:handlers.entrySet()) {
+    		if(entry.getValue() instanceof RelayForwarderRPC) {
+    			return ((RelayForwarderRPC)entry.getValue()).getAll();  
+    		}
+    	}
+    	return null;
     }
     
 }

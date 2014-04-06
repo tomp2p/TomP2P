@@ -15,6 +15,7 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.message.Message.Type;
@@ -22,6 +23,7 @@ import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -666,12 +668,13 @@ public class TestRouting {
                 routingBuilder.setMaxSuccess(100);
                 routingBuilder.setParallel(1);
 
-                FutureWrapper<FutureRouting> fm = peers[i].getDistributedRouting().bootstrap(
+                FutureDone<Pair<FutureRouting,FutureRouting>> fm = peers[i].getDistributedRouting().bootstrap(
                         peerAddresses, routingBuilder, cc);
                 fm.awaitUninterruptibly();
                 // do verification
                 Assert.assertEquals(true, fm.isSuccess());
-                Assert.assertEquals(true, fm.getWrappedFuture().isSuccess());
+                Assert.assertEquals(true, fm.getObject().element0().isSuccess());
+                Assert.assertEquals(true, fm.getObject().element1().isSuccess());
             }
         } finally {
             if (cc != null) {

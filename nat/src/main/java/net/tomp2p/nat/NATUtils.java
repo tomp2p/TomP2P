@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.connection;
+package net.tomp2p.nat;
 
 import java.io.IOException;
 import java.net.InetAddress;

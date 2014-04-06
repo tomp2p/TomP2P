@@ -24,16 +24,17 @@ import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrappedBootstrap;
-import net.tomp2p.futures.FutureWrapper;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -230,7 +231,7 @@ public class BootstrapBuilder {
     }
 
     private FutureBootstrap bootstrap() {
-        final FutureWrappedBootstrap<FutureWrapper<FutureRouting>> result = new FutureWrappedBootstrap<FutureWrapper<FutureRouting>>();
+        final FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>> result = new FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>>();
         result.setBootstrapTo(bootstrapTo);
         int conn = Math.max(routingConfiguration.getParallel(), requestP2PConfiguration.getParallel());
         FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(conn, 0);
@@ -241,7 +242,7 @@ public class BootstrapBuilder {
                 if (futureChannelCreator.isSuccess()) {
                     RoutingBuilder routingBuilder = createBuilder(requestP2PConfiguration,
                             routingConfiguration);
-                    FutureWrapper<FutureRouting> futureBootstrap = peer.getDistributedRouting().bootstrap(
+                    FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.getDistributedRouting().bootstrap(
                             bootstrapTo, routingBuilder, futureChannelCreator.getChannelCreator());
                     Utils.addReleaseListener(futureChannelCreator.getChannelCreator(), futureBootstrap);
                     result.waitFor(futureBootstrap);

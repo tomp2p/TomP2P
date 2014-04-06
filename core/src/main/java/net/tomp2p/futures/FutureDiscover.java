@@ -16,6 +16,7 @@
 package net.tomp2p.futures;
 
 
+import java.net.InetAddress;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -39,8 +40,12 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     private boolean discoveredTCP = false;
 
     private boolean discoveredUDP = false;
-
-    private boolean setupRelay = false;
+    
+    private boolean isNat = false;
+    
+    private InetAddress internalAddress;
+    
+    private InetAddress externalAddress;
 
     /**
      * Constructor.
@@ -152,45 +157,47 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     }
 
     /**
-     * Indicates if a relay could be established. It makes no sense to make a relay, if the peer e.g. is not connected
-     * to the Internet.
-     * 
-     * @return True if the user could try to establish a relay connection
-     */
-    public boolean isSetupRealy() {
-        synchronized (lock) {
-            return setupRelay;
-        }
-    }
-
-    /**
      * In case of no peer can contact us, we fire an failed.
      */
     private final class DiscoverTimeoutTask implements Runnable {
         private final long start = Timings.currentTimeMillis();
         @Override
         public void run() {
-            setFailedRelayPossible("Timeout in Discover: " + (Timings.currentTimeMillis() - start) + "ms");
+        	setFailed("Timeout in Discover: " + (Timings.currentTimeMillis() - start) + "ms");
         }
     }
 
-    /**
-     * Set failed but with a flag that indicates if it makes sense to try to setup a relay. See {@link #isSetupRelay()}
-     * 
-     * @param failed
-     *            The reason for failure
-     * @return this class
-     */
-    public FutureDiscover setFailedRelayPossible(final String failed) {
-        synchronized (lock) {
+	public FutureDiscover setExternalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {
+		synchronized (lock) {
             if (!setCompletedAndNotify()) {
                 return this;
             }
             this.reason = failed;
             this.type = FutureType.FAILED;
-            this.setupRelay = true;
+            this.internalAddress = internalAddress;
+            this.externalAddress = externalAddress;
+            this.isNat = true;
         }
         notifyListeners();
         return this;
+	    
     }
+	
+	public InetAddress internalAddress() {
+        synchronized (lock) {
+            return internalAddress;
+        }
+    }
+	
+	public InetAddress externalAddress() {
+        synchronized (lock) {
+            return externalAddress;
+        }
+    }
+	
+	public boolean isNat() {
+		synchronized (lock) {
+			return isNat;
+		}
+	}
 }

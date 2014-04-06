@@ -110,10 +110,9 @@ public class PeerCreator {
 		
 		//connection bean
 		Sender sender = new Sender(peerId, peerStatusListeners, channelClientConfiguration, dispatcher);
-		NATUtils natUtils = new NATUtils();
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
-		        channelClientConfiguration, natUtils, timer);
+		        channelClientConfiguration, timer);
 		this.master = true;
 	}
 
@@ -180,7 +179,6 @@ public class PeerCreator {
 			}
 		});
 		// this is blocking
-		connectionBean.natUtils().shutdown();
 		return shutdownFuture();
 	}
 	

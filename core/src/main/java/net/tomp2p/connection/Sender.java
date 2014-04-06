@@ -289,7 +289,7 @@ public class Sender {
 		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers,
 		        futureResponse);
 
-		if (peerConnection != null) {
+		if (peerConnection != null && channelFuture!=null) {
 			peerConnection.channelFuture(channelFuture);
 			heartBeat.peerConnection(peerConnection);
 		}

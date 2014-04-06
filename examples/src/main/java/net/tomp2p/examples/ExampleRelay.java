@@ -7,11 +7,11 @@ import java.util.Random;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
+import net.tomp2p.nat.RelayConf;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.relay.RelayBuilder;
-import net.tomp2p.relay.RelayFuture;
+import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.storage.Data;
 
@@ -28,7 +28,7 @@ public class ExampleRelay {
          * 3. get: <bootstrap address> <key>
          */
 
-        if (args.length == 0) {
+        /*if (args.length == 0) {
             //bootstrap node
             Bindings b = new Bindings();
             Peer peer = new PeerMaker(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).makeAndListen();
@@ -49,7 +49,7 @@ public class ExampleRelay {
             InetAddress address = Inet4Address.getByName(args[0]);
 
             //RelayManager manager = new RelayManager(peer, new PeerAddress(bootstrapId, InetSocketAddress.createUnresolved(args[0], PORT)));
-            RelayFuture rf = new RelayBuilder(peer).bootstrapInetAddress(address).ports(PORT).start();
+            FutureRelay rf = new RelayConf(peer).bootstrapInetAddress(address).ports(PORT).start();
             rf.awaitUninterruptibly();
 
             if (rf.isSuccess()) {
@@ -71,7 +71,7 @@ public class ExampleRelay {
             System.err.println("hash:" + Number160.createHash(args[1]));
             
             InetAddress address = Inet4Address.getByName(args[0]);
-            RelayFuture rf = new RelayBuilder(peer).bootstrapInetAddress(address).ports(PORT).start();
+            FutureRelay rf = new RelayConf(peer).bootstrapInetAddress(address).ports(PORT).start();
             rf.awaitUninterruptibly();
 
             if (rf.isSuccess()) {
@@ -85,7 +85,7 @@ public class ExampleRelay {
             } else {
                 System.err.println(fg.getFailedReason());
             }
-        }
+        }*/
     }
 
 }

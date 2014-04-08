@@ -5,35 +5,23 @@ import java.io.IOException;
 import net.tomp2p.message.Buffer;
 
 
-public class FutureDirect extends FutureWrapper<FutureResponse> {
+public class FutureDirect extends FutureWrapper2<FutureDirect, FutureResponse> {
     
     private final FutureResponse futureResponse;
+    
+    public FutureDirect(String failed) {
+    	super(new FutureResponse(null));
+    	self(this);
+    	this.futureResponse = wrappedFuture();
+    	futureResponse.setFailed(failed);
+    	setFailed(failed);
+    }
+    
     public FutureDirect(FutureResponse futureResponse) {
+    	super(futureResponse);
+    	self(this);
         this.futureResponse = futureResponse;
-        if(futureResponse!=null) {
-            waitFor(futureResponse);
-        }
-    }
-    
-    /**
-	 * Set failed that returns this class not not null.
-	 * 
-	 * @param failed
-	 *            The failure string
-	 * @return this class (never null)
-	 */
-    public FutureDirect setFailed0(String failed) {
-        setFailed(failed);
-        return this;
-    }
-    
-    /**
-     * Used for testing only.
-     * @return this class (never null)
-     */
-    public FutureDirect awaitUninterruptibly0() {
-        futureResponse.awaitUninterruptibly();
-        return this;
+        waitFor();
     }
     
     public Buffer getBuffer() {

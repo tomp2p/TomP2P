@@ -50,12 +50,12 @@ public class TestRelay {
             }
         });
         
-        FutureDirect futureResponse = master.sendDirect(pcMaster).setObject("test").start().awaitUninterruptibly0();
+        FutureDirect futureResponse = master.sendDirect(pcMaster).setObject("test").start().awaitUninterruptibly();
         Assert.assertEquals("yoo!", futureResponse.object());
         
         FuturePeerConnection pcSlave = myDirectDataRPC.peerConnection();
         
-        futureResponse = slave.sendDirect(pcSlave).setObject("hello").start().awaitUninterruptibly0();
+        futureResponse = slave.sendDirect(pcSlave).setObject("hello").start().awaitUninterruptibly();
         System.err.println(futureResponse.getFailedReason());
         Assert.assertEquals("world!", futureResponse.object());
         

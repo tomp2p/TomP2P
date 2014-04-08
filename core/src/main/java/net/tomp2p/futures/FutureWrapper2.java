@@ -25,9 +25,18 @@ package net.tomp2p.futures;
  * @author Thomas Bocek
  * @param <K>
  */
-public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
+public class FutureWrapper2<K extends BaseFuture, J extends BaseFuture> extends BaseFutureImpl<K> {
     
-    private K wrappedFuture;  
+    final private J wrappedFuture;
+    
+    public FutureWrapper2(J wrappedFuture) {
+    	this.wrappedFuture = wrappedFuture;
+    }
+    
+    public FutureWrapper2(K baseFuture, J wrappedFuture) {
+    	this.wrappedFuture = wrappedFuture;
+    	self(baseFuture);
+    }
 
     /**
      * Wait for the future, which will cause this future to complete if the
@@ -36,12 +45,11 @@ public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
      * @param future
      *            The future to wrap
      */
-    public void waitFor(final K future) {
-        self(future);
-        synchronized (lock) {
-        	wrappedFuture = future;
-        }
-        future.addListener(new BaseFutureAdapter<K>() {
+    public void waitFor() {
+    	if(wrappedFuture == null) {
+    		return;
+    	}
+    	wrappedFuture.addListener(new BaseFutureAdapter<K>() {
             @Override
             public void operationComplete(final K future) throws Exception {
                 synchronized (lock) {
@@ -50,7 +58,6 @@ public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
                     }
                     type = future.getType();
                     reason = future.toString();
-                    
                 }
                 notifyListeners();
             }
@@ -60,9 +67,7 @@ public class FutureWrapper<K extends BaseFuture> extends BaseFutureImpl<K> {
     /**
      * @return The wrapped (original) future.
      */
-    public K getWrappedFuture() {
-        synchronized (lock) {
-            return wrappedFuture;
-        }
+    public J wrappedFuture() {
+        return wrappedFuture;
     }
 }

@@ -141,7 +141,6 @@ public class Sender {
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = null;
-			//TODO: say what we will do here
 			if (message.getRecipient().isRelayed()) {
 				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 				        peerConnection, timeoutHandler);

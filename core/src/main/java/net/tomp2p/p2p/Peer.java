@@ -112,7 +112,7 @@ public class Peer {
     // private TaskRPC taskRPC;
     private BroadcastRPC broadcastRPC;
 
-    private boolean shutdown = false;
+    private volatile boolean shutdown = false;
     
     private List<AutomaticFuture> automaticFutures = null;
     private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>());

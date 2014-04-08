@@ -7,12 +7,11 @@ import java.util.Random;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureGet;
 import net.tomp2p.futures.FuturePut;
-import net.tomp2p.nat.RelayConf;
+import net.tomp2p.nat.FutureRelayNAT;
+import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.relay.FutureRelay;
-import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.storage.Data;
 
 public class ExampleRelay {
@@ -28,12 +27,12 @@ public class ExampleRelay {
          * 3. get: <bootstrap address> <key>
          */
 
-        /*if (args.length == 0) {
+        if (args.length == 0) {
             //bootstrap node
             Bindings b = new Bindings();
             Peer peer = new PeerMaker(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).makeAndListen();
             System.err.println("bootstrap peer id: " + peer.getPeerAddress().getPeerId());
-            RelayRPC.setup(peer);
+            new PeerNAT(peer);
             System.err.println("bootstrap peer is running");
             while(true) {
                 Thread.sleep(10000);
@@ -44,15 +43,15 @@ public class ExampleRelay {
             int port = (rnd.nextInt() % 10000) + 10000;
             Peer peer = new PeerMaker(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).makeAndListen();
             System.err.println("put peer id: " + peer.getPeerAddress().getPeerId());
-            RelayRPC.setup(peer);
+            PeerNAT pnat = new PeerNAT(peer);
 
             InetAddress address = Inet4Address.getByName(args[0]);
 
-            //RelayManager manager = new RelayManager(peer, new PeerAddress(bootstrapId, InetSocketAddress.createUnresolved(args[0], PORT)));
-            FutureRelay rf = new RelayConf(peer).bootstrapInetAddress(address).ports(PORT).start();
-            rf.awaitUninterruptibly();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().setInetAddress(address).setPorts(PORT)).startRelay();
+            		
+            fbn.awaitUninterruptibly();
 
-            if (rf.isSuccess()) {
+            if (fbn.isSuccess()) {
                 System.err.println("Successfuly set up relays");
                 Thread.sleep(1000);
             }
@@ -69,12 +68,13 @@ public class ExampleRelay {
             Peer peer = new PeerMaker(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).makeAndListen();
             System.err.println("get peer id: " + peer.getPeerAddress().getPeerId());
             System.err.println("hash:" + Number160.createHash(args[1]));
+            PeerNAT pnat = new PeerNAT(peer);
             
             InetAddress address = Inet4Address.getByName(args[0]);
-            FutureRelay rf = new RelayConf(peer).bootstrapInetAddress(address).ports(PORT).start();
-            rf.awaitUninterruptibly();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().setInetAddress(address).setPorts(PORT)).startRelay();
+            fbn.awaitUninterruptibly();
 
-            if (rf.isSuccess()) {
+            if (fbn.isSuccess()) {
                 System.err.println("Successfuly set up relays");
             }
 
@@ -85,7 +85,7 @@ public class ExampleRelay {
             } else {
                 System.err.println(fg.getFailedReason());
             }
-        }*/
+        }
     }
 
 }

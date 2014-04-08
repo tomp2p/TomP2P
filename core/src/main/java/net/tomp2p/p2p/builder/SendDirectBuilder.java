@@ -36,8 +36,7 @@ import net.tomp2p.utils.Utils;
 
 public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBuilderI,
         SignatureBuilder<SendDirectBuilder> {
-	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect(null)
-	        .setFailed0("Peer is shutting down");
+	private static final FutureDirect FUTURE_REQUEST_SHUTDOWN = new FutureDirect("Peer is shutting down");
 
 	private final Peer peer;
 

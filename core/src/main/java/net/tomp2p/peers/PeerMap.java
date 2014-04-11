@@ -257,19 +257,31 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
         boolean firstHand = referrer == null || !peerVerification;
+        //if we got contacted by this peer, but we did not initiate the connection
+        boolean secondHand = remotePeer.equals(referrer);
+        //if a peer reported about other peers
+        boolean thirdHand = !firstHand && !secondHand;
         // always trust first hand information
         if (firstHand) {
             offlineMap.remove(remotePeer.getPeerId());
+            shutdownMap.remove(remotePeer.getPeerId());
         }
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
-        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId())
-                || offlineMap.containsKey(remotePeer.getPeerId()) || reject(remotePeer)
-                || shutdownMap.containsKey(remotePeer.getPeerId()) || exceptionMap.containsKey(remotePeer.getPeerId())) {
+        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId()) || reject(remotePeer)) {
             return false;
         }
         
         if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
+        	return false;
+        }
+        
+        final boolean probablyDead = offlineMap.containsKey(remotePeer.getPeerId()) || 
+        		shutdownMap.containsKey(remotePeer.getPeerId()) || 
+        		exceptionMap.containsKey(remotePeer.getPeerId());
+        
+        if(thirdHand && probablyDead) {
+        	LOG.debug("don't add {}", remotePeer.getPeerId());
         	return false;
         }
         

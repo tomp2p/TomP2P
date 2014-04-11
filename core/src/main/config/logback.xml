@@ -41,7 +41,7 @@
   <!--  <logger name="net.tomp2p.p2p.Statistics" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.MaintenanceTask" level="TRACE"/> -->
   
-  <!--  <logger name="net.tomp2p.peers.PeerMapKadImpl" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.peers.PeerMap" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.replication.DefaultStorageReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.DefaultTrackerReplication" level="TRACE"/> -->

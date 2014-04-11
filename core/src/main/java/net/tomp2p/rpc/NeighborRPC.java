@@ -28,6 +28,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.KeyCollection;
 import net.tomp2p.message.Message;
@@ -128,8 +129,23 @@ public class NeighborRPC extends DispatchHandler {
     }
     
     private FutureResponse send(final Message message, final ConnectionConfiguration configuration, final ChannelCreator channelCreator) {
-    	
     	FutureResponse futureResponse = new FutureResponse(message);
+    	futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+			@Override
+            public void operationComplete(FutureResponse future) throws Exception {
+	            if(future.isSuccess()) {
+	            	Message response = future.getResponse();
+	            	if(response != null) {
+	            		NeighborSet ns = response.getNeighborsSet(0);
+	            		if(ns!=null) {
+	            			for(PeerAddress neighbors:ns.neighbors()) {
+	            				peerBean().peerMap().peerFound(neighbors, response.getSender());
+	            			}
+	            		}
+	            	}
+	            }
+            }
+		});
         RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
                 peerBean(), connectionBean(), configuration);
 

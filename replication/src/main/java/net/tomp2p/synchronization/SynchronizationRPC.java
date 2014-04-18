@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.synchronization;
 
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
@@ -40,6 +40,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.StorageLayer.PutStatus;
 
@@ -57,8 +58,8 @@ public class SynchronizationRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SynchronizationRPC.class);
 
-    public static final byte INFO_COMMAND = 13;
-    public static final byte SYNC_COMMAND = 14;
+    public static final byte INFO_COMMAND = RPC.Commands.SYNC_INFO.getNr();
+    public static final byte SYNC_COMMAND = RPC.Commands.SYNC.getNr();
 
     /**
      * Constructor that registers this RPC with the message handler.
@@ -140,12 +141,11 @@ public class SynchronizationRPC extends DispatchHandler {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
-        switch (message.getCommand()) {
-        case INFO_COMMAND:
+        if(message.getCommand() == INFO_COMMAND) {
             handleInfo(message, responseMessage, responder);
-        case SYNC_COMMAND:
+        } else if (message.getCommand() == SYNC_COMMAND) {
             handleSync(message, responseMessage, responder);
-        default:
+        } else {
             throw new IllegalArgumentException("Message content is wrong");
         }
     }

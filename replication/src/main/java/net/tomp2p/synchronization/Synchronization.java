@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.synchronization;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;

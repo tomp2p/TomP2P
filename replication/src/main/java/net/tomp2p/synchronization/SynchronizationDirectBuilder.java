@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.synchronization;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -171,7 +171,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                     LOG.error("checkDirect failed {}", future2.getFailedReason());
                     return;
                 }
-                final FutureResponse futureResponse = peerSync.getSynchronizationRPC().infoMessage(other,
+                final FutureResponse futureResponse = peerSync.synchronizationRPC().infoMessage(other,
                         SynchronizationDirectBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
@@ -241,7 +241,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                         SynchronizationDirectBuilder.this.dataMap = new DataMap(retVal);
 
                         if (secondMessageRequired) {
-                            FutureResponse fr = peerSync.getSynchronizationRPC().syncMessage(other,
+                            FutureResponse fr = peerSync.synchronizationRPC().syncMessage(other,
                                     SynchronizationDirectBuilder.this, future2.getChannelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 

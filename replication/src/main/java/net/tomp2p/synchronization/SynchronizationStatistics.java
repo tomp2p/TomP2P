@@ -1,4 +1,4 @@
-package net.tomp2p.replication;
+package net.tomp2p.synchronization;
 
 public class SynchronizationStatistics {
     

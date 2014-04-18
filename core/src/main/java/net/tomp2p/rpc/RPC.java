@@ -19,7 +19,9 @@ public class RPC {
 		PUT_META(13), 
 		DIGEST_BLOOMFILTER(14),
 		RELAY(15),
-		DIGEST_META_VALUES(16);
+		DIGEST_META_VALUES(16),
+		SYNC(17),
+		SYNC_INFO(18);
 
 	private final byte nr; 
 	Commands(int nr) {

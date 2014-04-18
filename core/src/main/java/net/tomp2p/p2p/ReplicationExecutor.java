@@ -138,7 +138,7 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
             synchronizeData(locationKey);
         }
         // recalculate replication factor
-        int replicationFactor = ReplicationExecutor.this.replicationFactor.factor();
+        int replicationFactor = ReplicationExecutor.this.replicationFactor.replicationFactor();
         peer.getPeerBean().replicationStorage().setReplicationFactor(replicationFactor);
     }
 

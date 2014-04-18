@@ -360,16 +360,17 @@ public class PeerMaker {
 		if (replicationFactor == null) {
 			replicationFactor = new ReplicationFactor() {
 				@Override
-				public int factor() {
+				public int replicationFactor() {
 					// Default is 6 as in the builders
 					return 6;
 				}
 
 				@Override
-				public void init(Peer peer) {
-				}
+                public void init(Peer peer) {
+                }
 			};
 		}
+		//here we need the peermap to be ready
 		replicationFactor.init(peer);
 
 		if (replicationSender == null) {

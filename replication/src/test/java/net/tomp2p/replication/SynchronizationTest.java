@@ -22,6 +22,13 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
+import net.tomp2p.synchronization.Checksum;
+import net.tomp2p.synchronization.Instruction;
+import net.tomp2p.synchronization.PeerSync;
+import net.tomp2p.synchronization.SyncSender;
+import net.tomp2p.synchronization.Synchronization;
+import net.tomp2p.synchronization.SynchronizationDirectBuilder;
+import net.tomp2p.synchronization.SynchronizationStatistics;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;

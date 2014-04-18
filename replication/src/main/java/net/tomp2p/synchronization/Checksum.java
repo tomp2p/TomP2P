@@ -14,7 +14,7 @@
  * the License.
  */
 
-package net.tomp2p.replication;
+package net.tomp2p.synchronization;
 
 import java.io.Serializable;
 import java.util.Arrays;

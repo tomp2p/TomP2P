@@ -177,7 +177,7 @@ public class PingBuilder {
                             final InetAddress broadcastAddress = bindings.broadcastAddresses().get(i);
                             final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
                                     port, port);
-                            FutureResponse validBroadcast = peer.getHandshakeRPC().pingBroadcastUDP(
+                            FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
                                     peerAddress, future.getChannelCreator(), connectionConfiguration);
                             if (!futureLateJoin.add(validBroadcast)) {
                                 // the latejoin future is fininshed if the add returns false
@@ -229,7 +229,7 @@ public class PingBuilder {
      * @return The future response
      */
     public FutureResponse ping(PeerAddress peerAddress, final boolean isUDP) {
-        final RequestHandler<FutureResponse> request = peer.getHandshakeRPC().ping(peerAddress, connectionConfiguration);
+        final RequestHandler<FutureResponse> request = peer.pingRPC().ping(peerAddress, connectionConfiguration);
         if (isUDP) {
             FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 0);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -261,7 +261,7 @@ public class PingBuilder {
     }
     
     public FutureResponse pingPeerConnection(final PeerConnection peerConnection) {
-        final RequestHandler<FutureResponse> request = peer.getHandshakeRPC().ping(
+        final RequestHandler<FutureResponse> request = peer.pingRPC().ping(
                 peerConnection.remotePeer(), connectionConfiguration);
         FutureChannelCreator futureChannelCreator = peerConnection.acquire(request.futureResponse());
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {

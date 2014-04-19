@@ -102,7 +102,7 @@ public class Peer {
     // private AsyncTask asyncTask;
 
     // RPC
-    private PingRPC handshakeRCP;
+    private PingRPC pingRCP;
     private StorageRPC storageRPC;
     private NeighborRPC neighborRPC;
     private QuitRPC quitRCP;
@@ -167,15 +167,16 @@ public class Peer {
         return peerCreator;
     }
 
-    public PingRPC getHandshakeRPC() {
-        if (handshakeRCP == null) {
+    public PingRPC pingRPC() {
+        if (pingRCP == null) {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
-        return handshakeRCP;
+        return pingRCP;
     }
 
-    public void setHandshakeRPC(PingRPC handshakeRPC) {
-        this.handshakeRCP = handshakeRPC;
+    public Peer pingRPC(PingRPC handshakeRPC) {
+        this.pingRCP = handshakeRPC;
+        return this;
     }
 
     public StorageRPC getStoreRPC() {

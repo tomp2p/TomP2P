@@ -32,6 +32,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,10 +235,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         PeerAddress recipient = message.getRecipient();
         // Search for handler, 0 is ping
-        if (recipient.getPeerId().isZero() && message.getCommand() == 0) {
-            return searchHandler(peerBean.serverPeerAddress().getPeerId(), 0);
+        if (recipient.getPeerId().isZero() && message.getCommand() == RPC.Commands.PING.getNr()) {
+            return searchHandler(peerBean.serverPeerAddress().getPeerId(), RPC.Commands.PING.getNr());
         } else {
-            return searchHandler(recipient.getPeerId(), Integer.valueOf(message.getCommand()));
+            return searchHandler(recipient.getPeerId(), message.getCommand());
         }
     }
 
@@ -250,7 +251,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            The type of the message to be filtered
      * @return the handler for the given message or null if none has been found
      */
-    public DispatchHandler searchHandler(final Number160 recipientID, final Integer command) {
+    public DispatchHandler searchHandler(final Number160 recipientID, final int cmd) {
+    	final Integer command = Integer.valueOf(cmd);
         Map<Integer, DispatchHandler> types = ioHandlers.get(recipientID);
         
         if (types != null && types.containsKey(command)) {

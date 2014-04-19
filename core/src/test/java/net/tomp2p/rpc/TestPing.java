@@ -39,7 +39,7 @@ public class TestPing {
             fcc.awaitUninterruptibly();
             cc = fcc.getChannelCreator();
 
-            FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+            FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
@@ -69,10 +69,10 @@ public class TestPing {
             fcc.awaitUninterruptibly();
             cc = fcc.getChannelCreator();
 
-            FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+            FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
-            FutureResponse fr2 = recv1.getHandshakeRPC().pingTCP(sender.getPeerAddress(), cc,
+            FutureResponse fr2 = recv1.pingRPC().pingTCP(sender.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr2.awaitUninterruptibly();
             Assert.assertEquals(true, fr2.isSuccess());
@@ -106,14 +106,14 @@ public class TestPing {
             cc = fcc.getChannelCreator();
             final ChannelCreator cc1 = cc;
 
-            FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+            FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
 
             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
                 @Override
                 public void operationComplete(final FutureResponse future) throws Exception {
-                    FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc1,
+                    FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc1,
                             new DefaultConnectionConfiguration());
                     try {
                         fr2.await();
@@ -309,7 +309,7 @@ public class TestPing {
             fcc.awaitUninterruptibly();
             cc = fcc.getChannelCreator();
             for (int i = 0; i < 50; i++) {
-                FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+                FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                         new DefaultConnectionConfiguration());
                 list.add(fr);
             }
@@ -342,7 +342,7 @@ public class TestPing {
                 FutureChannelCreator fcc = p[0].getConnectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.getChannelCreator();
-                FutureResponse fr = p[0].getHandshakeRPC().pingTCP(p[i].getPeerAddress(), cc,
+                FutureResponse fr = p[0].pingRPC().pingTCP(p[i].getPeerAddress(), cc,
                         new DefaultConnectionConfiguration());
                 Utils.addReleaseListener(cc, fr);
                 list.add(fr);
@@ -377,7 +377,7 @@ public class TestPing {
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.getChannelCreator();
                 for (int j = 0; j < 50; j++) {
-                    FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+                    FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
@@ -403,7 +403,7 @@ public class TestPing {
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.getChannelCreator();
                 for (int j = 0; j < 50; j++) {
-                    FutureResponse fr = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc,
+                    FutureResponse fr = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc,
                             new DefaultConnectionConfiguration());
                     list.add(fr);
                 }
@@ -445,13 +445,13 @@ public class TestPing {
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             ChannelCreator cc = fcc.getChannelCreator();
-            FutureResponse fr = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+            FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             Utils.addReleaseListener(cc, fr);
             fr.awaitUninterruptibly();
             fr.awaitListeners();
             Assert.assertEquals(true, fr.isSuccess());
-            FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc,
+            FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr2.awaitUninterruptibly();
             fr2.awaitListeners();

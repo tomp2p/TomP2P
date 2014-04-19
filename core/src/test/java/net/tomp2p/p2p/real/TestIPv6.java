@@ -65,7 +65,7 @@ public class TestIPv6 {
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.getChannelCreator();
                 
-                FutureResponse fr1 = peer.getHandshakeRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
+                FutureResponse fr1 = peer.pingRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
                 fr1.awaitUninterruptibly();
 
                 if (fr1.isSuccess()) {
@@ -73,7 +73,7 @@ public class TestIPv6 {
                 } else {
                     System.out.println("offline " + pa);
                 }
-                FutureResponse fr2 = peer.getHandshakeRPC().pingUDP(pa, cc, new DefaultConnectionConfiguration());
+                FutureResponse fr2 = peer.pingRPC().pingUDP(pa, cc, new DefaultConnectionConfiguration());
                 fr2.awaitUninterruptibly();
                 cc.shutdown().awaitUninterruptibly();
                 if (fr2.isSuccess()) {

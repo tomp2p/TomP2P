@@ -86,7 +86,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 	public static RelayForwarderRPC find(Peer peer, Number160 peerId) {
 		//we can search for any command, except RELAY, which is not handled here
 		return (RelayForwarderRPC) peer.getConnectionBean().dispatcher().searchHandler(
-				peerId, Integer.valueOf(RPC.Commands.NEIGHBOR.getNr()));
+				peerId, RPC.Commands.NEIGHBOR.getNr());
     }
 
 	@Override

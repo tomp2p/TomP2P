@@ -18,23 +18,18 @@ package net.tomp2p.p2p;
 import net.tomp2p.peers.PeerAddress;
 
 /**
- * Use this interface to notify if a peer is reachable from the outside.
+ * Use this interface to notify if a peer received a broadcast ping.
  * 
  * @author Thomas Bocek
  * 
  */
-public interface PeerReachable {
-
+public interface PeerReceivedBroadcastPing {
 	/**
-	 * Call this method when other peers can reach our peer from outside.
+	 * Call this method when we receive a broadcast ping. If multiple peers are
+	 * on the same network, only one reply will be accepted. Thus, all peers
+	 * that receive such a broadcast ping will call this method.
 	 * 
-	 * @param peerAddress
-	 *            How we can be reached from outside
-	 * @param reporter
-	 *            The reporter that told us we are reachable
-	 * @param tcp
-	 *            True if we are reachable over TCP, false if we are reachable
-	 *            over UDP
+	 * @param sender The sender that sent the broadcast ping
 	 */
-	void peerWellConnected(PeerAddress peerAddress, PeerAddress reporter, boolean tcp);
+	void broadcastPingReceived(PeerAddress sender);
 }

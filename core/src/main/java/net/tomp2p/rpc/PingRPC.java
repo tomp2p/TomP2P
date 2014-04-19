@@ -18,7 +18,6 @@ package net.tomp2p.rpc;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -34,6 +33,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.PeerReachable;
+import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Timings;
@@ -54,7 +54,8 @@ public class PingRPC extends DispatchHandler {
 
     public static final int WAIT_TIME = 10 * 1000;
 
-    private final List<PeerReachable> listeners = new CopyOnWriteArrayList<PeerReachable>();
+    private final List<PeerReachable> reachableListeners = new ArrayList<PeerReachable>(1);
+    private final List<PeerReceivedBroadcastPing> receivedBroadcastPingListeners = new ArrayList<PeerReceivedBroadcastPing>(1);
 
     // used for testing and debugging
     private final boolean enable;
@@ -79,8 +80,6 @@ public class PingRPC extends DispatchHandler {
      *            The peer bean
      * @param connectionBean
      *            The connection bean
-     * @param listeners
-     *            The listeners to notify when this peer address (IP) is changed
      * @param enable
      *            Used for test cases, set to true in production
      * @param register
@@ -137,7 +136,7 @@ public class PingRPC extends DispatchHandler {
      */
     public FutureResponse pingBroadcastUDP(final PeerAddress remotePeer, final ChannelCreator channelCreator,
             final ConnectionConfiguration configuration) {
-        return ping(remotePeer, configuration).sendBroadcastUDP(channelCreator);
+    	return createHandler(remotePeer, Type.REQUEST_4, configuration).sendBroadcastUDP(channelCreator);
     }
 
     /**
@@ -293,7 +292,8 @@ public class PingRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1
-                || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3) && message
+                || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3 
+                || message.getType() == Type.REQUEST_4) && message
                 .getCommand() == RPC.Commands.PING.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -341,7 +341,7 @@ public class PingRPC extends DispatchHandler {
             LOG.debug("reply to discover, found {}", message.getSender());
             responseMessage = createResponseMessage(message, Type.OK);
             responseMessage.setNeighborsSet(createNeighborSet(message.getSender()));
-        } else if (message.getType() == Type.REQUEST_1) { // regular ping
+        } else if (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_4) { // regular ping
             LOG.debug("reply to regular ping {}", message.getSender());
             // test if this is a broadcast message to ourselves. If it is, do not
             // reply.
@@ -363,6 +363,13 @@ public class PingRPC extends DispatchHandler {
                     Timings.sleepUninterruptibly(WAIT_TIME);
                 }
             }
+            if (message.getType() == Type.REQUEST_4) {
+            	synchronized (receivedBroadcastPingListeners) {
+                    for (PeerReceivedBroadcastPing listener : receivedBroadcastPingListeners) {
+                        listener.broadcastPingReceived(message.getSender());
+                    }
+                }
+            }
         } else { // fire and forget - if (message.getType() == Type.REQUEST_FF_1)
             // we received a fire and forget ping. This means we are reachable
             // from outside
@@ -371,8 +378,8 @@ public class PingRPC extends DispatchHandler {
             if (message.isUdp()) {
                 PeerAddress newServerAddress = serverAddress.changeFirewalledUDP(false);
                 peerBean().serverPeerAddress(newServerAddress);
-                synchronized (listeners) {
-                    for (PeerReachable listener : listeners) {
+                synchronized (reachableListeners) {
+                    for (PeerReachable listener : reachableListeners) {
                         listener.peerWellConnected(newServerAddress, message.getSender(), false);
                     }
                 }
@@ -380,8 +387,8 @@ public class PingRPC extends DispatchHandler {
             } else {
                 PeerAddress newServerAddress = serverAddress.changeFirewalledTCP(false);
                 peerBean().serverPeerAddress(newServerAddress);
-                synchronized (listeners) {
-                    for (PeerReachable listener : listeners) {
+                synchronized (reachableListeners) {
+                    for (PeerReachable listener : reachableListeners) {
                         listener.peerWellConnected(newServerAddress, message.getSender(), true);
                     }
                 }
@@ -392,10 +399,18 @@ public class PingRPC extends DispatchHandler {
     }
 
     public void addPeerReachableListener(PeerReachable peerReachable) {
-        listeners.add(peerReachable);
+    	reachableListeners.add(peerReachable);
     }
     
     public void removePeerReachableListener(PeerReachable peerReachable) {
-        listeners.remove(peerReachable);
+    	reachableListeners.remove(peerReachable);
+    }
+    
+    public void addPeerReceivedBroadcastPingListener(PeerReceivedBroadcastPing peerReceivedBroadcastPing) {
+    	receivedBroadcastPingListeners.add(peerReceivedBroadcastPing);
+    }
+    
+    public void removePeerReceivedBroadcastPingListener(PeerReceivedBroadcastPing peerReceivedBroadcastPing) {
+    	receivedBroadcastPingListeners.remove(peerReceivedBroadcastPing);
     }
 }

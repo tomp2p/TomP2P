@@ -435,7 +435,7 @@ public class PeerMaker {
 		// RPC communication
 		if (isEnableHandShakeRPC()) {
 			PingRPC handshakeRCP = new PingRPC(peerBean, connectionBean);
-			peer.setHandshakeRPC(handshakeRCP);
+			peer.pingRPC(handshakeRCP);
 		}
 
 		if (isEnableStorageRPC()) {

@@ -45,7 +45,7 @@ public class ExampleDiscover {
 
 				ChannelCreator cc = fcc.getChannelCreator();
 
-				FutureResponse fr1 = master.getHandshakeRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
+				FutureResponse fr1 = master.pingRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
 				fr1.awaitUninterruptibly();
 
 				if (fr1.isSuccess()) {
@@ -54,7 +54,7 @@ public class ExampleDiscover {
 					System.out.println("offline " + pa);
 				}
 
-				FutureResponse fr2 = master.getHandshakeRPC().pingUDP(pa, cc, new DefaultConnectionConfiguration());
+				FutureResponse fr2 = master.pingRPC().pingUDP(pa, cc, new DefaultConnectionConfiguration());
 				fr2.awaitUninterruptibly();
 
 				cc.shutdown();

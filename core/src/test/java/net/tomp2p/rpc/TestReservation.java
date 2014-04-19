@@ -31,9 +31,9 @@ public class TestReservation {
             cc = fcc.getChannelCreator();
 
             for (int i = 0; i < 1000; i++) {
-                FutureResponse fr1 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
-                FutureResponse fr2 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
-                FutureResponse fr3 = sender.getHandshakeRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr1 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr2 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr3 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
                 fr1.awaitUninterruptibly();
                 fr2.awaitUninterruptibly();
                 fr3.awaitUninterruptibly();
@@ -76,9 +76,9 @@ public class TestReservation {
             cc = fcc.getChannelCreator();
 
             for (int i = 0; i < 1000; i++) {
-                FutureResponse fr1 = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
-                FutureResponse fr2 = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
-                FutureResponse fr3 = sender.getHandshakeRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr1 = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr2 = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
+                FutureResponse fr3 = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
                 fr1.awaitUninterruptibly();
                 fr2.awaitUninterruptibly();
                 fr3.awaitUninterruptibly();

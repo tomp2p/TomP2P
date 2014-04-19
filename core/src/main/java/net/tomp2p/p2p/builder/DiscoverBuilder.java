@@ -192,7 +192,7 @@ public class DiscoverBuilder {
     private void discover(final FutureDiscover futureDiscover, final PeerAddress peerAddress,
             final ChannelCreator cc, final ConnectionConfiguration configuration) {
 
-        peer.getHandshakeRPC().addPeerReachableListener(new PeerReachable() {
+        peer.pingRPC().addPeerReachableListener(new PeerReachable() {
             private boolean changedUDP = false;
 
             private boolean changedTCP = false;
@@ -212,7 +212,7 @@ public class DiscoverBuilder {
             }
         });
 
-        final FutureResponse futureResponseTCP = peer.getHandshakeRPC().pingTCPDiscover(peerAddress, cc,
+        final FutureResponse futureResponseTCP = peer.pingRPC().pingTCPDiscover(peerAddress, cc,
                 configuration);
 
         futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -256,9 +256,9 @@ public class DiscoverBuilder {
                         }
                         // else -> we announce exactly how the other peer sees
                         // us
-                        FutureResponse fr1 = peer.getHandshakeRPC().pingTCPProbe(peerAddress, cc,
+                        FutureResponse fr1 = peer.pingRPC().pingTCPProbe(peerAddress, cc,
                                 configuration);
-                        FutureResponse fr2 = peer.getHandshakeRPC().pingUDPProbe(peerAddress, cc,
+                        FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
                         Utils.addReleaseListener(cc, fr1, fr2);
                         // from here we probe, set the timeout here

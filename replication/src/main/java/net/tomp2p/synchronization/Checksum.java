@@ -29,22 +29,19 @@ import java.util.Arrays;
 public class Checksum implements Serializable {
 
     private static final long serialVersionUID = -5313140351556914101L;
-    private int weakChecksum;
-    private byte[] strongChecksum;
-
-    public void setWeakChecksum(int weakChecksum) {
-        this.weakChecksum = weakChecksum;
+    private final int weakChecksum;
+    private final byte[] strongChecksum;
+    
+    public Checksum(int weakChecksum, byte[] strongChecksum) {
+    	this.weakChecksum = weakChecksum;
+    	this.strongChecksum = strongChecksum;
     }
 
-    public void setStrongChecksum(byte[] strongChecksum) {
-        this.strongChecksum = strongChecksum;
-    }
-
-    public int getWeakChecksum() {
+    public int weakChecksum() {
         return weakChecksum;
     }
 
-    public byte[] getStrongChecksum() {
+    public byte[] strongChecksum() {
         return strongChecksum;
     }
     
@@ -67,7 +64,8 @@ public class Checksum implements Serializable {
     
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("wcs:"+weakChecksum+",str:"+Arrays.toString(strongChecksum));
+        StringBuilder sb = new StringBuilder("wcs:");
+        sb.append(weakChecksum).append(",str:").append(Arrays.toString(strongChecksum));
         return sb.toString();
     }
 }

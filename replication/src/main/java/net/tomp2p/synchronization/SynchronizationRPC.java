@@ -42,6 +42,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.slf4j.Logger;
@@ -60,6 +61,8 @@ public class SynchronizationRPC extends DispatchHandler {
 
     public static final byte INFO_COMMAND = RPC.Commands.SYNC_INFO.getNr();
     public static final byte SYNC_COMMAND = RPC.Commands.SYNC.getNr();
+    
+    final int blockSize;
 
     /**
      * Constructor that registers this RPC with the message handler.
@@ -69,9 +72,10 @@ public class SynchronizationRPC extends DispatchHandler {
      * @param connectionBean
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
-    public SynchronizationRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
+    public SynchronizationRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final int blockSize) {
         super(peerBean, connectionBean);
         register(INFO_COMMAND, SYNC_COMMAND);
+        this.blockSize = blockSize;
     }
 
     /**
@@ -180,8 +184,10 @@ public class SynchronizationRPC extends DispatchHandler {
                     LOG.debug("no sync required");
                 } else {
                     // get the checksums
-                    ArrayList<Checksum> checksums = Synchronization.getChecksums(data.toBytes(),
-                            Synchronization.SIZE);
+                	// TODO: don't copy data, toBytes does a copy!
+                    List<Checksum> checksums = Synchronization.checksums(data.toBytes(), blockSize);
+                    
+                    DataBuffer 
                     
                     byte[] encoded = Synchronization.encodeChecksumList(checksums);
                     retVal.put(entry.getKey(), new Data(encoded));
@@ -234,7 +240,7 @@ public class SynchronizationRPC extends DispatchHandler {
                         continue;
                     }
                     byte[] reconstructedValue = Synchronization.getReconstructedValue(data.toBytes(),
-                            instructions, Synchronization.SIZE);
+                            instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {

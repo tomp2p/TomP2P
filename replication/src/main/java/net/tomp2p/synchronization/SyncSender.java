@@ -14,16 +14,18 @@ import net.tomp2p.storage.Data;
 
 public class SyncSender implements ReplicationSender, PeerInit {
 
-    private final PeerSync peerSync;
+	private final int blockSize;
+	
+	private PeerSync peerSync;
     private Peer peer;
-
-    public SyncSender(PeerSync peerSync) {
-        this.peerSync = peerSync;
+    
+    public SyncSender(final int blockSize) {
+    	this.blockSize = blockSize;
     }
 
     @Override
     public void init(Peer peer) {
-        peerSync.init(peer);
+        this.peerSync = new PeerSync(peer, blockSize);
         this.peer = peer;
     }
 
@@ -32,5 +34,9 @@ public class SyncSender implements ReplicationSender, PeerInit {
         FutureDone<SynchronizationStatistics> future = peerSync.synchronize(other)
                 .dataMap(new DataMap(dataMap)).start();
         peer.notifyAutomaticFutures(future);
+    }
+    
+    public PeerSync peerSync() {
+    	return peerSync;
     }
 }

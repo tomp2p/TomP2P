@@ -64,6 +64,8 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     private final PeerAddress other;
     
     private final PeerSync peerSync;
+    
+    private final int blockSize;
 
     /**
      * Constructor.
@@ -71,11 +73,12 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
      * @param peer
      *            The responsible peer that performs synchronization
      */
-    public SynchronizationDirectBuilder(final PeerSync peerSync, final PeerAddress other) {
+    public SynchronizationDirectBuilder(final PeerSync peerSync, final PeerAddress other, final int blockSize) {
         super(peerSync.peer(), Number160.ZERO);
         self(this);
         this.other = other;
         this.peerSync = peerSync;
+        this.blockSize = blockSize;
     }
 
     public SynchronizationDirectBuilder dataMap(DataMap dataMap) {
@@ -218,12 +221,12 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                                 ArrayList<Checksum> checksums = Synchronization.decodeChecksumList(data);
                                 Data data2 = peer.getPeerBean().storage().get(entry.getKey());
                                 ArrayList<Instruction> instructions = Synchronization.getInstructions(
-                                        data2.toBytes(), checksums, Synchronization.SIZE);
+                                        data2.toBytes(), checksums, blockSize);
                                 for (Instruction instruction : instructions) {
-                                    if (instruction.getReference() != -1) {
-                                        dataNotCopied += Synchronization.SIZE;
+                                    if (instruction.reference() != -1) {
+                                        dataNotCopied += blockSize;
                                     } else {
-                                        dataCopy += instruction.literalSize();
+                                        dataCopy += instruction.length();
                                     }
                                 }
                                 byte[] endoced = Synchronization.encodeInstructionList(instructions,

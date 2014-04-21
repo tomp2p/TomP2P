@@ -17,7 +17,8 @@
 package net.tomp2p.synchronization;
 
 import java.io.Serializable;
-import java.util.Arrays;
+
+import net.tomp2p.storage.DataBuffer;
 
 /**
  * Class that holds the instructions what to do with the differences.
@@ -29,35 +30,34 @@ import java.util.Arrays;
 public class Instruction implements Serializable {
 
     private static final long serialVersionUID = 112641683009283845L;
-    private int reference = -1;
-    private byte[] literal = null;
-
-    public void setReference(int reference) {
+    private final int reference;
+    private final DataBuffer literal;
+    
+    public Instruction(int reference) {
         this.reference = reference;
+        this.literal = null;
     }
 
-    public void setLiteral(byte[] literal) {
+    public Instruction (DataBuffer literal) {
+    	this.reference = -1;
         this.literal = literal;
     }
 
-    public int getReference() {
+    public int reference() {
         return reference;
     }
 
-    public byte[] getLiteral() {
+    public DataBuffer literal() {
         return literal;
     }
     
-    public int literalSize() {
-        if(literal == null)
-            return 0;
-        else
-            return literal.length;
+    public int length() {
+        return literal == null ? 0: literal.length();
     }
     
     @Override
     public int hashCode() {
-        return reference ^ (literal == null ? 0 : Arrays.hashCode(literal));
+        return reference ^ (literal == null ? 0 : literal.hashCode());
     }
 
     @Override
@@ -72,7 +72,7 @@ public class Instruction implements Serializable {
         if (reference >= 0) {
             return reference == i.reference;
         }
-        return Arrays.equals(literal, i.literal);
+        return literal.equals(i.literal);
     }
 
     @Override
@@ -81,9 +81,7 @@ public class Instruction implements Serializable {
         sb.append(reference);
         if (literal != null) {
             sb.append(",l:");
-            for (int i = 0; i < literal.length; i++) {
-                sb.append(literal[i]).append(",");
-            }
+            sb.append(literal.toByteBuf()).append(",");
         }
         return sb.toString();
     }

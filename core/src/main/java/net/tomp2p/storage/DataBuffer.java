@@ -14,7 +14,11 @@ public class DataBuffer {
 	private int alreadyTransferred = 0;
 
 	public DataBuffer() {
-		buffers = new ArrayList<ByteBuf>(1);
+		this(1);
+	}
+	
+	public DataBuffer(int nrArrays) {
+		buffers = new ArrayList<ByteBuf>(nrArrays);
 	}
 	
 	public DataBuffer(final byte[] buffer) {
@@ -23,7 +27,7 @@ public class DataBuffer {
 
 	public DataBuffer(final byte[] buffer, final int offset, final int length) {
 		buffers = new ArrayList<ByteBuf>(1);
-		final ByteBuf buf = Unpooled.wrappedBuffer(buffer);
+		final ByteBuf buf = Unpooled.wrappedBuffer(buffer, offset, length);
 		buffers.add(buf);
 		// no need to retain, as we initialized here and ref counter is set to 1
 	}
@@ -47,13 +51,21 @@ public class DataBuffer {
 			buf.retain();
 		}
 	}
+	
+	public DataBuffer add(DataBuffer dataBuffer) {
+		synchronized (buffers) {
+			buffers.addAll(dataBuffer.buffers);
+		}
+		return this;
+    }
 
 	// from here, work with shallow copies
 	public DataBuffer shallowCopy() {
+		final DataBuffer db;
 		synchronized (buffers) {
-			DataBuffer db = new DataBuffer(buffers);
-			return db;
+			db = new DataBuffer(buffers);
 		}
+		return db;
 	}
 
 	/**
@@ -73,10 +85,22 @@ public class DataBuffer {
 		}
 		return nioBuffers;
 	}
+	
+	/**
+	 * @return The length of the data that is backed by the data buffer
+	 */
+	public int length() {
+		int length = 0;
+		final DataBuffer copy = shallowCopy();
+		for (final ByteBuf buffer : copy.buffers) {
+			length += buffer.writerIndex();
+		}
+		return length;
+	}
 
 	/**
 	 * @return The wrapped ByteBuf backed by the buffers stored in here. The buffer is
-	 *         not copied here.
+	 *         not deep copied here.
 	 */
 	public ByteBuf toByteBuf() {
 		final DataBuffer copy = shallowCopy();
@@ -85,7 +109,7 @@ public class DataBuffer {
 	
 	/**
 	 * @return The ByteBuf arrays backed by the buffers stored in here. The buffer is
-	 *         not copied here.
+	 *         not deep copied here.
 	 */
 	public ByteBuf[] toByteBufs() {
 		final DataBuffer copy = shallowCopy();
@@ -94,7 +118,7 @@ public class DataBuffer {
 
 	/**
 	 * @return The ByteBuffers backed by the buffers stored in here. The buffer
-	 *         is not copied here.
+	 *         is not deep copied here.
 	 */
 	public ByteBuffer[] toByteBuffer() {
 		return toByteBuf().nioBuffers();
@@ -179,5 +203,22 @@ public class DataBuffer {
 		for (ByteBuf buf : copy.buffers) {
 			buf.release();
 		}
+	}
+
+	public byte[] bytes() {
+		final ByteBuffer[] bufs = toByteBuffer();
+		final int bufLength = bufs.length;
+		int size = 0;
+		for (int i = 0; i < bufLength; i++) {
+			size += bufs[i].remaining();
+		}
+
+		byte[] retVal = new byte[size];
+		for (int i = 0, offset = 0; i < bufLength; i++) {
+			final int remaining = bufs[i].remaining();
+			bufs[i].get(retVal, offset, remaining);
+			offset += remaining;
+		}
+		return retVal;
 	}
 }

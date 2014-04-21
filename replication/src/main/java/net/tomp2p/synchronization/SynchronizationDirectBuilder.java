@@ -66,6 +66,8 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     private final PeerSync peerSync;
     
     private final int blockSize;
+    
+    private boolean syncFromOldVersion = false;
 
     /**
      * Constructor.
@@ -101,6 +103,20 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
 
     public SynchronizationDirectBuilder keys(Set<Number640> keys) {
         this.keys = keys;
+        return this;
+    }
+    
+    public SynchronizationDirectBuilder syncFromOldVersion() {
+    	syncFromOldVersion = true;
+        return this;
+    }
+    
+    public boolean isSyncFromOldVersion() {
+        return syncFromOldVersion;
+    }
+
+    public SynchronizationDirectBuilder syncFromOldVersion(boolean syncFromOldVersion) {
+        this.syncFromOldVersion = syncFromOldVersion;
         return this;
     }
 

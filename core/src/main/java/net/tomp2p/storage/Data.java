@@ -81,6 +81,10 @@ public class Data {
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
 	private boolean meta;
+	
+	public Data(final DataBuffer buffer) {
+		this(buffer, buffer.length());
+	}
 
 	/**
 	 * Create a data object that does have the complete data.

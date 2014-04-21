@@ -45,6 +45,10 @@ public class Checksum implements Serializable {
         return strongChecksum;
     }
     
+    public int length() {
+    	return 4 + strongChecksum.length; 
+    }
+    
     @Override
     public int hashCode() {
         return weakChecksum ^ (strongChecksum == null ? 0 : Arrays.hashCode(strongChecksum));

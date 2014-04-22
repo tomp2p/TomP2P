@@ -59,9 +59,9 @@ import org.slf4j.LoggerFactory;
  * @author Maxat Pernebayev
  * 
  */
-public class SynchronizationRPC extends DispatchHandler {
+public class SyncRPC extends DispatchHandler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SynchronizationRPC.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncRPC.class);
 
     public static final byte INFO_COMMAND = RPC.Commands.SYNC_INFO.getNr();
     public static final byte SYNC_COMMAND = RPC.Commands.SYNC.getNr();
@@ -76,7 +76,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @param connectionBean
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
      */
-    public SynchronizationRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final int blockSize) {
+    public SyncRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final int blockSize) {
         super(peerBean, connectionBean);
         register(INFO_COMMAND, SYNC_COMMAND);
         this.blockSize = blockSize;
@@ -95,7 +95,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @return The future response to keep track of future events
      */
 	public FutureResponse infoMessage(final PeerAddress remotePeer,
-	        final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
+	        final SyncBuilder synchronizationBuilder, final ChannelCreator channelCreator) {
 		final Message message = createMessage(remotePeer, INFO_COMMAND,
 		        synchronizationBuilder.isSyncFromOldVersion() ? Type.REQUEST_2 : Type.REQUEST_1);
 
@@ -126,7 +126,7 @@ public class SynchronizationRPC extends DispatchHandler {
      * @throws IOException
      */
     public FutureResponse syncMessage(final PeerAddress remotePeer,
-            final SynchronizationDirectBuilder synchronizationBuilder, final ChannelCreator channelCreator)
+            final SyncBuilder synchronizationBuilder, final ChannelCreator channelCreator)
             throws IOException {
         final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 
@@ -189,15 +189,9 @@ public class SynchronizationRPC extends DispatchHandler {
                 } else {
                     // get the checksums
                 	// TODO: don't copy data, toBytes does a copy!
-                    List<Checksum> checksums = Synchronization.checksums(data.toBytes(), blockSize);
+                    List<Checksum> checksums = Sync.checksums(data.toBytes(), blockSize);
                     AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
-                    abuf.writeBytes(entry.getKey().getVersionKey().toByteArray());
-                    abuf.writeBytes(data.hash().toByteArray());
-                    for(Checksum checksum:checksums) {
-                    	abuf.writeInt(checksum.weakChecksum());
-                    	abuf.writeBytes(checksum.strongChecksum());
-                    }
-                    DataBuffer dataBuffer = new DataBuffer(abuf);
+                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().getVersionKey(), data.hash(), abuf);
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required");
                 }
@@ -207,16 +201,11 @@ public class SynchronizationRPC extends DispatchHandler {
             		Entry<Number640, Data> latest = peerBean().storage().
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
-            		List<Checksum> checksums = Synchronization.checksums(latest.getValue().toBytes(), blockSize);
+            		List<Checksum> checksums = Sync.checksums(latest.getValue().toBytes(), blockSize);
             		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
-            		abuf.writeBytes(latest.getKey().getVersionKey().toByteArray());
-            		abuf.writeBytes(latest.getValue().hash().toByteArray());
-                    for(Checksum checksum:checksums) {
-                    	abuf.writeInt(checksum.weakChecksum());
-                    	abuf.writeBytes(checksum.strongChecksum());
-                    }
-                    DataBuffer dataBuffer = new DataBuffer(abuf);
-                    retVal.put(entry.getKey(), new Data(dataBuffer).setFlag1());
+                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().getVersionKey(), 
+                    		latest.getValue().hash(), abuf);
+                    retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {
             		// not found
@@ -255,9 +244,9 @@ public class SynchronizationRPC extends DispatchHandler {
                 if (entry.getValue().isFlag1()) {
                     // diff
                 	ByteBuf buf = entry.getValue().buffer();
-                	Number160 versionKey = decodeNumber160(buf);
-                	Number160 hash = decodeNumber160(buf);
-                    List<Instruction> instructions = decodeInstructions(buf);
+                	Number160 versionKey = SyncUtils.decodeHeader(buf);
+                	Number160 hash = SyncUtils.decodeHeader(buf);
+                    List<Instruction> instructions = SyncUtils.decodeInstructions(buf);
 
                     Data dataOld = peerBean().storage().get(new Number640(entry.getKey().locationDomainAndContentKey(), versionKey));
 
@@ -265,7 +254,7 @@ public class SynchronizationRPC extends DispatchHandler {
                         continue;
                     }
                     // TODO: don't copy data, toBytes does a copy!
-                    DataBuffer reconstructedValue = Synchronization.reconstruct(dataOld.toBytes(), instructions, blockSize);
+                    DataBuffer reconstructedValue = Sync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {

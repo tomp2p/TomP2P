@@ -18,6 +18,7 @@ package net.tomp2p.synchronization;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Set;
@@ -33,7 +34,9 @@ import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DataBuffer;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -47,11 +50,11 @@ import org.slf4j.LoggerFactory;
  * @author Maxat Pernebayev
  * 
  */
-public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDirectBuilder> {
+public class SyncBuilder extends DHTBuilder<SyncBuilder> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SynchronizationDirectBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SyncBuilder.class);
 
-    private static final FutureDone<SynchronizationStatistics> FUTURE_SHUTDOWN = new FutureDone<SynchronizationStatistics>()
+    private static final FutureDone<SyncStat> FUTURE_SHUTDOWN = new FutureDone<SyncStat>()
             .setFailed("sync builder - peer is shutting down");
 
     private DataMap dataMap;
@@ -75,7 +78,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
      * @param peer
      *            The responsible peer that performs synchronization
      */
-    public SynchronizationDirectBuilder(final PeerSync peerSync, final PeerAddress other, final int blockSize) {
+    public SyncBuilder(final PeerSync peerSync, final PeerAddress other, final int blockSize) {
         super(peerSync.peer(), Number160.ZERO);
         self(this);
         this.other = other;
@@ -83,7 +86,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
         this.blockSize = blockSize;
     }
 
-    public SynchronizationDirectBuilder dataMap(DataMap dataMap) {
+    public SyncBuilder dataMap(DataMap dataMap) {
         this.dataMap = dataMap;
         return this;
     }
@@ -92,7 +95,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
         return key;
     }
 
-    public SynchronizationDirectBuilder key(Number640 key) {
+    public SyncBuilder key(Number640 key) {
         this.key = key;
         return this;
     }
@@ -101,12 +104,12 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
         return keys;
     }
 
-    public SynchronizationDirectBuilder keys(Set<Number640> keys) {
+    public SyncBuilder keys(Set<Number640> keys) {
         this.keys = keys;
         return this;
     }
     
-    public SynchronizationDirectBuilder syncFromOldVersion() {
+    public SyncBuilder syncFromOldVersion() {
     	syncFromOldVersion = true;
         return this;
     }
@@ -115,7 +118,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
         return syncFromOldVersion;
     }
 
-    public SynchronizationDirectBuilder syncFromOldVersion(boolean syncFromOldVersion) {
+    public SyncBuilder syncFromOldVersion(boolean syncFromOldVersion) {
         this.syncFromOldVersion = syncFromOldVersion;
         return this;
     }
@@ -172,15 +175,15 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
     }
 
     @Override
-    public SynchronizationDirectBuilder setDomainKey(final Number160 domainKey) {
+    public SyncBuilder setDomainKey(final Number160 domainKey) {
         throw new IllegalArgumentException("Cannot be set here");
     }
 
-    public FutureDone<SynchronizationStatistics> start() {
+    public FutureDone<SyncStat> start() {
         if (peer.isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
-        final FutureDone<SynchronizationStatistics> futureSync = new FutureDone<SynchronizationStatistics>();
+        final FutureDone<SyncStat> futureSync = new FutureDone<SyncStat>();
         FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 2);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
@@ -191,7 +194,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                     return;
                 }
                 final FutureResponse futureResponse = peerSync.synchronizationRPC().infoMessage(other,
-                        SynchronizationDirectBuilder.this, future2.getChannelCreator());
+                        SyncBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
                     public void operationComplete(FutureResponse future) throws Exception {
@@ -211,59 +214,60 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                         }
 
                         Map<Number640, Data> retVal = new HashMap<Number640, Data>();
-                        boolean secondMessageRequired = false;
+                        boolean syncMessageRequired = false;
                         int dataCopy = 0;
-                        int dataCopyCount = 0;
-                        int diffCount = 0;
-                        int dataNotCopied = 0;
+                        int dataOrig = 0;
+                        //int dataCopyCount = 0;
+                        //int diffCount = 0;
+                        //int dataNotCopied = 0;
                         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
-                            byte[] data = entry.getValue().toBytes();
-                            if (entry.getValue().length() == 1) {
-                                // do nothing or copy everyting
-                                if (data[0] == 0) {
-                                    // do nothing
-                                    retVal.put(entry.getKey(), new Data(new byte[] {}));
-                                } else {
-                                    // put everything
-                                    secondMessageRequired = true;
-                                    Data data2 = peer.getPeerBean().storage().get(entry.getKey());
+                        	
+                        	Data data = entry.getValue();
+                        	if(data.length() == 0) {
+                        		if(data.isFlag1()) {
+                        			//no sync required
+                        			syncMessageRequired = false;
+                        		} else if(data.isFlag2()) {
+                        			//copy required
+                        			syncMessageRequired = true;
+                        			Data data2 = peer.getPeerBean().storage().get(entry.getKey());
+                        			dataOrig += data2.length();
+                        			//copy
                                     retVal.put(entry.getKey(), data2);
                                     dataCopy += data2.length();
-                                    dataCopyCount++;
-                                }
-                            } else {
-                                // put diff
-                                secondMessageRequired = true;
-                                ArrayList<Checksum> checksums = Synchronization.decodeChecksumList(data);
-                                Data data2 = peer.getPeerBean().storage().get(entry.getKey());
-                                ArrayList<Instruction> instructions = Synchronization.getInstructions(
-                                        data2.toBytes(), checksums, blockSize);
-                                for (Instruction instruction : instructions) {
-                                    if (instruction.reference() != -1) {
-                                        dataNotCopied += blockSize;
-                                    } else {
-                                        dataCopy += instruction.length();
-                                    }
-                                }
-                                byte[] endoced = Synchronization.encodeInstructionList(instructions,
-                                        dataMapHash.get(entry.getKey()));
-                                Data data1 = new Data(endoced).setFlag1();
-                                retVal.put(entry.getKey(), data1);
-                                diffCount++;
-                            }
+                                    
+                        		}
+                        	} else {
+                        		syncMessageRequired = true;
+                        		Data data2 = peer.getPeerBean().storage().get(entry.getKey());
+                        		dataOrig += data2.length();
+                        		Number160 versionKey = SyncUtils.decodeHeader(data.buffer());
+                        		Number160 hash = SyncUtils.decodeHeader(data.buffer());
+                        		
+                        		if(!data2.hash().equals(hash)) {
+                        			//modified in the meantime, do not sync!
+                        			continue;
+                        		}
+                        		List<Checksum> checksums = SyncUtils.decodeChecksums(data.buffer());
+                        		// TODO: don't copy data, toBytes does a copy!
+                        		List<Instruction> instructions = Sync.instructions(
+                                         data2.toBytes(), checksums, blockSize);
+                        		
+                        		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
+                        		
+                        		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
+                        		DataBuffer dataBuffer = new DataBuffer(abuf);
+                        		//diff
+                        		Data data1 = new Data(dataBuffer).setFlag1();
+                                retVal.put(entry.getKey(), data1);                    		
+                        	}
+                        	
                         }
-                        final SynchronizationStatistics syncStat = new SynchronizationStatistics();
-                        syncStat.dataCopy(dataCopy);
-                        syncStat.dataCopyCount(dataCopyCount);
-                        syncStat.diffCount(diffCount);
-                        syncStat.dataNotCopied(dataNotCopied);
-                        SynchronizationDirectBuilder.this.dataMap = new DataMap(retVal);
-
-                        if (secondMessageRequired) {
-                            FutureResponse fr = peerSync.synchronizationRPC().syncMessage(other,
-                                    SynchronizationDirectBuilder.this, future2.getChannelCreator());
+                        final SyncStat syncStat = new SyncStat(dataCopy, dataOrig);
+                        if (syncMessageRequired) {
+                        	FutureResponse fr = peerSync.synchronizationRPC().syncMessage(other,
+                                    SyncBuilder.this, future2.getChannelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
-
                                 @Override
                                 public void operationComplete(FutureResponse future) throws Exception {
                                     if (future.isFailed()) {
@@ -275,7 +279,7 @@ public class SynchronizationDirectBuilder extends DHTBuilder<SynchronizationDire
                             });
                             Utils.addReleaseListener(future2.getChannelCreator(), fr, futureResponse);
                         } else {
-                            futureSync.setDone(syncStat);
+                        	futureSync.setDone(syncStat);
                             Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
                         }
                     }

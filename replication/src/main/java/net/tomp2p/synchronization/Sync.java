@@ -36,7 +36,7 @@ import net.tomp2p.utils.Utils;
  * @author Thomas Bocek
  * 
  */
-final public class Synchronization {
+final public class Sync {
 
 	/**
 	 * It returns an array of weak and strong checksums for the value.

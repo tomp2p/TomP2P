@@ -30,9 +30,9 @@ import net.tomp2p.synchronization.Checksum;
 import net.tomp2p.synchronization.Instruction;
 import net.tomp2p.synchronization.PeerSync;
 import net.tomp2p.synchronization.SyncSender;
-import net.tomp2p.synchronization.Synchronization;
-import net.tomp2p.synchronization.SynchronizationDirectBuilder;
-import net.tomp2p.synchronization.SynchronizationStatistics;
+import net.tomp2p.synchronization.Sync;
+import net.tomp2p.synchronization.SyncBuilder;
+import net.tomp2p.synchronization.SyncStat;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -76,7 +76,7 @@ public class SynchronizationTest {
 		for (int i = 0; i < 100; i++) {
 			byte[] test = new byte[1000*i];
 			rnd.nextBytes(test);
-			List<Checksum> list = Synchronization.checksums(test, 100);
+			List<Checksum> list = Sync.checksums(test, 100);
 			double t =  test.length / 100d;
 			Assert.assertEquals(list.size()	, (int) Math.floor(t));
 		}
@@ -88,9 +88,9 @@ public class SynchronizationTest {
 		int size = 6;
 		byte[] oldValue = "ZurichGenevaLuganoAAA".getBytes();
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAAA".getBytes();
-		List<Checksum> checksums = Synchronization.checksums(oldValue, size);
-		List<Instruction> instructions = Synchronization.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = Synchronization.reconstruct(oldValue, instructions, size);
+		List<Checksum> checksums = Sync.checksums(oldValue, size);
+		List<Instruction> instructions = Sync.instructions(newValue, checksums, size);
+		DataBuffer reconstructedValue = Sync.reconstruct(oldValue, instructions, size);
 		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
 	}
 	
@@ -100,9 +100,9 @@ public class SynchronizationTest {
 		int size = 6;
 		byte[] oldValue = "ZurichGenevaLuganoAA".getBytes();
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAAA".getBytes();
-		List<Checksum> checksums = Synchronization.checksums(oldValue, size);
-		List<Instruction> instructions = Synchronization.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = Synchronization.reconstruct(oldValue, instructions, size);
+		List<Checksum> checksums = Sync.checksums(oldValue, size);
+		List<Instruction> instructions = Sync.instructions(newValue, checksums, size);
+		DataBuffer reconstructedValue = Sync.reconstruct(oldValue, instructions, size);
 		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
 	}
 	
@@ -112,9 +112,9 @@ public class SynchronizationTest {
 		int size = 6;
 		byte[] oldValue = "ZurichGenevaLuganoAAA".getBytes();
 		byte[] newValue = "AzurichGenevaLuganoAbbLuganoAA".getBytes();
-		List<Checksum> checksums = Synchronization.checksums(oldValue, size);
-		List<Instruction> instructions = Synchronization.instructions(newValue, checksums, size);
-		DataBuffer reconstructedValue = Synchronization.reconstruct(oldValue, instructions, size);
+		List<Checksum> checksums = Sync.checksums(oldValue, size);
+		List<Instruction> instructions = Sync.instructions(newValue, checksums, size);
+		DataBuffer reconstructedValue = Sync.reconstruct(oldValue, instructions, size);
 		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
 	}
 
@@ -124,11 +124,11 @@ public class SynchronizationTest {
 		int size = 5;
 		byte[] newValue = "Test1Test2Test3Test4".getBytes();
 		byte[] oldValue = "test0Test2test0Test4".getBytes();
-		List<Checksum> checksums = Synchronization.checksums(oldValue, size);
-		List<Instruction> instructions = Synchronization.instructions(newValue, checksums, size);
+		List<Checksum> checksums = Sync.checksums(oldValue, size);
+		List<Instruction> instructions = Sync.instructions(newValue, checksums, size);
 
 		Assert.assertEquals(4, instructions.size());
-		DataBuffer reconstructedValue = Synchronization.reconstruct(oldValue, instructions, size);
+		DataBuffer reconstructedValue = Sync.reconstruct(oldValue, instructions, size);
 		Assert.assertArrayEquals(newValue, reconstructedValue.bytes());
 	}
 
@@ -177,12 +177,12 @@ public class SynchronizationTest {
 		}
 		System.out.println("new value: " + newValue);
 
-		List<Checksum> checksums = Synchronization.checksums(oldValue.getBytes(), size);
-		List<Instruction> instructions = Synchronization.instructions(newValue.getBytes(), checksums, size);
+		List<Checksum> checksums = Sync.checksums(oldValue.getBytes(), size);
+		List<Instruction> instructions = Sync.instructions(newValue.getBytes(), checksums, size);
 		System.out.println("checksums(" + checksums.size() + "): " + checksums);
 		System.out.println("instructions(" + instructions.size() + "): " + instructions);
 
-		DataBuffer reconstructedValue = Synchronization.reconstruct(oldValue.getBytes(), instructions, size);
+		DataBuffer reconstructedValue = Sync.reconstruct(oldValue.getBytes(), instructions, size);
 
 		Assert.assertArrayEquals(newValue.getBytes(), reconstructedValue.bytes());
 	}
@@ -220,7 +220,7 @@ public class SynchronizationTest {
 			@Override
 			public void operationComplete(final FutureChannelCreator future2) throws Exception {
 				if (future2.isSuccess()) {
-					SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(senderSync,
+					SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync,
 					        receiver.getPeerAddress());
 					synchronizationBuilder.dataMap(dataMap);
 					final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
@@ -274,7 +274,7 @@ public class SynchronizationTest {
 			@Override
 			public void operationComplete(final FutureChannelCreator future2) throws Exception {
 				if (future2.isSuccess()) {
-					SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(senderSync,
+					SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync,
 					        receiver.getPeerAddress());
 					synchronizationBuilder.dataMap(dataMap);
 					final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
@@ -329,7 +329,7 @@ public class SynchronizationTest {
 			@Override
 			public void operationComplete(final FutureChannelCreator future2) throws Exception {
 				if (future2.isSuccess()) {
-					SynchronizationDirectBuilder synchronizationBuilder = new SynchronizationDirectBuilder(senderSync,
+					SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync,
 					        receiver.getPeerAddress());
 					synchronizationBuilder.dataMap(dataMap);
 					final FutureResponse futureResponse = senderSync.getSynchronizationRPC().infoMessage(
@@ -375,7 +375,7 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-			FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
@@ -420,7 +420,7 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-			FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
@@ -462,7 +462,7 @@ public class SynchronizationTest {
 
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 
-			FutureDone<SynchronizationStatistics> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
@@ -493,27 +493,27 @@ public class SynchronizationTest {
 		Random random = new Random();
 		int value = random.nextInt(32767);
 
-		assertEquals(value, Synchronization.byteArrayToInt(Synchronization.intToByteArray(value)));
+		assertEquals(value, Sync.byteArrayToInt(Sync.intToByteArray(value)));
 	}
 
 	@Test
 	public void testEncodeDecodeChecksums() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
 		String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
 		int size = 10;
-		ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
-		byte[] bytes = Synchronization.encodeChecksumList(checksums);
+		ArrayList<Checksum> checksums = Sync.getChecksums(value.getBytes(), size);
+		byte[] bytes = Sync.encodeChecksumList(checksums);
 
-		assertEquals(checksums, Synchronization.decodeChecksumList(bytes));
+		assertEquals(checksums, Sync.decodeChecksumList(bytes));
 	}
 
 	@Test
 	public void testEncodeDecodeChecksums2() throws NoSuchAlgorithmException, IOException, ClassNotFoundException {
 		String value = "Test1Test2Test3Test4";
 		int size = 5;
-		ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
-		byte[] bytes = Synchronization.encodeChecksumList(checksums);
+		ArrayList<Checksum> checksums = Sync.getChecksums(value.getBytes(), size);
+		byte[] bytes = Sync.encodeChecksumList(checksums);
 
-		assertEquals(checksums, Synchronization.decodeChecksumList(bytes));
+		assertEquals(checksums, Sync.decodeChecksumList(bytes));
 	}
 
 	@Test
@@ -521,13 +521,13 @@ public class SynchronizationTest {
 		String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
 		String newValue = "asdfkjasfalskjfasdfkljasasasdflkjsdfkjjdfasdklfjasa";
 		int size = 10;
-		ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
-		ArrayList<Instruction> instructions = Synchronization.getInstructions(newValue.getBytes(), checksums, size);
+		ArrayList<Checksum> checksums = Sync.getChecksums(value.getBytes(), size);
+		ArrayList<Instruction> instructions = Sync.getInstructions(newValue.getBytes(), checksums, size);
 
 		Number160 key = new Number160(12345);
-		byte[] bytes = Synchronization.encodeInstructionList(instructions, key);
+		byte[] bytes = Sync.encodeInstructionList(instructions, key);
 
-		assertEquals(instructions, Synchronization.decodeInstructionList(bytes));
+		assertEquals(instructions, Sync.decodeInstructionList(bytes));
 	}
 
 	@Test
@@ -535,12 +535,12 @@ public class SynchronizationTest {
 		String value = "asdfkjasfalskjfasdfkljasaslkfjasdflaksjdfasdklfjasa";
 		String newValue = "asdfkjasfalskjfasdfkljasasasdflkjsdfkjjdfasdklfjasa";
 		int size = 10;
-		ArrayList<Checksum> checksums = Synchronization.getChecksums(value.getBytes(), size);
-		ArrayList<Instruction> instructions = Synchronization.getInstructions(newValue.getBytes(), checksums, size);
+		ArrayList<Checksum> checksums = Sync.getChecksums(value.getBytes(), size);
+		ArrayList<Instruction> instructions = Sync.getInstructions(newValue.getBytes(), checksums, size);
 
 		Number160 key = new Number160(12345);
-		byte[] bytes = Synchronization.encodeInstructionList(instructions, key);
+		byte[] bytes = Sync.encodeInstructionList(instructions, key);
 
-		assertEquals(key, Synchronization.decodeHash(bytes));
+		assertEquals(key, Sync.decodeHash(bytes));
 	}
 }

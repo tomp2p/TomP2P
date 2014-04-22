@@ -18,7 +18,7 @@ import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
-import net.tomp2p.synchronization.SynchronizationStatistics;
+import net.tomp2p.synchronization.SyncStat;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -244,7 +244,7 @@ public class AutomaticReplicationTest {
                 @Override
                 public void futureCreated(BaseFuture future) {
                     if(future instanceof FutureDone) {
-                        final FutureDone<SynchronizationStatistics> f = (FutureDone<SynchronizationStatistics>) future;
+                        final FutureDone<SyncStat> f = (FutureDone<SyncStat>) future;
                         f.addListener(new BaseFutureAdapter<BaseFuture>() {
                             @Override
                             public void operationComplete(BaseFuture future)

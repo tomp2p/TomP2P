@@ -5,13 +5,13 @@ import net.tomp2p.peers.PeerAddress;
 
 public class PeerSync {
 
-    private final SynchronizationRPC synchronizationRPC;
+    private final SyncRPC synchronizationRPC;
     private final Peer peer;
     private final int blockSize;
     
     PeerSync(Peer peer, final int blockSize) {
     	this.peer = peer;
-    	this.synchronizationRPC =  new SynchronizationRPC(peer.getPeerBean(),
+    	this.synchronizationRPC =  new SyncRPC(peer.getPeerBean(),
                 peer.getConnectionBean(), blockSize);
     	this.blockSize = blockSize;
     }
@@ -20,12 +20,12 @@ public class PeerSync {
         return peer;
     }
 
-    public SynchronizationRPC synchronizationRPC() {
+    public SyncRPC synchronizationRPC() {
         return synchronizationRPC;
     }
     
-    public SynchronizationDirectBuilder synchronize(PeerAddress other) {
-        return new SynchronizationDirectBuilder(this, other, blockSize);
+    public SyncBuilder synchronize(PeerAddress other) {
+        return new SyncBuilder(this, other, blockSize);
     }
 
 }

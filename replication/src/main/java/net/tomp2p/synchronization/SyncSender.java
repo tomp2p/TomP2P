@@ -31,7 +31,7 @@ public class SyncSender implements ReplicationSender, PeerInit {
 
     @Override
     public void sendDirect(PeerAddress other, Number160 locationKey, Map<Number640, Data> dataMap) {
-        FutureDone<SynchronizationStatistics> future = peerSync.synchronize(other)
+        FutureDone<SyncStat> future = peerSync.synchronize(other)
                 .dataMap(new DataMap(dataMap)).start();
         peer.notifyAutomaticFutures(future);
     }

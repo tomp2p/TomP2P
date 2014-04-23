@@ -147,6 +147,23 @@ public class TestData {
         Assert.assertFalse(newData.verify(keyPair2.getPublic(), factory));
         Assert.assertEquals(data, newData);
     }
+    
+    @Test
+    public void testData7() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
+        Data data = new Data().setFlag1();
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data, newData);
+        Assert.assertEquals(true, newData.isFlag1());
+    }
+    
+    @Test
+    public void testData8() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
+        Data data = new Data().setFlag2();
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(-1, newData.ttlSeconds());
+        Assert.assertEquals(data, newData);
+        Assert.assertEquals(true, newData.isFlag2());
+    }
 
 	private Data encodeDecode(Data data) throws InvalidKeyException, SignatureException, IOException {
 	    

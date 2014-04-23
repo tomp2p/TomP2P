@@ -226,7 +226,7 @@ public class Encoder {
 			data = data.duplicate();
 		}
 		if(isReply) {
-			int ttl = (int) (data.expirationMillis() - Timings.currentTimeMillis()) / 1000;
+			int ttl = (int) ((data.expirationMillis() - Timings.currentTimeMillis()) / 1000);
 			data.ttlSeconds(ttl < 0 ? 0:ttl);
 		}
 	    data.encodeHeader(buf, signatureFactory);

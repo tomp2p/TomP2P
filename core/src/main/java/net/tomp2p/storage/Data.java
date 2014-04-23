@@ -304,7 +304,7 @@ public class Data {
 		if (flag1) {
 			header |= 0x04;
 		}
-		if (flag1) {
+		if (flag2) {
 			header |= 0x08;
 		}
 		if (protectedEntry) {
@@ -688,6 +688,8 @@ public class Data {
 		bs.set(2, basedOnFlag);
 		bs.set(3, protectedEntry);
 		bs.set(4, publicKeyFlag);
+		bs.set(5, flag1);
+		bs.set(6, flag2);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
 		if (basedOn != null) {
 			hashCode = hashCode ^ basedOn.hashCode();
@@ -706,7 +708,8 @@ public class Data {
 		}
 		Data d = (Data) obj;
 		if (d.signed != signed || d.ttl != ttl || d.basedOnFlag != basedOnFlag 
-				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag) {
+				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
+				|| flag1!=d.flag1 || flag2!=d.flag2) {
 			return false;
 		}
 		if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {

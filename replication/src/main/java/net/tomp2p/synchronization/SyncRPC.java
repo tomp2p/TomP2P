@@ -172,7 +172,7 @@ public class SyncRPC extends DispatchHandler {
      * @throws NoSuchAlgorithmException
      */
     private void handleInfo(final Message message, final Message responseMessage, Responder responder) {
-        LOG.debug("Info received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
+        LOG.debug("Info received from {} -> I'm {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
         
         final boolean isSyncFromOldVersion = message.getType() == Type.REQUEST_2;
@@ -189,11 +189,11 @@ public class SyncRPC extends DispatchHandler {
                 } else {
                     // get the checksums
                 	// TODO: don't copy data, toBytes does a copy!
-                    List<Checksum> checksums = Sync.checksums(data.toBytes(), blockSize);
+                    List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
                     AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().getVersionKey(), data.hash(), abuf);
                     retVal.put(entry.getKey(), new Data(dataBuffer));
-                    LOG.debug("sync required");
+                    LOG.debug("sync required hash = {}", data.hash());
                 }
             } else {
             	if(isSyncFromOldVersion) {
@@ -201,7 +201,7 @@ public class SyncRPC extends DispatchHandler {
             		Entry<Number640, Data> latest = peerBean().storage().
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
-            		List<Checksum> checksums = Sync.checksums(latest.getValue().toBytes(), blockSize);
+            		List<Checksum> checksums = RSync.checksums(latest.getValue().toBytes(), blockSize);
             		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
                     DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().getVersionKey(), 
                     		latest.getValue().hash(), abuf);
@@ -210,7 +210,7 @@ public class SyncRPC extends DispatchHandler {
             	} else {
             		// not found
             		retVal.put(entry.getKey(), new Data().setFlag2());
-            		LOG.debug("copy required");
+            		LOG.debug("copy required, not found on this peer {}", entry.getKey());
             	}
             }
         }
@@ -230,7 +230,7 @@ public class SyncRPC extends DispatchHandler {
      * @throws ClassNotFoundException
      */
     private void handleSync(final Message message, final Message responseMessage, Responder responder) {
-        LOG.debug("Sync received: {} -> {}", message.getSender().getPeerId(), message.getRecipient()
+        LOG.debug("Sync received: got from {} -> I'm {}", message.getSender().getPeerId(), message.getRecipient()
                 .getPeerId());
 
         final DataMap dataMap = message.getDataMap(0);
@@ -239,11 +239,13 @@ public class SyncRPC extends DispatchHandler {
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
             if (entry.getValue().isFlag2()) {
+            	LOG.debug("remove entry {}", entry.getKey());
                 peerBean().storage().remove(entry.getKey(), publicKey, false);
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff
-                	ByteBuf buf = entry.getValue().buffer();
+                	LOG.debug("handle diff {}", entry.getKey());
+                	final ByteBuf buf = entry.getValue().buffer();
                 	Number160 versionKey = SyncUtils.decodeHeader(buf);
                 	Number160 hash = SyncUtils.decodeHeader(buf);
                     List<Instruction> instructions = SyncUtils.decodeInstructions(buf);
@@ -254,7 +256,7 @@ public class SyncRPC extends DispatchHandler {
                         continue;
                     }
                     // TODO: don't copy data, toBytes does a copy!
-                    DataBuffer reconstructedValue = Sync.reconstruct(dataOld.toBytes(), instructions, blockSize);
+                    DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {
@@ -263,6 +265,7 @@ public class SyncRPC extends DispatchHandler {
 
                 } else {
                     // copy
+                	LOG.debug("handle copy {}", entry.getKey());
                     //TODO: domain protection?, make the flags configurable
                     Enum<?> status = peerBean().storage().put(entry.getKey(), entry.getValue(),
                             message.getPublicKey(0), false, false);

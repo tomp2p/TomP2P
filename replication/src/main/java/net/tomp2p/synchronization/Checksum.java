@@ -69,7 +69,7 @@ public class Checksum implements Serializable {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("wcs:");
-        sb.append(weakChecksum).append(",str:").append(Arrays.toString(strongChecksum));
+        sb.append(weakChecksum).append(",scs:").append(Arrays.toString(strongChecksum));
         return sb.toString();
     }
 }

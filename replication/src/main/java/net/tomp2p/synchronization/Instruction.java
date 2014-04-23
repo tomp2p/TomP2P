@@ -77,11 +77,13 @@ public class Instruction implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("diff->r:");
-        sb.append(reference);
+        StringBuilder sb = new StringBuilder("inst");
         if (literal != null) {
-            sb.append(",l:");
-            sb.append(literal.toByteBuf()).append(",");
+        	sb.append("->l:");
+        	sb.append(literal.length());
+        } else {
+        	sb.append("->r:");
+        	sb.append(reference);
         }
         return sb.toString();
     }

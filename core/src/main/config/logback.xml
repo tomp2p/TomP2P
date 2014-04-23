@@ -65,6 +65,8 @@
   <!--  <logger name="net.tomp2p.storage.StorageLayer" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.storage.StorageMemoryReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.storage.TrackerStorage" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.synchronization.SyncRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.synchronization.SyncBuilder" level="TRACE"/> -->
    
   
   <!--  <logger name="net.tomp2p.task.AsyncTask" level="TRACE"/> -->

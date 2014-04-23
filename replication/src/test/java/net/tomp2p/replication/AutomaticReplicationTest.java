@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.NavigableSet;
 import java.util.Random;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -17,7 +21,10 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
+import net.tomp2p.synchronization.ReplicationSync;
 import net.tomp2p.synchronization.SyncStat;
 
 import org.junit.Assert;
@@ -26,20 +33,12 @@ import org.junit.Test;
 public class AutomaticReplicationTest {
     private double reliability = 0.90;
     private int peerId = 1111;
-    private int port1 = 4001;
-    private int port2 = 4002;
-    private int port3 = 4003;
-    private int port4 = 4004;
-    private int port5 = 4005;
-    private int port6 = 4006;
     private int port7 = 4007;
     private int port8 = 4008;
     private int port9 = 4009;
     private int port10 = 4010;
-    private int port11 = 4011;
     private int port12 = 4012;
     private int port13 = 4013;
-    private int port14 = 4014;
 
     @Test
     public void testGetBestSmoothingFactor() throws IOException {
@@ -212,26 +211,26 @@ public class AutomaticReplicationTest {
     private static final Random rnd = new Random(74);
     private static final int port = 4020;
 
-    private ArrayList<Integer> findTheClosestPeer(Peer[] peers, Number160 locationKey) {
-        ArrayList<Integer> closestPeersIndexes = new ArrayList<Integer>();
-        int index = -1;
-        for (int i = 0; i < 10; i++) {
-            Number160 min = null;
-            for (int j = 0; j < peers.length; j++) {
-                if (min == null && !closestPeersIndexes.contains(j)) {
-                    min = peers[j].getPeerID().xor(locationKey);
-                    index = j;
-                } else if (min.compareTo(peers[j].getPeerID().xor(locationKey)) > 0
-                        && !closestPeersIndexes.contains(j)) {
-                    min = peers[j].getPeerID().xor(locationKey);
-                    index = j;
-                }
-            }
-            closestPeersIndexes.add(index);
-        }
-
-        return closestPeersIndexes;
+    private NavigableSet<PeerAddress> findTheClosestPeer(Peer[] peers, Number160 locationKey) {
+    	
+    	Comparator<PeerAddress> c = PeerMap.createComparator(locationKey);
+    	TreeSet<PeerAddress> ts = new TreeSet<>(c);
+    	for(Peer peer:peers) {
+    		ts.add(peer.getPeerAddress());
+    	}
+        return ts;
     }
+    
+    private Peer find(Peer[] peers, PeerAddress peerAddress) {
+    	for(Peer peer:peers) {
+    		if(peer.getPeerAddress().equals(peerAddress)) {
+    			return peer;
+    		}
+    	}
+    	return null;
+    }
+    
+    
 
     @Test
     public void testIndirectReplication1() throws Exception {
@@ -241,6 +240,7 @@ public class AutomaticReplicationTest {
         try {
             AutomaticFuture af = new AutomaticFuture() {
                 
+                @SuppressWarnings("unchecked")
                 @Override
                 public void futureCreated(BaseFuture future) {
                     if(future instanceof FutureDone) {
@@ -249,7 +249,8 @@ public class AutomaticReplicationTest {
                             @Override
                             public void operationComplete(BaseFuture future)
                                     throws Exception {
-                                testCopied.set(f.getObject().dataCopy() == 71 || f.getObject().dataCopy() == 36 || f.getObject().dataCopy() == 76);
+                            	System.err.println(future.isSuccess() +"/"+ f.getObject());
+                                //testCopied.set(f.getObject().dataCopy() == 71 || f.getObject().dataCopy() == 36 || f.getObject().dataCopy() == 76);
                                 latch.countDown();
                             }
                         });
@@ -262,31 +263,42 @@ public class AutomaticReplicationTest {
 
             master = peers[0];
             final Number160 locationKey = new Number160(12345);
-            final Number160 domainKey = Number160.ZERO;
-            final Number160 contentKey = Number160.ZERO;
 
-            ArrayList<Integer> closestPeersIndexes = findTheClosestPeer(peers, locationKey);
+            NavigableSet<PeerAddress> closestPeersIndexes = findTheClosestPeer(peers, locationKey);
+            Iterator<PeerAddress> iterator = closestPeersIndexes.iterator();
+            
+            PeerAddress Pa = iterator.next();
+            PeerAddress Pb = iterator.next();
+            PeerAddress Pc = iterator.next();
 
-            Peer A = peers[closestPeersIndexes.get(0)];
-            Peer B = peers[closestPeersIndexes.get(1)];
-            Peer C = peers[closestPeersIndexes.get(2)];
+            Peer A = find(peers, Pa);
+            Peer B = find(peers, Pb);
+            Peer C = find(peers, Pc);
+            
+            System.err.println("peer A "+A.getPeerAddress());
+            System.err.println("peer B "+B.getPeerAddress());
+            System.err.println("peer C "+C.getPeerAddress());
 
             Data data1 = new Data("CommunicationSystemsDatabaseSoftwareEngineeringRequirementsAnalysis..");
             Data data2 = new Data("CommunicationSystemsDatabaseSoftwarasdfkjasdklfjasdfklajsdfaslkjfsdfd");
             Data data3 = new Data(
                     "oesauhtnoaetnsuuhooaeuoaeuoauoaeuoaeuoaeuaetnsauosanuhatns");
-
+            
+            
+            //A.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data1, null, false, false);
+            //B.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data2, null, false, false);
+            //C.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data3, null, false, false);
             A.put(locationKey).setData(data1).start().awaitUninterruptibly();
             B.put(locationKey).setData(data2).start().awaitUninterruptibly();
             C.put(locationKey).setData(data3).start().awaitUninterruptibly();
 
             Utils2.perfectRouting(peers);
 
-            Data data = A.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
+            Data data = A.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfA = data.toBytes();
-            data = B.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
+            data = B.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfB = data.toBytes();
-            data = C.getPeerBean().storage().get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
+            data = C.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfC = data.toBytes();
 
             Assert.assertArrayEquals(valueOfA, valueOfB);
@@ -295,31 +307,6 @@ public class AutomaticReplicationTest {
             Assert.assertEquals(true, testCopied.get());
             
             
-        } finally {
-            if (master != null) {
-                master.shutdown();
-            }
-        }
-    }
-
-    @Test
-    public void testIndirectReplication2() throws Exception {
-        Peer master = null;
-        try {
-            // test for replication, shutdown peers
-            Peer[] peers = Utils2.createNodes(15, rnd, port + 1, null, true);
-            master = peers[0];
-            Utils2.perfectRouting(peers);
-
-            peers[5].announceShutdown().start().awaitUninterruptibly();
-            peers[5].shutdown().awaitUninterruptibly();
-            peers[7].announceShutdown().start().awaitUninterruptibly();
-            peers[7].shutdown().awaitUninterruptibly();
-            peers[8].announceShutdown().start().awaitUninterruptibly();
-            peers[8].shutdown().awaitUninterruptibly();
-
-            Thread.sleep(60 * 1000);
-            assertEquals(4, peers[0].getPeerBean().replicationStorage().getReplicationFactor());
         } finally {
             if (master != null) {
                 master.shutdown();

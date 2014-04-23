@@ -16,6 +16,8 @@
 
 package net.tomp2p.synchronization;
 
+import io.netty.buffer.ByteBuf;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,24 +55,24 @@ import org.slf4j.LoggerFactory;
 public class SyncBuilder extends DHTBuilder<SyncBuilder> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncBuilder.class);
-
     private static final FutureDone<SyncStat> FUTURE_SHUTDOWN = new FutureDone<SyncStat>()
             .setFailed("sync builder - peer is shutting down");
+    static final int DEFAULT_BLOCK_SIZE = 700;
+    
+    private final PeerAddress other;
+    private final PeerSync peerSync;
+    private final int blockSize;
 
     private DataMap dataMap;
     private Number640 key;
     private Set<Number640> keys;
-
     private NavigableMap<Number640, Number160> dataMapHash;
     private ArrayList<Instruction> instructions;
-
-    private final PeerAddress other;
-    
-    private final PeerSync peerSync;
-    
-    private final int blockSize;
-    
     private boolean syncFromOldVersion = false;
+    
+    public SyncBuilder(final PeerSync peerSync, final PeerAddress other) {
+    	this(peerSync, other, DEFAULT_BLOCK_SIZE);
+    }
 
     /**
      * Constructor.
@@ -193,7 +195,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                     LOG.error("checkDirect failed {}", future2.getFailedReason());
                     return;
                 }
-                final FutureResponse futureResponse = peerSync.synchronizationRPC().infoMessage(other,
+                final FutureResponse futureResponse = peerSync.syncRPC().infoMessage(other,
                         SyncBuilder.this, future2.getChannelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
@@ -209,6 +211,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         DataMap dataMap = responseMessage.getDataMap(0);
 
                         if (dataMap == null) {
+                        	LOG.error("nothing received, something is wrong");
                             futureSync.setFailed("nothing received, something is wrong");
                             return;
                         }
@@ -225,10 +228,10 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         	Data data = entry.getValue();
                         	if(data.length() == 0) {
                         		if(data.isFlag1()) {
-                        			//no sync required
+                        			LOG.debug("no sync required");
                         			syncMessageRequired = false;
                         		} else if(data.isFlag2()) {
-                        			//copy required
+                        			LOG.debug("copy required for key {}",entry.getKey());
                         			syncMessageRequired = true;
                         			Data data2 = peer.getPeerBean().storage().get(entry.getKey());
                         			dataOrig += data2.length();
@@ -238,19 +241,17 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                                     
                         		}
                         	} else {
+                        		LOG.debug("sync required");
                         		syncMessageRequired = true;
                         		Data data2 = peer.getPeerBean().storage().get(entry.getKey());
                         		dataOrig += data2.length();
-                        		Number160 versionKey = SyncUtils.decodeHeader(data.buffer());
-                        		Number160 hash = SyncUtils.decodeHeader(data.buffer());
-                        		
-                        		if(!data2.hash().equals(hash)) {
-                        			//modified in the meantime, do not sync!
-                        			continue;
-                        		}
-                        		List<Checksum> checksums = SyncUtils.decodeChecksums(data.buffer());
+                        		final ByteBuf buffer = data.buffer();
+                        		Number160 versionKey = SyncUtils.decodeHeader(buffer);
+                        		Number160 hash = SyncUtils.decodeHeader(buffer);
+             
+                        		List<Checksum> checksums = SyncUtils.decodeChecksums(buffer);
                         		// TODO: don't copy data, toBytes does a copy!
-                        		List<Instruction> instructions = Sync.instructions(
+                        		List<Instruction> instructions = RSync.instructions(
                                          data2.toBytes(), checksums, blockSize);
                         		
                         		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
@@ -261,11 +262,11 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		Data data1 = new Data(dataBuffer).setFlag1();
                                 retVal.put(entry.getKey(), data1);                    		
                         	}
-                        	
                         }
                         final SyncStat syncStat = new SyncStat(dataCopy, dataOrig);
                         if (syncMessageRequired) {
-                        	FutureResponse fr = peerSync.synchronizationRPC().syncMessage(other,
+                        	SyncBuilder.this.dataMap(new DataMap(retVal));
+                        	FutureResponse fr = peerSync.syncRPC().syncMessage(other,
                                     SyncBuilder.this, future2.getChannelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
                                 @Override

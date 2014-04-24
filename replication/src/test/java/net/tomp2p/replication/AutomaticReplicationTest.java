@@ -251,7 +251,7 @@ public class AutomaticReplicationTest {
                             	if(future.isFailed()) {
                             		System.err.println(future.getFailedReason());
                             	}
-                            	System.err.println(future.isSuccess() +"/"+ f.getObject());
+                            	//System.err.println(future.isSuccess() +"/"+ f.getObject());
                             	if(!testCopied.get()) {
                             		testCopied.set(f.getObject().dataCopy() == 56);
                             	}

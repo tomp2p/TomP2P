@@ -67,8 +67,8 @@ public final class MessageHeaderCodec {
         buffer.writeInt(message.getMessageId()); // 8
         buffer.writeByte(message.getCommand()); // 9
         buffer.writeBytes(message.getSender().getPeerId().toByteArray()); // 29
-        buffer.writeShort((short) message.getSender().udpPort()); // 31
-        buffer.writeShort((short) message.getSender().tcpPort()); // 33
+        buffer.writeShort((short) message.getSender().tcpPort()); // 31
+        buffer.writeShort((short) message.getSender().udpPort()); // 33
         buffer.writeBytes(message.getRecipient().getPeerId().toByteArray()); // 53
         buffer.writeInt(encodeContentTypes(message.getContentTypes())); // 57
         // CHECKSTYLE:OFF

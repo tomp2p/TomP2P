@@ -707,14 +707,16 @@ public class Data {
 			return true;
 		}
 		Data d = (Data) obj;
-		if (d.signed != signed || d.ttl != ttl || d.basedOnFlag != basedOnFlag 
+		//ignore ttl -> it's still the same data even if ttl is different
+		if (d.signed != signed  || d.basedOnFlag != basedOnFlag 
 				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
 				|| flag1!=d.flag1 || flag2!=d.flag2) {
 			return false;
 		}
-		if (d.ttlSeconds != ttlSeconds || d.type != type || d.length != length) {
+		if (d.type != type || d.length != length) {
 			return false;
 		}
+		//ignore ttl -> it's still the same data even if ttl is different
 		return Utils.equals(basedOn, d.basedOn) && Utils.equals(signature, d.signature)
 				&& d.buffer.equals(buffer); // This is a slow operation, use
 											// with care!

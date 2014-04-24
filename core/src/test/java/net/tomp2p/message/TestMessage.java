@@ -585,6 +585,7 @@ public class TestMessage {
 		Assert.assertEquals(m1.getRecipient(), m2.getRecipient());
 		Assert.assertEquals(m1.getType(), m2.getType());
 		Assert.assertEquals(m1.getSender(), m2.getSender());
+		Assert.assertEquals(m1.getSender().tcpPort(), m2.getSender().tcpPort());
 
 		Assert.assertEquals(
 				true,

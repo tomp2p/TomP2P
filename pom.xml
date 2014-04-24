@@ -44,7 +44,7 @@
 		<module>examples</module>
 		<module>nat</module>
 		<module>all</module>
-		<!-- <module>storage</module> -->
+		<module>storage</module>
 		<!-- <module>task</module> -->
 	</modules>
 

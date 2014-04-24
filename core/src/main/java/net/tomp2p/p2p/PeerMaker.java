@@ -54,6 +54,7 @@ import net.tomp2p.rpc.StorageRPC;
 //import net.tomp2p.rpc.TaskRPC;
 import net.tomp2p.rpc.TrackerRPC;
 import net.tomp2p.storage.IdentityManagement;
+import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
 import net.tomp2p.storage.TrackerStorage;
@@ -120,7 +121,7 @@ public class PeerMaker {
 
 	private PeerStatusListener[] peerStatusListeners = null;
 
-	private StorageMemory storage = null;
+	private Storage storage = null;
 
 	private TrackerStorage trackerStorage = null;
 
@@ -592,6 +593,15 @@ public class PeerMaker {
 
 	public PeerMaker peerMap(PeerMap peerMap) {
 		this.peerMap = peerMap;
+		return this;
+	}
+	
+	public Storage storage() {
+		return storage;
+	}
+
+	public PeerMaker storage(Storage storage) {
+		this.storage = storage;
 		return this;
 	}
 

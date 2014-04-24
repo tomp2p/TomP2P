@@ -16,14 +16,20 @@
 
 package net.tomp2p.synchronization;
 
+import net.tomp2p.peers.Number160;
+
 public class SyncStat {
     
     final private int dataCopy;
     final private int dataOrig;
+    final private Number160 fromPeer;
+    final private Number160 toPeer;
 
-    public SyncStat(int dataCopy, int dataOrig) {
+    public SyncStat(Number160 fromPeer, Number160 toPeer, int dataCopy, int dataOrig) {
 	    this.dataCopy = dataCopy;
 	    this.dataOrig = dataOrig;
+	    this.fromPeer = fromPeer;
+	    this.toPeer = toPeer;
     }
     
     public int dataCopy() {
@@ -36,7 +42,8 @@ public class SyncStat {
     
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("sync stats:");
+        StringBuilder sb = new StringBuilder("sync stats from [");
+        sb.append(fromPeer).append("] to [").append(toPeer).append(":");
         sb.append("send=").append(dataCopy).append("(orig=").append(dataOrig).append(")");
         sb.append(",ratio: ").append(dataOrig/(double)dataCopy);
         return sb.toString();

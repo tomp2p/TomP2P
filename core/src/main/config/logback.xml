@@ -45,7 +45,7 @@
   
   <!--  <logger name="net.tomp2p.replication.DefaultStorageReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.DefaultTrackerReplication" level="TRACE"/> -->
-  <!--  <logger name="net.tomp2p.replication.Replication" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.p2p.Replication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.ReplicationExecutor" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.Replication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.TrackerStorageReplication" level="TRACE"/> -->

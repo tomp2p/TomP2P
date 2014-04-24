@@ -149,6 +149,7 @@ public class PeerMaker {
 
 	private Random random = null;
 	private int delayMillis = -1;
+	private boolean allPeersReplicate = false;
 	private int intervalMillis = -1;
 	private int storageIntervalMillis = -1;
 
@@ -381,7 +382,7 @@ public class PeerMaker {
 		// indirect replication
 		if (replicationExecutor == null && isEnableIndirectReplication() && isEnableStorageRPC()) {
 			replicationExecutor = new ReplicationExecutor(peer, replicationFactor, replicationSender, random,
-			        connectionBean.timer(), delayMillis);
+			        connectionBean.timer(), delayMillis, allPeersReplicate);
 		}
 		if (replicationExecutor != null) {
 			replicationExecutor.init(intervalMillis);
@@ -681,6 +682,20 @@ public class PeerMaker {
 
 	public PeerMaker delayMillis(int delayMillis) {
 		this.delayMillis = delayMillis;
+		return this;
+	}
+	
+	public boolean isAllPeersReplicate() {
+		return allPeersReplicate;
+	}
+	
+	public PeerMaker allPeersReplicate() {
+		this.allPeersReplicate = true;
+		return this;
+	}
+
+	public PeerMaker allPeersReplicate(boolean allPeersReplicate) {
+		this.allPeersReplicate = allPeersReplicate;
 		return this;
 	}
 

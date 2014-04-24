@@ -72,6 +72,8 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
     
     private final ReplicationSender replicationSender;
     
+    private final boolean allPeersReplicate;
+    
     private ScheduledFuture<?> scheduledFuture;
 
     /**
@@ -81,7 +83,8 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
      *            The peer
      */
     public ReplicationExecutor(final Peer peer, final ReplicationFactor replicationFactor,
-            ReplicationSender replicationSender, final Random random, final ScheduledExecutorService timer, final int delayMillis) {
+            ReplicationSender replicationSender, final Random random, final ScheduledExecutorService timer, 
+            final int delayMillis, final boolean allPeersReplicate) {
         this.peer = peer;
         this.storage = peer.getPeerBean().storage();
         this.storageRPC = peer.getStoreRPC();
@@ -93,6 +96,7 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
         this.delayMillis = delayMillis;
         this.replicationFactor = replicationFactor;
         this.replicationSender = replicationSender;
+        this.allPeersReplicate = allPeersReplicate;
     }
 
     public void init(int intervalMillis) {
@@ -101,6 +105,9 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
 
     @Override
     public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
+    	if(!allPeersReplicate) {
+    		return;
+    	}
         LOG.debug("Other peer {} is responsible for {}. I'm {}", other, locationKey, storageRPC.peerBean()
                 .serverPeerAddress());
         if (!delayed) {
@@ -125,6 +132,16 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
     public void meResponsible(final Number160 locationKey) {
         LOG.debug("I ({}) now responsible for {}", storageRPC.peerBean().serverPeerAddress(), locationKey);
         synchronizeData(locationKey);
+    }
+    
+    @Override
+    public void meResponsible(final Number160 locationKey, PeerAddress newPeer) {
+        LOG.debug("I ({}) sync {} to {}", storageRPC.peerBean().serverPeerAddress(), locationKey, newPeer);
+        Number640 min = new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO);
+        Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
+                Number160.MAX_VALUE);
+        final Map<Number640, Data> dataMap = storage.get(min, max, -1, true);
+        replicationSender.sendDirect(newPeer, locationKey, dataMap);
     }
 
     @Override

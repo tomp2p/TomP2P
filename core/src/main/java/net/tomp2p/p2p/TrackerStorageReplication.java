@@ -13,14 +13,12 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.replication;
+package net.tomp2p.p2p;
 
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.PeerExchangeRPC;
@@ -69,13 +67,23 @@ public class TrackerStorageReplication implements ResponsibilityListener {
     public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
         // do pex here, but with mesh peers!
         LOG.debug("other peer became responsibel and we thought we were responsible, so move the data to this peer");
-        for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey)) {
+        peerExchange(locationKey, other);
+    }
+
+	@Override
+    public void meResponsible(final Number160 locationKey, final PeerAddress newPeer) {
+		LOG.debug("I'm responsible and a new peer joined");
+		peerExchange(locationKey, newPeer);
+    }
+
+	private void peerExchange(final Number160 locationKey, final PeerAddress newPeer) {
+	    for (final Number160 domainKey : trackerStorage.responsibleDomains(locationKey)) {
             FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(1, 0);
             futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
-                        FutureResponse futureResponse = peerExchangeRPC.peerExchange(other, locationKey,
+                        FutureResponse futureResponse = peerExchangeRPC.peerExchange(newPeer, locationKey,
                                 domainKey, true, future.getChannelCreator(),
                                 new DefaultConnectionConfiguration());
                         Utils.addReleaseListener(future.getChannelCreator(), futureResponse);

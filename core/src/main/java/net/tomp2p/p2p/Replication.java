@@ -126,6 +126,12 @@ public class Replication implements PeerMapChangeListener {
             responsibilityListener.meResponsible(locationKey);
         }
     }
+    
+    private void notifyMeResponsible(final Number160 locationKey, PeerAddress newPeer) {
+        for (ResponsibilityListener responsibilityListener : listeners) {
+            responsibilityListener.meResponsible(locationKey, newPeer);
+        }
+    }
 
     /**
      * Notify if an other peer is responsible and we should transfer data to this peer.
@@ -186,12 +192,17 @@ public class Replication implements PeerMapChangeListener {
                     // notify that someone else is now responsible for the
                     // content with key responsibleLocations
                     notifyOtherResponsible(myResponsibleLocation, closest, false);
+                    // cancel any pending notifyMeResponsible*, as we are not responsible anymore.
                 }
             } else if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
                 // we are still responsible, but a new peer joined and if it is within the x close peers, we need to
                 // replicate
-                if (replicationStorage.updateResponsibilities(myResponsibleLocation, peerAddress.getPeerId())) {
+                if (replicationStorage.updateResponsibilities(myResponsibleLocation, selfAddress.getPeerId())) {
+                	//I figured out I'm the new responsible, so check all my peer in the replication range
                     notifyMeResponsible(myResponsibleLocation);
+                } else {
+                	//new peer joined, I'm responsible, so replicate to that peer
+                	notifyMeResponsible(myResponsibleLocation, peerAddress);
                 }
             }
         }

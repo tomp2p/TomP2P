@@ -650,6 +650,11 @@ public class TestStorage {
                     System.err.println("I'm responsible for " + locationKey + " / ");
                     test2.incrementAndGet();
                 }
+
+				@Override
+                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+	                System.err.println("I sync for " + locationKey + " / ");
+                }
             });
             master.getPeerBean().replicationStorage(replication);
             Number160 location = new Number160("0xff");
@@ -728,6 +733,10 @@ public class TestStorage {
                 public void meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey);
                     test2.incrementAndGet();
+                }
+                @Override
+                public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+	                System.err.println("I sync for " + locationKey + " / ");
                 }
             });
 

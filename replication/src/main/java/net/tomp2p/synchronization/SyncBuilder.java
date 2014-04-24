@@ -263,7 +263,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                                 retVal.put(entry.getKey(), data1);                    		
                         	}
                         }
-                        final SyncStat syncStat = new SyncStat(dataCopy, dataOrig);
+                        final SyncStat syncStat = new SyncStat(peer.getPeerAddress().getPeerId(), other.getPeerId(), dataCopy, dataOrig);
                         if (syncMessageRequired) {
                         	SyncBuilder.this.dataMap(new DataMap(retVal));
                         	FutureResponse fr = peerSync.syncRPC().syncMessage(other,

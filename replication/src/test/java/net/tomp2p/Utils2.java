@@ -31,12 +31,11 @@ import java.util.TreeSet;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
-import net.tomp2p.p2p.ReplicationSender;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -146,7 +145,7 @@ public class Utils2 {
                    .ports(port).setEnableMaintenance(maintenance)
                    .externalBindings(bindings);
         if(replication) {
-        	ReplicationSync rs = new ReplicationSync(5);
+        	ReplicationSync rs = new ReplicationSync(10);
         	pm.replicationSender(rs);
         }
         if(automaticFuture!=null) {
@@ -159,7 +158,7 @@ public class Utils2 {
             pm = new PeerMaker(new Number160(rnd)).setEnableMaintenance(maintenance)
                         .externalBindings(bindings).setEnableIndirectReplication(replication).masterPeer(peers[0]);
             if(replication) {
-            	ReplicationSync rs = new ReplicationSync(5);
+            	ReplicationSync rs = new ReplicationSync(10);
               	pm.replicationSender(rs);
             }
             if(automaticFuture!=null) {

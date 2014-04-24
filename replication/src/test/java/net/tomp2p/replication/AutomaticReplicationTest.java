@@ -24,7 +24,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.storage.Data;
-import net.tomp2p.synchronization.ReplicationSync;
 import net.tomp2p.synchronization.SyncStat;
 
 import org.junit.Assert;
@@ -249,8 +248,13 @@ public class AutomaticReplicationTest {
                             @Override
                             public void operationComplete(BaseFuture future)
                                     throws Exception {
+                            	if(future.isFailed()) {
+                            		System.err.println(future.getFailedReason());
+                            	}
                             	System.err.println(future.isSuccess() +"/"+ f.getObject());
-                                //testCopied.set(f.getObject().dataCopy() == 71 || f.getObject().dataCopy() == 36 || f.getObject().dataCopy() == 76);
+                            	if(!testCopied.get()) {
+                            		testCopied.set(f.getObject().dataCopy() == 56);
+                            	}
                                 latch.countDown();
                             }
                         });
@@ -283,6 +287,7 @@ public class AutomaticReplicationTest {
             Data data2 = new Data("CommunicationSystemsDatabaseSoftwarasdfkjasdklfjasdfklajsdfaslkjfsdfd");
             Data data3 = new Data(
                     "oesauhtnoaetnsuuhooaeuoaeuoauoaeuoaeuoaeuaetnsauosanuhatns");
+                    //Data data3 = new Data("CommunicationSystemsDatabaseSoftwarasdfkjasdklfjasdfklajsdfaslkjfsdfa");
             
             
             //A.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data1, null, false, false);
@@ -305,7 +310,7 @@ public class AutomaticReplicationTest {
             Assert.assertArrayEquals(valueOfA, valueOfC);
             latch.await();
             Assert.assertEquals(true, testCopied.get());
-            
+            System.err.println("DONE!");
             
         } finally {
             if (master != null) {

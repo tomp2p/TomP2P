@@ -33,6 +33,8 @@ public interface ResponsibilityListener {
      *            The location key
      */
     void meResponsible(Number160 locationKey);
+    
+    void meResponsible(Number160 locationKey, PeerAddress newPeer);
 
     /**
      * Here an other peer is responsible and we need to transfer data.

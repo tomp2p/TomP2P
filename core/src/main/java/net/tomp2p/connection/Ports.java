@@ -18,13 +18,7 @@ package net.tomp2p.connection;
 import java.util.Random;
 
 /**
- * Gathers information about interface bindings. Here a user can set the
- * preferences to which addresses to bind the socket. This class contains two
- * types of information: 1.) the interface/address to listen for incoming
- * connections and 2.) how other peers see us. The default is to listen to all
- * interfaces and our outside address is set to the first interface it finds. If
- * more than one search hint is used, then the combination operation will be
- * "and"
+ * Store port information. 
  * 
  * @author Thomas Bocek
  */
@@ -47,10 +41,10 @@ public class Ports {
     private final boolean randomPorts;
 
     /**
-     * Creates a binding class that binds to everything.
+     * Creates random ports for TCP and UDP. The random ports start from port 49152
      */
     public Ports() {
-        this(0, 0);
+        this(-1, -1);
     }
 
     /**
@@ -70,12 +64,9 @@ public class Ports {
      *            provided, a random port will be used
      */
     public Ports(final int externalTCPPort, final int externalUDPPort) {
-        if (externalTCPPort < 0 || externalUDPPort < 0) {
-            throw new IllegalArgumentException("port needs to be >= 0");
-        }
-        this.externalTCPPort = externalTCPPort == 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalTCPPort;
-        this.externalUDPPort = externalUDPPort == 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalUDPPort;
-        this.randomPorts = externalTCPPort == 0 && externalUDPPort == 0;
+        this.externalTCPPort = externalTCPPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalTCPPort;
+        this.externalUDPPort = externalUDPPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalUDPPort;
+        this.randomPorts = externalTCPPort < 0 && externalUDPPort < 0;
     }
 
     /**

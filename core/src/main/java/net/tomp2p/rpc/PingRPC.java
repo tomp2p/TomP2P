@@ -399,11 +399,15 @@ public class PingRPC extends DispatchHandler {
     }
 
     public void addPeerReachableListener(PeerReachable peerReachable) {
-    	reachableListeners.add(peerReachable);
+    	synchronized (reachableListeners) {
+    		reachableListeners.add(peerReachable);
+    	}
     }
     
     public void removePeerReachableListener(PeerReachable peerReachable) {
-    	reachableListeners.remove(peerReachable);
+    	synchronized (reachableListeners) {
+    		reachableListeners.remove(peerReachable);
+    	}
     }
     
     public void addPeerReceivedBroadcastPingListener(PeerReceivedBroadcastPing peerReceivedBroadcastPing) {

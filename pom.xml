@@ -134,7 +134,10 @@
 							<goal>jar</goal>
 						</goals>
 						<configuration>
-                			<additionalparam>-Xdoclint:none</additionalparam>
+						    <!-- if you compile with 1.7, but want that 1.8 should generate the jar use failOnError -->
+						    <failOnError>false</failOnError>
+						    <!-- if you compile with 1.8, but want that 1.7 should generate the jar use Xdoclint -->
+                			<!-- <additionalparam>-Xdoclint:none</additionalparam> -->
             			</configuration>
 					</execution>
 				</executions>

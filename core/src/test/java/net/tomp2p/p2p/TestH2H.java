@@ -73,7 +73,7 @@ public class TestH2H {
 
 			Data data = new Data(testData);
 			data.ttlSeconds(10000);
-			data.basedOn(bKey);
+			data.addBasedOn(bKey);
 			data.setProtectedEntry().sign(keyPair, factory);
 			FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).setDomainKey(dKey).setVersionKey(vKey)
 			        .keyPair(keyPair).start();

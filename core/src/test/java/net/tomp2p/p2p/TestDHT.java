@@ -748,11 +748,11 @@ public class TestDHT {
 			Data data2 = new Data(toStore2.getBytes());
 			Data data3 = new Data(toStore3.getBytes());
 			Number160 key = new Number160(rnd);
-			data1.basedOn(Number160.ONE);
+			data1.addBasedOn(Number160.ONE);
 			Number160 versionKey1 = new Number160(1, data1.hash());
-			data2.basedOn(versionKey1);
+			data2.addBasedOn(versionKey1);
 			Number160 versionKey2 = new Number160(2, data2.hash());
-			data3.basedOn(versionKey2);
+			data3.addBasedOn(versionKey2);
 			Number160 versionKey3 = new Number160(3, data3.hash());
 			FuturePut fput = peers[30].put(nr).setData(key, data1, versionKey1).start();
 			fput.awaitUninterruptibly();

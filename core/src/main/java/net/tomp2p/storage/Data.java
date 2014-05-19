@@ -25,6 +25,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
@@ -71,7 +73,7 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Number160 basedOn = null;
+	private Set<Number160> basedOnSet = new HashSet<Number160>(1);
 	private PublicKey publicKey;
 	//this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
@@ -243,9 +245,12 @@ public class Data {
 			data.ttlSeconds = buf.readInt();
 		}
 		if (data.basedOnFlag) {
-			byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-			buf.readBytes(me);
-			data.basedOn = new Number160(me);
+			int length = buf.readInt();
+			for (int i = 0; i < length; i++) {
+				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+				buf.readBytes(me);
+				data.basedOnSet.add(new Number160(me));
+			}
 		}
 		if (data.publicKeyFlag) {
 			data.publicKey = signatureFactory.decodePublicKey(buf);
@@ -336,7 +341,9 @@ public class Data {
 			buf.writeInt(ttlSeconds);
 		}
 		if (basedOnFlag) {
-			buf.writeBytes(basedOn.toByteArray());
+			buf.writeInt(basedOnSet.size());
+			for (Number160 basedOn: basedOnSet)
+				buf.writeBytes(basedOn.toByteArray());
 		}
 		if (publicKeyFlag) {
 			if (publicKey == null) {
@@ -442,14 +449,14 @@ public class Data {
 		return this;
 	}
 
-	public Data basedOn(Number160 basedOn) {
-		this.basedOn = basedOn;
+	public Data addBasedOn(Number160 basedOn) {
+		this.basedOnSet.add(basedOn);
 		this.basedOnFlag = true;
 		return this;
 	}
 
-	public Number160 basedOn() {
-		return basedOn;
+	public Set<Number160> basedOnSet() {
+		return basedOnSet;
 	}
 
 	public SignatureFactory signatureFactory() {
@@ -572,7 +579,9 @@ public class Data {
 	 */
 	public Data duplicate() {
 		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)
-				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
+				.signature(signature).ttlSeconds(ttlSeconds);
+		// duplicate based on keys
+		data.basedOnSet.addAll(basedOnSet);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
@@ -589,7 +598,9 @@ public class Data {
 	
 	public Data duplicateMeta() {
 		Data data = new Data().publicKey(publicKey)
-				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
+				.signature(signature).ttlSeconds(ttlSeconds);
+		// duplicate based on keys
+		data.basedOnSet.addAll(basedOnSet);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
@@ -691,9 +702,8 @@ public class Data {
 		bs.set(5, flag1);
 		bs.set(6, flag2);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
-		if (basedOn != null) {
+		for (Number160 basedOn: basedOnSet)
 			hashCode = hashCode ^ basedOn.hashCode();
-		}
 		// This is a slow operation, use with care!
 		return hashCode ^ buffer.hashCode();
 	}
@@ -717,7 +727,7 @@ public class Data {
 			return false;
 		}
 		//ignore ttl -> it's still the same data even if ttl is different
-		return Utils.equals(basedOn, d.basedOn) && Utils.equals(signature, d.signature)
+		return Utils.equals(basedOnSet, d.basedOnSet) && Utils.equals(signature, d.signature)
 				&& d.buffer.equals(buffer); // This is a slow operation, use
 											// with care!
 	}

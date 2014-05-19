@@ -11,6 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 
 import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -163,6 +164,14 @@ public class TestData {
         Assert.assertEquals(-1, newData.ttlSeconds());
         Assert.assertEquals(data, newData);
         Assert.assertEquals(true, newData.isFlag2());
+    }
+    
+    @Test
+    public void testDataBasedOn1() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
+        Data data = new Data();
+        data.addBasedOn(new Number160());
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
     }
 
 	private Data encodeDecode(Data data) throws InvalidKeyException, SignatureException, IOException {

@@ -158,16 +158,6 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                                 broadcastBuilder.setIsUDP(isUDP);
                                 FutureResponse futureResponse = peer.getBroadcastRPC().send(peerAddress, broadcastBuilder, 
                                         future.getChannelCreator(), broadcastBuilder);
-                                futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-
-									@Override
-                                    public void operationComplete(FutureResponse future) throws Exception {
-	                                    if(future.isFailed()) {
-	                                    	System.err.println("why" + future.getFailedReason());
-	                                    }
-	                                    
-                                    }
-								});
                                 LOG.debug("1st broadcast to {}", peerAddress);
                                 Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
                             }
@@ -210,17 +200,6 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                         
                         futures[i] = peer.getBroadcastRPC().send(randomAddress,
                                 broadcastBuilder, future.getChannelCreator(), broadcastBuilder);
-                        
-                        futures[i].addListener(new BaseFutureAdapter<FutureResponse>() {
-
-							@Override
-                            public void operationComplete(FutureResponse future) throws Exception {
-                                if(future.isFailed()) {
-                                	System.err.println("why2" + future.getFailedReason());
-                                }
-                                
-                            }
-						});
                         LOG.debug("2nd broadcast to {}", randomAddress);
                     }
                     Utils.addReleaseListener(future.getChannelCreator(), futures);

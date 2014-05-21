@@ -1275,7 +1275,6 @@ public class TestDHT {
 		}
 	}
 
-	// TODO: make this work
 	@Test
 	public void testBroadcast() throws Exception {
 		Peer master = null;
@@ -1285,7 +1284,7 @@ public class TestDHT {
 			master = peers[0];
 			Utils2.perfectRouting(peers);
 			// do testing
-			master.broadcast(Number160.createHash("blub")).start();
+			master.broadcast(Number160.createHash("blub")).setIsUDP(false).start();
 			DefaultBroadcastHandler d = (DefaultBroadcastHandler) master.getBroadcastRPC().broadcastHandler();
 			int counter = 0;
 			while (d.getBroadcastCounter() < 900) {

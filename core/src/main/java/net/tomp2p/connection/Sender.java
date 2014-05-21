@@ -516,8 +516,7 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.setFailedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {}", futureResponse.getRequest(), future.cause());
-
+					LOG.warn("Failed to write channel the request {} {}", futureResponse.getRequest(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.setResponseLater(null);

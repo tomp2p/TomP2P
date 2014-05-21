@@ -1,4 +1,4 @@
-package net.tomp2p.message;
+package net.tomp2p.connection;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 public class DropConnectionInboundHandler extends ChannelInboundHandlerAdapter {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DropConnectionInboundHandler.class);
-	private static final AtomicInteger counter = new AtomicInteger();
+	private final AtomicInteger counter = new AtomicInteger();
 	final int limit;
 
 	public DropConnectionInboundHandler(int limit) {

@@ -241,13 +241,10 @@ public class TestMessage {
 		m1.setPublicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
-
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(
-				pair1.getPrivate(), factory));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 })
-				.sign(pair1.getPrivate(), factory));
-		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 })
-				.sign(pair1.getPrivate(), factory));
+		
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1.getPrivate(), factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate(), factory));
+		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate(), factory));
 		m1.setDataMap(new DataMap(dataMap));
 		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
 		Set<Number160> set = new HashSet<Number160>(1);

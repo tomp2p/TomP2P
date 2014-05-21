@@ -209,7 +209,7 @@ public class TestData {
 			InvalidKeyException, SignatureException {
 		Data data = new Data();
 		Random random = new Random();
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 255; i++)
 			data.addBasedOn(new Number160(random));
 		Data newData = encodeDecode(data);
 		Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
@@ -221,13 +221,37 @@ public class TestData {
 			InvalidKeyException, SignatureException, NoSuchAlgorithmException {
 		Random random = new Random();
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair keyPair1 = gen.generateKeyPair();
+		KeyPair keyPair2 = gen.generateKeyPair();
 
 		Data data = new Data(UUID.randomUUID().toString());
 		data.ttlSeconds(random.nextInt());
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 255; i++)
 			data.addBasedOn(new Number160(random));
 		//data.setProtectedEntry().publicKey(gen.generateKeyPair().getPublic());
-		data.sign(gen.generateKeyPair(), factory);
+		data.sign(keyPair1, factory);
+		Data newData = encodeDecode(data);
+
+		Assert.assertEquals(data.object(), newData.object());
+		Assert.assertEquals(data.ttlSeconds(), newData.ttlSeconds());
+		Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+		Assert.assertTrue(newData.verify(keyPair1.getPublic(), factory));
+		Assert.assertFalse(newData.verify(keyPair2.getPublic(), factory));
+		Assert.assertEquals(data, newData);
+	}
+
+	@Test
+	public void testDataBasedOn4() throws IOException, ClassNotFoundException,
+			InvalidKeyException, SignatureException, NoSuchAlgorithmException {
+		Random random = new Random();
+		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+		KeyPair keyPair1 = gen.generateKeyPair();
+
+		Data data = new Data(UUID.randomUUID().toString());
+		data.ttlSeconds(random.nextInt());
+		for (int i = 0; i < 255; i++)
+			data.addBasedOn(new Number160(random));
+		data.setProtectedEntry().publicKey(keyPair1.getPublic());
 		Data newData = encodeDecode(data);
 
 		Assert.assertEquals(data.object(), newData.object());
@@ -236,6 +260,7 @@ public class TestData {
 		Assert.assertEquals(data, newData);
 	}
 
+	
 	private Data encodeDecode(Data data) throws InvalidKeyException,
 			SignatureException, IOException {
 

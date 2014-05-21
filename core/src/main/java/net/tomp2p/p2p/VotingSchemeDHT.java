@@ -33,7 +33,7 @@ import net.tomp2p.storage.Data;
 
 public class VotingSchemeDHT implements EvaluatingSchemeDHT {
     
-    private static final NavigableMap<Number640, Number160> emptyMap = new TreeMap<Number640, Number160>();
+    private static final NavigableMap<Number640, Set<Number160>> emptyMap = new TreeMap<Number640, Set<Number160>>();
     
     @Override
     public Collection<Number640> evaluate1(Map<PeerAddress, Map<Number640, Number160>> rawKeysByte) {

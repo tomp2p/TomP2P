@@ -366,8 +366,7 @@ public class StorageLayer {
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-				Number160 basedOn = entry.getValue().basedOn();
-				digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+				digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
 			}
 			return digestInfo;
 		} finally {
@@ -387,15 +386,13 @@ public class StorageLayer {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().getContentKey())) {
 						if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-							Number160 basedOn = entry.getValue().basedOn();
-							digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+							digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
 						}
 					}
 				} else {
 					if (keyBloomFilter == null || !keyBloomFilter.contains(entry.getKey().getContentKey())) {
 						if (contentBloomFilter == null || !contentBloomFilter.contains(entry.getValue().hash())) {
-							Number160 basedOn = entry.getValue().basedOn();
-							digestInfo.put(entry.getKey(), basedOn == null ? Number160.ZERO : basedOn);
+							digestInfo.put(entry.getKey(),entry.getValue().basedOnSet());
 						}
 					}
 				}
@@ -413,8 +410,7 @@ public class StorageLayer {
 			try {
 				if (backend.contains(number640)) {
 					Data data = getInternal(number640);
-					Number160 basedOn = data.basedOn();
-					digestInfo.put(number640, basedOn == null ? Number160.ZERO : basedOn);
+					digestInfo.put(number640, data.basedOnSet());
 				}
 			} finally {
 				lock.unlock();

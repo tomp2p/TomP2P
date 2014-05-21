@@ -17,9 +17,11 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -41,8 +43,10 @@ import org.slf4j.LoggerFactory;
 
 public class Decoder {
 
-	public static final AttributeKey<InetSocketAddress> INET_ADDRESS_KEY = AttributeKey.valueOf("inet-addr");
-	public static final AttributeKey<PeerAddress> PEER_ADDRESS_KEY = AttributeKey.valueOf("peer-addr");
+	public static final AttributeKey<InetSocketAddress> INET_ADDRESS_KEY = AttributeKey
+			.valueOf("inet-addr");
+	public static final AttributeKey<PeerAddress> PEER_ADDRESS_KEY = AttributeKey
+			.valueOf("peer-addr");
 
 	private static final Logger LOG = LoggerFactory.getLogger(Decoder.class);
 
@@ -55,7 +59,7 @@ public class Decoder {
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
-	
+
 	private int peerSocketAddressSize = -1;
 	private List<PeerSocketAddress> peerSocketAddresses = null;
 
@@ -67,8 +71,8 @@ public class Decoder {
 	private Data data = null;
 	private Number640 key = null;
 
-	private int keyMap480Size = -1;
-	private KeyMap640 keyMap480 = null;
+	private int keyMap640KeysSize = -1;
+	private KeyMap640Keys keyMap640Keys = null;
 
 	private int keyMapByteSize = -1;
 	private KeyMapByte keyMapByte = null;
@@ -88,22 +92,24 @@ public class Decoder {
 		this.signatureFactory = signatureFactory;
 	}
 
-	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
-			final InetSocketAddress sender) {
+	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf,
+			InetSocketAddress recipient, final InetSocketAddress sender) {
 
 		LOG.debug("decode of TomP2P starts now");
 
 		try {
 			final int readerBefore = buf.readerIndex();
 			// set the sender of this message for handling timeout
-			final Attribute<InetSocketAddress> attributeInet = ctx.attr(INET_ADDRESS_KEY);
+			final Attribute<InetSocketAddress> attributeInet = ctx
+					.attr(INET_ADDRESS_KEY);
 			attributeInet.set(sender);
 
 			if (message == null) {
 				boolean doneHeader = decodeHeader(buf, recipient, sender);
 				if (doneHeader) {
 					// store the sender as an attribute
-					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
+					final Attribute<PeerAddress> attributePeerAddress = ctx
+							.attr(PEER_ADDRESS_KEY);
 					attributePeerAddress.set(message.getSender());
 					message.udp(ctx.channel() instanceof DatagramChannel);
 					if (message.isFireAndForget() && message.isUdp()) {
@@ -113,11 +119,11 @@ public class Decoder {
 					return false;
 				}
 			}
-			
+
 			final boolean donePayload = decodePayload(buf);
 			final int readerAfter = buf.readerIndex();
 			final int len = readerAfter - readerBefore;
-			if(len > 0) {
+			if (len > 0) {
 				verifySignature(buf, readerBefore, len, donePayload);
 			}
 			// see https://github.com/netty/netty/issues/1976
@@ -131,18 +137,21 @@ public class Decoder {
 		}
 	}
 
-	private void verifySignature(final ByteBuf buf, final int readerBefore, final int len, final boolean donePayload)
-	        throws SignatureException, IOException, InvalidKeyException {
+	private void verifySignature(final ByteBuf buf, final int readerBefore,
+			final int len, final boolean donePayload)
+			throws SignatureException, IOException, InvalidKeyException {
 
 		if (!message.isSign()) {
 			return;
 		}
 		// if we read the complete data, we also read the signature. For the
 		// verification, we should not use this for the signature
-		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
+		final int length = donePayload ? len
+				- (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
 		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
-		
-		Signature signature = signatureFactory.update(message.getPublicKey(0), byteBuffers);
+
+		Signature signature = signatureFactory.update(message.getPublicKey(0),
+				byteBuffers);
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
@@ -156,7 +165,8 @@ public class Decoder {
 		}
 	}
 
-	public boolean decodeHeader(final ByteBuf buf, InetSocketAddress recipient, final InetSocketAddress sender) {
+	public boolean decodeHeader(final ByteBuf buf, InetSocketAddress recipient,
+			final InetSocketAddress sender) {
 		// we don't have the header yet, we need the full header first
 		if (message == null) {
 			if (buf.readableBytes() < MessageHeaderCodec.HEADER_SIZE) {
@@ -182,9 +192,11 @@ public class Decoder {
 		return false;
 	}
 
-	public boolean decodePayload(final ByteBuf buf) throws NoSuchAlgorithmException, InvalidKeySpecException,
+	public boolean decodePayload(final ByteBuf buf)
+			throws NoSuchAlgorithmException, InvalidKeySpecException,
 			InvalidKeyException {
-		LOG.debug("about to pass message {} to {}", message, message.senderSocket());
+		LOG.debug("about to pass message {} to {}", message,
+				message.senderSocket());
 		if (!message.hasContent()) {
 			return true;
 		}
@@ -237,7 +249,8 @@ public class Decoder {
 					neighborSize = buf.readUnsignedByte();
 				}
 				if (neighborSet == null) {
-					neighborSet = new NeighborSet(-1, new ArrayList<PeerAddress>(neighborSize));
+					neighborSet = new NeighborSet(-1,
+							new ArrayList<PeerAddress>(neighborSize));
 				}
 				for (int i = neighborSet.size(); i < neighborSize; i++) {
 					if (buf.readableBytes() < Utils.SHORT_BYTE_SIZE) {
@@ -256,17 +269,18 @@ public class Decoder {
 				neighborSize = -1;
 				neighborSet = null;
 				break;
-				
-				
+
 			case SET_PEER_SOCKET:
-				if (peerSocketAddressSize == -1 && buf.readableBytes() < Utils.BYTE_SIZE) {
+				if (peerSocketAddressSize == -1
+						&& buf.readableBytes() < Utils.BYTE_SIZE) {
 					return false;
 				}
 				if (peerSocketAddressSize == -1) {
 					peerSocketAddressSize = buf.readUnsignedByte();
 				}
 				if (peerSocketAddresses == null) {
-					peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddressSize);
+					peerSocketAddresses = new ArrayList<PeerSocketAddress>(
+							peerSocketAddressSize);
 				}
 				for (int i = peerSocketAddresses.size(); i < peerSocketAddressSize; i++) {
 					if (buf.readableBytes() < Utils.BYTE_SIZE) {
@@ -278,28 +292,32 @@ public class Decoder {
 					if (buf.readableBytes() < size) {
 						return false;
 					}
-					peerSocketAddresses.add(PeerSocketAddress.create(buf, isIPv4));
+					peerSocketAddresses.add(PeerSocketAddress.create(buf,
+							isIPv4));
 				}
 				message.setPeerSocketAddresses(peerSocketAddresses);
 				lastContent = contentTypes.poll();
 				peerSocketAddressSize = -1;
 				peerSocketAddresses = null;
 				break;
-				
-				
+
 			case SET_KEY640:
-				if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (keyCollectionSize == -1
+						&& buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
 				if (keyCollectionSize == -1) {
 					keyCollectionSize = buf.readInt();
 				}
 				if (keyCollection == null) {
-					keyCollection = new KeyCollection(new ArrayList<Number640>(keyCollectionSize));
+					keyCollection = new KeyCollection(new ArrayList<Number640>(
+							keyCollectionSize));
 				}
 				for (int i = keyCollection.size(); i < keyCollectionSize; i++) {
-					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE) {
 						return false;
 					}
 					byte[] me2 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -311,7 +329,8 @@ public class Decoder {
 					Number160 contentKey = new Number160(me2);
 					buf.readBytes(me2);
 					Number160 versionKey = new Number160(me2);
-					keyCollection.add(new Number640(locationKey, domainKey, contentKey, versionKey));
+					keyCollection.add(new Number640(locationKey, domainKey,
+							contentKey, versionKey));
 				}
 				message.setKeyCollection(keyCollection);
 				lastContent = contentTypes.poll();
@@ -319,20 +338,23 @@ public class Decoder {
 				keyCollection = null;
 				break;
 			case MAP_KEY640_DATA:
-				if (mapsSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (mapsSize == -1
+						&& buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
 				if (mapsSize == -1) {
 					mapsSize = buf.readInt();
 				}
 				if (dataMap == null) {
-					dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapsSize));
+					dataMap = new DataMap(new HashMap<Number640, Data>(
+							2 * mapsSize));
 				}
 				if (data != null) {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!data.decodeDone(buf, message.getPublicKey(0),
+							signatureFactory)) {
 						return false;
 					}
 					data = null;
@@ -340,8 +362,10 @@ public class Decoder {
 				}
 				for (int i = dataMap.size(); i < mapsSize; i++) {
 					if (key == null) {
-						if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-								+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+						if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE
+								+ Number160.BYTE_ARRAY_SIZE
+								+ Number160.BYTE_ARRAY_SIZE
+								+ Number160.BYTE_ARRAY_SIZE) {
 							return false;
 						}
 						byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -353,7 +377,8 @@ public class Decoder {
 						Number160 contentKey = new Number160(me3);
 						buf.readBytes(me3);
 						Number160 versionKey = new Number160(me3);
-						key = new Number640(locationKey, domainKey, contentKey, versionKey);
+						key = new Number640(locationKey, domainKey, contentKey,
+								versionKey);
 					}
 					data = Data.decodeHeader(buf, signatureFactory);
 					if (data == null) {
@@ -364,11 +389,15 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!data.decodeDone(buf, message.getPublicKey(0),
+							signatureFactory)) {
 						return false;
 					}
-					// if we have signed the message, set the public key anyway, but only if we indicated so
-					if (message.isSign() && message.getPublicKey(0) != null && data.hasPublicKey() 
+					// if we have signed the message, set the public key anyway,
+					// but only if we indicated so
+					if (message.isSign()
+							&& message.getPublicKey(0) != null
+							&& data.hasPublicKey()
 							&& (data.publicKey() == null || data.publicKey() == PeerMaker.EMPTY_PUBLICKEY)) {
 						data.publicKey(message.getPublicKey(0));
 					}
@@ -381,20 +410,27 @@ public class Decoder {
 				mapsSize = -1;
 				dataMap = null;
 				break;
-			case MAP_KEY640_KEY:
-				if (keyMap480Size == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+			case MAP_KEY640_KEYS:
+				if (keyMap640KeysSize == -1
+						&& buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
-				if (keyMap480Size == -1) {
-					keyMap480Size = buf.readInt();
+				if (keyMap640KeysSize == -1) {
+					keyMap640KeysSize = buf.readInt();
 				}
-				if (keyMap480 == null) {
-					keyMap480 = new KeyMap640(new TreeMap<Number640, Number160>());
+				if (keyMap640Keys == null) {
+					keyMap640Keys = new KeyMap640Keys(
+							new TreeMap<Number640, Set<Number160>>());
 				}
 
-				for (int i = keyMap480.size(); i < keyMap480Size; i++) {
-					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+				final int meta = Number160.BYTE_ARRAY_SIZE
+						+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
+						+ Number160.BYTE_ARRAY_SIZE;
+
+				for (int i = keyMap640Keys.size(); i < keyMap640KeysSize; i++) {
+					if (buf.readableBytes() < meta
+							+ Utils.BYTE_SIZE
+							+ (buf.getUnsignedByte(buf.readerIndex() + meta) * Number160.BYTE_ARRAY_SIZE)) {
 						return false;
 					}
 					byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -406,30 +442,42 @@ public class Decoder {
 					Number160 contentKey = new Number160(me3);
 					buf.readBytes(me3);
 					Number160 versionKey = new Number160(me3);
-					buf.readBytes(me3);
-					Number160 valueKey = new Number160(me3);
-					keyMap480.put(new Number640(locationKey, domainKey, contentKey, versionKey), valueKey);
+
+					int numBasedOn = buf.readByte();
+					Set<Number160> value = new HashSet<Number160>(numBasedOn);
+					for (int j = 0; j < numBasedOn; j++) {
+						buf.readBytes(me3);
+						Number160 basedOnKey = new Number160(me3);
+						value.add(basedOnKey);
+					}
+
+					keyMap640Keys.put(new Number640(locationKey, domainKey,
+							contentKey, versionKey), value);
 				}
 
-				message.setKeyMap640(keyMap480);
+				message.setKeyMap640Keys(keyMap640Keys);
 				lastContent = contentTypes.poll();
-				keyMap480Size = -1;
-				keyMap480 = null;
+				keyMap640KeysSize = -1;
+				keyMap640Keys = null;
 				break;
 			case MAP_KEY640_BYTE:
-				if (keyMapByteSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (keyMapByteSize == -1
+						&& buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
 				if (keyMapByteSize == -1) {
 					keyMapByteSize = buf.readInt();
 				}
 				if (keyMapByte == null) {
-					keyMapByte = new KeyMapByte(new HashMap<Number640, Byte>(2 * keyMapByteSize));
+					keyMapByte = new KeyMapByte(new HashMap<Number640, Byte>(
+							2 * keyMapByteSize));
 				}
 
 				for (int i = keyMapByte.size(); i < keyMapByteSize; i++) {
-					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE + 1) {
+					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE
+							+ Number160.BYTE_ARRAY_SIZE + 1) {
 						return false;
 					}
 					byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -442,7 +490,8 @@ public class Decoder {
 					buf.readBytes(me3);
 					Number160 versionKey = new Number160(me3);
 					byte value = buf.readByte();
-					keyMapByte.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
+					keyMapByte.put(new Number640(locationKey, domainKey,
+							contentKey, versionKey), value);
 				}
 
 				message.setKeyMapByte(keyMapByte);
@@ -451,7 +500,8 @@ public class Decoder {
 				keyMapByte = null;
 				break;
 			case BYTE_BUFFER:
-				if (bufferSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (bufferSize == -1
+						&& buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
 				if (bufferSize == -1) {
@@ -460,41 +510,47 @@ public class Decoder {
 				if (buffer == null) {
 					buffer = new DataBuffer();
 				}
-				
+
 				final int already = buffer.alreadyTransferred();
 				final int remaining = bufferSize - already;
 				// already finished
 				if (remaining != 0) {
 					int read = buffer.transferFrom(buf, remaining);
-					if(read != remaining) {
-						LOG.debug("we are still looking for data, indicate that we are not finished yet, "
-								+ "read = {}, size = {}", buffer.alreadyTransferred(), bufferSize);
+					if (read != remaining) {
+						LOG.debug(
+								"we are still looking for data, indicate that we are not finished yet, "
+										+ "read = {}, size = {}",
+								buffer.alreadyTransferred(), bufferSize);
 						return false;
 					}
 				}
-				
-				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(buffer.toByteBufs());
+
+				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(buffer
+						.toByteBufs());
 				message.setBuffer(new Buffer(buf2, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				buffer = null;
 				break;
 			case SET_TRACKER_DATA:
-				if (trackerDataSize == -1 && buf.readableBytes() < Utils.BYTE_SIZE) {
+				if (trackerDataSize == -1
+						&& buf.readableBytes() < Utils.BYTE_SIZE) {
 					return false;
 				}
 				if (trackerDataSize == -1) {
 					trackerDataSize = buf.readUnsignedByte();
 				}
 				if (trackerData == null) {
-					trackerData = new TrackerData(new HashMap<PeerAddress, Data>(2 * trackerDataSize),
+					trackerData = new TrackerData(
+							new HashMap<PeerAddress, Data>(2 * trackerDataSize),
 							message.getSender());
 				}
 				if (currentTrackerData != null) {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!currentTrackerData.decodeDone(buf,
+							message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -514,7 +570,8 @@ public class Decoder {
 					}
 					PeerAddress pa = new PeerAddress(buf);
 
-					currentTrackerData = Data.decodeHeader(buf, signatureFactory);
+					currentTrackerData = Data.decodeHeader(buf,
+							signatureFactory);
 					if (currentTrackerData == null) {
 						return false;
 					}
@@ -526,7 +583,8 @@ public class Decoder {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!currentTrackerData.decodeDone(buf,
+							message.getPublicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -541,9 +599,10 @@ public class Decoder {
 			case PUBLIC_KEY:
 			case PUBLIC_KEY_SIGNATURE:
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
-				if(content == Content.PUBLIC_KEY_SIGNATURE) {
+				if (content == Content.PUBLIC_KEY_SIGNATURE) {
 					if (receivedPublicKey == PeerMaker.EMPTY_PUBLICKEY) {
-						throw new InvalidKeyException("The public key cannot be empty");
+						throw new InvalidKeyException(
+								"The public key cannot be empty");
 					}
 				}
 				if (receivedPublicKey == null) {
@@ -552,7 +611,7 @@ public class Decoder {
 				message.setPublicKey(receivedPublicKey);
 				lastContent = contentTypes.poll();
 				break;
-				
+
 			default:
 			case USER1:
 			case EMPTY:
@@ -565,7 +624,7 @@ public class Decoder {
 			if (buf.readableBytes() < size) {
 				return false;
 			}
-			
+
 			signatureEncode.read(buf);
 			message.receivedSignature(signatureEncode);
 		}
@@ -585,8 +644,8 @@ public class Decoder {
 		mapsSize = -1;
 		dataMap = null;
 		data = null;
-		keyMap480Size = -1;
-		keyMap480 = null;
+		keyMap640KeysSize = -1;
+		keyMap640Keys = null;
 		bufferSize = -1;
 		buffer = null;
 		return ret;

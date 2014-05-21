@@ -25,6 +25,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
@@ -52,7 +54,9 @@ public class Data {
 	 * @author Thomas Bocek
 	 * 
 	 */
-	public enum Type {SMALL, LARGE}
+	public enum Type {
+		SMALL, LARGE
+	}
 
 	private final Type type;
 	private final int length;
@@ -71,9 +75,9 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Number160 basedOn = null;
+	private Set<Number160> basedOnSet = new HashSet<Number160>(1);
 	private PublicKey publicKey;
-	//this goes never over the network! If this is set, we have to sign lazy
+	// this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
 
 	// never serialized over the network in this object
@@ -81,7 +85,7 @@ public class Data {
 	private SignatureFactory signatureFactory;
 	private Number160 hash;
 	private boolean meta;
-	
+
 	public Data(final DataBuffer buffer) {
 		this(buffer, buffer.length());
 	}
@@ -149,7 +153,7 @@ public class Data {
 	public Data(final byte[] buffer) {
 		this(buffer, 0, buffer.length);
 	}
-	
+
 	public Data() {
 		this(Utils.EMPTY_BYTE_ARRAY);
 	}
@@ -179,8 +183,10 @@ public class Data {
 		this.validFromMillis = Timings.currentTimeMillis();
 	}
 
-	private static boolean hasEnoughDataForPublicKey(final ByteBuf buf, final int indexPublicKey, final int toRead) {
-		final int len = buf.getUnsignedShort(buf.readerIndex() + indexPublicKey);
+	private static boolean hasEnoughDataForPublicKey(final ByteBuf buf,
+			final int indexPublicKey, final int toRead) {
+		final int len = buf
+				.getUnsignedShort(buf.readerIndex() + indexPublicKey);
 		if (len > 0 && buf.readableBytes() < toRead + len) {
 			return false;
 		}
@@ -195,7 +201,8 @@ public class Data {
 	 *            The buffer to read from
 	 * @return The data object, may be partially filled
 	 */
-	public static Data decodeHeader(final ByteBuf buf, final SignatureFactory signatureFactory) {
+	public static Data decodeHeader(final ByteBuf buf,
+			final SignatureFactory signatureFactory) {
 		// 2 is the smallest packet size, we could start if we know 1 byte to
 		// decode the header, but we need always need
 		// a second byte. Thus, we are waiting for at least 2 bytes.
@@ -207,30 +214,46 @@ public class Data {
 		final int len;
 		final int toRead;
 		final int toReadPublicKey;
+		final int numBasedOn;
+		if (hasBasedOn(header)) {
+			// find index where # of based on keys is stored
+			final int indexBasedOn = Utils.BYTE_SIZE + Utils.BYTE_SIZE
+					+ (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0);
+			// get # of based on keys
+			numBasedOn = buf.getUnsignedByte(buf.readerIndex() + indexBasedOn);
+		} else {
+			// no based on keys
+			numBasedOn = 0;
+		}
 		final int meta1 = (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0)
-				+ (hasBasedOn(header) ? Number160.BYTE_ARRAY_SIZE : 0);
-		final int meta2 = (hasPublicKey(header) ? 2 : 0);
+				// consider # of based on keys byte
+				+ (hasBasedOn(header) ? Utils.BYTE_SIZE : 0)
+				// calculate used bytes for based on keys
+				+ (numBasedOn * Number160.BYTE_ARRAY_SIZE);
+		final int meta2 = (hasPublicKey(header) ? Utils.SHORT_BYTE_SIZE : 0);
 		switch (type) {
 		case SMALL:
-			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.BYTE_SIZE;
+			toReadPublicKey = Utils.BYTE_SIZE + Utils.BYTE_SIZE + meta1;
 			toRead = toReadPublicKey + meta2;
 			if (buf.readableBytes() < toReadPublicKey) {
 				return null;
 			}
 			// read the length of the public key
-			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
+			if (hasPublicKey(header)
+					&& !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
 				return null;
 			}
 			len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedByte();
 			break;
 		case LARGE:
-			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.INTEGER_BYTE_SIZE;
+			toReadPublicKey = Utils.BYTE_SIZE + Utils.INTEGER_BYTE_SIZE + meta1;
 			toRead = toReadPublicKey + meta2;
 			if (buf.readableBytes() < toReadPublicKey) {
 				return null;
 			}
 			// read the length of the public key
-			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
+			if (hasPublicKey(header)
+					&& !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
 				return null;
 			}
 			len = buf.skipBytes(Utils.BYTE_SIZE).readInt();
@@ -243,16 +266,19 @@ public class Data {
 			data.ttlSeconds = buf.readInt();
 		}
 		if (data.basedOnFlag) {
-			byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-			buf.readBytes(me);
-			data.basedOn = new Number160(me);
+			int num = buf.readUnsignedByte();
+			for (int i = 0; i < num; i++) {
+				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+				buf.readBytes(me);
+				data.basedOnSet.add(new Number160(me));
+			}
 		}
 		if (data.publicKeyFlag) {
 			data.publicKey = signatureFactory.decodePublicKey(buf);
 		}
 		return data;
 	}
-	
+
 	/**
 	 * Add data to the byte buffer.
 	 * 
@@ -274,13 +300,14 @@ public class Data {
 		return transfered == remaining;
 	}
 
-	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
+	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey,
+			SignatureFactory signatureFactory) {
 		if (signed) {
-			if(publicKey == PeerMaker.EMPTY_PUBLICKEY) {
-				this.publicKey = publicKey;	
+			if (publicKey == PeerMaker.EMPTY_PUBLICKEY) {
+				this.publicKey = publicKey;
 			}
 			signature = signatureFactory.signatureCodec();
-			if(buf.readableBytes() < signature.signatureSize()) {
+			if (buf.readableBytes() < signature.signatureSize()) {
 				return false;
 			}
 			signature.read(buf);
@@ -288,15 +315,19 @@ public class Data {
 		return true;
 	}
 
-	public boolean verify(SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public boolean verify(SignatureFactory signatureFactory)
+			throws InvalidKeyException, SignatureException, IOException {
 		return verify(publicKey, signatureFactory);
 	}
 
-	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
-		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
+	public boolean verify(PublicKey publicKey, SignatureFactory signatureFactory)
+			throws InvalidKeyException, SignatureException, IOException {
+		return signatureFactory
+				.verify(publicKey, buffer.toByteBuf(), signature);
 	}
 
-	public void encodeHeader(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) {
+	public void encodeHeader(final AlternativeCompositeByteBuf buf,
+			SignatureFactory signatureFactory) {
 		int header = type.ordinal();
 		if (publicKeyFlag) {
 			header |= 0x02;
@@ -336,7 +367,9 @@ public class Data {
 			buf.writeInt(ttlSeconds);
 		}
 		if (basedOnFlag) {
-			buf.writeBytes(basedOn.toByteArray());
+			buf.writeByte(basedOnSet.size());
+			for (Number160 basedOn : basedOnSet)
+				buf.writeBytes(basedOn.toByteArray());
 		}
 		if (publicKeyFlag) {
 			if (publicKey == null) {
@@ -347,7 +380,7 @@ public class Data {
 		}
 		buffer.transferTo(buf);
 	}
-	
+
 	public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
 		int already = buffer.alreadyTransferred();
 
@@ -360,12 +393,15 @@ public class Data {
 		return buffer.alreadyTransferred() == length();
 	}
 
-	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory)
+			throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
 			if (signature == null && privateKey == null) {
-				throw new IllegalArgumentException("you need to sign the data object first and add a public key!");
-			} else if(privateKey != null) {
-				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+				throw new IllegalArgumentException(
+						"you need to sign the data object first and add a public key!");
+			} else if (privateKey != null) {
+				signature = signatureFactory.sign(privateKey,
+						buffer.toByteBuf());
 			}
 			signature.write(buf);
 		}
@@ -382,30 +418,34 @@ public class Data {
 	public long validFromMillis() {
 		return validFromMillis;
 	}
-	
+
 	Data validFromMillis(long validFromMillis) {
-	    this.validFromMillis = validFromMillis;
-	    return this;
-    }
-	
-	public Data sign(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		this.validFromMillis = validFromMillis;
+		return this;
+	}
+
+	public Data sign(KeyPair keyPair, SignatureFactory signatureFactory)
+			throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
+			this.signature = signatureFactory.sign(keyPair.getPrivate(),
+					buffer.toByteBuf());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
 		}
 		return this;
 	}
 
-	public Data sign(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public Data sign(PrivateKey privateKey, SignatureFactory signatureFactory)
+			throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
-			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+			this.signature = signatureFactory.sign(privateKey,
+					buffer.toByteBuf());
 		}
 		return this;
 	}
-	
+
 	public Data lazySign(KeyPair keyPair) {
 		if (this.signature == null) {
 			this.signed = true;
@@ -415,7 +455,7 @@ public class Data {
 		}
 		return this;
 	}
-	
+
 	public Data lazySign(PrivateKey privateKey) {
 		if (this.signature == null) {
 			this.signed = true;
@@ -429,7 +469,8 @@ public class Data {
 	}
 
 	public long expirationMillis() {
-		return ttlSeconds <= 0 ? Long.MAX_VALUE : validFromMillis + (ttlSeconds * 1000L);
+		return ttlSeconds <= 0 ? Long.MAX_VALUE : validFromMillis
+				+ (ttlSeconds * 1000L);
 	}
 
 	public int ttlSeconds() {
@@ -442,14 +483,14 @@ public class Data {
 		return this;
 	}
 
-	public Data basedOn(Number160 basedOn) {
-		this.basedOn = basedOn;
+	public Data addBasedOn(Number160 basedOn) {
+		this.basedOnSet.add(basedOn);
 		this.basedOnFlag = true;
 		return this;
 	}
 
-	public Number160 basedOn() {
-		return basedOn;
+	public Set<Number160> basedOnSet() {
+		return basedOnSet;
 	}
 
 	public SignatureFactory signatureFactory() {
@@ -472,12 +513,12 @@ public class Data {
 	public boolean isSigned() {
 		return signed;
 	}
-	
+
 	public Data signed(boolean signed) {
 		this.signed = signed;
 		return this;
 	}
-	
+
 	public Data signed() {
 		this.signed = true;
 		return this;
@@ -522,7 +563,7 @@ public class Data {
 		this.flag2 = true;
 		return this;
 	}
-	
+
 	public boolean hasPublicKey() {
 		return publicKeyFlag;
 	}
@@ -536,7 +577,7 @@ public class Data {
 		this.publicKeyFlag = true;
 		return this;
 	}
-	
+
 	public boolean isMeta() {
 		return meta;
 	}
@@ -572,7 +613,9 @@ public class Data {
 	 */
 	public Data duplicate() {
 		Data data = new Data(buffer.shallowCopy(), length).publicKey(publicKey)
-				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
+				.signature(signature).ttlSeconds(ttlSeconds);
+		// duplicate based on keys
+		data.basedOnSet.addAll(basedOnSet);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
@@ -586,10 +629,12 @@ public class Data {
 		data.validFromMillis = validFromMillis;
 		return data;
 	}
-	
+
 	public Data duplicateMeta() {
-		Data data = new Data().publicKey(publicKey)
-				.signature(signature).basedOn(basedOn).ttlSeconds(ttlSeconds);
+		Data data = new Data().publicKey(publicKey).signature(signature)
+				.ttlSeconds(ttlSeconds);
+		// duplicate based on keys
+		data.basedOnSet.addAll(basedOnSet);
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
@@ -607,7 +652,7 @@ public class Data {
 	public static Type type(final int header) {
 		return Type.values()[header & 0x1];
 	}
-	
+
 	private static boolean hasPublicKey(final int header) {
 		return (header & 0x02) > 0;
 	}
@@ -657,7 +702,7 @@ public class Data {
 	public PublicKey publicKey() {
 		return publicKey;
 	}
-	
+
 	/**
 	 * @return A private key if we want to sign it lazy (during encoding).
 	 */
@@ -691,9 +736,8 @@ public class Data {
 		bs.set(5, flag1);
 		bs.set(6, flag2);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
-		if (basedOn != null) {
+		for (Number160 basedOn : basedOnSet)
 			hashCode = hashCode ^ basedOn.hashCode();
-		}
 		// This is a slow operation, use with care!
 		return hashCode ^ buffer.hashCode();
 	}
@@ -707,17 +751,19 @@ public class Data {
 			return true;
 		}
 		Data d = (Data) obj;
-		//ignore ttl -> it's still the same data even if ttl is different
-		if (d.signed != signed  || d.basedOnFlag != basedOnFlag 
-				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
-				|| flag1!=d.flag1 || flag2!=d.flag2) {
+		// ignore ttl -> it's still the same data even if ttl is different
+		if (d.signed != signed || d.basedOnFlag != basedOnFlag
+				|| d.protectedEntry != protectedEntry
+				|| d.publicKeyFlag != publicKeyFlag || flag1 != d.flag1
+				|| flag2 != d.flag2) {
 			return false;
 		}
 		if (d.type != type || d.length != length) {
 			return false;
 		}
-		//ignore ttl -> it's still the same data even if ttl is different
-		return Utils.equals(basedOn, d.basedOn) && Utils.equals(signature, d.signature)
+		// ignore ttl -> it's still the same data even if ttl is different
+		return Utils.equals(basedOnSet, d.basedOnSet)
+				&& Utils.equals(signature, d.signature)
 				&& d.buffer.equals(buffer); // This is a slow operation, use
 											// with care!
 	}

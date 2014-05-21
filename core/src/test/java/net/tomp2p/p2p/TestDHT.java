@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,7 +53,6 @@ import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -598,6 +598,50 @@ public class TestDHT {
 			}
 		}
 	}
+
+	@Test
+	public void testDigest() throws Exception {
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(200, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			// do testing
+			Number160 nr = new Number160(rnd);
+			String toStore1 = "hallo1";
+			String toStore2 = "hallo2";
+			String toStore3 = "hallo3";
+			Data data1 = new Data(toStore1.getBytes());
+			Data data2 = new Data(toStore2.getBytes());
+			Data data3 = new Data(toStore3.getBytes());
+			FuturePut fput = peers[30].add(nr).setData(data1).start();
+			fput.awaitUninterruptibly();
+			System.out.println("added: " + toStore1 + " (" + fput.isSuccess() + ")");
+			fput = peers[50].add(nr).setData(data2).start();
+			fput.awaitUninterruptibly();
+			System.out.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
+			fput = peers[51].add(nr).setData(data3).start();
+			fput.awaitUninterruptibly();
+			System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
+			FutureDigest fget = peers[77].digest(nr).setAll().start();
+			fget.awaitUninterruptibly();
+			System.err.println(fget.getFailedReason());
+			Assert.assertEquals(true, fget.isSuccess());
+			Assert.assertEquals(3, fget.getDigest().keyDigest().size());
+			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
+			Set<Number160> test2 = new HashSet<Number160>();
+			test2.add(test);
+			fget = peers[67].digest(nr).contentKeys(test2).start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(true, fget.isSuccess());
+			Assert.assertEquals(1, fget.getDigest().keyDigest().size());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
 	
 	@Test
 	public void removeTestLoop() throws IOException, ClassNotFoundException {
@@ -639,7 +683,7 @@ public class TestDHT {
 	}
 
 	@Test
-	public void testDigest1() throws Exception {
+	public void testDigest2() throws Exception {
 		Peer master = null;
 		try {
 			// setup
@@ -688,7 +732,7 @@ public class TestDHT {
 	}
 
 	@Test
-	public void testDigest2() throws Exception {
+	public void testDigest3() throws Exception {
 		Peer master = null;
 		try {
 			// setup
@@ -886,8 +930,6 @@ public class TestDHT {
 	}
 
 	@Test
-	@Ignore
-	// test is not working
 	public void testAddGetPermits() throws Exception {
 		Peer master = null;
 		try {
@@ -1297,7 +1339,6 @@ public class TestDHT {
 
 	// TODO: make this work
 	@Test
-	@Ignore
 	public void testTooManyOpenFilesInSystem() throws Exception {
 		Peer master = null;
 		Peer slave = null;

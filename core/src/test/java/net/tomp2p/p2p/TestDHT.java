@@ -739,47 +739,47 @@ public class TestDHT {
 			Peer[] peers = Utils2.createNodes(200, rnd, 4001);
 			master = peers[0];
 			Utils2.perfectRouting(peers);
-			// do testing
-			Number160 nr = new Number160(rnd);
+
+			// initialize test data
+			Number160 lKey = new Number160(rnd);
 			String toStore1 = "hallo1";
 			String toStore2 = "hallo2";
 			String toStore3 = "hallo3";
 			Data data1 = new Data(toStore1.getBytes());
 			Data data2 = new Data(toStore2.getBytes());
 			Data data3 = new Data(toStore3.getBytes());
-			Number160 key = new Number160(rnd);
-			data1.basedOn(Number160.ONE);
+			Number160 ckey = new Number160(rnd);
+			data1.addBasedOn(Number160.ONE);
 			Number160 versionKey1 = new Number160(1, data1.hash());
-			data2.basedOn(versionKey1);
+			data2.addBasedOn(versionKey1);
 			Number160 versionKey2 = new Number160(2, data2.hash());
-			data3.basedOn(versionKey2);
+			data3.addBasedOn(versionKey2);
 			Number160 versionKey3 = new Number160(3, data3.hash());
-			FuturePut fput = peers[30].put(nr).setData(key, data1, versionKey1).start();
+			
+			// put test data
+			FuturePut fput = peers[30].put(lKey).setData(ckey, data1, versionKey1).start();
 			fput.awaitUninterruptibly();
-			System.out.println("added: " + toStore1 + " (" + fput.isSuccess() + ")");
-			fput = peers[50].put(nr).setData(key, data2, versionKey2).start();
+			fput = peers[50].put(lKey).setData(ckey, data2, versionKey2).start();
 			fput.awaitUninterruptibly();
-			System.out.println("added: " + toStore2 + " (" + fput.isSuccess() + ")");
-			fput = peers[51].put(nr).setData(key, data3, versionKey3).start();
+			fput = peers[51].put(lKey).setData(ckey, data3, versionKey3).start();
 			fput.awaitUninterruptibly();
-			System.out.println("added: " + toStore3 + " (" + fput.isSuccess() + ")");
 
-			FutureDigest fget = peers[77].digest(nr).setAll().start();
+			// get digest
+			FutureDigest fget = peers[77].digest(lKey).setAll().start();
 			fget.awaitUninterruptibly();
 			DigestResult dr = fget.getDigest();
-			NavigableMap<Number640, Number160> map = dr.keyDigest();
-			Entry<Number640, Number160> e1 = map.pollFirstEntry();
-			Assert.assertEquals(Number160.ONE, e1.getValue());
-			Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey1), e1.getKey());
-			System.err.println(e1);
-			Entry<Number640, Number160> e2 = map.pollFirstEntry();
-			Assert.assertEquals(Number160.ONE, e1.getValue());
-			Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey2), e2.getKey());
-			System.err.println(e2);
-			Entry<Number640, Number160> e3 = map.pollFirstEntry();
-			Assert.assertEquals(Number160.ONE, e1.getValue());
-			Assert.assertEquals(new Number640(nr, Number160.ZERO, key, versionKey2), e3.getKey());
-			System.err.println(e3);
+			NavigableMap<Number640, Set<Number160>> map = dr.keyDigest();
+			
+			// verify fetched digest
+			Entry<Number640, Set<Number160>> e1 = map.pollFirstEntry();
+			Assert.assertEquals(Number160.ONE, e1.getValue().iterator().next());
+			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey1), e1.getKey());
+			Entry<Number640, Set<Number160>> e2 = map.pollFirstEntry();
+			Assert.assertEquals(versionKey1, e2.getValue().iterator().next());
+			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e2.getKey());
+			Entry<Number640, Set<Number160>> e3 = map.pollFirstEntry();
+			Assert.assertEquals(versionKey2, e3.getValue().iterator().next());
+			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e3.getKey());
 
 		} finally {
 			if (master != null) {

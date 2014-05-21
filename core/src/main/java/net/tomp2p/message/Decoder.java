@@ -17,9 +17,11 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 import java.util.TreeMap;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -55,7 +57,7 @@ public class Decoder {
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
-	
+
 	private int peerSocketAddressSize = -1;
 	private List<PeerSocketAddress> peerSocketAddresses = null;
 
@@ -67,8 +69,8 @@ public class Decoder {
 	private Data data = null;
 	private Number640 key = null;
 
-	private int keyMap480Size = -1;
-	private KeyMap640 keyMap480 = null;
+	private int keyMap640KeysSize = -1;
+	private KeyMap640Keys keyMap640Keys = null;
 
 	private int keyMapByteSize = -1;
 	private KeyMapByte keyMapByte = null;
@@ -381,20 +383,23 @@ public class Decoder {
 				mapsSize = -1;
 				dataMap = null;
 				break;
-			case MAP_KEY640_KEY:
-				if (keyMap480Size == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+			case MAP_KEY640_KEYS:
+				if (keyMap640KeysSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
-				if (keyMap480Size == -1) {
-					keyMap480Size = buf.readInt();
+				if (keyMap640KeysSize == -1) {
+					keyMap640KeysSize = buf.readInt();
 				}
-				if (keyMap480 == null) {
-					keyMap480 = new KeyMap640(new TreeMap<Number640, Number160>());
+				if (keyMap640Keys == null) {
+					keyMap640Keys = new KeyMap640Keys(new TreeMap<Number640, Set<Number160>>());
 				}
 
-				for (int i = keyMap480.size(); i < keyMap480Size; i++) {
-					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
-							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
+				final int meta = Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
+						+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE;
+
+				for (int i = keyMap640Keys.size(); i < keyMap640KeysSize; i++) {
+					if (buf.readableBytes() < meta + Utils.BYTE_SIZE
+							+ (buf.getUnsignedByte(buf.readerIndex() + meta) * Number160.BYTE_ARRAY_SIZE)) {
 						return false;
 					}
 					byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -406,15 +411,22 @@ public class Decoder {
 					Number160 contentKey = new Number160(me3);
 					buf.readBytes(me3);
 					Number160 versionKey = new Number160(me3);
-					buf.readBytes(me3);
-					Number160 valueKey = new Number160(me3);
-					keyMap480.put(new Number640(locationKey, domainKey, contentKey, versionKey), valueKey);
+
+					int numBasedOn = buf.readByte();
+					Set<Number160> value = new HashSet<Number160>(numBasedOn);
+					for (int j = 0; j < numBasedOn; j++) {
+						buf.readBytes(me3);
+						Number160 basedOnKey = new Number160(me3);
+						value.add(basedOnKey);
+					}
+
+					keyMap640Keys.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
 				}
 
-				message.setKeyMap640(keyMap480);
+				message.setKeyMap640Keys(keyMap640Keys);
 				lastContent = contentTypes.poll();
-				keyMap480Size = -1;
-				keyMap480 = null;
+				keyMap640KeysSize = -1;
+				keyMap640Keys = null;
 				break;
 			case MAP_KEY640_BYTE:
 				if (keyMapByteSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -585,8 +597,8 @@ public class Decoder {
 		mapsSize = -1;
 		dataMap = null;
 		data = null;
-		keyMap480Size = -1;
-		keyMap480 = null;
+		keyMap640KeysSize = -1;
+		keyMap640Keys = null;
 		bufferSize = -1;
 		buffer = null;
 		return ret;

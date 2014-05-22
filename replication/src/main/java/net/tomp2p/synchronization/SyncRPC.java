@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -36,7 +37,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
-import net.tomp2p.message.KeyMap640;
+import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -103,8 +104,8 @@ public class SyncRPC extends DispatchHandler {
 			message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
 		}
 
-		KeyMap640 keyMap = new KeyMap640(synchronizationBuilder.dataMapHash());
-		message.setKeyMap640(keyMap);
+		KeyMap640Keys keyMap = new KeyMap640Keys(synchronizationBuilder.dataMapHash());
+		message.setKeyMap640Keys(keyMap);
 
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
@@ -176,14 +177,17 @@ public class SyncRPC extends DispatchHandler {
                 .getPeerId());
         
         final boolean isSyncFromOldVersion = message.getType() == Type.REQUEST_2;
-        final KeyMap640 keysMap = message.getKeyMap640(0);
+        final KeyMap640Keys keysMap = message.getKeyMap640Keys(0);
         final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
         
-        for (Map.Entry<Number640, Number160> entry : keysMap.keysMap().entrySet()) {
+        for (Map.Entry<Number640, Set<Number160>> entry : keysMap.keysMap().entrySet()) {
             Data data = peerBean().storage().get(entry.getKey());
+            if(entry.getValue().size() != 1) {
+            	continue;
+            }
             if (data != null) {
                 // found, check if same
-                if (entry.getValue().equals(data.hash())) {
+                if (entry.getValue().iterator().next().equals(data.hash())) {
                     retVal.put(entry.getKey(), new Data().setFlag1());
                     LOG.debug("no sync required");
                 } else {

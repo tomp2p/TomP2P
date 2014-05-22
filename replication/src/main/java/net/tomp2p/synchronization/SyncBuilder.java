@@ -20,6 +20,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -66,7 +67,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
     private DataMap dataMap;
     private Number640 key;
     private Set<Number640> keys;
-    private NavigableMap<Number640, Number160> dataMapHash;
+    private NavigableMap<Number640, Set<Number160>> dataMapHash;
     private ArrayList<Instruction> instructions;
     private boolean syncFromOldVersion = false;
     
@@ -154,19 +155,27 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         }
     }
 
-    public NavigableMap<Number640, Number160> dataMapHash() {
+    public NavigableMap<Number640, Set<Number160>> dataMapHash() {
         if (dataMapHash == null) {
-            dataMapHash = new TreeMap<Number640, Number160>();
+            dataMapHash = new TreeMap<Number640, Set<Number160>>();
         }
         if (dataMap != null) {
-            dataMapHash.putAll(dataMap.convertToHash());
+        	for (Map.Entry<Number640, Number160> entry : dataMap.convertToHash().entrySet()) {
+        		Set<Number160> hashSet = new HashSet<Number160>(1);
+        		hashSet.add(entry.getValue());
+        		dataMapHash.put(key, hashSet);
+        	}
         }
         if (key != null) {
-            dataMapHash.put(key, peer.getPeerBean().storage().get(key).hash());
+        	Set<Number160> hashSet = new HashSet<Number160>(1);
+        	hashSet.add(peer.getPeerBean().storage().get(key).hash());
+            dataMapHash.put(key, hashSet);
         }
         if (keys != null) {
             for (Number640 key : keys) {
-                dataMapHash.put(key, peer.getPeerBean().storage().get(key).hash());
+            	Set<Number160> hashSet = new HashSet<Number160>(1);
+            	hashSet.add(peer.getPeerBean().storage().get(key).hash());
+                dataMapHash.put(key, hashSet);
             }
         }
         return dataMapHash;

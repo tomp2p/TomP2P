@@ -636,7 +636,7 @@ public class TestStorage {
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
             final int replicatioFactor = 5;
-            Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
+            Replication replication = new Replication(new StorageLayer(s1), master.getPeerAddress(), master.getPeerBean()
                     .peerMap(), replicatioFactor);
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
@@ -719,7 +719,7 @@ public class TestStorage {
             StorageMemory s1 = new StorageMemory();
             master.getPeerBean().storage(new StorageLayer(s1));
             final int replicatioFactor = 5;
-            Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
+            Replication replication = new Replication(new StorageLayer(s1), master.getPeerAddress(), master.getPeerBean()
                     .peerMap(), replicatioFactor);
 
             replication.addResponsibilityListener(new ResponsibilityListener() {

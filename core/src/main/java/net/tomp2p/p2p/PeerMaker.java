@@ -315,7 +315,7 @@ public class PeerMaker {
 		}
 
 		// peerBean.setStorage(getStorage());
-		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5);
+		Replication replicationStorage = new Replication(new StorageLayer(storage), peerBean.serverPeerAddress(), peerMap, 5);
 		peerBean.replicationStorage(replicationStorage);
 
 		// TrackerStorage storageTracker = new

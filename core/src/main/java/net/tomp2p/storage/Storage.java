@@ -20,6 +20,7 @@ import java.security.PublicKey;
 import java.util.Collection;
 import java.util.NavigableMap;
 
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
@@ -37,7 +38,7 @@ import net.tomp2p.peers.Number640;
  * @author Thomas Bocek
  * 
  */
-public interface Storage extends ReplicationStorage {
+public interface Storage {
     // Core storage
     public abstract boolean put(Number640 key, Data value);
 
@@ -72,4 +73,14 @@ public interface Storage extends ReplicationStorage {
     public abstract boolean protectEntry(Number480 key, PublicKey publicKey);
 
     public abstract boolean isEntryProtectedByOthers(Number480 key, PublicKey publicKey);
+    
+    // Responsibility
+    
+    public abstract Number160 findPeerIDForResponsibleContent(Number160 locationKey);
+
+    public abstract Collection<Number160> findContentForResponsiblePeerID(Number160 peerID);
+
+    public boolean updateResponsibilities(Number160 locationKey, Number160 peerId);
+
+    public void removeResponsibility(Number160 locationKey);
 }

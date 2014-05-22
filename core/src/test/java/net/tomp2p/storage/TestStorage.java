@@ -1,7 +1,5 @@
 package net.tomp2p.storage;
 
-import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -12,11 +10,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.StorageLayer.PutStatus;
-import net.tomp2p.utils.Utils;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 public class TestStorage {
@@ -37,31 +32,13 @@ public class TestStorage {
     final private Number640 key3 = new Number640(locationKey, domainKey, content3, Number160.ZERO);
     final private Number640 key4 = new Number640(locationKey, domainKey, content4, Number160.ZERO);
 
-    private static String DIR;
-
-    @Before
-    public void befor() throws IOException {
-        File tmpDir = Utils.createTempDir();
-        DIR = tmpDir.getPath();
-    }
-
-    @After
-    public void after() {
-        File f = new File(DIR);
-        f.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-                if (pathname.isFile())
-                    pathname.delete();
-                return false;
-            }
-        });
-        f.delete();
+    public Storage createStorage() throws IOException {
+    	return new StorageMemory();
     }
 
     @Test
     public void testPutInitial() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         store(new StorageLayer(storageM));
         storageM.close();
     }
@@ -88,7 +65,7 @@ public class TestStorage {
 
     @Test
     public void testGet() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testGet(new StorageLayer(storageM));
         storageM.close();
     }
@@ -105,7 +82,7 @@ public class TestStorage {
 
     @Test
     public void testPut() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testPut(new StorageLayer(storageM));
         storageM.close();
     }
@@ -122,7 +99,7 @@ public class TestStorage {
 
     @Test
     public void testPutIfAbsent() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testPutIfAbsent(new StorageLayer(storageM));
         storageM.close();
     }
@@ -140,7 +117,7 @@ public class TestStorage {
 
     @Test
     public void testRemove() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testRemove(new StorageLayer(storageM));
         storageM.close();
     }
@@ -160,7 +137,7 @@ public class TestStorage {
 
     @Test
     public void testTTL1() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testTTL1(new StorageLayer(storageM));
         storageM.close();
     }
@@ -176,7 +153,7 @@ public class TestStorage {
 
     @Test
     public void testTTL2() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testTTL2(new StorageLayer(storageM));
         storageM.close();
     }
@@ -193,7 +170,7 @@ public class TestStorage {
     
     @Test
     public void testTTLLeak() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testTTLLeak(new StorageLayer(storageM));
         Assert.assertEquals(0, storageM.subMapTimeout(Long.MAX_VALUE).size());
         storageM.close();
@@ -211,12 +188,12 @@ public class TestStorage {
 
     @Test
     public void testResponsibility() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testResponsibility(storageM);
         storageM.close();
     }
 
-    private void testResponsibility(StorageMemory storage) throws Exception {
+    private void testResponsibility(Storage storage) throws Exception {
         storage.updateResponsibilities(content1, locationKey);
         storage.updateResponsibilities(content2, locationKey);
         Assert.assertEquals(locationKey, storage.findPeerIDForResponsibleContent(content1));
@@ -228,7 +205,7 @@ public class TestStorage {
 
     @Test
     public void testPublicKeyDomain() throws Exception {
-        StorageMemory storageM = new StorageMemory();
+        Storage storageM = createStorage();
         testPublicKeyDomain(new StorageLayer(storageM));
         storageM.close();
     }
@@ -313,7 +290,7 @@ public class TestStorage {
     
     @Test
     public void testConcurrency() throws InterruptedException, IOException {
-        final StorageMemory sM = new StorageMemory();
+        final Storage sM = createStorage();
         final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
         final AtomicInteger counter = new AtomicInteger();
@@ -338,7 +315,7 @@ public class TestStorage {
 
     @Test
     public void testConcurrency2() throws InterruptedException, IOException {
-        final StorageMemory sM = new StorageMemory();
+        final Storage sM = createStorage();
         final StorageLayer storageGeneric = new StorageLayer(sM);
         store(storageGeneric);
         final AtomicInteger counter = new AtomicInteger();

@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author draft
  */
-public class TrackerStorage implements PeerStatusListener, Digest, ReplicationStorage {
+public class TrackerStorage implements PeerStatusListener, Digest {
     private static final Logger logger = LoggerFactory.getLogger(TrackerStorage.class);
 
    // private static final Map<Number160, TrackerData> EMPTY_MAP = new HashMap<Number160, TrackerData>();
@@ -94,7 +94,7 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
 
     private int primanyFactor = 1;
 
-    private final StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+    private final Storage storageMemoryReplication = new StorageMemory();
 
     public enum ReferrerType {
         ACTIVE, MESH
@@ -469,22 +469,22 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         return retVal;
     }
 
-    @Override
+    
     public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
         return storageMemoryReplication.findPeerIDForResponsibleContent(locationKey);
     }
 
-    @Override
+    
     public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
         return storageMemoryReplication.findContentForResponsiblePeerID(peerID);
     }
 
-    @Override
+    
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
         return storageMemoryReplication.updateResponsibilities(locationKey, peerId);
     }
 
-    @Override
+    
     public void removeResponsibility(Number160 locationKey) {
         storageMemoryReplication.removeResponsibility(locationKey);
     }

@@ -1,6 +1,6 @@
 package net.tomp2p.peers;
 
-import net.tomp2p.storage.StorageMemoryReplication;
+import net.tomp2p.storage.StorageMemory;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -8,7 +8,7 @@ import org.junit.Test;
 public class TestStorageMemoryReplication {
     @Test
     public void testStorageMemoryReplication1() {
-        StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+        StorageMemory storageMemoryReplication = new StorageMemory();
         Number160 testLoc = Number160.createHash("test1");
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
@@ -17,7 +17,7 @@ public class TestStorageMemoryReplication {
 
     @Test
     public void testStorageMemoryReplication2() {
-        StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+    	StorageMemory storageMemoryReplication = new StorageMemory();
         Number160 testLoc = Number160.createHash("test1");
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
@@ -27,7 +27,7 @@ public class TestStorageMemoryReplication {
 
     @Test
     public void testStorageMemoryReplication3() {
-        StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+    	StorageMemory storageMemoryReplication = new StorageMemory();
         Number160 testLoc = Number160.createHash("test1");
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
@@ -39,7 +39,7 @@ public class TestStorageMemoryReplication {
 
     @Test
     public void testStorageMemoryReplication4() {
-        StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+    	StorageMemory storageMemoryReplication = new StorageMemory();
         Number160 testLoc = Number160.createHash("test1");
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);

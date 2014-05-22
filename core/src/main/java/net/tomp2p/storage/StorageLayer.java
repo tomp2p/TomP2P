@@ -16,7 +16,9 @@
 package net.tomp2p.storage;
 
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -81,6 +83,8 @@ public class StorageLayer {
 	final private KeyLock<Number480> dataLock480 = new KeyLock<Number480>();
 
 	final private KeyLock<Number640> dataLock640 = new KeyLock<Number640>();
+	
+	final private KeyLock<Number160> responsibilityLock = new KeyLock<Number160>();
 
 	final private Storage backend;
 
@@ -544,7 +548,26 @@ public class StorageLayer {
 	}
 
 	public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
-		return backend.findContentForResponsiblePeerID(peerID);
+		Collection<Number160> contentIDs = backend.findContentForResponsiblePeerID(peerID);
+        if (contentIDs == null) {
+            return Collections.<Number160> emptyList();
+        } else {
+            KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerID);
+            try {
+                return new ArrayList<Number160>(contentIDs);
+            } finally {
+                responsibilityLock.unlock(lock);
+            }
+        }
+	}
+	
+	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
+		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
+        try {
+            return backend.updateResponsibilities(locationKey, peerId);
+        } finally {
+            responsibilityLock.unlock(lock1);
+        }
 	}
 
 	private class StorageMaintenanceTask implements Runnable {
@@ -601,4 +624,6 @@ public class StorageLayer {
 		}
 		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
+	
+	
 }

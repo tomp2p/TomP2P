@@ -40,11 +40,13 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Random;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -204,17 +206,25 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		m1.setKeyMap640(new KeyMap640(keysMap));
-		//
+		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		Set<Number160> set = new HashSet<Number160>(1);
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(2);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(3);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
-		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -236,17 +246,25 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate(), factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate(), factory));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		m1.setKeyMap640(new KeyMap640(keysMap));
-		//
+		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		Set<Number160> set = new HashSet<Number160>(1);
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(2);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(3);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(true, m2.getPublicKey(0) != null);
 		Assert.assertEquals(false, m2.getDataMap(0) == null);
-		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -267,12 +285,20 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1, factory));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Number160> keysMap = new TreeMap<Number640, Number160>();
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		keysMap.put(new Number640(rnd), new Number160(rnd));
-		m1.setKeyMap640(new KeyMap640(keysMap));
-		//
+		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		Set<Number160> set = new HashSet<Number160>(1);
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(2);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		set = new HashSet<Number160>(3);
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		set.add(new Number160(rnd));
+		keysMap.put(new Number640(rnd), set);
+		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
 		Assert.assertEquals(true, m2.getPublicKey(0) != null);
@@ -280,7 +306,7 @@ public class TestMessage {
 		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
 		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
 		Assert.assertEquals(pair1.getPublic(), m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey());
-		Assert.assertEquals(false, m2.getKeyMap640(0) == null);
+		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -615,7 +641,7 @@ public class TestMessage {
 				Utils.isSameSets(m1.getKeyCollectionList(),
 						m2.getKeyCollectionList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getKeyMap480List(), m2.getKeyMap480List()));
+				Utils.isSameSets(m1.getKeyMapKeys640List(), m2.getKeyMapKeys640List()));
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.getLongList(), m2.getLongList()));
 		

@@ -9,8 +9,11 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
+import java.util.Random;
+import java.util.UUID;
 
 import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -163,6 +166,84 @@ public class TestData {
         Assert.assertEquals(-1, newData.ttlSeconds());
         Assert.assertEquals(data, newData);
         Assert.assertEquals(true, newData.isFlag2());
+    }
+
+    @Test
+    public void testDataBasedOn1() throws IOException, ClassNotFoundException, InvalidKeyException,
+            SignatureException {
+        Data data = new Data();
+        data.addBasedOn(Number160.ZERO);
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertEquals(data, newData);
+
+        data = new Data();
+        data.addBasedOn(Number160.ONE);
+        newData = encodeDecode(data);
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertEquals(data, newData);
+
+        data = new Data();
+        data.addBasedOn(Number160.MAX_VALUE);
+        newData = encodeDecode(data);
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertEquals(data, newData);
+    }
+
+    @Test
+    public void testDataBasedOn2() throws IOException, ClassNotFoundException, InvalidKeyException,
+            SignatureException {
+        Data data = new Data();
+        Random random = new Random();
+        for (int i = 0; i < 255; i++)
+            data.addBasedOn(new Number160(random));
+        Data newData = encodeDecode(data);
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertEquals(data, newData);
+    }
+
+    @Test
+    public void testDataBasedOn3() throws IOException, ClassNotFoundException, InvalidKeyException,
+            SignatureException, NoSuchAlgorithmException {
+        Random random = new Random();
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+        KeyPair keyPair1 = gen.generateKeyPair();
+        KeyPair keyPair2 = gen.generateKeyPair();
+
+        Data data = new Data(UUID.randomUUID().toString());
+        data.ttlSeconds(random.nextInt());
+        for (int i = 0; i < 255; i++)
+            data.addBasedOn(new Number160(random));
+        // data.setProtectedEntry().publicKey(gen.generateKeyPair().getPublic());
+        data.sign(keyPair1, factory);
+        Data newData = encodeDecode(data);
+
+        Assert.assertEquals(data.object(), newData.object());
+        Assert.assertEquals(data.ttlSeconds(), newData.ttlSeconds());
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertTrue(newData.verify(keyPair1.getPublic(), factory));
+        Assert.assertFalse(newData.verify(keyPair2.getPublic(), factory));
+        Assert.assertEquals(data, newData);
+    }
+
+    @Test
+    public void testDataBasedOn4() throws IOException, ClassNotFoundException, InvalidKeyException,
+            SignatureException, NoSuchAlgorithmException {
+        Random random = new Random();
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+        KeyPair keyPair1 = gen.generateKeyPair();
+
+        Data data = new Data(UUID.randomUUID().toString());
+        data.ttlSeconds(random.nextInt());
+        for (int i = 0; i < 255; i++)
+            data.addBasedOn(new Number160(random));
+        data.setProtectedEntry().publicKey(keyPair1.getPublic());
+        Data newData = encodeDecode(data);
+
+        Assert.assertEquals(data.object(), newData.object());
+        Assert.assertEquals(data.ttlSeconds(), newData.ttlSeconds());
+        Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
+        Assert.assertEquals(data, newData);
     }
 
 	private Data encodeDecode(Data data) throws InvalidKeyException, SignatureException, IOException {

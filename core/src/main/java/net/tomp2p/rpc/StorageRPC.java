@@ -34,7 +34,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
-import net.tomp2p.message.KeyMap640;
+import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -791,7 +791,7 @@ public class StorageRPC extends DispatchHandler {
                 responseMessage.setBloomFilter(digestInfo.getContentKeyBloomFilter(factory));
                 responseMessage.setBloomFilter(digestInfo.getVersionKeyBloomFilter(factory));
             } else {
-                responseMessage.setKeyMap640(new KeyMap640(digestInfo.getDigests()));
+                responseMessage.setKeyMap640Keys(new KeyMap640Keys(digestInfo.getDigests()));
             }
         }
         return responseMessage;

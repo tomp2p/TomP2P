@@ -51,7 +51,7 @@ public class Message {
      * 8 x 4 bit.
      */
     public enum Content {
-        EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEY, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
+        EMPTY, KEY, MAP_KEY640_DATA, MAP_KEY640_KEYS, SET_KEY640, SET_NEIGHBORS, BYTE_BUFFER, 
         LONG, INTEGER, PUBLIC_KEY_SIGNATURE, SET_TRACKER_DATA, BLOOM_FILTER, MAP_KEY640_BYTE, 
         PUBLIC_KEY, SET_PEER_SOCKET, USER1
     };
@@ -126,7 +126,7 @@ public class Message {
     private List<Integer> integerList = null;
     private List<Long> longList = null;
     private List<KeyCollection> keyCollectionList = null;
-    private List<KeyMap640> keyMap640List = null;
+    private List<KeyMap640Keys> keyMap640ListKeys = null;
     private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
@@ -696,29 +696,29 @@ public class Message {
     }
 
     
-    public Message setKeyMap640(final KeyMap640 keyMap) {
+    public Message setKeyMap640Keys(final KeyMap640Keys keyMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY640_KEY);
+            setContentType(Content.MAP_KEY640_KEYS);
         }
-        if (keyMap640List == null) {
-            keyMap640List = new ArrayList<KeyMap640>(1);
+        if (keyMap640ListKeys == null) {
+            keyMap640ListKeys = new ArrayList<KeyMap640Keys>(1);
         }
-        keyMap640List.add(keyMap);
+        keyMap640ListKeys.add(keyMap);
         return this;
     }
 
-    public List<KeyMap640> getKeyMap480List() {
-        if (keyMap640List == null) {
+    public List<KeyMap640Keys> getKeyMapKeys640List() {
+        if (keyMap640ListKeys == null) {
             return Collections.emptyList();
         }
-        return keyMap640List;
+        return keyMap640ListKeys;
     }
 
-    public KeyMap640 getKeyMap640(final int index) {
-        if (keyMap640List == null || index > keyMap640List.size() - 1) {
+    public KeyMap640Keys getKeyMap640Keys(final int index) {
+        if (keyMap640ListKeys == null || index > keyMap640ListKeys.size() - 1) {
             return null;
         }
-        return keyMap640List.get(index);
+        return keyMap640ListKeys.get(index);
     }
     
     public Message setKeyMapByte(final KeyMapByte keyMap) {

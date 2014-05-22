@@ -949,7 +949,7 @@ public class TestSecurity {
 		// put the first version of the content with key pair 1
 		Number160 vKey1 = Number160.createHash("version1");
 		Data data = new Data("data1v1").setProtectedEntry().sign(keyPair1, factory);
-		data.basedOn(Number160.ZERO);
+		data.addBasedOn(Number160.ZERO);
 		FuturePut futurePut1 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1)
 		        .setVersionKey(vKey1).start();
 		futurePut1.awaitUninterruptibly();
@@ -957,7 +957,7 @@ public class TestSecurity {
 		// add another version with the correct key pair 1
 		Number160 vKey2 = Number160.createHash("version2");
 		data = new Data("data1v2").setProtectedEntry().sign(keyPair1, factory);
-		data.basedOn(vKey1);
+		data.addBasedOn(vKey1);
 		FuturePut futurePut2 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair1)
 		        .setVersionKey(vKey2).start();
 		futurePut2.awaitUninterruptibly();
@@ -965,7 +965,7 @@ public class TestSecurity {
 		// put new version with other key pair 2 (expected to fail)
 		Number160 vKey3 = Number160.createHash("version3");
 		data = new Data("data1v3").setProtectedEntry().sign(keyPair2, factory);
-		data.basedOn(vKey2);
+		data.addBasedOn(vKey2);
 		FuturePut futurePut3 = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).keyPair(keyPair2)
 		        .setVersionKey(vKey3).start();
 		futurePut3.awaitUninterruptibly();
@@ -989,7 +989,7 @@ public class TestSecurity {
 		// add another version with the new protection key
 		Number160 vKey4 = Number160.createHash("version4");
 		data = new Data("data1v4").setProtectedEntry().sign(keyPair2, factory);
-		data.basedOn(vKey2);
+		data.addBasedOn(vKey2);
 		FuturePut futurePut5 = p1.put(lKey).setDomainKey(dKey).setSign().setData(cKey, data).keyPair(keyPair2)
 		        .setVersionKey(vKey4).start();
 		futurePut5.awaitUninterruptibly();
@@ -1082,7 +1082,7 @@ public class TestSecurity {
 
 		String testData = "data";
 		Data data = new Data(testData).setProtectedEntry().lazySign(keyPair1);
-		data.ttlSeconds(ttl).basedOn(bKey);
+		data.ttlSeconds(ttl).addBasedOn(bKey);
 
 		// initial put
 		FuturePut futurePut = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).setVersionKey(vKey).keyPair(keyPair1)
@@ -1159,7 +1159,7 @@ public class TestSecurity {
 
 		String testData = "data";
 		Data data = new Data(testData).setProtectedEntry().sign(keyPairOld, factory);
-		data.ttlSeconds(ttl).basedOn(bKey);
+		data.ttlSeconds(ttl).addBasedOn(bKey);
 
 		// initial put of some test data
 		FuturePut futurePut = p1.put(lKey).setDomainKey(dKey).setData(cKey, data).setVersionKey(vKey)
@@ -1189,7 +1189,7 @@ public class TestSecurity {
 		// create a dummy data object for changing the content protection key
 		// through a put meta
 		Data dummyData = new Data();
-		dummyData.basedOn(bKey).ttlSeconds(ttl);
+		dummyData.addBasedOn(bKey).ttlSeconds(ttl);
 		// assign the reused hash from signature (don't forget to set the
 		// signedflag)
 		dummyData.signature(codec.decode(signatureNew)).signed(true).duplicateMeta();

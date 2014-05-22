@@ -13,23 +13,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FuturePut;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyMapByte;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.Replication;
+import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.p2p.builder.AddBuilder;
 import net.tomp2p.p2p.builder.DigestBuilder;
 import net.tomp2p.p2p.builder.GetBuilder;
@@ -40,8 +37,6 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
-import net.tomp2p.p2p.Replication;
-import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.storage.Data;
 //import net.tomp2p.storage.StorageDisk;
 import net.tomp2p.storage.StorageLayer;
@@ -52,6 +47,7 @@ import net.tomp2p.utils.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestStorage {
@@ -913,7 +909,7 @@ public class TestStorage {
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Message m = fr.getResponse();
-            Assert.assertEquals(2, m.getKeyMap640(0).size());
+            Assert.assertEquals(2, m.getKeyMap640Keys(0).size());
 
         } finally {
             if (cc != null) {
@@ -929,6 +925,7 @@ public class TestStorage {
     }
 
     @Test
+    // TODO test is not working
     public void testBigStore2() throws Exception {
         StorageMemory storeSender = new StorageMemory();
         StorageMemory storeRecv = new StorageMemory();
@@ -986,6 +983,7 @@ public class TestStorage {
     }
 
     @Test
+    // TODO test is not working
     public void testBigStoreGet() throws Exception {
         StorageMemory storeSender = new StorageMemory();
         StorageMemory storeRecv = new StorageMemory();

@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -437,8 +438,8 @@ public class DistributedHashTable {
 												                .getBloomFilter(1);
 												        digest = new DigestResult(sbf1, sbf2);
 											        } else {
-												        NavigableMap<Number640, Number160> keyDigest = future
-												                .getResponse().getKeyMap640(0).keysMap();
+												        NavigableMap<Number640, Set<Number160>> keyDigest = future
+												                .getResponse().getKeyMap640Keys(0).keysMap();
 												        digest = new DigestResult(keyDigest);
 											        }
 											        rawDigest.put(future.getRequest().getRecipient(), digest);

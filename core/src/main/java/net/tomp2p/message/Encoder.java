@@ -7,6 +7,7 @@ import java.security.SignatureException;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
@@ -149,15 +150,20 @@ public class Encoder {
                 }
                 message.contentRefencencs().poll();
                 break;
-            case MAP_KEY640_KEY:
-                KeyMap640 keyMap640 = message.getKeyMap640(next.number());
-                buf.writeInt(keyMap640.size());
-                for (Entry<Number640, Number160> entry : keyMap640.keysMap().entrySet()) {
+            case MAP_KEY640_KEYS:
+                KeyMap640Keys keyMap640Keys = message.getKeyMap640Keys(next.number());
+                buf.writeInt(keyMap640Keys.size());
+                for (Entry<Number640, Set<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                     buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                     buf.writeBytes(entry.getKey().getContentKey().toByteArray());
                     buf.writeBytes(entry.getKey().getVersionKey().toByteArray());
-                    buf.writeBytes(entry.getValue().toByteArray());
+                    // write # of based on keys
+                    buf.writeByte(entry.getValue().size());
+                    // write based on keys
+                    for (Number160 basedOnKey : entry.getValue()) {
+                        buf.writeBytes(basedOnKey.toByteArray());
+                    }
                 }
                 message.contentRefencencs().poll();
                 break;

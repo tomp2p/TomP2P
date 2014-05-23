@@ -63,6 +63,7 @@ import net.tomp2p.p2p.builder.PutBuilder;
 import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
@@ -893,5 +894,11 @@ public class Utils {
 		return String.valueOf(publicKey.hashCode());
     }
 
-	
+	public static Map<Number640, Byte> setMapError(Map<Number640, ?> dataMap, byte reason) {
+		Map<Number640, Byte> retVal = new HashMap<Number640, Byte>();
+		for(Number640 key:dataMap.keySet()) {
+			retVal.put(key, Byte.valueOf(reason));
+		}
+	    return retVal;
+    }
 }

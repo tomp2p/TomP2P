@@ -165,6 +165,7 @@ public class RelayRPC extends DispatchHandler {
             @Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
                 // unregister relay handler
+            	LOG.debug("Unregister the relay for {}", peerConnection.remotePeer().getPeerId());
                 RelayForwarderRPC.unregister(peer, peerConnection.remotePeer().getPeerId());
             }
         });

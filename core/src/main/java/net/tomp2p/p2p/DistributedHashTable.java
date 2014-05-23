@@ -70,6 +70,9 @@ import org.slf4j.LoggerFactory;
 
 public class DistributedHashTable {
     private static final Logger logger = LoggerFactory.getLogger(DistributedHashTable.class);
+    
+    public static final int REASON_CANCEL = 254;
+    public static final int REASON_UNKOWN = 255;
 
     private final DistributedRouting routing;
 
@@ -287,7 +290,14 @@ public class DistributedHashTable {
                                                     rawData.put(future.getRequest().getRecipient(), future
                                                             .getResponse().getKeyMapByte(0).keysMap());
                                                 } else {
-                                                    rawData.put(future.getRequest().getRecipient(), null);
+                                                	if(future.getResponse() == null) {
+                                                		Map<Number640, Byte> error = Utils.setMapError(future.getRequest().getDataMap(0).dataMap(), (byte) REASON_CANCEL);
+                                                		rawData.put(future.getRequest().getRecipient(), error);
+                                                	} else {
+                                                		logger.debug("future failed: "+future.getFailedReason());
+                                                		Map<Number640, Byte> error = Utils.setMapError(future.getRequest().getDataMap(0).dataMap(), (byte) REASON_UNKOWN);
+                                                        rawData.put(future.getRequest().getRecipient(), error);
+                                                	}
                                                 }
                                             }
                                         });

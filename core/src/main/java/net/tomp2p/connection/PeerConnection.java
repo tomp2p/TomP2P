@@ -1,5 +1,6 @@
 package net.tomp2p.connection;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
@@ -9,6 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -16,6 +20,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
 
 public class PeerConnection {
+	final static Logger LOG = LoggerFactory.getLogger(PeerConnection.class);
 	final public static int HEART_BEAT_MILLIS = 2000;
     final private Semaphore oneConnection = new Semaphore(1);
 
@@ -78,10 +83,11 @@ public class PeerConnection {
         return closeFuture;
     }
 
-    private void addCloseListener(ChannelFuture channelFuture2) {
+    private void addCloseListener(final ChannelFuture channelFuture) {
         channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> arg0) throws Exception {
+            	LOG.debug("about to close the connection {}",  channelFuture.channel());
                 closeFuture.setDone();
             }
         });
@@ -89,7 +95,9 @@ public class PeerConnection {
 
     public FutureDone<Void> close() {
         // cc is not null if we opened the connection
+    	Channel channel = channelFuture != null ? channelFuture.channel() : null;
         if (cc != null) {
+        	LOG.debug("close connection, we were the initiator {}", channel);
             FutureDone<Void> future = cc.shutdown();
             // Maybe done on arrival? Set close future in any case
             future.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -101,6 +109,7 @@ public class PeerConnection {
         } else {
             // cc is null if its an incoming connection. We can close it here, or it will be closed when the dispatcher
             // is shutdown
+        	LOG.debug("close connection, not the initiator {}", channel);
             channelFuture.channel().close();
         }
         return closeFuture;

@@ -249,35 +249,34 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             return;
         }
 
-        
-
         // We got a good answer, let's mark the sender as alive
         if (responseMessage.isOk() || responseMessage.isNotOk()) {
-        	
             peerBean.peerMap().peerFound(responseMessage.getSender(), null);
         }
         
         // call this for streaming support
         futureResponse.progress(responseMessage);
         if (!responseMessage.isDone()) {
-            LOG.debug("message is streaming {}", responseMessage);
+            LOG.debug("good message is streaming {}", responseMessage);
             return;
         }
         
         // Now we now we have the right message
-        LOG.debug("perfect: {}", responseMessage);
         
         if(message.getSender().isRelayed()) {
+        	LOG.debug("good message is relayed {}", responseMessage);	
         	PeerAddress sender = message.getSender().changePeerSocketAddresses(message.getPeerSocketAddresses());
         	message.setSender(sender);
         }
 
         if (!message.isKeepAlive()) {
+        	LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.
             futureResponse.setResponseLater(responseMessage); 
             //the channel creater adds a listener that sets futureResponse.setResponseNow, when the channel is closed
             ctx.close();
         } else {
+        	LOG.debug("good message, leave open {}", responseMessage);
             futureResponse.setResponse(responseMessage);
         }
     }

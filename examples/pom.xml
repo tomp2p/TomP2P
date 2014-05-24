@@ -20,7 +20,7 @@
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha11</version>
+    	<version>5.0-Alpha12-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-examples</artifactId>
@@ -43,21 +43,21 @@
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha11</version>
+			<version>5.0-Alpha12-SNAPSHOT</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-replication</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha11</version>
+			<version>5.0-Alpha12-SNAPSHOT</version>
 		</dependency>
 		
 		<dependency>
 			<groupId>net.tomp2p</groupId>
 			<artifactId>tomp2p-nat</artifactId>
 			<!-- TODO: do we need a version here? -->
-			<version>5.0-Alpha11</version>
+			<version>5.0-Alpha12-SNAPSHOT</version>
 		</dependency>
 		
 		<!-- Used for the examples only -->

@@ -173,7 +173,7 @@ public class DiscoverBuilder {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    discover(futureDiscover, peerAddress, future.getChannelCreator(), configuration);
+                    discover(futureDiscover, peerAddress, future.channelCreator(), configuration);
                 } else {
                     futureDiscover.setFailed(future);
                 }

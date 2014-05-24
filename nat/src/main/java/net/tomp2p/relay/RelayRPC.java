@@ -93,6 +93,14 @@ public class RelayRPC extends DispatchHandler {
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
         return requestHandler.sendTCP(peerConnection);
     }
+    
+    public RequestHandler<FutureResponse> prepareForwardMessage(PeerAddress remotePeer, Buffer buf) {
+        final Message message = createMessage(remotePeer, RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
+        message.setKeepAlive(true);
+        message.setBuffer(buf);
+        FutureResponse futureResponse = new FutureResponse(message);
+        return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
+    }
 
     /**
      * Set up a relay connection to a peer. If the peer that is asked to act as

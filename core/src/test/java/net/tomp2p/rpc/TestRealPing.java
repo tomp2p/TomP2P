@@ -68,7 +68,7 @@ public class TestRealPing {
             PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCP(pa, cc, new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
@@ -102,7 +102,7 @@ public class TestRealPing {
             PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCPDiscover(pa, cc, new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
@@ -136,7 +136,7 @@ public class TestRealPing {
             PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCPProbe(pa, cc, new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());

@@ -311,9 +311,9 @@ public class PingRPC extends DispatchHandler {
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
                                     FutureResponse futureResponse = fireUDP(message.getSender(), future
-                                            .getChannelCreator(), connectionBean().channelServer()
+                                            .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
-                                    Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                                    Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
                                     LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}",
                                             future.getFailedReason());
@@ -327,9 +327,9 @@ public class PingRPC extends DispatchHandler {
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
                                     FutureResponse futureResponse = fireTCP(message.getSender(), future
-                                            .getChannelCreator(), connectionBean().channelServer()
+                                            .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
-                                    Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                                    Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
                                     LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}",
                                             future.getFailedReason());

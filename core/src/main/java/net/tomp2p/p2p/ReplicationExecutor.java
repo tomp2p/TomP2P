@@ -235,8 +235,8 @@ public class ReplicationExecutor implements ResponsibilityListener, Runnable {
                         PutBuilder putBuilder = new PutBuilder(peer, locationKey);
                         putBuilder.setDataMap(dataMap);
                         FutureResponse futureResponse = storageRPC.put(other, putBuilder,
-                                future.getChannelCreator());
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                                future.channelCreator());
+                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         peer.notifyAutomaticFutures(futureResponse);
                     } else {
                         if (LOG.isErrorEnabled()) {

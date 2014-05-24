@@ -99,7 +99,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             Collection<Data> dataSet = new HashSet<Data>();
             dataSet.add(new Data(1));
@@ -187,7 +187,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -262,7 +262,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -331,7 +331,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -391,7 +391,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -464,7 +464,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -537,7 +537,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(recv1, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -584,7 +584,7 @@ public class TestStorage {
 
                 FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 10);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
+                ChannelCreator cc = fcc.channelCreator();
 
                 // final ChannelCreator
                 // cc1=sender.getConnectionBean().getReservation().reserve(50);
@@ -659,7 +659,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(master, location);
             putBuilder.setDomainKey(location);
@@ -740,7 +740,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(master, loc);
             putBuilder.setDomainKey(domainKey);
@@ -823,7 +823,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -885,7 +885,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -953,7 +953,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -1011,7 +1011,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -1071,7 +1071,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -1126,7 +1126,7 @@ public class TestStorage {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             PutBuilder putBuilder = new PutBuilder(sender, new Number160(33));
             putBuilder.setDomainKey(Number160.createHash("test"));
@@ -1182,7 +1182,7 @@ public class TestStorage {
 			
 			FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 			
 			FutureResponse fr = master.getStoreRPC().put(slave.getPeerAddress(), pb, cc);
 			fr.awaitUninterruptibly();

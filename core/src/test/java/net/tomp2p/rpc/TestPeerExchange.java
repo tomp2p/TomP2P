@@ -26,7 +26,7 @@ public class TestPeerExchange {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             sender.getPeerBean().trackerStorage()
                     .addActive(locationKey, domainKey, sender.getPeerAddress(), null);

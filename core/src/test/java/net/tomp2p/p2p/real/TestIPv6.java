@@ -63,7 +63,7 @@ public class TestIPv6 {
                 
                 FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 1);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
+                ChannelCreator cc = fcc.channelCreator();
                 
                 FutureResponse fr1 = peer.pingRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
                 fr1.awaitUninterruptibly();

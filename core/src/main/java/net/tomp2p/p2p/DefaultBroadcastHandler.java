@@ -157,9 +157,9 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                                 broadcastBuilder.hopCounter(hopCounter + 1);
                                 broadcastBuilder.setIsUDP(isUDP);
                                 FutureResponse futureResponse = peer.getBroadcastRPC().send(peerAddress, broadcastBuilder, 
-                                        future.getChannelCreator(), broadcastBuilder);
+                                        future.channelCreator(), broadcastBuilder);
                                 LOG.debug("1st broadcast to {}", peerAddress);
-                                Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                                Utils.addReleaseListener(future.channelCreator(), futureResponse);
                             }
                         }
                     });
@@ -199,10 +199,10 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                         broadcastBuilder.setIsUDP(isUDP);
                         
                         futures[i] = peer.getBroadcastRPC().send(randomAddress,
-                                broadcastBuilder, future.getChannelCreator(), broadcastBuilder);
+                                broadcastBuilder, future.channelCreator(), broadcastBuilder);
                         LOG.debug("2nd broadcast to {}", randomAddress);
                     }
-                    Utils.addReleaseListener(future.getChannelCreator(), futures);
+                    Utils.addReleaseListener(future.channelCreator(), futures);
                 }
             }
         });

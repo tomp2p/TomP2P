@@ -28,7 +28,7 @@ public class TestReservation {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 3);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             for (int i = 0; i < 1000; i++) {
                 FutureResponse fr1 = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());
@@ -73,7 +73,7 @@ public class TestReservation {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(3, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             for (int i = 0; i < 1000; i++) {
                 FutureResponse fr1 = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc, new DefaultConnectionConfiguration());

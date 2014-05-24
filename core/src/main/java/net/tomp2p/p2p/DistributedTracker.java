@@ -113,11 +113,11 @@ public class DistributedTracker {
                         for (PeerAddress peerAddress : secondaryPeers.getPeerAddresses().keySet()) {
                             secondaryQueue.add(peerAddress);
                         }
-                        startLoop(builder, futureTracker, secondaryQueue, futureChannelCreator2.getChannelCreator());
+                        startLoop(builder, futureTracker, secondaryQueue, futureChannelCreator2.channelCreator());
                     } else {
                         
                         final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_3,
-                                futureChannelCreator2.getChannelCreator());
+                                futureChannelCreator2.channelCreator());
                         
                         // final Number160 searchCloseTo=new
                         // Number160(rnd);
@@ -129,7 +129,7 @@ public class DistributedTracker {
                                         logger.debug("found direct hits for tracker get: "
                                                 + futureRouting.getDirectHits());
                                     startLoop(builder, futureTracker, futureRouting.getDirectHits(),
-                                            futureChannelCreator2.getChannelCreator());
+                                            futureChannelCreator2.channelCreator());
                                 } else {
                                     futureTracker.setFailed("routing failed");
                                 }
@@ -137,7 +137,7 @@ public class DistributedTracker {
 
                         });
                     }
-                    Utils.addReleaseListener(futureChannelCreator2.getChannelCreator(), futureTracker);
+                    Utils.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
                 } else {
                     futureTracker.setFailed(futureChannelCreator2);
                 }
@@ -187,14 +187,14 @@ public class DistributedTracker {
                 if (future.isSuccess()) {
                     for (PeerAddress peerAddress : activePeers2.getPeerAddresses().keySet()) {
                         FutureResponse futureResponses = peerExchangeRPC.peerExchange(peerAddress,
-                                locationKey, domainKey, false, future.getChannelCreator(), configuration);
+                                locationKey, domainKey, false, future.channelCreator(), configuration);
                         if (!futureLateJoin.add(futureResponses)) {
                             // the late join future is fininshed if the
                             // add returns false
                             break;
                         }
                     }
-                    Utils.addReleaseListener(future.getChannelCreator(), futureLateJoin);
+                    Utils.addReleaseListener(future.channelCreator(), futureLateJoin);
                 } else {
                     futureLateJoin.setFailed(future);
                 }
@@ -217,7 +217,7 @@ public class DistributedTracker {
                 if (futureChannelCreator2.isSuccess()) {
                     
                     final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_1,
-                            futureChannelCreator2.getChannelCreator());
+                            futureChannelCreator2.channelCreator());
                     
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
@@ -231,7 +231,7 @@ public class DistributedTracker {
                                             @Override
                                             public FutureResponse create(PeerAddress remotePeer, boolean primary) {
                                                 logger.debug("tracker add (me={}): {} location={}", peerBean.serverPeerAddress(), remotePeer, builder.getLocationKey());
-                                                return trackerRPC.addToTracker(remotePeer, builder, futureChannelCreator2.getChannelCreator());
+                                                return trackerRPC.addToTracker(remotePeer, builder, futureChannelCreator2.channelCreator());
                                             }
                                         });
                             } else {
@@ -239,7 +239,7 @@ public class DistributedTracker {
                             }
                         }
                     });
-                    Utils.addReleaseListener(futureChannelCreator2.getChannelCreator(), futureTracker);
+                    Utils.addReleaseListener(futureChannelCreator2.channelCreator(), futureTracker);
                 } else {
                     futureTracker.setFailed(futureChannelCreator2);
                 }

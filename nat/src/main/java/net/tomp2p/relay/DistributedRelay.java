@@ -97,7 +97,7 @@ public class DistributedRelay {
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
-				future.getChannelCreator().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+				future.channelCreator().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 					@Override
 					public void operationComplete(FutureDone<Void> future) throws Exception {
 						futureChannelShutdown.setDone();
@@ -123,7 +123,7 @@ public class DistributedRelay {
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					final ChannelCreator cc = future.getChannelCreator();
+					final ChannelCreator cc = future.channelCreator();
 					final Collection<PeerAddress> relayCandidates;
 					if (relays == null) {
 						relayCandidates = relayCandidates();

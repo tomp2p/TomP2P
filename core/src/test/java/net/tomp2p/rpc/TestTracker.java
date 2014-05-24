@@ -37,7 +37,7 @@ public class TestTracker {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.setDomainKey(dom);
@@ -94,7 +94,7 @@ public class TestTracker {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.setDomainKey(dom);
@@ -141,7 +141,7 @@ public class TestTracker {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(1, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.setDomainKey(dom);
@@ -193,7 +193,7 @@ public class TestTracker {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
             addTrackerBuilder.setDomainKey(dom);

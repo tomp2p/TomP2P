@@ -57,7 +57,7 @@ public class TestNeighbor {
            
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
 
             SearchValues v = new SearchValues(new Number160("0x1"), null);
             FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), v, 
@@ -99,7 +99,7 @@ public class TestNeighbor {
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
 
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
 
             SearchValues v = new SearchValues(new Number160("0x1"), null);
             DefaultConnectionConfiguration d = new DefaultConnectionConfiguration();
@@ -144,7 +144,7 @@ public class TestNeighbor {
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
 
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
 
             SimpleBloomFilter<Number160> bf = new SimpleBloomFilter<Number160>(20, 10);
             for (int i = 0; i < 10; i++) {
@@ -190,7 +190,7 @@ public class TestNeighbor {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
 
             SearchValues v = new SearchValues(new Number160("0x30"), null);
             FutureResponse fr = neighbors2.closeNeighbors(sender.getPeerAddress(), v, 
@@ -224,7 +224,7 @@ public class TestNeighbor {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
 
             try {
                 SearchValues v = new SearchValues(new Number160("0x30"), null);

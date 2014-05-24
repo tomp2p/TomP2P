@@ -243,8 +243,8 @@ public class BootstrapBuilder {
                     RoutingBuilder routingBuilder = createBuilder(requestP2PConfiguration,
                             routingConfiguration);
                     FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.getDistributedRouting().bootstrap(
-                            bootstrapTo, routingBuilder, futureChannelCreator.getChannelCreator());
-                    Utils.addReleaseListener(futureChannelCreator.getChannelCreator(), futureBootstrap);
+                            bootstrapTo, routingBuilder, futureChannelCreator.channelCreator());
+                    Utils.addReleaseListener(futureChannelCreator.channelCreator(), futureBootstrap);
                     result.waitFor(futureBootstrap);
                 } else {
                     result.setFailed(futureChannelCreator);

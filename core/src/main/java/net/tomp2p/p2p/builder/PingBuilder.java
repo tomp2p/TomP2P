@@ -172,13 +172,13 @@ public class PingBuilder {
                 @Override
                 public void operationComplete(FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
-                        Utils.addReleaseListener(future.getChannelCreator(), futureLateJoin);
+                        Utils.addReleaseListener(future.channelCreator(), futureLateJoin);
                         for (int i = 0; i < size; i++) {
                             final InetAddress broadcastAddress = bindings.broadcastAddresses().get(i);
                             final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
                                     port, port);
                             FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(
-                                    peerAddress, future.getChannelCreator(), connectionConfiguration);
+                                    peerAddress, future.channelCreator(), connectionConfiguration);
                             if (!futureLateJoin.add(validBroadcast)) {
                                 // the latejoin future is fininshed if the add returns false
                                 break;
@@ -236,8 +236,8 @@ public class PingBuilder {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
-                        FutureResponse futureResponse = request.sendUDP(future.getChannelCreator());
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                        FutureResponse futureResponse = request.sendUDP(future.channelCreator());
+                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                     } else {
                         request.futureResponse().setFailed(future);
                     }
@@ -249,8 +249,8 @@ public class PingBuilder {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
-                        FutureResponse futureResponse = request.sendTCP(future.getChannelCreator());
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                        FutureResponse futureResponse = request.sendTCP(future.channelCreator());
+                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                     } else {
                         request.futureResponse().setFailed(future);
                     }

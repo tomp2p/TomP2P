@@ -205,12 +205,12 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                     return;
                 }
                 final FutureResponse futureResponse = peerSync.syncRPC().infoMessage(other,
-                        SyncBuilder.this, future2.getChannelCreator());
+                        SyncBuilder.this, future2.channelCreator());
                 futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                     @Override
                     public void operationComplete(FutureResponse future) throws Exception {
                         if (future.isFailed()) {
-                            Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
+                            Utils.addReleaseListener(future2.channelCreator(), futureResponse);
                             futureSync.setFailed(future);
                             LOG.error("checkDirect failed {}", future.getFailedReason());
                             return;
@@ -276,7 +276,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         if (syncMessageRequired) {
                         	SyncBuilder.this.dataMap(new DataMap(retVal));
                         	FutureResponse fr = peerSync.syncRPC().syncMessage(other,
-                                    SyncBuilder.this, future2.getChannelCreator());
+                                    SyncBuilder.this, future2.channelCreator());
                             fr.addListener(new BaseFutureAdapter<FutureResponse>() {
                                 @Override
                                 public void operationComplete(FutureResponse future) throws Exception {
@@ -287,10 +287,10 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                                     }
                                 }
                             });
-                            Utils.addReleaseListener(future2.getChannelCreator(), fr, futureResponse);
+                            Utils.addReleaseListener(future2.channelCreator(), fr, futureResponse);
                         } else {
                         	futureSync.setDone(syncStat);
-                            Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
+                            Utils.addReleaseListener(future2.channelCreator(), futureResponse);
                         }
                     }
                 });

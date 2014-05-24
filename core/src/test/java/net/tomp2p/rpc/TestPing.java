@@ -37,7 +37,7 @@ public class TestPing {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
@@ -67,7 +67,7 @@ public class TestPing {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
@@ -103,7 +103,7 @@ public class TestPing {
 
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             final ChannelCreator cc1 = cc;
 
             FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
@@ -149,7 +149,7 @@ public class TestPing {
             new PingRPC(recv1.getPeerBean(), recv1.getConnectionBean());
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingUDP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
@@ -180,7 +180,7 @@ public class TestPing {
             new PingRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
@@ -211,7 +211,7 @@ public class TestPing {
             new PingRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCP(recv1.getPeerBean().serverPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
@@ -245,7 +245,7 @@ public class TestPing {
             new PingRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, false);
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().serverPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
@@ -276,7 +276,7 @@ public class TestPing {
             new PingRPC(recv1.getPeerBean(), recv1.getConnectionBean(), false, true, true);
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(1, 0);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingUDP(recv1.getPeerBean().serverPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             fr.awaitUninterruptibly();
@@ -307,7 +307,7 @@ public class TestPing {
             List<FutureResponse> list = new ArrayList<FutureResponse>(50);
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 50);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
             for (int i = 0; i < 50; i++) {
                 FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                         new DefaultConnectionConfiguration());
@@ -341,7 +341,7 @@ public class TestPing {
             for (int i = 0; i < p.length; i++) {
                 FutureChannelCreator fcc = p[0].getConnectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
+                ChannelCreator cc = fcc.channelCreator();
                 FutureResponse fr = p[0].pingRPC().pingTCP(p[i].getPeerAddress(), cc,
                         new DefaultConnectionConfiguration());
                 Utils.addReleaseListener(cc, fr);
@@ -375,7 +375,7 @@ public class TestPing {
             for (int i = 0; i < 20; i++) {
                 FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 50);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
+                ChannelCreator cc = fcc.channelCreator();
                 for (int j = 0; j < 50; j++) {
                     FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                             new DefaultConnectionConfiguration());
@@ -401,7 +401,7 @@ public class TestPing {
             for (int i = 0; i < 20; i++) {
                 FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(50, 0);
                 fcc.awaitUninterruptibly();
-                ChannelCreator cc = fcc.getChannelCreator();
+                ChannelCreator cc = fcc.channelCreator();
                 for (int j = 0; j < 50; j++) {
                     FutureResponse fr = sender.pingRPC().pingUDP(recv1.getPeerAddress(), cc,
                             new DefaultConnectionConfiguration());
@@ -444,7 +444,7 @@ public class TestPing {
             recv1 = new PeerMaker(new Number160("0x1234")).p2pId(55).ports(8088).makeAndListen();
             FutureChannelCreator fcc = recv1.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            ChannelCreator cc = fcc.getChannelCreator();
+            ChannelCreator cc = fcc.channelCreator();
             FutureResponse fr = sender.pingRPC().pingTCP(recv1.getPeerAddress(), cc,
                     new DefaultConnectionConfiguration());
             Utils.addReleaseListener(cc, fr);

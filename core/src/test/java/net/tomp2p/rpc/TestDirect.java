@@ -82,7 +82,7 @@ public class TestDirect {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
             sendDirectBuilder.setStreaming();
@@ -167,7 +167,7 @@ public class TestDirect {
 
             FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 2);
             fcc.awaitUninterruptibly();
-            cc = fcc.getChannelCreator();
+            cc = fcc.channelCreator();
 
             SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
             sendDirectBuilder.setObject("test");
@@ -219,7 +219,7 @@ public class TestDirect {
 
                 FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
 
                 SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
                 sendDirectBuilder.setObject((Object) Integer.valueOf(i));

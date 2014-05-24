@@ -151,9 +151,13 @@ public class PeerSocketAddress implements Serializable {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("PSA[");
-        sb.append(inetAddress).append(",t:").append(tcpPort).append(",u:").append(udpPort).append("]");
-        return sb.toString();
+        StringBuilder sb = new StringBuilder("[");
+        sb.append(inetAddress);
+        if(tcpPort == udpPort) {
+        	return sb.append(",").append(tcpPort).toString();
+        } else {
+        	return sb.append(",t:").append(tcpPort).append(",u:").append(udpPort).append("]").toString();
+        }
     }
 
     /**

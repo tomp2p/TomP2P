@@ -32,6 +32,7 @@ import java.util.Random;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
@@ -865,21 +866,13 @@ public class Message {
     }
     
     //*************************************** End of content payload ********************
-    
-    
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Message:id=");
-        sb.append(getMessageId()).append(",t=").append(type.toString()).append(",c=").append(command).append(",").append(isUdp()?"udp":"tcp");
-        /*
-         * sb.append(",c=").append(getCommand().toString()).append(",t=").append(type.toString()).append(",l=")
-         * .append(getLength() + MessageCodec.HEADER_SIZE).append(",s=").append(getSender()).append(",r=")
-         * .append(getRecipient()); if (LOG.isDebugEnabled()) { if (dataMap != null) { sb.append(",m={"); for
-         * (Map.Entry<Number160, Data> entry : dataMap.entrySet()) { sb.append("k:"); sb.append(entry.getKey());
-         * sb.append("v:"); sb.append(entry.getValue().getHash()); } sb.append("}"); } }
-         */
-        return sb.toString();
+        final StringBuilder sb = new StringBuilder("msgid=");
+        return sb.append(getMessageId()).append(",t=").append(type.toString()).
+        	append(",c=").append(RPC.Commands.find(command).toString()).append(",").append(isUdp()?"udp":"tcp").
+        	append(",s=").append(sender).append(",r=").append(recipient).toString();        
     }
 
     // *************************** No transferable objects here *********************************

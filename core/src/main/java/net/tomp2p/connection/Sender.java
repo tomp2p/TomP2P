@@ -520,7 +520,7 @@ public class Sender {
 				}
 				if (fireAndForget) {
 					futureResponse.setResponseLater(null);
-					LOG.debug("fire and forget, close channel now");
+					LOG.debug("fire and forget, close channel now {}, {}",futureResponse.getRequest(), future.channel());
 					reportMessage(futureResponse, future.channel().close());
 				}
 			}

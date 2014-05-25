@@ -315,7 +315,8 @@ public class PeerMaker {
 		}
 
 		// peerBean.setStorage(getStorage());
-		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5);
+		// TODO make setting replication strategy flexible
+		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5, true);
 		peerBean.replicationStorage(replicationStorage);
 
 		// TrackerStorage storageTracker = new

@@ -13,7 +13,7 @@
 	<groupId>net.tomp2p</groupId>
 	<artifactId>tomp2p-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>5.0-Alpha12-SNAPSHOT</version>
+	<version>5.0-Alpha12</version>
 
 	<name>TomP2P</name>
 	<url>http://tomp2p.net</url>

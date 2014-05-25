@@ -26,6 +26,8 @@ public class PeerConnection {
 
     final private PeerAddress remotePeer;
     final private ChannelCreator cc;
+    
+    final private boolean initiator;
 
     final private Map<FutureChannelCreator, FutureResponse> map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
     final private FutureDone<Void> closeFuture = new FutureDone<Void>();
@@ -47,6 +49,7 @@ public class PeerConnection {
         this.remotePeer = remotePeer;
         this.cc = cc;
         this.heartBeatMillis = heartBeatMillis;
+        this.initiator = true;
     }
 
     /**
@@ -63,6 +66,7 @@ public class PeerConnection {
         addCloseListener(channelFuture);
         this.cc = null;
         this.heartBeatMillis = heartBeatMillis;
+        this.initiator = false;
     }
 
     public PeerConnection channelFuture(ChannelFuture channelFuture) {
@@ -87,7 +91,7 @@ public class PeerConnection {
         channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> arg0) throws Exception {
-            	LOG.debug("about to close the connection {}",  channelFuture.channel());
+            	LOG.debug("about to close the connection {}, {}",  channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
                 closeFuture.setDone();
             }
         });

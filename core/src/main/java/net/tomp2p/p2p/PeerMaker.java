@@ -36,8 +36,10 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.PingBuilderFactory;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -395,7 +397,13 @@ public class PeerMaker {
 		}
 
 		// set the ping builder for the heart beat
-		connectionBean.sender().pingBuilder(peer.ping());
+		connectionBean.sender().pingBuilderFactory(new PingBuilderFactory() {			
+			@Override
+			public PingBuilder create() {
+				return peer.ping();
+			}
+		});
+				
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}

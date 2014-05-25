@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
@@ -633,7 +634,7 @@ public class TestStorage {
             final AtomicInteger test2 = new AtomicInteger(0);
             final int replicatioFactor = 5;
             Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
-                    .peerMap(), replicatioFactor);
+                    .peerMap(), replicatioFactor, false);
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
                 public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
@@ -716,7 +717,7 @@ public class TestStorage {
             master.getPeerBean().storage(new StorageLayer(s1));
             final int replicatioFactor = 5;
             Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
-                    .peerMap(), replicatioFactor);
+                    .peerMap(), replicatioFactor, false);
 
             replication.addResponsibilityListener(new ResponsibilityListener() {
                 @Override
@@ -781,6 +782,216 @@ public class TestStorage {
         }
 
     }
+
+	/**
+	 * Test the responsibility and the notifications for the n-root replication
+	 * approach with replication factor 1.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testReplicationNRoot1() throws Exception {
+		int replicationFactor = 1;
+
+		// initial always a is replicating
+		int[] inital = { 1, 0, 0 };
+
+		Number160 key = new Number160("0xa");
+		// a still has to replicate, a doesn't have to notify newly joined b
+		int[] insert1 = { 0, 1, 0 }; // TODO makes no sense
+		// a still has to replicate, a doesn't have to notify newly joined c
+		int[] insert2 = { 0, 0, 0 };
+		// a still has to replicate, a doesn't have to notify newly joined d
+		int[] insert3 = { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xb");
+		// a doesn't have to replicate anymore, but b, a has to notify newly joined b
+		insert1 = new int[] { 0, 0, 1 };
+		// a has nothing to replicate
+		insert2 = new int[] { 0, 0, 0 };
+		// a has nothing to replicate
+		insert3 = new int[] { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xc");
+		// a doesn't have to replicate anymore, but b, a has to notify newly joined b
+		insert1 = new int[] { 0, 1, 0 }; // TODO makes no sense
+		// a has nothing to replicate
+		insert2 = new int[] { 0, 0, 1 }; // TODO makes no sense
+		// a has nothing to replicate
+		insert3 = new int[] { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xd");
+		// a doesn't have to replicate anymore, but b, a has to notify newly joined b
+		insert1 = new int[] { 0, 0, 1 };
+		// a has nothing to replicate
+		insert2 = new int[] { 0, 0, 0 };
+		// a has nothing to replicate
+		insert3 = new int[] { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+	}
+
+	/**
+	 * Test the responsibility and the notifications for the n-root replication
+	 * approach with replication factor 2.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testReplicationNRoot2() throws Exception {
+		int replicationFactor = 2;
+
+		// initial always a is replicating
+		int[] inital = { 1, 0, 0 };
+
+		Number160 key = new Number160("0xa");
+		// a and b have to replicate, a has to notify newly joined b
+		int[] insert1 = { 0, 1, 0 };
+		// a and c have to replicate, a has to notify newly joined c
+		int[] insert2 = { 0, 1, 0 };
+		// a and c still have to replicate, a doesn't has to notify newly joined d
+		int[] insert3 = { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xb");
+		// a and b have to replicate, a has to notify newly joined b
+		insert1 = new int[] { 0, 1, 0 };
+		insert2 = new int[] { 0, 1, 0 }; // TODO makes no sense
+		insert3 = new int[] { 0, 1, 0 }; // TODO makes no sense
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xc");
+		// a and b have to replicate, a has to notify newly joined b
+		insert1 = new int[] { 0, 1, 0 };
+		// a and c have to replicate, a has to notify newly joined c
+		insert2 = new int[] { 0, 1, 0 };
+		// a doesn't has to replicate, but d, a has to notify newly joined d
+		insert3 = new int[] { 0, 0, 1 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+
+		key = new Number160("0xd");
+		// a and b have to replicate, a has to notify newly joined b
+		insert1 = new int[] { 0, 1, 0 };
+		// b and c have to replicate, a has to notify newly joined c
+		insert2 = new int[] { 0, 0, 1 };
+		// c and d is replicating, a doesn't have to notify newly joined d
+		insert3 = new int[] { 0, 0, 0 };
+		testNRootReplication(key, replicationFactor, inital, insert1, insert2, insert3);
+	}
+
+	private void testNRootReplication(Number160 lKey, int replicationFactor, int[] inital, int[] insert1, int[] insert2,
+			int[] insert3) throws IOException, InterruptedException {
+	Peer master = null;
+		Peer slave1 = null;
+		Peer slave2 = null;
+		Peer slave3 = null;
+		ChannelCreator cc = null;
+		try {
+			// create both peers
+			master = new PeerMaker(new Number160("0xa")).ports(Ports.DEFAULT_PORT).makeAndListen();
+			slave1 = new PeerMaker(new Number160("0xb")).ports(Ports.DEFAULT_PORT+1).makeAndListen();
+			slave2 = new PeerMaker(new Number160("0xc")).ports(Ports.DEFAULT_PORT+2).makeAndListen();
+			slave3 = new PeerMaker(new Number160("0xd")).ports(Ports.DEFAULT_PORT+3).makeAndListen();
+
+			// create n-root replicating storage
+			StorageMemory s1 = new StorageMemory();
+			master.getPeerBean().storage(new StorageLayer(s1));
+			Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
+					.peerMap(), replicationFactor, true);
+
+			// attach test listener for test verification
+			final AtomicInteger replicateOther = new AtomicInteger(0);
+			final AtomicInteger replicateI = new AtomicInteger(0);
+			final AtomicInteger replicateWe = new AtomicInteger(0);
+			replication.addResponsibilityListener(new ResponsibilityListener() {
+				@Override
+				public void otherResponsible(final Number160 locationKey, final PeerAddress other,
+						final boolean delayed) {
+					System.err.println("Other peer " + other + " has to replicate " + locationKey);
+					replicateOther.incrementAndGet();
+				}
+
+				@Override
+				public void meResponsible(final Number160 locationKey) {
+					System.err.println("I have to replicate " + locationKey);
+					replicateI.incrementAndGet();
+				}
+
+				@Override
+				public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
+					System.err.println("I and " + newPeer +" have to replicate " + locationKey);
+					replicateWe.incrementAndGet();
+				}
+			});
+			master.getPeerBean().replicationStorage(replication);
+			
+			// create test data with given location key
+			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
+			dataMap.put(Number160.ZERO, new Data("string"));
+			PutBuilder putBuilder = new PutBuilder(master, lKey);
+			putBuilder.setDomainKey(Number160.ZERO);
+			putBuilder.setDataMapContent(dataMap);
+			putBuilder.setVersionKey(Number160.ZERO);
+
+			FutureChannelCreator fcc = master.getConnectionBean().reservation().create(0, 1);
+			fcc.awaitUninterruptibly();
+			cc = fcc.getChannelCreator();
+
+			// put test data
+			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), putBuilder, cc);
+			fr.awaitUninterruptibly();
+			Assert.assertEquals(inital[0], replicateI.get());
+			replicateI.set(0);
+			Assert.assertEquals(inital[1], replicateWe.get());
+			replicateWe.set(0);
+			Assert.assertEquals(inital[2], replicateOther.get());
+			replicateOther.set(0);
+			
+			// slave1 inserted (manually triggered)
+			master.getPeerBean().peerMap().peerFound(slave1.getPeerAddress(), null);
+			Assert.assertEquals(insert1[0], replicateI.get());
+			replicateI.set(0);
+			Assert.assertEquals(insert1[1], replicateWe.get());
+			replicateWe.set(0);
+			Assert.assertEquals(insert1[2], replicateOther.get());
+			replicateOther.set(0);
+			
+			// slave2 inserted (manually triggered)
+			master.getPeerBean().peerMap().peerFound(slave2.getPeerAddress(), null);
+			Assert.assertEquals(insert2[0], replicateI.get());
+			replicateI.set(0);
+			Assert.assertEquals(insert2[1], replicateWe.get());
+			replicateWe.set(0);
+			Assert.assertEquals(insert2[2], replicateOther.get());
+			replicateOther.set(0);
+			// slave3 inserted (manually triggered)
+			master.getPeerBean().peerMap().peerFound(slave3.getPeerAddress(), null);
+			Assert.assertEquals(insert3[0], replicateI.get());
+			replicateI.set(0);
+			Assert.assertEquals(insert3[1], replicateWe.get());
+			replicateWe.set(0);
+			Assert.assertEquals(insert3[2], replicateOther.get());
+			replicateOther.set(0);
+		} finally {
+			if (cc != null) {
+				cc.shutdown().awaitListenersUninterruptibly();
+			}
+			if (master != null) {
+				master.shutdown().await();
+			}
+			if (slave1 != null) {
+				slave1.shutdown().await();
+			}
+			if (slave2 != null) {
+				slave2.shutdown().await();
+			}
+			if (slave3 != null) {
+				slave3.shutdown().await();
+			}
+		}		
+	}
 
     private FutureResponse store(Peer sender, final Peer recv1, StorageRPC smmSender, ChannelCreator cc)
             throws Exception {

@@ -92,13 +92,14 @@ public class RelayRPC extends DispatchHandler {
     }
 
 	private FutureResponse sendSingle(final PeerConnection peerConnection, final FutureResponse futureResponse) {
+		LOG.debug("Acquire exclusively peerConnoction {} for message {}", peerConnection, futureResponse.getRequest());
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
-        final FutureChannelCreator fcc = peerConnection.acquire(requestHandler.futureResponse());
+        final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
             public void operationComplete(FutureChannelCreator future) throws Exception {
-	            if(future.isSuccess()) {
-	            	requestHandler.sendTCP(peerConnection);
+				if(future.isSuccess()) {
+	            	requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
 	            } else {
 	            	futureResponse.setFailed(future);
 	            }

@@ -117,8 +117,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
-
-        LOG.debug("received request {}", message);
+        LOG.debug("received request {} from channel {}", message, ctx.channel());
         if (message.getVersion() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.getVersion(), message);

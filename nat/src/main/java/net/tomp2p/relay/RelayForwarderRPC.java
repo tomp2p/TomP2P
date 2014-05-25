@@ -8,13 +8,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
-import java.util.concurrent.Semaphore;
 
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -50,7 +47,6 @@ public class RelayForwarderRPC extends DispatchHandler {
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
 	private final RelayRPC relayRPC;
-	private final Semaphore singleConnection = new Semaphore(1);
 
 	/**
 	 * 
@@ -119,25 +115,10 @@ public class RelayForwarderRPC extends DispatchHandler {
 		// unreachable peer
 		message.restoreContentReferences();
 		final Buffer buf = RelayUtils.encodeMessage(message);
-		
-		final RequestHandler<FutureResponse> request = relayRPC.prepareForwardMessage(peerConnection.remotePeer(), buf);
-		FutureChannelCreator fcc = peerConnection.acquire(request.futureResponse());
-		
-		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-            public void operationComplete(FutureChannelCreator future) throws Exception {
-	            if(future.isSuccess()) {
-	            	request.sendTCP(peerConnection);
-	            } else {
-	            	responder.failed(Type.USER1, future.getFailedReason());
-	            }
-	            
-            }
-		});
 
-		//FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf);
+		FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf);
 
-		request.futureResponse().addListener(new BaseFutureAdapter<FutureResponse>() {
+		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess()) {
 					Buffer buffer = future.getResponse().getBuffer(0);

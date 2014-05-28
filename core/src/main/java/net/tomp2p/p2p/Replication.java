@@ -280,7 +280,9 @@ public class Replication implements PeerMapChangeListener {
 						// replication responsibility to our replication map,
 						// because given key doesn't affect us anymore
 						LOG.debug("I {} am not responsible anymore for {}.", selfAddress, myResponsibleLocation);
-						replicationStorage.removeResponsibility(myResponsibleLocation, selfAddress.getPeerId());
+						// I'm not in replication range, I don't need to know
+						// about all responsibility entries to the given key
+						replicationStorage.removeResponsibility(myResponsibleLocation);
 					}
 				} else {
 					// newly joined peer doesn't have to replicate
@@ -301,7 +303,9 @@ public class Replication implements PeerMapChangeListener {
 						LOG.debug(
 								"I {} and newly joined peer {} don't have to replicate {}.",
 								selfAddress, peerAddress, myResponsibleLocation);
-						replicationStorage.removeResponsibility(myResponsibleLocation, selfAddress.getPeerId());
+						// I'm not in replication range, I don't need to know
+						// about all responsibility entries to the given key
+						replicationStorage.removeResponsibility(myResponsibleLocation);
 					}
 				}
 			}

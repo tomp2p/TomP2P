@@ -794,7 +794,7 @@ public class TestStorage {
 		final int replicationFactor = 1;
 
 		Number160 keyA = new Number160("0xa");
-		int[][] expectedA = 
+		int[][] joinA = 
 		// as first node, node a is always replicating given key
 		{{ 1, 0, 0 },
 		// node a is closer to key a than node b, node a doesn't have to notify
@@ -806,7 +806,14 @@ public class TestStorage {
 		// node a is closer to key a than node d, node a doesn't have to notify
 		// newly joined node d
 		{ 0, 0, 0 }};
-		testNRootReplication(keyA, replicationFactor, expectedA);
+		int[][] leaveA =
+		// node b leaves, node a has still to replicate key a
+		{{ 0, 0, 0 },
+		// node c leaves, node a has still to replicate key a
+		{ 0, 0, 0 },
+		// node d leaves, node a has still to replicate key a
+		{ 0, 0, 0 }};
+		testReplication(keyA, replicationFactor, true, joinA, leaveA);
 
 		Number160 keyB = new Number160("0xb");
 		int[][] expectedB = 
@@ -815,28 +822,43 @@ public class TestStorage {
 		// node b is closer to key b than node a, node a has to notify newly
 		// joined node b
 		{ 0, 0, 1 },
-		// node c is not closer to key b than node a and b, node a doesn't have
-		// to notify newly joined node c
+		// node a has no replication responsibilities to check
 		{ 0, 0, 0 },
-		// node d is not closer to key b than node a, b and c, node a doesn't
-		// have to notify newly joined node d
+		// node a has no replication responsibilities to check
 		{ 0, 0, 0 }};
-		testNRootReplication(keyB, replicationFactor, expectedB);
+		int[][] leaveB =
+		// node b leaves, node a has no replication responsibilities to check
+		{{ 0, 0, 0 },
+		// node c leaves, node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node d leaves, node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		testReplication(keyB, replicationFactor, true, expectedB, leaveB);
 
 		Number160 keyC = new Number160("0xc");
-		int[][] expectedC = 
+		int[][] expectedC =
 		// as first node, node a is always replicating given key
-		{{ 1, 0, 0 },
-		// node a is closer to key c than node b, node a doesn't have to notify
-		// newly joined node b
+		{ { 1, 0, 0 },
+		// node a is closer to key c than node b, node a doesn't have to
+		// notify newly joined node b
 		{ 0, 0, 0 },
 		// node c is closer to key c than node a, node a doesn't have to
-		// replicate key c anymore, node a has to notify newly joined node c
+		// replicate key c anymore, node a has to notify newly joined
+		// node c
 		{ 0, 0, 1 },
-		// node d is not closer to key c than node c, node a doesn't have to
-		// notify newly joined node d
-		{ 0, 0, 0 }};
-		testNRootReplication(keyC, replicationFactor, expectedC);
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 } };
+		int[][] leaveC =
+		// node a doesn't know any replication responsibilities for leaving node
+		// b
+		{ { 0, 0, 0 },
+		// node a doesn't know any replication responsibilities for leaving node
+		// c
+		{ 0, 0, 0 },
+		// node a doesn't know any replication responsibilities for leaving node
+		// d
+		{ 0, 0, 0 } };
+		testReplication(keyC, replicationFactor, true, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
 		int[][] expectedD = 
@@ -845,13 +867,21 @@ public class TestStorage {
 		// node b is closer to key d than node a, node a has to notify newly
 		// joined node b
 		{ 0, 0, 1 },
-		// node c is closer to key d than node b, node a has to notify newly
-		// joined node c
-		{ 0, 0, 1 },
-		// node d is closer to key d than node d, node a has to notify newly
-		// joined node d
-		{ 0, 0, 1 }};
-		testNRootReplication(keyD, replicationFactor, expectedD);
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		int[][] leaveD =
+		// node a doesn't know any replication responsibilities of
+		// leaving node b
+		{ { 0, 0, 0 },
+		// node a doesn't know any replication responsibilities of
+		// leaving node c
+		{ 0, 0, 0 },
+		// node a doesn't know any replication responsibilities of
+		// leaving node d
+		{ 0, 0, 0 }};
+		testReplication(keyD, replicationFactor, true, expectedD, leaveD);
 	}
 
 	/**
@@ -882,7 +912,17 @@ public class TestStorage {
 		// than newly joined node d), node a doesn't has to notify newly joined
 		// node d
 		{ 0, 0, 0 }};
-		testNRootReplication(keyA, replicationFactor, expectedA);
+		int[][] leaveA =
+		// leaving node b was also responsible for key a, node a has to
+		// notify it's replications set (node a and c are closest to key a)
+		{ { 1, 0, 0 },
+		// leaving node c was also responsible for key a, node a has to
+		// notify it's replications set (node a and d are closest to key a)
+		{ 1, 0, 0 },
+		// leaving node d was also responsible for key a, node a has to
+		// notify it's replications set
+		{ 1, 0, 0 }};
+		testReplication(keyA, replicationFactor, true, expectedA, leaveA);
 
 		Number160 keyB = new Number160("0xb");
 		int[][] expectedB = 
@@ -899,7 +939,17 @@ public class TestStorage {
 		// to key b than newly joined d), node a doesn't has to notify newly
 		// joined node d
 		{ 0, 0, 0 }};
-		testNRootReplication(keyB, replicationFactor, expectedB);
+		int[][] leaveB =
+		// leaving node b was also responsible for key b, node a has to
+		// notify it's replications set (node a and d are closest to key a)
+		{ { 1, 0, 0 },
+		// leaving node c was not responsible for key b, node a has not to
+		// notify someone (node a and d are closest to key a)
+		{ 0, 0, 0 },
+		// leaving node d was also responsible for key a, node a has to
+		// notify it's replications set
+		{ 1, 0, 0 }};
+		testReplication(keyB, replicationFactor, true, expectedB, leaveB);
 
 		Number160 keyC = new Number160("0xc");
 		int[][] expectedC = 
@@ -915,7 +965,17 @@ public class TestStorage {
 		// c than node a), node a doesn't has to replicate anymore, node a has
 		// to notify newly joined node d
 		{ 0, 0, 1 }};
-		testNRootReplication(keyC, replicationFactor, expectedC);
+		int[][] leaveC =
+		// node a doesn't know any replication responsibilities of
+		// leaving node b
+		{ { 0, 0, 0 },
+		// node a doesn't know any replication responsibilities of
+		// leaving node c
+		{ 0, 0, 0 },
+		// node a doesn't know any replication responsibilities of
+		// leaving node d
+		{ 0, 0, 0 }};
+		testReplication(keyC, replicationFactor, true, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
 		int[][] expectedD = 
@@ -927,10 +987,16 @@ public class TestStorage {
 		// node b and c have to replicate key d (node b and c are closer to key
 		// d than node a), node a has to notify newly joined node c
 		{ 0, 0, 1 },
-		// node c and d have to replicate key d (node c and d are closer to key
-		// d than node a and node b), node a has to notify newly joined node d
-		{ 0, 0, 1 }};
-		testNRootReplication(keyD, replicationFactor, expectedD);
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		int[][] leaveD =
+		// node a has no replication responsibilities to check
+		{ { 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		testReplication(keyD, replicationFactor, true, expectedD, leaveD);
 	}
 	
 	/**
@@ -956,7 +1022,17 @@ public class TestStorage {
 		// node c is not closer to key a than node a, b and c, node a doesn't
 		// have to notify newly joined node d
 		{ 0, 0, 0 }};
-		testNRootReplication(key, replicationFactor, expectedA);
+		int[][] leaveA =
+		// node b leaves, node b was also responsible for key a, notify replica
+		// set
+		{ { 1, 0, 0 },
+		// node c leaves, node c was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 },
+		// node d leaves, node d was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, true, expectedA, leaveA);
 
 		key = new Number160("0xb");
 		int[][] expectedB = 
@@ -971,7 +1047,17 @@ public class TestStorage {
 		// node a, b and d have to replicate key b (node a, b and d are closer
 		// to key b than node c), node a has to notify newly joined node d
 		{ 0, 1, 0 }};
-		testNRootReplication(key, replicationFactor, expectedB);
+		int[][] leaveB =
+		// node b leaves, node b was also responsible for key a, notify replica
+		// set
+		{{ 1, 0, 0},
+		// node c leaves, node c was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 },
+		// node d leaves, node d was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, true, expectedB, leaveB);
 
 		key = new Number160("0xc");
 		int[][] expectedC = 
@@ -986,7 +1072,16 @@ public class TestStorage {
 		// node a, c and d have to replicate key c (node a, c and d are closer
 		// to key b than node b), node a has to notify newly joined node d
 		{ 0, 1, 0 }};
-		testNRootReplication(key, replicationFactor, expectedC);
+		int[][] leaveC =
+		// node b leaves, node b was not responsible for key a
+		{{ 0, 0, 0},
+		// node c leaves, node c was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 },
+		// node d leaves, node d was also responsible for key a, notify replica
+		// set
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, true, expectedC, leaveC);
 
 		key = new Number160("0xd");
 		int[][] expectedD = 
@@ -1002,7 +1097,14 @@ public class TestStorage {
 		// to key d than node a), node a doesn't have to replicate anymore, node
 		// a has to notify newly joined node d
 		{ 0, 0, 1 }};
-		testNRootReplication(key, replicationFactor, expectedD);
+		int[][] leaveD =
+		// node a has no replication responsibilities to check
+		{{ 0, 0, 0},
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		testReplication(key, replicationFactor, true, expectedD, leaveD);
 	}
 
 	/**
@@ -1010,13 +1112,13 @@ public class TestStorage {
 	 * a <-0001-> b <-0111-> c <-0001-> d <-0111-> a,
 	 * a <-0110-> c, b <-0110-> d
 	 */
-	private void testNRootReplication(Number160 lKey, int replicationFactor, int[][] expected)
+	private void testReplication(Number160 lKey, int replicationFactor, boolean nRoot, int[][] joins, int[][] leaves)
 			throws IOException, InterruptedException {
-		List<Peer> peers = new ArrayList<Peer>(expected.length);
+		List<Peer> peers = new ArrayList<Peer>(joins.length);
 		ChannelCreator cc = null;
 		try {
 			char[] letters = { 'a', 'b', 'c', 'd' };
-			for (int i = 0; i < expected.length; i++) {
+			for (int i = 0; i < joins.length; i++) {
 				peers.add(new PeerMaker(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
 						.makeAndListen());
 			}
@@ -1026,7 +1128,7 @@ public class TestStorage {
 			Peer master = peers.get(0);
 			master.getPeerBean().storage(new StorageLayer(s1));
 			Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
-					.peerMap(), replicationFactor, true);
+					.peerMap(), replicationFactor, nRoot);
 
 			// attach test listener for test verification
 			final AtomicInteger replicateOther = new AtomicInteger(0);
@@ -1067,22 +1169,34 @@ public class TestStorage {
 			System.err.println("Putting " + lKey);
 			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), putBuilder, cc);
 			fr.awaitUninterruptibly();
-			Assert.assertEquals(expected[0][0], replicateI.get());
+			Assert.assertEquals(joins[0][0], replicateI.get());
 			replicateI.set(0);
-			Assert.assertEquals(expected[0][1], replicateWe.get());
+			Assert.assertEquals(joins[0][1], replicateWe.get());
 			replicateWe.set(0);
-			Assert.assertEquals(expected[0][2], replicateOther.get());
+			Assert.assertEquals(joins[0][2], replicateOther.get());
 			replicateOther.set(0);
 			
-			for (int i = 1; i < expected.length; i++) {
+			for (int i = 1; i < joins.length; i++) {
 				// insert a peer
 				master.getPeerBean().peerMap().peerFound(peers.get(i).getPeerAddress(), null);
 				// verify replication notifications
-				Assert.assertEquals(expected[i][0], replicateI.get());
+				Assert.assertEquals(joins[i][0], replicateI.get());
 				replicateI.set(0);
-				Assert.assertEquals(expected[i][1], replicateWe.get());
+				Assert.assertEquals(joins[i][1], replicateWe.get());
 				replicateWe.set(0);
-				Assert.assertEquals(expected[i][2], replicateOther.get());
+				Assert.assertEquals(joins[i][2], replicateOther.get());
+				replicateOther.set(0);
+			}
+			
+			for (int i = 0; i < leaves.length; i++) {
+				// remove a peer
+				master.getPeerBean().peerMap().peerFailed(peers.get(i+1).getPeerAddress(), FailReason.Shutdown);
+				// verify replication notifications
+				Assert.assertEquals(leaves[i][0], replicateI.get());
+				replicateI.set(0);
+				Assert.assertEquals(leaves[i][1], replicateWe.get());
+				replicateWe.set(0);
+				Assert.assertEquals(leaves[i][2], replicateOther.get());
 				replicateOther.set(0);
 			}
 			

@@ -29,4 +29,6 @@ public interface ReplicationStorage {
 
     public void removeResponsibility(Number160 locationKey);
 
+    public void removeResponsibility(Number160 locationKey, Number160 peerId);
+
 }

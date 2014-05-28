@@ -46,7 +46,7 @@ public class StorageMemory implements Storage {
     // Protection
     final private Map<Number320, PublicKey> protectedMap = new ConcurrentHashMap<Number320, PublicKey>();
     final private Map<Number480, PublicKey> entryMap = new ConcurrentHashMap<Number480, PublicKey>();
-    final private StorageMemoryReplication storageMemoryReplication = new StorageMemoryReplication();
+    final private StorageMemoryReplicationNRoot storageMemoryReplication = new StorageMemoryReplicationNRoot();
 
     // Core
     @Override
@@ -191,6 +191,11 @@ public class StorageMemory implements Storage {
         storageMemoryReplication.removeResponsibility(locationKey);
     }
 
+    @Override
+    public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+        storageMemoryReplication.removeResponsibility(locationKey, peerId);
+    }
+
     // Misc
     @Override
     public void close() {
@@ -214,4 +219,5 @@ public class StorageMemory implements Storage {
         }
         return !other.equals(publicKey);
     }
+
 }

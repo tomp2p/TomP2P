@@ -19,6 +19,7 @@ package net.tomp2p.storage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,18 @@ public class StorageMemoryReplication implements ReplicationStorage {
             }
         }
     }
+
+	public Map<Number160, Set<Number160>> findOtherResponsibilities(Number160 selfPeerID) {
+		Map<Number160, Set<Number160>> other = null;
+		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(selfPeerID);
+		try {
+			other = new HashMap<Number160, Set<Number160>>(responsibilityMapRev);
+			other.remove(selfPeerID);
+		} finally {
+			responsibilityLock.unlock(lock);
+		}
+		return other;
+	}
 
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
         if (LOG.isDebugEnabled()) {
@@ -120,4 +133,20 @@ public class StorageMemoryReplication implements ReplicationStorage {
             }
         }
     }
+
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		if (peerId == null || locationKey == null) {
+			throw new IllegalArgumentException("both keys must not be null");
+		}
+		Number160 peerId2 = responsibilityMap.get(locationKey);
+		if (peerId2 == null || !peerId.equals(peerId2)) {
+			return;
+		}
+		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerId);
+		try {
+			removeRevResponsibility(peerId, locationKey);
+		} finally {
+			responsibilityLock.unlock(lock);
+		}
+	}
 }

@@ -489,6 +489,11 @@ public class TrackerStorage implements PeerStatusListener, Digest, ReplicationSt
         storageMemoryReplication.removeResponsibility(locationKey);
     }
 
+	@Override
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		storageMemoryReplication.removeResponsibility(locationKey, peerId);
+	}
+
     @Override
     public DigestInfo digest(Number640 from, Number640 to) {
         throw new UnsupportedOperationException("Bloom filters and trackers are not supported");

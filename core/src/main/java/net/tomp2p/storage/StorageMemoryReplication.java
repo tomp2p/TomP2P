@@ -113,6 +113,9 @@ public class StorageMemoryReplication implements ReplicationStorage {
         if (peerId == null) {
             return;
         }
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Removed replication responsiblities for {}.", locationKey);
+		}
         KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerId);
         try {
             removeRevResponsibility(peerId, locationKey);
@@ -141,6 +144,9 @@ public class StorageMemoryReplication implements ReplicationStorage {
 		Number160 peerId2 = responsibilityMap.get(locationKey);
 		if (peerId2 == null || !peerId.equals(peerId2)) {
 			return;
+		}
+		if (LOG.isDebugEnabled()) {
+			LOG.debug("Removed replication responsibility of {} for {}", peerId, locationKey);
 		}
 		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(peerId);
 		try {

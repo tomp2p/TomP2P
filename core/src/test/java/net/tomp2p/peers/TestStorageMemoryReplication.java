@@ -12,7 +12,7 @@ public class TestStorageMemoryReplication {
         Number160 testLoc = Number160.createHash("test1");
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
-        Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDForResponsibleContent(testLoc));
+        Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc).iterator().next());
     }
 
     @Test
@@ -32,7 +32,7 @@ public class TestStorageMemoryReplication {
         Number160 testPer = Number160.createHash("test2");
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
-        Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDForResponsibleContent(testLoc));
+        Assert.assertEquals(testPer, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc).iterator().next());
         Assert.assertEquals(testLoc, storageMemoryReplication.findContentForResponsiblePeerID(testPer).iterator()
                 .next());
     }
@@ -45,7 +45,7 @@ public class TestStorageMemoryReplication {
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
         storageMemoryReplication.updateResponsibilities(testLoc, testPer);
         storageMemoryReplication.removeResponsibility(testLoc);
-        Assert.assertEquals(null, storageMemoryReplication.findPeerIDForResponsibleContent(testLoc));
+        Assert.assertEquals(null, storageMemoryReplication.findPeerIDsForResponsibleContent(testLoc).iterator().next());
         Assert.assertEquals(0, storageMemoryReplication.findContentForResponsiblePeerID(testPer).size());
     }
 }

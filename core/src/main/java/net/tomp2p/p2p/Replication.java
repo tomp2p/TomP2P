@@ -189,19 +189,57 @@ public class Replication implements PeerMapChangeListener {
         if (!isReplicationEnabled()) {
             return;
         }
-        PeerAddress closest = closest(locationKey);
-        if (closest.getPeerId().equals(selfAddress.getPeerId())) {
-            if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
-                // I am responsible for this content
-                notifyMeResponsible(locationKey);
+        if (!nRootReplication) {
+            PeerAddress closest = closest(locationKey);
+            if (closest.getPeerId().equals(selfAddress.getPeerId())) {
+                if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
+                    // I am responsible for this content
+                    notifyMeResponsible(locationKey);
+                }
+            } else {
+                if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
+                    // notify that someone else is now responsible for the
+                    // content with key responsibleLocations
+                    notifyOtherResponsible(locationKey, closest, false);
+                }
             }
         } else {
-            if (replicationStorage.updateResponsibilities(locationKey, closest.getPeerId())) {
-                // notify that someone else is now responsible for the
-                // content with key responsibleLocations
-                notifyOtherResponsible(locationKey, closest, false);
-            }
-        }
+			if (isInReplicationRange(locationKey, selfAddress, replicationFactor)) {
+				if (replicationStorage.updateResponsibilities(locationKey, selfAddress.getPeerId())) {
+					LOG.debug("I {} am now responsible for key {}.", selfAddress, locationKey);
+					notifyMeResponsible(locationKey);
+				} else {
+					LOG.debug("I {} already know that I'm responsible for key {}.", selfAddress, locationKey);
+					// get all other replica nodes
+					Collection<Number160> peerIds = replicationStorage
+							.findPeerIDsForResponsibleContent(locationKey);
+					peerIds.remove(selfAddress.getPeerId());
+					// check if all other replica nodes are still responsible
+					boolean hasToNotifyReplicaSet = false;
+					for (Number160 otherReplica : peerIds) {
+						// TODO avoid this initialization
+						PeerAddress peerAddress = new PeerAddress(otherReplica);
+						if (!isInReplicationRange(locationKey, peerAddress, replicationFactor)) {
+							LOG.debug("I {} detected that {} is not responsible anymore for key {}.",
+									selfAddress, peerAddress, locationKey);
+							replicationStorage.removeResponsibility(locationKey, otherReplica);
+							hasToNotifyReplicaSet = true;
+						} else {
+							LOG.debug("I {} checked that {} is still responsible for key {}.", selfAddress,
+									peerAddress, locationKey);
+						}
+					}
+					if (hasToNotifyReplicaSet) {
+						// at least one replica node is not responsible anymore,
+						// notify replica set
+						notifyMeResponsible(locationKey);
+					}
+				}
+			} else {
+				LOG.debug("I {} am not responsible for key {}.", selfAddress, locationKey);
+				replicationStorage.removeResponsibility(locationKey);
+			}
+		}
     }
 
     @Override

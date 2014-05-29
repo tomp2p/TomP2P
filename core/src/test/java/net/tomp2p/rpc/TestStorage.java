@@ -42,6 +42,8 @@ import net.tomp2p.storage.Data;
 //import net.tomp2p.storage.StorageDisk;
 import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
+import net.tomp2p.storage.StorageMemoryReplication;
+import net.tomp2p.storage.StorageMemoryReplicationNRoot;
 import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
@@ -621,7 +623,7 @@ public class TestStorage {
      * @throws Exception .
      */
     @Test
-    public void testResponsibility() throws Exception {
+    public void testResponsibility0Root1() throws Exception {
         // Random rnd=new Random(42L);
         Peer master = null;
         Peer slave = null;
@@ -697,7 +699,7 @@ public class TestStorage {
      * @throws Exception .
      */
     @Test
-    public void testResponsibility2() throws Exception {
+    public void testResponsibility0Root2() throws Exception {
         final Random rnd = new Random(42L);
         final int port = 8000;
         Peer master = null;
@@ -763,14 +765,14 @@ public class TestStorage {
             master.getPeerBean().peerMap().peerFailed(slaveAddress1, FailReason.Shutdown);
 
             Assert.assertEquals(1, test1.get());
-            Assert.assertEquals(1, test2.get());
+            Assert.assertEquals(2, test2.get());
 
             PeerAddress slaveAddress2 = slave2.getPeerAddress();
             slave2.shutdown().await();
             master.getPeerBean().peerMap().peerFailed(slaveAddress2, FailReason.Shutdown);
 
             Assert.assertEquals(1, test1.get());
-            Assert.assertEquals(2, test2.get());
+            Assert.assertEquals(3, test2.get());
 
         } finally {
             if (cc != null) {
@@ -893,9 +895,6 @@ public class TestStorage {
 	@Test
 	public void testReplicationNRoot2() throws Exception {
 		int replicationFactor = 2;
-
-		// as first node, node a is always replicating given key
-		int[] inital = { 1, 0, 0 };
 
 		Number160 keyA = new Number160("0xa");
 		int[][] expectedA = 
@@ -1122,12 +1121,15 @@ public class TestStorage {
 				peers.add(new PeerMaker(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
 						.makeAndListen());
 			}
-			
-			// create n-root replicating storage
-			StorageMemory s1 = new StorageMemory();
+			StorageMemory storage;
+			if (nRoot) {
+				storage = new StorageMemory(new StorageMemoryReplicationNRoot());
+			} else {
+				storage = new StorageMemory(new StorageMemoryReplication());
+			}
 			Peer master = peers.get(0);
-			master.getPeerBean().storage(new StorageLayer(s1));
-			Replication replication = new Replication(s1, master.getPeerAddress(), master.getPeerBean()
+			master.getPeerBean().storage(new StorageLayer(storage));
+			Replication replication = new Replication(storage, master.getPeerAddress(), master.getPeerBean()
 					.peerMap(), replicationFactor, nRoot);
 
 			// attach test listener for test verification
@@ -1166,7 +1168,6 @@ public class TestStorage {
 			cc = fcc.getChannelCreator();
 
 			// put test data
-			System.err.println("Putting " + lKey);
 			FutureResponse fr = master.getStoreRPC().put(master.getPeerAddress(), putBuilder, cc);
 			fr.awaitUninterruptibly();
 			Assert.assertEquals(joins[0][0], replicateI.get());

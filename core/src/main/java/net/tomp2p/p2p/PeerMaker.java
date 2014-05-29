@@ -57,6 +57,8 @@ import net.tomp2p.storage.IdentityManagement;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
+import net.tomp2p.storage.StorageMemoryReplication;
+import net.tomp2p.storage.StorageMemoryReplicationNRoot;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
@@ -196,6 +198,7 @@ public class PeerMaker {
 	private boolean enableMaintenance = true;
 	private boolean enableIndirectReplication = false;
 	private boolean enableBroadcast = true;
+	private boolean enableNRootReplication = true;
 
 	// private Random rnd;
 
@@ -265,7 +268,11 @@ public class PeerMaker {
 		}
 
 		if (storage == null) {
-			storage = new StorageMemory();
+			if (enableNRootReplication) {
+				storage = new StorageMemory(new StorageMemoryReplicationNRoot());
+			} else {
+				storage = new StorageMemory(new StorageMemoryReplication());
+			}
 		}
 
 		if (storageIntervalMillis == -1) {
@@ -315,8 +322,8 @@ public class PeerMaker {
 		}
 
 		// peerBean.setStorage(getStorage());
-		// TODO make setting replication strategy flexible
-		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5, true);
+		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5,
+				enableNRootReplication);
 		peerBean.replicationStorage(replicationStorage);
 
 		// TrackerStorage storageTracker = new
@@ -901,6 +908,15 @@ public class PeerMaker {
 
 	public PeerMaker setEnableIndirectReplication(boolean enableIndirectReplication) {
 		this.enableIndirectReplication = enableIndirectReplication;
+		return this;
+	}
+
+	public boolean isEnableNRootReplication() {
+		return enableNRootReplication;
+	}
+
+	public PeerMaker setEnableNRootReplication(boolean enableNRootReplication) {
+		this.enableNRootReplication = enableNRootReplication;
 		return this;
 	}
 

@@ -46,7 +46,15 @@ public class StorageMemory implements Storage {
     // Protection
     final private Map<Number320, PublicKey> protectedMap = new ConcurrentHashMap<Number320, PublicKey>();
     final private Map<Number480, PublicKey> entryMap = new ConcurrentHashMap<Number480, PublicKey>();
-    final private StorageMemoryReplicationNRoot storageMemoryReplication = new StorageMemoryReplicationNRoot();
+    final private ReplicationStorage storageMemoryReplication;
+
+    public StorageMemory() {
+    	this.storageMemoryReplication = new StorageMemoryReplicationNRoot();
+    }
+
+    public StorageMemory(final ReplicationStorage storageMemoryReplication) {
+    	this.storageMemoryReplication = storageMemoryReplication;
+    }
 
     // Core
     @Override

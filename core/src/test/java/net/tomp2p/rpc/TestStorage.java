@@ -792,6 +792,207 @@ public class TestStorage {
 	 * @throws Exception
 	 */
 	@Test
+	public void testReplication0Root1() throws Exception {
+		final int replicationFactor = 1;
+
+		Number160 keyA = new Number160("0xa");
+		int[][] joinA = 
+		// node a is responsible for key a
+		{{ 1, 0, 0 },
+		// node a remains responsible for key a
+		{ 0, 0, 0 },
+		// node a remains responsible for key a
+		{ 0, 0, 0 },
+		// node a remains responsible for key a
+		{ 0, 0, 0 }};
+		int[][] leaveA =
+		// node b leaves, node a has still to replicate key a
+		{{ 0, 0, 0 },
+		// node c leaves, node a has still to replicate key a
+		{ 0, 0, 0 },
+		// node d leaves, node a has still to replicate key a
+		{ 0, 0, 0 }};
+		testReplication(keyA, replicationFactor, false, joinA, leaveA);
+
+		Number160 keyB = new Number160("0xb");
+		int[][] expectedB = 
+		// as first node, node a has to replicate key b
+		{{ 1, 0, 0 },
+		// node b is closer to key b than node a, node a has to notify newly
+		// joined node b
+		{ 0, 0, 1 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		int[][] leaveB =
+		{{ 1, 0, 0 }, // TODO makes no sense
+		{ 0, 0, 0 },
+		{ 0, 0, 0 }};
+		testReplication(keyB, replicationFactor, false, expectedB, leaveB);
+
+		Number160 keyC = new Number160("0xc");
+		int[][] expectedC =
+		// as first node, node a has to replicate key c
+		{ { 1, 0, 0 },
+		// node a is closer to key c than node b, node a doesn't have to
+		// notify newly joined node b
+		{ 0, 0, 0 },
+		// node c is closer to key c than node a, node a doesn't have to
+		// replicate key c anymore, node a has to notify newly joined
+		// node c
+		{ 0, 0, 1 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 } };
+		int[][] leaveC =
+		{ { 0, 0, 0 },
+		{ 0, 0, 1 },	// TODO makes no sense
+		{ 1, 0, 0 } };	// TODO makes no sense
+		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
+
+		Number160 keyD = new Number160("0xd");
+		int[][] expectedD = 
+		// as first node, node a is always replicating given key
+		{{ 1, 0, 0 },
+		// node b is closer to key d than node a, node a has to notify newly
+		// joined node b
+		{ 0, 0, 1 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		int[][] leaveD =
+		{ { 0, 0, 1 },	// TODO makes no sense
+		{ 0, 0, 0 },
+		{ 1, 0, 0 }};	// TODO makes no sense
+		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
+	}
+
+	/**
+	 * Test the responsibility and the notifications for the 0-root replication
+	 * approach with replication factor 2.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testReplication0Root2() throws Exception {
+		int replicationFactor = 2;
+
+		Number160 keyA = new Number160("0xa");
+		int[][] expectedA = 
+		// as first node, node a has to replicate key a
+		{{ 1, 0, 0 },
+		// node a has to replicate key a and node a and b are in the
+		// replica set, node a has to notify newly joined node b
+		{ 0, 1, 0 },
+		// node a and b still have to replicate key a (node a and b are closer
+		// to key a than newly joined node c), node a doesn't has to notify
+		// newly joined node c
+		{ 0, 0, 0 },
+		// node a and b still have to replicate key a (node b is closer to key a
+		// than newly joined node d), node a doesn't has to notify newly joined
+		// node d
+		{ 0, 0, 0 }};
+		int[][] leaveA =
+		// leaving node b was also responsible for key a, node a has to
+		// notify it's replications set (node a and c are closest to key a)
+		{ { 1, 0, 0 },
+		// leaving node c was also responsible for key a, node a has to
+		// notify it's replications set (node a and d are closest to key a)
+		{ 1, 0, 0 },
+		// leaving node d was also responsible for key a, node a has to
+		// notify it's replications set
+		{ 1, 0, 0 }};
+		testReplication(keyA, replicationFactor, false, expectedA, leaveA);
+
+		Number160 keyB = new Number160("0xb");
+		int[][] expectedB = 
+		// as first node, node a has to replicate key b
+		{{ 1, 0, 0 },
+		// node a and b are in the replica set, node b is responsible
+		// for replication, node a has to notify newly joined node b
+		{ 0, 0, 1 },
+		// node a and b are still in the replica set for key b (node a
+		// and b are closer to key b than newly joined c), node a
+		// doesn't has to notify newly joined node c, because node b is
+		// responsible for notifications
+		{ 0, 0, 0 },
+		// node a and b are still in the replica set for key b (node a
+		// and b are closer to key b than newly joined d), node a
+		// doesn't has to notify newly joined node d, because node b is
+		// responsible for notifications
+		{ 0, 0, 0 }};
+		int[][] leaveB =
+		// leaving node b was in replica set of key b (and was also responsible
+		// for replicating key b, now node a), node a has to notify the replica
+		// set (node a and d are closest to key a)
+		{ { 1, 0, 0 },
+		// leaving node c was not responsible for key b, node a has not to
+		// notify someone (node a and d are closest to key a)
+		{ 0, 0, 0 },
+		// leaving node d was in replica set of key b, node a has to
+		// notify it's replications set
+		{ 1, 0, 0 }};
+		testReplication(keyB, replicationFactor, false, expectedB, leaveB);
+
+		Number160 keyC = new Number160("0xc");
+		int[][] expectedC = 
+		// as first node, node a has to replicate key c
+		{{ 1, 0, 0 },
+		// node a and b are in the replica set of key c, node a has to notify newly
+		// joined node b, because node a is responsible
+		{ 0, 1, 0 },
+		// node a and c are in the replica set of key c (node a and c
+		// are closer to key c than node b), node a has to notify newly
+		// joined node c, because node c becomes responsible
+		{ 0, 0, 1},
+		// node c and d are in the replica set of key c (node c and d
+		// are closer to key c than node a), node has no responsibilities
+		{ 0, 0, 0 }};
+		int[][] leaveC =
+		// leaving node b doesn't affect node a
+		{ { 0, 0, 0 },
+		// node c leaves, node a is now in replica set of key c, but
+		// node d is responsible for replication, thus node a notifies
+		// nobody
+		{ 0, 0, 1 }, // {0, 0, 0}, TODO makes no sense
+		// node d leaves, node a becomes responsible for key c and has
+		// to notify the replica set
+		{ 1, 0, 0 }};
+		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
+
+		Number160 keyD = new Number160("0xd");
+		int[][] expectedD = 
+		// as first node, node a is responsible for key d
+		{{ 1, 0, 0 },
+		// node a and b are in the replica set of key d, node a has to notify newly
+		// joined node b, which gets responsible for replicating key d
+		{ 0, 0, 1 },
+		// node b and c are in the replica set of key d, node c is
+		// responsible for replicating key d, node a has nothing to
+		// notify
+		{ 0, 0, 0 },
+		// node c and d are in the replica set of key d, node d is
+		// responsible for replicating key d, node a has nothing to
+		// notify
+		{ 0, 0, 0 }};
+		int[][] leaveD =
+		// node a has no replication responsibilities to check
+		{ { 0, 0, 1 }, // {{ 0, 0, 0}, TODO makes no sense
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 1, 0, 0 }}; // { 0, 0, 0}, TODO makes no sense
+		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
+	}
+
+	/**
+	 * Test the responsibility and the notifications for the n-root replication
+	 * approach with replication factor 1.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
 	public void testReplicationNRoot1() throws Exception {
 		final int replicationFactor = 1;
 

@@ -43,8 +43,10 @@ public class StorageMemoryReplication implements ReplicationStorage {
 
     final private KeyLock<Number160> responsibilityLock = new KeyLock<Number160>();
 
-    public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
-        return responsibilityMap.get(locationKey);
+    public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+    	Set<Number160> set = new HashSet<Number160>();
+    	set.add(responsibilityMap.get(locationKey));
+        return set;
     }
 
     public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {

@@ -43,12 +43,12 @@ public class StorageMemoryReplicationNRoot implements ReplicationStorage {
 	final private KeyLock<Number160> responsibilityLock = new KeyLock<Number160>();
 
 	@Override
-	public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
+	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
 		Set<Number160> set = responsibilityMap.get(locationKey);
 		if (set == null || set.isEmpty()) {
-			return null;
+			return Collections.<Number160> emptyList();
 		} else {
-			return set.iterator().next();
+			return new HashSet<Number160>(set);
 		}
 	}
 

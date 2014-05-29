@@ -180,8 +180,8 @@ public class StorageMemory implements Storage {
     }
 
     @Override
-    public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
-        return storageMemoryReplication.findPeerIDForResponsibleContent(locationKey);
+    public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+        return storageMemoryReplication.findPeerIDsForResponsibleContent(locationKey);
     }
 
     @Override

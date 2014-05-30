@@ -790,7 +790,6 @@ public class TestStorage {
 	 * @throws Exception
 	 */
 	@Test
-	@Ignore // TODO make this run
 	public void testReplication0Root1() throws Exception {
 		final int replicationFactor = 1;
 
@@ -805,19 +804,20 @@ public class TestStorage {
 		// node a remains responsible for key a
 		{ 0, 0, 0 }};
 		int[][] leaveA =
-		// node b leaves, node a has still to replicate key a
+		// node b leaves, it doesn't affects key a's replica set
 		{{ 0, 0, 0 },
-		// node c leaves, node a has still to replicate key a
+		// node c leaves, it doesn't affects key a's replica set
 		{ 0, 0, 0 },
-		// node d leaves, node a has still to replicate key a
+		// node d leaves, it doesn't affects key a's replica set
 		{ 0, 0, 0 }};
 		testReplication(keyA, replicationFactor, false, joinA, leaveA);
 
 		Number160 keyB = new Number160("0xb");
 		int[][] expectedB = 
-		// as first node, node a has to replicate key b
+		// as first node, node a is responsible for key b
 		{{ 1, 0, 0 },
-		// node b is closer to key b than node a, node a has to notify newly
+		// node b joins and becomes responsible for key b (closer than
+		// node a), node a has to notify newly
 		// joined node b
 		{ 0, 0, 1 },
 		// node a has no replication responsibilities to check
@@ -825,45 +825,54 @@ public class TestStorage {
 		// node a has no replication responsibilities to check
 		{ 0, 0, 0 }};
 		int[][] leaveB =
-		{{ 1, 0, 0 }, // TODO makes no sense
+		// node a has no replication responsibilities to check
+		{{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
 		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
 		{ 0, 0, 0 }};
 		testReplication(keyB, replicationFactor, false, expectedB, leaveB);
 
 		Number160 keyC = new Number160("0xc");
 		int[][] expectedC =
-		// as first node, node a has to replicate key c
+		// as first node, node a is responsible for key c
 		{ { 1, 0, 0 },
-		// node a is closer to key c than node b, node a doesn't have to
-		// notify newly joined node b
+		// node b joins, node a is closer to key c than node b, node a
+		// doesn't have to notify newly joined node b
 		{ 0, 0, 0 },
-		// node c is closer to key c than node a, node a doesn't have to
-		// replicate key c anymore, node a has to notify newly joined
-		// node c
+		// node c joins, node c is closer to key c than node a, node c
+		// becomes responsible for key c, node a has to notify newly
+		// joined node c
 		{ 0, 0, 1 },
 		// node a has no replication responsibilities to check
 		{ 0, 0, 0 } };
 		int[][] leaveC =
+		// node a has no replication responsibilities to check
 		{ { 0, 0, 0 },
-		{ 1, 0, 1 },	// TODO makes no sense
-		{ 1, 0, 0 } };	// TODO makes no sense
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 } };
 		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
 		int[][] expectedD = 
-		// as first node, node a is always replicating given key
-		{{ 1, 0, 0 },
-		// node b is closer to key d than node a, node a has to notify newly
-		// joined node b
+		// as first node, node a is responsible for key d
+		{ { 1, 0, 0 },
+		// node b joins, node b is closer to key d than node a and
+		// becomes responsible for key d, node a has to notify newly joined node b
 		{ 0, 0, 1 },
 		// node a has no replication responsibilities to check
-		{ 0, 0, 1 },	// TODO makes no sense
-		// node a has no replication responsibilities to check
-		{ 0, 0, 1 }};	// TODO makes no sense
-		int[][] leaveD =
-		{ { 0, 0, 0 },
 		{ 0, 0, 0 },
-		{ 1, 0, 0 }};	// TODO makes no sense
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
+		int[][] leaveD =
+		// node a has no replication responsibilities to check
+		{ { 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no replication responsibilities to check
+		{ 0, 0, 0 }};
 		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
 	}
 
@@ -972,10 +981,10 @@ public class TestStorage {
 		// responsible: c
 		{ 0, 0, 1},
 		// node d joins, node c and d is closer to key c, node a is not
-		// in replica set anymore, node a doesn't have to notify someone
+		// in replica set anymore, node a has to notify node c
 		// replica set: c, d
 		// responsible: c
-		{ 0, 0, 0 }};
+		{ 0, 0, 1 }};
 		int[][] leaveC =
 		// leaving node b doesn't affect replica set or node a
 		// replica set: c, d
@@ -1006,10 +1015,11 @@ public class TestStorage {
 		// responsible: b
 		{ 0, 0, 1 },
 		// node c joins, closer nodes b and c are in replica set of key
-		// d, closer node c becomes responsible, node a notifies nobody
+		// d, closer node c becomes responsible, node a is no more in
+		// replica set of key d, node a has to notify node c
 		// replica set: b, c
 		// responsible: c
-		{ 0, 0, 0 },
+		{ 0, 0, 1 },
 		// node d joins, closer nodes c and d are in replica set of key
 		// d, closer node d becomes responsible, node a notifies nobody
 		// replica set: c, d

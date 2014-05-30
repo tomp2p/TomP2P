@@ -272,6 +272,8 @@ public class Replication implements PeerMapChangeListener {
     								myResponsibleLocation);
     					}
 					} else {
+						// notify closest replica node about responsibility
+						notifyOtherResponsible(myResponsibleLocation, closest, false);
 						LOG.debug("I {} am no more in the replica set of {}.", selfAddress, myResponsibleLocation);
 						backend.removeResponsibility(myResponsibleLocation);
 					}

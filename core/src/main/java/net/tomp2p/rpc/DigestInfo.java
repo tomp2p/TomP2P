@@ -105,8 +105,9 @@ public class DigestInfo {
             hashKey = hashKey.xor(entry.getKey().getDomainKey());
             hashKey = hashKey.xor(entry.getKey().getContentKey());
             hashKey = hashKey.xor(entry.getKey().getVersionKey());
-            for (Number160 basedOn: entry.getValue())
+            for (Number160 basedOn: entry.getValue()) {
             	hashContent = hashContent.xor(basedOn);
+            }
         }
         keyDigest = hashKey;
         contentDigest = hashContent;

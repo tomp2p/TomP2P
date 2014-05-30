@@ -43,7 +43,7 @@ public class ExampleDiscover {
 				FutureChannelCreator fcc = master.getConnectionBean().reservation().create(1, 1);
 				fcc.awaitUninterruptibly();
 
-				ChannelCreator cc = fcc.getChannelCreator();
+				ChannelCreator cc = fcc.channelCreator();
 
 				FutureResponse fr1 = master.pingRPC().pingTCP(pa, cc, new DefaultConnectionConfiguration());
 				fr1.awaitUninterruptibly();

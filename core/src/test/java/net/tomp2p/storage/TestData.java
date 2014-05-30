@@ -19,8 +19,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestData {
-    
-    private static final DSASignatureFactory factory = new DSASignatureFactory();
+	
+	private static final DSASignatureFactory factory = new DSASignatureFactory();
     @Test
     public void testData1() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
         Data data = new Data("test");

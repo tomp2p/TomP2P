@@ -138,6 +138,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 	}
 
 	private void handlePing(Message message, Responder responder, PeerAddress sender) {
+		LOG.debug("peerconnection open? {}", peerConnection.isOpen());
 		Message response = createResponseMessage(message, peerConnection.isOpen() ? Type.OK : Type.EXCEPTION, sender);
 		responder.response(response);
 	}

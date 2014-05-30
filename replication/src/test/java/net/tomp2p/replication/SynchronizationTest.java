@@ -228,14 +228,14 @@ public class SynchronizationTest {
 						SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync, receiverAddress, 5);
 						synchronizationBuilder.dataMap(dataMap);
 						final FutureResponse futureResponse = senderSync.syncRPC().infoMessage(
-						        receiverAddress, synchronizationBuilder, future2.getChannelCreator());
+						        receiverAddress, synchronizationBuilder, future2.channelCreator());
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								System.err.println(future.getFailedReason());
 								ref.set(future.getResponse().getType());
 								ref2.set(future.getResponse().getDataMap(0));
-								Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
+								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
 						});
@@ -295,12 +295,12 @@ public class SynchronizationTest {
 						SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync, receiverAddress, 5);
 						synchronizationBuilder.dataMap(dataMap);
 						final FutureResponse futureResponse = senderSync.syncRPC().infoMessage(
-						        receiverAddress, synchronizationBuilder, future2.getChannelCreator());
+						        receiverAddress, synchronizationBuilder, future2.channelCreator());
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								ref.set(future.getResponse().getDataMap(0));
-								Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
+								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
 						});
@@ -365,12 +365,12 @@ public class SynchronizationTest {
 						SyncBuilder synchronizationBuilder = new SyncBuilder(senderSync, receiverAddress, 5);
 						synchronizationBuilder.dataMap(dataMap);
 						final FutureResponse futureResponse = senderSync.syncRPC().infoMessage(receiverAddress,
-						        synchronizationBuilder, future2.getChannelCreator());
+						        synchronizationBuilder, future2.channelCreator());
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								ref.set(future.getResponse().getDataMap(0));
-								Utils.addReleaseListener(future2.getChannelCreator(), futureResponse);
+								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
 						});

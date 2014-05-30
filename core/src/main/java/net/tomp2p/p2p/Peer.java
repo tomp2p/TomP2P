@@ -386,7 +386,7 @@ public class Peer {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    final ChannelCreator cc = fcc.getChannelCreator();
+                    final ChannelCreator cc = fcc.channelCreator();
                     final PeerConnection peerConnection = new PeerConnection(destination, cc, heartBeatMillis);
                     futureDone.setDone(peerConnection);
                 } else {

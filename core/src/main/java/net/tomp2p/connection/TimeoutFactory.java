@@ -102,7 +102,7 @@ public class TimeoutFactory {
 
         /**
          * @param futureResponse
-         *            The future that will be called if a timeout occured
+         *            The future that will be called if a timeout occured. Can be null if we are server, if we are client, futureResponse will be set
          * @param peerStatusListeners
          *            The listeners that get notified when a timeout happend
          */

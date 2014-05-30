@@ -498,9 +498,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("PeerAddr[");
-        return sb.append(peerSocketAddress.toString()).append(",ID:").append(peerId.toString()).append("]")
-                .toString();
+        StringBuilder sb = new StringBuilder("paddr[");
+        return sb.append(peerId.toString()).append(peerSocketAddress.toString()).append("]").toString();
     }
 
     @Override

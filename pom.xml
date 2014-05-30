@@ -13,7 +13,7 @@
 	<groupId>net.tomp2p</groupId>
 	<artifactId>tomp2p-parent</artifactId>
 	<packaging>pom</packaging>
-	<version>5.0-Alpha7-SNAPSHOT</version>
+	<version>5.0-Alpha16-SNAPSHOT</version>
 
 	<name>TomP2P</name>
 	<url>http://tomp2p.net</url>
@@ -78,12 +78,12 @@
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-transport</artifactId>
-				<version>4.0.14.Final</version>
+				<version>4.0.19.Final</version>
 			</dependency>
 			<dependency>
 				<groupId>io.netty</groupId>
 				<artifactId>netty-buffer</artifactId>
-				<version>4.0.14.Final</version>
+				<version>4.0.19.Final</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -161,6 +161,7 @@
 				</configuration>
 			</plugin>
 		</plugins>
+		
 	</build>
 
 </project>

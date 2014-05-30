@@ -71,7 +71,7 @@ public class Sender {
 	private final Dispatcher dispatcher;
 	private final Random random;
 
-	private PingBuilder pingBuilder;
+	private PingBuilderFactory pingBuilderFactory;
 
 	/**
 	 * Creates a new sender with the listeners for offline peers.
@@ -94,12 +94,12 @@ public class Sender {
 		return channelClientConfiguration;
 	}
 
-	public PingBuilder pingBuilder() {
-		return pingBuilder;
+	public PingBuilderFactory pingBuilderFactory() {
+		return pingBuilderFactory;
 	}
 
-	public Sender pingBuilder(PingBuilder pingBuilder) {
-		this.pingBuilder = pingBuilder;
+	public Sender pingBuilderFactory(PingBuilderFactory pingBuilderFactory) {
+		this.pingBuilderFactory = pingBuilderFactory;
 		return this;
 	}
 
@@ -168,7 +168,7 @@ public class Sender {
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
 	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
 		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(),
-		        pingBuilder);
+				pingBuilderFactory);
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -218,7 +218,7 @@ public class Sender {
 	 * @param pingBuilder
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses, PingBuilder pingBuilder) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses, PingBuilderFactory pingBuilderFactory) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
 		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.size()];
@@ -226,6 +226,7 @@ public class Sender {
 		for (PeerSocketAddress psa : peerSocketAddresses) {
             if (psa != null) {
                 InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
+                PingBuilder pingBuilder = pingBuilderFactory.create();
                 forks[index++] = pingBuilder.setInetAddress(inetSocketAddress.getAddress())
                         .setPort(inetSocketAddress.getPort()).start();
             }
@@ -281,7 +282,7 @@ public class Sender {
 
 		HeartBeat heartBeat = null;
 		if (peerConnection != null) {
-			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilder);
+			heartBeat = new HeartBeat(peerConnection.heartBeatMillis(), TimeUnit.MILLISECONDS, pingBuilderFactory);
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 
@@ -516,12 +517,11 @@ public class Sender {
 				if (!future.isSuccess()) {
 					futureResponse.setFailedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {}", futureResponse.getRequest(), future.cause());
-
+					LOG.warn("Failed to write channel the request {} {}", futureResponse.getRequest(), future.cause());
 				}
 				if (fireAndForget) {
 					futureResponse.setResponseLater(null);
-					LOG.debug("fire and forget, close channel now");
+					LOG.debug("fire and forget, close channel now {}, {}",futureResponse.getRequest(), future.channel());
 					reportMessage(futureResponse, future.channel().close());
 				}
 			}

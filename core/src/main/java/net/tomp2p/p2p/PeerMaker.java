@@ -36,8 +36,10 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerCreator;
+import net.tomp2p.connection.PingBuilderFactory;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
@@ -57,8 +59,6 @@ import net.tomp2p.storage.IdentityManagement;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.storage.StorageLayer;
 import net.tomp2p.storage.StorageMemory;
-import net.tomp2p.storage.StorageMemoryReplication;
-import net.tomp2p.storage.StorageMemoryReplicationNRoot;
 import net.tomp2p.storage.TrackerStorage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
@@ -268,11 +268,7 @@ public class PeerMaker {
 		}
 
 		if (storage == null) {
-			if (enableNRootReplication) {
-				storage = new StorageMemory(new StorageMemoryReplicationNRoot());
-			} else {
-				storage = new StorageMemory(new StorageMemoryReplication());
-			}
+			storage = new StorageMemory();
 		}
 
 		if (storageIntervalMillis == -1) {
@@ -322,7 +318,7 @@ public class PeerMaker {
 		}
 
 		// peerBean.setStorage(getStorage());
-		Replication replicationStorage = new Replication(storage, peerBean.serverPeerAddress(), peerMap, 5,
+		Replication replicationStorage = new Replication(new StorageLayer(storage), peerBean.serverPeerAddress(), peerMap, 5,
 				enableNRootReplication);
 		peerBean.replicationStorage(replicationStorage);
 
@@ -403,7 +399,13 @@ public class PeerMaker {
 		}
 
 		// set the ping builder for the heart beat
-		connectionBean.sender().pingBuilder(peer.ping());
+		connectionBean.sender().pingBuilderFactory(new PingBuilderFactory() {			
+			@Override
+			public PingBuilder create() {
+				return peer.ping();
+			}
+		});
+				
 		for (PeerInit peerInit : toInitialize) {
 			peerInit.init(peer);
 		}

@@ -161,8 +161,9 @@ public class Encoder {
                     // write # of based on keys
                     buf.writeByte(entry.getValue().size());
                     // write based on keys
-                    for (Number160 basedOnKey : entry.getValue())
+                    for (Number160 basedOnKey : entry.getValue()) {
                         buf.writeBytes(basedOnKey.toByteArray());
+                    }
                 }
                 message.contentRefencencs().poll();
                 break;

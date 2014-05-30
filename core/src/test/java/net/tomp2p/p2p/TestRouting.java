@@ -135,11 +135,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -209,11 +209,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -277,11 +277,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -344,11 +344,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -414,11 +414,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 3);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(3, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -518,11 +518,11 @@ public class TestRouting {
             if (tcp) {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             } else {
                 FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
                 fcc.awaitUninterruptibly();
-                cc = fcc.getChannelCreator();
+                cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -586,11 +586,11 @@ public class TestRouting {
                 if (tcp) {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, res);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 } else {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(res, 0);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -651,11 +651,11 @@ public class TestRouting {
                 if (tcp) {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 } else {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();
@@ -760,11 +760,11 @@ public class TestRouting {
                 if (tcp) {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 } else {
                     FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
                     fcc.awaitUninterruptibly();
-                    cc = fcc.getChannelCreator();
+                    cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();

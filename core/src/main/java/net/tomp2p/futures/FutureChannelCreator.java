@@ -54,7 +54,7 @@ public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
     /**
      * @return The ChannelCreator
      */
-    public ChannelCreator getChannelCreator() {
+    public ChannelCreator channelCreator() {
         synchronized (lock) {
             return channelCreator;
         }

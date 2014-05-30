@@ -16,13 +16,13 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	
+
 	<parent>
-    	<groupId>net.tomp2p</groupId>
-    	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha7-SNAPSHOT</version>
-  	</parent>
-	
+		<groupId>net.tomp2p</groupId>
+		<artifactId>tomp2p-parent</artifactId>
+		<version>5.0-Alpha16-SNAPSHOT</version>
+	</parent>
+
 	<artifactId>tomp2p-storage</artifactId>
 	<name>TomP2P storage</name>
 	<packaging>jar</packaging>
@@ -36,7 +36,7 @@
 			<name>Apache License, Version 2.0</name>
 			<url>http://www.apache.org/licenses/LICENSE-2.0</url>
 		</license>
-	</licenses>	
+	</licenses>
 
 	<dependencies>
 		<dependency>
@@ -44,31 +44,31 @@
 			<artifactId>slf4j-api</artifactId>
 			<optional>true</optional>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<optional>true</optional>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>io.netty</groupId>
 			<artifactId>netty-transport</artifactId>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		
+
 		<dependency>
-    		<groupId>org.mapdb</groupId>
-    		<artifactId>mapdb</artifactId>
-    		<version>0.9.13</version>
+			<groupId>org.mapdb</groupId>
+			<artifactId>mapdb</artifactId>
+			<version>1.0.1</version>
 		</dependency>
 
-		<!-- For testing-->
+		<!-- For testing -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -77,6 +77,4 @@
 		</dependency>
 
 	</dependencies>
-
-	
 </project>

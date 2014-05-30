@@ -116,7 +116,7 @@ public class TestReservation {
 				fc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 					@Override
 					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						final ChannelCreator cc = future.getChannelCreator();
+						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
@@ -174,7 +174,7 @@ public class TestReservation {
 				fc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 					@Override
 					public void operationComplete(final FutureChannelCreator future) throws Exception {
-						final ChannelCreator cc = future.getChannelCreator();
+						final ChannelCreator cc = future.channelCreator();
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS, false,
@@ -234,7 +234,7 @@ public class TestReservation {
 						if (future.isFailed()) {
 							return;
 						}
-						final ChannelCreator cc = future.getChannelCreator();
+						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,
@@ -292,7 +292,7 @@ public class TestReservation {
 						if (future.isFailed()) {
 							return;
 						}
-						final ChannelCreator cc = future.getChannelCreator();
+						final ChannelCreator cc = future.channelCreator();
 						final int timeout = 2000;
 						for (int k = 0; k < conn; k++) {
 							ChannelFuture channelFuture = cc.createTCP(SOCKET_ADDRESS, timeout,

@@ -61,6 +61,7 @@
   <!--  <logger name="net.tomp2p.rpc.StorageRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.HandshakeRPC" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.rpc.TaskRPC" level="TRACE"/> -->
+  <!--  <logger name="net.tomp2p.rpc.BroadcastRPC" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.storage.StorageLayer" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.storage.StorageMemoryReplication" level="TRACE"/> -->
@@ -73,13 +74,13 @@
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.relay" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
   
   <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF. 
        See http://logback.qos.ch/manual/architecture.html for more information-->
-  <root level="WARN">
+  <root level="DEBUG">
     <appender-ref ref="STDOUT" />
   </root>
 </configuration>

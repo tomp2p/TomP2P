@@ -35,7 +35,7 @@ public class HeartBeat extends ChannelDuplexHandler {
     
     private volatile int state; // 0 - none, 1 - initialized, 2 - destroyed
     
-    private final PingBuilder builder;
+    private final PingBuilderFactory pingBuilderFactory;
     //may be set from other threads
     private volatile PeerConnection peerConnection;
 
@@ -48,7 +48,7 @@ public class HeartBeat extends ChannelDuplexHandler {
      * @param unit
      *            the {@link TimeUnit} of {@code readerIdleTime}, {@code writeIdleTime}, and {@code allIdleTime}
      */
-    public HeartBeat(long allIdleTime, TimeUnit unit, PingBuilder builder) {
+    public HeartBeat(long allIdleTime, TimeUnit unit, PingBuilderFactory pingBuilderFactory) {
         if (unit == null) {
             throw new NullPointerException("unit");
         }
@@ -57,7 +57,7 @@ public class HeartBeat extends ChannelDuplexHandler {
         } else {
             timeToHeartBeatMillis = Math.max(unit.toMillis(allIdleTime), MIN_TIME_TO_HEARTBEAT_MILLIS);
         }
-        this.builder = builder;
+        this.pingBuilderFactory = pingBuilderFactory;
     }
     
     @Override
@@ -182,7 +182,9 @@ public class HeartBeat extends ChannelDuplexHandler {
             long nextDelay = timeToHeartBeatMillis - (currentTime - lastIoTime);
             
             if(peerConnection!=null && nextDelay <= 0) {
-                LOG.debug("sending heart beat to {}",peerConnection.remotePeer());
+                LOG.debug("sending heart beat to {}, {}", peerConnection.remotePeer(), 
+                		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
+                PingBuilder builder = pingBuilderFactory.create();
                 BaseFuture baseFuture = builder.peerConnection(peerConnection).start();
                 builder.notifyAutomaticFutures(baseFuture);
             }

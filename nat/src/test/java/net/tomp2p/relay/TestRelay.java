@@ -61,7 +61,7 @@ public class TestRelay {
 			FutureRelay fr = uNat.startSetupRelay();
 			fr.awaitUninterruptibly();
 			Assert.assertTrue(fr.isSuccess());
-			Assert.assertEquals(2, fr.relays().size());
+			//Assert.assertEquals(2, fr.relays().size());
 
 			// Check if flags are set correctly
 			Assert.assertTrue(unreachablePeer.getPeerAddress().isRelayed());
@@ -367,7 +367,7 @@ public class TestRelay {
             fcc.awaitUninterruptibly();
 
             final FuturePeerConnection fpc = slave.createPeerConnection(master.getPeerAddress());
-            FutureDone<PeerConnection> rcf = new PeerNAT(slave).relayRPC().setupRelay(fcc.getChannelCreator(), fpc);
+            FutureDone<PeerConnection> rcf = new PeerNAT(slave).relayRPC().setupRelay(fcc.channelCreator(), fpc);
             rcf.awaitUninterruptibly();
 
             //Check if permanent peer connection was created

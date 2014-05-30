@@ -57,7 +57,7 @@ public class Decoder {
 
 	private int neighborSize = -1;
 	private NeighborSet neighborSet = null;
-
+	
 	private int peerSocketAddressSize = -1;
 	private List<PeerSocketAddress> peerSocketAddresses = null;
 

@@ -62,8 +62,8 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * @param delaySec
      *            The delay in seconds
      */
-    public void setTimeout(final ScheduledExecutorService timer, final int delaySec) {
-        final DiscoverTimeoutTask task = new DiscoverTimeoutTask();
+    public void setTimeout(final PeerAddress serverPeerAddress, final ScheduledExecutorService timer, final int delaySec) {
+        final DiscoverTimeoutTask task = new DiscoverTimeoutTask(serverPeerAddress);
         final ScheduledFuture<?> scheduledFuture = timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec), TimeUnit.MILLISECONDS);
         addListener(new BaseFutureAdapter<FutureDiscover>() {
             @Override
@@ -161,10 +161,30 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      */
     private final class DiscoverTimeoutTask implements Runnable {
         private final long start = Timings.currentTimeMillis();
+        private final PeerAddress serverPeerAddress;
+        
+        private DiscoverTimeoutTask(PeerAddress serverPeerAddress) {
+        	this.serverPeerAddress = serverPeerAddress;
+        }
+        
         @Override
         public void run() {
-        	setFailed("Timeout in Discover: " + (Timings.currentTimeMillis() - start) + "ms");
+        	setFailed(serverPeerAddress, "Timeout in Discover: " + 
+        			(Timings.currentTimeMillis() - start) + "ms. However, I think my peer address is " + serverPeerAddress);
         }
+    }
+    
+    public FutureDiscover setFailed(PeerAddress serverPeerAddress, final String failed) {
+        synchronized (lock) {
+            if (!setCompletedAndNotify()) {
+                return this;
+            }
+            this.reason = failed;
+            this.ourPeerAddress = serverPeerAddress;
+            this.type = FutureType.FAILED;
+        }
+        notifyListeners();
+        return this;
     }
 
 	public FutureDiscover setExternalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {

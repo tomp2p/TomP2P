@@ -84,9 +84,9 @@ public class TrackerStorageReplication implements ResponsibilityListener {
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
                         FutureResponse futureResponse = peerExchangeRPC.peerExchange(newPeer, locationKey,
-                                domainKey, true, future.getChannelCreator(),
+                                domainKey, true, future.channelCreator(),
                                 new DefaultConnectionConfiguration());
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         peer.notifyAutomaticFutures(futureResponse);
                     } else {
                         LOG.error("otherResponsible failed {}", future.getFailedReason());

@@ -215,6 +215,7 @@ public class Data {
 			final int indexBasedOn = Utils.BYTE_SIZE + Utils.BYTE_SIZE
 					+ (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0);
 			// get # of based on keys
+			//TODO: the read is too early! check if we have the data is necessary
 			numBasedOn = buf.getUnsignedByte(buf.readerIndex() + indexBasedOn);
 		} else {
 			// no based on keys
@@ -259,6 +260,7 @@ public class Data {
 			data.ttlSeconds = buf.readInt();
 		}
 		if (data.basedOnFlag) {
+			//TODO: +1
 			int num = buf.readUnsignedByte();
 			for (int i = 0; i < num; i++) {
 				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -355,9 +357,11 @@ public class Data {
 			buf.writeInt(ttlSeconds);
 		}
 		if (basedOnFlag) {
+			//TODO -1?
 			buf.writeByte(basedOnSet.size());
-			for (Number160 basedOn : basedOnSet)
+			for (Number160 basedOn : basedOnSet) {
 				buf.writeBytes(basedOn.toByteArray());
+			}
 		}
 		if (publicKeyFlag) {
 			if (publicKey == null) {

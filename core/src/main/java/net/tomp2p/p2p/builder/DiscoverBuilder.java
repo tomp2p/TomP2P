@@ -173,7 +173,7 @@ public class DiscoverBuilder {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    discover(futureDiscover, peerAddress, future.getChannelCreator(), configuration);
+                    discover(futureDiscover, peerAddress, future.channelCreator(), configuration);
                 } else {
                     futureDiscover.setFailed(future);
                 }
@@ -262,7 +262,7 @@ public class DiscoverBuilder {
                                 configuration);
                         Utils.addReleaseListener(cc, fr1, fr2);
                         // from here we probe, set the timeout here
-                        futureDiscover.setTimeout(peer.getConnectionBean().timer(), discoverTimeoutSec);
+                        futureDiscover.setTimeout(serverAddress, peer.getConnectionBean().timer(), discoverTimeoutSec);
                         return;
                     } else {
                         // important to release connection if not needed

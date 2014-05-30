@@ -50,7 +50,7 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
 
     private static final int NR = 10;
 
-    private static final int MAX_HOP_COUNT = 7;
+    private static final int MAX_HOP_COUNT = 4;
 
     private final Peer peer;
 
@@ -155,10 +155,11 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                                 BroadcastBuilder broadcastBuilder = new BroadcastBuilder(peer, messageKey);
                                 broadcastBuilder.dataMap(dataMap);
                                 broadcastBuilder.hopCounter(hopCounter + 1);
+                                broadcastBuilder.setIsUDP(isUDP);
                                 FutureResponse futureResponse = peer.getBroadcastRPC().send(peerAddress, broadcastBuilder, 
-                                        future.getChannelCreator(), broadcastBuilder);
+                                        future.channelCreator(), broadcastBuilder);
                                 LOG.debug("1st broadcast to {}", peerAddress);
-                                Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
+                                Utils.addReleaseListener(future.channelCreator(), futureResponse);
                             }
                         }
                     });
@@ -188,18 +189,20 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
+                	FutureResponse[] futures = new FutureResponse[max]; 
                     for (int i = 0; i < max; i++) {
                         PeerAddress randomAddress = list.remove(rnd.nextInt(list.size()));
                         
                         BroadcastBuilder broadcastBuilder = new BroadcastBuilder(peer, messageKey);
                         broadcastBuilder.dataMap(dataMap);
                         broadcastBuilder.hopCounter(hopCounter + 1);
+                        broadcastBuilder.setIsUDP(isUDP);
                         
-                        FutureResponse futureResponse = peer.getBroadcastRPC().send(randomAddress,
-                                broadcastBuilder, future.getChannelCreator(), broadcastBuilder);
+                        futures[i] = peer.getBroadcastRPC().send(randomAddress,
+                                broadcastBuilder, future.channelCreator(), broadcastBuilder);
                         LOG.debug("2nd broadcast to {}", randomAddress);
-                        Utils.addReleaseListener(future.getChannelCreator(), futureResponse);
                     }
+                    Utils.addReleaseListener(future.channelCreator(), futures);
                 }
             }
         });

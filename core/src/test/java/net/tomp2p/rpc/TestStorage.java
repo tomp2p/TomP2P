@@ -882,11 +882,6 @@ public class TestStorage {
 	 * 
 	 * @throws Exception
 	 */
-	/**
-	 * Distances between a, b, c and d:
-	 * a <-0001-> b <-0111-> c <-0001-> d <-0111-> a,
-	 * a <-0110-> c, b <-0110-> d
-	 */
 	@Test
 	public void testReplication0Root2() throws Exception {
 		int replicationFactor = 2;
@@ -1042,6 +1037,159 @@ public class TestStorage {
 		{ 0, 0, 0 }};
 		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
 	}
+
+	/**
+	 * Test the responsibility and the notifications for the 0-root replication
+	 * approach with replication factor 3.
+	 * 
+	 * @throws Exception
+	 */
+	@Test
+	public void testReplication0Root3() throws Exception {
+		int replicationFactor = 3;
+
+		Number160 key = new Number160("0xa");
+		int[][] expectedA = 
+		// as first node, node a has to replicate key a
+		{ { 1, 0, 0 },
+		// node b joins, node b is in replica set of key a, node a
+		// remains responsible, node a has to sync to node b
+		// replica set: a, b
+		// responsible: a
+		{ 0, 1, 0 },
+		// node c joins, node c is in replica set of key a, node a
+		// remains responsible, node a has to sync to node c
+		// replica set: a, b, c
+		// responsible: a
+		{ 0, 1, 0 },
+		// node d joins, node d doesn't affects replica set of key a
+		// replica set: a, b, c
+		// responsible: a
+		{ 0, 0, 0 }};
+		int[][] leaveA =
+		// node b leaves, node b was in replica set, node a remains responsible,
+		// node a has to notify replica set
+		// replica set: a, c, d
+		// responsible: a
+		{ { 1, 0, 0 },
+		// node c leaves, node c was in replica set, node a remains
+		// responsible, node a has to notify replica set
+		// replica set: a, d
+		// responsible: a
+		{ 1, 0, 0 },
+		// node d leaves, node d was in replica set, node a remains
+		// responsible, node a has to notify replica set
+		// replica set: a
+		// responsible: a
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, false, expectedA, leaveA);
+
+		key = new Number160("0xb");
+		int[][] expectedB = 
+		// as first node, node a has to replicate key b
+		{{ 1, 0, 0 },
+		// node b joins, node b is in replica set, node becomes
+		// responsible for key b, node a has to notify node b
+		// replica set: a, b
+		// responsible: b
+		{ 0, 0, 1 },
+		// node c joins, node c is in replica set, node b remains
+		// responsible, therefore node a doesn't have to notify
+		// replica set: a, b, c
+		// responsible: b
+		{ 0, 0, 0 },
+		// node d joins, node d is in replica set, node b remains
+		// responsible, therefore node a doesn't have to notify
+		// replica set: a, b, d
+		// responsible: b
+		{ 0, 0, 0 }};
+		int[][] leaveB =
+		// node b leaves, node a becomes responsible, node a notifies replica set
+		// replica set: a, c, d
+		// responsible: a
+		{{ 1, 0, 0},
+		// node c leaves, node a remains responsible, node c was in
+		// replica set, node a notifies replica set
+		// replica set: a, d
+		// responsible: a
+		{ 1, 0, 0 },
+		// node d leaves, node a remains responsible, node d was in
+		// replica set, node a notifies replica set
+		// replica set: a
+		// responsible: a
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, false, expectedB, leaveB);
+
+		key = new Number160("0xc");
+		int[][] expectedC = 
+		// as first node, node a has to replicate key c
+		{{ 1, 0, 0 },
+		// node b joins, node b is in replica set of key c, node a
+		// remains responsible, node a syncs to node b
+		// replica set: a, b
+		// responsible: a
+		{ 0, 1, 0 },
+		// node c joins, node c is in replica set of key c, node c
+		// becomes responsible, node a notifies node c
+		// replica set: a, b, c
+		// responsible: c
+		{ 0, 0, 1 },
+		// node d joins, node d is in replica set of key c, node c
+		// remains responsible, node a notifies no one
+		// replica set: a, c, d
+		// responsible: c
+		{ 0, 0, 0 }};
+		int[][] leaveC =
+		// node b leaves, node b doesn't affect replica set of key c
+		// replica set: a, c, d
+		// responsible: c
+		{{ 0, 0, 0},
+		// node c leaves, node c was in replica set of key c, node d
+		// becomes responsible, node a notifies node d about responsibility
+		// replica set: a, d
+		// responsible: d
+		{ 0, 0, 1 },
+		// node d leaves, node d was responsible for key c, node a
+		// becomes responsible for key c, node a notifies replica set
+		// replica set: a
+		// responsible: a
+		{ 1, 0, 0 }};
+		testReplication(key, replicationFactor, false, expectedC, leaveC);
+
+		key = new Number160("0xd");
+		int[][] expectedD = 
+		// as first node, node a has to replicate key d
+		{ { 1, 0, 0 },
+		// node b joins, node b is in replica set of key d, node b
+		// becomes responsible, node a notifies node b
+		// replica set: a, b
+		// responsible: b
+		{ 0, 0, 1 },
+		// node c joins, node c is in replica set of key d, node c
+		// becomes responsible, node a notifies node c
+		// replica set: a, b, c
+		// responsible: c
+		{ 0, 0, 1 },
+		// node d joins, node d is in replica set of key d, node d
+		// becomes responsible, node a notifies node d
+		// replica set: b, c, d
+		// responsible: d
+		{ 0, 0, 1 }};
+		int[][] leaveD =
+		// node a has no responsibilities to check
+		{{ 0, 0, 0},
+		// node a has no responsibilities to check
+		{ 0, 0, 0 },
+		// node a has no responsibilities to check
+		{ 0, 0, 0 }};
+		testReplication(key, replicationFactor, false, expectedD, leaveD);
+	}
+	
+	/**
+	 * Distances between a, b, c and d:
+	 * a <-0001-> b <-0111-> c <-0001-> d <-0111-> a,
+	 * a <-0110-> c, b <-0110-> d
+	 */
 
 	/**
 	 * Test the responsibility and the notifications for the n-root replication

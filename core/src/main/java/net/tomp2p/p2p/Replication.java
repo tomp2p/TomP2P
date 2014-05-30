@@ -403,6 +403,9 @@ public class Replication implements PeerMapChangeListener {
 							closest.getPeerId())) {
 						LOG.debug("We should check if the closer peer has the content");
 						notifyOtherResponsible(otherResponsibleLocation, closest, true);
+						// we don't need to check this again, so remove it from
+						// the list if present
+						myResponsibleLocations.remove(otherResponsibleLocation);
 					}
 				}
 			}

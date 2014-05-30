@@ -258,17 +258,22 @@ public class Replication implements PeerMapChangeListener {
 				// use 0-root replication strategy
 				PeerAddress closest = closest(myResponsibleLocation);
 				if (!closest.getPeerId().equals(selfAddress.getPeerId())) {
-					if (backend.updateResponsibilities(myResponsibleLocation, closest.getPeerId())) {
-						LOG.debug("I {} didn't know that {} is responsible for {}.", selfAddress, closest,
-								myResponsibleLocation);
-						// notify that someone else is now responsible for the
-						// content with key responsibleLocations
-						notifyOtherResponsible(myResponsibleLocation, closest, false);
-						// cancel any pending notifyMeResponsible*, as we are
-						// not responsible anymore.
+					if (isInReplicationRange(myResponsibleLocation, selfAddress, replicationFactor)) {
+    					if (backend.updateResponsibilities(myResponsibleLocation, closest.getPeerId())) {
+    						LOG.debug("I {} didn't know that {} is responsible for {}.", selfAddress, closest,
+    								myResponsibleLocation);
+    						// notify that someone else is now responsible for the
+    						// content with key responsibleLocations
+    						notifyOtherResponsible(myResponsibleLocation, closest, false);
+    						// cancel any pending notifyMeResponsible*, as we are
+    						// not responsible anymore.
+    					} else {
+    						LOG.debug("I {} know already that {} is responsible for {}.", selfAddress, closest,
+    								myResponsibleLocation);
+    					}
 					} else {
-						LOG.debug("I {} know already that {} is responsible for {}.", selfAddress, closest,
-								myResponsibleLocation);
+						LOG.debug("I {} am no more in the replica set of {}.", selfAddress, myResponsibleLocation);
+						backend.removeResponsibility(myResponsibleLocation);
 					}
 				} else if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
 					LOG.debug("{} is in the replica set for {}.", peerAddress, myResponsibleLocation);

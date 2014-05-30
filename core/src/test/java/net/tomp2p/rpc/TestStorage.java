@@ -873,116 +873,163 @@ public class TestStorage {
 	 * 
 	 * @throws Exception
 	 */
+	/**
+	 * Distances between a, b, c and d:
+	 * a <-0001-> b <-0111-> c <-0001-> d <-0111-> a,
+	 * a <-0110-> c, b <-0110-> d
+	 */
 	@Test
-	@Ignore // TODO make this run
 	public void testReplication0Root2() throws Exception {
 		int replicationFactor = 2;
 
 		Number160 keyA = new Number160("0xa");
 		int[][] expectedA = 
 		// as first node, node a has to replicate key a
+		// replica set: a
+		// responsible: a
 		{{ 1, 0, 0 },
-		// node a has to replicate key a and node a and b are in the
-		// replica set, node a has to notify newly joined node b
+		// node b joins, node a is closest to key a, node a syncs to node b
+		// replica set: a, b
+		// responsible: a
 		{ 0, 1, 0 },
-		// node a and b still have to replicate key a (node a and b are closer
-		// to key a than newly joined node c), node a doesn't has to notify
-		// newly joined node c
+		// node c joins, node c doesn't affect replica set
+		// replica set: a, b
+		// responsible: a
 		{ 0, 0, 0 },
-		// node a and b still have to replicate key a (node b is closer to key a
-		// than newly joined node d), node a doesn't has to notify newly joined
-		// node d
+		// node d joins, node c doesn't affect replica set
+		// replica set: a, b
+		// responsible: a
 		{ 0, 0, 0 }};
 		int[][] leaveA =
-		// leaving node b was also responsible for key a, node a has to
-		// notify it's replications set (node a and c are closest to key a)
+		// node b leaves, node a has to notify the replica set
+		// replica set: a, c
+		// responsible: a
 		{ { 1, 0, 0 },
-		// leaving node c was also responsible for key a, node a has to
-		// notify it's replications set (node a and d are closest to key a)
+		// node c leaves, node a has to notify the replica set
+		// replica set: a, d
+		// responsible: a
 		{ 1, 0, 0 },
-		// leaving node d was also responsible for key a, node a has to
-		// notify it's replications set
+		// node d leaves, node a has to notify the replica set
+		// responsible: a
 		{ 1, 0, 0 }};
 		testReplication(keyA, replicationFactor, false, expectedA, leaveA);
 
 		Number160 keyB = new Number160("0xb");
 		int[][] expectedB = 
 		// as first node, node a has to replicate key b
-		{{ 1, 0, 0 },
-		// node a and b are in the replica set, node b is responsible
-		// for replication, node a has to notify newly joined node b
+		// replica set: a
+		// responsible: a
+		{ { 1, 0, 0 },
+		// node b joins, node b is closer to key b than node a, node a
+		// is still in replica set, node a notifies node b about
+		// responsibility
+		// replica set: a, b
+		// responsible: b
 		{ 0, 0, 1 },
-		// node a and b are still in the replica set for key b (node a
-		// and b are closer to key b than newly joined c), node a
-		// doesn't has to notify newly joined node c, because node b is
-		// responsible for notifications
+		// node c joins, node a and b remains in replica set for key c
+		// (node a and b are closer to key b than node c), node a
+		// notifies nobody
+		// replica set: a, b
+		// responsible: b
 		{ 0, 0, 0 },
-		// node a and b are still in the replica set for key b (node a
-		// and b are closer to key b than newly joined d), node a
-		// doesn't has to notify newly joined node d, because node b is
-		// responsible for notifications
+		// node d joins, node a and b remains in replica set for key d
+		// (node a and b are closer to key b than node d), node a
+		// notifies nobody
+		// replica set: a, b
+		// responsible: b
 		{ 0, 0, 0 }};
 		int[][] leaveB =
-		// leaving node b was in replica set of key b (and was also responsible
-		// for replicating key b, now node a), node a has to notify the replica
-		// set (node a and d are closest to key a)
+		// node b leaves, node b was in replica set of key b, closest node a
+		// becomes responsible, node a has to notify replica set
+		// replica set: a, d
+		// responsible: a
 		{ { 1, 0, 0 },
-		// leaving node c was not responsible for key b, node a has not to
-		// notify someone (node a and d are closest to key a)
+		// node c leaves, node c doesn't affects replica set of key b
+		// replica set: a, d
+		// responsible: a
 		{ 0, 0, 0 },
-		// leaving node d was in replica set of key b, node a has to
-		// notify it's replications set
+		// node d leaves, node d was in replica set of key b, node a has
+		// to notify replica set
+		// replica set: a
+		// responsible: a
 		{ 1, 0, 0 }};
 		testReplication(keyB, replicationFactor, false, expectedB, leaveB);
 
 		Number160 keyC = new Number160("0xc");
 		int[][] expectedC = 
 		// as first node, node a has to replicate key c
-		{{ 1, 0, 0 },
-		// node a and b are in the replica set of key c, node a has to notify newly
-		// joined node b, because node a is responsible
+		// replica set: a
+		// responsible: a
+		{ { 1, 0, 0 },
+		// node b joins and is in replica set of key c, closer node a
+		// syncs to node b
+		// replica set: a, b
+		// responsible: a
 		{ 0, 1, 0 },
-		// node a and c are in the replica set of key c (node a and c
-		// are closer to key c than node b), node a has to notify newly
-		// joined node c, because node c becomes responsible
+		// node c joins, node c is closest to key c and becomes
+		// responsible, node a has to notify node c
+		// replica set: a, c
+		// responsible: c
 		{ 0, 0, 1},
-		// node c and d are in the replica set of key c (node c and d
-		// are closer to key c than node a), node has no responsibilities
+		// node d joins, node c and d is closer to key c, node a is not
+		// in replica set anymore, node a doesn't have to notify someone
+		// replica set: c, d
+		// responsible: c
 		{ 0, 0, 0 }};
 		int[][] leaveC =
-		// leaving node b doesn't affect node a
+		// leaving node b doesn't affect replica set or node a
+		// replica set: c, d
+		// responsible: c
 		{ { 0, 0, 0 },
 		// node c leaves, node a is now in replica set of key c, but
 		// node d is responsible for replication, thus node a notifies
-		// nobody
-		{ 0, 0, 1 }, // {0, 0, 0}, TODO makes no sense
-		// node d leaves, node a becomes responsible for key c and has
-		// to notify the replica set
-		{ 1, 0, 0 }};
+		// nobody (meanwhile node d should notify node a, not tested here)
+		// replica set: a, d
+		// responsible: d
+		{ 0, 0, 0 },
+		// node d leaves, node a becomes responsible for key c, but in
+		// this test node a doesn't get notified by node d and therefore
+		// node a doesn't know about it's responsibility
+		// replica set: a
+		// responsible: a
+		{ 0, 0, 0 }};
 		testReplication(keyC, replicationFactor, false, expectedC, leaveC);
 
 		Number160 keyD = new Number160("0xd");
 		int[][] expectedD = 
 		// as first node, node a is responsible for key d
-		{{ 1, 0, 0 },
-		// node a and b are in the replica set of key d, node a has to notify newly
-		// joined node b, which gets responsible for replicating key d
+		{ { 1, 0, 0 },
+		// node b joins, node a and b are in the replica set, closer
+		// node b becomes responsible for key d, node a has to notify
+		// node b 
+		// replica set: a, b
+		// responsible: b
 		{ 0, 0, 1 },
-		// node b and c are in the replica set of key d, node c is
-		// responsible for replicating key d, node a has nothing to
-		// notify
+		// node c joins, closer nodes b and c are in replica set of key
+		// d, closer node c becomes responsible, node a notifies nobody
+		// replica set: b, c
+		// responsible: c
 		{ 0, 0, 0 },
-		// node c and d are in the replica set of key d, node d is
-		// responsible for replicating key d, node a has nothing to
-		// notify
+		// node d joins, closer nodes c and d are in replica set of key
+		// d, closer node d becomes responsible, node a notifies nobody
+		// replica set: c, d
+		// responsible: d
 		{ 0, 0, 0 }};
 		int[][] leaveD =
-		// node a has no replication responsibilities to check
-		{ { 0, 0, 1 }, // {{ 0, 0, 0}, TODO makes no sense
-		// node a has no replication responsibilities to check
+		// node b leaves and doesn't affects replica set of key d
+		// replica set: c, d
+		// responsible: d
+		{ { 0, 0, 0 },
+		// node c leaves and node a joins replica set of key d, node d
+		// would be responsible to notify node a
+		// replica set: a, d
+		// responsible: d
 		{ 0, 0, 0 },
-		// node a has no replication responsibilities to check
-		{ 1, 0, 0 }}; // { 0, 0, 0}, TODO makes no sense
+		// node d leaves and node a becomes responsible of key d, but
+		// node a wasn't previously notified by node d
+		// replica set: a
+		// responsible: a
+		{ 0, 0, 0 }};
 		testReplication(keyD, replicationFactor, false, expectedD, leaveD);
 	}
 

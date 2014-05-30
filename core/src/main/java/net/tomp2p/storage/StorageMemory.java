@@ -36,7 +36,12 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StorageMemory implements Storage {
+
+    private static final Logger LOG = LoggerFactory.getLogger(StorageMemory.class);
 
     // Core
     final private NavigableMap<Number640, Data> dataMap = new ConcurrentSkipListMap<Number640, Data>();
@@ -192,6 +197,9 @@ public class StorageMemory implements Storage {
 		boolean isNew = peerIDs.add(peerId);
 		Set<Number160> contentIDs = putIfAbsentRev(peerId, new HashSet<Number160>());
 		contentIDs.add(locationKey);
+		if (isNew && LOG.isDebugEnabled()) {
+			LOG.debug("Update {} is responsible for key {}.", peerId, locationKey);
+		}
 		return isNew;
 	}
 
@@ -214,6 +222,7 @@ public class StorageMemory implements Storage {
 			for (Number160 peerId : peerIds) {
 				removeRevResponsibility(peerId, locationKey);
 			}
+			LOG.debug("Remove responsiblity for {}.", locationKey);
     	 }
     }
     
@@ -232,6 +241,7 @@ public class StorageMemory implements Storage {
 		Set<Number160> peerIds = responsibilityMap.get(locationKey);
 		if (peerIds != null && peerIds.remove(peerId)) {
 			removeRevResponsibility(peerId, locationKey);
+			LOG.debug("Remove responsibility of {} for {}.", peerId, locationKey);
 		}
 	}
 

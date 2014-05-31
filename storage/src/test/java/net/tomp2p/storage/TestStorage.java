@@ -96,6 +96,23 @@ public class TestStorage {
         SortedMap<Number640, Data> result = storage.get(key1, key4, -1, true);
         Assert.assertEquals(3, result.size());
     }
+    
+    @Test
+    public void testLarge() throws Exception {
+        Storage storageM = createStorage();
+        testLarge(new StorageLayer(storageM));
+        storageM.close();
+    }
+
+    private void testLarge(StorageLayer storage) throws IOException {
+        store(storage);
+        Data data = new Data(new byte[20*1000]);
+        Enum<?> store = storage
+                .put(key1, data, null, false, false);
+        Assert.assertEquals(PutStatus.OK, store);
+        Data data2 = storage.get(key1);
+        Assert.assertEquals(data, data2);
+    }
 
     @Test
     public void testPutIfAbsent() throws Exception {
@@ -349,7 +366,7 @@ public class TestStorage {
                 }
             }).start();
         }
-        Thread.sleep(500);
+        Thread.sleep(4000);
         Assert.assertEquals(0, counter.get());
         sM.close();
     }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
@@ -56,21 +57,21 @@ public class StorageDisk implements Storage {
     final private DB db;
     
     //for full control
-    public StorageDisk(DB db, Number160 peerId, File path) {
+    public StorageDisk(DB db, Number160 peerId, File path, SignatureFactory signatureFactory) {
     	this.db = db;
-    	DataSerializer dataSerializer = new DataSerializer(path);
-    	this.dataMap = db.createTreeMap("dataMap_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.timeoutMap = db.createTreeMap("timeoutMap_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.timeoutMapRev = db.createTreeMap("timeoutMapRev_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.protectedDomainMap = db.createTreeMap("protectedDomainMap_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.protectedEntryMap = db.createTreeMap("protectedEntryMap_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.responsibilityMap = db.createTreeMap("responsibilityMap_" + peerId.toString()).valueSerializer(dataSerializer).make();
-    	this.responsibilityMapRev = db.createTreeMap("responsibilityMapRev_" + peerId.toString()).valueSerializer(dataSerializer).make();
+    	DataSerializer dataSerializer = new DataSerializer(path, signatureFactory);
+    	this.dataMap = db.createTreeMap("dataMap_" + peerId.toString()).valueSerializer(dataSerializer).makeOrGet();
+    	this.timeoutMap = db.createTreeMap("timeoutMap_" + peerId.toString()).makeOrGet();
+    	this.timeoutMapRev = db.createTreeMap("timeoutMapRev_" + peerId.toString()).makeOrGet();
+    	this.protectedDomainMap = db.createTreeMap("protectedDomainMap_" + peerId.toString()).makeOrGet();
+    	this.protectedEntryMap = db.createTreeMap("protectedEntryMap_" + peerId.toString()).makeOrGet();
+    	this.responsibilityMap = db.createTreeMap("responsibilityMap_" + peerId.toString()).makeOrGet();
+    	this.responsibilityMapRev = db.createTreeMap("responsibilityMapRev_" + peerId.toString()).makeOrGet();
     }
     
     //set parameter to a reasonable default
-    public StorageDisk(File path, Number160 peerId) {
-    	this(DBMaker.newFileDB(new File(path, "tomp2p")).transactionDisable().closeOnJvmShutdown().make(), peerId, path);
+    public StorageDisk(Number160 peerId, File path, SignatureFactory signatureFactory) {
+    	this(DBMaker.newFileDB(new File(path, "tomp2p")).transactionDisable().closeOnJvmShutdown().make(), peerId, path, signatureFactory);
     }
     
     @Override

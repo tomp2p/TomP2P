@@ -16,9 +16,9 @@
 
 package net.tomp2p.rpc;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.NavigableMap;
-import java.util.Set;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -29,7 +29,7 @@ public class DigestResult {
     final private SimpleBloomFilter<Number160> contentBloomFilter;
     final private SimpleBloomFilter<Number160> versoinBloomFilter;
 
-    final private NavigableMap<Number640, Set<Number160>> keyDigest;
+    final private NavigableMap<Number640, Collection<Number160>> keyDigest;
     
     final private Map<Number640, Data> dataMap;
 
@@ -40,7 +40,7 @@ public class DigestResult {
         this.dataMap = null;
     }
 
-    public DigestResult(NavigableMap<Number640, Set<Number160>> keyDigest) {
+    public DigestResult(NavigableMap<Number640, Collection<Number160>> keyDigest) {
         this.keyDigest = keyDigest;
         this.contentBloomFilter = null;
         this.versoinBloomFilter = null;
@@ -62,7 +62,7 @@ public class DigestResult {
         return versoinBloomFilter;
     }
 
-    public NavigableMap<Number640, Set<Number160>> keyDigest() {
+    public NavigableMap<Number640, Collection<Number160>> keyDigest() {
         return keyDigest;
     }
 

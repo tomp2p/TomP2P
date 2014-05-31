@@ -19,6 +19,7 @@ package net.tomp2p.connection;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.PrivateKey;
@@ -35,7 +36,7 @@ import net.tomp2p.message.SignatureCodec;
  * @author Thomas Bocek
  * 
  */
-public interface SignatureFactory {
+public interface SignatureFactory extends Serializable {
 
 	/**
 	 * The public key is sent over the wire, thus the decoding of it needs

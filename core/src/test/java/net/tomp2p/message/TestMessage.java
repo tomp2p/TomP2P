@@ -206,7 +206,7 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		NavigableMap<Number640, Collection<Number160>> keysMap = new TreeMap<Number640, Collection<Number160>>();
 		Set<Number160> set = new HashSet<Number160>(1);
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);
@@ -246,7 +246,7 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1.getPrivate(), factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1.getPrivate(), factory));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		NavigableMap<Number640, Collection<Number160>> keysMap = new TreeMap<Number640, Collection<Number160>>();
 		Set<Number160> set = new HashSet<Number160>(1);
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);
@@ -285,7 +285,7 @@ public class TestMessage {
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 4, 5, 6, 7 }).sign(pair1, factory));
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 5, 6, 7, 8, 9 }).sign(pair1, factory));
 		m1.setDataMap(new DataMap(dataMap));
-		NavigableMap<Number640, Set<Number160>> keysMap = new TreeMap<Number640, Set<Number160>>();
+		NavigableMap<Number640, Collection<Number160>> keysMap = new TreeMap<Number640, Collection<Number160>>();
 		Set<Number160> set = new HashSet<Number160>(1);
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);

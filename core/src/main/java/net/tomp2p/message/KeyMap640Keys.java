@@ -1,5 +1,6 @@
 package net.tomp2p.message;
 
+import java.util.Collection;
 import java.util.NavigableMap;
 import java.util.Set;
 
@@ -9,13 +10,13 @@ import net.tomp2p.utils.Utils;
 
 public class KeyMap640Keys {
 
-	private final NavigableMap<Number640, Set<Number160>> keysMap;
+	private final NavigableMap<Number640, Collection<Number160>> keysMap;
 
-	public KeyMap640Keys(NavigableMap<Number640, Set<Number160>> keysMap) {
+	public KeyMap640Keys(NavigableMap<Number640, Collection<Number160>> keysMap) {
 		this.keysMap = keysMap;
 	}
 
-	public NavigableMap<Number640, Set<Number160>> keysMap() {
+	public NavigableMap<Number640, Collection<Number160>> keysMap() {
 		return keysMap;
 	}
 

@@ -768,16 +768,16 @@ public class TestDHT {
 			FutureDigest fget = peers[77].digest(lKey).setAll().start();
 			fget.awaitUninterruptibly();
 			DigestResult dr = fget.getDigest();
-			NavigableMap<Number640, Set<Number160>> map = dr.keyDigest();
+			NavigableMap<Number640, Collection<Number160>> map = dr.keyDigest();
 			
 			// verify fetched digest
-			Entry<Number640, Set<Number160>> e1 = map.pollFirstEntry();
+			Entry<Number640, Collection<Number160>> e1 = map.pollFirstEntry();
 			Assert.assertEquals(Number160.ONE, e1.getValue().iterator().next());
 			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey1), e1.getKey());
-			Entry<Number640, Set<Number160>> e2 = map.pollFirstEntry();
+			Entry<Number640, Collection<Number160>> e2 = map.pollFirstEntry();
 			Assert.assertEquals(versionKey1, e2.getValue().iterator().next());
 			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e2.getKey());
-			Entry<Number640, Set<Number160>> e3 = map.pollFirstEntry();
+			Entry<Number640, Collection<Number160>> e3 = map.pollFirstEntry();
 			Assert.assertEquals(versionKey2, e3.getValue().iterator().next());
 			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e3.getKey());
 

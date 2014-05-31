@@ -19,6 +19,7 @@ package net.tomp2p.synchronization;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -67,7 +68,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
     private DataMap dataMap;
     private Number640 key;
     private Set<Number640> keys;
-    private NavigableMap<Number640, Set<Number160>> dataMapHash;
+    private NavigableMap<Number640, Collection<Number160>> dataMapHash;
     private ArrayList<Instruction> instructions;
     private boolean syncFromOldVersion = false;
     
@@ -155,9 +156,9 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         }
     }
 
-    public NavigableMap<Number640, Set<Number160>> dataMapHash() {
+    public NavigableMap<Number640, Collection<Number160>> dataMapHash() {
         if (dataMapHash == null) {
-            dataMapHash = new TreeMap<Number640, Set<Number160>>();
+            dataMapHash = new TreeMap<Number640, Collection<Number160>>();
         }
         if (dataMap != null) {
         	for (Map.Entry<Number640, Number160> entry : dataMap.convertToHash().entrySet()) {

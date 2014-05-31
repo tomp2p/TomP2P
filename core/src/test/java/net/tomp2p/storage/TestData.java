@@ -212,8 +212,9 @@ public class TestData {
 
         Data data = new Data(UUID.randomUUID().toString());
         data.ttlSeconds(random.nextInt());
-        for (int i = 0; i < 255; i++)
+        for (int i = 0; i < 255; i++) {
             data.addBasedOn(new Number160(random));
+        }
         // data.setProtectedEntry().publicKey(gen.generateKeyPair().getPublic());
         data.sign(keyPair1, factory);
         Data newData = encodeDecode(data);
@@ -235,8 +236,9 @@ public class TestData {
 
         Data data = new Data(UUID.randomUUID().toString());
         data.ttlSeconds(random.nextInt());
-        for (int i = 0; i < 255; i++)
+        for (int i = 0; i < 255; i++) {
             data.addBasedOn(new Number160(random));
+        }
         data.setProtectedEntry().publicKey(keyPair1.getPublic());
         Data newData = encodeDecode(data);
 

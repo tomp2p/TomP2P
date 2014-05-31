@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DSASignatureFactory implements SignatureFactory {
 
+    private static final long serialVersionUID = -7966953508649829919L;
 	private static final Logger LOG = LoggerFactory.getLogger(DSASignatureFactory.class);
 
 	/**

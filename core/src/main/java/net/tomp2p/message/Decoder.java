@@ -16,6 +16,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -391,7 +392,7 @@ public class Decoder {
 					keyMap640KeysSize = buf.readInt();
 				}
 				if (keyMap640Keys == null) {
-					keyMap640Keys = new KeyMap640Keys(new TreeMap<Number640, Set<Number160>>());
+					keyMap640Keys = new KeyMap640Keys(new TreeMap<Number640, Collection<Number160>>());
 				}
 
 				final int meta = Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE

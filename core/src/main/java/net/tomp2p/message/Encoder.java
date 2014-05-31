@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.peers.Number160;
@@ -153,7 +153,7 @@ public class Encoder {
             case MAP_KEY640_KEYS:
                 KeyMap640Keys keyMap640Keys = message.getKeyMap640Keys(next.number());
                 buf.writeInt(keyMap640Keys.size());
-                for (Entry<Number640, Set<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
+                for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().getLocationKey().toByteArray());
                     buf.writeBytes(entry.getKey().getDomainKey().toByteArray());
                     buf.writeBytes(entry.getKey().getContentKey().toByteArray());
@@ -236,6 +236,7 @@ public class Encoder {
 			data.ttlSeconds(ttl < 0 ? 0:ttl);
 		}
 	    data.encodeHeader(buf, signatureFactory);
+	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory);
     }
 

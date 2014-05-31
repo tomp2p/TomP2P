@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -180,7 +180,7 @@ public class SyncRPC extends DispatchHandler {
         final KeyMap640Keys keysMap = message.getKeyMap640Keys(0);
         final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
         
-        for (Map.Entry<Number640, Set<Number160>> entry : keysMap.keysMap().entrySet()) {
+        for (Map.Entry<Number640, Collection<Number160>> entry : keysMap.keysMap().entrySet()) {
             Data data = peerBean().storage().get(entry.getKey());
             if(entry.getValue().size() != 1) {
             	continue;

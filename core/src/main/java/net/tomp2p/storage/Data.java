@@ -24,9 +24,9 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Collection;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
@@ -73,7 +73,7 @@ public class Data {
 	// can be added later
 	private SignatureCodec signature;
 	private int ttlSeconds = -1;
-	private Set<Number160> basedOnSet = new HashSet<Number160>(1);
+	private Collection<Number160> basedOnSet = new ArrayList<Number160>(0);
 	private PublicKey publicKey;
 	//this goes never over the network! If this is set, we have to sign lazy
 	private transient PrivateKey privateKey;
@@ -89,7 +89,7 @@ public class Data {
 	}
 
 	/**
-	 * Create a data object that does have the complete data.
+	 * Create a data object that does have the complete data, but not the complete header
 	 * 
 	 * @param length
 	 *            The expected length of the buffer. This does not include the
@@ -181,17 +181,21 @@ public class Data {
 		this.validFromMillis = Timings.currentTimeMillis();
 	}
 
-	private static boolean hasEnoughDataForPublicKey(final ByteBuf buf, final int indexPublicKey, final int toRead) {
-		final int len = buf.getUnsignedShort(buf.readerIndex() + indexPublicKey);
-		if (len > 0 && buf.readableBytes() < toRead + len) {
-			return false;
-		}
-		return true;
-	}
-
 	/**
 	 * Reads the header. Does not modify the buffer positions if header could
 	 * not be fully read.
+	 * 
+	 * Header format:
+	 * <pre>
+	 * 1 byte - header
+	 * 1 or 4 bytes - length
+	 * 4 or 0 bytes - ttl (hasTTL)
+	 * 1 or 0 bytes - number of basedon keys (hasBasedOn)
+	 * n x 20 bytes - basedon keys (hasBasedOn, number of basedon keys)
+	 * 2 or 0 bytes - length of public key (hasPublicKey)
+	 * n bytes - public key (hasPublicKey, length of public key)
+	 * </pre>
+	 * 
 	 * 
 	 * @param buf
 	 *            The buffer to read from
@@ -199,78 +203,110 @@ public class Data {
 	 */
 	public static Data decodeHeader(final ByteBuf buf, final SignatureFactory signatureFactory) {
 		// 2 is the smallest packet size, we could start if we know 1 byte to
-		// decode the header, but we need always need
+		// decode the header, but we always need
 		// a second byte. Thus, we are waiting for at least 2 bytes.
 		if (buf.readableBytes() < Utils.BYTE_SIZE + Utils.BYTE_SIZE) {
 			return null;
 		}
 		final int header = buf.getUnsignedByte(buf.readerIndex());
 		final Data.Type type = Data.type(header);
-		final int len;
-		final int toRead;
-		final int toReadPublicKey;
-		final int numBasedOn;
-		if (hasBasedOn(header)) {
-			// find index where # of based on keys is stored
-			final int indexBasedOn = Utils.BYTE_SIZE + Utils.BYTE_SIZE
-					+ (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0);
-			// get # of based on keys
-			//TODO: the read is too early! check if we have the data is necessary
-			numBasedOn = buf.getUnsignedByte(buf.readerIndex() + indexBasedOn);
-		} else {
-			// no based on keys
-			numBasedOn = 0;
-		}
-		final int meta1 = (hasTTL(header) ? Utils.INTEGER_BYTE_SIZE : 0)
-				// consider # of based on keys byte
-				+ (hasBasedOn(header) ? Utils.BYTE_SIZE : 0)
-				// calculate used bytes for based on keys
-				+ (numBasedOn * Number160.BYTE_ARRAY_SIZE);
-		final int meta2 = (hasPublicKey(header) ? Utils.SHORT_BYTE_SIZE : 0);
+		
+		//Data length
+		final int length;
+		final int indexLength = Utils.BYTE_SIZE;
+		final int indexTTL;
 		switch (type) {
 		case SMALL:
-			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.BYTE_SIZE;
-			toRead = toReadPublicKey + meta2;
-			if (buf.readableBytes() < toReadPublicKey) {
-				return null;
-			}
-			// read the length of the public key
-			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
-				return null;
-			}
-			len = buf.skipBytes(Utils.BYTE_SIZE).readUnsignedByte();
+			length = buf.getUnsignedByte(buf.readerIndex() + indexLength);
+			indexTTL = indexLength + Utils.BYTE_SIZE;
 			break;
 		case LARGE:
-			toReadPublicKey = meta1 + Utils.BYTE_SIZE + Utils.INTEGER_BYTE_SIZE;
-			toRead = toReadPublicKey + meta2;
-			if (buf.readableBytes() < toReadPublicKey) {
+			indexTTL = indexLength + Utils.INTEGER_BYTE_SIZE;
+			if (buf.readableBytes() < indexTTL) {
 				return null;
 			}
-			// read the length of the public key
-			if (hasPublicKey(header) && !hasEnoughDataForPublicKey(buf, toReadPublicKey, toRead)) {
-				return null;
-			}
-			len = buf.skipBytes(Utils.BYTE_SIZE).readInt();
+			length = buf.getInt(buf.readerIndex() + indexLength);
 			break;
 		default:
 			throw new IllegalArgumentException("unknown type");
 		}
-		final Data data = new Data(header, len);
-		if (data.ttl) {
-			data.ttlSeconds = buf.readInt();
-		}
-		if (data.basedOnFlag) {
-			//TODO: +1
-			int num = buf.readUnsignedByte();
-			for (int i = 0; i < num; i++) {
-				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
-				buf.readBytes(me);
-				data.basedOnSet.add(new Number160(me));
+		
+		//TTL
+		final int ttl;
+		final int indexBasedOnNr;
+		if(hasTTL(header)) {
+			indexBasedOnNr = indexTTL + Utils.INTEGER_BYTE_SIZE;
+			if (buf.readableBytes() < indexBasedOnNr) {
+				return null;
 			}
+			ttl = buf.getInt(buf.readerIndex() + indexTTL);
+		} else {
+			ttl = -1;
+			indexBasedOnNr = indexTTL;
 		}
-		if (data.publicKeyFlag) {
-			data.publicKey = signatureFactory.decodePublicKey(buf);
+		
+		//Nr BasedOn + basedon
+		final int numBasedOn;
+		final int indexPublicKeySize;
+		final int indexBasedOn;
+		final Collection<Number160> basedOn = new ArrayList<Number160>();
+		if (hasBasedOn(header)) {
+			// get # of based on keys
+			indexBasedOn = indexBasedOnNr + Utils.BYTE_SIZE;
+			if (buf.readableBytes() < indexBasedOn) {
+				return null;
+			}
+			numBasedOn = buf.getUnsignedByte(buf.readerIndex() + indexBasedOnNr) + 1;
+			indexPublicKeySize = indexBasedOn + (numBasedOn * Number160.BYTE_ARRAY_SIZE);
+			if (buf.readableBytes() < indexPublicKeySize) {
+				return null;
+			}
+			//get basedon
+			int index = buf.readerIndex() + indexBasedOnNr + Utils.BYTE_SIZE;
+			final byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
+			for (int i = 0; i < numBasedOn; i++) {
+				buf.getBytes(index, me);
+				index += Number160.BYTE_ARRAY_SIZE;
+				basedOn.add(new Number160(me));
+			}
+			
+		} else {
+			// no based on keys
+			indexPublicKeySize = indexBasedOnNr;
+			numBasedOn = 0;
 		}
+		
+		//public key and size
+		final int publicKeySize;
+		final int indexPublicKey;
+		final int indexEnd;
+		final PublicKey publicKey;
+		if(hasPublicKey(header)) {
+			indexPublicKey = indexPublicKeySize + Utils.SHORT_BYTE_SIZE;
+			if (buf.readableBytes() < indexPublicKey) {
+				return null;
+			}
+			publicKeySize = buf.getUnsignedShort(buf.readerIndex() + indexPublicKeySize);
+			indexEnd = indexPublicKey + publicKeySize;
+			if (buf.readableBytes() < indexEnd) {
+				return null;
+			}
+			//get public key
+			buf.skipBytes(indexPublicKeySize);
+			publicKey = signatureFactory.decodePublicKey(buf);
+			
+		} else {
+			publicKeySize = 0;
+			indexPublicKey = indexPublicKeySize;
+			buf.skipBytes(indexPublicKey);
+			publicKey = null;
+		}
+		
+		//now we have read the header and the length
+		final Data data = new Data(header, length);
+		data.ttlSeconds = ttl;
+		data.basedOnSet = basedOn;
+		data.publicKey = publicKey;
 		return data;
 	}
 	
@@ -293,6 +329,17 @@ public class Data {
 		// we need to release the buffer
 		final int transfered = buffer.transferFrom(buf, remaining);
 		return transfered == remaining;
+	}
+	
+	public boolean decodeDone(final ByteBuf buf, SignatureFactory signatureFactory) {
+		if (signed) {
+			signature = signatureFactory.signatureCodec();
+			if(buf.readableBytes() < signature.signatureSize()) {
+				return false;
+			}
+			signature.read(buf);
+		}
+		return true;
 	}
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
@@ -317,6 +364,21 @@ public class Data {
 		return signatureFactory.verify(publicKey, buffer.toByteBuf(), signature);
 	}
 
+	/**
+	 * * Header format:
+	 * <pre>
+	 * 1 byte - header
+	 * 1 or 4 bytes - length
+	 * 4 or 0 bytes - ttl (hasTTL)
+	 * 1 or 0 bytes - number of basedon keys (hasBasedOn)
+	 * n x 20 bytes - basedon keys (hasBasedOn, number of basedon keys)
+	 * 2 or 0 bytes - length of public key (hasPublicKey)
+	 * n bytes - public key (hasPublicKey, length of public key)
+	 * </pre>
+	 * 
+	 * @param buf
+	 * @param signatureFactory
+	 */
 	public void encodeHeader(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) {
 		int header = type.ordinal();
 		if (publicKeyFlag) {
@@ -357,8 +419,7 @@ public class Data {
 			buf.writeInt(ttlSeconds);
 		}
 		if (basedOnFlag) {
-			//TODO -1?
-			buf.writeByte(basedOnSet.size());
+			buf.writeByte(basedOnSet.size() - 1);
 			for (Number160 basedOn : basedOnSet) {
 				buf.writeBytes(basedOn.toByteArray());
 			}
@@ -370,7 +431,6 @@ public class Data {
 				signatureFactory.encodePublicKey(publicKey, buf);
 			}
 		}
-		buffer.transferTo(buf);
 	}
 	
 	public boolean encodeBuffer(final AlternativeCompositeByteBuf buf) {
@@ -473,7 +533,7 @@ public class Data {
 		return this;
 	}
 
-	public Set<Number160> basedOnSet() {
+	public Collection<Number160> basedOnSet() {
 		return basedOnSet;
 	}
 

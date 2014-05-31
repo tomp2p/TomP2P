@@ -20,6 +20,7 @@ import java.io.File;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,6 +28,7 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -148,7 +150,7 @@ public class StorageDisk implements Storage {
  	private void putIfAbsent2(long expiration, Number640 key) {
         Set<Number640> timeouts = timeoutMapRev.get(expiration);
         if(timeouts == null) {
-        	timeouts = new HashSet<Number640>();
+        	timeouts = Collections.newSetFromMap(new ConcurrentHashMap<Number640, Boolean>());
         }
         timeouts.add(key);
         timeoutMapRev.put(expiration, timeouts);

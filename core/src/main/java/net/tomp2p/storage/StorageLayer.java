@@ -557,6 +557,20 @@ public class StorageLayer {
         }
 	}
 	
+	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+		Collection<Number160> peerIDs = backend.findPeerIDsForResponsibleContent(locationKey);
+        if (peerIDs == null) {
+            return Collections.<Number160> emptyList();
+        } else {
+            KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(locationKey);
+            try {
+                return new ArrayList<Number160>(peerIDs);
+            } finally {
+                responsibilityLock.unlock(lock);
+            }
+        }
+	}
+	
 	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
 		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
         try {
@@ -564,6 +578,16 @@ public class StorageLayer {
         } finally {
             responsibilityLock.unlock(lock1);
         }
+	}
+	
+	public void removeResponsibility(Number160 locationKey) {
+		// TODO add locks
+		backend.removeResponsibility(locationKey);
+	}
+
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		// TODO add locks
+		backend.removeResponsibility(locationKey, peerId);
 	}
 
 	private class StorageMaintenanceTask implements Runnable {

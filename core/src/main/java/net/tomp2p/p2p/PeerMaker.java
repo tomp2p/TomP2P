@@ -198,6 +198,7 @@ public class PeerMaker {
 	private boolean enableMaintenance = true;
 	private boolean enableIndirectReplication = false;
 	private boolean enableBroadcast = true;
+	private boolean enableNRootReplication = true;
 
 	// private Random rnd;
 
@@ -317,7 +318,8 @@ public class PeerMaker {
 		}
 
 		// peerBean.setStorage(getStorage());
-		Replication replicationStorage = new Replication(new StorageLayer(storage), peerBean.serverPeerAddress(), peerMap, 5);
+		Replication replicationStorage = new Replication(new StorageLayer(storage), peerBean.serverPeerAddress(), peerMap, 5,
+				enableNRootReplication);
 		peerBean.replicationStorage(replicationStorage);
 
 		// TrackerStorage storageTracker = new
@@ -908,6 +910,15 @@ public class PeerMaker {
 
 	public PeerMaker setEnableIndirectReplication(boolean enableIndirectReplication) {
 		this.enableIndirectReplication = enableIndirectReplication;
+		return this;
+	}
+
+	public boolean isEnableNRootReplication() {
+		return enableNRootReplication;
+	}
+
+	public PeerMaker setEnableNRootReplication(boolean enableNRootReplication) {
+		this.enableNRootReplication = enableNRootReplication;
 		return this;
 	}
 

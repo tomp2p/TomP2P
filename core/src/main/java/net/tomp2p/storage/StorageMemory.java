@@ -36,7 +36,12 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class StorageMemory implements Storage {
+
+    private static final Logger LOG = LoggerFactory.getLogger(StorageMemory.class);
 
     // Core
     final private NavigableMap<Number640, Data> dataMap = new ConcurrentSkipListMap<Number640, Data>();
@@ -48,9 +53,9 @@ public class StorageMemory implements Storage {
     // Protection
     final private Map<Number320, PublicKey> protectedMap = new ConcurrentHashMap<Number320, PublicKey>();
     final private Map<Number480, PublicKey> entryMap = new ConcurrentHashMap<Number480, PublicKey>();
-    
+
     // Responsibility
-    final private Map<Number160, Number160> responsibilityMap = new ConcurrentHashMap<Number160, Number160>();
+    final private Map<Number160, Set<Number160>> responsibilityMap = new ConcurrentHashMap<Number160, Set<Number160>>();
     final private Map<Number160, Set<Number160>> responsibilityMapRev = new ConcurrentHashMap<Number160, Set<Number160>>();
 
     // Core
@@ -176,43 +181,48 @@ public class StorageMemory implements Storage {
         return timeouts == null ? hashSet : timeouts;
     }
 
-    @Override
-    public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
-    	return responsibilityMap.get(locationKey);
-    }
+	@Override
+	public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+		return responsibilityMap.get(locationKey);
+	}
 
     @Override
     public Collection<Number160> findContentForResponsiblePeerID(Number160 peerID) {
-        return responsibilityMapRev.get(peerID);
+		return responsibilityMapRev.get(peerID);
     }
 
-    @Override
-    public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
-        boolean isNew = true;
-        Number160 oldPeerId = responsibilityMap.put(locationKey, peerId);
-        // add to the reverse map
-        Set<Number160> contentIDs = putIfAbsent1(peerId, new HashSet<Number160>());
-        contentIDs.add(locationKey);
-        if (oldPeerId != null) {
-            isNew = !oldPeerId.equals(peerId);
-            if (isNew) {
-                removeRevResponsibility(oldPeerId, locationKey);
-            }
-        }
-        return isNew;
+	@Override
+	public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
+		Set<Number160> peerIDs = putIfAbsent(locationKey, new HashSet<Number160>());
+		boolean isNew = peerIDs.add(peerId);
+		Set<Number160> contentIDs = putIfAbsentRev(peerId, new HashSet<Number160>());
+		contentIDs.add(locationKey);
+		if (isNew && LOG.isDebugEnabled()) {
+			LOG.debug("Update {} is responsible for key {}.", peerId, locationKey);
+		}
+		return isNew;
+	}
+
+    private Set<Number160> putIfAbsent(Number160 locationKey, Set<Number160> hashSet) {
+        Set<Number160> peerIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMap).putIfAbsent(
+        		locationKey, hashSet);
+        return peerIDs == null ? hashSet : peerIDs;
     }
-    
-    private Set<Number160> putIfAbsent1(Number160 peerId, Set<Number160> hashSet) {
-        Set<Number160> contentIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMapRev).putIfAbsent(
-                peerId, hashSet);
-        return contentIDs == null ? hashSet : contentIDs;
-    }
+
+	private Set<Number160> putIfAbsentRev(Number160 peerId, Set<Number160> hashSet) {
+		Set<Number160> contentIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMapRev)
+				.putIfAbsent(peerId, hashSet);
+		return contentIDs == null ? hashSet : contentIDs;
+	}
 
     @Override
     public void removeResponsibility(Number160 locationKey) {
-    	 Number160 peerId = responsibilityMap.remove(locationKey);
-    	 if(peerId != null) {
-    		 removeRevResponsibility(peerId, locationKey);
+    	 Set<Number160> peerIds = responsibilityMap.remove(locationKey);
+    	 if(peerIds != null) {
+			for (Number160 peerId : peerIds) {
+				removeRevResponsibility(peerId, locationKey);
+			}
+			LOG.debug("Remove responsiblity for {}.", locationKey);
     	 }
     }
     
@@ -225,6 +235,15 @@ public class StorageMemory implements Storage {
             }
         }
     }
+
+    @Override
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		Set<Number160> peerIds = responsibilityMap.get(locationKey);
+		if (peerIds != null && peerIds.remove(peerId)) {
+			removeRevResponsibility(peerId, locationKey);
+			LOG.debug("Remove responsibility of {} for {}.", peerId, locationKey);
+		}
+	}
 
     // Misc
     @Override

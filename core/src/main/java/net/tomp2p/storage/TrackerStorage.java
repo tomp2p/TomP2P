@@ -470,8 +470,8 @@ public class TrackerStorage implements PeerStatusListener, Digest {
     }
 
     
-    public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
-        return storageMemoryReplication.findPeerIDForResponsibleContent(locationKey);
+    public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+        return storageMemoryReplication.findPeerIDsForResponsibleContent(locationKey);
     }
 
     
@@ -488,6 +488,10 @@ public class TrackerStorage implements PeerStatusListener, Digest {
     public void removeResponsibility(Number160 locationKey) {
         storageMemoryReplication.removeResponsibility(locationKey);
     }
+
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		storageMemoryReplication.removeResponsibility(locationKey, peerId);
+	}
 
     @Override
     public DigestInfo digest(Number640 from, Number640 to) {

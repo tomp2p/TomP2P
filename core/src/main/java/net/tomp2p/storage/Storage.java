@@ -75,12 +75,13 @@ public interface Storage {
     public abstract boolean isEntryProtectedByOthers(Number480 key, PublicKey publicKey);
     
     // Responsibility
-    
-    public abstract Number160 findPeerIDForResponsibleContent(Number160 locationKey);
+    public abstract Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey);
 
     public abstract Collection<Number160> findContentForResponsiblePeerID(Number160 peerID);
 
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId);
 
     public void removeResponsibility(Number160 locationKey);
+
+    public void removeResponsibility(Number160 locationKey, Number160 peerId);
 }

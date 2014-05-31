@@ -196,11 +196,11 @@ public class TestStorage {
     private void testResponsibility(Storage storage) throws Exception {
         storage.updateResponsibilities(content1, locationKey);
         storage.updateResponsibilities(content2, locationKey);
-        Assert.assertEquals(locationKey, storage.findPeerIDForResponsibleContent(content1));
+        Assert.assertEquals(locationKey, storage.findPeerIDsForResponsibleContent(content1).iterator().next());
         Assert.assertEquals(2, storage.findContentForResponsiblePeerID(locationKey).size());
         storage.updateResponsibilities(content1, domainKey);
         storage.updateResponsibilities(content2, locationKey);
-        Assert.assertEquals(domainKey, storage.findPeerIDForResponsibleContent(content1));
+        Assert.assertEquals(domainKey, storage.findPeerIDsForResponsibleContent(content1).iterator().next());
     }
 
     @Test

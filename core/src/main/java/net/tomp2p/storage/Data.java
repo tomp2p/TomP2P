@@ -379,7 +379,7 @@ public class Data {
 	 * @param buf
 	 * @param signatureFactory
 	 */
-	public void encodeHeader(final AlternativeCompositeByteBuf buf, SignatureFactory signatureFactory) {
+	public void encodeHeader(final ByteBuf buf, SignatureFactory signatureFactory) {
 		int header = type.ordinal();
 		if (publicKeyFlag) {
 			header |= 0x02;

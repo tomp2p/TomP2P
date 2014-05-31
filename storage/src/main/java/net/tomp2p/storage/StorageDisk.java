@@ -20,7 +20,6 @@ import java.io.File;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,8 +27,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -51,7 +48,7 @@ public class StorageDisk implements Storage {
     final private Map<Number320, PublicKey> protectedDomainMap;
     final private Map<Number480, PublicKey> protectedEntryMap;
     // Responsibility
-    final private Map<Number160, Number160> responsibilityMap;
+    final private Map<Number160, Set<Number160>> responsibilityMap;
     final private Map<Number160, Set<Number160>> responsibilityMapRev;
     
     final private DB db;
@@ -137,17 +134,24 @@ public class StorageDisk implements Storage {
     }
     
     // Maintenance
- 	@Override
-     public void addTimeout(Number640 key, long expiration) {
- 		Long oldExpiration = timeoutMap.put(key, expiration);
-         Set<Number640> tmp = putIfAbsent2(expiration,
-                 Collections.newSetFromMap(new ConcurrentHashMap<Number640, Boolean>()));
-         tmp.add(key);
-         if (oldExpiration == null) {
-             return;
-         }
-         removeRevTimeout(key, oldExpiration);
-         db.commit();
+	@Override
+	public void addTimeout(Number640 key, long expiration) {
+		Long oldExpiration = timeoutMap.put(key, expiration);
+		putIfAbsent2(expiration, key);
+		if (oldExpiration == null) {
+			return;
+		}
+		removeRevTimeout(key, oldExpiration);
+		db.commit();
+	}
+ 	
+ 	private void putIfAbsent2(long expiration, Number640 key) {
+        Set<Number640> timeouts = timeoutMapRev.get(expiration);
+        if(timeouts == null) {
+        	timeouts = new HashSet<Number640>();
+        }
+        timeouts.add(key);
+        timeoutMapRev.put(expiration, timeouts);
     }
  	
  	@Override
@@ -166,6 +170,8 @@ public class StorageDisk implements Storage {
             tmp.remove(key);
             if (tmp.isEmpty()) {
                 timeoutMapRev.remove(expiration);
+            } else {
+            	timeoutMapRev.put(expiration, tmp);
             }
         }
     }
@@ -180,15 +186,12 @@ public class StorageDisk implements Storage {
         return toRemove;
     }
  	
- 	private Set<Number640> putIfAbsent2(long expiration, Set<Number640> hashSet) {
-        Set<Number640> timeouts = timeoutMapRev.putIfAbsent(expiration, hashSet);
-        return timeouts == null ? hashSet : timeouts;
-    }
+ 	
     
  	// Responsibility
-	@Override
-    public Number160 findPeerIDForResponsibleContent(Number160 locationKey) {
-		return responsibilityMap.get(locationKey);
+ 	@Override
+    public Collection<Number160> findPeerIDsForResponsibleContent(Number160 locationKey) {
+ 		return responsibilityMap.get(locationKey);
     }
 
 	@Override
@@ -198,34 +201,42 @@ public class StorageDisk implements Storage {
 
 	@Override
     public boolean updateResponsibilities(Number160 locationKey, Number160 peerId) {
-		boolean isNew = true;
-        Number160 oldPeerId = responsibilityMap.put(locationKey, peerId);
-        // add to the reverse map
-        Set<Number160> contentIDs = putIfAbsent1(peerId, new HashSet<Number160>());
-        contentIDs.add(locationKey);
-        if (oldPeerId != null) {
-            isNew = !oldPeerId.equals(peerId);
-            if (isNew) {
-                removeRevResponsibility(oldPeerId, locationKey);
-            }
+		boolean isNew1 = putIfAbsent0(locationKey, peerId);
+		boolean isNew2 = putIfAbsent1(peerId, locationKey);
+		db.commit();
+		return isNew1 && isNew2;
+        
+    }
+	
+	private boolean putIfAbsent0(Number160 locationKey, Number160 peerId) {
+		Set<Number160> peerIDs = responsibilityMap.get(locationKey);
+        if(peerIDs == null) {
+        	peerIDs = new HashSet<Number160>();
         }
-        db.commit();
+        boolean isNew = peerIDs.add(peerId);
+        responsibilityMap.put(locationKey, peerIDs);
         return isNew;
     }
 	
-	private Set<Number160> putIfAbsent1(Number160 peerId, Set<Number160> hashSet) {
-        Set<Number160> contentIDs = ((ConcurrentMap<Number160, Set<Number160>>) responsibilityMapRev).putIfAbsent(
-                peerId, hashSet);
-        return contentIDs == null ? hashSet : contentIDs;
+	private boolean putIfAbsent1(Number160 peerId, Number160 locationKey) {
+		Set<Number160> contentIDs = responsibilityMapRev.get(peerId);
+        if(contentIDs == null) {
+        	contentIDs = new HashSet<Number160>();
+        }
+        boolean isNew = contentIDs.add(locationKey);
+        responsibilityMapRev.put(locationKey, contentIDs);
+        return isNew;
     }
 
 	@Override
     public void removeResponsibility(Number160 locationKey) {
-		Number160 peerId = responsibilityMap.remove(locationKey);
-		if(peerId != null) {
-   	 		removeRevResponsibility(peerId, locationKey);
-   	 		db.commit();
-		}
+		Set<Number160> peerIds = responsibilityMap.remove(locationKey);
+		if(peerIds != null) {
+			for (Number160 peerId : peerIds) {
+				removeRevResponsibility(peerId, locationKey);
+			}
+			db.commit();
+    	 }
     }
 	
 	private void removeRevResponsibility(Number160 peerId, Number160 locationKey) {
@@ -234,8 +245,20 @@ public class StorageDisk implements Storage {
             contentIDs.remove(locationKey);
             if (contentIDs.isEmpty()) {
                 responsibilityMapRev.remove(peerId);
+            } else {
+            	responsibilityMapRev.put(peerId, contentIDs);
             }
         }
+    }
+	
+	@Override
+    public void removeResponsibility(Number160 locationKey, Number160 peerId) {
+		Set<Number160> peerIds = responsibilityMap.get(locationKey);
+		if (peerIds != null && peerIds.remove(peerId)) {
+			responsibilityMap.put(locationKey, peerIds);
+			removeRevResponsibility(peerId, locationKey);
+			db.commit();
+		}
     }
 	
 	// Misc

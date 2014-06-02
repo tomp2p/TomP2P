@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureGet;
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -155,7 +155,7 @@ public final class ExampleSimpleRecommondation {
                 Collection<String> tmp = new ArrayList<String>(friends.values());
                 Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
                 for (String friend : tmp) {
-                    dataMap.put(peer.getPeerID().xor(Number160.createHash(friend)), new Data(friend));
+                    dataMap.put(peer.peerID().xor(Number160.createHash(friend)), new Data(friend));
                 }
                 peer.put(entry.getKey()).setDataMapContent(dataMap).start().awaitUninterruptibly();
             }
@@ -184,7 +184,7 @@ public final class ExampleSimpleRecommondation {
          *            Set reply handler for peer.
          */
         private void setReplyHandler(final Peer peer) {
-            peer.setObjectDataReply(new ObjectDataReply() {
+            peer.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     if (request != null && request instanceof Number160) {

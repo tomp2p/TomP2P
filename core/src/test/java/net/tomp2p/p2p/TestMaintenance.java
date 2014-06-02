@@ -20,10 +20,10 @@ public class TestMaintenance {
             Peer[] peers = Utils2.createRealNodes(10, rnd, 4001, new Rep(counter));
             master = peers[0];
             //give the master one of the peers,
-            master.getPeerBean().peerMap().peerFound(peers[1].getPeerAddress(), peers[2].getPeerAddress());
+            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress());
             // wait for 1 sec.
             
-            master.getPeerBean().peerMap().peerFound(peers[1].getPeerAddress(), peers[2].getPeerAddress());
+            master.peerBean().peerMap().peerFound(peers[1].peerAddress(), peers[2].peerAddress());
             Thread.sleep(3000);
             
             //both peers pinged each other

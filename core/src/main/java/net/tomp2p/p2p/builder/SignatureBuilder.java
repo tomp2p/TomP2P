@@ -19,7 +19,7 @@ public interface SignatureBuilder<K extends SignatureBuilder<K>> {
     /**
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
-    public abstract K setSign();
+    public abstract K sign();
 
     /**
      * @param keyPair

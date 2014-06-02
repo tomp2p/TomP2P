@@ -104,8 +104,8 @@ public class VotingSchemeDHT implements EvaluatingSchemeDHT {
             Map<Number640, Data> data = rawData.get(address);
             for (Number640 contentKey : data.keySet()) {
                 Data dat = data.get(contentKey);
-                Number160 hash = dat.hash().xor(contentKey.getContentKey()).
-                        xor(contentKey.getDomainKey()).xor(contentKey.getLocationKey());
+                Number160 hash = dat.hash().xor(contentKey.contentKey()).
+                        xor(contentKey.domainKey()).xor(contentKey.locationKey());
                 int c = 1;
                 Integer count = counter.get(hash);
                 if (count != null) {

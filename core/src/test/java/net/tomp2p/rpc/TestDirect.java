@@ -1,17 +1,17 @@
 package net.tomp2p.rpc;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -23,12 +23,11 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -52,17 +51,17 @@ public class TestDirect {
         final AtomicInteger progressNotComplete = new AtomicInteger(0);
         try {
 
-            PeerMaker pm1 = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424);
+            PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
             ChannelServerConficuration css = pm1.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
-            sender = pm1.makeAndListen();
+            sender = pm1.start();
 
-            PeerMaker pm2 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088);
+            PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
             pm2.channelServerConfiguration(css);
-            recv1 = pm2.makeAndListen();
+            recv1 = pm2.start();
 
-            recv1.setRawDataReply(new RawDataReply() {
+            recv1.rawDataReply(new RawDataReply() {
 
                 @Override
                 public Buffer reply(PeerAddress sender, Buffer requestBuffer, boolean complete)
@@ -80,12 +79,12 @@ public class TestDirect {
                 }
             });
 
-            FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
 
             SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
-            sendDirectBuilder.setStreaming();
+            sendDirectBuilder.streaming();
             sendDirectBuilder.idleTCPSeconds(Integer.MAX_VALUE);
 
             byte[] me = new byte[50];
@@ -96,7 +95,7 @@ public class TestDirect {
                 replyBuffer.writerIndex(50);
                 b.addComponent(replyBuffer);
             }
-            sendDirectBuilder.setBuffer(b);
+            sendDirectBuilder.buffer(b);
             sendDirectBuilder.progressListener(new ProgressListener() {
                 @Override
                 public void progress(final Message interMediateMessage) {
@@ -110,7 +109,7 @@ public class TestDirect {
                 }
             });
 
-            FutureResponse fr = sender.getDirectDataRPC().send(recv1.getPeerAddress(), sendDirectBuilder, cc);
+            FutureResponse fr = sender.directDataRPC().send(recv1.peerAddress(), sendDirectBuilder, cc);
             if (wait) {
                 Thread.sleep(500);
                 ByteBuf replyBuffer = Unpooled.buffer(50);
@@ -156,35 +155,35 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).makeAndListen();
-            recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).makeAndListen();
-            recv1.setObjectDataReply(new ObjectDataReply() {
+            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start();
+            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start();
+            recv1.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     return "yes";
                 }
             });
 
-            FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 2);
+            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 2);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
 
             SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
-            sendDirectBuilder.setObject("test");
+            sendDirectBuilder.object("test");
 
-            FutureResponse fd1 = sender.getDirectDataRPC()
-                    .send(recv1.getPeerAddress(), sendDirectBuilder, cc);
-            FutureResponse fd2 = sender.getDirectDataRPC()
-                    .send(recv1.getPeerAddress(), sendDirectBuilder, cc);
+            FutureResponse fd1 = sender.directDataRPC()
+                    .send(recv1.peerAddress(), sendDirectBuilder, cc);
+            FutureResponse fd2 = sender.directDataRPC()
+                    .send(recv1.peerAddress(), sendDirectBuilder, cc);
 
             fd1.awaitUninterruptibly();
             fd2.awaitUninterruptibly();
 
-            System.err.println(fd1.getFailedReason());
+            System.err.println(fd1.failedReason());
             Assert.assertEquals(true, fd1.isSuccess());
             Assert.assertEquals(true, fd2.isSuccess());
 
-            Object ret = fd1.getResponse().getBuffer(0).object();
+            Object ret = fd1.responseMessage().buffer(0).object();
             Assert.assertEquals("yes", ret);
         } finally {
             if (cc != null) {
@@ -205,9 +204,9 @@ public class TestDirect {
         Peer recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerMaker(new Number160("0x9876")).p2pId(55).ports(2424).makeAndListen();
-            recv1 = new PeerMaker(new Number160("0x1234")).p2pId(55).ports(8088).makeAndListen();
-            recv1.setObjectDataReply(new ObjectDataReply() {
+            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
+            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
+            recv1.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     Integer i = (Integer) request;
@@ -217,14 +216,14 @@ public class TestDirect {
             });
             for (int i = 0; i < 500; i++) {
 
-                FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
+                FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
 
                 SendDirectBuilder sendDirectBuilder = new SendDirectBuilder(sender, (PeerAddress) null);
-                sendDirectBuilder.setObject((Object) Integer.valueOf(i));
+                sendDirectBuilder.object((Object) Integer.valueOf(i));
 
-                FutureResponse futureData = sender.getDirectDataRPC().send(recv1.getPeerAddress(),
+                FutureResponse futureData = sender.directDataRPC().send(recv1.peerAddress(),
                         sendDirectBuilder, cc);
                 Utils.addReleaseListener(cc, futureData);
                 futureData.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -232,12 +231,12 @@ public class TestDirect {
                     public void operationComplete(FutureResponse future) throws Exception {
                         // the future object might be null if the future failed,
                         // e.g due to shutdown
-                        System.err.println(future.getResponse().getBuffer(0).object());
+                        System.err.println(future.responseMessage().buffer(0).object());
                     }
                 });
             }
             System.err.println("done");
-            Timings.sleep(2000);
+            Thread.sleep(2000);
 
         } finally {
             if (cc != null) {
@@ -272,31 +271,31 @@ public class TestDirect {
 					return retVal;
 				}
 			};
-			ChannelServerConficuration csc = PeerMaker.createDefaultChannelServerConfiguration();
-			ChannelClientConfiguration ccc = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
-            sender = new PeerMaker(new Number160("0x50")).p2pId(55).setEnableMaintenance(false).ports(2424).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).setEnableMaintenance(false).ports(8088).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            recv1.setObjectDataReply(new ObjectDataReply() {
+            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).setEnableMaintenance(false).ports(2424).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).setEnableMaintenance(false).ports(8088).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            recv1.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     return "yes";
                 }
             });
-            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress());
+            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress());
             ccohTCP.reset();
             ccohUDP.reset();
 
-            FutureDirect fd1 = sender.sendDirect(peerConnection).setObject("test")
+            FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(10 * 1000).start();
             fd1.awaitListenersUninterruptibly();
             Assert.assertEquals(true, fd1.isSuccess());
             Assert.assertEquals(1, ccohTCP.total());
             Assert.assertEquals(0, ccohUDP.total());
-            Timings.sleep(2000);
+            Thread.sleep(2000);
             System.err.println("send second with the same connection");
-            FutureDirect fd2 = sender.sendDirect(peerConnection).setObject("test").start();
+            FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
             Assert.assertEquals(1, ccohTCP.total());
             Assert.assertEquals(0, ccohUDP.total());
@@ -332,33 +331,33 @@ public class TestDirect {
 					return retVal;
 				}
 			};
-			ChannelServerConficuration csc = PeerMaker.createDefaultChannelServerConfiguration();
-			ChannelClientConfiguration ccc = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
-            sender = new PeerMaker(new Number160("0x50")).p2pId(55).ports(2424).setEnableMaintenance(false)
-                    .channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            recv1 = new PeerMaker(new Number160("0x20")).p2pId(55).ports(8088).setEnableMaintenance(false)
-            		.channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            recv1.setObjectDataReply(new ObjectDataReply() {
+            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).setEnableMaintenance(false)
+                    .channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).setEnableMaintenance(false)
+            		.channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            recv1.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     return "yes";
                 }
             });
-            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.getPeerAddress(), 8000);
+            FuturePeerConnection peerConnection = sender.createPeerConnection(recv1.peerAddress(), 8000);
             ccohTCP.reset();
             ccohUDP.reset();
 
-            FutureDirect fd1 = sender.sendDirect(peerConnection).setObject("test")
+            FutureDirect fd1 = sender.sendDirect(peerConnection).object("test")
                     .connectionTimeoutTCPMillis(2000).idleTCPSeconds(5).start();
             fd1.awaitUninterruptibly();
 
             Assert.assertEquals(1, ccohTCP.total());
 
-            Timings.sleep(7000);
+            Thread.sleep(7000);
 
-            FutureDirect fd2 = sender.sendDirect(peerConnection).setObject("test").start();
+            FutureDirect fd2 = sender.sendDirect(peerConnection).object("test").start();
             fd2.awaitUninterruptibly();
             peerConnection.close().await();
             Assert.assertEquals(2, ccohTCP.total());

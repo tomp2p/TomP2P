@@ -27,36 +27,36 @@ public class TestRelay {
         Peer master = null;
         Peer slave = null;
         try {
-        master = Utils2.createNodes(1, rnd, 4001, null, false, false)[0];
-        slave = Utils2.createNodes(1, rnd, 4002, null, false, false)[0];
-        System.err.println("master is " + master.getPeerAddress());
-        System.err.println("slave is " + slave.getPeerAddress());
+        master = Utils2.createNodes(1, rnd, 4001, null, false)[0];
+        slave = Utils2.createNodes(1, rnd, 4002, null, false)[0];
+        System.err.println("master is " + master.peerAddress());
+        System.err.println("slave is " + slave.peerAddress());
         
-        FuturePeerConnection pcMaster = master.createPeerConnection(slave.getPeerAddress());
-        MyDirectDataRPC myDirectDataRPC = new MyDirectDataRPC(slave.getPeerBean(), slave.getConnectionBean());
-        slave.setDirectDataRPC(myDirectDataRPC);
+        FuturePeerConnection pcMaster = master.createPeerConnection(slave.peerAddress());
+        MyDirectDataRPC myDirectDataRPC = new MyDirectDataRPC(slave.peerBean(), slave.connectionBean());
+        slave.directDataRPC(myDirectDataRPC);
         
-        slave.setObjectDataReply(new ObjectDataReply() {
+        slave.objectDataReply(new ObjectDataReply() {
             @Override
             public Object reply(PeerAddress sender, Object request) throws Exception {
                 return "yoo!";
             }
         });
         
-        master.setObjectDataReply(new ObjectDataReply() {
+        master.objectDataReply(new ObjectDataReply() {
             @Override
             public Object reply(PeerAddress sender, Object request) throws Exception {
                 return "world!";
             }
         });
         
-        FutureDirect futureResponse = master.sendDirect(pcMaster).setObject("test").start().awaitUninterruptibly();
+        FutureDirect futureResponse = master.sendDirect(pcMaster).object("test").start().awaitUninterruptibly();
         Assert.assertEquals("yoo!", futureResponse.object());
         
         FuturePeerConnection pcSlave = myDirectDataRPC.peerConnection();
         
-        futureResponse = slave.sendDirect(pcSlave).setObject("hello").start().awaitUninterruptibly();
-        System.err.println(futureResponse.getFailedReason());
+        futureResponse = slave.sendDirect(pcSlave).object("hello").start().awaitUninterruptibly();
+        System.err.println(futureResponse.failedReason());
         Assert.assertEquals("world!", futureResponse.object());
         
         Thread.sleep(1000);
@@ -85,8 +85,8 @@ public class TestRelay {
         @Override
         public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
                 throws Exception {
-            futurePeerConnection = new FuturePeerConnection(message.getSender());
-            futurePeerConnection.setDone(peerConnection);
+            futurePeerConnection = new FuturePeerConnection(message.sender());
+            futurePeerConnection.done(peerConnection);
             super.handleResponse(message, peerConnection, sign, responder);
         }
         

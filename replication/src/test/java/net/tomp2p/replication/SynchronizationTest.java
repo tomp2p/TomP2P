@@ -19,7 +19,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -196,9 +196,9 @@ public class SynchronizationTest {
 			final AtomicReference<DataMap> ref2 = new AtomicReference<DataMap>();
 
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(1)).ports(4001).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(1)).ports(4001).replicationSender(syncSender).start();
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(2)).ports(4002).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(2)).ports(4002).replicationSender(syncReceiver).start();
 			final PeerSync senderSync = syncSender.peerSync();
 			// final PeerSync receiverSync = syncReceiver.peerSync();
 
@@ -214,12 +214,12 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
 
-			sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
+			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
-			FutureChannelCreator futureChannelCreator = sender.getConnectionBean().reservation().create(0, 1);
+			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
 
 			final CountDownLatch latch = new CountDownLatch(1);
-			final PeerAddress receiverAddress = receiver.getPeerAddress();
+			final PeerAddress receiverAddress = receiver.peerAddress();
 
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
@@ -232,9 +232,9 @@ public class SynchronizationTest {
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								System.err.println(future.getFailedReason());
-								ref.set(future.getResponse().getType());
-								ref2.set(future.getResponse().getDataMap(0));
+								System.err.println(future.failedReason());
+								ref.set(future.emptyResponse().type());
+								ref2.set(future.emptyResponse().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -266,10 +266,10 @@ public class SynchronizationTest {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -284,10 +284,10 @@ public class SynchronizationTest {
 
 			sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
 
-			sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
+			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 			final CountDownLatch latch = new CountDownLatch(1);
-			final PeerAddress receiverAddress = receiver.getPeerAddress();
-			FutureChannelCreator futureChannelCreator = sender.getConnectionBean().reservation().create(0, 1);
+			final PeerAddress receiverAddress = receiver.peerAddress();
+			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -299,7 +299,7 @@ public class SynchronizationTest {
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								ref.set(future.getResponse().getDataMap(0));
+								ref.set(future.emptyResponse().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -331,10 +331,10 @@ public class SynchronizationTest {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -352,12 +352,12 @@ public class SynchronizationTest {
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
-			sender.bootstrap().setPeerAddress(receiver.getPeerAddress()).start().awaitUninterruptibly();
+			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
 			final CountDownLatch latch = new CountDownLatch(1);
-			final PeerAddress receiverAddress = receiver.getPeerAddress();
+			final PeerAddress receiverAddress = receiver.peerAddress();
 
-			FutureChannelCreator futureChannelCreator = sender.getConnectionBean().reservation().create(0, 1);
+			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -369,7 +369,7 @@ public class SynchronizationTest {
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								ref.set(future.getResponse().getDataMap(0));
+								ref.set(future.emptyResponse().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -400,10 +400,10 @@ public class SynchronizationTest {
 		Peer receiver = null;
 		try {
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -420,18 +420,18 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
-			System.err.println(future.getObject().toString());
-			Data data = receiver.getPeerBean().storage()
+			System.err.println(future.object().toString());
+			Data data = receiver.peerBean().storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
 			assertArrayEquals(newValue.getBytes(), reconstructedValue);
-			Assert.assertEquals(20, ((SyncStat)future.getObject()).dataOrig());
-			Assert.assertEquals(26, ((SyncStat)future.getObject()).dataCopy());
+			Assert.assertEquals(20, ((SyncStat)future.object()).dataOrig());
+			Assert.assertEquals(26, ((SyncStat)future.object()).dataCopy());
 		} finally {
 			if (sender != null) {
 				sender.shutdown().awaitUninterruptibly();
@@ -448,10 +448,10 @@ public class SynchronizationTest {
 		Peer receiver = null;
 		try {
 			final ReplicationSync syncSender = new ReplicationSync(32);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(32);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -468,18 +468,18 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
-			System.err.println(future.getObject().toString());
-			Data data = receiver.getPeerBean().storage()
+			System.err.println(future.object().toString());
+			Data data = receiver.peerBean().storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
 			assertArrayEquals(newValue.getBytes(), reconstructedValue);
-			Assert.assertEquals(164, ((SyncStat)future.getObject()).dataOrig());
-			Assert.assertEquals(56, ((SyncStat)future.getObject()).dataCopy());
+			Assert.assertEquals(164, ((SyncStat)future.object()).dataOrig());
+			Assert.assertEquals(56, ((SyncStat)future.object()).dataCopy());
 		} finally {
 			if (sender != null) {
 				sender.shutdown().awaitUninterruptibly();
@@ -496,10 +496,10 @@ public class SynchronizationTest {
 		Peer receiver = null;
 		try {
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -516,19 +516,19 @@ public class SynchronizationTest {
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
 
-			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
-			System.err.println(future.getObject().toString());
-			Data data = receiver.getPeerBean().storage()
+			System.err.println(future.object().toString());
+			Data data = receiver.peerBean().storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
 			assertArrayEquals(newValue.getBytes(), reconstructedValue);
 			
-			Assert.assertEquals(0, ((SyncStat)future.getObject()).dataOrig());
-			Assert.assertEquals(0, ((SyncStat)future.getObject()).dataCopy());
+			Assert.assertEquals(0, ((SyncStat)future.object()).dataOrig());
+			Assert.assertEquals(0, ((SyncStat)future.object()).dataCopy());
 		} finally {
 			if (sender != null) {
 				sender.shutdown().awaitUninterruptibly();
@@ -545,10 +545,10 @@ public class SynchronizationTest {
 		Peer receiver = null;
 		try {
 			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerMaker(new Number160(3)).ports(4003).replicationSender(syncSender).makeAndListen();
+			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
 
 			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerMaker(new Number160(4)).ports(4004).replicationSender(syncReceiver).makeAndListen();
+			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
 
 			final PeerSync senderSync = syncSender.peerSync();
 
@@ -562,18 +562,18 @@ public class SynchronizationTest {
 
 			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
 
-			FutureDone<SyncStat> future = senderSync.synchronize(receiver.getPeerAddress()).key(key)
+			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
 			future.awaitUninterruptibly();
 
-			System.err.println(future.getObject().toString());
+			System.err.println(future.object().toString());
 
-			Data data = receiver.getPeerBean().storage()
+			Data data = receiver.peerBean().storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 			assertArrayEquals(newValue.getBytes(), reconstructedValue);
-			Assert.assertEquals(20, ((SyncStat)future.getObject()).dataOrig());
-			Assert.assertEquals(20, ((SyncStat)future.getObject()).dataCopy());
+			Assert.assertEquals(20, ((SyncStat)future.object()).dataOrig());
+			Assert.assertEquals(20, ((SyncStat)future.object()).dataCopy());
 		} finally {
 			if (sender != null) {
 				sender.shutdown().awaitUninterruptibly();

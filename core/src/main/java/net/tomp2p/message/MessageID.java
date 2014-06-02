@@ -41,7 +41,7 @@ public class MessageID implements Comparable<MessageID> {
      *            The message
      */
     public MessageID(final Message message) {
-        this(message.getMessageId(), message.isRequest() ? message.getSender() : message.getRecipient());
+        this(message.messageId(), message.isRequest() ? message.sender() : message.recipient());
     }
 
     /**
@@ -62,14 +62,14 @@ public class MessageID implements Comparable<MessageID> {
     /**
      * @return the message id
      */
-    public int getId() {
+    public int id() {
         return id;
     }
 
     /**
      * @return The node address of sender or recipient
      */
-    public PeerAddress getNodeAddress() {
+    public PeerAddress peerAddress() {
         return peerAddress;
     }
 

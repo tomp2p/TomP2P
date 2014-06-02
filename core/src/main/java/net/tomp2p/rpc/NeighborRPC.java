@@ -104,25 +104,25 @@ public class NeighborRPC extends DispatchHandler {
             throw new IllegalArgumentException("The type must be a request");
         }
         
-        message.setKey(searchValues.locationKey());
-        message.setKey(searchValues.domainKey() == null ? Number160.ZERO : searchValues.domainKey());
+        message.key(searchValues.locationKey());
+        message.key(searchValues.domainKey() == null ? Number160.ZERO : searchValues.domainKey());
         
         if(searchValues.from() !=null && searchValues.to()!=null) {
         	Collection<Number640> collection = new ArrayList<Number640>(2);
         	collection.add(searchValues.from());
         	collection.add(searchValues.to());
         	KeyCollection keyCollection = new KeyCollection(collection);
-        	message.setKeyCollection(keyCollection);
+        	message.keyCollection(keyCollection);
         } else {
 	        if (searchValues.contentKey() != null) {
-        		message.setKey(searchValues.contentKey());
+        		message.key(searchValues.contentKey());
         	}
         
         	if (searchValues.keyBloomFilter() != null) {
-        		message.setBloomFilter(searchValues.keyBloomFilter());
+        		message.bloomFilter(searchValues.keyBloomFilter());
         	}
         	if (searchValues.contentBloomFilter() != null) {
-        		message.setBloomFilter(searchValues.contentBloomFilter());
+        		message.bloomFilter(searchValues.contentBloomFilter());
         	}
         }
         return send(message, configuration, channelCreator);
@@ -134,12 +134,12 @@ public class NeighborRPC extends DispatchHandler {
 			@Override
             public void operationComplete(FutureResponse future) throws Exception {
 	            if(future.isSuccess()) {
-	            	Message response = future.getResponse();
+	            	Message response = future.responseMessage();
 	            	if(response != null) {
-	            		NeighborSet ns = response.getNeighborsSet(0);
+	            		NeighborSet ns = response.neighborsSet(0);
 	            		if(ns!=null) {
 	            			for(PeerAddress neighbors:ns.neighbors()) {
-	            				peerBean().peerMap().peerFound(neighbors, response.getSender());
+	            				peerBean().peerMap().peerFound(neighbors, response.sender());
 	            			}
 	            		}
 	            	}
@@ -159,22 +159,22 @@ public class NeighborRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws IOException {
-        if (message.getKeyList().size() < 2) {
+        if (message.keyList().size() < 2) {
             throw new IllegalArgumentException("We need the location and domain key at least");
         }
-        if (!(message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2
-                || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4)
-                && (message.getCommand() == RPC.Commands.NEIGHBOR.getNr())) {
+        if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
+                || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
+                && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
-        Number160 locationKey = message.getKey(0);
-        Number160 domainKey = message.getKey(1);
+        Number160 locationKey = message.key(0);
+        Number160 domainKey = message.key(1);
         
         SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
             //return empty neighbor set
             Message response = createResponseMessage(message, Type.NOT_FOUND);
-            response.setNeighborsSet(new NeighborSet(-1));
+            response.neighborsSet(new NeighborSet(-1));
             responder.response(response);
             return;
         }
@@ -184,51 +184,61 @@ public class NeighborRPC extends DispatchHandler {
         
         LOG.debug("found the following neighbors {}", neighbors);
         NeighborSet neighborSet = new NeighborSet(NEIGHBOR_LIMIT, neighbors);
-        responseMessage.setNeighborsSet(neighborSet);
+        responseMessage.neighborsSet(neighborSet);
         // check for fastget, -1 if, no domain provided, so we cannot
         // check content length, 0 for content not here , > 0 content here
         // int contentLength = -1;
-        Number160 contentKey = message.getKey(2);
-        SimpleBloomFilter<Number160> keyBloomFilter = message.getBloomFilter(0);
-        SimpleBloomFilter<Number160> contentBloomFilter = message.getBloomFilter(1);
-        KeyCollection keyCollection = message.getKeyCollection(0);
+        Number160 contentKey = message.key(2);
+        SimpleBloomFilter<Number160> keyBloomFilter = message.bloomFilter(0);
+        SimpleBloomFilter<Number160> contentBloomFilter = message.bloomFilter(1);
+        KeyCollection keyCollection = message.keyCollection(0);
         // it is important to set an integer if a value is present
-        boolean isDigest = message.getType() != Type.REQUEST_1;
+        boolean isDigest = message.type() != Type.REQUEST_1;
         if (isDigest) {
-            if (message.getType() == Type.REQUEST_2) {
+            if (message.type() == Type.REQUEST_2) {
                 final DigestInfo digestInfo;
-                if (contentKey != null && locationKey!=null && domainKey!=null) {
+                if (peerBean().digestStorage() == null) {
+                	//no storage to search
+                	digestInfo = new DigestInfo();
+                }
+                else if (contentKey != null && locationKey!=null && domainKey!=null) {
                 	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     Number640 from = new Number640(locationAndDomainKey, contentKey, Number160.ZERO);
                     Number640 to = new Number640(locationAndDomainKey, contentKey, Number160.MAX_VALUE);
-                    digestInfo = peerBean().storage().digest(from, to, -1, true);
+                    digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
                 } else if ((keyBloomFilter != null || contentBloomFilter != null)  && locationKey!=null && domainKey!=null) {
                 	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
-                    digestInfo = peerBean().storage().digest(locationAndDomainKey, keyBloomFilter,
+                    digestInfo = peerBean().digestStorage().digest(locationAndDomainKey, keyBloomFilter,
                             contentBloomFilter, -1, true, true);
                 } else if (keyCollection!=null && keyCollection.keys().size() == 2) {
                 	Iterator<Number640> iterator = keyCollection.keys().iterator();
                 	Number640 from = iterator.next();
                 	Number640 to = iterator.next();
-                	digestInfo = peerBean().storage().digest(from, to, -1, true);
+                	digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
                 } else if (locationKey!=null && domainKey!=null){
                 	Number320 locationAndDomainKey = new Number320(locationKey, domainKey);
                     Number640 from = new Number640(locationAndDomainKey, Number160.ZERO, Number160.ZERO);
                     Number640 to = new Number640(locationAndDomainKey, Number160.MAX_VALUE, Number160.MAX_VALUE);
-                    digestInfo = peerBean().storage().digest(from, to, -1, true);
+                    digestInfo = peerBean().digestStorage().digest(from, to, -1, true);
                 } else {
                 	LOG.warn("did not search for anything");
                 	digestInfo = new DigestInfo();
                 }
-                responseMessage.setInteger(digestInfo.getSize());
-                responseMessage.setKey(digestInfo.getKeyDigest());
-                responseMessage.setKey(digestInfo.getContentDigest());
-            } else if (message.getType() == Type.REQUEST_3) {
-                DigestInfo digestInfo = peerBean().trackerStorage().digest(locationKey, domainKey, null);
-                if (digestInfo.getSize() == 0) {
-                    LOG.debug("No entry found on peer {}", message.getRecipient());
-                }
-                responseMessage.setInteger(digestInfo.getSize());
+                responseMessage.intValue(digestInfo.size());
+                responseMessage.key(digestInfo.keyDigest());
+                responseMessage.key(digestInfo.contentDigest());
+            } else if (message.type() == Type.REQUEST_3) {
+            	final DigestInfo digestInfo;
+            	if(peerBean().digestTracker() == null) {
+            		//no tracker to search
+            		digestInfo = new DigestInfo();
+            	} else {
+            		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, null);
+            		if (digestInfo.size() == 0) {	
+            			LOG.debug("No entry found on peer {}", message.recipient());
+            		}
+            	}
+                responseMessage.intValue(digestInfo.size());
             } /*
                * else if (message.getType() == Type.REQUEST_4) { DigestInfo digestInfo =
                * peerBean().taskManager().digest(); responseMessage.setInteger(digestInfo.getSize()); }

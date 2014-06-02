@@ -37,7 +37,6 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.builder.DHTBuilder;
 
 /**
  * Reserves a block of connections.
@@ -118,7 +117,7 @@ public class Reservation {
 	 * @return The future channel creator
 	 */
 	public FutureChannelCreator create(final RoutingConfiguration routingConfiguration,
-	        final RequestP2PConfiguration requestP2PConfiguration, final DHTBuilder<?> builder) {
+	        final RequestP2PConfiguration requestP2PConfiguration, final DefaultConnectionConfiguration builder) {
 		if (routingConfiguration == null && requestP2PConfiguration == null) {
 			throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
 		}
@@ -127,16 +126,16 @@ public class Reservation {
 		int nrConnectionsUDP = 0;
 		if (requestP2PConfiguration != null) {
 			if (builder.isForceUDP()) {
-				nrConnectionsUDP = requestP2PConfiguration.getParallel();
+				nrConnectionsUDP = requestP2PConfiguration.parallel();
 			} else {
-				nrConnectionsTCP = requestP2PConfiguration.getParallel();
+				nrConnectionsTCP = requestP2PConfiguration.parallel();
 			}
 		}
 		if (routingConfiguration != null) {
 			if (!builder.isForceTCP()) {
-				nrConnectionsUDP = Math.max(nrConnectionsUDP, routingConfiguration.getParallel());
+				nrConnectionsUDP = Math.max(nrConnectionsUDP, routingConfiguration.parallel());
 			} else {
-				nrConnectionsTCP = Math.max(nrConnectionsTCP, routingConfiguration.getParallel());
+				nrConnectionsTCP = Math.max(nrConnectionsTCP, routingConfiguration.parallel());
 			}
 		}
 
@@ -165,7 +164,7 @@ public class Reservation {
 		read.lock();
 		try {
 			if (shutdown) {
-				return futureChannelCreator.setFailed("shutting down");
+				return futureChannelCreator.failed("shutting down");
 			}
 
 			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
@@ -203,7 +202,7 @@ public class Reservation {
 		read.lock();
 		try {
 			if (shutdown) {
-				return futureChannelCreator.setFailed("shutting down");
+				return futureChannelCreator.failed("shutting down");
 			}
 			FutureDone<Void> futureChannelCreationDone = new FutureDone<Void>();
 			futureChannelCreationDone.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -231,7 +230,7 @@ public class Reservation {
 		write.lock();
 		try {
 			if (shutdown) {
-				shutdownFuture().setFailed("already shutting down");
+				shutdownFuture().failed("already shutting down");
 				return shutdownFuture();
 			}
 			shutdown = true;
@@ -247,17 +246,17 @@ public class Reservation {
 		for (Runnable r : executor.shutdownNow()) {
 			if (r instanceof WaitReservation) {
 				WaitReservation wr = (WaitReservation) r;
-				wr.futureChannelCreator().setFailed("shutting down");
+				wr.futureChannelCreator().failed("shutting down");
 			} else {
 				WaitReservationPermanent wr = (WaitReservationPermanent) r;
-				wr.futureChannelCreator().setFailed("shutting down");
+				wr.futureChannelCreator().failed("shutting down");
 			}
 		}
 
 		// the channelCreator does not change anymore from here on
 		final int size = channelCreators.size();
 		if (size == 0) {
-			futureReservationDone.setDone();
+			futureReservationDone.done();
 		} else {
 			final AtomicInteger completeCounter = new AtomicInteger(0);
 			for (final ChannelCreator channelCreator : channelCreators) {
@@ -275,7 +274,7 @@ public class Reservation {
 							semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 							semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
 							semaphorePermanentTCP.acquireUninterruptibly(maxPermitsPermanentTCP);
-							shutdownFuture().setDone();
+							shutdownFuture().done();
 						}
 					}
 				});
@@ -361,21 +360,21 @@ public class Reservation {
 			read.lock();
 			try {
 				if (shutdown) {
-					futureChannelCreator.setFailed("shutting down");
+					futureChannelCreator.failed("shutting down");
 					return;
 				}
 
 				try {
 					semaphoreUPD.acquire(permitsUDP);
 				} catch (InterruptedException e) {
-					futureChannelCreator.setFailed(e);
+					futureChannelCreator.failed(e);
 					return;
 				}
 				try {
 					semaphoreTCP.acquire(permitsTCP);
 				} catch (InterruptedException e) {
 					semaphoreUPD.release(permitsUDP);
-					futureChannelCreator.setFailed(e);
+					futureChannelCreator.failed(e);
 					return;
 				}
 
@@ -433,14 +432,14 @@ public class Reservation {
 			read.lock();
 			try {
 				if (shutdown) {
-					futureChannelCreator.setFailed("shutting down");
+					futureChannelCreator.failed("shutting down");
 					return;
 				}
 
 				try {
 					semaphorePermanentTCP.acquire(permitsPermanentTCP);
 				} catch (InterruptedException e) {
-					futureChannelCreator.setFailed(e);
+					futureChannelCreator.failed(e);
 					return;
 				}
 

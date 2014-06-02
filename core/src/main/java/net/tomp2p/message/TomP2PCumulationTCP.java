@@ -64,7 +64,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			finished = decoder.decode(ctx, cumulation, (InetSocketAddress) ctx
 					.channel().localAddress(), sender);
 			if (finished) {
-				lastId = decoder.message().getMessageId();
+				lastId = decoder.message().messageId();
 				moreData = cumulation.readableBytes() > 0;
 				ctx.fireChannelRead(decoder.prepareFinish());
 			} else {
@@ -73,7 +73,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				// is finished as well although it may send only partial data.
 				//TODO testBroadcast
 				//if(decoder.message() != null) {
-				if (lastId == decoder.message().getMessageId()) {
+				if (lastId == decoder.message().messageId()) {
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;
 					ctx.fireChannelRead(decoder.prepareFinish());

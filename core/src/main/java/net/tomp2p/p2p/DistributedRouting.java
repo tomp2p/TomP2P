@@ -74,7 +74,7 @@ public class DistributedRouting {
         this.neighbors = neighbors;
         this.peerBean = peerBean;
         // stable random number. No need to be truly random
-        rnd = new Random(peerBean.serverPeerAddress().getPeerId().hashCode());
+        rnd = new Random(peerBean.serverPeerAddress().peerId().hashCode());
     }
 
     /**
@@ -95,7 +95,7 @@ public class DistributedRouting {
         final FutureDone<Pair<FutureRouting,FutureRouting>> futureDone = new FutureDone<Pair<FutureRouting,FutureRouting>>();
 
         // first we find close peers to us
-        routingBuilder.setBootstrap(true);
+        routingBuilder.bootstrap(true);
 
         final FutureRouting futureRouting0 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
         // to not become a Fachidiot (expert idiot), we need to know other peers
@@ -104,15 +104,19 @@ public class DistributedRouting {
             @Override
             public void operationComplete(final FutureRouting future) throws Exception {
                 // setting this to null causes to search for a random number
-                routingBuilder.setLocationKey(null);
-                final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
-                futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
-					@Override
-                    public void operationComplete(FutureRouting future) throws Exception {
-						final Pair<FutureRouting,FutureRouting> pair = new Pair<FutureRouting, FutureRouting>(futureRouting0, futureRouting1);
-						futureDone.setDone(pair);
-                    }
-				});
+            	if(future.isSuccess()) {
+            		routingBuilder.locationKey(null);
+            		final FutureRouting futureRouting1 = routing(peerAddresses, routingBuilder, Type.REQUEST_1, cc);
+            		futureRouting1.addListener(new BaseFutureAdapter<FutureRouting>() {
+            			@Override
+            			public void operationComplete(FutureRouting future) throws Exception {
+            				final Pair<FutureRouting,FutureRouting> pair = new Pair<FutureRouting, FutureRouting>(futureRouting0, futureRouting1);
+            				futureDone.done(pair);
+            			}
+            		});
+            	} else {
+            		futureDone.failed(future);
+            	}
             }
         });
         return futureDone;
@@ -132,8 +136,8 @@ public class DistributedRouting {
      */
     public FutureRouting route(final RoutingBuilder routingBuilder, final Type type, final ChannelCreator cc) {
         // for bad distribution, use large NO_NEW_INFORMATION
-        Collection<PeerAddress> startPeers = peerBean.peerMap().closePeers(routingBuilder.getLocationKey(),
-                routingBuilder.getParallel() * 2);
+        Collection<PeerAddress> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
+                routingBuilder.parallel() * 2);
         return routing(startPeers, routingBuilder, type, cc);
     }
 
@@ -163,13 +167,13 @@ public class DistributedRouting {
         if (peerAddresses == null) {
             throw new IllegalArgumentException("you need to specify some nodes");
         }
-        boolean randomSearch = routingBuilder.getLocationKey() == null;
+        boolean randomSearch = routingBuilder.locationKey() == null;
         //
         final Comparator<PeerAddress> comparator;
         if (randomSearch) {
             comparator = peerBean.peerMap().createComparator();
         } else {
-            comparator = PeerMap.createComparator(routingBuilder.getLocationKey());
+            comparator = PeerMap.createComparator(routingBuilder.locationKey());
         }
         final NavigableSet<PeerAddress> queueToAsk = new TreeSet<PeerAddress>(comparator);
         // we can reuse the comparator
@@ -185,38 +189,38 @@ public class DistributedRouting {
         alreadyAsked.add(peerBean.serverPeerAddress());
         potentialHits.add(peerBean.serverPeerAddress());
         // domainkey can be null if we bootstrap
-        if (type == Type.REQUEST_2 && routingBuilder.getDomainKey() != null && !randomSearch) {
+        if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch) {
             final Number640 from;
             final Number640 to;
             if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
             	from = routingBuilder.from();
             	to = routingBuilder.to();
-            } else if (routingBuilder.getDomainKey() == null) {
-                from = new Number640(routingBuilder.getLocationKey(), Number160.ZERO, Number160.ZERO,
+            } else if (routingBuilder.domainKey() == null) {
+                from = new Number640(routingBuilder.locationKey(), Number160.ZERO, Number160.ZERO,
                         Number160.ZERO);
-                to = new Number640(routingBuilder.getLocationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,
+                to = new Number640(routingBuilder.locationKey(), Number160.MAX_VALUE, Number160.MAX_VALUE,
                         Number160.MAX_VALUE);
-            } else if (routingBuilder.getContentKey() == null) {
-                from = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+            } else if (routingBuilder.contentKey() == null) {
+                from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
                         Number160.ZERO, Number160.ZERO);
-                to = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
+                to = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
                         Number160.MAX_VALUE, Number160.MAX_VALUE);
             } else {
-                from = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
-                        routingBuilder.getContentKey(), Number160.ZERO);
-                to = new Number640(routingBuilder.getLocationKey(), routingBuilder.getDomainKey(),
-                        routingBuilder.getContentKey(), Number160.MAX_VALUE);
+                from = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
+                        routingBuilder.contentKey(), Number160.ZERO);
+                to = new Number640(routingBuilder.locationKey(), routingBuilder.domainKey(),
+                        routingBuilder.contentKey(), Number160.MAX_VALUE);
             }
-            DigestInfo digestBean = peerBean.storage().digest(from, to, -1, true);
-            if (digestBean.getSize() > 0) {
+            DigestInfo digestBean = peerBean.digestStorage().digest(from, to, -1, true);
+            if (digestBean.size() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestBean);
             }
         } else if (type == Type.REQUEST_3 && !randomSearch) {
-            DigestInfo digestInfo = peerBean.trackerStorage().digest(routingBuilder.getLocationKey(),
-                    routingBuilder.getDomainKey(), routingBuilder.getContentKey());
+            DigestInfo digestInfo = peerBean.digestTracker().digest(routingBuilder.locationKey(),
+                    routingBuilder.domainKey(), routingBuilder.contentKey());
             // we always put ourselfs to the tracker list, so we need to check
             // if we know also other peers on our trackers.
-            if (digestInfo.getSize() > 0) {
+            if (digestInfo.size() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
             }
         }
@@ -233,7 +237,7 @@ public class DistributedRouting {
         // bootstrap with an empty List<PeerAddress>, which will then also be 0.
         final FutureRouting futureRouting = new FutureRouting();
         if (peerAddresses.size() == 0) {
-            futureRouting.setNeighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
+            futureRouting.neighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
                     false);
         } else {
             // if a peer bootstraps to itself, then the size of peerAddresses
@@ -297,7 +301,7 @@ public class DistributedRouting {
     private void routingRec(final RoutingBuilder routingBuilder, final RoutingMechanism routingMechanism,
             final Type type, final ChannelCreator channelCreator) {
 
-        final boolean randomSearch = routingBuilder.getLocationKey() == null;
+        final boolean randomSearch = routingBuilder.locationKey() == null;
         int active = 0;
         for (int i = 0; i < routingMechanism.parallel(); i++) {
             if (routingMechanism.futureResponse(i) == null && !routingMechanism.isStopCreatingNewFutures()) {
@@ -312,12 +316,16 @@ public class DistributedRouting {
                     active++;
                     // if we search for a random peer, then the peer should
                     // return the address farest away.
-                    final Number160 locationKey2 = randomSearch ? next.getPeerId().xor(Number160.MAX_VALUE)
-                            : routingBuilder.getLocationKey();
-                    routingBuilder.setLocationKey(locationKey2);
-                    if(LOG.isWarnEnabled()) {
-                    	if(channelCreator.availableUDPPermits()==0) {
-                    		LOG.warn("sanity check faild: {}, {}",i,Thread.currentThread().getName());
+                    final Number160 locationKey2 = randomSearch ? next.peerId().xor(Number160.MAX_VALUE)
+                            : routingBuilder.locationKey();
+                    routingBuilder.locationKey(locationKey2);
+                     
+                    if(LOG.isWarnEnabled() ) {
+                    	//routing is per default UDP, don't show warning if the other TCP/UDP is used
+                    	if(channelCreator.availableUDPPermits()==0 && !routingBuilder.isForceTCP()) {
+                    		LOG.warn("sanity check faild UDP: {}, {}",i,Thread.currentThread().getName());
+                    	} else if(channelCreator.availableTCPPermits()==0 && routingBuilder.isForceTCP()) {
+                    		LOG.warn("sanity check faild TCP: {}, {}",i,Thread.currentThread().getName());
                     	}
                     }
                     routingMechanism.futureResponse(i, neighbors.closeNeighbors(next,
@@ -332,7 +340,7 @@ public class DistributedRouting {
         if (active == 0) {
             LOG.debug("no activity, closing");
 
-            routingMechanism.setNeighbors(routingBuilder);
+            routingMechanism.neighbors(routingBuilder);
             routingMechanism.cancel();
             return;
         }
@@ -344,25 +352,25 @@ public class DistributedRouting {
             public void operationComplete(final FutureForkJoin<FutureResponse> future) throws Exception {
                 final boolean finished;
                 if (future.isSuccess()) {
-                    Message lastResponse = future.getLast().getResponse();
-                    PeerAddress remotePeer = lastResponse.getSender();
+                    Message lastResponse = future.last().responseMessage();
+                    PeerAddress remotePeer = lastResponse.sender();
                     routingMechanism.addPotentialHits(remotePeer);
-                    Collection<PeerAddress> newNeighbors = lastResponse.getNeighborsSet(0).neighbors();
+                    Collection<PeerAddress> newNeighbors = lastResponse.neighborsSet(0).neighbors();
 
-                    Integer resultSize = lastResponse.getInteger(0);
-                    Number160 keyDigest = lastResponse.getKey(0);
-                    Number160 contentDigest = lastResponse.getKey(1);
+                    Integer resultSize = lastResponse.intAt(0);
+                    Number160 keyDigest = lastResponse.key(0);
+                    Number160 contentDigest = lastResponse.key(1);
                     DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null ? 0
                             : resultSize);
-                    LOG.debug("Peer ({}) {} reported {}", (digestBean.getSize() > 0 ? "direct" : "none"),
+                    LOG.debug("Peer ({}) {} reported {}", (digestBean.size() > 0 ? "direct" : "none"),
                             remotePeer, newNeighbors);
-                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.getLocationKey());
+                    finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.locationKey());
                     LOG.debug("Routing finished {} / {}", finished,
                             routingMechanism.isStopCreatingNewFutures());
                 } else {
                     // if it failed but the failed is the closest one, its good to try again, since the peer might just
                     // be busy
-                    LOG.debug("routing error {}", future.getFailedReason());
+                    LOG.debug("routing error {}", future.failedReason());
                     finished = routingMechanism.evaluateFailed();
                     routingMechanism.stopCreatingNewFutures(finished);
                 }
@@ -370,7 +378,7 @@ public class DistributedRouting {
                     LOG.debug("finished routing, direct hits: {} potential: {}",
                             routingMechanism.directHits(), routingMechanism.potentialHits());
 
-                    routingMechanism.setNeighbors(routingBuilder);
+                    routingMechanism.neighbors(routingBuilder);
                     routingMechanism.cancel();
                     // stop all operations, as we are finished, no need to go further
                 } else {

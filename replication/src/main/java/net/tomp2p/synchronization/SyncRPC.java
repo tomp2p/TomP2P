@@ -34,6 +34,7 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.KeyCollection;
@@ -48,7 +49,6 @@ import net.tomp2p.rpc.RPC;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DataBuffer;
-import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,11 +101,11 @@ public class SyncRPC extends DispatchHandler {
 		        synchronizationBuilder.isSyncFromOldVersion() ? Type.REQUEST_2 : Type.REQUEST_1);
 
 		if (synchronizationBuilder.isSign()) {
-			message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
+			message.publicKeyAndSign(synchronizationBuilder.keyPair());
 		}
 
 		KeyMap640Keys keyMap = new KeyMap640Keys(synchronizationBuilder.dataMapHash());
-		message.setKeyMap640Keys(keyMap);
+		message.keyMap640Keys(keyMap);
 
 		FutureResponse futureResponse = new FutureResponse(message);
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
@@ -132,7 +132,7 @@ public class SyncRPC extends DispatchHandler {
         final Message message = createMessage(remotePeer, SYNC_COMMAND, Type.REQUEST_1);
 
         if (synchronizationBuilder.isSign()) {
-            message.setPublicKeyAndSign(synchronizationBuilder.keyPair());
+            message.publicKeyAndSign(synchronizationBuilder.keyPair());
         }
 
         DataMap dataMap = synchronizationBuilder.dataMap();
@@ -147,13 +147,13 @@ public class SyncRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!(message.getCommand() == INFO_COMMAND || message.getCommand() == SYNC_COMMAND)) {
+        if (!(message.command() == INFO_COMMAND || message.command() == SYNC_COMMAND)) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
-        if(message.getCommand() == INFO_COMMAND) {
+        if(message.command() == INFO_COMMAND) {
             handleInfo(message, responseMessage, responder);
-        } else if (message.getCommand() == SYNC_COMMAND) {
+        } else if (message.command() == SYNC_COMMAND) {
             handleSync(message, responseMessage, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
@@ -173,47 +173,47 @@ public class SyncRPC extends DispatchHandler {
      * @throws NoSuchAlgorithmException
      */
     private void handleInfo(final Message message, final Message responseMessage, Responder responder) {
-        LOG.debug("Info received from {} -> I'm {}", message.getSender().getPeerId(), message.getRecipient()
-                .getPeerId());
+        LOG.debug("Info received from {} -> I'm {}", message.sender().peerId(), message.recipient()
+                .peerId());
         
-        final boolean isSyncFromOldVersion = message.getType() == Type.REQUEST_2;
-        final KeyMap640Keys keysMap = message.getKeyMap640Keys(0);
+        final boolean isSyncFromOldVersion = message.type() == Type.REQUEST_2;
+        final KeyMap640Keys keysMap = message.keyMap640Keys(0);
         final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
         
         for (Map.Entry<Number640, Collection<Number160>> entry : keysMap.keysMap().entrySet()) {
-            Data data = peerBean().storage().get(entry.getKey());
+            Data data = peerBean().storageLayer().get(entry.getKey());
             if(entry.getValue().size() != 1) {
             	continue;
             }
             if (data != null) {
                 // found, check if same
                 if (entry.getValue().iterator().next().equals(data.hash())) {
-                    retVal.put(entry.getKey(), new Data().setFlag1());
+                    retVal.put(entry.getKey(), new Data().flag1());
                     LOG.debug("no sync required");
                 } else {
                     // get the checksums
                 	// TODO: don't copy data, toBytes does a copy!
                     List<Checksum> checksums = RSync.checksums(data.toBytes(), blockSize);
                     AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
-                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().getVersionKey(), data.hash(), abuf);
+                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, entry.getKey().versionKey(), data.hash(), abuf);
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required hash = {}", data.hash());
                 }
             } else {
             	if(isSyncFromOldVersion) {
             		//TODO: the client could send us his history to figure out what the latest version in this history is
-            		Entry<Number640, Data> latest = peerBean().storage().
+            		Entry<Number640, Data> latest = peerBean().storageLayer().
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
             		List<Checksum> checksums = RSync.checksums(latest.getValue().toBytes(), blockSize);
             		AlternativeCompositeByteBuf abuf = AlternativeCompositeByteBuf.compBuffer();
-                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().getVersionKey(), 
+                    DataBuffer dataBuffer = SyncUtils.encodeChecksum(checksums, latest.getKey().versionKey(), 
                     		latest.getValue().hash(), abuf);
                     retVal.put(entry.getKey(), new Data(dataBuffer));
                     LOG.debug("sync required for version");
             	} else {
             		// not found
-            		retVal.put(entry.getKey(), new Data().setFlag2());
+            		retVal.put(entry.getKey(), new Data().flag2());
             		LOG.debug("copy required, not found on this peer {}", entry.getKey());
             	}
             }
@@ -234,17 +234,17 @@ public class SyncRPC extends DispatchHandler {
      * @throws ClassNotFoundException
      */
     private void handleSync(final Message message, final Message responseMessage, Responder responder) {
-        LOG.debug("Sync received: got from {} -> I'm {}", message.getSender().getPeerId(), message.getRecipient()
-                .getPeerId());
+        LOG.debug("Sync received: got from {} -> I'm {}", message.sender().peerId(), message.recipient()
+                .peerId());
 
-        final DataMap dataMap = message.getDataMap(0);
-        final PublicKey publicKey = message.getPublicKey(0);
+        final DataMap dataMap = message.dataMap(0);
+        final PublicKey publicKey = message.publicKey(0);
         final List<Number640> retVal = new ArrayList<Number640>(dataMap.size());
 
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
             if (entry.getValue().isFlag2()) {
             	LOG.debug("remove entry {}", entry.getKey());
-                peerBean().storage().remove(entry.getKey(), publicKey, false);
+                peerBean().storageLayer().remove(entry.getKey(), publicKey, false);
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff
@@ -254,7 +254,7 @@ public class SyncRPC extends DispatchHandler {
                 	Number160 hash = SyncUtils.decodeHeader(buf);
                     List<Instruction> instructions = SyncUtils.decodeInstructions(buf);
 
-                    Data dataOld = peerBean().storage().get(new Number640(entry.getKey().locationDomainAndContentKey(), versionKey));
+                    Data dataOld = peerBean().storageLayer().get(new Number640(entry.getKey().locationDomainAndContentKey(), versionKey));
 
                     if (dataOld == null || !dataOld.hash().equals(hash)) {
                         continue;
@@ -262,7 +262,7 @@ public class SyncRPC extends DispatchHandler {
                     // TODO: don't copy data, toBytes does a copy!
                     DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = peerBean().storage().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    Enum<?> status = peerBean().storageLayer().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
@@ -271,8 +271,8 @@ public class SyncRPC extends DispatchHandler {
                     // copy
                 	LOG.debug("handle copy {}", entry.getKey());
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = peerBean().storage().put(entry.getKey(), entry.getValue(),
-                            message.getPublicKey(0), false, false);
+                    Enum<?> status = peerBean().storageLayer().put(entry.getKey(), entry.getValue(),
+                            message.publicKey(0), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
                     }
@@ -280,11 +280,11 @@ public class SyncRPC extends DispatchHandler {
                 }
                 if (peerBean().replicationStorage() != null) {
                     peerBean().replicationStorage().updateAndNotifyResponsibilities(
-                            entry.getKey().getLocationKey());
+                            entry.getKey().locationKey());
                 }
             }
         }
-        responseMessage.setKeyCollection(new KeyCollection(retVal));
+        responseMessage.keyCollection(new KeyCollection(retVal));
         responder.response(responseMessage);
     }
 }

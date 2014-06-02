@@ -95,7 +95,7 @@ public interface BaseFuture extends Cancel {
      *            The reason of failure
      * @return this
      */
-    BaseFuture setFailed(String reason);
+    BaseFuture failed(String reason);
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason based
@@ -105,7 +105,7 @@ public interface BaseFuture extends Cancel {
      *            The origin of failure
      * @return this
      */
-    BaseFuture setFailed(BaseFuture origin);
+    BaseFuture failed(BaseFuture origin);
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -117,7 +117,7 @@ public interface BaseFuture extends Cancel {
      *            The origin of failure
      * @return this
      */
-    BaseFuture setFailed(String reason, BaseFuture origin);
+    BaseFuture failed(String reason, BaseFuture origin);
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -127,7 +127,7 @@ public interface BaseFuture extends Cancel {
      *            The stack trace where the failure happened
      * @return this
      */
-    BaseFuture setFailed(final Throwable t);
+    BaseFuture failed(final Throwable t);
 
     /**
      * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
@@ -139,21 +139,21 @@ public interface BaseFuture extends Cancel {
      *            The stack trace where the failure happened
      * @return this
      */
-    BaseFuture setFailed(final String reason, final Throwable t);
+    BaseFuture failed(final String reason, final Throwable t);
 
     /**
      * The default failed reason is Unknown.
      * 
      * @return Returns the reason why a future failed.
      */
-    String getFailedReason();
+    String failedReason();
 
     /**
      * If the type is not OK, then something unexpected happened.
      * 
      * @return The fail type
      */
-    FutureType getType();
+    FutureType type();
 
     /**
      * Waits until all the listener finished. This may include the release of resources.

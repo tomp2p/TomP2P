@@ -31,9 +31,8 @@ import java.util.Collection;
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.SignatureCodec;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 /**
@@ -111,7 +110,7 @@ public class Data {
 			this.type = Type.LARGE;
 		}
 		this.buffer = buffer;
-		this.validFromMillis = Timings.currentTimeMillis();
+		this.validFromMillis = System.currentTimeMillis();
 	}
 
 	/**
@@ -141,7 +140,7 @@ public class Data {
 
 		this.length = length;
 		this.buffer = new DataBuffer();
-		this.validFromMillis = Timings.currentTimeMillis();
+		this.validFromMillis = System.currentTimeMillis();
 	}
 
 	public Data(final Object object) throws IOException {
@@ -178,7 +177,7 @@ public class Data {
 		} else {
 			this.type = Type.LARGE;
 		}
-		this.validFromMillis = Timings.currentTimeMillis();
+		this.validFromMillis = System.currentTimeMillis();
 	}
 
 	/**
@@ -344,7 +343,7 @@ public class Data {
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
 		if (signed) {
-			if(publicKey == PeerMaker.EMPTY_PUBLICKEY) {
+			if(publicKey == PeerBuilder.EMPTY_PUBLICKEY) {
 				this.publicKey = publicKey;	
 			}
 			signature = signatureFactory.signatureCodec();
@@ -468,7 +467,7 @@ public class Data {
 		return validFromMillis;
 	}
 	
-	Data validFromMillis(long validFromMillis) {
+	public Data validFromMillis(long validFromMillis) {
 	    this.validFromMillis = validFromMillis;
 	    return this;
     }
@@ -589,7 +588,7 @@ public class Data {
 		return this;
 	}
 
-	public Data setFlag1() {
+	public Data flag1() {
 		this.flag1 = true;
 		return this;
 	}
@@ -603,7 +602,7 @@ public class Data {
 		return this;
 	}
 
-	public Data setFlag2() {
+	public Data flag2() {
 		this.flag2 = true;
 		return this;
 	}
@@ -612,12 +611,12 @@ public class Data {
 		return publicKeyFlag;
 	}
 
-	public Data hasPublicKey(boolean publicKeyFlag) {
+	public Data publicKeyFlag(boolean publicKeyFlag) {
 		this.publicKeyFlag = publicKeyFlag;
 		return this;
 	}
 
-	public Data setPublicKey() {
+	public Data publicKeyFlag() {
 		this.publicKeyFlag = true;
 		return this;
 	}
@@ -631,7 +630,7 @@ public class Data {
 		return this;
 	}
 
-	public Data setMeta() {
+	public Data meta() {
 		this.meta = true;
 		return this;
 	}

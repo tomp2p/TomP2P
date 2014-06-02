@@ -148,20 +148,18 @@ public class PeerCreator {
 			LOG.debug("shutdown in progress...");
 		}
 		// de-register in dispatcher
-		connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().getPeerId());
+		connectionBean.dispatcher().removeIoHandler(peerBean().serverPeerAddress().peerId());
 		// shutdown running tasks for this peer
 		if (peerBean.maintenanceTask() != null) {
 			peerBean.maintenanceTask().shutdown();
 		}
-		if (peerBean.replicationExecutor() != null) {
-			peerBean.replicationExecutor().shutdown();
-		}
+		
 		// shutdown all children
 		if (!master) {
 			for (PeerCreator peerCreator : childConnections) {
 				peerCreator.shutdown();
 			}
-			return shutdownFuture().setDone();
+			return shutdownFuture().done();
 		}
 		// shutdown the timer
 		connectionBean.timer().shutdown();
@@ -193,7 +191,7 @@ public class PeerCreator {
 					        @Override
 					        public void operationComplete(final Future future) throws Exception {
 						        LOG.debug("shutdown done in client / bossGroup...");
-						        shutdownFuture().setDone();
+						        shutdownFuture().done();
 					        }
 				        });
 			}

@@ -28,5 +28,4 @@ public class VotingSchemeTracker implements EvaluatingSchemeTracker {
             throw new IllegalArgumentException("cannot evaluate, as no result provided");
         return rawData.values();
     }
-
 }

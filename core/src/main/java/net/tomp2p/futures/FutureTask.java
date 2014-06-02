@@ -62,9 +62,9 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
      * Finishes the future. Set the future to success if at least one of the
      * future was a success.
      */
-    public void setDone() {
+    public void done() {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return;
             }
             this.reason = message.toString();
@@ -80,38 +80,38 @@ public class FutureTask extends BaseFutureImpl<FutureTask> {
      * @param futureAsyncTask
      *            The future that has finished
      */
-    public void setProgress(FutureAsyncTask futureAsyncTask) {
+    public void progress(FutureAsyncTask futureAsyncTask) {
         synchronized (lock) {
             if (futureAsyncTask.isSuccess()) {
                 resultSuccess++;
-                PeerAddress peerAddress = futureAsyncTask.getRemotePeer();
+                PeerAddress peerAddress = futureAsyncTask.remotePeer();
                 Map<Number160, Data> tmp = dataMap.get(peerAddress);
                 if (tmp == null) {
                     tmp = new HashMap<Number160, Data>();
                     dataMap.put(peerAddress, tmp);
                 }
-                tmp.putAll(futureAsyncTask.getDataMap());
+                tmp.putAll(futureAsyncTask.dataMap());
                 message.append("[Ok] ");
             } else {
-                message.append("[").append(futureAsyncTask.getFailedReason()).append("] ");
+                message.append("[").append(futureAsyncTask.failedReason()).append("] ");
                 resultFailed++;
             }
         }
     }
 
-    public Map<PeerAddress, Map<Number160, Data>> getRawDataMap() {
+    public Map<PeerAddress, Map<Number160, Data>> rawDataMap() {
         synchronized (lock) {
             return dataMap;
         }
     }
 
-    public int getSuccessCount() {
+    public int successCount() {
         synchronized (lock) {
             return resultSuccess;
         }
     }
 
-    public int getFailureCount() {
+    public int failureCount() {
         synchronized (lock) {
             return resultFailed;
         }

@@ -42,21 +42,21 @@ public class PeerIPFilter implements PeerFilter {
 	@Override
 	public boolean reject(final PeerAddress peerAddress, Collection<PeerAddress> all, Number160 target) {
 
-		if (peerAddress.getInetAddress() instanceof Inet4Address) {
-			IPv4 ipv4 = IPv4.fromInetAddress(peerAddress.getInetAddress());
+		if (peerAddress.inetAddress() instanceof Inet4Address) {
+			IPv4 ipv4 = IPv4.fromInetAddress(peerAddress.inetAddress());
 			for (PeerAddress inMap : all) {
-				if (inMap.getInetAddress() instanceof Inet4Address) {
-					IPv4 ipv4Test = IPv4.fromInetAddress(inMap.getInetAddress());
+				if (inMap.inetAddress() instanceof Inet4Address) {
+					IPv4 ipv4Test = IPv4.fromInetAddress(inMap.inetAddress());
 					if (ipv4.maskWithNetworkMask(mask4).equals(ipv4Test.maskWithNetworkMask(mask4))) {
 						return true;
 					}
 				}
 			}
 		} else {
-			IPv6 ipv6 = IPv6.fromInetAddress(peerAddress.getInetAddress());
+			IPv6 ipv6 = IPv6.fromInetAddress(peerAddress.inetAddress());
 			for (PeerAddress inMap : all) {
-				if (inMap.getInetAddress() instanceof Inet6Address) {
-					IPv6 ipv6Test = IPv6.fromInetAddress(inMap.getInetAddress());
+				if (inMap.inetAddress() instanceof Inet6Address) {
+					IPv6 ipv6Test = IPv6.fromInetAddress(inMap.inetAddress());
 					if (ipv6.maskWithNetworkMask(mask6).equals(ipv6Test.maskWithNetworkMask(mask6))) {
 						return true;
 					}

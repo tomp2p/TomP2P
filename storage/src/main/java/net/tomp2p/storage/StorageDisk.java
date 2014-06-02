@@ -55,8 +55,10 @@ public class StorageDisk implements Storage {
     
     final private DB db;
     
+    final private int storageCheckIntervalMillis;
+    
     //for full control
-    public StorageDisk(DB db, Number160 peerId, File path, SignatureFactory signatureFactory) {
+    public StorageDisk(DB db, Number160 peerId, File path, SignatureFactory signatureFactory, int storageCheckIntervalMillis) {
     	this.db = db;
     	DataSerializer dataSerializer = new DataSerializer(path, signatureFactory);
     	this.dataMap = db.createTreeMap("dataMap_" + peerId.toString()).valueSerializer(dataSerializer).makeOrGet();
@@ -66,11 +68,13 @@ public class StorageDisk implements Storage {
     	this.protectedEntryMap = db.createTreeMap("protectedEntryMap_" + peerId.toString()).makeOrGet();
     	this.responsibilityMap = db.createTreeMap("responsibilityMap_" + peerId.toString()).makeOrGet();
     	this.responsibilityMapRev = db.createTreeMap("responsibilityMapRev_" + peerId.toString()).makeOrGet();
+    	this.storageCheckIntervalMillis = storageCheckIntervalMillis;
     }
     
     //set parameter to a reasonable default
     public StorageDisk(Number160 peerId, File path, SignatureFactory signatureFactory) {
-    	this(DBMaker.newFileDB(new File(path, "tomp2p")).transactionDisable().closeOnJvmShutdown().make(), peerId, path, signatureFactory);
+    	this(DBMaker.newFileDB(new File(path, "tomp2p")).transactionDisable().closeOnJvmShutdown().make(), 
+    			peerId, path, signatureFactory, 60 * 1000);
     }
     
     @Override
@@ -299,5 +303,10 @@ public class StorageDisk implements Storage {
             return false;
         }
         return !other.equals(publicKey);
+    }
+
+	@Override
+    public int storageCheckIntervalMillis() {
+	    return storageCheckIntervalMillis;
     }
 }

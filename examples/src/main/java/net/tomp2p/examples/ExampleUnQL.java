@@ -6,9 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.examples.Query.QueryType;
 import net.tomp2p.examples.Query.ValueType;
-import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;

@@ -21,11 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.utils.ConcurrentCacheMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import net.tomp2p.utils.ConcurrentCacheMap;
-import net.tomp2p.utils.Timings;
 
 /**
  * The default maintenance implementation.
@@ -135,14 +134,14 @@ public class DefaultMaintenance implements Maintenance {
                 final Map<Number160, PeerStatatistic> mapNonVerified = peerMapNonVerified.get(i);
                 final PeerStatatistic readyForMaintenance = next(mapNonVerified);
                 if (readyForMaintenance != null
-                        && !notInterestedAddresses.contains(readyForMaintenance.getPeerAddress())) {
-                    LOG.debug("check peer {} from the non verified map",readyForMaintenance.getPeerAddress());
+                        && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
+                    LOG.debug("check peer {} from the non verified map",readyForMaintenance.peerAddress());
                     return readyForMaintenance;
                 }
             }
             final PeerStatatistic readyForMaintenance = next(mapVerified);
             if (readyForMaintenance != null
-                    && !notInterestedAddresses.contains(readyForMaintenance.getPeerAddress())) {
+                    && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
                 return readyForMaintenance;
             }
         }
@@ -211,7 +210,7 @@ public class DefaultMaintenance implements Maintenance {
         	}
         }
         final int time = intervalSeconds[index];
-        final long lastTimeWhenChecked = Timings.currentTimeMillis() - peerStatatistic.getLastSeenOnline();
+        final long lastTimeWhenChecked = System.currentTimeMillis() - peerStatatistic.lastSeenOnline();
         return lastTimeWhenChecked > TimeUnit.SECONDS.toMillis(time);
     }
 

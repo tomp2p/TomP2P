@@ -32,7 +32,7 @@ import java.security.spec.X509EncodedKeySpec;
 
 import net.tomp2p.message.DSASignatureCodec;
 import net.tomp2p.message.SignatureCodec;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +89,7 @@ public class DSASignatureFactory implements SignatureFactory {
 		buf.skipBytes(2);
 
 		if (len <= 0) {
-			return PeerMaker.EMPTY_PUBLICKEY;
+			return PeerBuilder.EMPTY_PUBLICKEY;
 		}
 
 		byte me[] = new byte[len];

@@ -85,7 +85,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      *            Set to true if the communication should be TCP, default is UDP for routing
      * @return This class
      */
-    public DefaultConnectionConfiguration setForceTCP(final boolean forceTCP) {
+    public DefaultConnectionConfiguration forceTCP(final boolean forceTCP) {
         this.forceTCP = forceTCP;
         return this;
     }
@@ -95,7 +95,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public DefaultConnectionConfiguration setForceTCP() {
+    public DefaultConnectionConfiguration forceTCP() {
         this.forceTCP = true;
         return this;
     }
@@ -120,7 +120,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public DefaultConnectionConfiguration setForceUDP() {
+    public DefaultConnectionConfiguration forceUDP() {
         this.forceUDP = true;
         return this;
     }

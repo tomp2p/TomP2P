@@ -83,24 +83,24 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		this.peerConnection = peerConnection;
     }
 
-	public PeerAddress getRecipient() {
+	public PeerAddress recipient() {
 		return recipientAddress;
 	}
 
-	public Buffer getBuffer() {
+	public Buffer buffer() {
 		return buffer;
 	}
 
-	public SendDirectBuilder setBuffer(Buffer buffer) {
+	public SendDirectBuilder buffer(Buffer buffer) {
 		this.buffer = buffer;
 		return this;
 	}
 
-	public FuturePeerConnection getConnection() {
+	public FuturePeerConnection connection() {
 		return recipientConnection;
 	}
 
-	public SendDirectBuilder setConnection(FuturePeerConnection connection) {
+	public SendDirectBuilder connection(FuturePeerConnection connection) {
 		this.recipientConnection = connection;
 		return this;
 	}
@@ -114,20 +114,20 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	public Object getObject() {
+	public Object object() {
 		return object;
 	}
 
-	public SendDirectBuilder setObject(Object object) {
+	public SendDirectBuilder object(Object object) {
 		this.object = object;
 		return this;
 	}
 
-	public FutureChannelCreator getFutureChannelCreator() {
+	public FutureChannelCreator futureChannelCreator() {
 		return futureChannelCreator;
 	}
 
-	public SendDirectBuilder setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
+	public SendDirectBuilder futureChannelCreator(FutureChannelCreator futureChannelCreator) {
 		this.futureChannelCreator = futureChannelCreator;
 		return this;
 	}
@@ -137,11 +137,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return this;
 	}
 
-	public boolean streaming() {
+	public boolean isStreaming() {
 		return streaming;
 	}
 
-	public SendDirectBuilder setStreaming() {
+	public SendDirectBuilder streaming() {
 		this.streaming = true;
 		return this;
 	}
@@ -171,11 +171,11 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		}
 
 		if (futureChannelCreator == null) {
-			futureChannelCreator = peer.getConnectionBean().reservation()
+			futureChannelCreator = peer.connectionBean().reservation()
 			        .create(isForceUDP() ? 1 : 0, isForceUDP() ? 0 : 1);
 		}
 
-		final RequestHandler<FutureResponse> request = peer.getDirectDataRPC().sendInternal(remotePeer, this);
+		final RequestHandler<FutureResponse> request = peer.directDataRPC().sendInternal(remotePeer, this);
 		if (keepAlive) {
 			if (peerConnection != null) {
 				sendDirectRequest(request, peerConnection);
@@ -186,7 +186,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 						if (future.isSuccess()) {
 							sendDirectRequest(request, future.peerConnection());
 						} else {
-							request.futureResponse().setFailed("Could not acquire channel (1)", future);
+							request.futureResponse().failed("Could not acquire channel (1)", future);
 						}
 					}
 				});
@@ -200,7 +200,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 						final FutureResponse futureResponse = request.sendTCP(future.channelCreator());
 						Utils.addReleaseListener(future.channelCreator(), futureResponse);
 					} else {
-						request.futureResponse().setFailed("could not create channel", future);
+						request.futureResponse().failed("could not create channel", future);
 					}
 				}
 			});
@@ -215,10 +215,10 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					request.futureResponse().getRequest().setKeepAlive(true);
+					request.futureResponse().request().keepAlive(true);
 					request.sendTCP(peerConnection.channelCreator(), peerConnection);
 				} else {
-					request.futureResponse().setFailed("Could not acquire channel (2)", future);
+					request.futureResponse().failed("Could not acquire channel (2)", future);
 				}
 			}
 
@@ -229,12 +229,12 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 		return forceUDP;
 	}
 
-	public SendDirectBuilder setForceUDP(final boolean forceUDP) {
+	public SendDirectBuilder forceUDP(final boolean forceUDP) {
 		this.forceUDP = forceUDP;
 		return this;
 	}
 
-	public SendDirectBuilder setForceUDP() {
+	public SendDirectBuilder forceUDP() {
 		this.forceUDP = true;
 		return this;
 	}
@@ -317,7 +317,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 *            for routing
 	 * @return This class
 	 */
-	public SendDirectBuilder setForceTCP(final boolean forceTCP) {
+	public SendDirectBuilder forceTCP(final boolean forceTCP) {
 		this.forceTCP = forceTCP;
 		return this;
 	}
@@ -326,7 +326,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 * @return Set to true if the communication should be TCP, default is UDP
 	 *         for routing
 	 */
-	public SendDirectBuilder setForceTCP() {
+	public SendDirectBuilder forceTCP() {
 		this.forceTCP = true;
 		return this;
 	}
@@ -356,7 +356,7 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 */
 	public SendDirectBuilder sign(final boolean signMessage) {
 		if (signMessage) {
-			setSign();
+			sign();
 		} else {
 			this.keyPair = null;
 		}
@@ -367,8 +367,8 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 	 * @return Set to true if the message should be signed. For protecting an
 	 *         entry, this needs to be set to true.
 	 */
-	public SendDirectBuilder setSign() {
-		this.keyPair = peer.getPeerBean().keyPair();
+	public SendDirectBuilder sign() {
+		this.keyPair = peer.peerBean().keyPair();
 		return this;
 	}
 

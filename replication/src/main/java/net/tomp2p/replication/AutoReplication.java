@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.ReplicationFactor;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -47,7 +46,7 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 	
 	@Override
     public void init(Peer peer) {
-		this.peerMap = peer.getPeerBean().peerMap();
+		this.peerMap = peer.peerBean().peerMap();
 		peerMap.addPeerMapChangeListener(this);
     }
 	
@@ -60,7 +59,7 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 	@Override
 	public void peerRemoved(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
 		synchronized (removedPeers) {
-			removedPeers.add(peerAddress.getPeerId());
+			removedPeers.add(peerAddress.peerId());
 		}
 	}
 

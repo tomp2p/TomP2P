@@ -80,7 +80,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
         // the futures array may have null entries, so count first.
         nrFutures = forks.length();
         if (this.nrFutures <= 0) {
-            setFailed("We have no futures: " + nrFutures);
+            failed("We have no futures: " + nrFutures);
         } else {
             join();
         }
@@ -112,7 +112,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
                     // and in this case, we failed otherwise, in evaluate,
                     // successCounter would finish first
                     if (++counter >= nrFutures) {
-                        notifyNow = setFinish(FutureType.FAILED);
+                        notifyNow = finish(FutureType.FAILED);
                     }
                 }
                 if (notifyNow) {
@@ -144,9 +144,9 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
             forksCopy.add(finished);
             forks.set(index, (K) null);
             if (finished.isSuccess() && ++successCounter >= nrFinishFuturesSuccess) {
-                notifyNow = setFinish(FutureType.OK);
+                notifyNow = finish(FutureType.OK);
             } else if (++counter >= nrFutures) {
-                notifyNow = setFinish(FutureType.FAILED);
+                notifyNow = finish(FutureType.FAILED);
             }
         }
         if (notifyNow) {
@@ -176,8 +176,8 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      *            The type of the future, if it has failed, its ok, or it has been canceled
      * @return True if other listener should get notified
      */
-    private boolean setFinish(final FutureType type) {
-        if (!setCompletedAndNotify()) {
+    private boolean finish(final FutureType type) {
+        if (!completedAndNotify()) {
             return false;
         }
         this.type = type;
@@ -185,12 +185,12 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
     }
 
     @Override
-    public String getFailedReason() {
+    public String failedReason() {
         synchronized (lock) {
             StringBuilder sb = new StringBuilder("FFJ:").append(reason);
             sb.append(", type:").append(type);
-            for (K k : getCompleted()) {
-                sb.append(",").append(k.getFailedReason());
+            for (K k : completed()) {
+                sb.append(",").append(k.failedReason());
             }
             return sb.toString();
         }
@@ -202,18 +202,18 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      * 
      * @return The last evaluated future.
      */
-    public K getLast() {
+    public K last() {
         synchronized (lock) {
             return forksCopy.get(forksCopy.size() - 1);
         }
     }
 
     /**
-     * Returns a list of evaluated futures. The last completed future is the same as retrieved with {@link #getLast()}.
+     * Returns a list of evaluated futures. The last completed future is the same as retrieved with {@link #last()}.
      * 
      * @return A list of evaluated futures.
      */
-    public List<K> getCompleted() {
+    public List<K> completed() {
         synchronized (lock) {
             return forksCopy;
         }
@@ -224,7 +224,7 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      * 
      * @return The number of successful finished futures
      */
-    public int getSuccessCounter() {
+    public int successCounter() {
         synchronized (lock) {
             return successCounter;
         }

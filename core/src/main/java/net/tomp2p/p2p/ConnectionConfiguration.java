@@ -53,11 +53,11 @@ public class ConnectionConfiguration {
 
     private boolean forceStorageUDP = false;
 
-    public void setDiscoverTimeoutSec(int discoverTimeoutSec) {
+    public void discoverTimeoutSec(int discoverTimeoutSec) {
         this.discoverTimeoutSec = discoverTimeoutSec;
     }
 
-    public int getDiscoverTimeoutSec() {
+    public int discoverTimeoutSec() {
         return discoverTimeoutSec;
     }
 
@@ -73,7 +73,7 @@ public class ConnectionConfiguration {
      *            If set to true, peer is assumed to be behind firewall and is
      *            unreable.
      */
-    public void setBehindFirewall(boolean behindFirewall) {
+    public void behindFirewall(boolean behindFirewall) {
         this.behindFirewall = behindFirewall;
     }
 
@@ -81,7 +81,7 @@ public class ConnectionConfiguration {
         return behindFirewall;
     }
 
-    public int getTrackerTimoutSeconds() {
+    public int trackerTimoutSeconds() {
         return trackerTimoutSeconds;
     }
 
@@ -93,7 +93,7 @@ public class ConnectionConfiguration {
         return disableBind;
     }
 
-    public void setDisableBind(boolean disableBind) {
+    public void disableBind(boolean disableBind) {
         this.disableBind = disableBind;
     }
 
@@ -101,47 +101,47 @@ public class ConnectionConfiguration {
         return limitTracker;
     }
 
-    public void setLimitTracker(boolean limitTracker) {
+    public void limitTracker(boolean limitTracker) {
         this.limitTracker = limitTracker;
     }
 
-    public int getIdleTCPMillis() {
+    public int idleTCPMillis() {
         return idleTCPMillis;
     }
 
-    public void setIdleTCPMillis(int idleTCPMillis) {
+    public void idleTCPMillis(int idleTCPMillis) {
         this.idleTCPMillis = idleTCPMillis;
     }
 
-    public int getIdleUDPMillis() {
+    public int idleUDPMillis() {
         return idleUDPMillis;
     }
 
-    public void setIdleUDPMillis(int idleUDPMillis) {
+    public void idleUDPMillis(int idleUDPMillis) {
         this.idleUDPMillis = idleUDPMillis;
     }
 
-    public int getConnectTimeoutMillis() {
+    public int connectTimeoutMillis() {
         return connectTimeouMillis;
     }
 
-    public void setConnectTimeoutMillis(int connectTimeouMillist) {
+    public void connectTimeoutMillis(int connectTimeouMillist) {
         this.connectTimeouMillis = connectTimeouMillist;
     }
 
-    public void setMaxOpenConnection(int maxOpenConnection) {
+    public void maxOpenConnection(int maxOpenConnection) {
         this.maxOpenConnection = maxOpenConnection;
     }
 
-    public int getMaxOpenConnection() {
+    public int maxOpenConnection() {
         return maxOpenConnection;
     }
 
-    public int getMaxCreating() {
+    public int maxCreating() {
         return maxCreating;
     }
 
-    public void setMaxCreating(int maxCreating) {
+    public void maxCreating(int maxCreating) {
         this.maxCreating = maxCreating;
     }
 
@@ -149,7 +149,7 @@ public class ConnectionConfiguration {
         return forceTrackerTCP;
     }
 
-    public void setForceTrackerTCP(boolean forceTrackerTCP) {
+    public void forceTrackerTCP(boolean forceTrackerTCP) {
         this.forceTrackerTCP = forceTrackerTCP;
     }
 
@@ -157,7 +157,7 @@ public class ConnectionConfiguration {
         return forceStorageUDP;
     }
 
-    public void setForceStorageUDP(boolean forceStorageUDP) {
+    public void forceStorageUDP(boolean forceStorageUDP) {
         this.forceStorageUDP = forceStorageUDP;
     }
 }

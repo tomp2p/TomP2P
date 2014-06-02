@@ -56,11 +56,11 @@ public class MaintenanceTask implements Runnable {
                 if(peerStatatistic == null) {
                     continue;
                 }
-                BaseFuture future = peer.ping().setPeerAddress(peerStatatistic.getPeerAddress()).start();
-                LOG.debug("maintenance ping from {} to {}", peer.getPeerAddress(), peerStatatistic.getPeerAddress());
+                BaseFuture future = peer.ping().peerAddress(peerStatatistic.peerAddress()).start();
+                LOG.debug("maintenance ping from {} to {}", peer.peerAddress(), peerStatatistic.peerAddress());
                 
                 peer.notifyAutomaticFutures(future);
-                runningFutures.put(future, peerStatatistic.getPeerAddress());
+                runningFutures.put(future, peerStatatistic.peerAddress());
                 COUNTER.incrementAndGet();
                 future.addListener(new BaseFutureAdapter<BaseFuture>() {
                     @Override
@@ -90,7 +90,7 @@ public class MaintenanceTask implements Runnable {
                     @Override
                     public void operationComplete(BaseFuture future) throws Exception {
                         if (counter.incrementAndGet() == max) {
-                            futureShutdown.setDone();
+                            futureShutdown.done();
                         }
                     }
                 });
@@ -99,11 +99,11 @@ public class MaintenanceTask implements Runnable {
         return futureShutdown;
     }
 
-    public int getIntervalMillis() {
+    public int intervalMillis() {
         return intervalMillis;
     }
 
-    public void setIntervalMillis(int intervalMillis) {
+    public void intervalMillis(int intervalMillis) {
         this.intervalMillis = intervalMillis;
     }
     

@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.utils.Pair;
 
 import org.junit.After;
@@ -106,7 +106,7 @@ public class TestReservation {
 		final int conn = 50;
 		final int tcpMax = 1000;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.maxPermitsTCP(tcpMax);
 			c.pipelineFilter(new MyPipeLine());
 			Reservation r = new Reservation(workerGroup, c);
@@ -164,7 +164,7 @@ public class TestReservation {
 		final int conn = 50;
 		final int udpMax = 1000;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsUDP(udpMax);
 			Reservation r = new Reservation(workerGroup, c);
@@ -221,7 +221,7 @@ public class TestReservation {
 		final int conn = 5;
 		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(workerGroup, c);
@@ -279,7 +279,7 @@ public class TestReservation {
 		final int conn = 5;
 		final int tcpMax = 500;
 		for (int i = 0; i < round; i++) {
-			ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
 			c.pipelineFilter(new MyPipeLine());
 			c.maxPermitsTCP(tcpMax);
 			Reservation r = new Reservation(ev, c);

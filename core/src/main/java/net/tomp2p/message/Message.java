@@ -158,7 +158,7 @@ public class Message {
      * 
      * @return message Id
      */
-    public int getMessageId() {
+    public int messageId() {
         return messageId;
     }
 
@@ -169,7 +169,7 @@ public class Message {
      *            The message Id
      * @return This class
      */
-    public Message setMessageId(final int messageId) {
+    public Message messageId(final int messageId) {
         this.messageId = messageId;
         return this;
     }
@@ -180,7 +180,7 @@ public class Message {
      * 
      * @return The application version that uses this P2P framework
      */
-    public int getVersion() {
+    public int version() {
         return version;
     }
 
@@ -191,7 +191,7 @@ public class Message {
      *            The 24bit version
      * @return This class
      */
-    public Message setVersion(final int version) {
+    public Message version(final int version) {
         this.version = version;
         return this;
     }
@@ -201,7 +201,7 @@ public class Message {
      * 
      * @return Type of the message
      */
-    public Type getType() {
+    public Type type() {
         return type;
     }
 
@@ -212,7 +212,7 @@ public class Message {
      *            Type of the message
      * @return This class
      */
-    public Message setType(final Type type) {
+    public Message type(final Type type) {
         this.type = type;
         return this;
     }
@@ -222,7 +222,7 @@ public class Message {
      * 
      * @return Command
      */
-    public byte getCommand() {
+    public byte command() {
         return command;
     }
 
@@ -233,7 +233,7 @@ public class Message {
      *            Command
      * @return This class
      */
-    public Message setCommand(final byte command) {
+    public Message command(final byte command) {
         this.command = command;
         return this;
     }
@@ -243,7 +243,7 @@ public class Message {
      * 
      * @return The ID of the sender.
      */
-    public PeerAddress getSender() {
+    public PeerAddress sender() {
         return sender;
     }
 
@@ -254,7 +254,7 @@ public class Message {
      *            The ID of the sender.
      * @return This class
      */
-    public Message setSender(final PeerAddress sender) {
+    public Message sender(final PeerAddress sender) {
         this.sender = sender;
         return this;
     }
@@ -264,7 +264,7 @@ public class Message {
      * 
      * @return The ID of the recipient
      */
-    public PeerAddress getRecipient() {
+    public PeerAddress recipient() {
         return recipient;
     }
 
@@ -275,7 +275,7 @@ public class Message {
      *            The ID of the recipient
      * @return This class
      */
-    public Message setRecipient(final PeerAddress recipient) {
+    public Message recipient(final PeerAddress recipient) {
         this.recipient = recipient;
         return this;
     }
@@ -285,7 +285,7 @@ public class Message {
      * 
      * @return Content type 1
      */
-    public Content[] getContentTypes() {
+    public Content[] contentTypes() {
         return contentTypes;
     }
 
@@ -297,7 +297,7 @@ public class Message {
      *            The content type to set
      * @return This class
      */
-    public Message setContentType(final Content contentType) {
+    public Message contentType(final Content contentType) {
         for (int i = 0, reference = 0; i < CONTENT_TYPE_LENGTH; i++) {
             if (contentTypes[i] == null) {
                 if (contentType == Content.PUBLIC_KEY_SIGNATURE && i != 0) {
@@ -365,7 +365,7 @@ public class Message {
      *            The content type
      * @return This class
      */
-    public Message setContentType(final int index, final Content contentType) {
+    public Message contentType(final int index, final Content contentType) {
         contentTypes[index] = contentType;
         return this;
     }
@@ -377,7 +377,7 @@ public class Message {
      *            The content types that were decoded.
      * @return This class
      */
-    public Message setContentTypes(final Content[] contentTypes) {
+    public Message contentTypes(final Content[] contentTypes) {
         this.contentTypes = contentTypes;
         return this;
     }
@@ -458,7 +458,7 @@ public class Message {
      *            The option from the last byte of the header
      * @return This class
      */
-    public Message setOptions(final int options) {
+    public Message options(final int options) {
         this.options = options;
         return this;
     }
@@ -466,7 +466,7 @@ public class Message {
     /**
      * @return The option from the last byte of the header
      */
-    public int getOptions() {
+    public int options() {
         return options;
     }
 
@@ -477,7 +477,7 @@ public class Message {
      *            other end has an idle handler that will close the connection.
      * @return This class
      */
-    public Message setKeepAlive(final boolean isKeepAlive) {
+    public Message keepAlive(final boolean isKeepAlive) {
         if (isKeepAlive) {
             options |= 1;
         } else {
@@ -493,7 +493,7 @@ public class Message {
         return (options & 1) > 0;
     }
     
-    public Message setStreaming() {
+    public Message streaming() {
         return streaming(true);
     }
 
@@ -512,9 +512,9 @@ public class Message {
 
     // Header data ends here *********************************** static payload starts now
 
-    public Message setKey(final Number160 key) {
+    public Message key(final Number160 key) {
         if (!presetContentTypes) {
-            setContentType(Content.KEY);
+            contentType(Content.KEY);
         }
         if (keyList == null) {
             keyList = new ArrayList<Number160>(1);
@@ -523,23 +523,23 @@ public class Message {
         return this;
     }
 
-    public List<Number160> getKeyList() {
+    public List<Number160> keyList() {
         if (keyList == null) {
             return Collections.emptyList();
         }
         return keyList;
     }
 
-    public Number160 getKey(final int index) {
+    public Number160 key(final int index) {
         if (keyList == null || index > keyList.size() - 1) {
             return null;
         }
         return keyList.get(index);
     }
 
-    public Message setBloomFilter(final SimpleBloomFilter<Number160> bloomFilter) {
+    public Message bloomFilter(final SimpleBloomFilter<Number160> bloomFilter) {
         if (!presetContentTypes) {
-            setContentType(Content.BLOOM_FILTER);
+            contentType(Content.BLOOM_FILTER);
         }
         if (bloomFilterList == null) {
             bloomFilterList = new ArrayList<SimpleBloomFilter<Number160>>(1);
@@ -548,32 +548,32 @@ public class Message {
         return this;
     }
 
-    public List<SimpleBloomFilter<Number160>> getBloomFilterList() {
+    public List<SimpleBloomFilter<Number160>> bloomFilterList() {
         if (bloomFilterList == null) {
             return Collections.emptyList();
         }
         return bloomFilterList;
     }
 
-    public SimpleBloomFilter<Number160> getBloomFilter(final int index) {
+    public SimpleBloomFilter<Number160> bloomFilter(final int index) {
         if (bloomFilterList == null || index > bloomFilterList.size() - 1) {
             return null;
         }
         return bloomFilterList.get(index);
     }
 
-    public Message setPublicKeyAndSign(KeyPair keyPair) {
+    public Message publicKeyAndSign(KeyPair keyPair) {
         if (!presetContentTypes) {
-            setContentType(Content.PUBLIC_KEY_SIGNATURE);
+            contentType(Content.PUBLIC_KEY_SIGNATURE);
         }
-        setPublicKey0(keyPair.getPublic());
+        publicKey0(keyPair.getPublic());
         this.privateKey = keyPair.getPrivate();
         return this;
     }
 
-    public Message setInteger(final int integer) {
+    public Message intValue(final int integer) {
         if (!presetContentTypes) {
-            setContentType(Content.INTEGER);
+            contentType(Content.INTEGER);
         }
         if (integerList == null) {
             integerList = new ArrayList<Integer>(1);
@@ -582,23 +582,23 @@ public class Message {
         return this;
     }
 
-    public List<Integer> getIntegerList() {
+    public List<Integer> intList() {
         if (integerList == null) {
             return Collections.emptyList();
         }
         return integerList;
     }
 
-    public Integer getInteger(final int index) {
+    public Integer intAt(final int index) {
         if (integerList == null || index > integerList.size() - 1) {
             return null;
         }
         return integerList.get(index);
     }
 
-    public Message setLong(long long0) {
+    public Message longValue(long long0) {
         if (!presetContentTypes) {
-            setContentType(Content.LONG);
+            contentType(Content.LONG);
         }
         if (longList == null) {
             longList = new ArrayList<Long>(1);
@@ -607,23 +607,23 @@ public class Message {
         return this;
     }
 
-    public List<Long> getLongList() {
+    public List<Long> longList() {
         if (longList == null) {
             return Collections.emptyList();
         }
         return longList;
     }
 
-    public Long getLong(int index) {
+    public Long longAt(int index) {
         if (longList == null || index > longList.size() - 1) {
             return null;
         }
         return longList.get(index);
     }
 
-    public Message setNeighborsSet(final NeighborSet neighborSet) {
+    public Message neighborsSet(final NeighborSet neighborSet) {
         if (!presetContentTypes) {
-            setContentType(Content.SET_NEIGHBORS);
+            contentType(Content.SET_NEIGHBORS);
         }
         if (neighborsList == null) {
             neighborsList = new ArrayList<NeighborSet>(1);
@@ -632,14 +632,14 @@ public class Message {
         return this;
     }
 
-    public List<NeighborSet> getNeighborsSetList() {
+    public List<NeighborSet> neighborsSetList() {
         if (neighborsList == null) {
             return Collections.emptyList();
         }
         return neighborsList;
     }
 
-    public NeighborSet getNeighborsSet(final int index) {
+    public NeighborSet neighborsSet(final int index) {
         if (neighborsList == null || index > neighborsList.size() - 1) {
             return null;
         }
@@ -648,7 +648,7 @@ public class Message {
 
     public Message setDataMap(final DataMap dataMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY640_DATA);
+            contentType(Content.MAP_KEY640_DATA);
         }
         if (dataMapList == null) {
             dataMapList = new ArrayList<DataMap>(1);
@@ -657,23 +657,23 @@ public class Message {
         return this;
     }
 
-    public List<DataMap> getDataMapList() {
+    public List<DataMap> dataMapList() {
         if (dataMapList == null) {
             return Collections.emptyList();
         }
         return dataMapList;
     }
 
-    public DataMap getDataMap(final int index) {
+    public DataMap dataMap(final int index) {
         if (dataMapList == null || index > dataMapList.size() - 1) {
             return null;
         }
         return dataMapList.get(index);
     }
 
-    public Message setKeyCollection(final KeyCollection key) {
+    public Message keyCollection(final KeyCollection key) {
         if (!presetContentTypes) {
-            setContentType(Content.SET_KEY640);
+            contentType(Content.SET_KEY640);
         }
         if (keyCollectionList == null) {
             keyCollectionList = new ArrayList<KeyCollection>(1);
@@ -682,14 +682,14 @@ public class Message {
         return this;
     }
 
-    public List<KeyCollection> getKeyCollectionList() {
+    public List<KeyCollection> keyCollectionList() {
         if (keyCollectionList == null) {
             return Collections.emptyList();
         }
         return keyCollectionList;
     }
 
-    public KeyCollection getKeyCollection(final int index) {
+    public KeyCollection keyCollection(final int index) {
         if (keyCollectionList == null || index > keyCollectionList.size() - 1) {
             return null;
         }
@@ -697,9 +697,9 @@ public class Message {
     }
 
     
-    public Message setKeyMap640Keys(final KeyMap640Keys keyMap) {
+    public Message keyMap640Keys(final KeyMap640Keys keyMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY640_KEYS);
+            contentType(Content.MAP_KEY640_KEYS);
         }
         if (keyMap640ListKeys == null) {
             keyMap640ListKeys = new ArrayList<KeyMap640Keys>(1);
@@ -708,23 +708,23 @@ public class Message {
         return this;
     }
 
-    public List<KeyMap640Keys> getKeyMapKeys640List() {
+    public List<KeyMap640Keys> keyMapKeys640List() {
         if (keyMap640ListKeys == null) {
             return Collections.emptyList();
         }
         return keyMap640ListKeys;
     }
 
-    public KeyMap640Keys getKeyMap640Keys(final int index) {
+    public KeyMap640Keys keyMap640Keys(final int index) {
         if (keyMap640ListKeys == null || index > keyMap640ListKeys.size() - 1) {
             return null;
         }
         return keyMap640ListKeys.get(index);
     }
     
-    public Message setKeyMapByte(final KeyMapByte keyMap) {
+    public Message keyMapByte(final KeyMapByte keyMap) {
         if (!presetContentTypes) {
-            setContentType(Content.MAP_KEY640_BYTE);
+            contentType(Content.MAP_KEY640_BYTE);
         }
         if (keyMapByteList == null) {
             keyMapByteList = new ArrayList<KeyMapByte>(1);
@@ -733,23 +733,23 @@ public class Message {
         return this;
     }
 
-    public List<KeyMapByte> getKeyMapByteList() {
+    public List<KeyMapByte> keyMapByteList() {
         if (keyMapByteList == null) {
             return Collections.emptyList();
         }
         return keyMapByteList;
     }
 
-    public KeyMapByte getKeyMapByte(final int index) {
+    public KeyMapByte keyMapByte(final int index) {
         if (keyMapByteList == null || index > keyMapByteList.size() - 1) {
             return null;
         }
         return keyMapByteList.get(index);
     }
 
-    public Message setPublicKey(final PublicKey publicKey) {
+    public Message publicKey(final PublicKey publicKey) {
     	if (!presetContentTypes) {
-            setContentType(Content.PUBLIC_KEY);
+            contentType(Content.PUBLIC_KEY);
         }
     	if(publicKeyList == null) {
     		publicKeyList = new ArrayList<PublicKey>(1);
@@ -758,7 +758,7 @@ public class Message {
         return this;
     }
     
-    private Message setPublicKey0(final PublicKey publicKey) {
+    private Message publicKey0(final PublicKey publicKey) {
     	if(publicKeyList == null) {
     		publicKeyList = new ArrayList<PublicKey>(1);
     	}
@@ -766,23 +766,23 @@ public class Message {
         return this;
     }
 
-    public List<PublicKey> getPublicKeyList() {
+    public List<PublicKey> publicKeyList() {
     	if (publicKeyList == null) {
             return Collections.emptyList();
         }
         return publicKeyList;
     }
     
-    public PublicKey getPublicKey(final int index) {
+    public PublicKey publicKey(final int index) {
         if (publicKeyList == null || index > publicKeyList.size() - 1) {
             return null;
         }
         return publicKeyList.get(index);
     }
     
-    public Message setPeerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
+    public Message peerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
     	if (!presetContentTypes) {
-            setContentType(Content.SET_PEER_SOCKET);
+            contentType(Content.SET_PEER_SOCKET);
         }
     	if(this.peerSocketAddresses == null) {
     		this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
@@ -791,7 +791,7 @@ public class Message {
         return this;
     }
 
-    public List<PeerSocketAddress> getPeerSocketAddresses() {
+    public List<PeerSocketAddress> peerSocketAddresses() {
     	if (peerSocketAddresses == null) {
             return Collections.emptyList();
         }
@@ -802,13 +802,13 @@ public class Message {
         return publicKey;
     }*/
 
-    public PrivateKey getPrivateKey() {
+    public PrivateKey privateKey() {
         return privateKey;
     }
 
-    public Message setBuffer(final Buffer byteBuf) {
+    public Message buffer(final Buffer byteBuf) {
         if (!presetContentTypes) {
-            setContentType(Content.BYTE_BUFFER);
+            contentType(Content.BYTE_BUFFER);
         }
         if (bufferList == null) {
             bufferList = new ArrayList<Buffer>(1);
@@ -817,23 +817,23 @@ public class Message {
         return this;
     }
 
-    public List<Buffer> getBufferList() {
+    public List<Buffer> bufferList() {
         if (bufferList == null) {
             return Collections.emptyList();
         }
         return bufferList;
     }
 
-    public Buffer getBuffer(final int index) {
+    public Buffer buffer(final int index) {
         if (bufferList == null || index > bufferList.size() - 1) {
             return null;
         }
         return bufferList.get(index);
     }
     
-    public Message setTrackerData(final TrackerData trackerData) {
+    public Message trackerData(final TrackerData trackerData) {
         if (!presetContentTypes) {
-            setContentType(Content.SET_TRACKER_DATA);
+            contentType(Content.SET_TRACKER_DATA);
         }
         if (trackerDataList == null) {
             trackerDataList = new ArrayList<TrackerData>(1);
@@ -842,14 +842,14 @@ public class Message {
         return this;
     }
 
-    public List<TrackerData> getTrackerDataList() {
+    public List<TrackerData> trackerDataList() {
         if (trackerDataList == null) {
             return Collections.emptyList();
         }
         return trackerDataList;
     }
 
-    public TrackerData getTrackerData(final int index) {
+    public TrackerData trackerData(final int index) {
         if (trackerDataList == null || index > trackerDataList.size() - 1) {
             return null;
         }
@@ -870,7 +870,7 @@ public class Message {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("msgid=");
-        return sb.append(getMessageId()).append(",t=").append(type.toString()).
+        return sb.append(messageId()).append(",t=").append(type.toString()).
         	append(",c=").append(RPC.Commands.find(command).toString()).append(",").append(isUdp()?"udp":"tcp").
         	append(",s=").append(sender).append(",r=").append(recipient).toString();        
     }
@@ -1002,6 +1002,4 @@ public class Message {
     public boolean isDone() {
         return done;
     }
-
-	
 }

@@ -36,11 +36,11 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
     private boolean isForceRoutingOnlyToSelf;
     private boolean isRoutingToOthers;
 
-    public Number160 getLocationKey() {
+    public Number160 locationKey() {
         return locationKey;
     }
 
-    public Number160 getDomainKey() {
+    public Number160 domainKey() {
         return domainKey;
     }
 
@@ -49,15 +49,15 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
      * 
      * @return
      */
-    public int getMaxDirectHits() {
+    public int maxDirectHits() {
         return maxDirectHits;
     }
 
-    public void setMaxDirectHits(int maxDirectHits) {
+    public void maxDirectHits(int maxDirectHits) {
         this.maxDirectHits = maxDirectHits;
     }
 
-    public int getMaxNoNewInfo() {
+    public int maxNoNewInfo() {
         return maxNoNewInfo;
     }
 
@@ -65,27 +65,27 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         this.maxNoNewInfo = maxNoNewInfo;
     }
 
-    public int getMaxFailures() {
+    public int maxFailures() {
         return maxFailures;
     }
 
-    public void setMaxFailures(int maxFailures) {
+    public void maxFailures(int maxFailures) {
         this.maxFailures = maxFailures;
     }
 
-    public int getMaxSuccess() {
+    public int maxSuccess() {
         return maxSuccess;
     }
 
-    public void setMaxSuccess(int maxSuccess) {
+    public void maxSuccess(int maxSuccess) {
         this.maxSuccess = maxSuccess;
     }
 
-    public int getParallel() {
+    public int parallel() {
         return parallel;
     }
 
-    public void setParallel(int parallel) {
+    public void parallel(int parallel) {
         this.parallel = parallel;
     }
 
@@ -93,7 +93,7 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isBootstrap;
     }
 
-    public void setBootstrap(boolean isBootstrap) {
+    public void bootstrap(boolean isBootstrap) {
         this.isBootstrap = isBootstrap;
     }
 
@@ -101,15 +101,15 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isForceRoutingOnlyToSelf;
     }
 
-    public void setForceRoutingOnlyToSelf(boolean isForceRoutingOnlyToSelf) {
+    public void forceRoutingOnlyToSelf(boolean isForceRoutingOnlyToSelf) {
         this.isForceRoutingOnlyToSelf = isForceRoutingOnlyToSelf;
     }
 
-    public void setLocationKey(Number160 locationKey) {
+    public void locationKey(Number160 locationKey) {
         this.locationKey = locationKey;
     }
     
-    public void setDomainKey(Number160 domainKey) {
+    public void domainKey(Number160 domainKey) {
         this.domainKey = domainKey;
     }
     
@@ -126,14 +126,14 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
      * @return The search values for the neighbor request, or null if no content key specified
      */
     public SearchValues searchValues() {
-        if (getContentKey() != null) {
-        	return new SearchValues(locationKey, domainKey, getContentKey());
+        if (contentKey() != null) {
+        	return new SearchValues(locationKey, domainKey, contentKey());
         } else if(from !=null && to!=null) {
         	return new SearchValues(locationKey, domainKey, from, to);
-        } else if (getContentBloomFilter() == null && getKeyBloomFilter() != null) {
-            return new SearchValues(locationKey, domainKey, getKeyBloomFilter());
-        } else if (getContentBloomFilter() != null && getKeyBloomFilter() != null) {
-            return new SearchValues(locationKey, domainKey, getKeyBloomFilter(), getContentBloomFilter());
+        } else if (contentBloomFilter() == null && keyBloomFilter() != null) {
+            return new SearchValues(locationKey, domainKey, keyBloomFilter());
+        } else if (contentBloomFilter() != null && keyBloomFilter() != null) {
+            return new SearchValues(locationKey, domainKey, keyBloomFilter(), contentBloomFilter());
         } else {
             return new SearchValues(locationKey, domainKey);
         }
@@ -148,42 +148,42 @@ public class RoutingBuilder extends DefaultConnectionConfiguration {
         return isRoutingToOthers;
     }
 
-    public Number160 getContentKey() {
+    public Number160 contentKey() {
         return contentKey;
     }
 
-    public void setContentKey(Number160 contentKey) {
+    public void contentKey(Number160 contentKey) {
         this.contentKey = contentKey;
     }
 
-    public SimpleBloomFilter<Number160> getContentBloomFilter() {
+    public SimpleBloomFilter<Number160> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public void setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public void contentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
     }
 
-    public SimpleBloomFilter<Number160> getKeyBloomFilter() {
+    public SimpleBloomFilter<Number160> keyBloomFilter() {
         return keyBloomFilter;
     }
 
-    public void setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public void keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
     }
 
     public RoutingMechanism createRoutingMechanism(FutureRouting futureRouting) {
-        final FutureResponse[] futureResponses = new FutureResponse[getParallel()];
+        final FutureResponse[] futureResponses = new FutureResponse[parallel()];
         RoutingMechanism routingMechanism = new RoutingMechanism(
                 new AtomicReferenceArray<FutureResponse>(futureResponses), futureRouting, peerFilters);
-        routingMechanism.setMaxDirectHits(getMaxDirectHits());
-        routingMechanism.setMaxFailures(getMaxFailures());
-        routingMechanism.setMaxNoNewInfo(getMaxNoNewInfo());
-        routingMechanism.setMaxSucess(getMaxSuccess());
+        routingMechanism.maxDirectHits(maxDirectHits());
+        routingMechanism.maxFailures(maxFailures());
+        routingMechanism.maxNoNewInfo(maxNoNewInfo());
+        routingMechanism.maxSucess(maxSuccess());
         return routingMechanism;
     }
 
-	public void setRange(Number640 from, Number640 to) {
+	public void range(Number640 from, Number640 to) {
 	    this.from = from;
 	    this.to = to;
     }

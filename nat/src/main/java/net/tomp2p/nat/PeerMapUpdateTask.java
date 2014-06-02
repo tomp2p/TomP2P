@@ -51,7 +51,7 @@ class PeerMapUpdateTask extends TimerTask {
 
     @Override
     public void run() {
-        if (relayRPC.peer().isShutdown() || !relayRPC.peer().getPeerAddress().isRelayed()) {
+        if (relayRPC.peer().isShutdown() || !relayRPC.peer().peerAddress().isRelayed()) {
             this.cancel();
             return;
         }
@@ -61,13 +61,13 @@ class PeerMapUpdateTask extends TimerTask {
         fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
             public void operationComplete(FutureBootstrap future) throws Exception {
                 if (future.isSuccess()) {
-                    List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().getPeerBean().peerMap().peerMapVerified();
+                    List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
                     for (final PeerConnection pc : distributedRelay.relayAddresses()) {
                         final FutureResponse fr = relayRPC.sendPeerMap(pc.remotePeer(), peerMapVerified, pc);
                         fr.addListener(new BaseFutureAdapter<BaseFuture>() {
                             public void operationComplete(BaseFuture future) throws Exception {
                                 if (future.isFailed()) {
-                                    LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(), future.getFailedReason());
+                                    LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(), future.failedReason());
                                 } else {
                                     LOG.trace("Updated peer map on relay {}", pc.remotePeer());
                                 }

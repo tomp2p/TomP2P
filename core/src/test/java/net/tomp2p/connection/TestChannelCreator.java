@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.utils.Pair;
 
 import org.junit.After;
@@ -143,7 +143,7 @@ public class TestChannelCreator {
         final int timeout = 4000;
         for (int j = 0; j < rounds; j++) {
 
-            ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+            ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
             c.pipelineFilter(new MyPipeLine());
             
             final ChannelCreator channelCreator2 = new ChannelCreator(ev, new FutureDone<Void>(), 0,
@@ -199,7 +199,7 @@ public class TestChannelCreator {
 
         for (int j = 0; j < rounds; j++) {
 
-            ChannelClientConfiguration c = PeerMaker.createDefaultChannelClientConfiguration();
+            ChannelClientConfiguration c = PeerBuilder.createDefaultChannelClientConfiguration();
             c.pipelineFilter(new MyPipeLine());
             final ChannelCreator channelCreator2 = new ChannelCreator(ev, new FutureDone<Void>(),
                     connections, 0, c);

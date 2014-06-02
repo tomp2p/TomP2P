@@ -118,12 +118,12 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
-        if (message.getVersion() != p2pID) {
+        if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
-                    message.getVersion(), message);
+                    message.version(), message);
             ctx.close();
             for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                peerStatusListener.peerFailed(message.getSender(), FailReason.Exception);
+                peerStatusListener.peerFailed(message.sender(), FailReason.Exception);
             }
             return;
         }
@@ -134,16 +134,16 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         //Message responseMessage = null;
         Responder responder = new DirectResponder(ctx, message);
-        final DispatchHandler myHandler = getAssociatedHandler(message);
+        final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
-            boolean isRelay = message.getSender().isRelayed();
+            boolean isRelay = message.sender().isRelayed();
             if(isRelay) {
-            	PeerAddress sender = message.getSender().changePeerSocketAddresses(message.getPeerSocketAddresses());
-            	message.setSender(sender);
+            	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
+            	message.sender(sender);
             }
             LOG.debug("about to respond to {}", message);
-            PeerConnection peerConnection = new PeerConnection(message.getSender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
+            PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
             LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
@@ -163,8 +163,11 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         @Override
         public void response(Message responseMessage) {
         	
-        	if(responseMessage.getSender().isRelayed()) {
-        		responseMessage.setPeerSocketAddresses(responseMessage.getSender().getPeerSocketAddresses());
+        	if(responseMessage == null || responseMessage.sender() == null) {
+        		System.err.println("why");
+        	}
+        	if(responseMessage.sender().isRelayed()) {
+        		responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
     		}
         	
             Dispatcher.this.response(ctx, responseMessage);
@@ -228,16 +231,16 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      *            the message a handler should be found for
      * @return the handler for the given message, null if none has been registered for that message.
      */
-    public DispatchHandler getAssociatedHandler(final Message message) {
+    public DispatchHandler associatedHandler(final Message message) {
         if (message == null || !(message.isRequest())) {
             return null;
         }
-        PeerAddress recipient = message.getRecipient();
+        PeerAddress recipient = message.recipient();
         // Search for handler, 0 is ping
-        if (recipient.getPeerId().isZero() && message.getCommand() == RPC.Commands.PING.getNr()) {
-            return searchHandler(peerBean.serverPeerAddress().getPeerId(), RPC.Commands.PING.getNr());
+        if (recipient.peerId().isZero() && message.command() == RPC.Commands.PING.getNr()) {
+            return searchHandler(peerBean.serverPeerAddress().peerId(), RPC.Commands.PING.getNr());
         } else {
-            return searchHandler(recipient.getPeerId(), message.getCommand());
+            return searchHandler(recipient.peerId(), message.command());
         }
     }
 

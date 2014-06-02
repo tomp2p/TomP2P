@@ -31,36 +31,21 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.p2p.builder.AddBuilder;
-import net.tomp2p.p2p.builder.AddTrackerBuilder;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.BroadcastBuilder;
-import net.tomp2p.p2p.builder.DigestBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
-import net.tomp2p.p2p.builder.GetBuilder;
-import net.tomp2p.p2p.builder.GetTrackerBuilder;
-import net.tomp2p.p2p.builder.ParallelRequestBuilder;
 import net.tomp2p.p2p.builder.PingBuilder;
-import net.tomp2p.p2p.builder.PutBuilder;
-import net.tomp2p.p2p.builder.RemoveBuilder;
-import net.tomp2p.p2p.builder.SendBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
-import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.rpc.PeerExchangeRPC;
 import net.tomp2p.rpc.PingRPC;
-import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
-import net.tomp2p.rpc.StorageRPC;
 //import net.tomp2p.rpc.TaskRPC;
-import net.tomp2p.rpc.TrackerRPC;
-//import net.tomp2p.task.AsyncTask;
-//import net.tomp2p.task.Worker;
+
 
 
 /**
@@ -75,7 +60,7 @@ import net.tomp2p.rpc.TrackerRPC;
  * 
  * <ul>
  * <li>{@link PutBuilder#setData(Number160, net.tomp2p.storage.Data)} - puts a content key with a value</li>
- * <li>{@link PutBuilder#setDataMap(Map) - puts multiple content key / values at once</li>
+ * <li>{@link PutBuilder#dataMap(Map) - puts multiple content key / values at once</li>
  * <li>{@link PutBuilder#setPutIfAbsent() - only puts data if its not already on the peers</li>
  * <li>...</li>
  * </ul>
@@ -92,63 +77,24 @@ public class Peer {
     private final Number160 peerId;
     // the p2p network identifier, two different networks can have the same
     // ports
-    private final int p2pID;
+    private final int p2pId;
 
     // Distributed
-    private DistributedHashTable distributedHashMap;
-    private DistributedTracker distributedTracker;
     private DistributedRouting distributedRouting;
-    //private DistributedTask distributedTask;
-    // private AsyncTask asyncTask;
 
     // RPC
     private PingRPC pingRCP;
-    private StorageRPC storageRPC;
     private NeighborRPC neighborRPC;
-    private QuitRPC quitRCP;
-    private PeerExchangeRPC peerExchangeRPC;
     private DirectDataRPC directDataRPC;
-    private TrackerRPC trackerRPC;
-    // private TaskRPC taskRPC;
     private BroadcastRPC broadcastRPC;
 
     private volatile boolean shutdown = false;
     
-    private List<AutomaticFuture> automaticFutures = null;
-    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>());
-
-    //
-    // final private ConnectionConfiguration configuration;
-
-    // final private Map<BaseFuture, Long> pendingFutures = Collections.synchronizedMap(new CacheMap<BaseFuture, Long>(
-    // 1000, true));
-
-    // private boolean masterFlag = true;
-
-    // private List<ScheduledFuture<?>> scheduledFutures = Collections
-    // .synchronizedList(new ArrayList<ScheduledFuture<?>>());
-
-    // final private List<PeerListener> listeners = new ArrayList<PeerListener>();
-
-    // private Timer timer;
-
-    // final public static int BLOOMFILTER_SIZE = 1024;
-
-    //
-    // final private int maintenanceThreads;
-
-    // final private int replicationThreads;
-
-    // final private int replicationRefreshMillis;
-
-    // final private PeerMap peerMap;
-
-    // final private int maxMessageSize;
-
-    // private volatile boolean shutdown = false;
+    private List<AutomaticFuture> automaticFutures = Collections.synchronizedList(new ArrayList<AutomaticFuture>(1)); 
+    private List<Shutdown> shutdownListeners = Collections.synchronizedList(new ArrayList<Shutdown>(5)); 
 
     /**
-     * Create a peer. Please use {@link PeerMaker} to create a class
+     * Create a peer. Please use {@link PeerBuilder} to create a class
      * 
      * @param p2pID
      *            The P2P ID
@@ -158,7 +104,7 @@ public class Peer {
      *            The peer creator that holds the peer bean and connection bean
      */
     Peer(final int p2pID, final Number160 peerId, final PeerCreator peerCreator) {
-        this.p2pID = p2pID;
+        this.p2pId = p2pID;
         this.peerId = peerId;
         this.peerCreator = peerCreator;
     }
@@ -179,186 +125,90 @@ public class Peer {
         return this;
     }
 
-    public StorageRPC getStoreRPC() {
-        if (storageRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-        }
-        return storageRPC;
-    }
-
-    public void setStorageRPC(StorageRPC storageRPC) {
-        this.storageRPC = storageRPC;
-    }
-
-    public NeighborRPC getNeighborRPC() {
+    public NeighborRPC neighborRPC() {
         if (neighborRPC == null) {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return neighborRPC;
     }
 
-    public void setNeighborRPC(NeighborRPC neighborRPC) {
+    public Peer neighborRPC(NeighborRPC neighborRPC) {
         this.neighborRPC = neighborRPC;
+        return this;
     }
 
-    public QuitRPC getQuitRPC() {
-        if (quitRCP == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-        }
-        return quitRCP;
-    }
-
-    public void setQuitRPC(QuitRPC quitRCP) {
-        this.quitRCP = quitRCP;
-    }
-
-    public PeerExchangeRPC getPeerExchangeRPC() {
-        if (peerExchangeRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-        }
-        return peerExchangeRPC;
-    }
-
-    public void setPeerExchangeRPC(PeerExchangeRPC peerExchangeRPC) {
-        this.peerExchangeRPC = peerExchangeRPC;
-    }
-
-    public DirectDataRPC getDirectDataRPC() {
+    public DirectDataRPC directDataRPC() {
         if (directDataRPC == null) {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return directDataRPC;
     }
 
-    public void setDirectDataRPC(DirectDataRPC directDataRPC) {
+    public Peer directDataRPC(DirectDataRPC directDataRPC) {
         this.directDataRPC = directDataRPC;
+        return this;
     }
 
-    public TrackerRPC getTrackerRPC() {
-        if (trackerRPC == null) {
-            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
-        }
-        return trackerRPC;
-    }
-
-    public void setTrackerRPC(TrackerRPC trackerRPC) {
-        this.trackerRPC = trackerRPC;
-    }
-
-    /*
-     * public TaskRPC getTaskRPC() { if (taskRPC == null) { throw new
-     * RuntimeException("Not enabled, please enable this RPC in PeerMaker"); } return taskRPC; }
-     * 
-     * public void setTaskRPC(TaskRPC taskRPC) { this.taskRPC = taskRPC; }
-     */
-
-    public void setBroadcastRPC(BroadcastRPC broadcastRPC) {
-        this.broadcastRPC = broadcastRPC;
-
-    }
-
-    public BroadcastRPC getBroadcastRPC() {
+    public BroadcastRPC broadcastRPC() {
         if (broadcastRPC == null) {
             throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
         }
         return broadcastRPC;
     }
+    
+    public Peer broadcastRPC(BroadcastRPC broadcastRPC) {
+        this.broadcastRPC = broadcastRPC;
+        return this;
+    }
 
-    public DistributedRouting getDistributedRouting() {
+    public DistributedRouting distributedRouting() {
         if (distributedRouting == null) {
             throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
         }
         return distributedRouting;
     }
 
-    public void setDistributedRouting(DistributedRouting distributedRouting) {
+    public void distributedRouting(DistributedRouting distributedRouting) {
         this.distributedRouting = distributedRouting;
     }
 
-    public DistributedHashTable getDistributedHashMap() {
-        if (distributedHashMap == null) {
-            throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
-        }
-        return distributedHashMap;
-    }
-
-    public void setDistributedHashMap(DistributedHashTable distributedHashMap) {
-        this.distributedHashMap = distributedHashMap;
-    }
-
-    public DistributedTracker getDistributedTracker() {
-        if (distributedTracker == null) {
-            throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
-        }
-        return distributedTracker;
-    }
-
-    public void setDistributedTracker(DistributedTracker distributedTracker) {
-        this.distributedTracker = distributedTracker;
-    }
-
-    /*
-     * public AsyncTask getAsyncTask() { if (asyncTask == null) { throw new
-     * RuntimeException("Not enabled, please enable this RPC in PeerMaker"); } return asyncTask; }
-     * 
-     * public void setAsyncTask(AsyncTask asyncTask) { this.asyncTask = asyncTask; }
-     */
-
-    /*public DistributedTask getDistributedTask() {
-        if (distributedTask == null) {
-            throw new RuntimeException("Not enabled, please enable this P2P function in PeerMaker");
-        }
-        return distributedTask;
-    }
-
-    public void setDistributedTask(DistributedTask task) {
-        this.distributedTask = task;
-    }*/
-
-    public PeerBean getPeerBean() {
+    public PeerBean peerBean() {
         return peerCreator.peerBean();
     }
 
-    public ConnectionBean getConnectionBean() {
+    public ConnectionBean connectionBean() {
         return peerCreator.connectionBean();
     }
 
-    public Number160 getPeerID() {
+    public Number160 peerID() {
         return peerId;
     }
 
-    public int getP2PID() {
-        return p2pID;
+    public int p2pId() {
+        return p2pId;
     }
 
-    public PeerAddress getPeerAddress() {
-        return getPeerBean().serverPeerAddress();
+    public PeerAddress peerAddress() {
+        return peerBean().serverPeerAddress();
     }
     
-    
-    Peer setAutomaticFutures(List<AutomaticFuture> automaticFutures) {
-        this.automaticFutures = Collections.unmodifiableList(automaticFutures);
-        return this;
-    }
-    
-    //TODO: expose this
     public Peer notifyAutomaticFutures(BaseFuture future) {
-        if(automaticFutures!=null) {
-            for(AutomaticFuture automaticFuture:automaticFutures) {
+    	synchronized (automaticFutures) {
+    		for(AutomaticFuture automaticFuture:automaticFutures) {
                 automaticFuture.futureCreated(future);
-            }
+    		}
         }
         return this;
     }
 
-    // *********************************** DHT / Tracker operations start here
+    // *********************************** Basic P2P operation starts here
 
-    public void setRawDataReply(final RawDataReply rawDataReply) {
-        getDirectDataRPC().setReply(rawDataReply);
+    public void rawDataReply(final RawDataReply rawDataReply) {
+        directDataRPC().rawDataReply(rawDataReply);
     }
 
-    public void setObjectDataReply(final ObjectDataReply objectDataReply) {
-        getDirectDataRPC().setReply(objectDataReply);
+    public void objectDataReply(final ObjectDataReply objectDataReply) {
+        directDataRPC().objectDataReply(objectDataReply);
     }
     
     public FuturePeerConnection createPeerConnection(final PeerAddress destination) {
@@ -381,70 +231,23 @@ public class Peer {
      */
     public FuturePeerConnection createPeerConnection(final PeerAddress destination, final int heartBeatMillis) {
         final FuturePeerConnection futureDone = new FuturePeerConnection(destination);
-        final FutureChannelCreator fcc = getConnectionBean().reservation().createPermanent(1);
+        final FutureChannelCreator fcc = connectionBean().reservation().createPermanent(1);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     final ChannelCreator cc = fcc.channelCreator();
                     final PeerConnection peerConnection = new PeerConnection(destination, cc, heartBeatMillis);
-                    futureDone.setDone(peerConnection);
+                    futureDone.done(peerConnection);
                 } else {
-                    futureDone.setFailed(future);
+                    futureDone.failed(future);
                 }
             }
         });
         return futureDone;
     }
 
-    // New API - builder pattern
-    // --------------------------------------------------
-
-    /*
-     * public SubmitBuilder submit(Number160 locationKey, Worker worker) { return new SubmitBuilder(this, locationKey,
-     * worker); }
-     */
-
-    public AddBuilder add(Number160 locationKey) {
-        return new AddBuilder(this, locationKey);
-    }
-
-    public PutBuilder put(Number160 locationKey) {
-        return new PutBuilder(this, locationKey);
-    }
-
-    public GetBuilder get(Number160 locationKey) {
-        return new GetBuilder(this, locationKey);
-    }
-    
-    public DigestBuilder digest(Number160 locationKey) {
-        return new DigestBuilder(this, locationKey);
-    }
-
-    public RemoveBuilder remove(Number160 locationKey) {
-        return new RemoveBuilder(this, locationKey);
-    }
-
-    /**
-     * The send method works as follows:
-     * 
-     * <pre>
-     * 1. routing: find close peers to the content hash. 
-     *    You can control the routing behavior with 
-     *    setRoutingConfiguration() 
-     * 2. sending: send the data to the n closest peers. 
-     *    N is set via setRequestP2PConfiguration(). 
-     *    If you want to send it to the closest one, use 
-     *    setRequestP2PConfiguration(1, 5, 0)
-     * </pre>
-     * 
-     * @param locationKey
-     *            The target hash to search for during the routing process
-     * @return The send builder that allows to set options
-     */
-    public SendBuilder send(Number160 locationKey) {
-        return new SendBuilder(this, locationKey);
-    }
+    // -------------------------------------------------- Direct, bootstrap, ping and broadcast   
 
     public SendDirectBuilder sendDirect(PeerAddress recipientAddress) {
         return new SendDirectBuilder(this, recipientAddress);
@@ -470,29 +273,8 @@ public class Peer {
         return new DiscoverBuilder(this);
     }
 
-    public AddTrackerBuilder addTracker(Number160 locationKey) {
-        return new AddTrackerBuilder(this, locationKey);
-    }
-
-    public GetTrackerBuilder getTracker(Number160 locationKey) {
-        return new GetTrackerBuilder(this, locationKey);
-    }
-
-    public ParallelRequestBuilder<?> parallelRequest(Number160 locationKey) {
-        return new ParallelRequestBuilder<>(this, locationKey);
-    }
-
     public BroadcastBuilder broadcast(Number160 messageKey) {
         return new BroadcastBuilder(this, messageKey);
-    }
-
-    /**
-     * Sends a friendly shutdown message to my close neighbors in the DHT.
-     * 
-     * @return A builder for shutdown that runs asynchronous.
-     */
-    public ShutdownBuilder announceShutdown() {
-        return new ShutdownBuilder(this);
     }
 
     /**
@@ -517,7 +299,7 @@ public class Peer {
             futureLateJoin.add(peerCreator.shutdown());
             return futureLateJoin;
         } else {
-            return new FutureDone<Void>().setFailed("already shutting / shut down");
+            return new FutureDone<Void>().failed("already shutting / shut down");
         }
     }
 
@@ -528,11 +310,23 @@ public class Peer {
         return shutdown;
     }
 
-	public void addShutdownListener(Shutdown shutdown) {
+	public Peer addShutdownListener(Shutdown shutdown) {
 		shutdownListeners.add(shutdown);
+		return this;
     }
 	
-	public void removeShutdownListener(Shutdown shutdown) {
+	public Peer removeShutdownListener(Shutdown shutdown) {
 		shutdownListeners.remove(shutdown);
+		return this;
+	}
+	
+	public Peer addAutomaticFuture(AutomaticFuture automaticFuture) {
+		automaticFutures.add(automaticFuture);
+		return this;
+    }
+	
+	public Peer removeAutomaticFuture(AutomaticFuture automaticFuture) {
+		automaticFutures.remove(automaticFuture);
+		return this;
 	}
 }

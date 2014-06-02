@@ -42,7 +42,7 @@ public class DiscoverBuilder {
     final private static Logger logger = LoggerFactory.getLogger(DiscoverBuilder.class);
 
     final private static FutureDiscover FUTURE_DISCOVER_SHUTDOWN = new FutureDiscover()
-            .setFailed("Peer is shutting down");
+            .failed("Peer is shutting down");
 
     final private Peer peer;
 
@@ -168,14 +168,14 @@ public class DiscoverBuilder {
      */
     private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
     		final FutureDiscover futureDiscover) {
-        FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 2);
+        FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 2);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                     discover(futureDiscover, peerAddress, future.channelCreator(), configuration);
                 } else {
-                    futureDiscover.setFailed(future);
+                    futureDiscover.failed(future);
                 }
             }
         });
@@ -201,10 +201,10 @@ public class DiscoverBuilder {
             public void peerWellConnected(PeerAddress peerAddress, PeerAddress reporter, boolean tcp) {
                 if (tcp) {
                     changedTCP = true;
-                    futureDiscover.setDiscoveredTCP();
+                    futureDiscover.discoveredTCP();
                 } else {
                     changedUDP = true;
-                    futureDiscover.setDiscoveredUDP();
+                    futureDiscover.discoveredUDP();
                 }
                 if (changedTCP && changedUDP) {
                     futureDiscover.done(peerAddress, reporter);
@@ -218,38 +218,38 @@ public class DiscoverBuilder {
         futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
             public void operationComplete(FutureResponse future) throws Exception {
-                PeerAddress serverAddress = peer.getPeerBean().serverPeerAddress();
+                PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
                 if (futureResponseTCP.isSuccess()) {
-                    Collection<PeerAddress> tmp = futureResponseTCP.getResponse().getNeighborsSet(0)
+                    Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
                             .neighbors();
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
                         logger.info("I'm seen as " + seenAs + " by peer " + peerAddress + " I see myself as "
-                                + peer.getPeerAddress().getInetAddress());
-                        if (!peer.getPeerAddress().getInetAddress().equals(seenAs.getInetAddress())) {
+                                + peer.peerAddress().inetAddress());
+                        if (!peer.peerAddress().inetAddress().equals(seenAs.inetAddress())) {
                             // check if we have this interface in that we can
                             // listen to
-                            Bindings bindings2 = new Bindings().addAddress(seenAs.getInetAddress());
+                            Bindings bindings2 = new Bindings().addAddress(seenAs.inetAddress());
                             String status = DiscoverNetworks.discoverInterfaces(bindings2);
                             logger.info("2nd interface discovery: " + status);
                             if (bindings2.foundAddresses().size() > 0
-                                    && bindings2.foundAddresses().contains(seenAs.getInetAddress())) {
-                                serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-                                peer.getPeerBean().serverPeerAddress(serverAddress);
+                                    && bindings2.foundAddresses().contains(seenAs.inetAddress())) {
+                                serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                peer.peerBean().serverPeerAddress(serverAddress);
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
-                                final Ports ports = peer.getConnectionBean().channelServer().ports();
+                                final Ports ports = peer.connectionBean().channelServer().ports();
                                 if (ports.isSetExternalPortsManually()) {
                                     serverAddress = serverAddress.changePorts(ports.externalTCPPort(),
                                             ports.externalUDPPort());
-                                    serverAddress = serverAddress.changeAddress(seenAs.getInetAddress());
-                                    peer.getPeerBean().serverPeerAddress(serverAddress);
+                                    serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
+                                    peer.peerBean().serverPeerAddress(serverAddress);
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.
                                     futureDiscover
-                                            .setExternalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay " + peerAddress, futureResponseTCP.getResponse()
-                                                    .getRecipient().getInetAddress(), seenAs.getInetAddress());
+                                            .externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay " + peerAddress, futureResponseTCP.responseMessage()
+                                                    .recipient().inetAddress(), seenAs.inetAddress());
                                     return;
                                 }
                             }
@@ -262,18 +262,18 @@ public class DiscoverBuilder {
                                 configuration);
                         Utils.addReleaseListener(cc, fr1, fr2);
                         // from here we probe, set the timeout here
-                        futureDiscover.setTimeout(serverAddress, peer.getConnectionBean().timer(), discoverTimeoutSec);
+                        futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
                         return;
                     } else {
                         // important to release connection if not needed
                         cc.shutdown();
-                        futureDiscover.setFailed("Peer " + peerAddress + " did not report our IP address");
+                        futureDiscover.failed("Peer " + peerAddress + " did not report our IP address");
                         return;
                     }
                 } else {
                     // important to release connection if not needed
                     cc.shutdown();
-                    futureDiscover.setFailed("FutureDiscover: We need at least the TCP connection",
+                    futureDiscover.failed("FutureDiscover: We need at least the TCP connection",
                             futureResponseTCP);
                     return;
                 }

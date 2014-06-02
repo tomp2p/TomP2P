@@ -22,7 +22,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Timings;
 
 /**
  * The future that keeps track of network discovery such as discovery if its behind a NAT, the status if UPNP or NAT-PMP
@@ -62,7 +61,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * @param delaySec
      *            The delay in seconds
      */
-    public void setTimeout(final PeerAddress serverPeerAddress, final ScheduledExecutorService timer, final int delaySec) {
+    public void timeout(final PeerAddress serverPeerAddress, final ScheduledExecutorService timer, final int delaySec) {
         final DiscoverTimeoutTask task = new DiscoverTimeoutTask(serverPeerAddress);
         final ScheduledFuture<?> scheduledFuture = timer.schedule(task, TimeUnit.SECONDS.toMillis(delaySec), TimeUnit.MILLISECONDS);
         addListener(new BaseFutureAdapter<FutureDiscover>() {
@@ -84,7 +83,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      */
     public void done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return;
             }
             this.type = FutureType.OK;
@@ -99,7 +98,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * 
      * @return The new un-firewalled peerAddress of this peer
      */
-    public PeerAddress getPeerAddress() {
+    public PeerAddress peerAddress() {
         synchronized (lock) {
             return ourPeerAddress;
         }
@@ -108,7 +107,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     /**
      * @return The reporter that told us what peer address we have
      */
-    public PeerAddress getReporter() {
+    public PeerAddress reporter() {
         synchronized (lock) {
             return reporter;
         }
@@ -118,7 +117,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * Intermediate result if TCP has been discovered. Set discoveredTCP True if other peer could reach us with a TCP
      * ping.
      */
-    public void setDiscoveredTCP() {
+    public void discoveredTCP() {
         synchronized (lock) {
             this.discoveredTCP = true;
         }
@@ -128,7 +127,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * Intermediate result if UDP has been discovered. Set discoveredUDP True if other peer could reach us with a UDP
      * ping.
      */
-    public void setDiscoveredUDP() {
+    public void discoveredUDP() {
         synchronized (lock) {
             this.discoveredUDP = true;
         }
@@ -160,7 +159,7 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
      * In case of no peer can contact us, we fire an failed.
      */
     private final class DiscoverTimeoutTask implements Runnable {
-        private final long start = Timings.currentTimeMillis();
+        private final long start = System.currentTimeMillis();
         private final PeerAddress serverPeerAddress;
         
         private DiscoverTimeoutTask(PeerAddress serverPeerAddress) {
@@ -169,14 +168,14 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         
         @Override
         public void run() {
-        	setFailed(serverPeerAddress, "Timeout in Discover: " + 
-        			(Timings.currentTimeMillis() - start) + "ms. However, I think my peer address is " + serverPeerAddress);
+        	failed(serverPeerAddress, "Timeout in Discover: " + 
+        			(System.currentTimeMillis() - start) + "ms. However, I think my peer address is " + serverPeerAddress);
         }
     }
     
-    public FutureDiscover setFailed(PeerAddress serverPeerAddress, final String failed) {
+    public FutureDiscover failed(PeerAddress serverPeerAddress, final String failed) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return this;
             }
             this.reason = failed;
@@ -187,9 +186,9 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         return this;
     }
 
-	public FutureDiscover setExternalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {
+	public FutureDiscover externalHost(String failed, InetAddress internalAddress, InetAddress externalAddress) {
 		synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return this;
             }
             this.reason = failed;

@@ -45,7 +45,7 @@ public class RelayRPC extends DispatchHandler {
      * @return
      */
     public RelayRPC(Peer peer) {
-        super(peer.getPeerBean(), peer.getConnectionBean());
+        super(peer.peerBean(), peer.connectionBean());
         register(RPC.Commands.RELAY.getNr());
         this.peer = peer;
         config = new DefaultConnectionConfiguration();
@@ -65,9 +65,9 @@ public class RelayRPC extends DispatchHandler {
      */
     public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, final PeerConnection peerConnection) {
         final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-        message.setKeepAlive(true);
+        message.keepAlive(true);
         // TODO: neighbor size limit is 256, we might have more here
-        message.setNeighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
+        message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
         final FutureResponse futureResponse = new FutureResponse(message);
         return sendSingle(peerConnection, futureResponse);
     }
@@ -85,14 +85,14 @@ public class RelayRPC extends DispatchHandler {
      */
     public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf) {
         final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
-        message.setKeepAlive(true);
-        message.setBuffer(buf);
+        message.keepAlive(true);
+        message.buffer(buf);
         final FutureResponse futureResponse = new FutureResponse(message);
         return sendSingle(peerConnection, futureResponse);
     }
 
 	private FutureResponse sendSingle(final PeerConnection peerConnection, final FutureResponse futureResponse) {
-		LOG.debug("Acquire exclusively peerConnoction {} for message {}", peerConnection, futureResponse.getRequest());
+		LOG.debug("Acquire exclusively peerConnoction {} for message {}", peerConnection, futureResponse.request());
         final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
         final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -101,7 +101,7 @@ public class RelayRPC extends DispatchHandler {
 				if(future.isSuccess()) {
 	            	requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
 	            } else {
-	            	futureResponse.setFailed(future);
+	            	futureResponse.failed(future);
 	            }
             }
 		});
@@ -121,25 +121,25 @@ public class RelayRPC extends DispatchHandler {
     public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
         final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-        message.setKeepAlive(true);
+        message.keepAlive(true);
         final FutureResponse futureResponse = new FutureResponse(message);
         LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
 
         fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
             public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
                 if (futurePeerConnection.isSuccess()) {
-                	final PeerConnection peerConnection = futurePeerConnection.getObject();
+                	final PeerConnection peerConnection = futurePeerConnection.object();
                 	sendSingle(peerConnection, futureResponse).addListener(new BaseFutureAdapter<FutureResponse>() {
                         public void operationComplete(FutureResponse future) throws Exception {
                             if (future.isSuccess()) {
-                                futureDone.setDone(peerConnection);
+                                futureDone.done(peerConnection);
                             } else {
-                                futureDone.setFailed(future);
+                                futureDone.failed(future);
                             }
                         }
                     });
                 } else {
-                    futureDone.setFailed(futurePeerConnection);
+                    futureDone.failed(futurePeerConnection);
                 }
             }
         });
@@ -149,11 +149,11 @@ public class RelayRPC extends DispatchHandler {
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         LOG.debug("received RPC message {}", message);
-        if (message.getType() == Type.REQUEST_1 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
+        if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
             handleSetup(message, peerConnection, responder);
-        } else if (message.getType() == Type.REQUEST_2 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
+        } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
             handlePiggyBackMessage(message, responder);
-        } else if (message.getType() == Type.REQUEST_3 && message.getCommand() == RPC.Commands.RELAY.getNr()) {
+        } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
             handleMap(message, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
@@ -180,8 +180,8 @@ public class RelayRPC extends DispatchHandler {
             @Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
                 // unregister relay handler
-            	LOG.debug("Unregister the relay for {}", peerConnection.remotePeer().getPeerId());
-                RelayForwarderRPC.unregister(peer, peerConnection.remotePeer().getPeerId());
+            	LOG.debug("Unregister the relay for {}", peerConnection.remotePeer().peerId());
+                RelayForwarderRPC.unregister(peer, peerConnection.remotePeer().peerId());
             }
         });
 
@@ -190,16 +190,16 @@ public class RelayRPC extends DispatchHandler {
 
     private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
-        Buffer requestBuffer = message.getBuffer(0);
+        Buffer requestBuffer = message.buffer(0);
         Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
         NoDirectResponse responder = new NoDirectResponse();
         // TODO: Not sure what to do with the peer connection and sign
-        peer.getConnectionBean().dispatcher().getAssociatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
+        peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
         LOG.debug("Send reply message to relay peer: {}", responder.getResponse());
         Message response = createResponseMessage(message, Type.OK);
-        response.setBuffer(RelayUtils.encodeMessage(responder.getResponse()));
+        response.buffer(RelayUtils.encodeMessage(responder.getResponse()));
         responderToRelay.response(response);
     }
 
@@ -212,10 +212,10 @@ public class RelayRPC extends DispatchHandler {
      * @param responder
      */
     private void handleMap(Message message, Responder responder) {
-        Collection<PeerAddress> map = message.getNeighborsSet(0).neighbors();
-        RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.getSender().getPeerId());
+        Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
+        RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.sender().peerId());
         if (relayForwarderRPC != null) {
-            relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.getSender()));
+            relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.sender()));
         } else {
             LOG.error("need to call setup relay first");
         }

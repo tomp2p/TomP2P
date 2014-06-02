@@ -131,7 +131,7 @@ public final class ChannelServer {
 	 *             If the startup fails, e.g, ports already in use
 	 */
 	public boolean startup() throws IOException {
-		if (!channelServerConfiguration.disableBind()) {
+		if (!channelServerConfiguration.isDisableBind()) {
 			final boolean listenAll = interfaceBindings.isListenAll();
 			if (listenAll) {
 				if (LOG.isInfoEnabled()) {
@@ -318,7 +318,7 @@ public final class ChannelServer {
 				public void operationComplete(final ChannelFuture future) throws Exception {
 					LOG.debug("shutdown TCP server");
 					if(listenerCounter.incrementAndGet()==maxListeners) {
-						futureServerDone.setDone();
+						futureServerDone.done();
 					}
 				}
 			});
@@ -329,7 +329,7 @@ public final class ChannelServer {
 				public void operationComplete(final ChannelFuture future) throws Exception {
 					LOG.debug("shutdown TCP channels");
 					if(listenerCounter.incrementAndGet()==maxListeners) {
-						futureServerDone.setDone();
+						futureServerDone.done();
 					}
 				}
 			});

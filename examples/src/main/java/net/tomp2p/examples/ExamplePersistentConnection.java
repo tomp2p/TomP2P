@@ -29,7 +29,7 @@ import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.message.CountConnectionOutboundHandler;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -78,15 +78,15 @@ public final class ExamplePersistentConnection {
             final int port2 = 4002;
             final int timeout = 20;
             
-            ChannelServerConficuration csc = PeerMaker.createDefaultChannelServerConfiguration();
-    		ChannelClientConfiguration ccc = PeerMaker.createDefaultChannelClientConfiguration();
+            ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+    		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
     		csc.pipelineFilter(createFilter());
     		ccc.pipelineFilter(createFilter());
             
-            peer1 = new PeerMaker(new Number160(RND)).ports(port1).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            peer2 = new PeerMaker(new Number160(RND)).ports(port2).makeAndListen();
+            peer1 = new PeerBuilder(new Number160(RND)).ports(port1).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            peer2 = new PeerBuilder(new Number160(RND)).ports(port2).start();
             //
-            peer2.setObjectDataReply(new ObjectDataReply() {
+            peer2.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     return "world!";
@@ -94,7 +94,7 @@ public final class ExamplePersistentConnection {
             });
             
             String sentObject = "Hello";
-            FutureDirect fd = peer1.sendDirect(peer2.getPeerAddress()).setObject(sentObject).start();
+            FutureDirect fd = peer1.sendDirect(peer2.peerAddress()).object(sentObject).start();
             System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
             
@@ -102,15 +102,15 @@ public final class ExamplePersistentConnection {
                     + ccohTCP.total()+ "/"+ccohUDP.total());
             
             // keep the connection for 20s alive. Setting -1 means to keep it open as long as possible
-            FuturePeerConnection futurePeerConnection = peer1.createPeerConnection(peer2.getPeerAddress(), timeout);
+            FuturePeerConnection futurePeerConnection = peer1.createPeerConnection(peer2.peerAddress(), timeout);
             
-            fd = peer1.sendDirect(futurePeerConnection).setObject(sentObject).start();
+            fd = peer1.sendDirect(futurePeerConnection).object(sentObject).start();
             System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
             System.out.println("received " + fd.object() + " connections: "
                     + ccohTCP.total()+ "/"+ccohUDP.total());
             // we reuse the connection
-            fd = peer1.sendDirect(futurePeerConnection).setObject(sentObject).start();
+            fd = peer1.sendDirect(futurePeerConnection).object(sentObject).start();
             System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
             System.out.println("received " + fd.object() + " connections: "

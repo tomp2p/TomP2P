@@ -72,11 +72,11 @@ public final class Number640 extends Number implements Comparable<Number640> {
      *            The content key
      */
     public Number640(final Number480 key, final Number160 versionKey) {
-        this(key.getLocationKey(), key.getDomainKey(), key.getContentKey(), versionKey);
+        this(key.locationKey(), key.domainKey(), key.contentKey(), versionKey);
     }
     
     public Number640(final Number320 key, final Number160 contentKey, final Number160 versionKey) {
-        this(key.getLocationKey(), key.getDomainKey(), contentKey, versionKey);
+        this(key.locationKey(), key.domainKey(), contentKey, versionKey);
     }
 
     /**
@@ -92,28 +92,28 @@ public final class Number640 extends Number implements Comparable<Number640> {
     /**
      * @return The location key
      */
-    public Number160 getLocationKey() {
+    public Number160 locationKey() {
         return locationKey;
     }
 
     /**
      * @return The domain key
      */
-    public Number160 getDomainKey() {
+    public Number160 domainKey() {
         return domainKey;
     }
 
     /**
      * @return The content key
      */
-    public Number160 getContentKey() {
+    public Number160 contentKey() {
         return contentKey;
     }
     
     /**
      * @return The content key
      */
-    public Number160 getVersionKey() {
+    public Number160 versionKey() {
         return versionKey;
     }
 

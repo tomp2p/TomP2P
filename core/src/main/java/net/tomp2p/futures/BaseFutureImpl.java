@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.utils.Timings;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +84,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     /**
      * @return The object that stored this object. This is necessary for the builder pattern when using generics.
      */
-    K self() {
+    protected K self() {
         return self;
     }
 
@@ -141,7 +140,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
      *             If the flag interrupt is true and this thread has been interrupted.
      */
     private boolean await0(final long timeoutMillis, final boolean interrupt) throws InterruptedException {
-        final long startTime = (timeoutMillis <= 0) ? 0 : Timings.currentTimeMillis();
+        final long startTime = (timeoutMillis <= 0) ? 0 : System.currentTimeMillis();
         long waitTime = timeoutMillis;
         synchronized (lock) {
             if (completed) {
@@ -161,7 +160,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
                 if (completed) {
                     return true;
                 } else {
-                    waitTime = timeoutMillis - (Timings.currentTimeMillis() - startTime);
+                    waitTime = timeoutMillis - (System.currentTimeMillis() - startTime);
                     if (waitTime <= 0) {
                         return completed;
                     }
@@ -193,40 +192,40 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     }
 
     @Override
-    public K setFailed(final BaseFuture origin) {
-        return setFailed(origin.getFailedReason());
+    public K failed(final BaseFuture origin) {
+        return failed(origin.failedReason());
     }
 
     @Override
-    public K setFailed(final String failed, final BaseFuture origin) {
+    public K failed(final String failed, final BaseFuture origin) {
         StringBuilder sb = new StringBuilder(failed);
-        return setFailed(sb.append(" <-> ").append(origin.getFailedReason()).toString());
+        return failed(sb.append(" <-> ").append(origin.failedReason()).toString());
     }
 
     @Override
-    public K setFailed(final Throwable t) {
+    public K failed(final Throwable t) {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
         t.printStackTrace(printWriter);
-        return setFailed(stringWriter.toString());
+        return failed(stringWriter.toString());
     }
 
     @Override
-    public K setFailed(final String failed, final Throwable t) {
+    public K failed(final String failed, final Throwable t) {
         if (t == null) {
-            return setFailed("n/a");
+            return failed("n/a");
         }
         StringBuilder sb = new StringBuilder(failed);
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
         t.printStackTrace(printWriter);
-        return setFailed(sb.append(" <-> ").append(stringWriter.toString()).toString());
+        return failed(sb.append(" <-> ").append(stringWriter.toString()).toString());
     }
 
     @Override
-    public K setFailed(final String failed) {
+    public K failed(final String failed) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return self;
             }
             this.reason = failed;
@@ -237,7 +236,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     }
 
     @Override
-    public String getFailedReason() {
+    public String failedReason() {
         StringBuffer sb = new StringBuffer("BaseFuture (compl/canc:");
         synchronized (lock) {
             sb.append(completed).append(" / ");
@@ -249,7 +248,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     }
 
     @Override
-    public FutureType getType() {
+    public FutureType type() {
         synchronized (lock) {
             return type;
         }
@@ -260,7 +259,7 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
      * 
      * @return True if notified. It will notify if completed is not set yet.
      */
-    protected boolean setCompletedAndNotify() {
+    protected boolean completedAndNotify() {
         if (!completed) {
             completed = true;
             lock.notifyAll();

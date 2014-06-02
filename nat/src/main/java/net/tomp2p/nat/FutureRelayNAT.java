@@ -18,7 +18,7 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 
 	public void done(final Shutdown shutdown) {
 		synchronized (lock) {
-			if (!setCompletedAndNotify()) {
+			if (!completedAndNotify()) {
 				return;
 			}
 			this.type = FutureType.OK;

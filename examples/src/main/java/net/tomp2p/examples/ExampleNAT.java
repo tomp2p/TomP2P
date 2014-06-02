@@ -25,7 +25,7 @@ import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -36,18 +36,18 @@ public class ExampleNAT {
 			Random r = new Random(42L);
 			// peer.getP2PConfiguration().setBehindFirewall(true);
 			Bindings b = new Bindings().addInterface("eth0");
-			peer = new PeerMaker(new Number160(r)).bindings(b).ports(4000).makeAndListen();
+			peer = new PeerBuilder(new Number160(r)).bindings(b).ports(4000).start();
 			System.out.println("peer started.");
 			for (;;) {
-				for (PeerAddress pa : peer.getPeerBean().peerMap().getAll()) {
-					BaseFuture future = peer.ping().setPeerAddress(pa).setTcpPing().start();
+				for (PeerAddress pa : peer.peerBean().peerMap().all()) {
+					BaseFuture future = peer.ping().peerAddress(pa).tcpPing().start();
 					if (future.isSuccess()) {
 						System.out.println("peer online (TCP):" + pa);
 					}
 					else {
 						System.out.println("offline " + pa);
 					}
-					future = peer.ping().setPeerAddress(pa).start();
+					future = peer.ping().peerAddress(pa).start();
 					if (future.isSuccess()) {
 						System.out.println("peer online (UDP):" + pa);
 					}
@@ -73,7 +73,7 @@ public class ExampleNAT {
 
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
-		Peer peer = new PeerMaker(new Number160(r)).ports(4000).setBehindFirewall().makeAndListen();
+		Peer peer = new PeerBuilder(new Number160(r)).ports(4000).behindFirewall().start();
 		PeerNAT peerNAT = new PeerNAT(peer);
 		PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), 4000, 4000);
 		
@@ -83,9 +83,9 @@ public class ExampleNAT {
 		
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) {
-			System.out.println("found that my outside address is " + fd.getPeerAddress());
+			System.out.println("found that my outside address is " + fd.peerAddress());
 		} else {
-			System.out.println("failed " + fd.getFailedReason());
+			System.out.println("failed " + fd.failedReason());
 		}
 		
 		frn.awaitUninterruptibly();

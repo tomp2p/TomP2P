@@ -37,7 +37,7 @@ public class Statistics {
 		this.peerMap = peerMap;
 	}
 	
-	public double getEstimatedNumberOfNodes() {
+	public double estimatedNumberOfNodes() {
 		final int bagSize = peerMap.bagSizeVerified();
 		final List<Map<Number160, PeerStatatistic>> map = peerMap.peerMapVerified();
 		// assume we are full
@@ -62,7 +62,7 @@ public class Statistics {
 		return estimatedNumberOfPeers;
 	}
 
-	public double getAvgGap() {
+	public double avgGap() {
 		return avgGap;
 	}
 }

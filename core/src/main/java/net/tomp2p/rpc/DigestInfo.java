@@ -76,7 +76,7 @@ public class DigestInfo {
      * @return Returns or calculates the global key hash. The global key hash will be calculated if the empty
      *         constructor is used.
      */
-    public Number160 getKeyDigest() {
+    public Number160 keyDigest() {
         if (keyDigest == null) {
             process();
         }
@@ -87,7 +87,7 @@ public class DigestInfo {
      * @return Returns or calculates the global content hash. The global content hash will be calculated if the empty
      *         constructor is used.
      */
-    public Number160 getContentDigest() {
+    public Number160 contentDigest() {
         if (contentDigest == null) {
             process();
         }
@@ -101,10 +101,10 @@ public class DigestInfo {
         Number160 hashKey = Number160.ZERO;
         Number160 hashContent = Number160.ZERO;
         for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            hashKey = hashKey.xor(entry.getKey().getLocationKey());
-            hashKey = hashKey.xor(entry.getKey().getDomainKey());
-            hashKey = hashKey.xor(entry.getKey().getContentKey());
-            hashKey = hashKey.xor(entry.getKey().getVersionKey());
+            hashKey = hashKey.xor(entry.getKey().locationKey());
+            hashKey = hashKey.xor(entry.getKey().domainKey());
+            hashKey = hashKey.xor(entry.getKey().contentKey());
+            hashKey = hashKey.xor(entry.getKey().versionKey());
             for (Number160 basedOn: entry.getValue()) {
             	hashContent = hashContent.xor(basedOn);
             }
@@ -118,10 +118,10 @@ public class DigestInfo {
      *            The bloom filter creator
      * @return The bloom filter of the keys that are on this peer
      */
-    public SimpleBloomFilter<Number160> getLocationKeyBloomFilter(final BloomfilterFactory factory) {
+    public SimpleBloomFilter<Number160> locationKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createLoctationKeyBloomFilter();
         for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().getLocationKey());
+            sbf.add(entry.getKey().locationKey());
         }
         return sbf;
     }
@@ -131,10 +131,10 @@ public class DigestInfo {
      *            The bloom filter creator
      * @return The bloom filter of the keys that are on this peer
      */
-    public SimpleBloomFilter<Number160> getDomainKeyBloomFilter(final BloomfilterFactory factory) {
+    public SimpleBloomFilter<Number160> domainKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createDomainKeyBloomFilter();
         for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().getDomainKey());
+            sbf.add(entry.getKey().domainKey());
         }
         return sbf;
     }
@@ -144,10 +144,10 @@ public class DigestInfo {
      *            The bloom filter creator
      * @return The bloom filter of the keys that are on this peer
      */
-    public SimpleBloomFilter<Number160> getContentKeyBloomFilter(final BloomfilterFactory factory) {
+    public SimpleBloomFilter<Number160> contentKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createContentKeyBloomFilter();
         for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().getContentKey());
+            sbf.add(entry.getKey().contentKey());
         }
         return sbf;
     }
@@ -157,10 +157,10 @@ public class DigestInfo {
      *            The bloom filter creator
      * @return The bloom filter of the content keys that are on this peer
      */
-    public SimpleBloomFilter<Number160> getVersionKeyBloomFilter(final BloomfilterFactory factory) {
+    public SimpleBloomFilter<Number160> versionKeyBloomFilter(final BloomfilterFactory factory) {
         SimpleBloomFilter<Number160> sbf = factory.createContentBloomFilter();
         for (Map.Entry<Number640, Collection<Number160>> entry : mapDigests.entrySet()) {
-            sbf.add(entry.getKey().getVersionKey());
+            sbf.add(entry.getKey().versionKey());
         }
         return sbf;
     }
@@ -180,14 +180,14 @@ public class DigestInfo {
     /**
      * @return The list of hashes
      */
-    public NavigableMap<Number640, Collection<Number160>> getDigests() {
+    public NavigableMap<Number640, Collection<Number160>> digests() {
         return mapDigests;
     }
 
     /**
      * @return The number of hashes
      */
-    public int getSize() {
+    public int size() {
         if (size == -1) {
             size = mapDigests.size();
         }
@@ -210,12 +210,12 @@ public class DigestInfo {
             return true;
         }
         DigestInfo other = (DigestInfo) obj;
-        return getKeyDigest().equals(other.getKeyDigest()) && getSize() == other.getSize()
-                && getContentDigest().equals(other.getContentDigest());
+        return keyDigest().equals(other.keyDigest()) && size() == other.size()
+                && contentDigest().equals(other.contentDigest());
     }
 
     @Override
     public int hashCode() {
-        return getKeyDigest().hashCode() ^ getSize() ^ getContentDigest().hashCode();
+        return keyDigest().hashCode() ^ size() ^ contentDigest().hashCode();
     }
 }

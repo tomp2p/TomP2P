@@ -92,7 +92,7 @@ public class PeerConnection {
             @Override
             public void operationComplete(Future<? super Void> arg0) throws Exception {
             	LOG.debug("about to close the connection {}, {}",  channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
-                closeFuture.setDone();
+                closeFuture.done();
             }
         });
     }
@@ -107,7 +107,7 @@ public class PeerConnection {
             future.addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                 @Override
                 public void operationComplete(FutureDone<Void> future) throws Exception {
-                    closeFuture.setDone();
+                    closeFuture.done();
                 }
             });        
         } else {

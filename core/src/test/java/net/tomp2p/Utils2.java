@@ -35,7 +35,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -95,13 +95,13 @@ public class Utils2 {
         Message message = new Message();
         PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSendor, udpPortSender, firewallUDP,
                 firewallTCP);
-        message.setSender(n1);
+        message.sender(n1);
         //
         PeerAddress n2 = createAddress(idRecipien, inetRecipient, tcpPortRecipient, udpPortRecipient,
                 firewallUDP, firewallTCP);
-        message.setRecipient(n2);
-        message.setType(type);
-        message.setCommand(command);
+        message.recipient(n2);
+        message.type(type);
+        message.command(command);
         return message;
     }
 
@@ -112,11 +112,6 @@ public class Utils2 {
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
             throws Exception {
         return createNodes(nrOfPeers, rnd, port, automaticFuture, false);
-    }
-
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
-            boolean replication) throws Exception {
-        return createNodes(nrOfPeers, rnd, port, automaticFuture, false, true);
     }
 
     /**
@@ -134,7 +129,7 @@ public class Utils2 {
      *             If the creation of nodes fail.
      */
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
-            boolean replication, boolean maintenance) throws Exception {
+            boolean maintenance) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
@@ -143,29 +138,29 @@ public class Utils2 {
         if (automaticFuture != null) {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
-                    .addAutomaticFuture(automaticFuture).ports(port).setEnableMaintenance(maintenance)
-                    .externalBindings(bindings).peerMap(peerMap).makeAndListen();
+            peers[0] = new PeerBuilder(peerId)
+                    .ports(port).setEnableMaintenance(maintenance)
+                    .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerMaker(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
-                    .setEnableIndirectReplication(false).peerMap(peerMap).ports(port).makeAndListen();
+            peers[0] = new PeerBuilder(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+                   .peerMap(peerMap).ports(port).start();
         }
 
         for (int i = 1; i < nrOfPeers; i++) {
             if (automaticFuture != null) {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-                peers[i] = new PeerMaker(peerId).setEnableIndirectReplication(replication)
-                        .addAutomaticFuture(automaticFuture).masterPeer(peers[0])
-                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).makeAndListen();
+                peers[i] = new PeerBuilder(peerId)
+                        .masterPeer(peers[0])
+                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
-                peers[i] = new PeerMaker(peerId).setEnableMaintenance(maintenance)
-                        .externalBindings(bindings).setEnableIndirectReplication(replication).peerMap(peerMap).masterPeer(peers[0])
-                        .makeAndListen();
+                peers[i] = new PeerBuilder(peerId).setEnableMaintenance(maintenance)
+                        .externalBindings(bindings).peerMap(peerMap).masterPeer(peers[0])
+                        .start();
             }
         }
         System.err.println("peers created.");
@@ -179,8 +174,8 @@ public class Utils2 {
         }
         Peer[] peers = new Peer[nrOfPeers];
         for (int i = 0; i < nrOfPeers; i++) {
-            peers[i] = new PeerMaker(new Number160(rnd)).addAutomaticFuture(automaticFuture)
-                    .ports(startPort + i).makeAndListen();
+            peers[i] = new PeerBuilder(new Number160(rnd))
+                    .ports(startPort + i).start().addAutomaticFuture(automaticFuture);
         }
         System.err.println("real peers created.");
         return peers;
@@ -191,10 +186,10 @@ public class Utils2 {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-        peers[0] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).ports(port).makeAndListen();
+        peers[0] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).ports(port).start();
         for (int i = 1; i < nrOfPeers; i++) {
-            peers[i] = new PeerMaker(new Number160(rnd)).setEnableMaintenance(false).masterPeer(peers[0])
-                    .makeAndListen();
+            peers[i] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).masterPeer(peers[0])
+                    .start();
         }
         System.err.println("non-maintenance peers created.");
         return peers;
@@ -210,7 +205,7 @@ public class Utils2 {
     public static void perfectRouting(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
         }
         System.err.println("perfect routing done.");
     }
@@ -218,7 +213,7 @@ public class Utils2 {
     public static void perfectRoutingIndirect(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), peers[j].getPeerAddress());
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress());
         }
         System.err.println("perfect routing done.");
     }
@@ -247,9 +242,9 @@ public class Utils2 {
         Peer[] peers = new Peer[nr];
         for (int i = 0; i < nr; i++) {
             if (i == 0) {
-                peers[0] = new PeerMaker(new Number160(rnd)).ports(port).makeAndListen();
+                peers[0] = new PeerBuilder(new Number160(rnd)).ports(port).start();
             } else {
-                peers[i] = new PeerMaker(new Number160(rnd)).masterPeer(peers[0]).makeAndListen();
+                peers[i] = new PeerBuilder(new Number160(rnd)).masterPeer(peers[0]).start();
             }
         }
         return peers;
@@ -259,18 +254,18 @@ public class Utils2 {
         List<FutureBootstrap> futures1 = new ArrayList<FutureBootstrap>();
         List<FutureDiscover> futures2 = new ArrayList<FutureDiscover>();
         for (int i = 1; i < peers.length; i++) {
-            FutureDiscover tmp = peers[i].discover().peerAddress(peers[0].getPeerAddress()).start();
+            FutureDiscover tmp = peers[i].discover().peerAddress(peers[0].peerAddress()).start();
             futures2.add(tmp);
         }
         for (FutureDiscover future : futures2) {
             future.awaitUninterruptibly();
         }
         for (int i = 1; i < peers.length; i++) {
-            FutureBootstrap tmp = peers[i].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+            FutureBootstrap tmp = peers[i].bootstrap().peerAddress(peers[0].peerAddress()).start();
             futures1.add(tmp);
         }
         for (int i = 1; i < peers.length; i++) {
-            FutureBootstrap tmp = peers[0].bootstrap().setPeerAddress(peers[i].getPeerAddress()).start();
+            FutureBootstrap tmp = peers[0].bootstrap().peerAddress(peers[i].peerAddress()).start();
             futures1.add(tmp);
         }
         for (FutureBootstrap future : futures1)
@@ -287,22 +282,22 @@ public class Utils2 {
         while (!resultPeer.equals(result)) {
             System.out.println("round " + round);
             round++;
-            pa1.addAll(peers[start].getPeerBean().peerMap().getAll());
-            queried.add(peers[start].getPeerAddress());
+            pa1.addAll(peers[start].peerBean().peerMap().all());
+            queried.add(peers[start].peerAddress());
             System.out.println("closest so far: " + queried.first());
             PeerAddress next = pa1.pollFirst();
             while (queried.contains(next)) {
                 next = pa1.pollFirst();
             }
-            result = next.getPeerId();
-            start = findNr(next.getPeerId().toString(), peers);
+            result = next.peerId();
+            start = findNr(next.peerId().toString(), peers);
         }
     }
 
     public static void findInMap(PeerAddress key, Peer[] peers) {
         for (int i = 0; i < peers.length; i++) {
-            if (peers[i].getPeerBean().peerMap().contains(key)) {
-                System.out.println("Peer " + i + " with the id " + peers[i].getPeerID() + " knows the peer "
+            if (peers[i].peerBean().peerMap().contains(key)) {
+                System.out.println("Peer " + i + " with the id " + peers[i].peerID() + " knows the peer "
                         + key);
             }
         }
@@ -310,7 +305,7 @@ public class Utils2 {
 
     public static int findNr(String string, Peer[] peers) {
         for (int i = 0; i < peers.length; i++) {
-            if (peers[i].getPeerID().equals(new Number160(string))) {
+            if (peers[i].peerID().equals(new Number160(string))) {
                 System.out.println("we found the number " + i + " for peer with id " + string);
                 return i;
             }
@@ -320,7 +315,7 @@ public class Utils2 {
 
     public static Peer find(String string, Peer[] peers) {
         for (int i = 0; i < peers.length; i++) {
-            if (peers[i].getPeerID().equals(new Number160(string))) {
+            if (peers[i].peerID().equals(new Number160(string))) {
                 System.out.println("!!we found the number " + i + " for peer with id " + string);
                 return peers[i];
             }
@@ -342,6 +337,20 @@ public class Utils2 {
 
 	public static PeerAddress createAddressIP(String inet) throws UnknownHostException {
 	    return createAddress(Number160.createHash(inet), inet, 8005, 8006, false, false);
+    }
+	
+	public static PeerAddress[] createDummyAddress(int size, int portTCP, int portUDP) throws UnknownHostException {
+        PeerAddress[] pa = new PeerAddress[size];
+        for (int i = 0; i < size; i++) {
+            pa[i] = createAddress(i + 1, portTCP, portUDP);
+        }
+        return pa;
+    }
+
+	public static PeerAddress createAddress(int iid, int portTCP, int portUDP) throws UnknownHostException {
+        Number160 id = new Number160(iid);
+        InetAddress address = InetAddress.getByName("127.0.0.1");
+        return new PeerAddress(id, address, portTCP, portUDP);
     }
 
 }

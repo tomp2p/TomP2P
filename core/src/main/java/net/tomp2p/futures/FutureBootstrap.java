@@ -32,5 +32,5 @@ public interface FutureBootstrap extends BaseFuture {
      * 
      * @return the peers we bootstrapped to.
      */
-     Collection<PeerAddress> getBootstrapTo();
+     Collection<PeerAddress> bootstrapTo();
 }

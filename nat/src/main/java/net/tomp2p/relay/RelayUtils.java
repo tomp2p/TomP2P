@@ -40,7 +40,7 @@ public class RelayUtils {
 	}
 
 	public static List<Map<Number160, PeerStatatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
-		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.getPeerId());
+		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for(PeerAddress peerAddress:map) {
 			peerMap.peerFound(peerAddress, null);
@@ -52,7 +52,7 @@ public class RelayUtils {
 		Collection<PeerAddress> result = new ArrayList<PeerAddress>();
 		for (Map<Number160, PeerStatatistic> map : maps) {
 			for (PeerStatatistic peerStatatistic : map.values()) {
-				result.add(peerStatatistic.getPeerAddress());
+				result.add(peerStatatistic.peerAddress());
 			}
 		}
 		return result;

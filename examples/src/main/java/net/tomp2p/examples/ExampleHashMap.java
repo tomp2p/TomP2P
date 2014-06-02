@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
-import net.tomp2p.futures.FutureGet;
-import net.tomp2p.futures.FuturePut;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -70,7 +70,7 @@ public class ExampleHashMap {
 			Number160 locationKey = Number160.createHash(key);
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
-			return peer.get(locationKey).setDomainKey(domainKey).setContentKey(contentKey).start();
+			return peer.get(locationKey).domainKey(domainKey).setContentKey(contentKey).start();
 		}
 
 		private FuturePut put(String key, String domain, String content, String data) throws IOException {
@@ -78,7 +78,7 @@ public class ExampleHashMap {
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
 			MyData<String> myData = new MyData<String>().key(key).domain(domain).content(content).data(data);
-			return peer.put(locationKey).setDomainKey(domainKey).setData(contentKey, new Data(myData)).start();
+			return peer.put(locationKey).domainKey(domainKey).setData(contentKey, new Data(myData)).start();
 		}
 	}
 

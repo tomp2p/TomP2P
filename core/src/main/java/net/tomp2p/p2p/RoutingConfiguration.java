@@ -71,7 +71,7 @@ public class RoutingConfiguration {
         this.forceTCP = forceTCP;
     }
 
-    public int getMaxDirectHits() {
+    public int maxDirectHits() {
         return maxDirectHits;
     }
 
@@ -82,23 +82,23 @@ public class RoutingConfiguration {
      * 
      * @return
      */
-    public int getMaxNoNewInfoDiff() {
+    public int maxNoNewInfoDiff() {
         return maxNoNewInfoDiff;
     }
 
-    public int getMaxNoNewInfo(int minimumResults) {
+    public int maxNoNewInfo(int minimumResults) {
         return maxNoNewInfoDiff + minimumResults;
     }
 
-    public int getMaxFailures() {
+    public int maxFailures() {
         return maxFailures;
     }
 
-    public int getMaxSuccess() {
+    public int maxSuccess() {
         return maxSuccess;
     }
 
-    public int getParallel() {
+    public int parallel() {
         return parallel;
     }
 

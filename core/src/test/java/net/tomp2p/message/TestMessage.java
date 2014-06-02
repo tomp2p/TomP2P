@@ -147,23 +147,23 @@ public class TestMessage {
 	public void testEncodeDecode2() throws Exception { // encode
 		Random rnd = new Random(42);
 		Message m1 = Utils2.createDummyMessage();
-		m1.setCommand((byte) 3);
-		m1.setType(Message.Type.DENIED);
+		m1.command((byte) 3);
+		m1.type(Message.Type.DENIED);
 		Number160 key1 = new Number160(5667);
 		Number160 key2 = new Number160(5667);
-		m1.setKey(key1);
-		m1.setKey(key2);
+		m1.key(key1);
+		m1.key(key2);
 		List<Number640> tmp2 = new ArrayList<Number640>();
 		Number640 n1 = new Number640(rnd);
 		Number640 n2 = new Number640(rnd);
 		tmp2.add(n1);
 		tmp2.add(n2);
-		m1.setKeyCollection(new KeyCollection(tmp2));
+		m1.keyCollection(new KeyCollection(tmp2));
 
 		Message m2 = encodeDecode(m1);
 
-		Assert.assertEquals(false, m2.getKeyList() == null);
-		Assert.assertEquals(false, m2.getKeyCollectionList() == null);
+		Assert.assertEquals(false, m2.keyList() == null);
+		Assert.assertEquals(false, m2.keyCollectionList() == null);
 		compareMessage(m1, m2);
 	}
 
@@ -175,13 +175,13 @@ public class TestMessage {
 	@Test
 	public void testEncodeDecode3() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.setType(Message.Type.DENIED);
-		m1.setLong(8888888);
+		m1.type(Message.Type.DENIED);
+		m1.longValue(8888888);
 		byte[] me = new byte[10000];
 		ByteBuf tmp = Unpooled.wrappedBuffer(me);
-		m1.setBuffer(new Buffer(tmp));
+		m1.buffer(new Buffer(tmp));
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(false, m2.getBuffer(0) == null);
+		Assert.assertEquals(false, m2.buffer(0) == null);
 		compareMessage(m1, m2);
 	}
 
@@ -194,12 +194,12 @@ public class TestMessage {
 	public void testEncodeDecode4() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.setType(Message.Type.DENIED);
+		m1.type(Message.Type.DENIED);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
-		m1.setPublicKeyAndSign(pair1);
+		m1.publicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }));
@@ -219,12 +219,12 @@ public class TestMessage {
 		set.add(new Number160(rnd));
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);
-		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
+		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey(0) != null);
-		Assert.assertEquals(false, m2.getDataMap(0) == null);
-		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
+		Assert.assertEquals(false, m2.dataMap(0) == null);
+		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -233,12 +233,12 @@ public class TestMessage {
 	public void testEncodeDecode5() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.setType(Message.Type.PARTIALLY_OK);
+		m1.type(Message.Type.PARTIALLY_OK);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
-		m1.setPublicKeyAndSign(pair1);
+		m1.publicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
 		
@@ -259,12 +259,12 @@ public class TestMessage {
 		set.add(new Number160(rnd));
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);
-		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
+		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey(0) != null);
-		Assert.assertEquals(false, m2.getDataMap(0) == null);
-		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
+		Assert.assertEquals(false, m2.dataMap(0) == null);
+		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -273,12 +273,12 @@ public class TestMessage {
 	public void testEncodeDecode7() throws Exception {
 		Message m1 = Utils2.createDummyMessage();
 		Random rnd = new Random(42);
-		m1.setType(Message.Type.PARTIALLY_OK);
+		m1.type(Message.Type.PARTIALLY_OK);
 		m1.setHintSign();
 
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
-		m1.setPublicKeyAndSign(pair1);
+		m1.publicKeyAndSign(pair1);
 
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>();
 		dataMap.put(new Number640(rnd), new Data(new byte[] { 3, 4, 5 }).sign(pair1, factory));
@@ -298,15 +298,15 @@ public class TestMessage {
 		set.add(new Number160(rnd));
 		set.add(new Number160(rnd));
 		keysMap.put(new Number640(rnd), set);
-		m1.setKeyMap640Keys(new KeyMap640Keys(keysMap));
+		m1.keyMap640Keys(new KeyMap640Keys(keysMap));
 
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey(0) != null);
-		Assert.assertEquals(false, m2.getDataMap(0) == null);
-		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
-		Assert.assertEquals(false, m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
-		Assert.assertEquals(pair1.getPublic(), m2.getDataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey());
-		Assert.assertEquals(false, m2.getKeyMap640Keys(0) == null);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
+		Assert.assertEquals(false, m2.dataMap(0) == null);
+		Assert.assertEquals(false, m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().signature() == null);
+		Assert.assertEquals(false, m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey() == null);
+		Assert.assertEquals(pair1.getPublic(), m2.dataMap(0).dataMap().entrySet().iterator().next().getValue().publicKey());
+		Assert.assertEquals(false, m2.keyMap640Keys(0) == null);
 		Assert.assertEquals(true, m2.verified());
 		compareMessage(m1, m2);
 	}
@@ -355,10 +355,10 @@ public class TestMessage {
 	@Test
 	public void testEncodeDecode480Map() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.setType(Message.Type.PARTIALLY_OK);
+		m1.type(Message.Type.PARTIALLY_OK);
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
-		m1.setPublicKeyAndSign(pair1);
+		m1.publicKeyAndSign(pair1);
 		Map<Number640, Data> dataMap = new HashMap<Number640, Data>(1000);
 		Random rnd = new Random(42l);
 		for (int i = 0; i < 1000; i++) {
@@ -370,26 +370,26 @@ public class TestMessage {
 		}
 		m1.setDataMap(new DataMap(dataMap));
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey(0) != null);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
 		compareMessage(m1, m2);
 	}
 
 	@Test
 	public void testEncodeDecode480Set() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.setType(Message.Type.NOT_FOUND);
+		m1.type(Message.Type.NOT_FOUND);
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair pair1 = gen.generateKeyPair();
-		m1.setPublicKeyAndSign(pair1);
+		m1.publicKeyAndSign(pair1);
 		Collection<Number640> list = new ArrayList<Number640>();
 		Random rnd = new Random(42l);
 		for (int i = 0; i < 1000; i++) {
 			list.add(new Number640(new Number160(rnd), new Number160(rnd),
 					new Number160(rnd), new Number160(rnd)));
 		}
-		m1.setKeyCollection(new KeyCollection(list));
+		m1.keyCollection(new KeyCollection(list));
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(true, m2.getPublicKey(0) != null);
+		Assert.assertEquals(true, m2.publicKey(0) != null);
 		compareMessage(m1, m2);
 	}
 
@@ -398,7 +398,7 @@ public class TestMessage {
 			InvalidKeyException, SignatureException, NoSuchAlgorithmException,
 			InvalidKeySpecException {
 		Message m1 = Utils2.createDummyMessage();
-		m1.setBuffer(new Buffer(Unpooled.buffer()));
+		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
 		e.write(buf, m1);
@@ -416,7 +416,7 @@ public class TestMessage {
 			ClassNotFoundException, InvalidKeyException, SignatureException {
 		try {
 			Message m1 = Utils2.createDummyMessage();
-			m1.setBuffer(new Buffer(Unpooled.buffer()));
+			m1.buffer(new Buffer(Unpooled.buffer()));
 			Utils.encodeJavaObject(m1);
 			Assert.fail("Unserializable exception here");
 		} catch (Throwable t) {
@@ -427,13 +427,13 @@ public class TestMessage {
 	@Test
 	public void testRelayAddresses1() throws Exception { // encode
 		Message m1 = Utils2.createDummyMessage();
-		m1.setType(Message.Type.NOT_FOUND);
+		m1.type(Message.Type.NOT_FOUND);
 		List<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
 		tmp.add(new PeerSocketAddress(InetAddress.getLocalHost(), 15, 17));
 		tmp.add(new PeerSocketAddress(InetAddress.getByName("0:0:0:0:0:0:0:1"), 16, 18));
-		m1.setPeerSocketAddresses(tmp);
+		m1.peerSocketAddresses(tmp);
 		Message m2 = encodeDecode(m1);
-		Assert.assertEquals(tmp, m2.getPeerSocketAddresses());
+		Assert.assertEquals(tmp, m2.peerSocketAddresses());
 		compareMessage(m1, m2);
 	}
 	
@@ -458,10 +458,10 @@ public class TestMessage {
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
         tmp.add(pa3);
-        m1.setNeighborsSet(new NeighborSet(-1, tmp));
+        m1.neighborsSet(new NeighborSet(-1, tmp));
         
         Message m2 = encodeDecode(m1);
-		Assert.assertArrayEquals(psa.toArray(), m2.getNeighborsSet(0).neighbors().iterator().next().getPeerSocketAddresses().toArray());
+		Assert.assertArrayEquals(psa.toArray(), m2.neighborsSet(0).neighbors().iterator().next().peerSocketAddresses().toArray());
 		compareMessage(m1, m2);
 		
 	}
@@ -487,10 +487,10 @@ public class TestMessage {
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
         tmp.add(pa3);
-        m1.setNeighborsSet(new NeighborSet(10, tmp));
+        m1.neighborsSet(new NeighborSet(10, tmp));
         
         Message m2 = encodeDecode(m1);
-		Assert.assertEquals(tmp, m2.getPeerSocketAddresses());
+		Assert.assertEquals(tmp, m2.peerSocketAddresses());
 		compareMessage(m1, m2);
 		
 	}
@@ -535,8 +535,8 @@ public class TestMessage {
 		ChannelHandlerContext ctx = mockChannelHandlerContext(buf, m2);
 		encoder.write(ctx, m1, null);
 		Decoder decoder = new Decoder(new DSASignatureFactory());
-		decoder.decode(ctx, buf, m1.getRecipient().createSocketTCP(), m1
-				.getSender().createSocketTCP());
+		decoder.decode(ctx, buf, m1.recipient().createSocketTCP(), m1
+				.sender().createSocketTCP());
 		return decoder.message();
 	}
 
@@ -604,28 +604,28 @@ public class TestMessage {
 	 *            The second message
 	 */
 	private void compareMessage(final Message m1, final Message m2) {
-		Assert.assertEquals(m1.getMessageId(), m2.getMessageId());
-		Assert.assertEquals(m1.getVersion(), m2.getVersion());
-		Assert.assertEquals(m1.getCommand(), m2.getCommand());
+		Assert.assertEquals(m1.messageId(), m2.messageId());
+		Assert.assertEquals(m1.version(), m2.version());
+		Assert.assertEquals(m1.command(), m2.command());
 		compareContentTypes(m1, m2);
-		Assert.assertEquals(m1.getRecipient(), m2.getRecipient());
-		Assert.assertEquals(m1.getType(), m2.getType());
-		Assert.assertEquals(m1.getSender(), m2.getSender());
-		Assert.assertEquals(m1.getSender().tcpPort(), m2.getSender().tcpPort());
+		Assert.assertEquals(m1.recipient(), m2.recipient());
+		Assert.assertEquals(m1.type(), m2.type());
+		Assert.assertEquals(m1.sender(), m2.sender());
+		Assert.assertEquals(m1.sender().tcpPort(), m2.sender().tcpPort());
 
 		Assert.assertEquals(
 				true,
-				Utils.isSameSets(m1.getBloomFilterList(),
-						m2.getBloomFilterList()));
+				Utils.isSameSets(m1.bloomFilterList(),
+						m2.bloomFilterList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getBufferList(), m2.getBufferList()));
+				Utils.isSameSets(m1.bufferList(), m2.bufferList()));
 		
 		
-		Assert.assertEquals(m1.getDataMapList().size(), m2.getDataMapList().size());
+		Assert.assertEquals(m1.dataMapList().size(), m2.dataMapList().size());
 		
 		//;
-		for(Iterator<DataMap> iter1 = m1.getDataMapList().iterator(), 
-				iter2 = m2.getDataMapList().iterator();iter1.hasNext() && iter2.hasNext();) {
+		for(Iterator<DataMap> iter1 = m1.dataMapList().iterator(), 
+				iter2 = m2.dataMapList().iterator();iter1.hasNext() && iter2.hasNext();) {
 			Assert.assertEquals(true,
 					DeepEquals.deepEquals(iter1.next().dataMap(), iter2.next().dataMap()));
 		}
@@ -633,21 +633,21 @@ public class TestMessage {
 		
 		
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getIntegerList(), m2.getIntegerList()));
+				Utils.isSameSets(m1.intList(), m2.intList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getKeyList(), m2.getKeyList()));
+				Utils.isSameSets(m1.keyList(), m2.keyList()));
 		Assert.assertEquals(
 				true,
-				Utils.isSameSets(m1.getKeyCollectionList(),
-						m2.getKeyCollectionList()));
+				Utils.isSameSets(m1.keyCollectionList(),
+						m2.keyCollectionList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getKeyMapKeys640List(), m2.getKeyMapKeys640List()));
+				Utils.isSameSets(m1.keyMapKeys640List(), m2.keyMapKeys640List()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.getLongList(), m2.getLongList()));
+				Utils.isSameSets(m1.longList(), m2.longList()));
 		
-		Assert.assertEquals(m1.getNeighborsSetList().size(), m2.getNeighborsSetList().size()); 
-		for(Iterator<NeighborSet> iter1 = m1.getNeighborsSetList().iterator(), 
-				iter2 = m2.getNeighborsSetList().iterator();iter1.hasNext() && iter2.hasNext();) {
+		Assert.assertEquals(m1.neighborsSetList().size(), m2.neighborsSetList().size()); 
+		for(Iterator<NeighborSet> iter1 = m1.neighborsSetList().iterator(), 
+				iter2 = m2.neighborsSetList().iterator();iter1.hasNext() && iter2.hasNext();) {
 			Assert.assertEquals(
 					true,
 					Utils.isSameSets(iter1.next().neighbors(),
@@ -656,9 +656,9 @@ public class TestMessage {
 		
 		
 
-		Assert.assertEquals(m1.getSender().isFirewalledTCP(), m2.getSender()
+		Assert.assertEquals(m1.sender().isFirewalledTCP(), m2.sender()
 				.isFirewalledTCP());
-		Assert.assertEquals(m1.getSender().isFirewalledUDP(), m2.getSender()
+		Assert.assertEquals(m1.sender().isFirewalledUDP(), m2.sender()
 				.isFirewalledUDP());
 	}
 
@@ -672,9 +672,9 @@ public class TestMessage {
 	 *            The second message
 	 */
 	private void compareContentTypes(final Message m1, final Message m2) {
-		for (int i = 0; i < m1.getContentTypes().length; i++) {
-			Content type1 = m1.getContentTypes()[i];
-			Content type2 = m2.getContentTypes()[i];
+		for (int i = 0; i < m1.contentTypes().length; i++) {
+			Content type1 = m1.contentTypes()[i];
+			Content type2 = m2.contentTypes()[i];
 			if (type1 == null) {
 				type1 = Content.EMPTY;
 			}

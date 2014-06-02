@@ -69,11 +69,11 @@ public class IdentityManagement implements PeerStatusListener {
         return false;
     }
 
-    public Number160 getSelf() {
-        return self.getPeerId();
+    public Number160 self() {
+        return self.peerId();
     }
 
-    public PeerAddress getPeerAddress() {
+    public PeerAddress peerAddress() {
         return self;
     }
 }

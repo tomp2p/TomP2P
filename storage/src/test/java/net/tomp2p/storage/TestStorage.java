@@ -7,9 +7,11 @@ import java.security.PublicKey;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.dht.StorageLayer;
+import net.tomp2p.dht.StorageLayer.PutStatus;
+import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.junit.Assert;
 import org.junit.Test;

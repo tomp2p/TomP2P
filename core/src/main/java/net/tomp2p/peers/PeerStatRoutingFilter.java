@@ -29,12 +29,12 @@ import net.tomp2p.p2p.Statistics;
  */
 public class PeerStatRoutingFilter implements PeerFilter {
 
-	final private Statistics statistics;
-	final private int replicationRate;
+	//final private Statistics statistics;
+	//final private int replicationRate;
 
 	public PeerStatRoutingFilter(final Statistics statistics, final int replicationRate) {
-		this.statistics = statistics;
-		this.replicationRate = replicationRate;
+		//this.statistics = statistics;
+		//this.replicationRate = replicationRate;
 	}
 
 	// see

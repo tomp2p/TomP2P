@@ -15,7 +15,7 @@ public class FuturePeerConnection extends FutureDone<PeerConnection> {
     }
     
     public PeerConnection peerConnection() {
-        return getObject();
+        return object();
     }
 
     /**
@@ -27,18 +27,18 @@ public class FuturePeerConnection extends FutureDone<PeerConnection> {
             @Override
             public void operationComplete(final FutureDone<PeerConnection> future) throws Exception {
                 if (future.isSuccess()) {
-                    future.getObject().close().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+                    future.object().close().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
                         @Override
                         public void operationComplete(final FutureDone<Void> future) throws Exception {
                             if (future.isSuccess()) {
-                                shutdown.setDone();
+                                shutdown.done();
                             } else {
-                                shutdown.setFailed("could not close (1)", future);
+                                shutdown.failed("could not close (1)", future);
                             }
                         }
                     });
                 } else {
-                    shutdown.setFailed("could not close (2)", future);
+                    shutdown.failed("could not close (2)", future);
                 }
             }
         });

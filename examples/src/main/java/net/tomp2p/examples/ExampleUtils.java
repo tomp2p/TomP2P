@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 
 /**
@@ -39,7 +39,7 @@ public class ExampleUtils {
     	//make perfect bootstrap, the regular can take a while
     	for(int i=0;i<peers.length;i++) {
     		for(int j=0;j<peers.length;j++) {
-    			peers[i].getPeerBean().peerMap().peerFound(peers[j].getPeerAddress(), null);
+    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
     		}
     	}
     }
@@ -56,9 +56,9 @@ public class ExampleUtils {
         Peer[] peers = new Peer[nr];
         for ( int i = 0; i < nr; i++ ) {
             if ( i == 0 ) {
-                peers[0] = new PeerMaker( new Number160( RND ) ).ports( port ).makeAndListen();
+                peers[0] = new PeerBuilder( new Number160( RND ) ).ports( port ).start();
             } else {
-                peers[i] = new PeerMaker( new Number160( RND ) ).masterPeer( peers[0] ).makeAndListen();
+                peers[i] = new PeerBuilder( new Number160( RND ) ).masterPeer( peers[0] ).start();
             }
         }
         return peers;

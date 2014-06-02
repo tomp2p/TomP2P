@@ -73,19 +73,19 @@ public class DirectDataRPC extends DispatchHandler {
                 sendDirectBuilder.progressListener());
 
         if (sendDirectBuilder.isSign()) {
-            message.setPublicKeyAndSign(sendDirectBuilder.keyPair());
+            message.publicKeyAndSign(sendDirectBuilder.keyPair());
         }
-        message.streaming(sendDirectBuilder.streaming());
+        message.streaming(sendDirectBuilder.isStreaming());
 
         if (sendDirectBuilder.isRaw()) {
-            message.setBuffer(sendDirectBuilder.getBuffer());
+            message.buffer(sendDirectBuilder.buffer());
         } else {
             byte[] me;
             try {
-                me = Utils.encodeJavaObject(sendDirectBuilder.getObject());
-                message.setBuffer(new Buffer(Unpooled.wrappedBuffer(me)));
+                me = Utils.encodeJavaObject(sendDirectBuilder.object());
+                message.buffer(new Buffer(Unpooled.wrappedBuffer(me)));
             } catch (IOException e) {
-                futureResponse.setFailed("cannot convert object", e);
+                futureResponse.failed("cannot convert object", e);
             }       
         }
 
@@ -103,11 +103,11 @@ public class DirectDataRPC extends DispatchHandler {
         }
     }
 
-    public void setReply(final RawDataReply rawDataReply) {
+    public void rawDataReply(final RawDataReply rawDataReply) {
         this.rawDataReply = rawDataReply;
     }
 
-    public void setReply(ObjectDataReply objectDataReply) {
+    public void objectDataReply(ObjectDataReply objectDataReply) {
         this.objectDataReply = objectDataReply;
     }
 
@@ -121,51 +121,51 @@ public class DirectDataRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!((message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2) && message
-                .getCommand() == RPC.Commands.DIRECT_DATA.getNr())) {
+        if (!((message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2) && message
+                .command() == RPC.Commands.DIRECT_DATA.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         if (sign) {
-            responseMessage.setPublicKeyAndSign(peerBean().getKeyPair());
+            responseMessage.publicKeyAndSign(peerBean().getKeyPair());
         }
         final RawDataReply rawDataReply2 = rawDataReply;
         final ObjectDataReply objectDataReply2 = objectDataReply;
-        if (message.getType() == Type.REQUEST_1 && rawDataReply2 == null) {
-            responseMessage.setType(Type.NOT_FOUND);
-        } else if (message.getType() == Type.REQUEST_2 && objectDataReply2 == null) {
-            responseMessage.setType(Type.NOT_FOUND);
+        if (message.type() == Type.REQUEST_1 && rawDataReply2 == null) {
+            responseMessage.type(Type.NOT_FOUND);
+        } else if (message.type() == Type.REQUEST_2 && objectDataReply2 == null) {
+            responseMessage.type(Type.NOT_FOUND);
         } else {
-            final Buffer requestBuffer = message.getBuffer(0);
+            final Buffer requestBuffer = message.buffer(0);
             // the user can reply with null, indicating not found. Or
             // returning the request buffer, which means nothing is
             // returned. Or an exception can be thrown
-            if (message.getType() == Type.REQUEST_1) {
+            if (message.type() == Type.REQUEST_1) {
                 LOG.debug("handling request1");
-                final Buffer replyBuffer = rawDataReply2.reply(message.getSender(), requestBuffer,
+                final Buffer replyBuffer = rawDataReply2.reply(message.sender(), requestBuffer,
                         message.isDone());
                 if (replyBuffer == null && message.isDone()) {
-                    responseMessage.setType(Type.NOT_FOUND);
+                    responseMessage.type(Type.NOT_FOUND);
                 } else if (replyBuffer != requestBuffer) {
                     // can be partial as well
                     if (!replyBuffer.isComplete()) {
-                        responseMessage.setStreaming();
+                        responseMessage.streaming();
                     }
-                    responseMessage.setBuffer(replyBuffer);
+                    responseMessage.buffer(replyBuffer);
                 }
             } else { // no streaming here when we deal with objects
                 Object obj = Utils.decodeJavaObject(requestBuffer.buffer());
                 LOG.debug("handling {}", obj);
 
-                Object reply = objectDataReply2.reply(message.getSender(), obj);
+                Object reply = objectDataReply2.reply(message.sender(), obj);
                 if (reply == null) {
-                    responseMessage.setType(Type.NOT_FOUND);
+                    responseMessage.type(Type.NOT_FOUND);
                 } else if (reply == obj) {
-                    responseMessage.setType(Type.OK);
+                    responseMessage.type(Type.OK);
                 } else {
                     byte[] me = Utils.encodeJavaObject(reply);
-                    responseMessage.setBuffer(new Buffer(Unpooled.wrappedBuffer(me)));
+                    responseMessage.buffer(new Buffer(Unpooled.wrappedBuffer(me)));
                 }
             }
         }

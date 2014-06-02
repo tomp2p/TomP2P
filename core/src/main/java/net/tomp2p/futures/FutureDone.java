@@ -39,8 +39,8 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
      * 
      * @return This class
      */
-    public FutureDone<K> setDone() {
-        setDone(null);
+    public FutureDone<K> done() {
+        done(null);
         return this;
     }
 
@@ -51,9 +51,9 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
      *            An object that can be attached.
      * @return This class
      */
-    public FutureDone<K> setDone(final K object) {
+    public FutureDone<K> done(final K object) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return this;
             }
             this.object = object;
@@ -66,7 +66,7 @@ public class FutureDone<K> extends BaseFutureImpl<FutureDone<K>> {
     /**
      * @return The attached object
      */
-    public K getObject() {
+    public K object() {
         synchronized (lock) {
             return object;
         }

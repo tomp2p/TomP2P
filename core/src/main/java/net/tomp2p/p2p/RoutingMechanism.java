@@ -189,31 +189,31 @@ public class RoutingMechanism {
         return maxDirectHits;
     }
 
-    public void setMaxDirectHits(int maxDirectHits) {
+    public void maxDirectHits(int maxDirectHits) {
         this.maxDirectHits = maxDirectHits;
     }
 
-    public int getMaxNoNewInfo() {
+    public int maxNoNewInfo() {
         return maxNoNewInfo;
     }
 
-    public void setMaxNoNewInfo(int maxNoNewInfo) {
+    public void maxNoNewInfo(int maxNoNewInfo) {
         this.maxNoNewInfo = maxNoNewInfo;
     }
 
-    public int getMaxFailures() {
+    public int maxFailures() {
         return maxFailures;
     }
 
-    public void setMaxFailures(int maxFailures) {
+    public void maxFailures(int maxFailures) {
         this.maxFailures = maxFailures;
     }
 
-    public int getMaxSucess() {
+    public int maxSucess() {
         return maxSucess;
     }
 
-    public void setMaxSucess(int maxSucess) {
+    public void maxSucess(int maxSucess) {
         this.maxSucess = maxSucess;
     }
 
@@ -236,10 +236,10 @@ public class RoutingMechanism {
         }
     }
 
-    public void setNeighbors(RoutingBuilder builder) {
+    public void neighbors(RoutingBuilder builder) {
         synchronized (this) {
 
-            futureRoutingResponse.setNeighbors(directHits, potentialHits, alreadyAsked,
+            futureRoutingResponse.neighbors(directHits, potentialHits, alreadyAsked,
                     builder.isBootstrap(), builder.isRoutingToOthers());
         }
     }
@@ -272,7 +272,7 @@ public class RoutingMechanism {
     }
 
     public boolean evaluateFailed() {
-        return (++nrFailures) > getMaxFailures();
+        return (++nrFailures) > maxFailures();
     }
 
     public boolean evaluateSuccess(PeerAddress remotePeer, DigestInfo digestBean,
@@ -285,14 +285,14 @@ public class RoutingMechanism {
                 LOG.debug("we have enough direct hits {}", directHits);
                 finished = true;
                 stopCreatingNewFutures = true;
-            } else if ((++nrSuccess) > getMaxSucess()) {
+            } else if ((++nrSuccess) > maxSucess()) {
                 // wait until pending futures are finished
                 LOG.debug("we have reached max success {}", nrSuccess);
                 finished = last;
                 stopCreatingNewFutures = true;
-            } else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, getMaxNoNewInfo())) {
+            } else if (evaluateInformation(newNeighbors, queueToAsk, alreadyAsked, maxNoNewInfo())) {
                 // wait until pending futures are finished
-                LOG.debug("we have no new information for the {} time", getMaxNoNewInfo());
+                LOG.debug("we have no new information for the {} time", maxNoNewInfo());
                 finished = last;
                 stopCreatingNewFutures = true;
             } else {
@@ -339,7 +339,7 @@ public class RoutingMechanism {
     static boolean evaluateDirectHits(final PeerAddress remotePeer,
             final Map<PeerAddress, DigestInfo> directHits, final DigestInfo digestBean,
             final int maxDirectHits) {
-        if (digestBean.getSize() > 0) {
+        if (digestBean.size() > 0) {
             directHits.put(remotePeer, digestBean);
             if (directHits.size() >= maxDirectHits) {
                 return true;

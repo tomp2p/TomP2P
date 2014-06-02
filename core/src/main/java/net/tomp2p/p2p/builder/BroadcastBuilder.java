@@ -49,18 +49,18 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
         if (isUDP == null) {
             // not set, decide based on the data
             if (dataMap == null) {
-                setIsUDP(true);
+                udp(true);
             } else {
-                setIsUDP(false);
+                udp(false);
                 message.setDataMap(new DataMap(dataMap));
             }
         }
         
-        message.setKey(messageKey);
-        message.setInteger(0);
+        message.key(messageKey);
+        message.intValue(0);
         message.udp(isUDP());
         
-        peer.getBroadcastRPC().broadcastHandler().receive(message);
+        peer.broadcastRPC().broadcastHandler().receive(message);
     }
     
     public Number160 messageKey() {
@@ -83,7 +83,7 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
         return isUDP;
     }
 
-    public BroadcastBuilder setIsUDP(boolean isUDP) {
+    public BroadcastBuilder udp(boolean isUDP) {
         this.isUDP = isUDP;
         return this;
     }
@@ -98,6 +98,6 @@ public class BroadcastBuilder extends DefaultConnectionConfiguration {
     }
 
     public PeerAddress remotePeer() {
-        return peer.getPeerAddress();
+        return peer.peerAddress();
     }
 }

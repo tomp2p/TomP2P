@@ -28,13 +28,13 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import net.tomp2p.dht.DHTBuilder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message;
-import net.tomp2p.p2p.builder.DHTBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -58,7 +58,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
 
     private static final Logger LOG = LoggerFactory.getLogger(SyncBuilder.class);
     private static final FutureDone<SyncStat> FUTURE_SHUTDOWN = new FutureDone<SyncStat>()
-            .setFailed("sync builder - peer is shutting down");
+            .failed("sync builder - peer is shutting down");
     static final int DEFAULT_BLOCK_SIZE = 700;
     
     private final PeerAddress other;
@@ -133,17 +133,17 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         } else {
             Map<Number640, Data> newDataMap = new HashMap<Number640, Data>();
             if (key != null) {
-                Data data = peer.getPeerBean().storage().get(key);
+                Data data = peer.peerBean().storageLayer().get(key);
                 if (data == null) {
-                    data = new Data().setFlag2();
+                    data = new Data().flag2();
                 }
                 newDataMap.put(key, data);
             }
             if (keys != null) {
                 for (Number640 key : keys) {
-                    Data data = peer.getPeerBean().storage().get(key);
+                    Data data = peer.peerBean().storageLayer().get(key);
                     if (data == null) {
-                        data = new Data().setFlag2();
+                        data = new Data().flag2();
                     }
                     newDataMap.put(key, data);
                 }
@@ -169,13 +169,13 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         }
         if (key != null) {
         	Set<Number160> hashSet = new HashSet<Number160>(1);
-        	hashSet.add(peer.getPeerBean().storage().get(key).hash());
+        	hashSet.add(peer.peerBean().storageLayer().get(key).hash());
             dataMapHash.put(key, hashSet);
         }
         if (keys != null) {
             for (Number640 key : keys) {
             	Set<Number160> hashSet = new HashSet<Number160>(1);
-            	hashSet.add(peer.getPeerBean().storage().get(key).hash());
+            	hashSet.add(peer.peerBean().storageLayer().get(key).hash());
                 dataMapHash.put(key, hashSet);
             }
         }
@@ -196,13 +196,13 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
             return FUTURE_SHUTDOWN;
         }
         final FutureDone<SyncStat> futureSync = new FutureDone<SyncStat>();
-        FutureChannelCreator futureChannelCreator = peer.getConnectionBean().reservation().create(0, 2);
+        FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation().create(0, 2);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
                 if (!future2.isSuccess()) {
-                    futureSync.setFailed(future2);
-                    LOG.error("checkDirect failed {}", future2.getFailedReason());
+                    futureSync.failed(future2);
+                    LOG.error("checkDirect failed {}", future2.failedReason());
                     return;
                 }
                 final FutureResponse futureResponse = peerSync.syncRPC().infoMessage(other,
@@ -212,17 +212,17 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                     public void operationComplete(FutureResponse future) throws Exception {
                         if (future.isFailed()) {
                             Utils.addReleaseListener(future2.channelCreator(), futureResponse);
-                            futureSync.setFailed(future);
-                            LOG.error("checkDirect failed {}", future.getFailedReason());
+                            futureSync.failed(future);
+                            LOG.error("checkDirect failed {}", future.failedReason());
                             return;
                         }
 
-                        Message responseMessage = future.getResponse();
-                        DataMap dataMap = responseMessage.getDataMap(0);
+                        Message responseMessage = future.emptyResponse();
+                        DataMap dataMap = responseMessage.dataMap(0);
 
                         if (dataMap == null) {
                         	LOG.error("nothing received, something is wrong");
-                            futureSync.setFailed("nothing received, something is wrong");
+                            futureSync.failed("nothing received, something is wrong");
                             return;
                         }
 
@@ -243,7 +243,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		} else if(data.isFlag2()) {
                         			LOG.debug("copy required for key {}",entry.getKey());
                         			syncMessageRequired = true;
-                        			Data data2 = peer.getPeerBean().storage().get(entry.getKey());
+                        			Data data2 = peer.peerBean().storageLayer().get(entry.getKey());
                         			dataOrig += data2.length();
                         			//copy
                                     retVal.put(entry.getKey(), data2);
@@ -253,7 +253,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         	} else {
                         		LOG.debug("sync required");
                         		syncMessageRequired = true;
-                        		Data data2 = peer.getPeerBean().storage().get(entry.getKey());
+                        		Data data2 = peer.peerBean().storageLayer().get(entry.getKey());
                         		dataOrig += data2.length();
                         		final ByteBuf buffer = data.buffer();
                         		Number160 versionKey = SyncUtils.decodeHeader(buffer);
@@ -269,11 +269,11 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		dataCopy += SyncUtils.encodeInstructions(instructions, versionKey, hash, abuf);
                         		DataBuffer dataBuffer = new DataBuffer(abuf);
                         		//diff
-                        		Data data1 = new Data(dataBuffer).setFlag1();
+                        		Data data1 = new Data(dataBuffer).flag1();
                                 retVal.put(entry.getKey(), data1);                    		
                         	}
                         }
-                        final SyncStat syncStat = new SyncStat(peer.getPeerAddress().getPeerId(), other.getPeerId(), dataCopy, dataOrig);
+                        final SyncStat syncStat = new SyncStat(peer.peerAddress().peerId(), other.peerId(), dataCopy, dataOrig);
                         if (syncMessageRequired) {
                         	SyncBuilder.this.dataMap(new DataMap(retVal));
                         	FutureResponse fr = peerSync.syncRPC().syncMessage(other,
@@ -282,15 +282,15 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                                 @Override
                                 public void operationComplete(FutureResponse future) throws Exception {
                                     if (future.isFailed()) {
-                                        futureSync.setFailed(future);
+                                        futureSync.failed(future);
                                     } else {
-                                        futureSync.setDone(syncStat);
+                                        futureSync.done(syncStat);
                                     }
                                 }
                             });
                             Utils.addReleaseListener(future2.channelCreator(), fr, futureResponse);
                         } else {
-                        	futureSync.setDone(syncStat);
+                        	futureSync.done(syncStat);
                             Utils.addReleaseListener(future2.channelCreator(), futureResponse);
                         }
                     }

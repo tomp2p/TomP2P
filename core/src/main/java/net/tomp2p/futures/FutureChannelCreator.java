@@ -42,7 +42,7 @@ public class FutureChannelCreator extends BaseFutureImpl<FutureChannelCreator> {
      */
     public void reserved(final ChannelCreator channelCreator) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return;
             }
             this.type = FutureType.OK;

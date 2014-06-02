@@ -28,7 +28,7 @@ import java.util.TreeMap;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.connection.TimeoutFactory;
 import net.tomp2p.message.Message.Content;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -107,7 +107,7 @@ public class Decoder {
 				if (doneHeader) {
 					// store the sender as an attribute
 					final Attribute<PeerAddress> attributePeerAddress = ctx.attr(PEER_ADDRESS_KEY);
-					attributePeerAddress.set(message.getSender());
+					attributePeerAddress.set(message.sender());
 					message.udp(ctx.channel() instanceof DatagramChannel);
 					if (message.isFireAndForget() && message.isUdp()) {
 						TimeoutFactory.removeTimeout(ctx);
@@ -145,7 +145,7 @@ public class Decoder {
 		final int length = donePayload ? len - (Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) : len;
 		ByteBuffer[] byteBuffers = buf.nioBuffers(readerBefore, length);
 		
-		Signature signature = signatureFactory.update(message.getPublicKey(0), byteBuffers);
+		Signature signature = signatureFactory.update(message.publicKey(0), byteBuffers);
 
 		if (donePayload) {
 			byte[] signatureReceived = message.receivedSignature().encode();
@@ -170,7 +170,7 @@ public class Decoder {
 			// we have set the content types already
 			message.presetContentTypes(true);
 
-			for (Content content : message.getContentTypes()) {
+			for (Content content : message.contentTypes()) {
 				if (content == Content.EMPTY) {
 					break;
 				}
@@ -202,14 +202,14 @@ public class Decoder {
 				if (buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
-				message.setInteger(buf.readInt());
+				message.intValue(buf.readInt());
 				lastContent = contentTypes.poll();
 				break;
 			case LONG:
 				if (buf.readableBytes() < Utils.LONG_BYTE_SIZE) {
 					return false;
 				}
-				message.setLong(buf.readLong());
+				message.longValue(buf.readLong());
 				lastContent = contentTypes.poll();
 				break;
 			case KEY:
@@ -218,7 +218,7 @@ public class Decoder {
 				}
 				byte[] me = new byte[Number160.BYTE_ARRAY_SIZE];
 				buf.readBytes(me);
-				message.setKey(new Number160(me));
+				message.key(new Number160(me));
 				lastContent = contentTypes.poll();
 				break;
 			case BLOOM_FILTER:
@@ -229,7 +229,7 @@ public class Decoder {
 				if (buf.readableBytes() < size) {
 					return false;
 				}
-				message.setBloomFilter(new SimpleBloomFilter<Number160>(buf));
+				message.bloomFilter(new SimpleBloomFilter<Number160>(buf));
 				lastContent = contentTypes.poll();
 				break;
 			case SET_NEIGHBORS:
@@ -254,7 +254,7 @@ public class Decoder {
 					PeerAddress pa = new PeerAddress(buf);
 					neighborSet.add(pa);
 				}
-				message.setNeighborsSet(neighborSet);
+				message.neighborsSet(neighborSet);
 				lastContent = contentTypes.poll();
 				neighborSize = -1;
 				neighborSet = null;
@@ -283,7 +283,7 @@ public class Decoder {
 					}
 					peerSocketAddresses.add(PeerSocketAddress.create(buf, isIPv4));
 				}
-				message.setPeerSocketAddresses(peerSocketAddresses);
+				message.peerSocketAddresses(peerSocketAddresses);
 				lastContent = contentTypes.poll();
 				peerSocketAddressSize = -1;
 				peerSocketAddresses = null;
@@ -316,7 +316,7 @@ public class Decoder {
 					Number160 versionKey = new Number160(me2);
 					keyCollection.add(new Number640(locationKey, domainKey, contentKey, versionKey));
 				}
-				message.setKeyCollection(keyCollection);
+				message.keyCollection(keyCollection);
 				lastContent = contentTypes.poll();
 				keyCollectionSize = -1;
 				keyCollection = null;
@@ -335,7 +335,7 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!data.decodeDone(buf, message.publicKey(0), signatureFactory)) {
 						return false;
 					}
 					data = null;
@@ -367,13 +367,13 @@ public class Decoder {
 					if (!data.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!data.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!data.decodeDone(buf, message.publicKey(0), signatureFactory)) {
 						return false;
 					}
 					// if we have signed the message, set the public key anyway, but only if we indicated so
-					if (message.isSign() && message.getPublicKey(0) != null && data.hasPublicKey() 
-							&& (data.publicKey() == null || data.publicKey() == PeerMaker.EMPTY_PUBLICKEY)) {
-						data.publicKey(message.getPublicKey(0));
+					if (message.isSign() && message.publicKey(0) != null && data.hasPublicKey() 
+							&& (data.publicKey() == null || data.publicKey() == PeerBuilder.EMPTY_PUBLICKEY)) {
+						data.publicKey(message.publicKey(0));
 					}
 					data = null;
 					key = null;
@@ -424,7 +424,7 @@ public class Decoder {
 					keyMap640Keys.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
 				}
 
-				message.setKeyMap640Keys(keyMap640Keys);
+				message.keyMap640Keys(keyMap640Keys);
 				lastContent = contentTypes.poll();
 				keyMap640KeysSize = -1;
 				keyMap640Keys = null;
@@ -458,7 +458,7 @@ public class Decoder {
 					keyMapByte.put(new Number640(locationKey, domainKey, contentKey, versionKey), value);
 				}
 
-				message.setKeyMapByte(keyMapByte);
+				message.keyMapByte(keyMapByte);
 				lastContent = contentTypes.poll();
 				keyMapByteSize = -1;
 				keyMapByte = null;
@@ -487,7 +487,7 @@ public class Decoder {
 				}
 				
 				ByteBuf buf2 = AlternativeCompositeByteBuf.compBuffer(buffer.toByteBufs());
-				message.setBuffer(new Buffer(buf2, bufferSize));
+				message.buffer(new Buffer(buf2, bufferSize));
 				lastContent = contentTypes.poll();
 				bufferSize = -1;
 				buffer = null;
@@ -501,13 +501,13 @@ public class Decoder {
 				}
 				if (trackerData == null) {
 					trackerData = new TrackerData(new HashMap<PeerAddress, Data>(2 * trackerDataSize),
-							message.getSender());
+							message.sender());
 				}
 				if (currentTrackerData != null) {
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!currentTrackerData.decodeDone(buf, message.publicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
@@ -533,19 +533,19 @@ public class Decoder {
 					}
 					trackerData.map().put(pa, currentTrackerData);
 					if (message.isSign()) {
-						currentTrackerData.publicKey(message.getPublicKey(0));
+						currentTrackerData.publicKey(message.publicKey(0));
 					}
 
 					if (!currentTrackerData.decodeBuffer(buf)) {
 						return false;
 					}
-					if (!currentTrackerData.decodeDone(buf, message.getPublicKey(0), signatureFactory)) {
+					if (!currentTrackerData.decodeDone(buf, message.publicKey(0), signatureFactory)) {
 						return false;
 					}
 					currentTrackerData = null;
 				}
 
-				message.setTrackerData(trackerData);
+				message.trackerData(trackerData);
 				lastContent = contentTypes.poll();
 				trackerDataSize = -1;
 				trackerData = null;
@@ -555,14 +555,14 @@ public class Decoder {
 			case PUBLIC_KEY_SIGNATURE:
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if(content == Content.PUBLIC_KEY_SIGNATURE) {
-					if (receivedPublicKey == PeerMaker.EMPTY_PUBLICKEY) {
+					if (receivedPublicKey == PeerBuilder.EMPTY_PUBLICKEY) {
 						throw new InvalidKeyException("The public key cannot be empty");
 					}
 				}
 				if (receivedPublicKey == null) {
 					return false;
 				}
-				message.setPublicKey(receivedPublicKey);
+				message.publicKey(receivedPublicKey);
 				lastContent = contentTypes.poll();
 				break;
 				

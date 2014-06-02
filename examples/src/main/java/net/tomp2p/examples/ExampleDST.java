@@ -28,14 +28,15 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import net.tomp2p.futures.FutureGet;
-import net.tomp2p.futures.FuturePut;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.StorageLayer;
+import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.StorageLayer;
-import net.tomp2p.storage.StorageMemory;
+import net.tomp2p.storage.DigestStorage;
 
 /**
  * Example how to do range queries.
@@ -85,7 +86,7 @@ public final class ExampleDST {
      */
     private static void setupStorage(final Peer[] peers, final int max) {
         for (Peer peer : peers) {
-        	StorageLayer sl = new StorageLayer(new StorageMemory()) {
+        	DigestStorage sl = new StorageLayer(new StorageMemory()) {
         		@Override
         		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
         		        boolean domainProtection) {
@@ -125,7 +126,7 @@ public final class ExampleDST {
                     return retVal;
                 }
         	};
-            peer.getPeerBean().storage(sl);
+            peer.peerBean().storageLayer(sl);
         }
     }
 

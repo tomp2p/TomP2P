@@ -74,7 +74,7 @@ public class DirectReplication implements Shutdown {
 				future.cancel(false);
 			}
 			if (runnerCounter.decrementAndGet() == 0) {
-				shutdownFuture.setDone();
+				shutdownFuture.done();
 			}
 		}
 	};
@@ -113,7 +113,7 @@ public class DirectReplication implements Shutdown {
 				@Override
 				public BaseFuture shutdown() {
 					worker.shutdown();
-					return new FutureDone<Void>().setDone();
+					return new FutureDone<Void>().done();
 				}
 			};
 		}

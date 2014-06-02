@@ -19,8 +19,6 @@ import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.tomp2p.utils.Timings;
-
 /**
  * Keeps track of the statistics of a given peer.
  * 
@@ -33,7 +31,7 @@ public class PeerStatatistic implements Serializable {
 
 	private final AtomicLong lastSeenOnline = new AtomicLong(0);
 
-    private final long created = Timings.currentTimeMillis();
+    private final long created = System.currentTimeMillis();
 
     private final AtomicInteger successfullyChecked = new AtomicInteger(0);
 
@@ -60,7 +58,7 @@ public class PeerStatatistic implements Serializable {
      * @return The number of successful checks
      */
     public int successfullyChecked() {
-        lastSeenOnline.set(Timings.currentTimeMillis());
+        lastSeenOnline.set(System.currentTimeMillis());
         failed.set(0);
         return successfullyChecked.incrementAndGet();
 
@@ -69,14 +67,14 @@ public class PeerStatatistic implements Serializable {
     /**
      * @return The time last seen online
      */
-    public long getLastSeenOnline() {
+    public long lastSeenOnline() {
         return lastSeenOnline.get();
     }
 
     /**
      * @return The number of times the peer has been successfully checked
      */
-    public int getSuccessfullyChecked() {
+    public int successfullyCheckedCounter() {
         return successfullyChecked.get();
     }
 
@@ -92,7 +90,7 @@ public class PeerStatatistic implements Serializable {
     /**
      * @return The time of creating this peer (statistic)
      */
-    public long getCreated() {
+    public long created() {
         return created;
     }
 
@@ -106,7 +104,7 @@ public class PeerStatatistic implements Serializable {
     /**
      * @return the peer address associated with this peer address
      */
-    public PeerAddress getPeerAddress() {
+    public PeerAddress peerAddress() {
         return peerAddress;
     }
 
@@ -117,8 +115,8 @@ public class PeerStatatistic implements Serializable {
      *            The updated peer ID
      * @return The old peer address
      */
-    public PeerAddress setPeerAddress(final PeerAddress peerAddress) {
-        if (!this.peerAddress.getPeerId().equals(peerAddress.getPeerId())) {
+    public PeerAddress peerAddress(final PeerAddress peerAddress) {
+        if (!this.peerAddress.peerId().equals(peerAddress.peerId())) {
             throw new IllegalArgumentException("can only update the same peer address");
         }
         PeerAddress previousPeerAddress = this.peerAddress;

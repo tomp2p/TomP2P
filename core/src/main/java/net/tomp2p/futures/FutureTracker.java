@@ -116,10 +116,10 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      * @param peersOnTracker
      *            The data from the trackers.
      */
-    public void setTrackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
+    public void trackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
             Map<PeerAddress, TrackerData> peersOnTracker) {
         synchronized (lock) {
-            if (!setCompletedAndNotify())
+            if (!completedAndNotify())
                 return;
             this.potentialTrackers = potentialTrackers;
             this.directTrackers = directTrackers;
@@ -137,7 +137,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
      * @return The trackers that are close to the key, also containing the
      *         direct trackers.
      */
-    public Set<PeerAddress> getPotentialTrackers() {
+    public Set<PeerAddress> potentialTrackers() {
         synchronized (lock) {
             return potentialTrackers;
         }
@@ -146,7 +146,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     /**
      * @return Those peers that are close and reported to have the key.
      */
-    public Set<PeerAddress> getDirectTrackers() {
+    public Set<PeerAddress> directTrackers() {
         synchronized (lock) {
             return directTrackers;
         }
@@ -155,7 +155,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     /**
      * @return the raw data, which means all the data the trackers reported.
      */
-    public Map<PeerAddress, TrackerData> getRawPeersOnTracker() {
+    public Map<PeerAddress, TrackerData> rawPeersOnTracker() {
         synchronized (lock) {
             return peersOnTracker;
         }
@@ -164,7 +164,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     /**
      * @return The peer address that send back data.
      */
-    public Set<PeerAddress> getPeersOnTracker() {
+    public Set<PeerAddress> peersOnTracker() {
         synchronized (lock) {
             return peersOnTracker.keySet();
         }
@@ -173,7 +173,7 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     /**
      * @return The list of peers which we already have in our result set.
      */
-    public Set<Number160> getKnownPeers() {
+    public Set<Number160> knownPeers() {
         synchronized (lock) {
             return knownPeers;
         }
@@ -182,11 +182,11 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     /**
      * Evaluates the data from the trackers. Since we receive multiple results,
      * we evaluate them before we give the data to the user. If the user wants
-     * to see the raw data, use {@link #getRawPeersOnTracker()}.
+     * to see the raw data, use {@link #rawPeersOnTracker()}.
      * 
      * @return The data from the trackers.
      */
-    public Collection<TrackerData> getTrackers() {
+    public Collection<TrackerData> trackers() {
         synchronized (lock) {
             return evaluatingSchemeTracker.evaluateSingle(peersOnTracker);
         }

@@ -61,18 +61,18 @@ public final class MessageHeaderCodec {
      */
     public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
         // CHECKSTYLE:OFF
-        final int versionAndType = message.getVersion() << 4 | (message.getType().ordinal() & 0xf);
+        final int versionAndType = message.version() << 4 | (message.type().ordinal() & 0xf);
         // CHECKSTYLE:ON
         buffer.writeInt(versionAndType); // 4
-        buffer.writeInt(message.getMessageId()); // 8
-        buffer.writeByte(message.getCommand()); // 9
-        buffer.writeBytes(message.getSender().getPeerId().toByteArray()); // 29
-        buffer.writeShort((short) message.getSender().tcpPort()); // 31
-        buffer.writeShort((short) message.getSender().udpPort()); // 33
-        buffer.writeBytes(message.getRecipient().getPeerId().toByteArray()); // 53
-        buffer.writeInt(encodeContentTypes(message.getContentTypes())); // 57
+        buffer.writeInt(message.messageId()); // 8
+        buffer.writeByte(message.command()); // 9
+        buffer.writeBytes(message.sender().peerId().toByteArray()); // 29
+        buffer.writeShort((short) message.sender().tcpPort()); // 31
+        buffer.writeShort((short) message.sender().udpPort()); // 33
+        buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
+        buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
         // CHECKSTYLE:OFF
-        buffer.writeByte((message.getSender().getOptions() << 4) | message.getOptions()); // 58
+        buffer.writeByte((message.sender().options() << 4) | message.options()); // 58
         // CHECKSTYLE:ON
         return buffer;
     }
@@ -98,30 +98,30 @@ public final class MessageHeaderCodec {
         final Message message = new Message();
         final int versionAndType = buffer.readInt();
         // CHECKSTYLE:OFF
-        message.setVersion(versionAndType >>> 4);
-        message.setType(Type.values()[(versionAndType & 0xf)]);
+        message.version(versionAndType >>> 4);
+        message.type(Type.values()[(versionAndType & 0xf)]);
         // CHECKSTYLE:ON
-        message.setMessageId(buffer.readInt());
+        message.messageId(buffer.readInt());
         final int command = buffer.readUnsignedByte();
-        message.setCommand((byte) command);
+        message.command((byte) command);
         final Number160 senderID = readID(buffer);
         final int portTCP = buffer.readUnsignedShort();
         final int portUDP = buffer.readUnsignedShort();
         final Number160 recipientID = readID(buffer);
-        message.setRecipient(new PeerAddress(recipientID, recipient));
+        message.recipient(new PeerAddress(recipientID, recipient));
         final int contentTypes = buffer.readInt();
         message.hasContent(contentTypes != 0);
-        message.setContentTypes(decodeContentTypes(contentTypes, message));
+        message.contentTypes(decodeContentTypes(contentTypes, message));
         // set the address as we see it, important for port forwarding
         // identification
         final int options = buffer.readUnsignedByte();
         // CHECKSTYLE:OFF
-        message.setOptions(options & 0xf);
+        message.options(options & 0xf);
         final int senderOptions = options >>> 4;
         // CHECKSTYLE:ON
         final PeerAddress peerAddress = new PeerAddress(senderID, sender.getAddress(), portTCP, portUDP,
                 senderOptions);
-        message.setSender(peerAddress);
+        message.sender(peerAddress);
         message.senderSocket(sender);
         message.recipientSocket(recipient);
         return message;

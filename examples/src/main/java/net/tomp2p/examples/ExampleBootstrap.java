@@ -41,21 +41,21 @@ public class ExampleBootstrap {
 			peers = ExampleUtils.createAndAttachNodes(3, PORT);
 
 			for (int i = 0; i < peers.length; i++) {
-				System.out.println("peer[" + i + "]: " + peers[i].getPeerAddress());
+				System.out.println("peer[" + i + "]: " + peers[i].peerAddress());
 			}
 
-			FutureBootstrap futureBootstrap1 = peers[1].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+			FutureBootstrap futureBootstrap1 = peers[1].bootstrap().peerAddress(peers[0].peerAddress()).start();
 			futureBootstrap1.awaitUninterruptibly();
-			System.out.println("peer[0] knows: " + peers[0].getPeerBean().peerMap().getAll() + " unverified: "
-			        + peers[0].getPeerBean().peerMap().getAllOverflow());
+			System.out.println("peer[0] knows: " + peers[0].peerBean().peerMap().all() + " unverified: "
+			        + peers[0].peerBean().peerMap().allOverflow());
 			System.out.println("wait for maintenace ping");
 			Thread.sleep(2000);
-			System.out.println("peer[0] knows: " + peers[0].getPeerBean().peerMap().getAll() + " unverified: "
-			        + peers[0].getPeerBean().peerMap().getAllOverflow());
-			FutureBootstrap futureBootstrap2 = peers[2].bootstrap().setPeerAddress(peers[0].getPeerAddress()).start();
+			System.out.println("peer[0] knows: " + peers[0].peerBean().peerMap().all() + " unverified: "
+			        + peers[0].peerBean().peerMap().allOverflow());
+			FutureBootstrap futureBootstrap2 = peers[2].bootstrap().peerAddress(peers[0].peerAddress()).start();
 			futureBootstrap2.awaitUninterruptibly();
 			// list all the peers C knows by now:
-			System.out.println("peer[2] knows: " + peers[2].getPeerBean().peerMap().getAll());
+			System.out.println("peer[2] knows: " + peers[2].peerBean().peerMap().all());
 
 		} finally {
 			// 0 is the master

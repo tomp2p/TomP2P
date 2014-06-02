@@ -64,6 +64,8 @@ public interface Storage {
     public abstract void removeTimeout(Number640 key);
 
     public abstract Collection<Number640> subMapTimeout(long to);
+    
+    public int storageCheckIntervalMillis();
 
     // Domain / entry protection
     public abstract boolean protectDomain(Number320 key, PublicKey publicKey);

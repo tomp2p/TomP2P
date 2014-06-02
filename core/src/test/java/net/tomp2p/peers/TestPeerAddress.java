@@ -185,7 +185,7 @@ public class TestPeerAddress {
         int offset2 = pa3.toByteArray(me, offset);
         int len = offset2 - offset;
         // 142 is the
-        Assert.assertEquals(PeerAddress.MAX_SIZE, PeerAddress.size(pa3.getOptions(), pa3.getRelays()));
+        Assert.assertEquals(PeerAddress.MAX_SIZE, PeerAddress.size(pa3.options(), pa3.relays()));
         Assert.assertEquals(PeerAddress.MAX_SIZE, len);
         //
         PeerAddress pa4 = new PeerAddress(me, offset);
@@ -225,7 +225,7 @@ public class TestPeerAddress {
      *            The second PeerAddress
      */
     private void compare(final PeerAddress pa1, final PeerAddress pa2) {
-        Assert.assertEquals(pa1.getPeerId(), pa2.getPeerId());
+        Assert.assertEquals(pa1.peerId(), pa2.peerId());
         Assert.assertEquals(pa1.createSocketTCP().getPort(), pa2.createSocketTCP().getPort());
         Assert.assertEquals(pa1.createSocketTCP(), pa2.createSocketTCP());
         Assert.assertEquals(pa1.createSocketUDP().getPort(), pa2.createSocketUDP().getPort());
@@ -234,10 +234,10 @@ public class TestPeerAddress {
         Assert.assertEquals(pa1.isFirewalledUDP(), pa2.isFirewalledUDP());
         Assert.assertEquals(pa1.isIPv6(), pa2.isIPv6());
         Assert.assertEquals(pa1.isRelayed(), pa2.isRelayed());
-        Assert.assertEquals(pa1.getOptions(), pa2.getOptions());
-        Assert.assertEquals(pa1.getRelays(), pa2.getRelays());
-        List<PeerSocketAddress> psa1 = new ArrayList<PeerSocketAddress>(pa1.getPeerSocketAddresses());
-        List<PeerSocketAddress> psa2 = new ArrayList<PeerSocketAddress>(pa2.getPeerSocketAddresses());
+        Assert.assertEquals(pa1.options(), pa2.options());
+        Assert.assertEquals(pa1.relays(), pa2.relays());
+        List<PeerSocketAddress> psa1 = new ArrayList<PeerSocketAddress>(pa1.peerSocketAddresses());
+        List<PeerSocketAddress> psa2 = new ArrayList<PeerSocketAddress>(pa2.peerSocketAddresses());
         Assert.assertEquals(psa1.size(), psa2.size());
         for (int i = 0; i < psa1.size(); i++) {
             Assert.assertEquals(psa1.get(i), psa2.get(i));

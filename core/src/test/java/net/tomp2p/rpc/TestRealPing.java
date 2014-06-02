@@ -29,7 +29,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -63,10 +63,10 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
-                    .makeAndListen();
-            PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
-            FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+                    .start();
+            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
+            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCP(pa, cc, new DefaultConnectionConfiguration());
@@ -97,10 +97,10 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
-                    .makeAndListen();
-            PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
-            FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+                    .start();
+            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
+            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCPDiscover(pa, cc, new DefaultConnectionConfiguration());
@@ -131,10 +131,10 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerMaker(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
-                    .makeAndListen();
-            PingRPC handshake = new PingRPC(sender.getPeerBean(), sender.getConnectionBean());
-            FutureChannelCreator fcc = sender.getConnectionBean().reservation().create(0, 1);
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+                    .start();
+            PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
+            FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
             FutureResponse fr = handshake.pingTCPProbe(pa, cc, new DefaultConnectionConfiguration());
@@ -163,8 +163,8 @@ public class TestRealPing {
     public void receivePing() throws IOException, InterruptedException {
         Peer recv = null;
         try {
-            recv = new PeerMaker(new Number160("0x1234")).ports(PORT).setEnableMaintenance(false)
-                    .makeAndListen();
+            recv = new PeerBuilder(new Number160("0x1234")).ports(PORT).setEnableMaintenance(false)
+                    .start();
             /**
              * HandshakeRPC with custom debug output.
              * 
@@ -191,7 +191,7 @@ public class TestRealPing {
                 }
 
             }
-            new MyHandshakeRPC(recv.getPeerBean(), recv.getConnectionBean());
+            new MyHandshakeRPC(recv.peerBean(), recv.connectionBean());
             Thread.sleep(WAIT);
         } finally {
             if (recv != null) {

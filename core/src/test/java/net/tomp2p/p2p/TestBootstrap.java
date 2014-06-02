@@ -23,11 +23,11 @@ public class TestBootstrap {
         Peer master = null;
         Peer slave = null;
         try {
-            master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
-            slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
-            FutureDiscover fd = master.discover().peerAddress(slave.getPeerAddress()).start();
+            master = new PeerBuilder(new Number160(rnd)).ports(4001).start();
+            slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
+            FutureDiscover fd = master.discover().peerAddress(slave.peerAddress()).start();
             fd.awaitUninterruptibly();
-            System.err.println(fd.getFailedReason());
+            System.err.println(fd.failedReason());
             Assert.assertEquals(true, fd.isSuccess());
         } finally {
             if (master != null) {
@@ -45,14 +45,14 @@ public class TestBootstrap {
         Peer master = null;
         Peer slave = null;
         try {
-            master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
-            slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
-            FutureBootstrap fb = master.bootstrap().setInetAddress(InetAddress.getByName("127.0.0.1"))
-                    .setPorts(3000).start();
+            master = new PeerBuilder(new Number160(rnd)).ports(4001).start();
+            slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
+            FutureBootstrap fb = master.bootstrap().inetAddress(InetAddress.getByName("127.0.0.1"))
+                    .ports(3000).start();
             fb.awaitUninterruptibly();
             Assert.assertEquals(false, fb.isSuccess());
-            System.err.println(fb.getFailedReason());
-            fb = master.bootstrap().setPeerAddress(slave.getPeerAddress()).start();
+            System.err.println(fb.failedReason());
+            fb = master.bootstrap().peerAddress(slave.peerAddress()).start();
             fb.awaitUninterruptibly();
             Assert.assertEquals(true, fb.isSuccess());
 
@@ -78,7 +78,7 @@ public class TestBootstrap {
             List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();
             for (int i = 0; i < peers.length; i++) {
                 if (peers[i] != master) {
-                    FutureBootstrap res = peers[i].bootstrap().setPeerAddress(master.getPeerAddress())
+                    FutureBootstrap res = peers[i].bootstrap().peerAddress(master.peerAddress())
                             .start();
                     tmp.add(res);
                 }
@@ -87,7 +87,7 @@ public class TestBootstrap {
             for (FutureBootstrap fm : tmp) {
                 fm.awaitUninterruptibly();
                 if (fm.isFailed())
-                    System.err.println(fm.getFailedReason());
+                    System.err.println(fm.failedReason());
                 Assert.assertEquals(true, fm.isSuccess());
                 System.err.println("i:" + (++i));
             }
@@ -110,7 +110,7 @@ public class TestBootstrap {
             List<FutureBootstrap> tmp = new ArrayList<FutureBootstrap>();
             for (int i = 0; i < peers.length; i++) {
                 if (peers[i] != master) {
-                    FutureBootstrap res = peers[i].bootstrap().setPeerAddress(master.getPeerAddress())
+                    FutureBootstrap res = peers[i].bootstrap().peerAddress(master.peerAddress())
                             .start();
                     tmp.add(res);
                 }
@@ -119,7 +119,7 @@ public class TestBootstrap {
             for (FutureBootstrap fm : tmp) {
                 fm.awaitUninterruptibly();
                 if (fm.isFailed())
-                    System.err.println("FAILL:" + fm.getFailedReason());
+                    System.err.println("FAILL:" + fm.failedReason());
                 Assert.assertEquals(true, fm.isSuccess());
                 System.err.println("i:" + (++i));
             }
@@ -143,7 +143,7 @@ public class TestBootstrap {
             // we start from 1, because a broadcast to ourself will not get
             // replied.
             for (int i = 1; i < peers.length; i++) {
-                FutureBootstrap res = peers[i].bootstrap().setPorts(4001).setBroadcast().start();
+                FutureBootstrap res = peers[i].bootstrap().ports(4001).broadcast().start();
                 tmp.add(res);
             }
         } finally {
@@ -159,9 +159,9 @@ public class TestBootstrap {
         Peer master = null;
         Peer slave = null;
         try {
-            master = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
-            slave = new PeerMaker(new Number160(rnd)).ports(4002).makeAndListen();
-            BaseFuture res = slave.ping().setPort(4001).setBroadcast().start();
+            master = new PeerBuilder(new Number160(rnd)).ports(4001).start();
+            slave = new PeerBuilder(new Number160(rnd)).ports(4002).start();
+            BaseFuture res = slave.ping().port(4001).broadcast().start();
             res.awaitUninterruptibly();
             Assert.assertEquals(true, res.isSuccess());
         } finally {
@@ -179,9 +179,9 @@ public class TestBootstrap {
         final Random rnd = new Random(42);
         Peer peer = null;
         try {
-            peer = new PeerMaker(new Number160(rnd)).ports(4000).makeAndListen();
+            peer = new PeerBuilder(new Number160(rnd)).ports(4000).start();
             PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000, 4000);
-            FutureBootstrap tmp = peer.bootstrap().setPeerAddress(pa).start();
+            FutureBootstrap tmp = peer.bootstrap().peerAddress(pa).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());
         } finally {
@@ -201,8 +201,8 @@ public class TestBootstrap {
         final Random rnd = new Random(42);
         Peer peer = null;
         try {
-            peer = new PeerMaker(new Number160(rnd)).ports(4000).makeAndListen();
-            FutureBootstrap tmp = peer.bootstrap().setPeerAddress(peer.getPeerAddress()).start();
+            peer = new PeerBuilder(new Number160(rnd)).ports(4000).start();
+            FutureBootstrap tmp = peer.bootstrap().peerAddress(peer.peerAddress()).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(true, tmp.isSuccess());
         } finally {
@@ -223,13 +223,13 @@ public class TestBootstrap {
         final Random rnd = new Random(42);
         Peer peer = null;
         try {
-            peer = new PeerMaker(new Number160(rnd)).ports(4000).makeAndListen();
+            peer = new PeerBuilder(new Number160(rnd)).ports(4000).start();
 
             Collection<PeerAddress> bootstrapTo = new ArrayList<PeerAddress>(2);
             PeerAddress pa = new PeerAddress(new Number160(rnd), "192.168.77.77", 4000, 4000);
-            bootstrapTo.add(peer.getPeerAddress());
+            bootstrapTo.add(peer.peerAddress());
             bootstrapTo.add(pa);
-            FutureBootstrap tmp = peer.bootstrap().setBootstrapTo(bootstrapTo).start();
+            FutureBootstrap tmp = peer.bootstrap().bootstrapTo(bootstrapTo).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());
         } finally {

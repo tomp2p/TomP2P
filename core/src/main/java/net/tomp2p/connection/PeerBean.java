@@ -21,11 +21,9 @@ import net.tomp2p.p2p.MaintenanceTask;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.p2p.Replication;
-import net.tomp2p.p2p.ReplicationExecutor;
 import net.tomp2p.rpc.BloomfilterFactory;
-import net.tomp2p.storage.StorageLayer;
-import net.tomp2p.storage.TrackerStorage;
+import net.tomp2p.storage.DigestStorage;
+import net.tomp2p.storage.DigestTracker;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings for the peer. The sharable
@@ -39,16 +37,11 @@ public class PeerBean {
     private PeerAddress serverPeerAddress;
     private PeerMap peerMap;
     private PeerStatusListener[] peerStatusListeners;
-    private StorageLayer storage;
-    private TrackerStorage trackerStorage;
-    private Replication replicationStorage;
-    private Replication replicationTracker;
     private BloomfilterFactory bloomfilterFactory;
     private MaintenanceTask maintenanceTask;
-    private ReplicationExecutor replicationExecutor;
-    /*
-     * private Statistics statistics; private Peer peer;
-     */
+    private DigestStorage digestStorage;
+    private DigestTracker digestTracker;
+    
 
     /**
      * Creates a bean with a key pair.
@@ -136,62 +129,6 @@ public class PeerBean {
         this.peerStatusListeners = peerStatusListeners;
         return this;
     }
-
-    /**
-     * @param storage
-     *            The storage where the key value pairs are stored
-     * @return This class
-     */
-    public PeerBean storage(final StorageLayer storage) {
-        this.storage = storage;
-        return this;
-    }
-
-    /**
-     * @return The storage where the key value pairs are stored
-     */
-    public StorageLayer storage() {
-        return storage;
-    }
-
-    /**
-     * Set the replication class that stores who is responsible for what. The backend is typically implemented together
-     * with the storage.
-     * 
-     * @param replicationStorage
-     *            The replication used for storage
-     * @return This class
-     */
-    public PeerBean replicationStorage(final Replication replicationStorage) {
-        this.replicationStorage = replicationStorage;
-        return this;
-    }
-
-    /**
-     * @return The replication class that stores who is responsible for what. The backend is typically implemented
-     *         together with the storage.
-     */
-    public Replication replicationStorage() {
-        return replicationStorage;
-    }
-
-    public PeerBean replicationTracker(final Replication replicationTracker) {
-        this.replicationTracker = replicationTracker;
-        return this;
-    }
-
-    public Replication getReplicationTracker() {
-        return replicationTracker;
-    }
-
-    public PeerBean trackerStorage(TrackerStorage trackerStorage) {
-        this.trackerStorage = trackerStorage;
-        return this;
-    }
-
-    public TrackerStorage trackerStorage() {
-        return trackerStorage;
-    }
     
     public PeerBean bloomfilterFactory(final BloomfilterFactory bloomfilterFactory) {
         this.bloomfilterFactory = bloomfilterFactory;
@@ -210,13 +147,22 @@ public class PeerBean {
     public MaintenanceTask maintenanceTask() {
         return maintenanceTask;
     }
-
-    public ReplicationExecutor replicationExecutor() {
-        return replicationExecutor;
-    }
-
-    public PeerBean replicationExecutor(ReplicationExecutor replicationExecutor) {
-        this.replicationExecutor = replicationExecutor;
+    
+    public PeerBean digestStorage(DigestStorage digestStorage) {
+        this.digestStorage = digestStorage;
         return this;
+    }
+    
+    public DigestStorage digestStorage() {
+        return digestStorage;
+    }
+    
+    public PeerBean digestTracker(DigestTracker digestTracker) {
+        this.digestTracker = digestTracker;
+        return this;
+    }
+    
+    public DigestTracker digestTracker() {
+        return digestTracker;
     }
 }

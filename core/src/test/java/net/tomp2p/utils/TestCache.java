@@ -10,40 +10,40 @@ import org.junit.Test;
 
 public class TestCache {
     @Test
-    public void testCache() {
+    public void testCache() throws InterruptedException {
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
         test.put("hallo1", "test1");
-        Timings.sleepUninterruptibly(500);
+        Thread.sleep(500);
         test.put("hallo2", "test2");
         test.put("hallo3", "test3");
-        Timings.sleepUninterruptibly(600);
+        Thread.sleep(600);
         Assert.assertEquals(2, test.size());
     }
 
     @Test
-    public void testCache2() {
+    public void testCache2() throws InterruptedException {
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
         test.put("hallo0", "test0");
-        Timings.sleepUninterruptibly(500);
+        Thread.sleep(500);
         for (int i = 1; i < 800; i++) {
             test.put("hallo" + i, "test" + i);
         }
-        Timings.sleepUninterruptibly(500);
+        Thread.sleep(500);
         Assert.assertEquals(800 - 1, test.size());
     }
 
     @Test
-    public void testCache3multi() {
+    public void testCache3multi() throws InterruptedException {
         for (int i = 0; i < 5; i++) {
             testCache3();
         }
     }
 
     @Test
-    public void testCache3() {
+    public void testCache3() throws InterruptedException {
         final ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(3, 1024);
         test.put("hallo0", "test0");
-        Timings.sleepUninterruptibly(1000);
+        Thread.sleep(1000);
         final long start = System.currentTimeMillis();
         final AtomicBoolean failed = new AtomicBoolean(false);
         final AtomicInteger integer1 = new AtomicInteger(1);
@@ -78,7 +78,7 @@ public class TestCache {
         }
         long waitfor = 2900 - (System.currentTimeMillis() - start);
         System.out.println("waitfor: " + waitfor);
-        Timings.sleepUninterruptibly((int) waitfor);
+        Thread.sleep((int) waitfor);
         System.out.println("TestCache: expected: " + (800 - 1) + ", got: " + test.size() + ", failed: " + failed.get()
                 + " - expired " + test.expiredCounter() + ", inserts: " + integer1 + "/" + integer2 + ", threads: "
                 + Thread.activeCount());
@@ -90,49 +90,49 @@ public class TestCache {
     }
 
     @Test
-    public void testCache4() {
+    public void testCache4() throws InterruptedException {
         String key = "hallo0";
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
         test.put(key, "test0");
-        Timings.sleepUninterruptibly(1100);
+        Thread.sleep(1100);
         test.put(key, "test1");
-        Timings.sleepUninterruptibly(200);
+        Thread.sleep(200);
         String val = test.get(key);
         Assert.assertEquals("test1", val);
     }
 
     @Test
-    public void testCache5() {
+    public void testCache5() throws InterruptedException {
         String key = "hallo0";
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024);
         test.put(key, "test0");
-        Timings.sleepUninterruptibly(1100);
+        Thread.sleep(1100);
         test.put(key, "test1");
-        Timings.sleepUninterruptibly(1100);
+        Thread.sleep(1100);
         String val = test.get(key);
         Assert.assertEquals(null, val);
     }
 
     @Test
-    public void testCache6() {
+    public void testCache6() throws InterruptedException {
         String key = "hallo0";
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, false);
         test.put(key, "test0");
-        Timings.sleepUninterruptibly(500);
+        Thread.sleep(500);
         test.putIfAbsent(key, "test1");
-        Timings.sleepUninterruptibly(800);
+        Thread.sleep(800);
         String val = test.get(key);
         Assert.assertEquals(null, val);
     }
 
     @Test
-    public void testCache7() {
+    public void testCache7() throws InterruptedException {
         String key = "hallo0";
         ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, true);
         test.put(key, "test0");
-        Timings.sleepUninterruptibly(500);
+        Thread.sleep(500);
         test.putIfAbsent(key, "test1");
-        Timings.sleepUninterruptibly(800);
+        Thread.sleep(800);
         String val = test.get(key);
         // putIfAbsent will refresh test0
         Assert.assertEquals("test0", val);

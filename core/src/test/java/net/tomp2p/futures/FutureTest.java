@@ -32,7 +32,7 @@ public class FutureTest extends BaseFutureImpl<FutureTest> {
 
     public void setDone(Number160 result, int counter) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return;
             }
             type = FutureType.OK;

@@ -43,11 +43,11 @@ public class TrackerData {
         this.couldProvideMoreData = couldProvideMoreData;
     }
 
-    public Map<PeerAddress, Data> getPeerAddresses() {
+    public Map<PeerAddress, Data> peerAddresses() {
         return peerAddresses;
     }
 
-    public PeerAddress getReferrer() {
+    public PeerAddress referrer() {
         return referrer;
     }
 
@@ -78,7 +78,7 @@ public class TrackerData {
         for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
             Map.Entry<PeerAddress, Data> entry = iterator.next();
-            if (entry.getKey().getPeerId().equals(remotePeerId)) {
+            if (entry.getKey().peerId().equals(remotePeerId)) {
                 iterator.remove();
                 return entry;
             }
@@ -90,7 +90,7 @@ public class TrackerData {
         for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
             Map.Entry<PeerAddress, Data> entry = iterator.next();
-            if (entry.getKey().getPeerId().equals(tmpKey)) {
+            if (entry.getKey().peerId().equals(tmpKey)) {
                 return true;
             }
         }

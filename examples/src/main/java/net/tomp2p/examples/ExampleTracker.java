@@ -169,10 +169,10 @@ public final class ExampleTracker {
             FutureTracker futureTracker = peer.getTracker(key).start();
             // now we know which peer has this data, and we also know what other things this peer has
             futureTracker.awaitUninterruptibly();
-            Collection<TrackerData> trackerDatas = futureTracker.getTrackers();
+            Collection<TrackerData> trackerDatas = futureTracker.trackers();
             for (TrackerData trackerData : trackerDatas) {
             	
-				for (Data attachement : trackerData.getPeerAddresses().values()) {
+				for (Data attachement : trackerData.peerAddresses().values()) {
 
 					String[] attachements = (String[]) attachement.object();
 					for (String s1 : attachements) {
@@ -187,7 +187,7 @@ public final class ExampleTracker {
          * @param peer Set reply handler for peer.
          */
         private void setReplyHandler(final Peer peer) {
-            peer.setObjectDataReply(new ObjectDataReply() {
+            peer.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     if (request != null && request instanceof Number160) {

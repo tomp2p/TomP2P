@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
-import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
@@ -99,15 +98,15 @@ public class TestPeerMap {
         SortedSet<PeerAddress> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
         Iterator<PeerAddress> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x2", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x3", iterator.next().peerId().toString());
+        Assert.assertEquals("0x2", iterator.next().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(4, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x5", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x6", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x7", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x4", iterator.next().peerId().toString());
+        Assert.assertEquals("0x5", iterator.next().peerId().toString());
+        Assert.assertEquals("0x6", iterator.next().peerId().toString());
+        Assert.assertEquals("0x7", iterator.next().peerId().toString());
     }
 
     @Test
@@ -140,17 +139,17 @@ public class TestPeerMap {
         SortedSet<PeerAddress> pa = peerMap.closePeers(ID, 2);
         Assert.assertEquals(2, pa.size());
         Iterator<PeerAddress> iterator = pa.iterator();
-        Assert.assertEquals("0x3", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x2", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x3", iterator.next().peerId().toString());
+        Assert.assertEquals("0x2", iterator.next().peerId().toString());
         pa = peerMap.closePeers(id3, 3);
         Assert.assertEquals(3, pa.size());
         iterator = pa.iterator();
-        Assert.assertEquals("0x4", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x5", iterator.next().getPeerId().toString());
-        Assert.assertEquals("0x6", iterator.next().getPeerId().toString());
+        Assert.assertEquals("0x4", iterator.next().peerId().toString());
+        Assert.assertEquals("0x5", iterator.next().peerId().toString());
+        Assert.assertEquals("0x6", iterator.next().peerId().toString());
         // 0x7 is in the non-verified / overflow map
-        List<PeerAddress> list = peerMap.getAllOverflow();
-        Assert.assertEquals("0x7", list.iterator().next().getPeerId().toString());
+        List<PeerAddress> list = peerMap.allOverflow();
+        Assert.assertEquals("0x7", list.iterator().next().peerId().toString());
     }
 
     @Test
@@ -179,8 +178,8 @@ public class TestPeerMap {
         rn1 = new PeerAddress(new Number160("0x10"));
         rn2 = new PeerAddress(new Number160("0x11"));
         key = new Number160("0xff");
-        System.err.println("0x7f xor 0xff " + rn1.getPeerId().xor(key));
-        System.err.println("0x40 xor 0xff " + rn2.getPeerId().xor(key));
+        System.err.println("0x7f xor 0xff " + rn1.peerId().xor(key));
+        System.err.println("0x40 xor 0xff " + rn2.peerId().xor(key));
         Assert.assertEquals(1, PeerMap.isCloser(key, rn1, rn2));
     }
 
@@ -253,7 +252,7 @@ public class TestPeerMap {
         peerMap.peerFailed(new PeerAddress(new Number160(2)), FailReason.ProbablyOffline);
         Assert.assertEquals(19, peerMap.size());
         Assert.assertTrue(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
-        Timings.sleep(1000);
+        Thread.sleep(1000);
         Assert.assertFalse(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(2))));
         Assert.assertFalse(peerMap.isPeerRemovedTemporarly(new PeerAddress(new Number160(100))));
 
@@ -481,8 +480,8 @@ public class TestPeerMap {
         peerMap.peerFound(pa2, pa1);
         List<PeerAddress> notInterested = new ArrayList<PeerAddress>();
         PeerStatatistic peerStatatistic = peerMap.nextForMaintenance(notInterested);
-        notInterested.add(peerStatatistic.getPeerAddress());
-        Assert.assertEquals(peerStatatistic.getPeerAddress(), pa2);
+        notInterested.add(peerStatatistic.peerAddress());
+        Assert.assertEquals(peerStatatistic.peerAddress(), pa2);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
         Assert.assertEquals(true, peerStatatistic == null);
         
@@ -492,7 +491,7 @@ public class TestPeerMap {
         Assert.assertEquals(true, peerStatatistic == null);
         Thread.sleep(1000);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);
-        Assert.assertEquals(peerStatatistic.getPeerAddress(), pa3);
+        Assert.assertEquals(peerStatatistic.peerAddress(), pa3);
     }
 
     @Test
@@ -523,7 +522,7 @@ public class TestPeerMap {
             set.addAll(peers);
             PeerAddress closest1 = set.iterator().next();
             PeerAddress closest2 = peerMap.closePeers(key, 1).iterator().next();
-            if (peerMap.getAllOverflow().size() == 0) {
+            if (peerMap.allOverflow().size() == 0) {
                 Assert.assertEquals(closest1, closest2);
             }
         }

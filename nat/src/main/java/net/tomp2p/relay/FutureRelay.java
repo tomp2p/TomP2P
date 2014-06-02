@@ -33,7 +33,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 
 	public FutureRelay nothingTodo() {
 		synchronized (lock) {
-			if (!setCompletedAndNotify()) {
+			if (!completedAndNotify()) {
 				return this;
 			}
 			type = FutureType.OK;
@@ -45,7 +45,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 
 	public FutureRelay setDone(Collection<PeerConnection> relays) {
 		synchronized (lock) {
-			if (!setCompletedAndNotify()) {
+			if (!completedAndNotify()) {
 				return this;
 			}
 			type = FutureType.OK;

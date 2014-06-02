@@ -58,7 +58,7 @@ public abstract class DispatchHandler {
     }
     
     public void register(final int... names) {
-        connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().getPeerId(), this, names);
+        connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), this, names);
     }
 
     /**
@@ -95,8 +95,8 @@ public abstract class DispatchHandler {
      * @return The request message
      */
     public Message createMessage(final PeerAddress recipient, final byte name, final Type type) {
-        return new Message().setRecipient(recipient).setSender(peerBean().serverPeerAddress())
-                .setCommand(name).setType(type).setVersion(connectionBean().p2pId());
+        return new Message().recipient(recipient).sender(peerBean().serverPeerAddress())
+                .command(name).type(type).version(connectionBean().p2pId());
     }
 
     /**
@@ -117,12 +117,12 @@ public abstract class DispatchHandler {
         // this will have the ports > 40'000 that we need to know for sendig the reply
         replyMessage.senderSocket(requestMessage.senderSocket());
         replyMessage.recipientSocket(requestMessage.recipientSocket());
-        replyMessage.setRecipient(requestMessage.getSender());
-        replyMessage.setSender(peerAddress);
-        replyMessage.setCommand(requestMessage.getCommand());
-        replyMessage.setType(replyType);
-        replyMessage.setVersion(requestMessage.getVersion());
-        replyMessage.setMessageId(requestMessage.getMessageId());
+        replyMessage.recipient(requestMessage.sender());
+        replyMessage.sender(peerAddress);
+        replyMessage.command(requestMessage.command());
+        replyMessage.type(replyType);
+        replyMessage.version(requestMessage.version());
+        replyMessage.messageId(requestMessage.messageId());
         replyMessage.udp(requestMessage.isUdp());
         return replyMessage;
     }
@@ -140,11 +140,11 @@ public abstract class DispatchHandler {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
-        peerBean().peerMap().peerFound(requestMessage.getSender(), requestMessage.getSender());
+        peerBean().peerMap().peerFound(requestMessage.sender(), requestMessage.sender());
         try {
             handleResponse(requestMessage, peerConnection, sign, responder);
         } catch (Throwable e) {
-            peerBean().peerMap().peerFailed(requestMessage.getSender(), FailReason.Exception);
+            peerBean().peerMap().peerFailed(requestMessage.sender(), FailReason.Exception);
             LOG.error("Exception in custom handler", e);
             responder.failed(Type.EXCEPTION , e.toString());
         }

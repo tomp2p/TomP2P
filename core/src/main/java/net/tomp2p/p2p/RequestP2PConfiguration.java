@@ -70,19 +70,19 @@ public class RequestP2PConfiguration {
                 forceUPD, forceTCP);
     }
 
-    public int getMinimumResults() {
+    public int minimumResults() {
         return minimumResults;
     }
 
-    public int getMaxFailure() {
+    public int maxFailure() {
         return maxFailure;
     }
 
-    public int getParallelDiff() {
+    public int parallelDiff() {
         return parallelDiff;
     }
 
-    public int getParallel() {
+    public int parallel() {
         return minimumResults + parallelDiff;
     }
 

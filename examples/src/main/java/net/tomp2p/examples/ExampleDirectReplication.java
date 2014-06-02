@@ -18,12 +18,12 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
+import net.tomp2p.dht.PutBuilder;
+import net.tomp2p.dht.RemoveBuilder;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
-import net.tomp2p.p2p.builder.PutBuilder;
-import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.replication.DirectReplication;
 import net.tomp2p.storage.Data;

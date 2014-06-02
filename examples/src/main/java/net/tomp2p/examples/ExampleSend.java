@@ -1,6 +1,6 @@
 package net.tomp2p.examples;
 
-import net.tomp2p.futures.FutureSend;
+import net.tomp2p.dht.FutureSend;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
@@ -29,8 +29,8 @@ public class ExampleSend {
 
 	private static void exampleSendOne(Peer peer) {
 		RequestP2PConfiguration requestP2PConfiguration = new RequestP2PConfiguration(1, 10, 0);
-		FutureSend futureSend = peer.send(Number160.createHash("key")).setObject("hello")
-		        .setRequestP2PConfiguration(requestP2PConfiguration).start();
+		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello")
+		        .requestP2PConfiguration(requestP2PConfiguration).start();
 		futureSend.awaitUninterruptibly();
 		for (Object object : futureSend.getRawDirectData2().values()) {
 			System.err.println("got:" + object);
@@ -38,7 +38,7 @@ public class ExampleSend {
 	}
 
 	private static void exampleSendRedundant(Peer peer) {
-		FutureSend futureSend = peer.send(Number160.createHash("key")).setObject("hello").start();
+		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello").start();
 		futureSend.awaitUninterruptibly();
 		for (Object object : futureSend.getRawDirectData2().values()) {
 			System.err.println("got:" + object);
@@ -48,11 +48,11 @@ public class ExampleSend {
 
 	private static void setupReplyHandler(Peer[] peers) {
 		for (final Peer peer : peers) {
-			peer.setObjectDataReply(new ObjectDataReply() {
+			peer.objectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
-					System.err.println("I'm " + peer.getPeerID() + " and I just got the message [" + request
-					        + "] from " + sender.getPeerId());
+					System.err.println("I'm " + peer.peerID() + " and I just got the message [" + request
+					        + "] from " + sender.peerId());
 					return "world";
 				}
 			});

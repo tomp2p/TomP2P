@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Random;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Statistics;
 import net.tomp2p.storage.Data;

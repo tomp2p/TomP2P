@@ -51,9 +51,9 @@ public class TestStatistics {
 				peerMap.peerFound(pa, null);
 			}
 
-			double diff = nr / statistics.getEstimatedNumberOfNodes();
+			double diff = nr / statistics.estimatedNumberOfNodes();
 			System.err.println("diff: " + diff);
-			System.err.println("estimated: " + statistics.getEstimatedNumberOfNodes() + " actual: " + (nr-1));
+			System.err.println("estimated: " + statistics.estimatedNumberOfNodes() + " actual: " + (nr-1));
 			Assert.assertTrue(diff < 1.5 && diff > 0.5);
 		}
 	}

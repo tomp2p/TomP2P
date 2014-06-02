@@ -33,19 +33,19 @@ import net.tomp2p.peers.PeerFilter;
  */
 public interface BasicBuilder<K> extends ConnectionConfiguration, Builder {
 
-    public Number160 getLocationKey();
+    public Number160 locationKey();
 
-    public Number160 getDomainKey();
+    public Number160 domainKey();
 
-    public K setDomainKey(Number160 domainKey);
+    public K domainKey(Number160 domainKey);
 
-    public RoutingConfiguration getRoutingConfiguration();
+    public RoutingConfiguration routingConfiguration();
 
-    public K setRoutingConfiguration(RoutingConfiguration routingConfiguration);
+    public K routingConfiguration(RoutingConfiguration routingConfiguration);
 
-    public RequestP2PConfiguration getRequestP2PConfiguration();
+    public RequestP2PConfiguration requestP2PConfiguration();
 
-    public K setRequestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration);
+    public K requestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration);
 
     public RoutingBuilder createBuilder(RequestP2PConfiguration requestP2PConfiguration,
             RoutingConfiguration routingConfiguration);

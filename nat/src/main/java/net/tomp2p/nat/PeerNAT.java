@@ -49,7 +49,7 @@ public class PeerNAT {
 			@Override
 			public BaseFuture shutdown() {
 				natUtils.shutdown();
-				return new FutureDone<Void>().setDone();
+				return new FutureDone<Void>().done();
 			}
 		});
 
@@ -80,37 +80,37 @@ public class PeerNAT {
 				if (future.isFailed() && future.isNat()) {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress());
 					if (externalPorts != null) {
-						PeerAddress serverAddress = peer.getPeerBean().serverPeerAddress();
+						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
 						serverAddress = serverAddress.changePorts(externalPorts.externalTCPPort(),
 						        externalPorts.externalUDPPort());
 						serverAddress = serverAddress.changeAddress(future.externalAddress());
-						peer.getPeerBean().serverPeerAddress(serverAddress);
+						peer.peerBean().serverPeerAddress(serverAddress);
 						// test with discover again
 						DiscoverBuilder builder = new DiscoverBuilder(peer);
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
-									futureNAT.done(future.getPeerAddress(), future.getReporter());
+									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay
-									PeerAddress pa = peer.getPeerBean().serverPeerAddress().changeFirewalledTCP(true)
+									PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
 									        .changeFirewalledUDP(true);
-									peer.getPeerBean().serverPeerAddress(pa);
-									futureNAT.setFailed(future);
+									peer.peerBean().serverPeerAddress(pa);
+									futureNAT.failed(future);
 								}
 							}
 						});
 					} else {
 						// indicate relay
-						PeerAddress pa = peer.getPeerBean().serverPeerAddress().changeFirewalledTCP(true)
+						PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
 						        .changeFirewalledUDP(true);
-						peer.getPeerBean().serverPeerAddress(pa);
-						futureNAT.setFailed("could not setup NAT");
+						peer.peerBean().serverPeerAddress(pa);
+						futureNAT.failed("could not setup NAT");
 					}
 				} else {
 					LOG.info("nothing to do, you are reachable from outside");
-					futureNAT.done(futureDiscover.getPeerAddress(), futureDiscover.getReporter());
+					futureNAT.done(futureDiscover.peerAddress(), futureDiscover.reporter());
 				}
 			}
 		});
@@ -132,7 +132,7 @@ public class PeerNAT {
 		boolean success;
 
 		try {
-			success = natUtils.mapUPNP(internalHost, peer.getPeerAddress().tcpPort(), peer.getPeerAddress().udpPort(),
+			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
 			        ports.externalUDPPort(), ports.externalTCPPort());
 		} catch (IOException e) {
 			success = false;
@@ -143,7 +143,7 @@ public class PeerNAT {
 				LOG.warn("cannot find UPNP devices");
 			}
 			try {
-				success = natUtils.mapPMP(peer.getPeerAddress().tcpPort(), peer.getPeerAddress().udpPort(),
+				success = natUtils.mapPMP(peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
 				        ports.externalUDPPort(), ports.externalTCPPort());
 				if (!success) {
 					if (LOG.isWarnEnabled()) {
@@ -217,14 +217,14 @@ public class PeerNAT {
 		}
 		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder(),
 		        futureRelay.distributedRelay());
-		peer.getConnectionBean().timer()
+		peer.connectionBean().timer()
 		        .scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval(), TimeUnit.SECONDS);
 
 		final Shutdown shutdown = new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {
 				peerMapUpdateTask.cancel();
-				return new FutureDone<Void>().setDone();
+				return new FutureDone<Void>().done();
 			}
 		};
 		peer.addShutdownListener(shutdown);
@@ -234,7 +234,7 @@ public class PeerNAT {
 			public BaseFuture shutdown() {
 				peerMapUpdateTask.cancel();
 				peer.removeShutdownListener(shutdown);
-				return new FutureDone<Void>().setDone();
+				return new FutureDone<Void>().done();
 			}
 		};
 	}
@@ -251,9 +251,9 @@ public class PeerNAT {
 		// make it firewalled
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
 		
-		PeerAddress upa = peer.getPeerBean().serverPeerAddress();
+		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
-		peer.getPeerBean().serverPeerAddress(upa);
+		peer.peerBean().serverPeerAddress(upa);
 		// find neighbors
 
 		FutureBootstrap futureBootstrap = bootstrapBuilder().start();
@@ -281,17 +281,17 @@ public class PeerNAT {
 											Shutdown shutdown = startRelayMaintenance(futureRelay);
 											futureBootstrapNAT.done(shutdown);
 										} else {
-											futureBootstrapNAT.setFailed(future);
+											futureBootstrapNAT.failed(future);
 										}
 									}
 								});
 							} else {
-								futureBootstrapNAT.setFailed(future);
+								futureBootstrapNAT.failed(future);
 							}
 						}
 					});
 				} else {
-					futureBootstrapNAT.setFailed(future);
+					futureBootstrapNAT.failed(future);
 				}
 			}
 		});

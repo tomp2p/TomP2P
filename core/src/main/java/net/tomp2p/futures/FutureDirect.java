@@ -13,8 +13,8 @@ public class FutureDirect extends FutureWrapper2<FutureDirect, FutureResponse> {
     	super(new FutureResponse(null));
     	self(this);
     	this.futureResponse = wrappedFuture();
-    	futureResponse.setFailed(failed);
-    	setFailed(failed);
+    	futureResponse.failed(failed);
+    	failed(failed);
     }
     
     public FutureDirect(FutureResponse futureResponse) {
@@ -24,15 +24,15 @@ public class FutureDirect extends FutureWrapper2<FutureDirect, FutureResponse> {
         waitFor();
     }
     
-    public Buffer getBuffer() {
+    public Buffer buffer() {
         synchronized (lock) {
-            return futureResponse.getResponse().getBuffer(0);
+            return futureResponse.responseMessage().buffer(0);
         }
     }
     
     public Object object() throws ClassNotFoundException, IOException {
         synchronized (lock) {
-            return getBuffer().object();
+            return buffer().object();
         }
     }
 

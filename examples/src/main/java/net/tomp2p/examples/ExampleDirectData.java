@@ -3,10 +3,10 @@ package net.tomp2p.examples;
 import java.io.IOException;
 import java.util.Arrays;
 
+import net.tomp2p.dht.FutureSend;
 import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.futures.FutureSend;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
@@ -20,16 +20,16 @@ public class ExampleDirectData {
 	public static void main(String[] args) throws IOException {
 		final Number160 idP1 = Number160.createHash("p1");
 		final Number160 idP2 = Number160.createHash("p2");
-		Peer p1 = new PeerMaker(idP1).ports(1234).makeAndListen();
-		Peer p2 = new PeerMaker(idP2).ports(1235).makeAndListen();
+		Peer p1 = new PeerBuilder(idP1).ports(1234).start();
+		Peer p2 = new PeerBuilder(idP2).ports(1235).start();
 		BootstrapBuilder b = p2.bootstrap();
-		b.setBootstrapTo(Arrays.asList(new PeerAddress(idP1, "localhost", 1234, 1234)));
+		b.bootstrapTo(Arrays.asList(new PeerAddress(idP1, "localhost", 1234, 1234)));
 		b.start().awaitUninterruptibly();
 
-		p1.setObjectDataReply(new ObjectDataReply() {
+		p1.objectDataReply(new ObjectDataReply() {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
-				if (sender.getPeerId().equals(idP2)) {
+				if (sender.peerId().equals(idP2)) {
 					int val = (Integer) request;
 					System.err.println(String.format("P1 received: %d", val));
 					if (val != p1Counter) {
@@ -46,10 +46,10 @@ public class ExampleDirectData {
 			}
 		});
 
-		p2.setObjectDataReply(new ObjectDataReply() {
+		p2.objectDataReply(new ObjectDataReply() {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
-				if (sender.getPeerId().equals(idP1)) {
+				if (sender.peerId().equals(idP1)) {
 					int val = (Integer) request;
 					System.err.println(String.format("P2 received: %d", val));
 					if (val != p2Counter) {
@@ -76,7 +76,7 @@ public class ExampleDirectData {
 
 	static void p1SendNext(final Peer p, final Number160 idP2) {
 		p1Counter++;
-		p.send(idP2).setObject(p1Counter - 1).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
+		p.send(idP2).object(p1Counter - 1).requestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
 		        .addListener(new BaseFutureListener<FutureSend>() {
 
 			        @Override
@@ -106,7 +106,7 @@ public class ExampleDirectData {
 
 	static void p2SendNext(final Peer p, final Number160 idP1) {
 		p2Counter++;
-		p.send(idP1).setObject(p2Counter - 1).setRequestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
+		p.send(idP1).object(p2Counter - 1).requestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
 		        .addListener(new BaseFutureListener<FutureSend>() {
 
 			        @Override

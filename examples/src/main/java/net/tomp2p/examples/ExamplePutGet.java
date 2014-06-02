@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Random;
 
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureGet;
-import net.tomp2p.futures.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -96,7 +96,7 @@ public final class ExamplePutGet {
     {
         Number160 nr = new Number160( RND );
         FuturePut futurePut =
-            peers[30].put( nr ).setData( new Number160( 11 ), new Data( "hallo" ) ).setDomainKey( Number160.createHash( "my_domain" ) ).start();
+            peers[30].put( nr ).setData( new Number160( 11 ), new Data( "hallo" ) ).domainKey( Number160.createHash( "my_domain" ) ).start();
         futurePut.awaitUninterruptibly();
         System.out.println( "peer 30 stored [key: " + nr + ", value: \"hallo\"]" );
         // this will fail, since we did not specify the domain
@@ -105,7 +105,7 @@ public final class ExamplePutGet {
         System.out.println( "peer 77 got: \"" + futureGet.getData() + "\" for the key " + nr );
         // this will succeed, since we specify the domain
         futureGet =
-            peers[77].get( nr ).setAll().setDomainKey( Number160.createHash( "my_domain" ) ).start().awaitUninterruptibly();
+            peers[77].get( nr ).setAll().domainKey( Number160.createHash( "my_domain" ) ).start().awaitUninterruptibly();
         System.out.println( "peer 77 got: \"" + futureGet.getData().object() + "\" for the key " + nr );
         // the output should look like this:
         // peer 30 stored [key: 0x8992a603029824e810fd7416d729ef2eb9ad3cfc, value: "hallo"]

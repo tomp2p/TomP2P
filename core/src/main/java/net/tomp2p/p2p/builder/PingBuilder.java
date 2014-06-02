@@ -37,7 +37,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.utils.Utils;
 
 public class PingBuilder {
-    private static final BaseFuture FUTURE_PING_SHUTDOWN = new FutureDone<Void>().setFailed("Peer is shutting down");
+    private static final BaseFuture FUTURE_PING_SHUTDOWN = new FutureDone<Void>().failed("Peer is shutting down");
 
     private final Peer peer;
 
@@ -68,25 +68,25 @@ public class PingBuilder {
         return peerAddress;
     }
 
-    public PingBuilder setPeerAddress(PeerAddress peerAddress) {
+    public PingBuilder peerAddress(PeerAddress peerAddress) {
         this.peerAddress = peerAddress;
         return this;
     }
 
-    public InetAddress getInetAddress() {
+    public InetAddress inetAddress() {
         return inetAddress;
     }
 
-    public PingBuilder setInetAddress(InetAddress inetAddress) {
+    public PingBuilder inetAddress(InetAddress inetAddress) {
         this.inetAddress = inetAddress;
         return this;
     }
 
-    public int getPort() {
+    public int port() {
         return port;
     }
 
-    public PingBuilder setPort(int port) {
+    public PingBuilder port(int port) {
         this.port = port;
         return this;
     }
@@ -95,12 +95,12 @@ public class PingBuilder {
         return broadcast;
     }
 
-    public PingBuilder setBroadcast() {
+    public PingBuilder broadcast() {
         this.broadcast = true;
         return this;
     }
 
-    public PingBuilder setBroadcast(boolean broadcast) {
+    public PingBuilder broadcast(boolean broadcast) {
         this.broadcast = broadcast;
         return this;
     }
@@ -109,12 +109,12 @@ public class PingBuilder {
         return tcpPing;
     }
 
-    public PingBuilder setTcpPing() {
+    public PingBuilder tcpPing() {
         this.tcpPing = true;
         return this;
     }
 
-    public PingBuilder setTcpPing(boolean tcpPing) {
+    public PingBuilder tcpPing(boolean tcpPing) {
         this.tcpPing = tcpPing;
         return this;
     }
@@ -161,12 +161,12 @@ public class PingBuilder {
     }
 
     FutureLateJoin<FutureResponse> pingBroadcast(final int port) {
-        final Bindings bindings = peer.getConnectionBean().sender().channelClientConfiguration().externalBindings();
+        final Bindings bindings = peer.connectionBean().sender().channelClientConfiguration().externalBindings();
         final int size = bindings.broadcastAddresses().size();
         final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
         if (size > 0) {
 
-            FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(size, 0);
+            FutureChannelCreator fcc = peer.connectionBean().reservation().create(size, 0);
 
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
@@ -185,12 +185,12 @@ public class PingBuilder {
                             }
                         }
                     } else {
-                        futureLateJoin.setFailed(future);
+                        futureLateJoin.failed(future);
                     }
                 }
             });
         } else {
-            futureLateJoin.setFailed("No broadcast address found. Cannot ping nothing");
+            futureLateJoin.failed("No broadcast address found. Cannot ping nothing");
         }
         return futureLateJoin;
     }
@@ -231,7 +231,7 @@ public class PingBuilder {
     public FutureResponse ping(PeerAddress peerAddress, final boolean isUDP) {
         final RequestHandler<FutureResponse> request = peer.pingRPC().ping(peerAddress, connectionConfiguration);
         if (isUDP) {
-            FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 0);
+            FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -239,12 +239,12 @@ public class PingBuilder {
                         FutureResponse futureResponse = request.sendUDP(future.channelCreator());
                         Utils.addReleaseListener(future.channelCreator(), futureResponse);
                     } else {
-                        request.futureResponse().setFailed(future);
+                        request.futureResponse().failed(future);
                     }
                 }
             });
         } else {
-            FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(0, 1);
+            FutureChannelCreator fcc = peer.connectionBean().reservation().create(0, 1);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -252,7 +252,7 @@ public class PingBuilder {
                         FutureResponse futureResponse = request.sendTCP(future.channelCreator());
                         Utils.addReleaseListener(future.channelCreator(), futureResponse);
                     } else {
-                        request.futureResponse().setFailed(future);
+                        request.futureResponse().failed(future);
                     }
                 }
             });
@@ -269,10 +269,10 @@ public class PingBuilder {
             @Override
             public void operationComplete(FutureChannelCreator future) throws Exception {
                 if(future.isSuccess()) {
-                    request.futureResponse().getRequest().setKeepAlive(true);
+                    request.futureResponse().request().keepAlive(true);
                     request.sendTCP(peerConnection);
                 } else {
-                    request.futureResponse().setFailed(future);
+                    request.futureResponse().failed(future);
                 }
             }
         });

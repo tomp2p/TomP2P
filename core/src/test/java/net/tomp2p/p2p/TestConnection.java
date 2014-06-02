@@ -49,18 +49,18 @@ public class TestConnection {
 					return retVal;
 				}
 			};
-			ChannelServerConficuration csc = PeerMaker.createDefaultChannelServerConfiguration();
-			ChannelClientConfiguration ccc = PeerMaker.createDefaultChannelClientConfiguration();
+			ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
         	
             Bindings b1 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
             Bindings b2 = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(InetAddress.getByName("127.0.0.1"));
             
-            peer1 = new PeerMaker(new Number160(rnd)).ports(4005).bindings(b1).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
-            peer2 = new PeerMaker(new Number160(rnd)).ports(4006).bindings(b2).channelClientConfiguration(ccc).channelServerConfiguration(csc).makeAndListen();
+            peer1 = new PeerBuilder(new Number160(rnd)).ports(4005).bindings(b1).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            peer2 = new PeerBuilder(new Number160(rnd)).ports(4006).bindings(b2).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
 
-            peer2.setObjectDataReply(new ObjectDataReply() {
+            peer2.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
                     return "world!";
@@ -68,15 +68,15 @@ public class TestConnection {
             });
             // keep the connection for 20s alive. Setting -1 means to keep it
             // open as long as possible
-            FutureBootstrap masterAnother = peer1.bootstrap().setPeerAddress(peer2.getPeerAddress()).start();
-            FutureBootstrap anotherMaster = peer2.bootstrap().setPeerAddress(peer1.getPeerAddress()).start();
+            FutureBootstrap masterAnother = peer1.bootstrap().peerAddress(peer2.peerAddress()).start();
+            FutureBootstrap anotherMaster = peer2.bootstrap().peerAddress(peer1.peerAddress()).start();
             masterAnother.awaitUninterruptibly();
             anotherMaster.awaitUninterruptibly();
-            FuturePeerConnection fpc = peer1.createPeerConnection(peer2.getPeerAddress());
+            FuturePeerConnection fpc = peer1.createPeerConnection(peer2.peerAddress());
             // fpc.awaitUninterruptibly();
             // PeerConnection peerConnection = fpc.peerConnection();
             String sentObject = "Hello";
-            FutureDirect fd = peer1.sendDirect(fpc).setObject(sentObject).start();
+            FutureDirect fd = peer1.sendDirect(fpc).object(sentObject).start();
             System.out.println("send " + sentObject);
             fd.awaitUninterruptibly();
             Assert.assertEquals(true, fd.isSuccess());
@@ -85,11 +85,11 @@ public class TestConnection {
             // we reuse the connection
             long start = System.currentTimeMillis();
             System.out.println("send " + sentObject);
-            fd = peer1.sendDirect(fpc).setObject(sentObject).start();
+            fd = peer1.sendDirect(fpc).object(sentObject).start();
             fd.awaitUninterruptibly();
-            System.err.println(fd.getFailedReason());
+            System.err.println(fd.failedReason());
             Assert.assertEquals(true, fd.isSuccess());
-            System.err.println(fd.getFailedReason());
+            System.err.println(fd.failedReason());
             System.out.println("received " + fd.object() + " connections: "
                     + ccohTCP.total());
             // now we don't want to keep the connection open anymore:

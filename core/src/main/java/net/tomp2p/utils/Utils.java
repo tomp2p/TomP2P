@@ -59,8 +59,6 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.p2p.builder.PutBuilder;
-import net.tomp2p.p2p.builder.RemoveBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
@@ -530,8 +528,8 @@ public class Utils {
 
     public static TrackerData disjunction(TrackerData meshPeers, SimpleBloomFilter<Number160> knownPeers) {
         TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>(), null);
-        for (Map.Entry<PeerAddress, Data> entry : meshPeers.getPeerAddresses().entrySet()) {
-            if (!knownPeers.contains(entry.getKey().getPeerId())) {
+        for (Map.Entry<PeerAddress, Data> entry : meshPeers.peerAddresses().entrySet()) {
+            if (!knownPeers.contains(entry.getKey().peerId())) {
                 trackerData.put(entry.getKey(), entry.getValue());
             }
         }
@@ -548,14 +546,14 @@ public class Utils {
     }
 
     public static TrackerData limit(TrackerData peers, int size) {
-        Map<PeerAddress, Data> map = new HashMap<PeerAddress, Data>(peers.getPeerAddresses());
+        Map<PeerAddress, Data> map = new HashMap<PeerAddress, Data>(peers.peerAddresses());
         int i = 0;
         for (Iterator<Map.Entry<PeerAddress, Data>> it = map.entrySet().iterator(); it.hasNext() && i < size;) {
             Map.Entry<PeerAddress, Data> entry = it.next();
             map.put(entry.getKey(), entry.getValue());
         }
 
-        TrackerData data = new TrackerData(map, peers.getReferrer());
+        TrackerData data = new TrackerData(map, peers.referrer());
         return data;
     }
 
@@ -709,7 +707,7 @@ public class Utils {
     public static Collection<Number160> extractContentKeys(Collection<Number480> collection) {
         Collection<Number160> result = new ArrayList<Number160>(collection.size());
         for (Number480 number480 : collection) {
-            result.add(number480.getContentKey());
+            result.add(number480.contentKey());
         }
         return result;
     }
@@ -864,24 +862,7 @@ public class Utils {
         return true;
     }
 
-    public static int dataSize(PutBuilder putBuilder) {
-    	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
-    		//we only send a marker
-    		return 1;
-    	} else if(putBuilder.getDataMap()!=null) {
-            return putBuilder.getDataMap().size();
-        } else { 
-            return putBuilder.getDataMapContent().size();
-        }
-    }
     
-    public static int dataSize(RemoveBuilder builder) {
-	    if (builder.contentKeys()!=null) {
-	    	return builder.contentKeys().size();
-	    }
-	    //we don't know how much, at least one.
-	    return 1;
-    }
     
     public static boolean equals(Object a, Object b) {
     	return (a == b) || (a != null && a.equals(b));

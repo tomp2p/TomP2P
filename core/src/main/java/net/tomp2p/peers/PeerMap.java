@@ -233,7 +233,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     	if(peerFilters == null || peerFilters.size() ==0) {
     		return false;
     	}
-    	final Collection<PeerAddress> all = getAll();
+    	final Collection<PeerAddress> all = all();
     	for(PeerFilter peerFilter:peerFilters) {
     		if(peerFilter.reject(peerAddress, all, self)) {
     			return true;
@@ -263,12 +263,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         boolean thirdHand = !firstHand && !secondHand;
         // always trust first hand information
         if (firstHand) {
-            offlineMap.remove(remotePeer.getPeerId());
-            shutdownMap.remove(remotePeer.getPeerId());
+            offlineMap.remove(remotePeer.peerId());
+            shutdownMap.remove(remotePeer.peerId());
         }
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
-        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId()) || reject(remotePeer)) {
+        if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId()) || reject(remotePeer)) {
             return false;
         }
         
@@ -276,16 +276,16 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         	return false;
         }
         
-        final boolean probablyDead = offlineMap.containsKey(remotePeer.getPeerId()) || 
-        		shutdownMap.containsKey(remotePeer.getPeerId()) || 
-        		exceptionMap.containsKey(remotePeer.getPeerId());
+        final boolean probablyDead = offlineMap.containsKey(remotePeer.peerId()) || 
+        		shutdownMap.containsKey(remotePeer.peerId()) || 
+        		exceptionMap.containsKey(remotePeer.peerId());
         
         if(thirdHand && probablyDead) {
-        	LOG.debug("don't add {}", remotePeer.getPeerId());
+        	LOG.debug("don't add {}", remotePeer.peerId());
         	return false;
         }
         
-        final int classMember = classMember(remotePeer.getPeerId());
+        final int classMember = classMember(remotePeer.peerId());
 
         // the peer might have a new port
         final PeerStatatistic oldPeerStatatistic = updateExistingVerifiedPeerAddress(
@@ -301,13 +301,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 boolean insterted = false;
                 synchronized (map) {
                     // check again, now we are synchronized
-                    if (map.containsKey(remotePeer.getPeerId())) {
+                    if (map.containsKey(remotePeer.peerId())) {
                         return peerFound(remotePeer, referrer);
                     }
                     if (map.size() < bagSizeVerified) {
                         final PeerStatatistic peerStatatistic = new PeerStatatistic(remotePeer);
                         peerStatatistic.successfullyChecked();
-                        map.put(remotePeer.getPeerId(), peerStatatistic);
+                        map.put(remotePeer.peerId(), peerStatatistic);
                         insterted = true;
                     }
                 }
@@ -316,7 +316,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                     // if we inserted into the verified map, remove it from the non-verified map
                     final Map<Number160, PeerStatatistic> mapOverflow = peerMapOverflow.get(classMember);
                     synchronized (mapOverflow) {
-                        mapOverflow.remove(remotePeer.getPeerId());
+                        mapOverflow.remove(remotePeer.peerId());
                     }
                     notifyInsert(remotePeer, true);
                     return true;
@@ -327,14 +327,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         // check if we have it stored in the non verified map.
         final Map<Number160, PeerStatatistic> mapOverflow = peerMapOverflow.get(classMember);
         synchronized (mapOverflow) {
-            PeerStatatistic peerStatatistic = mapOverflow.get(remotePeer.getPeerId());
+            PeerStatatistic peerStatatistic = mapOverflow.get(remotePeer.peerId());
             if (peerStatatistic == null) {
                 peerStatatistic = new PeerStatatistic(remotePeer);
             }
             if (firstHand) {
                 peerStatatistic.successfullyChecked();
             }
-            mapOverflow.put(remotePeer.getPeerId(), peerStatatistic);
+            mapOverflow.put(remotePeer.peerId(), peerStatatistic);
         }
 
         notifyInsert(remotePeer, false);
@@ -358,22 +358,22 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             LOG.debug("peer " + remotePeer + " is offline");
         }
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
-        if (remotePeer.getPeerId().isZero() || self().equals(remotePeer.getPeerId())) {
+        if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {
             return false;
         }
-        final int classMember = classMember(remotePeer.getPeerId());
+        final int classMember = classMember(remotePeer.peerId());
         if (reason != FailReason.Timeout) {
             if(reason == FailReason.ProbablyOffline) {
-                offlineMap.put(remotePeer.getPeerId(), remotePeer);
+                offlineMap.put(remotePeer.peerId(), remotePeer);
             } else if(reason == FailReason.Shutdown) {
-                shutdownMap.put(remotePeer.getPeerId(), remotePeer);
+                shutdownMap.put(remotePeer.peerId(), remotePeer);
             } else { // reason is exception
-                exceptionMap.put(remotePeer.getPeerId(), remotePeer);
+                exceptionMap.put(remotePeer.peerId(), remotePeer);
             }
             Map<Number160, PeerStatatistic> tmp = peerMapOverflow.get(classMember);
             if (tmp != null) {
                 synchronized (tmp) {
-                    tmp.remove(remotePeer.getPeerId());
+                    tmp.remove(remotePeer.peerId());
                 }
             }
             tmp = peerMapVerified.get(classMember);
@@ -381,7 +381,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 boolean removed = false;
                 final PeerStatatistic peerStatatistic;
                 synchronized (tmp) {
-                    peerStatatistic = tmp.remove(remotePeer.getPeerId());
+                    peerStatatistic = tmp.remove(remotePeer.peerId());
                     if (peerStatatistic != null) {
                         removed = true;
                     }
@@ -411,14 +411,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True, if the peer address is either in the verified map
      */
     public boolean contains(final PeerAddress peerAddress) {
-        final int classMember = classMember(peerAddress.getPeerId());
+        final int classMember = classMember(peerAddress.peerId());
         if (classMember == -1) {
             // -1 means we searched for ourself and we never are our neighbor
             return false;
         }
         final Map<Number160, PeerStatatistic> tmp = peerMapVerified.get(classMember);
         synchronized (tmp) {
-            return tmp.containsKey(peerAddress.getPeerId());
+            return tmp.containsKey(peerAddress.peerId());
         }
     }
 
@@ -430,14 +430,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True, if the peer address is either in the overflow / non-verified map
      */
     public boolean containsOverflow(final PeerAddress peerAddress) {
-        final int classMember = classMember(peerAddress.getPeerId());
+        final int classMember = classMember(peerAddress.peerId());
         if (classMember == -1) {
             // -1 means we searched for ourself and we never are our neighbor
             return false;
         }
         final Map<Number160, PeerStatatistic> tmp = peerMapOverflow.get(classMember);
         synchronized (tmp) {
-            return tmp.containsKey(peerAddress.getPeerId());
+            return tmp.containsKey(peerAddress.peerId());
         }
     }
     
@@ -510,7 +510,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 if (tmp.size() > 0) {
                     sb.append("class:").append(i).append("->\n");
                     for (final PeerStatatistic node : tmp.values()) {
-                        sb.append("node:").append(node.getPeerAddress()).append(",");
+                        sb.append("node:").append(node.peerAddress()).append(",");
 
                     }
                 }
@@ -533,12 +533,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * 
      * @return All neighbors
      */
-    public List<PeerAddress> getAll() {
+    public List<PeerAddress> all() {
         List<PeerAddress> all = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatatistic> map : peerMapVerified) {
             synchronized (map) {
                 for (PeerStatatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.getPeerAddress());
+                    all.add(peerStatatistic.peerAddress());
                 }
             }
         }
@@ -558,12 +558,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * 
      * @return All neighbors
      */
-    public List<PeerAddress> getAllOverflow() {
+    public List<PeerAddress> allOverflow() {
         List<PeerAddress> all = new ArrayList<PeerAddress>();
         for (Map<Number160, PeerStatatistic> map : peerMapOverflow) {
             synchronized (map) {
                 for (PeerStatatistic peerStatatistic : map.values()) {
-                    all.add(peerStatatistic.getPeerAddress());
+                    all.add(peerStatatistic.peerAddress());
                 }
             }
         }
@@ -578,9 +578,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the peer is in the offline map, meaning that we consider this peer offline.
      */
     public boolean isPeerRemovedTemporarly(final PeerAddress peerAddress) {
-        return offlineMap.containsKey(peerAddress.getPeerId())
-                || shutdownMap.containsKey(peerAddress.getPeerId()) 
-                || exceptionMap.containsKey(peerAddress.getPeerId());
+        return offlineMap.containsKey(peerAddress.peerId())
+                || shutdownMap.containsKey(peerAddress.peerId()) 
+                || exceptionMap.containsKey(peerAddress.peerId());
     }
 
     /**
@@ -662,7 +662,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return -1 if first peer is closer, 1 otherwise, 0 if both are equal
      */
     public static int isKadCloser(final Number160 id, final PeerAddress rn, final PeerAddress rn2) {
-        return distance(id, rn.getPeerId()).compareTo(distance(id, rn2.getPeerId()));
+        return distance(id, rn.peerId()).compareTo(distance(id, rn2.peerId()));
     }
 
     /**
@@ -722,7 +722,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             final Map<Number160, PeerStatatistic> tmp, final int maxFail) {
         if (tmp != null) {
             synchronized (tmp) {
-                PeerStatatistic peerStatatistic = tmp.get(remotePeer.getPeerId());
+                PeerStatatistic peerStatatistic = tmp.get(remotePeer.peerId());
                 if (peerStatatistic != null) {
                     if (peerStatatistic.failed() >= maxFail) {
                         return true;
@@ -748,9 +748,9 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     private static PeerStatatistic updateExistingVerifiedPeerAddress(
             final Map<Number160, PeerStatatistic> tmp, final PeerAddress peerAddress, final boolean firstHand) {
         synchronized (tmp) {
-            PeerStatatistic old = tmp.get(peerAddress.getPeerId());
+            PeerStatatistic old = tmp.get(peerAddress.peerId());
             if (old != null) {
-                old.setPeerAddress(peerAddress);
+                old.peerAddress(peerAddress);
                 if (firstHand) {
                     old.successfullyChecked();
                 }
@@ -776,7 +776,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             final Map<Number160, PeerStatatistic> tmp) {
         synchronized (tmp) {
             for (final PeerStatatistic peerStatatistic : tmp.values()) {
-                set.add(peerStatatistic.getPeerAddress());
+                set.add(peerStatatistic.peerAddress());
             }
         }
         return set.size() >= atLeast;
@@ -788,5 +788,18 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 	
 	public int bagSizeOverflow() {
 	    return bagSizeOverflow;
+    }
+
+	public PeerAddress find(Number160 peerId) {
+		final int classMember = classMember(self, peerId);
+		if(classMember < 0) {
+			return null;
+		}
+		Map<Number160, PeerStatatistic> tmp = peerMapVerified.get(classMember);
+		PeerStatatistic peerStatatistic = tmp.get(peerId);
+		if(peerStatatistic!=null) {
+			return peerStatatistic.peerAddress();
+		}
+	    return null;
     }
 }

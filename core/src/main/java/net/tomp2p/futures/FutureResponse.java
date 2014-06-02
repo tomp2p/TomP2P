@@ -104,8 +104,8 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * 
      * @return This class
      */
-    public FutureResponse setResponse() {
-        return setResponse(null);
+    public FutureResponse emptyResponse() {
+        return response(null);
     }
 
     /**
@@ -116,9 +116,9 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      *            The received message
      * @return This class
      */
-    public FutureResponse setResponse(final Message responseMessage) {
+    public FutureResponse response(final Message responseMessage) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return this;
             }
             if (responseMessage != null) {
@@ -126,7 +126,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
                 // if its ok or nok, the communication was successful.
                 // Everything else is a failure in communication
                 type = futureSuccessEvaluator.evaluate(requestMessage, responseMessage);
-                reason = responseMessage.getType().toString();
+                reason = responseMessage.type().toString();
             } else {
                 type = FutureType.OK;
                 reason = "Nothing to deliver...";
@@ -136,7 +136,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return this;
     }
 
-    public boolean setResponseLater(final Message responseMessage) {
+    public boolean responseLater(final Message responseMessage) {
         synchronized (lock) {
             if(completed) {
                 return false;
@@ -147,7 +147,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
                 // if its ok or nok, the communication was successful.
                 // Everything else is a failure in communication
                 type = futureSuccessEvaluator.evaluate(requestMessage, responseMessage);
-                reason = responseMessage.getType().toString();
+                reason = responseMessage.type().toString();
             } else {
                 type = FutureType.OK;
                 reason = "Nothing to deliver...";
@@ -156,7 +156,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return true;
     }
     
-    public boolean setFailedLater(final Throwable cause) {
+    public boolean failedLater(final Throwable cause) {
         StringWriter stringWriter = new StringWriter();
         PrintWriter printWriter = new PrintWriter(stringWriter);
         cause.printStackTrace(printWriter);
@@ -171,13 +171,13 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return true;
     }
     
-    public FutureResponse setResponseNow() {
+    public FutureResponse responseNow() {
         synchronized (lock) {
         	if (!reponseLater && !completed) {
-        		setFailed("No future set beforehand, probably an early shutdown, or use setFailedLater() or setResponseLater()");
+        		failed("No future set beforehand, probably an early shutdown / timeout, or use setFailedLater() or setResponseLater()");
         		return this;
         	}
-            if (!super.setCompletedAndNotify()) {
+            if (!super.completedAndNotify()) {
                 return this;
             }
         }
@@ -185,11 +185,11 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
         return this; 
     }
     
-    protected boolean setCompletedAndNotify() {
+    protected boolean completedAndNotify() {
         if (reponseLater) {
             return false;
         }
-        return super.setCompletedAndNotify();
+        return super.completedAndNotify();
     }
     
     
@@ -200,7 +200,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * 
      * @return The successful response message or null if failed
      */
-    public Message getResponse() {
+    public Message responseMessage() {
         synchronized (lock) {
             return responseMessage;
         }
@@ -211,7 +211,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      * 
      * @return The request message.
      */
-    public Message getRequest() {
+    public Message request() {
         synchronized (lock) {
             return requestMessage;
         }
@@ -225,7 +225,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
      *            The progress handler that will be added by the TomP2P library.
      * @return This class
      */
-    public FutureResponse setProgressHandler(final ProgresHandler progressHandler) {
+    public FutureResponse progressHandler(final ProgresHandler progressHandler) {
         synchronized (lock) {
             this.progressHandler = progressHandler;
         }
@@ -283,7 +283,7 @@ public class FutureResponse extends BaseFutureImpl<FutureResponse> {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("future response state:");
-        sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.getCommand()).append(",reason:").append(reason);
+        sb.append(",type:").append(type.name()).append(",msg:").append(requestMessage.command()).append(",reason:").append(reason);
         return sb.toString();
     }
 }

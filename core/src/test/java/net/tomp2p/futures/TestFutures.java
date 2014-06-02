@@ -126,16 +126,16 @@ public class TestFutures {
                 if (future.isFailed()) {
                     return;
                 }
-                if (future.getLast().getCounter() >= SUB - 1) {
-                    done.add(future.getLast().getI());
+                if (future.last().getCounter() >= SUB - 1) {
+                    done.add(future.last().getI());
                     // return;
                 }
-                number160s[future.getLast().getI()] = future.getLast().getResult();
+                number160s[future.last().getI()] = future.last().getResult();
                 // System.err.println("start over with start" + future.getLast().getStart() + "/round"
                 // + future.getLast().getRounds()+ " for "+future.getLast().getI()+
                 // "counter="+future.getLast().getCounter());
-                recursive(array, number160s, future.getLast().getStart() + steps, future.getLast().getRounds() + steps,
-                        future.getLast().getCounter() + 1);
+                recursive(array, number160s, future.last().getStart() + steps, future.last().getRounds() + steps,
+                        future.last().getCounter() + 1);
             }
         });
     }

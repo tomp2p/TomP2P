@@ -18,8 +18,8 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
-import net.tomp2p.futures.FutureGet;
-import net.tomp2p.futures.FuturePut;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 
@@ -76,7 +76,7 @@ public final class ExampleSearch {
 
         Number160 key = Number160.createHash(TERM);
 
-        FuturePut futurePut = peers[peer60].put(key).setObject(TERM).start();
+        FuturePut futurePut = peers[peer60].put(key).object(TERM).start();
         futurePut.awaitUninterruptibly();
 
         FutureGet futureGet = peers[peer30].get(key).start();
@@ -104,7 +104,7 @@ public final class ExampleSearch {
         // store a keyword
         for (String keyword : keywords) {
             Number160 keyKeyword = Number160.createHash(keyword);
-            peers[peer10].put(keyKeyword).setObject(keyTerm).start().awaitUninterruptibly();
+            peers[peer10].put(keyKeyword).object(keyTerm).start().awaitUninterruptibly();
         }
 
         // search for a keyword

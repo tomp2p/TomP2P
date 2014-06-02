@@ -29,14 +29,13 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.PeerReachable;
 import net.tomp2p.p2p.PeerReceivedBroadcastPing;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.utils.Timings;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -94,7 +93,7 @@ public class PingRPC extends DispatchHandler {
         this.enable = enable;
         this.wait = wait;
         if (register) {
-            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().getPeerId(), this,
+            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), this,
             		RPC.Commands.PING.getNr());
         }
     }
@@ -272,7 +271,7 @@ public class PingRPC extends DispatchHandler {
      */
     private FutureResponse createDiscoverHandler(final PeerAddress remotePeer) {
         final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_2);
-        message.setNeighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
+        message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
         return new FutureResponse(message);
     }
 
@@ -291,16 +290,16 @@ public class PingRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!((message.getType() == Type.REQUEST_FF_1 || message.getType() == Type.REQUEST_1
-                || message.getType() == Type.REQUEST_2 || message.getType() == Type.REQUEST_3 
-                || message.getType() == Type.REQUEST_4) && message
-                .getCommand() == RPC.Commands.PING.getNr())) {
+        if (!((message.type() == Type.REQUEST_FF_1 || message.type() == Type.REQUEST_1
+                || message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3 
+                || message.type() == Type.REQUEST_4) && message
+                .command() == RPC.Commands.PING.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         final Message responseMessage;
         // probe
-        if (message.getType() == Type.REQUEST_3) {
-            LOG.debug("reply to probing, fire message to {}", message.getSender());
+        if (message.type() == Type.REQUEST_3) {
+            LOG.debug("reply to probing, fire message to {}", message.sender());
 
             responseMessage = createResponseMessage(message, Type.OK);
 
@@ -310,13 +309,13 @@ public class PingRPC extends DispatchHandler {
                             @Override
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
-                                    FutureResponse futureResponse = fireUDP(message.getSender(), future
+                                    FutureResponse futureResponse = fireUDP(message.sender(), future
                                             .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
                                     LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}",
-                                            future.getFailedReason());
+                                            future.failedReason());
                                 }
                             }
                         });
@@ -326,47 +325,47 @@ public class PingRPC extends DispatchHandler {
                             @Override
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
-                                    FutureResponse futureResponse = fireTCP(message.getSender(), future
+                                    FutureResponse futureResponse = fireTCP(message.sender(), future
                                             .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
                                     LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}",
-                                            future.getFailedReason());
+                                            future.failedReason());
                                 }
                             }
                         });
             }
-        } else if (message.getType() == Type.REQUEST_2) { // discover
-            LOG.debug("reply to discover, found {}", message.getSender());
+        } else if (message.type() == Type.REQUEST_2) { // discover
+            LOG.debug("reply to discover, found {}", message.sender());
             responseMessage = createResponseMessage(message, Type.OK);
-            responseMessage.setNeighborsSet(createNeighborSet(message.getSender()));
-        } else if (message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_4) { // regular ping
-            LOG.debug("reply to regular ping {}", message.getSender());
+            responseMessage.neighborsSet(createNeighborSet(message.sender()));
+        } else if (message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_4) { // regular ping
+            LOG.debug("reply to regular ping {}", message.sender());
             // test if this is a broadcast message to ourselves. If it is, do not
             // reply.
-            if (message.isUdp() && message.getSender().getPeerId().equals(peerBean().serverPeerAddress().getPeerId())
-                    && message.getRecipient().getPeerId().equals(Number160.ZERO)) {
+            if (message.isUdp() && message.sender().peerId().equals(peerBean().serverPeerAddress().peerId())
+                    && message.recipient().peerId().equals(Number160.ZERO)) {
                 LOG.warn("don't reply, we are on the same peer, you should not make this call");
                 responder.responseFireAndForget();
             }
             if (enable) {
                 responseMessage = createResponseMessage(message, Type.OK);
                 if (wait) {
-                    Timings.sleepUninterruptibly(WAIT_TIME);
+                	Thread.sleep(WAIT_TIME);
                 }
             } else {
-                responseMessage = null;
                 LOG.debug("do not reply");
                 // used for debugging
                 if (wait) {
-                    Timings.sleepUninterruptibly(WAIT_TIME);
+                	Thread.sleep(WAIT_TIME);
                 }
+                return;
             }
-            if (message.getType() == Type.REQUEST_4) {
+            if (message.type() == Type.REQUEST_4) {
             	synchronized (receivedBroadcastPingListeners) {
                     for (PeerReceivedBroadcastPing listener : receivedBroadcastPingListeners) {
-                        listener.broadcastPingReceived(message.getSender());
+                        listener.broadcastPingReceived(message.sender());
                     }
                 }
             }
@@ -380,7 +379,7 @@ public class PingRPC extends DispatchHandler {
                 peerBean().serverPeerAddress(newServerAddress);
                 synchronized (reachableListeners) {
                     for (PeerReachable listener : reachableListeners) {
-                        listener.peerWellConnected(newServerAddress, message.getSender(), false);
+                        listener.peerWellConnected(newServerAddress, message.sender(), false);
                     }
                 }
                 responseMessage = message;
@@ -389,7 +388,7 @@ public class PingRPC extends DispatchHandler {
                 peerBean().serverPeerAddress(newServerAddress);
                 synchronized (reachableListeners) {
                     for (PeerReachable listener : reachableListeners) {
-                        listener.peerWellConnected(newServerAddress, message.getSender(), true);
+                        listener.peerWellConnected(newServerAddress, message.sender(), true);
                     }
                 }
                 responseMessage = createResponseMessage(message, Type.OK);

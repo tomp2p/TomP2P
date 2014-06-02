@@ -37,17 +37,17 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
 
     /**
      * This will finish this future, but it will create a new future that will be returned and that can be obtained by
-     * {@link #getNext()}.
+     * {@link #next()}.
      * 
      * @param object
      *            The object to set
      * @param last
-     *            If the there will be no more data, set flag to true. Same as {@link #setDone(Object)}.
+     *            If the there will be no more data, set flag to true. Same as {@link #done(Object)}.
      * @return A new future object or null if this was the last data piece
      */
-    public FutureProgres<K> setProgres(final K object, final boolean last) {
+    public FutureProgres<K> progres(final K object, final boolean last) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return null;
             }
             if (!last) {
@@ -67,9 +67,9 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
      *            An object that can be attached.
      * @return This class
      */
-    public FutureProgres<K> setDone(final K object) {
+    public FutureProgres<K> done(final K object) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return this;
             }
             this.object = object;
@@ -82,7 +82,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
     /**
      * @return The attached object
      */
-    public K getObject() {
+    public K object() {
         synchronized (lock) {
             return object;
         }
@@ -91,7 +91,7 @@ public class FutureProgres<K> extends BaseFutureImpl<FutureProgres<K>> {
     /**
      * @return The next future if {@link #setProgres(Object)} is calledU
      */
-    public FutureProgres<K> getNext() {
+    public FutureProgres<K> next() {
         synchronized (lock) {
             return next;
         }

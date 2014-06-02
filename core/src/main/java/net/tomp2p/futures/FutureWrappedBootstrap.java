@@ -35,8 +35,8 @@ public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<
 	 *            The failure string
 	 * @return this class (never null)
 	 */
-	public FutureWrappedBootstrap<K> setFailed0(String failed) {
-		setFailed(failed);
+	public FutureWrappedBootstrap<K> failed0(String failed) {
+		failed(failed);
 		return this;
 	}
 
@@ -49,7 +49,7 @@ public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<
 	 * @param bootstrapTo
 	 *            A list of peers that were involved in the bootstrapping
 	 */
-	public void setBootstrapTo(final Collection<PeerAddress> bootstrapTo) {
+	public void bootstrapTo(final Collection<PeerAddress> bootstrapTo) {
 		synchronized (lock) {
 			this.bootstrapTo = bootstrapTo;
 		}
@@ -60,7 +60,7 @@ public class FutureWrappedBootstrap<K extends BaseFuture> extends FutureWrapper<
 	 * 
 	 * @return A list of peers that were involved in the bootstrapping
 	 */
-	public Collection<PeerAddress> getBootstrapTo() {
+	public Collection<PeerAddress> bootstrapTo() {
 		synchronized (lock) {
 			return bootstrapTo;
 		}

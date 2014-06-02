@@ -57,18 +57,18 @@ public class RelayForwarderRPC extends DispatchHandler {
 	 *            The relay peer
 	 */
 	public RelayForwarderRPC(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC) {
-		super(peer.getPeerBean(), peer.getConnectionBean());
+		super(peer.peerBean(), peer.connectionBean());
 		PeerAddress unreachablePeer = peerConnection.remotePeer();
 		this.peerConnection = peerConnection;
 		this.relayRPC = relayRPC;
-		LOG.debug("created forwarder from peer {} to peer {}", peer.getPeerAddress(), unreachablePeer);
+		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
 	
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
 			if (command != RPC.Commands.RELAY) {
-				peer.getConnectionBean().dispatcher()
-				        .registerIoHandler(peerConnection.remotePeer().getPeerId(), this, command.getNr());
+				peer.connectionBean().dispatcher()
+				        .registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
 			}
 		}
 	}
@@ -80,12 +80,12 @@ public class RelayForwarderRPC extends DispatchHandler {
 	
 	//TODO: make sure if a peerconnection is dead, unregister is called
 	public static void unregister(Peer peer, Number160 unreachablePeer) {
-		peer.getConnectionBean().dispatcher().removeIoHandler(unreachablePeer);
+		peer.connectionBean().dispatcher().removeIoHandler(unreachablePeer);
 	}
 	
 	public static RelayForwarderRPC find(Peer peer, Number160 peerId) {
 		//we can search for any command, except RELAY, which is not handled here
-		return (RelayForwarderRPC) peer.getConnectionBean().dispatcher().searchHandler(
+		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(
 				peerId, RPC.Commands.NEIGHBOR.getNr());
     }
 
@@ -94,13 +94,13 @@ public class RelayForwarderRPC extends DispatchHandler {
 	        final Responder responder) throws Exception {
 		// the sender should have the ip/port from the releay peer, the peerId
 		// from the unreachabel peer
-		final PeerAddress sender = peerBean().serverPeerAddress().changePeerId(peerConnection.remotePeer().getPeerId());
+		final PeerAddress sender = peerBean().serverPeerAddress().changePeerId(peerConnection.remotePeer().peerId());
 
 		// special treatment for ping and neighbor
-		if (message.getCommand() == RPC.Commands.PING.getNr()) {
+		if (message.command() == RPC.Commands.PING.getNr()) {
 			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, peerConnection.remotePeer());
 			handlePing(message, responder, sender);
-		} else if (message.getCommand() == RPC.Commands.NEIGHBOR.getNr()) {
+		} else if (message.command() == RPC.Commands.NEIGHBOR.getNr()) {
 			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, peerConnection.remotePeer());
 			handleNeigbhor(message, responder, sender);
 		} else {
@@ -121,16 +121,16 @@ public class RelayForwarderRPC extends DispatchHandler {
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess()) {
-					Buffer buffer = future.getResponse().getBuffer(0);
+					Buffer buffer = future.emptyResponse().buffer(0);
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
 					        message.senderSocket());
 					responseFromUnreachablePeer.restoreContentReferences();
-					responseFromUnreachablePeer.setSender(sender);
-					responseFromUnreachablePeer.setRecipient(message.getSender());
+					responseFromUnreachablePeer.sender(sender);
+					responseFromUnreachablePeer.recipient(message.sender());
 					LOG.debug("response from unreachable peer: {}", responseFromUnreachablePeer);
 					responder.response(responseFromUnreachablePeer);
 				} else {
-					responder.failed(Type.USER1, "Relaying message failed: " + future.getFailedReason());
+					responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());
 				}
 			}
 		});
@@ -144,21 +144,21 @@ public class RelayForwarderRPC extends DispatchHandler {
 	}
 
 	public void handleNeigbhor(final Message message, Responder responder, PeerAddress sender) throws IOException {
-		if (message.getKeyList().size() < 2) {
+		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
-		if (!(message.getType() == Type.REQUEST_1 || message.getType() == Type.REQUEST_2
-		        || message.getType() == Type.REQUEST_3 || message.getType() == Type.REQUEST_4)
-		        && (message.getCommand() == RPC.Commands.NEIGHBOR.getNr())) {
+		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
+		        || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
+		        && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
-		Number160 locationKey = message.getKey(0);
+		Number160 locationKey = message.key(0);
 
 		SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
-			response.setNeighborsSet(new NeighborSet(-1));
+			response.neighborsSet(new NeighborSet(-1));
 			responder.response(response);
 			return;
 		}
@@ -168,7 +168,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 
 		LOG.debug("found the following neighbors {}", neighbors);
 		NeighborSet neighborSet = new NeighborSet(NeighborRPC.NEIGHBOR_LIMIT, neighbors);
-		responseMessage.setNeighborsSet(neighborSet);
+		responseMessage.neighborsSet(neighborSet);
 		
 		//we can't do fast get here, as we only send over the neighbors and not the keys stored
 		responder.response(responseMessage);
@@ -179,7 +179,7 @@ public class RelayForwarderRPC extends DispatchHandler {
         if(peerMap == null) {
             return null;
         } else {
-            return PeerMap.closePeers(peerConnection.remotePeer().getPeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
+            return PeerMap.closePeers(peerConnection.remotePeer().peerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
         }
     }
 	
@@ -190,7 +190,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 		}
 		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
 	    for(PeerStatatistic peerStatatistic:result1) {
-	    	result2.add(peerStatatistic.getPeerAddress());
+	    	result2.add(peerStatatistic.peerAddress());
 	    }
 	    return result2;
     }

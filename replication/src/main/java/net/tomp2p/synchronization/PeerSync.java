@@ -38,7 +38,7 @@ public class PeerSync {
 	 */
 	public PeerSync(Peer peer, final int blockSize) {
 		this.peer = peer;
-		this.syncRPC = new SyncRPC(peer.getPeerBean(), peer.getConnectionBean(), blockSize);
+		this.syncRPC = new SyncRPC(peer.peerBean(), peer.connectionBean(), blockSize);
 		this.blockSize = blockSize;
 	}
 

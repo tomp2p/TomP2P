@@ -55,7 +55,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 // this will release the buffer
                 if (ctx.channel() instanceof DatagramChannel) {
                     if (message.senderSocket() == null) {
-                        message.senderSocket(message.getRecipient().createSocketUDP());
+                        message.senderSocket(message.recipient().createSocketUDP());
                     }
                     DatagramPacket d = new DatagramPacket(buf, message.senderSocket(), message.recipientSocket());
                     LOG.debug("Send UPD message {}, datagram: {}", message, d);

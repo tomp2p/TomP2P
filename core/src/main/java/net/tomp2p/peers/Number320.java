@@ -53,14 +53,14 @@ public final class Number320 extends Number implements Comparable<Number320> {
     /**
      * @return The location key
      */
-    public Number160 getLocationKey() {
+    public Number160 locationKey() {
         return locationKey;
     }
 
     /**
      * @return The domain key
      */
-    public Number160 getDomainKey() {
+    public Number160 domainKey() {
         return domainKey;
     }
 

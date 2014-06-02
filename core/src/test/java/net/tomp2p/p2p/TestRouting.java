@@ -121,46 +121,46 @@ public class TestRouting {
         try {
             // setup
             peers = createSpecialPeers(7);
-            addToPeerMap(peers[0], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[1], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress());
-            addToPeerMap(peers[2], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress());
-            addToPeerMap(peers[3], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress());
-            addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
-                    peers[5].getPeerAddress());
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
+                    peers[5].peerAddress());
             // do testing
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[6].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[6].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(2);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(2);
 
-            FutureRouting fr = peers[0].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
             // new RoutingBuilder(peers[6].getPeerID(), null, null, 0, 0, 0, 100, 2, false), Type.REQUEST_2, cc);
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
-            Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
+            SortedSet<PeerAddress> ns = fr.potentialHits();
+            Assert.assertEquals(peers[5].peerAddress(), ns.first());
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -194,48 +194,48 @@ public class TestRouting {
         try {
             // setup
             peers = createSpecialPeers(7);
-            addToPeerMap(peers[0], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[1], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress());
-            addToPeerMap(peers[2], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress());
-            addToPeerMap(peers[3], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress());
-            addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
                     Utils2.createAddress("0xffffff"));
             // do testing
 
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[6].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[6].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(2);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(2);
 
-            FutureRouting fr = peers[0].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
+            SortedSet<PeerAddress> ns = fr.potentialHits();
             // node5 cannot be reached, so it should not be part of the result
-            Assert.assertEquals(false, peers[5].getPeerAddress().equals(ns.first()));
-            Assert.assertEquals(true, peers[4].getPeerAddress().equals(ns.first()));
+            Assert.assertEquals(false, peers[5].peerAddress().equals(ns.first()));
+            Assert.assertEquals(true, peers[4].peerAddress().equals(ns.first()));
             LOG.error("done!");
         } finally {
             if (cc != null) {
@@ -263,47 +263,47 @@ public class TestRouting {
         try {
             // setup
             peers = createSpecialPeers(7);
-            addToPeerMap(peers[0], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[1], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress());
-            addToPeerMap(peers[2], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
-                    peers[5].getPeerAddress());
-            addToPeerMap(peers[3], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
+                    peers[5].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[5], peers[0].peerAddress(), peers[1].peerAddress());
             // do testing
 
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(1, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[6].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[6].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(1);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(1);
 
-            FutureRouting fr = peers[0].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
-            Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
-            Assert.assertEquals(false, ns.contains(peers[3].getPeerAddress()));
-            Assert.assertEquals(false, ns.contains(peers[4].getPeerAddress()));
+            SortedSet<PeerAddress> ns = fr.potentialHits();
+            Assert.assertEquals(peers[5].peerAddress(), ns.first());
+            Assert.assertEquals(false, ns.contains(peers[3].peerAddress()));
+            Assert.assertEquals(false, ns.contains(peers[4].peerAddress()));
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -330,50 +330,50 @@ public class TestRouting {
         try {
             // setup
             peers = createSpecialPeers(7);
-            addToPeerMap(peers[0], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[1], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress());
-            addToPeerMap(peers[2], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
-                    peers[5].getPeerAddress());
-            addToPeerMap(peers[3], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
+                    peers[5].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[5], peers[0].peerAddress(), peers[1].peerAddress());
             // do testing
 
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 2);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(2, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[6].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[6].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(2);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(2);
 
-            FutureRouting fr = peers[0].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
-            Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
-            Assert.assertEquals(true, ns.contains(peers[0].getPeerAddress()));
-            Assert.assertEquals(true, ns.contains(peers[1].getPeerAddress()));
-            Assert.assertEquals(true, ns.contains(peers[2].getPeerAddress()));
-            Assert.assertEquals(false, ns.contains(peers[3].getPeerAddress()));
-            Assert.assertEquals(true, ns.contains(peers[4].getPeerAddress()));
+            SortedSet<PeerAddress> ns = fr.potentialHits();
+            Assert.assertEquals(peers[5].peerAddress(), ns.first());
+            Assert.assertEquals(true, ns.contains(peers[0].peerAddress()));
+            Assert.assertEquals(true, ns.contains(peers[1].peerAddress()));
+            Assert.assertEquals(true, ns.contains(peers[2].peerAddress()));
+            Assert.assertEquals(false, ns.contains(peers[3].peerAddress()));
+            Assert.assertEquals(true, ns.contains(peers[4].peerAddress()));
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -400,47 +400,47 @@ public class TestRouting {
         try {
             // setup
             peers = createSpecialPeers(7);
-            addToPeerMap(peers[0], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[1], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress());
-            addToPeerMap(peers[2], peers[0].getPeerAddress(), peers[1].getPeerAddress(),
-                    peers[2].getPeerAddress(), peers[3].getPeerAddress(), peers[4].getPeerAddress(),
-                    peers[5].getPeerAddress());
-            addToPeerMap(peers[3], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[4], peers[0].getPeerAddress(), peers[1].getPeerAddress());
-            addToPeerMap(peers[5], peers[0].getPeerAddress(), peers[1].getPeerAddress());
+            addToPeerMap(peers[0], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[1], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress());
+            addToPeerMap(peers[2], peers[0].peerAddress(), peers[1].peerAddress(),
+                    peers[2].peerAddress(), peers[3].peerAddress(), peers[4].peerAddress(),
+                    peers[5].peerAddress());
+            addToPeerMap(peers[3], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[4], peers[0].peerAddress(), peers[1].peerAddress());
+            addToPeerMap(peers[5], peers[0].peerAddress(), peers[1].peerAddress());
             // do testing
 
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 3);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 3);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(3, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(3, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[6].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[6].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(3);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(3);
 
-            FutureRouting fr = peers[0].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[0].distributedRouting().route(routingBuilder, request, cc);
 
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
-            Assert.assertEquals(peers[5].getPeerAddress(), ns.first());
-            Assert.assertEquals(true, ns.contains(peers[3].getPeerAddress()));
-            Assert.assertEquals(true, ns.contains(peers[4].getPeerAddress()));
+            SortedSet<PeerAddress> ns = fr.potentialHits();
+            Assert.assertEquals(peers[5].peerAddress(), ns.first());
+            Assert.assertEquals(true, ns.contains(peers[3].peerAddress()));
+            Assert.assertEquals(true, ns.contains(peers[4].peerAddress()));
             Assert.assertEquals(6, ns.size());
         } finally {
             if (cc != null) {
@@ -462,7 +462,7 @@ public class TestRouting {
      */
     private void addToPeerMap(Peer peer, PeerAddress... peers) {
         for (int i = 0; i < peers.length; i++) {
-            peer.getPeerBean().peerMap().peerFound(peers[i], null);
+            peer.peerBean().peerMap().peerFound(peers[i], null);
         }
     }
 
@@ -471,7 +471,7 @@ public class TestRouting {
         Peer[] peers = new Peer[nr];
         for (int i = 0; i < nr; i++) {
             sb.append("f");
-            peers[i] = new PeerMaker(new Number160(sb.toString())).ports(4001 + i).makeAndListen();
+            peers[i] = new PeerBuilder(new Number160(sb.toString())).ports(4001 + i).start();
         }
         return peers;
     }
@@ -487,11 +487,11 @@ public class TestRouting {
             master = peers[0];
             Utils2.perfectRouting(peers);
             // do testing
-            Collection<PeerAddress> pas = peers[30].getPeerBean().peerMap()
-                    .closePeers(peers[30].getPeerID(), 20);
+            Collection<PeerAddress> pas = peers[30].peerBean().peerMap()
+                    .closePeers(peers[30].peerID(), 20);
             Iterator<PeerAddress> i = pas.iterator();
             PeerAddress p1 = i.next();
-            Assert.assertEquals(peers[262].getPeerAddress(), p1);
+            Assert.assertEquals(peers[262].peerAddress(), p1);
         } finally {
             master.shutdown().await();
         }
@@ -516,33 +516,33 @@ public class TestRouting {
             // do testing
 
             if (tcp) {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 1);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             } else {
-                FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
+                FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(1, 0);
                 fcc.awaitUninterruptibly();
                 cc = fcc.channelCreator();
             }
 
             RoutingBuilder routingBuilder = new RoutingBuilder();
             if (tcp) {
-                routingBuilder.setForceTCP(true);
+                routingBuilder.forceTCP(true);
             }
-            routingBuilder.setLocationKey(peers[20].getPeerID());
-            routingBuilder.setMaxDirectHits(0);
+            routingBuilder.locationKey(peers[20].peerID());
+            routingBuilder.maxDirectHits(0);
             routingBuilder.setMaxNoNewInfo(0);
-            routingBuilder.setMaxFailures(0);
-            routingBuilder.setMaxSuccess(100);
-            routingBuilder.setParallel(1);
+            routingBuilder.maxFailures(0);
+            routingBuilder.maxSuccess(100);
+            routingBuilder.parallel(1);
 
-            FutureRouting fr = peers[500].getDistributedRouting().route(routingBuilder, request, cc);
+            FutureRouting fr = peers[500].distributedRouting().route(routingBuilder, request, cc);
 
             fr.awaitUninterruptibly();
             // do verification
             Assert.assertEquals(true, fr.isSuccess());
-            SortedSet<PeerAddress> ns = fr.getPotentialHits();
-            Assert.assertEquals(peers[20].getPeerAddress(), ns.first());
+            SortedSet<PeerAddress> ns = fr.potentialHits();
+            Assert.assertEquals(peers[20].peerAddress(), ns.first());
         } finally {
             if (cc != null) {
                 cc.shutdown().awaitListenersUninterruptibly();
@@ -584,27 +584,27 @@ public class TestRouting {
             for (int i = 0; i < peers.length; i++) {
 
                 if (tcp) {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, res);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, res);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 } else {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(res, 0);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(res, 0);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();
                 if (tcp) {
-                    routingBuilder.setForceTCP(true);
+                    routingBuilder.forceTCP(true);
                 }
-                routingBuilder.setLocationKey(peers[rnd1.nextInt(peers.length)].getPeerID());
-                routingBuilder.setMaxDirectHits(0);
+                routingBuilder.locationKey(peers[rnd1.nextInt(peers.length)].peerID());
+                routingBuilder.maxDirectHits(0);
                 routingBuilder.setMaxNoNewInfo(0);
-                routingBuilder.setMaxFailures(0);
-                routingBuilder.setMaxSuccess(100);
-                routingBuilder.setParallel(res);
+                routingBuilder.maxFailures(0);
+                routingBuilder.maxSuccess(100);
+                routingBuilder.parallel(res);
 
-                FutureRouting frr = peers[rnd2.nextInt(peers.length)].getDistributedRouting().route(
+                FutureRouting frr = peers[rnd2.nextInt(peers.length)].distributedRouting().route(
                         routingBuilder, request, cc);
 
                 frs.add(frr);
@@ -615,8 +615,8 @@ public class TestRouting {
 
                 frs.get(i).awaitListenersUninterruptibly();
                 Assert.assertEquals(true, frs.get(i).isSuccess());
-                SortedSet<PeerAddress> ns = frs.get(i).getPotentialHits();
-                Assert.assertEquals(peers[rnd3.nextInt(peers.length)].getPeerAddress(), ns.first());
+                SortedSet<PeerAddress> ns = frs.get(i).potentialHits();
+                Assert.assertEquals(peers[rnd3.nextInt(peers.length)].peerAddress(), ns.first());
             }
             System.err.println("done!");
         } finally {
@@ -645,36 +645,36 @@ public class TestRouting {
             Utils2.perfectRouting(peers);
             // do testing
             Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>(1);
-            peerAddresses.add(master.getPeerAddress());
+            peerAddresses.add(master.peerAddress());
             for (int i = 1; i < peers.length; i++) {
 
                 if (tcp) {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 1);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 1);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 } else {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(1, 0);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(1, 0);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();
                 if (tcp) {
-                    routingBuilder.setForceTCP(true);
+                    routingBuilder.forceTCP(true);
                 }
-                routingBuilder.setMaxDirectHits(0);
+                routingBuilder.maxDirectHits(0);
                 routingBuilder.setMaxNoNewInfo(5);
-                routingBuilder.setMaxFailures(100);
-                routingBuilder.setMaxSuccess(100);
-                routingBuilder.setParallel(1);
+                routingBuilder.maxFailures(100);
+                routingBuilder.maxSuccess(100);
+                routingBuilder.parallel(1);
 
-                FutureDone<Pair<FutureRouting,FutureRouting>> fm = peers[i].getDistributedRouting().bootstrap(
+                FutureDone<Pair<FutureRouting,FutureRouting>> fm = peers[i].distributedRouting().bootstrap(
                         peerAddresses, routingBuilder, cc);
                 fm.awaitUninterruptibly();
                 // do verification
                 Assert.assertEquals(true, fm.isSuccess());
-                Assert.assertEquals(true, fm.getObject().element0().isSuccess());
-                Assert.assertEquals(true, fm.getObject().element1().isSuccess());
+                Assert.assertEquals(true, fm.object().element0().isSuccess());
+                Assert.assertEquals(true, fm.object().element1().isSuccess());
             }
         } finally {
             if (cc != null) {
@@ -692,15 +692,15 @@ public class TestRouting {
         Peer client = null;
         try {
             // Bindings b = new Bindings("wlan0");
-            master = new PeerMaker(new Number160(rnd)).ports(4000).makeAndListen();
-            client = new PeerMaker(new Number160(rnd)).ports(4001).makeAndListen();
+            master = new PeerBuilder(new Number160(rnd)).ports(4000).start();
+            client = new PeerBuilder(new Number160(rnd)).ports(4001).start();
 
-            BaseFuture tmp = client.ping().setBroadcast().setPort(4000).start();
+            BaseFuture tmp = client.ping().broadcast().port(4000).start();
             tmp.awaitUninterruptibly();
-            System.err.println(tmp.getFailedReason());
+            System.err.println(tmp.failedReason());
             Assert.assertEquals(true, tmp.isSuccess());
 
-            Assert.assertEquals(1, client.getPeerBean().peerMap().size());
+            Assert.assertEquals(1, client.peerBean().peerMap().size());
         } finally {
             if (client != null) {
                 client.shutdown().await();
@@ -717,12 +717,12 @@ public class TestRouting {
         Peer client = null;
         try {
         	Bindings b = new Bindings().addInterface("lo");
-        	master = new PeerMaker(new Number160(rnd)).externalBindings(b).ports(4002).makeAndListen();
-            client = new PeerMaker(new Number160(rnd)).externalBindings(b).ports(4001).makeAndListen();
-            BaseFuture tmp = client.ping().setBroadcast().setPort(4001).start();
+        	master = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4002).start();
+            client = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4001).start();
+            BaseFuture tmp = client.ping().broadcast().port(4001).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());
-            Assert.assertEquals(0, client.getPeerBean().peerMap().size());
+            Assert.assertEquals(0, client.peerBean().peerMap().size());
         } finally {
             if (client != null) {
                 client.shutdown().await();
@@ -754,42 +754,42 @@ public class TestRouting {
                 Comparator<PeerAddress> cmp = PeerMap.createComparator(find);
                 SortedSet<PeerAddress> ss = new TreeSet<PeerAddress>(cmp);
                 for (int i = 0; i < peers.length; i++) {
-                    ss.add(peers[i].getPeerAddress());
+                    ss.add(peers[i].peerAddress());
                 }
                 // do testing
                 if (tcp) {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(0, 2);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(0, 2);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 } else {
-                    FutureChannelCreator fcc = peers[0].getConnectionBean().reservation().create(2, 0);
+                    FutureChannelCreator fcc = peers[0].connectionBean().reservation().create(2, 0);
                     fcc.awaitUninterruptibly();
                     cc = fcc.channelCreator();
                 }
 
                 RoutingBuilder routingBuilder = new RoutingBuilder();
                 if (tcp) {
-                    routingBuilder.setForceTCP(true);
+                    routingBuilder.forceTCP(true);
                 }
-                routingBuilder.setLocationKey(find);
-                routingBuilder.setMaxDirectHits(Integer.MAX_VALUE);
+                routingBuilder.locationKey(find);
+                routingBuilder.maxDirectHits(Integer.MAX_VALUE);
                 routingBuilder.setMaxNoNewInfo(5);
-                routingBuilder.setMaxFailures(10);
-                routingBuilder.setMaxSuccess(20);
-                routingBuilder.setParallel(2);
+                routingBuilder.maxFailures(10);
+                routingBuilder.maxSuccess(20);
+                routingBuilder.parallel(2);
 
-                FutureRouting frr = peers[50].getDistributedRouting().route(routingBuilder, Type.REQUEST_1,
+                FutureRouting frr = peers[50].distributedRouting().route(routingBuilder, Type.REQUEST_1,
                         cc);
 
                 frr.awaitUninterruptibly();
-                SortedSet<PeerAddress> ss2 = frr.getPotentialHits();
+                SortedSet<PeerAddress> ss2 = frr.potentialHits();
                 // test the first 5 peers, because we set noNewInformation to 5,
                 // which means we find at least 5 entries.
                 for (int i = 0; i < 5; i++) {
                     PeerAddress pa = ss.first();
                     PeerAddress pa2 = ss2.first();
                     System.err.println("test " + pa + " - " + pa2);
-                    Assert.assertEquals(pa.getPeerId(), pa2.getPeerId());
+                    Assert.assertEquals(pa.peerId(), pa2.peerId());
                     ss.remove(pa);
                     ss2.remove(pa2);
                 }

@@ -167,7 +167,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 * 
 	 * @return The expected elements that was provided by the user
 	 */
-	public int getExpectedElements() {
+	public int expectedElements() {
 		return expectedElements;
 	}
 

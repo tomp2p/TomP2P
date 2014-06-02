@@ -14,11 +14,11 @@ public interface SendDirectBuilderI extends ConnectionConfiguration {
 
     boolean isSign();
 
-    boolean streaming();
+    boolean isStreaming();
 
-    Buffer getBuffer();
+    Buffer buffer();
 
-    Object getObject();
+    Object object();
 
     KeyPair keyPair();
 

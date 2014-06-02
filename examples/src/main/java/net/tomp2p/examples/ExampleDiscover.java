@@ -15,7 +15,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -34,13 +34,13 @@ public class ExampleDiscover {
 		Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(
 		        InetAddress.getByName("127.0.0.1"));
 		// b.addInterface("eth0");
-		Peer master = new PeerMaker(new Number160(rnd)).ports(4000).bindings(b).makeAndListen();
+		Peer master = new PeerBuilder(new Number160(rnd)).ports(4000).bindings(b).start();
 		System.out.println("Server started Listening to: " + DiscoverNetworks.discoverInterfaces(b));
-		System.out.println("address visible to outside is " + master.getPeerAddress());
+		System.out.println("address visible to outside is " + master.peerAddress());
 		while (true) {
-			for (PeerAddress pa : master.getPeerBean().peerMap().getAll()) {
+			for (PeerAddress pa : master.peerBean().peerMap().all()) {
 				System.out.println("PeerAddress: " + pa);
-				FutureChannelCreator fcc = master.getConnectionBean().reservation().create(1, 1);
+				FutureChannelCreator fcc = master.connectionBean().reservation().create(1, 1);
 				fcc.awaitUninterruptibly();
 
 				ChannelCreator cc = fcc.channelCreator();
@@ -74,9 +74,9 @@ public class ExampleDiscover {
 		Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET).addAddress(
 		        InetAddress.getByName("127.0.0.1"));
 		// b.addInterface("eth0");
-		Peer client = new PeerMaker(new Number160(rnd)).ports(4001).bindings(b).makeAndListen();
+		Peer client = new PeerBuilder(new Number160(rnd)).ports(4001).bindings(b).start();
 		System.out.println("Client started and Listening to: " + DiscoverNetworks.discoverInterfaces(b));
-		System.out.println("address visible to outside is " + client.getPeerAddress());
+		System.out.println("address visible to outside is " + client.peerAddress());
 
 		InetAddress address = Inet4Address.getByName(ipAddress);
 		int masterPort = 4000;
@@ -89,16 +89,16 @@ public class ExampleDiscover {
 		futureDiscover.awaitUninterruptibly();
 
 		// Future Bootstrap - slave
-		FutureBootstrap futureBootstrap = client.bootstrap().setInetAddress(address).setPorts(masterPort).start();
+		FutureBootstrap futureBootstrap = client.bootstrap().inetAddress(address).ports(masterPort).start();
 		futureBootstrap.awaitUninterruptibly();
 
-		Collection<PeerAddress> addressList = client.getPeerBean().peerMap().getAll();
+		Collection<PeerAddress> addressList = client.peerBean().peerMap().all();
 		System.out.println(addressList.size());
 
 		if (futureDiscover.isSuccess()) {
-			System.out.println("found that my outside address is " + futureDiscover.getPeerAddress());
+			System.out.println("found that my outside address is " + futureDiscover.peerAddress());
 		} else {
-			System.out.println("failed " + futureDiscover.getFailedReason());
+			System.out.println("failed " + futureDiscover.failedReason());
 		}
 		client.shutdown();
 	}

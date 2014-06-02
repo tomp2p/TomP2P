@@ -71,7 +71,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         this.peerBean = peerBean;
         this.connectionBean = connectionBean;
         this.futureResponse = futureResponse;
-        this.message = futureResponse.getRequest();
+        this.message = futureResponse.request();
         this.sendMessageID = new MessageID(message);
         this.idleTCPSeconds = configuration.idleTCPSeconds();
         this.idleUDPSeconds = configuration.idleUDPSeconds();
@@ -190,21 +190,21 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
-        LOG.debug("Error originating from: {}, cause {}", futureResponse.getRequest(), cause);
+        LOG.debug("Error originating from: {}, cause {}", futureResponse.request(), cause);
         if (futureResponse.isCompleted()) {
             LOG.warn("Got exception, but ignored (future response completed): {}",
-                    futureResponse.getFailedReason());
+                    futureResponse.failedReason());
         } else {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("exception caugth, but handled properly: " + cause.toString());
             }
             if (cause instanceof PeerException) {
                 PeerException pe = (PeerException) cause;
-                if (pe.getAbortCause() != PeerException.AbortCause.USER_ABORT) {
-                    FailReason reason = pe.getAbortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
+                if (pe.abortCause() != PeerException.AbortCause.USER_ABORT) {
+                    FailReason reason = pe.abortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
-                    boolean added = peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), reason);
+                    boolean added = peerBean.peerMap().peerFailed(futureResponse.request().recipient(), reason);
                     if (added) {
                         if (LOG.isWarnEnabled()) {
                             LOG.warn("removed from map, cause: " + pe.toString() + " msg: " + message);
@@ -216,12 +216,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     LOG.warn("error in request", cause);
                 }
             } else {
-                peerBean.peerMap().peerFailed(futureResponse.getRequest().getRecipient(), FailReason.Exception);
+                peerBean.peerMap().peerFailed(futureResponse.request().recipient(), FailReason.Exception);
             }
         }
         
         LOG.debug("report failure", cause);
-        futureResponse.setFailedLater(cause);
+        futureResponse.failedLater(cause);
         ctx.close();
     }
 
@@ -230,11 +230,11 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             throws Exception {
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
-        if (responseMessage.getType() == Message.Type.UNKNOWN_ID) {
+        if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
             String msg = "Message was not delivered successfully, unknow id (peer may be offline): " + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-        } else if (responseMessage.getType() == Message.Type.EXCEPTION) {
+        } else if (responseMessage.type() == Message.Type.EXCEPTION) {
             String msg = "Message caused an exception on the other side, handle as peer_abort: "
                     + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
@@ -251,7 +251,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 
         // We got a good answer, let's mark the sender as alive
         if (responseMessage.isOk() || responseMessage.isNotOk()) {
-            peerBean.peerMap().peerFound(responseMessage.getSender(), null);
+            peerBean.peerMap().peerFound(responseMessage.sender(), null);
         }
         
         // call this for streaming support
@@ -263,21 +263,21 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         // Now we now we have the right message
         
-        if(message.getSender().isRelayed()) {
+        if(message.sender().isRelayed()) {
         	LOG.debug("good message is relayed {}", responseMessage);	
-        	PeerAddress sender = message.getSender().changePeerSocketAddresses(message.getPeerSocketAddresses());
-        	message.setSender(sender);
+        	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
+        	message.sender(sender);
         }
 
         if (!message.isKeepAlive()) {
         	LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.
-            futureResponse.setResponseLater(responseMessage); 
+            futureResponse.responseLater(responseMessage); 
             //the channel creater adds a listener that sets futureResponse.setResponseNow, when the channel is closed
             ctx.close();
         } else {
         	LOG.debug("good message, leave open {}", responseMessage);
-            futureResponse.setResponse(responseMessage);
+            futureResponse.response(responseMessage);
         }
     }
 }

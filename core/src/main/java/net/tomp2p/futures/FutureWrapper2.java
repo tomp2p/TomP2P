@@ -53,10 +53,10 @@ public class FutureWrapper2<K extends BaseFuture, J extends BaseFuture> extends 
             @Override
             public void operationComplete(final K future) throws Exception {
                 synchronized (lock) {
-                    if (!setCompletedAndNotify()) {
+                    if (!completedAndNotify()) {
                         return;
                     }
-                    type = future.getType();
+                    type = future.type();
                     reason = future.toString();
                 }
                 notifyListeners();

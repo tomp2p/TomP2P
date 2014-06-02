@@ -54,7 +54,7 @@ public class PeerException extends Exception {
     /**
      * @return The cause of the error.
      */
-    public AbortCause getAbortCause() {
+    public AbortCause abortCause() {
         return abortCause;
     }
 

@@ -32,7 +32,7 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -57,11 +57,11 @@ public class TestIPv6 {
     public void startServer() throws IOException {
         Random r = new Random(Utils2.THE_ANSWER);
         Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET6);
-        Peer peer = new PeerMaker(new Number160(r)).bindings(b).ports(port).makeAndListen();
+        Peer peer = new PeerBuilder(new Number160(r)).bindings(b).ports(port).start();
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
-            for (PeerAddress pa : peer.getPeerBean().peerMap().getAll()) {
+            for (PeerAddress pa : peer.peerBean().peerMap().all()) {
                 
-                FutureChannelCreator fcc = peer.getConnectionBean().reservation().create(1, 1);
+                FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 1);
                 fcc.awaitUninterruptibly();
                 ChannelCreator cc = fcc.channelCreator();
                 
@@ -97,8 +97,8 @@ public class TestIPv6 {
     public void startClient() throws IOException {
         Random r = new Random(Utils2.THE_ANSWER2);
         Bindings b = new Bindings().addProtocol(StandardProtocolFamily.INET6);
-        Peer peer = new PeerMaker(new Number160(r)).bindings(b).ports(port).makeAndListen();
-        FutureBootstrap fb = peer.bootstrap().setInetAddress(InetAddress.getByName(ipSuperPeer)).setPorts(port).start();
+        Peer peer = new PeerBuilder(new Number160(r)).bindings(b).ports(port).start();
+        FutureBootstrap fb = peer.bootstrap().inetAddress(InetAddress.getByName(ipSuperPeer)).ports(port).start();
         fb.awaitUninterruptibly();
         System.out.println("Got it: " + fb.isSuccess());
     }

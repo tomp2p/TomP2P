@@ -118,15 +118,15 @@ public class TimeoutFactory {
                 LOG.warn("channel timeout for channel {} {}", name, ctx.channel());
                 final PeerAddress recipient;
                 if (futureResponse != null) {
-                    LOG.warn("Request status is {}", futureResponse.getRequest());
+                    LOG.warn("Request status is {}", futureResponse.request());
                     ctx.channel().close().addListener(new GenericFutureListener<ChannelFuture>() {
                         @Override
                         public void operationComplete(final ChannelFuture future) throws Exception {
-                            futureResponse.setFailed("channel is idle " + evt);
+                            futureResponse.failed("channel is idle " + evt);
                         }
                     });
                     
-                    recipient = futureResponse.getRequest().getRecipient();
+                    recipient = futureResponse.request().recipient();
                 } else {
                     ctx.close();
                     // check if we have set an attribute at least (if we have already decoded the header)

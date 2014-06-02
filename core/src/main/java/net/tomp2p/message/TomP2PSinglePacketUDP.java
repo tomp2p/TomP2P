@@ -53,8 +53,8 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
         }
     }
 
-    @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
+    //@Override
+    //public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) throws Exception {
         /*Message2 msg = decoder.message();
         if (msg == null && decoder.lastContent() == null) {
             LOG.error("exception in decoding UDP, not started decoding", cause);
@@ -64,5 +64,5 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
             cause.printStackTrace();
         }*/
         //cause.printStackTrace();
-    }
+    //}
 }

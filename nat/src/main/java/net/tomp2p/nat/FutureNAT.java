@@ -14,7 +14,7 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
 
 	public void done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return;
             }
             this.type = FutureType.OK;

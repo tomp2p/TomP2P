@@ -60,7 +60,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      *            Set to true if this peer is behind a firewall and cannot be accessed directly
      * @return This class
      */
-    public ChannelServerConficuration setBehindFirewall(final boolean behindFirewall) {
+    public ChannelServerConficuration behindFirewall(final boolean behindFirewall) {
         this.behindFirewall = behindFirewall;
         return this;
     }
@@ -70,7 +70,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public ChannelServerConficuration setBehindFirewall() {
+    public ChannelServerConficuration behindFirewall() {
         this.behindFirewall = true;
         return this;
     }
@@ -78,7 +78,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     /**
      * @return True if the bind to ports should be omited
      */
-    public boolean disableBind() {
+    public boolean isDisableBind() {
         return disableBind;
     }
 
@@ -97,7 +97,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
      * 
      * @return This class
      */
-    public ChannelServerConficuration setDisableBind() {
+    public ChannelServerConficuration disableBind() {
         this.disableBind = true;
         return this;
     }
@@ -185,12 +185,12 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return forceTCP;
     }
 
-    public ChannelServerConficuration setForceTCP(boolean forceTCP) {
+    public ChannelServerConficuration forceTCP(boolean forceTCP) {
         this.forceTCP = forceTCP;
         return this;
     }
 
-    public ChannelServerConficuration setForceTCP() {
+    public ChannelServerConficuration forceTCP() {
         this.forceTCP = true;
         return this;
     }
@@ -200,12 +200,12 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return forceUDP;
     }
     
-    public ChannelServerConficuration setForceUDP(boolean forceUDP) {
+    public ChannelServerConficuration forceUDP(boolean forceUDP) {
         this.forceUDP = forceUDP;
         return this;
     }
 
-    public ChannelServerConficuration setForceUDP() {
+    public ChannelServerConficuration forceUDP() {
         this.forceUDP = true;
         return this;
     }

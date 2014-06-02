@@ -18,7 +18,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -41,7 +41,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetBestSmoothingFactor() throws IOException {
-        Peer peer = new PeerMaker(new Number160(peerId)).ports(port7).makeAndListen();
+        Peer peer = new PeerBuilder(new Number160(peerId)).ports(port7).start();
         AutoReplication automaticReplication = new AutoReplication();
         automaticReplication.reliability(reliability).init(peer);
 
@@ -64,7 +64,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetAverage() throws IOException {
-        Peer peer = new PeerMaker(new Number160(peerId)).ports(port8).makeAndListen();
+        Peer peer = new PeerBuilder(new Number160(peerId)).ports(port8).start();
         AutoReplication automaticReplication = new AutoReplication();
         automaticReplication.reliability(reliability).init(peer);
 
@@ -86,7 +86,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetStandardDeviation() throws IOException {
-        Peer peer = new PeerMaker(new Number160(peerId)).ports(port9).makeAndListen();
+        Peer peer = new PeerBuilder(new Number160(peerId)).ports(port9).start();
         AutoReplication automaticReplication = new AutoReplication();
         automaticReplication.reliability(reliability).init(peer);
 
@@ -109,7 +109,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetPredictedValue() throws IOException {
-        Peer peer = new PeerMaker(new Number160(peerId)).ports(port10).makeAndListen();
+        Peer peer = new PeerBuilder(new Number160(peerId)).ports(port10).start();
         AutoReplication automaticReplication = new AutoReplication();
         automaticReplication.reliability(reliability).init(peer);
 
@@ -215,14 +215,14 @@ public class AutomaticReplicationTest {
     	Comparator<PeerAddress> c = PeerMap.createComparator(locationKey);
     	TreeSet<PeerAddress> ts = new TreeSet<>(c);
     	for(Peer peer:peers) {
-    		ts.add(peer.getPeerAddress());
+    		ts.add(peer.peerAddress());
     	}
         return ts;
     }
     
     private Peer find(Peer[] peers, PeerAddress peerAddress) {
     	for(Peer peer:peers) {
-    		if(peer.getPeerAddress().equals(peerAddress)) {
+    		if(peer.peerAddress().equals(peerAddress)) {
     			return peer;
     		}
     	}
@@ -249,11 +249,11 @@ public class AutomaticReplicationTest {
                             public void operationComplete(BaseFuture future)
                                     throws Exception {
                             	if(future.isFailed()) {
-                            		System.err.println(future.getFailedReason());
+                            		System.err.println(future.failedReason());
                             	}
                             	//System.err.println(future.isSuccess() +"/"+ f.getObject());
                             	if(!testCopied.get()) {
-                            		testCopied.set(f.getObject().dataCopy() == 56);
+                            		testCopied.set(f.object().dataCopy() == 56);
                             	}
                                 latch.countDown();
                             }
@@ -279,9 +279,9 @@ public class AutomaticReplicationTest {
             Peer B = find(peers, Pb);
             Peer C = find(peers, Pc);
             
-            System.err.println("peer A "+A.getPeerAddress());
-            System.err.println("peer B "+B.getPeerAddress());
-            System.err.println("peer C "+C.getPeerAddress());
+            System.err.println("peer A "+A.peerAddress());
+            System.err.println("peer B "+B.peerAddress());
+            System.err.println("peer C "+C.peerAddress());
 
             Data data1 = new Data("CommunicationSystemsDatabaseSoftwareEngineeringRequirementsAnalysis..");
             Data data2 = new Data("CommunicationSystemsDatabaseSoftwarasdfkjasdklfjasdfklajsdfaslkjfsdfd");
@@ -299,11 +299,11 @@ public class AutomaticReplicationTest {
 
             Utils2.perfectRouting(peers);
 
-            Data data = A.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
+            Data data = A.peerBean().storageLayer().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfA = data.toBytes();
-            data = B.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
+            data = B.peerBean().storageLayer().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfB = data.toBytes();
-            data = C.getPeerBean().storage().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
+            data = C.peerBean().storageLayer().get(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO));
             byte[] valueOfC = data.toBytes();
 
             Assert.assertArrayEquals(valueOfA, valueOfB);

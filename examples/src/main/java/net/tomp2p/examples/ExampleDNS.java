@@ -17,10 +17,10 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
+import net.tomp2p.dht.FutureGet;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureGet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -33,11 +33,11 @@ public class ExampleDNS {
 	final private Peer peer;
 
 	public ExampleDNS(int nodeId) throws Exception {
-		peer = new PeerMaker(Number160.createHash(nodeId)).ports(4000 + nodeId).makeAndListen();
-		FutureBootstrap fb = this.peer.bootstrap().setBroadcast(true).setPorts(4001).start();
+		peer = new PeerBuilder(Number160.createHash(nodeId)).ports(4000 + nodeId).start();
+		FutureBootstrap fb = this.peer.bootstrap().broadcast(true).ports(4001).start();
 		fb.awaitUninterruptibly();
 		if(fb.isSuccess()) {
-			peer.discover().peerAddress(fb.getBootstrapTo().iterator().next()).start().awaitUninterruptibly();
+			peer.discover().peerAddress(fb.bootstrapTo().iterator().next()).start().awaitUninterruptibly();
 		}
 	}
 

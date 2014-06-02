@@ -75,7 +75,7 @@ public class CountingBloomFilter<E> implements Set<E>, Serializable {
      * 
      * @return The expected elements that was provided by the user
      */
-    public int getExpectedElements() {
+    public int expectedElements() {
         return expectedElements;
     }
 
@@ -218,7 +218,7 @@ public class CountingBloomFilter<E> implements Set<E>, Serializable {
      * 
      * @return bloom filter as a bitset
      */
-    public int[] getIntSet() {
+    public int[] intSet() {
         return intSet;
     }
 

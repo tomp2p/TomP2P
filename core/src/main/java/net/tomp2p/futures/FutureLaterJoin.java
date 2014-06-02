@@ -126,7 +126,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
      */
     private boolean checkDone() {
         if (futuresDone.size() >= nrMaxFutures || successCount >= minSuccess) {
-            if (!setCompletedAndNotify()) {
+            if (!completedAndNotify()) {
                 return false;
             }
             boolean isSuccess = successCount >= minSuccess;
@@ -143,7 +143,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
      * 
      * @return All the futures that are done.
      */
-    public List<K> getFuturesDone() {
+    public List<K> futuresDone() {
         synchronized (lock) {
             return futuresDone;
         }
@@ -152,7 +152,7 @@ public class FutureLaterJoin<K extends BaseFuture> extends BaseFutureImpl<Future
     /**
      * @return the last successful finished future.
      */
-    public K getLastSuceessFuture() {
+    public K lastSuceessFuture() {
         synchronized (lock) {
             return lastSuceessFuture;
         }

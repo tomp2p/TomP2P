@@ -18,10 +18,10 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
-import net.tomp2p.futures.FutureDigest;
-import net.tomp2p.futures.FuturePut;
+import net.tomp2p.dht.FutureDigest;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -66,12 +66,12 @@ public final class ExampleIndirectReplication {
         final int nr2 = 2;
         final int port3 = 4003;
         final int nr3 = 4;
-        Peer peer1 = new PeerMaker(new Number160(nr1)).ports(port1).setEnableIndirectReplication(true)
-                .makeAndListen();
-        Peer peer2 = new PeerMaker(new Number160(nr2)).ports(port2).setEnableIndirectReplication(true)
-                .makeAndListen();
-        Peer peer3 = new PeerMaker(new Number160(nr3)).ports(port3).setEnableIndirectReplication(true)
-                .makeAndListen();
+        Peer peer1 = new PeerBuilder(new Number160(nr1)).ports(port1).setEnableIndirectReplication(true)
+                .start();
+        Peer peer2 = new PeerBuilder(new Number160(nr2)).ports(port2).setEnableIndirectReplication(true)
+                .start();
+        Peer peer3 = new PeerBuilder(new Number160(nr3)).ports(port3).setEnableIndirectReplication(true)
+                .start();
         Peer[] peers = new Peer[] {peer1, peer2, peer3};
         //
         FuturePut futurePut = peer1.put(new Number160(nr3)).setData(new Data("store on peer1")).start();
@@ -80,8 +80,8 @@ public final class ExampleIndirectReplication {
         futureDigest.awaitUninterruptibly();
         System.out.println("we found the data on " + futureDigest.getRawDigest().size() + " peers");
         // now peer1 gets to know peer2, transfer the data
-        peer1.bootstrap().setPeerAddress(peer2.getPeerAddress()).start();
-        peer1.bootstrap().setPeerAddress(peer3.getPeerAddress()).start();
+        peer1.bootstrap().peerAddress(peer2.peerAddress()).start();
+        peer1.bootstrap().peerAddress(peer3.peerAddress()).start();
         Thread.sleep(ONE_SECOND);
         futureDigest = peer1.digest(new Number160(nr3)).start();
         futureDigest.awaitUninterruptibly();

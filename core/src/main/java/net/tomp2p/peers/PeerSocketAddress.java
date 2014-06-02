@@ -75,28 +75,28 @@ public class PeerSocketAddress implements Serializable {
     /**
      * @return The IPv4 or IPv6 address.
      */
-    public InetAddress getInetAddress() {
+    public InetAddress inetAddress() {
         return inetAddress;
     }
 
     /**
      * @return The TCP port.
      */
-    public int getTcpPort() {
+    public int tcpPort() {
         return tcpPort;
     }
 
     /**
      * @return The UDP port.
      */
-    public int getUdpPort() {
+    public int udpPort() {
         return udpPort;
     }
 
     /**
      * @return Returns the offset.
      */
-    public int getOffset() {
+    public int offset() {
         return offset;
     }
     
@@ -224,7 +224,7 @@ public class PeerSocketAddress implements Serializable {
      * @return The socket address how to reach this peer
      */
     public static InetSocketAddress createSocketTCP(PeerSocketAddress peerSocketAddress) {
-        return new InetSocketAddress(peerSocketAddress.getInetAddress(), peerSocketAddress.getTcpPort());
+        return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.tcpPort());
     }
 
     /**
@@ -233,7 +233,7 @@ public class PeerSocketAddress implements Serializable {
      * @return The socket address how to reach this peer
      */
     public static InetSocketAddress createSocketUDP(PeerSocketAddress peerSocketAddress) {
-        return new InetSocketAddress(peerSocketAddress.getInetAddress(), peerSocketAddress.getUdpPort());
+        return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.udpPort());
     }
 
     @Override

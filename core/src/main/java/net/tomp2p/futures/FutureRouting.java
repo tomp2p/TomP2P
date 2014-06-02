@@ -35,7 +35,7 @@ import net.tomp2p.rpc.DigestInfo;
  * It will fail if we bootstrap to another peer, but could not contact any peer
  * than ourself.
  * 
- * @see #setNeighbors(SortedSet, SortedSet, SortedSet, boolean, boolean)
+ * @see #neighbors(SortedSet, SortedSet, SortedSet, boolean, boolean)
  * @author Thomas Bocek
  */
 public class FutureRouting extends BaseFutureImpl<FutureRouting> {
@@ -55,10 +55,10 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * operations or bootstrap to ourself. It will fail if we bootstrap to
      * another peer, but could not contact any peer than ourself.
      * 
-     * @see #getDirectHits()
-     * @see #getDirectHitsDigest()
-     * @see #getPotentialHits()
-     * @see #getRoutingPath()
+     * @see #directHits()
+     * @see #directHitsDigest()
+     * @see #potentialHits()
+     * @see #routingPath()
      * @param directHits
      *            The direct hits, the peers in the direct set that reports to
      *            have the key (Number160) we were looking for.
@@ -74,11 +74,11 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * @param isRoutingToOther
      *            Whether routing peers have been specified others than myself.
      */
-    public void setNeighbors(final SortedMap<PeerAddress, DigestInfo> directHits,
+    public void neighbors(final SortedMap<PeerAddress, DigestInfo> directHits,
             final NavigableSet<PeerAddress> potentialHits, final SortedSet<PeerAddress> routingPath,
             boolean isBootstrap, boolean isRoutingToOther) {
         synchronized (lock) {
-            if (!setCompletedAndNotify())
+            if (!completedAndNotify())
                 return;
             this.potentialHits = potentialHits;
             this.directHits = directHits;
@@ -109,13 +109,13 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * information what we are looking for anyway, so a reply if the content
      * exists or not is not very expensive. However, a peer may lie about this.
      * 
-     * @see #getDirectHits()
-     * @see #getDirectHitsDigest()
+     * @see #directHits()
+     * @see #directHitsDigest()
      * @return The potential hits, the peers in the direct set and those peers
      *         that reports to *not* have the key (Number160) we were looking
      *         for.
      */
-    public NavigableSet<PeerAddress> getPotentialHits() {
+    public NavigableSet<PeerAddress> potentialHits() {
         synchronized (lock) {
             return potentialHits;
         }
@@ -128,12 +128,12 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * a reply if the content exists or not is not very expensive. However, a
      * peer may lie about this.
      * 
-     * @see #getPotentialHits()
-     * @see #getDirectHitsDigest()
+     * @see #potentialHits()
+     * @see #directHitsDigest()
      * @return The direct hits, the peers in the direct set that reports to have
      *         the key (Number160) we were looking for.
      */
-    public NavigableSet<PeerAddress> getDirectHits() {
+    public NavigableSet<PeerAddress> directHits() {
         synchronized (lock) {
             if (directHits == null) {
                 return null;
@@ -162,13 +162,13 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * a reply if the content exists or not is not very expensive. However, a
      * peer may lie about this.
      * 
-     * @see #getPotentialHits()
-     * @see #getDirectHits()
+     * @see #potentialHits()
+     * @see #directHits()
      * @return The direct hits including its digest (size of the result set and
      *         its xored hashes), when a peer reports to have the key
      *         (Number160) we were looking for.
      */
-    public SortedMap<PeerAddress, DigestInfo> getDirectHitsDigest() {
+    public SortedMap<PeerAddress, DigestInfo> directHitsDigest() {
         synchronized (lock) {
             return directHits;
         }
@@ -180,14 +180,14 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
      * 
      * @return A set of peers that took part in the routing process.
      */
-    public SortedSet<PeerAddress> getRoutingPath() {
+    public SortedSet<PeerAddress> routingPath() {
         synchronized (lock) {
             return routingPath;
         }
     }
 
     @Override
-    public String getFailedReason() {
+    public String failedReason() {
         synchronized (lock) {
             return "FutureRouting -> complete:" + completed + ", type:" + type.toString() + ", direct:"
                     + directHits.size() + ", neighbors:" + potentialHits.size();

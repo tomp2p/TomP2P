@@ -60,27 +60,27 @@ public class TrackerConfiguration {
         this.forceTCP = forceTCP;
     }
 
-    public int getMaxFailure() {
+    public int maxFailure() {
         return maxFailure;
     }
 
-    public int getParallel() {
+    public int parallel() {
         return parallel;
     }
 
-    public int getAtLeastSucessfulRequestes() {
+    public int atLeastSucessfulRequestes() {
         return atLeastSuccessfulRequests;
     }
 
-    public int getAtLeastEntriesFromTrackers() {
+    public int atLeastEntriesFromTrackers() {
         return atLeastEntriesFromTrackers;
     }
 
-    public int getMaxFullTrackers() {
+    public int maxFullTrackers() {
         return maxFullTrackers;
     }
 
-    public int getMaxPrimaryTrackers() {
+    public int maxPrimaryTrackers() {
         return maxPrimaryTrackers;
     }
 

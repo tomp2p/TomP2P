@@ -53,21 +53,22 @@ public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
      * @param dataMap
      *            The result from the remote peer
      */
-    public void setDataMap(Map<Number160, Data> dataMap) {
+    public FutureAsyncTask dataMap(Map<Number160, Data> dataMap) {
         synchronized (lock) {
-            if (!setCompletedAndNotify()) {
-                return;
+            if (!completedAndNotify()) {
+                return this;
             }
             this.dataMap = dataMap;
             this.type = FutureType.OK;
         }
         notifyListeners();
+        return this;
     }
 
     /**
      * @return The result of the remote peer from the task.
      */
-    public Map<Number160, Data> getDataMap() {
+    public Map<Number160, Data> dataMap() {
         synchronized (lock) {
             return dataMap;
         }
@@ -76,7 +77,7 @@ public class FutureAsyncTask extends BaseFutureImpl<FutureAsyncTask> {
     /**
      * @return The address of the peer that processes the task
      */
-    public PeerAddress getRemotePeer() {
+    public PeerAddress remotePeer() {
         return remotePeer;
     }
 }

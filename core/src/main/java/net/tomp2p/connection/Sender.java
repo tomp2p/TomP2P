@@ -128,8 +128,8 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 		//we need to set the neighbors if we use relays
-		if(message.getSender().isRelayed()) {
-			message.setPeerSocketAddresses(message.getSender().getPeerSocketAddresses());
+		if(message.sender().isRelayed()) {
+			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 		
 
@@ -141,11 +141,11 @@ public class Sender {
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
 			InetSocketAddress recipient = null;
-			if (message.getRecipient().isRelayed()) {
+			if (message.recipient().isRelayed()) {
 				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 				        peerConnection, timeoutHandler);
 			} else {
-				recipient = message.getRecipient().createSocketTCP();
+				recipient = message.recipient().createSocketTCP();
 				channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
 				        timeoutHandler, connectTimeoutMillis, futureResponse);
 				afterConnect(futureResponse, message, channelFuture, handler == null);
@@ -167,13 +167,13 @@ public class Sender {
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
 	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.getRecipient().getPeerSocketAddresses(),
+		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(),
 				pingBuilderFactory);
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
 				if (futureDone.isSuccess()) {
-					InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.getObject());
+					InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.object());
 					ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection,
 					        handler, timeoutHandler, connectTimeoutMillis, futureResponse);
 					afterConnect(futureResponse, message, channelFuture, handler == null);
@@ -183,8 +183,8 @@ public class Sender {
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isFailed()) {
 
-								if (future.getResponse() != null
-								        && future.getResponse().getType() != Message.Type.USER1) {
+								if (future.emptyResponse() != null
+								        && future.responseMessage().type() != Message.Type.USER1) {
 									clearInactivePeerSocketAddress(futureDone);
 									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds,
 									        connectTimeoutMillis, peerConnection);
@@ -194,19 +194,19 @@ public class Sender {
 
 						private void clearInactivePeerSocketAddress(final FutureDone<PeerSocketAddress> futureDone) {
 						    Collection<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
-                            for (PeerSocketAddress psa : message.getRecipient().getPeerSocketAddresses()) {
+                            for (PeerSocketAddress psa : message.recipient().peerSocketAddresses()) {
 								if (psa != null) {
-									if (!psa.equals(futureDone.getObject())) {
+									if (!psa.equals(futureDone.object())) {
 										tmp.add(psa);
 									}
 								}
 							}
-                            message.setPeerSocketAddresses(tmp);
+                            message.peerSocketAddresses(tmp);
 						}
 					});
 
 				} else {
-					futureResponse.setFailed("no relay could be contacted");
+					futureResponse.failed("no relay could be contacted");
 				}
 			}
 		});
@@ -227,8 +227,8 @@ public class Sender {
             if (psa != null) {
                 InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
                 PingBuilder pingBuilder = pingBuilderFactory.create();
-                forks[index++] = pingBuilder.setInetAddress(inetSocketAddress.getAddress())
-                        .setPort(inetSocketAddress.getPort()).start();
+                forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress())
+                        .port(inetSocketAddress.getPort()).start();
             }
         }
 		FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<BaseFuture>(
@@ -237,7 +237,7 @@ public class Sender {
 			@Override
 			public void operationComplete(FutureForkJoin<BaseFuture> future) throws Exception {
 				if (future.isSuccess()) {
-					futureDone.setDone(((FutureResponse) (future.getCompleted().get(0))).getResponse().getSender()
+					futureDone.done(((FutureResponse) (future.completed().get(0))).responseMessage().sender()
 					        .peerSocketAddress());
 				}
 			}
@@ -374,8 +374,8 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 		
-		if(message.getSender().isRelayed()) {
-			message.setPeerSocketAddresses(message.getSender().getPeerSocketAddresses());
+		if(message.sender().isRelayed()) {
+			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 
 		boolean isFireAndForget = handler == null;
@@ -400,31 +400,31 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.getRecipient().isRelayed() && 
-				message.getCommand() != RPC.Commands.NEIGHBOR.getNr() && message.getCommand() != RPC.Commands.PING.getNr()) {
+		if (message.recipient().isRelayed() && 
+				message.command() != RPC.Commands.NEIGHBOR.getNr() && message.command() != RPC.Commands.PING.getNr()) {
 			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}", message);
 			futureResponse
-			        .setFailed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
+			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
 			final ChannelFuture channelFuture;
-			if(message.getRecipient().isRelayed()) {
+			if(message.recipient().isRelayed()) {
 				
-				List<PeerSocketAddress> psa = new ArrayList<>(message.getRecipient().getPeerSocketAddresses());
+				List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
 				LOG.debug("send neighbor request to random relay peer {}", psa);
 				if(psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					PeerAddress recipient = message.getRecipient();
-					message.setRecipient(recipient.changePeerSocketAddress(ps));
+					PeerAddress recipient = message.recipient();
+					message.recipient(recipient.changePeerSocketAddress(ps));
 				
 					channelFuture = channelCreator.createUDP
 							(PeerSocketAddress.createSocketUDP(ps), broadcast, handlers, futureResponse);
 				} else {
 					futureResponse
-			        	.setFailed("Peer is relayed, but no relay given");
+			        	.failed("Peer is relayed, but no relay given");
 					return;
 				}
 			} else {
-				channelFuture = channelCreator.createUDP(message.getRecipient().createSocketUDP(),
+				channelFuture = channelCreator.createUDP(message.recipient().createSocketUDP(),
 						broadcast, handlers, futureResponse);
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
@@ -463,7 +463,7 @@ public class Sender {
 	private void afterConnect(final FutureResponse futureResponse, final Message message,
 	        final ChannelFuture channelFuture, final boolean fireAndForget) {
 		if (channelFuture == null) {
-			futureResponse.setFailed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
+			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 			return;
 		}
 		final Cancel connectCancel = createCancel(channelFuture);
@@ -473,7 +473,7 @@ public class Sender {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.removeCancel(connectCancel);
 				if (future.isSuccess()) {
-					futureResponse.setProgressHandler(new ProgresHandler() {
+					futureResponse.progressHandler(new ProgresHandler() {
 						@Override
 						public void progres() {
 							final ChannelFuture writeFuture = future.channel().writeAndFlush(message);
@@ -483,7 +483,7 @@ public class Sender {
 					// this needs to be called first before all other progress
 					futureResponse.progressFirst();
 				} else {
-					futureResponse.setFailed("Channel creation failed " + future.cause());
+					futureResponse.failed("Channel creation failed " + future.cause());
 					// may have been closed by the other side,
 					// or it may have been canceled from this side
 					if (!(future.cause() instanceof CancellationException)
@@ -515,13 +515,13 @@ public class Sender {
 			public void operationComplete(final ChannelFuture future) throws Exception {
 				futureResponse.removeCancel(writeCancel);
 				if (!future.isSuccess()) {
-					futureResponse.setFailedLater(future.cause());
+					futureResponse.failedLater(future.cause());
 					reportFailed(futureResponse, future.channel().close());
-					LOG.warn("Failed to write channel the request {} {}", futureResponse.getRequest(), future.cause());
+					LOG.warn("Failed to write channel the request {} {}", futureResponse.request(), future.cause());
 				}
 				if (fireAndForget) {
-					futureResponse.setResponseLater(null);
-					LOG.debug("fire and forget, close channel now {}, {}",futureResponse.getRequest(), future.channel());
+					futureResponse.responseLater(null);
+					LOG.debug("fire and forget, close channel now {}, {}",futureResponse.request(), future.channel());
 					reportMessage(futureResponse, future.channel().close());
 				}
 			}
@@ -543,7 +543,7 @@ public class Sender {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture arg0) throws Exception {
-				futureResponse.setResponseNow();
+				futureResponse.responseNow();
 			}
 		});
 	}
@@ -562,7 +562,7 @@ public class Sender {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture arg0) throws Exception {
-				futureResponse.setResponseNow();
+				futureResponse.responseNow();
 			}
 		});
 	}
@@ -586,11 +586,11 @@ public class Sender {
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isFailed()) {
-					if(message.getRecipient().isRelayed()) {
+					if(message.recipient().isRelayed()) {
 						//TODO: make the relay go away if failed
 					} else {
 						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-							peerStatusListener.peerFailed(message.getRecipient(), FailReason.Exception);
+							peerStatusListener.peerFailed(message.recipient(), FailReason.Exception);
 						}
 					}
 				}

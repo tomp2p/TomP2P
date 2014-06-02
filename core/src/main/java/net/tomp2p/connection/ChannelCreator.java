@@ -265,7 +265,7 @@ public class ChannelCreator {
 					@Override
 					public void run() {
 						semaphore.release();
-						futureResponse.setResponseNow();
+						futureResponse.responseNow();
 					}
 				};
 				if (handlerExecutor == null) {
@@ -288,7 +288,7 @@ public class ChannelCreator {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<ChannelFuture>() {
 			@Override
 			public void operationComplete(final ChannelFuture future) throws Exception {
-				futureResponse.setResponseNow();
+				futureResponse.responseNow();
 			}
 		});
 		return channelFuture;
@@ -311,7 +311,7 @@ public class ChannelCreator {
 		writeTCP.lock();
 		try {
 			if (shutdownTCP || shutdownUDP) {
-				shutdownFuture().setFailed("already shutting down");
+				shutdownFuture().failed("already shutting down");
 				return shutdownFuture();
 			}
 			shutdownUDP = true;
@@ -327,7 +327,7 @@ public class ChannelCreator {
 				//we can block here as we block in GlobalEventExecutor.INSTANCE
 				semaphoreUPD.acquireUninterruptibly(maxPermitsUDP);
 				semaphoreTCP.acquireUninterruptibly(maxPermitsTCP);
-				shutdownFuture().setDone();
+				shutdownFuture().done();
 			}
 		});
 		

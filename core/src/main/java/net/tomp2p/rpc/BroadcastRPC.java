@@ -48,8 +48,8 @@ public class BroadcastRPC extends DispatchHandler {
     public FutureResponse send(final PeerAddress remotePeer, final BroadcastBuilder broadcastBuilder,
             final ChannelCreator channelCreator, final ConnectionConfiguration configuration) {
         final Message message = createMessage(remotePeer, RPC.Commands.BROADCAST.getNr(), Type.REQUEST_FF_1);
-        message.setInteger(broadcastBuilder.hopCounter());
-        message.setKey(broadcastBuilder.messageKey());
+        message.intValue(broadcastBuilder.hopCounter());
+        message.key(broadcastBuilder.messageKey());
         if (broadcastBuilder.dataMap() != null) {
             message.setDataMap(new DataMap(broadcastBuilder.dataMap()));
         }
@@ -65,7 +65,7 @@ public class BroadcastRPC extends DispatchHandler {
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        if (!(message.getType() == Type.REQUEST_FF_1 && message.getCommand() == RPC.Commands.BROADCAST.getNr())) {
+        if (!(message.type() == Type.REQUEST_FF_1 && message.command() == RPC.Commands.BROADCAST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong");
         }
         LOG.debug("received BRODACAST message: {}", message);

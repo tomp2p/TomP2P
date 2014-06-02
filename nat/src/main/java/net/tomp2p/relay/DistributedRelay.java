@@ -62,7 +62,7 @@ public class DistributedRelay {
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
 		// this needs to be kept open, as we want the peerconnection to stay
 		// alive
-		futureChannelCreator = peer.getConnectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
+		futureChannelCreator = peer.connectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
 	}
 
 	/**
@@ -100,7 +100,7 @@ public class DistributedRelay {
 				future.channelCreator().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 					@Override
 					public void operationComplete(FutureDone<Void> future) throws Exception {
-						futureChannelShutdown.setDone();
+						futureChannelShutdown.done();
 					}
 				});
 			}
@@ -133,7 +133,7 @@ public class DistributedRelay {
 					}
 					setupPeerConnections(futureRelay, cc, relayCandidates, successRelays, maxFail);
 				} else {
-					futureRelay.setFailed(future);
+					futureRelay.failed(future);
 				}
 			}
 		});
@@ -150,8 +150,8 @@ public class DistributedRelay {
 	 * @return FutureDone containing a collection of relay candidates
 	 */
 	private Set<PeerAddress> relayCandidates() {
-		Set<PeerAddress> relayCandidates = new LinkedHashSet<PeerAddress>(peer.getDistributedRouting().peerMap()
-		        .getAll());
+		Set<PeerAddress> relayCandidates = new LinkedHashSet<PeerAddress>(peer.distributedRouting().peerMap()
+		        .all());
 
 		filter(relayCandidates);
 		return relayCandidates;
@@ -199,7 +199,7 @@ public class DistributedRelay {
 			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, cc, nrOfRelays, futureRelay,
 			        relaySuccess, 0, maxFail);
 		} else {
-			futureRelay.setFailed("done");
+			futureRelay.failed("done");
 		}
 	}
 
@@ -248,7 +248,7 @@ public class DistributedRelay {
 		}
 		if (fail > maxFail) {
 			updatePeerAddress();
-			futureRelay.setFailed("maxfail");
+			futureRelay.failed("maxfail");
 			return;
 		}
 
@@ -264,7 +264,7 @@ public class DistributedRelay {
 					setupPeerConnectionsRecursive(futures, relayCandidates, cc, numberOfRelays, futureRelay,
 					        relaySuccess, fail + 1, maxFail);
 				} else {
-					futureRelay.setFailed("shutting down");
+					futureRelay.failed("shutting down");
 				}
 			}
 		});
@@ -275,7 +275,7 @@ public class DistributedRelay {
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				if (future.isSuccess()) {
-					PeerConnection peerConnection = future.getObject();
+					PeerConnection peerConnection = future.object();
 					PeerAddress relayAddress = peerConnection.remotePeer();
 					if (future.isSuccess()) {
 						LOG.debug("Adding peer {} as a relay", relayAddress);
@@ -286,7 +286,7 @@ public class DistributedRelay {
 						failedRelays.add(relayAddress);
 					}
 				} else {
-					futureDone.setFailed(future);
+					futureDone.failed(future);
 				}
 			}
 		});
@@ -344,13 +344,13 @@ public class DistributedRelay {
 		Collection<PeerSocketAddress> socketAddresses = new ArrayList<PeerSocketAddress>(relayAddresses.size());
 		for (PeerConnection pc : relayAddresses) {
 			PeerAddress pa = pc.remotePeer();
-			socketAddresses.add(new PeerSocketAddress(pa.getInetAddress(), pa.tcpPort(), pa.udpPort()));
+			socketAddresses.add(new PeerSocketAddress(pa.inetAddress(), pa.tcpPort(), pa.udpPort()));
 		}
 
 		// update firewalled and isRelayed flags
-		PeerAddress newAddress = peer.getPeerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
+		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
 		        .changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
-		peer.getPeerBean().serverPeerAddress(newAddress);
+		peer.peerBean().serverPeerAddress(newAddress);
 		LOG.debug("update peer address {}, isrelay = {}", newAddress, hasRelays);
 	}
 }

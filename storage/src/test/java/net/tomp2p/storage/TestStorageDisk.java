@@ -19,7 +19,7 @@ public class TestStorageDisk extends TestStorage {
 
 	public Storage createStorage() throws IOException {
 		DB db = DBMaker.newFileDB(new File(DIR, "tomp2p")).transactionDisable().closeOnJvmShutdown().cacheDisable().make();
-		return new StorageDisk(db, locationKey, DIR, new DSASignatureFactory());
+		return new StorageDisk(db, locationKey, DIR, new DSASignatureFactory(), 60 * 1000);
 	}
 
 	@Before

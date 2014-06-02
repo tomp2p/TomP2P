@@ -5,12 +5,12 @@ import java.net.InetAddress;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.futures.FutureGet;
-import net.tomp2p.futures.FuturePut;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerMaker;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -30,24 +30,24 @@ public class ExampleRelay {
         if (args.length == 0) {
             //bootstrap node
             Bindings b = new Bindings();
-            Peer peer = new PeerMaker(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).makeAndListen();
-            System.err.println("bootstrap peer id: " + peer.getPeerAddress().getPeerId());
+            Peer peer = new PeerBuilder(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).start();
+            System.err.println("bootstrap peer id: " + peer.peerAddress().peerId());
             new PeerNAT(peer);
             System.err.println("bootstrap peer is running");
             while(true) {
                 Thread.sleep(10000);
-                System.err.println(peer.getPeerBean().peerMap().peerMapVerified());
+                System.err.println(peer.peerBean().peerMap().peerMapVerified());
             }
         } else if (args.length == 3) {
             //put
             int port = (rnd.nextInt() % 10000) + 10000;
-            Peer peer = new PeerMaker(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).makeAndListen();
-            System.err.println("put peer id: " + peer.getPeerAddress().getPeerId());
+            Peer peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).start();
+            System.err.println("put peer id: " + peer.peerAddress().peerId());
             PeerNAT pnat = new PeerNAT(peer);
 
             InetAddress address = Inet4Address.getByName(args[0]);
 
-            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().setInetAddress(address).setPorts(PORT)).startRelay();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().inetAddress(address).ports(PORT)).startRelay();
             		
             fbn.awaitUninterruptibly();
 
@@ -65,13 +65,13 @@ public class ExampleRelay {
         } else if (args.length == 2) {
             //get
             int port = (rnd.nextInt() % 10000) + 10000;
-            Peer peer = new PeerMaker(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).makeAndListen();
-            System.err.println("get peer id: " + peer.getPeerAddress().getPeerId());
+            Peer peer = new PeerBuilder(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).start();
+            System.err.println("get peer id: " + peer.peerAddress().peerId());
             System.err.println("hash:" + Number160.createHash(args[1]));
             PeerNAT pnat = new PeerNAT(peer);
             
             InetAddress address = Inet4Address.getByName(args[0]);
-            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().setInetAddress(address).setPorts(PORT)).startRelay();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().inetAddress(address).ports(PORT)).startRelay();
             fbn.awaitUninterruptibly();
 
             if (fbn.isSuccess()) {
@@ -83,7 +83,7 @@ public class ExampleRelay {
             if (fg.isSuccess()) {
                 System.err.println("Received: " + fg.getData().object());
             } else {
-                System.err.println(fg.getFailedReason());
+                System.err.println(fg.failedReason());
             }
         }
     }

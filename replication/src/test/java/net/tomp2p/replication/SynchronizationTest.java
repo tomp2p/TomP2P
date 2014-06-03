@@ -211,8 +211,8 @@ public class SynchronizationTest {
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
-			sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
-			receiver.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
+			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 
 			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
@@ -282,7 +282,7 @@ public class SynchronizationTest {
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
-			sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
+			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 
 			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 			final CountDownLatch latch = new CountDownLatch(1);
@@ -345,8 +345,8 @@ public class SynchronizationTest {
 			final String value = "Test";
 			final String value1 = "Test1";
 
-			sender.put(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
-			receiver.put(locationKey).setData(new Data(value1)).start().awaitUninterruptibly();
+			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(new Data(value1)).start().awaitUninterruptibly();
 
 			HashMap<Number640, Data> map = new HashMap<Number640, Data>();
 			final DataMap dataMap = new DataMap(map);
@@ -417,8 +417,8 @@ public class SynchronizationTest {
 			Data test1 = new Data(newValue.getBytes());
 			Data test2 = new Data(oldValue.getBytes());
 
-			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
-			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
+			sender.put(locationKey).data(test1).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(test2).start().awaitUninterruptibly();
 
 			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
@@ -465,8 +465,8 @@ public class SynchronizationTest {
 			Data test1 = new Data(newValue.getBytes());
 			Data test2 = new Data(oldValue.getBytes());
 
-			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
-			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
+			sender.put(locationKey).data(test1).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(test2).start().awaitUninterruptibly();
 
 			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
@@ -513,8 +513,8 @@ public class SynchronizationTest {
 			Data test1 = new Data(newValue.getBytes());
 			Data test2 = new Data(oldValue.getBytes());
 
-			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
-			receiver.put(locationKey).setData(test2).start().awaitUninterruptibly();
+			sender.put(locationKey).data(test1).start().awaitUninterruptibly();
+			receiver.put(locationKey).data(test2).start().awaitUninterruptibly();
 
 			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();
@@ -560,7 +560,7 @@ public class SynchronizationTest {
 
 			Data test1 = new Data(newValue.getBytes());
 
-			sender.put(locationKey).setData(test1).start().awaitUninterruptibly();
+			sender.put(locationKey).data(test1).start().awaitUninterruptibly();
 
 			FutureDone<SyncStat> future = senderSync.synchronize(receiver.peerAddress()).key(key)
 			        .start();

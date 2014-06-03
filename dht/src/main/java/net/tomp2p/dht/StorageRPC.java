@@ -200,11 +200,11 @@ public class StorageRPC extends DispatchHandler {
         Utils.nullCheck(remotePeer);
 
         final DataMap dataMap;
-        if (putBuilder.getDataMap() != null) {
-            dataMap = new DataMap(putBuilder.getDataMap());
+        if (putBuilder.dataMap() != null) {
+            dataMap = new DataMap(putBuilder.dataMap());
         } else {
             dataMap = new DataMap(putBuilder.locationKey(), putBuilder.domainKey(),
-                    putBuilder.getVersionKey(), putBuilder.getDataMapContent());
+                    putBuilder.versionKey(), putBuilder.dataMapContent());
         }
 
         final Message message = createMessage(remotePeer, RPC.Commands.PUT.getNr(), type);
@@ -233,11 +233,11 @@ public class StorageRPC extends DispatchHandler {
         Utils.nullCheck(remotePeer);
 
         final DataMap dataMap;
-        if (putBuilder.getDataMap() != null) {
-            dataMap = new DataMap(putBuilder.getDataMap());
+        if (putBuilder.dataMap() != null) {
+            dataMap = new DataMap(putBuilder.dataMap());
         } else {
             dataMap = new DataMap(putBuilder.locationKey(), putBuilder.domainKey(),
-                    putBuilder.getVersionKey(), putBuilder.getDataMapContent());
+                    putBuilder.versionKey(), putBuilder.dataMapContent());
         }
         
         final Type type;
@@ -323,9 +323,9 @@ public class StorageRPC extends DispatchHandler {
         }
 
         // convert the data
-        Map<Number160, Data> dataMap = new HashMap<Number160, Data>(addBuilder.getDataSet().size());
-        if (addBuilder.getDataSet() != null) {
-            for (Data data : addBuilder.getDataSet()) {
+        Map<Number160, Data> dataMap = new HashMap<Number160, Data>(addBuilder.dataSet().size());
+        if (addBuilder.dataSet() != null) {
+            for (Data data : addBuilder.dataSet()) {
                 if (addBuilder.isList()) {
                     Number160 hash = new Number160(addBuilder.random());
                     while (dataMap.containsKey(hash)) {
@@ -345,7 +345,7 @@ public class StorageRPC extends DispatchHandler {
         }
 
         message.setDataMap(new DataMap(addBuilder.locationKey(), addBuilder.domainKey(), addBuilder
-                .getVersionKey(), dataMap));
+                .versionKey(), dataMap));
 
         final FutureResponse futureResponse = new FutureResponse(message);
         final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
@@ -403,15 +403,15 @@ public class StorageRPC extends DispatchHandler {
 
             if (getBuilder.contentKeys() != null) {
                 message.keyCollection(new KeyCollection(getBuilder.locationKey(), getBuilder
-                        .domainKey(), getBuilder.getVersionKey(), getBuilder.contentKeys()));
+                        .domainKey(), getBuilder.versionKey(), getBuilder.contentKeys()));
             } else {
                 message.intValue(getBuilder.returnNr());
-                if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
-                    if (getBuilder.getKeyBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.getKeyBloomFilter());
+                if (getBuilder.keyBloomFilter() != null || getBuilder.contentBloomFilter() != null) {
+                    if (getBuilder.keyBloomFilter() != null) {
+                        message.bloomFilter(getBuilder.keyBloomFilter());
                     }
-                    if (getBuilder.getContentBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.getContentBloomFilter());
+                    if (getBuilder.contentBloomFilter() != null) {
+                        message.bloomFilter(getBuilder.contentBloomFilter());
                     }
                 }
             }
@@ -463,15 +463,15 @@ public class StorageRPC extends DispatchHandler {
 
             if (getBuilder.contentKeys() != null) {
                 message.keyCollection(new KeyCollection(getBuilder.locationKey(), getBuilder
-                        .domainKey(), getBuilder.getVersionKey(), getBuilder.contentKeys()));
+                        .domainKey(), getBuilder.versionKey(), getBuilder.contentKeys()));
             } else {
                 message.intValue(getBuilder.returnNr());
-                if (getBuilder.getKeyBloomFilter() != null || getBuilder.getContentBloomFilter() != null) {
-                    if (getBuilder.getKeyBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.getKeyBloomFilter());
+                if (getBuilder.keyBloomFilter() != null || getBuilder.contentBloomFilter() != null) {
+                    if (getBuilder.keyBloomFilter() != null) {
+                        message.bloomFilter(getBuilder.keyBloomFilter());
                     }
-                    if (getBuilder.getContentBloomFilter() != null) {
-                        message.bloomFilter(getBuilder.getContentBloomFilter());
+                    if (getBuilder.contentBloomFilter() != null) {
+                        message.bloomFilter(getBuilder.contentBloomFilter());
                     }
                 }
             }
@@ -536,7 +536,7 @@ public class StorageRPC extends DispatchHandler {
 
             if (removeBuilder.contentKeys() != null) {
                 message.keyCollection(new KeyCollection(removeBuilder.locationKey(), removeBuilder
-                        .domainKey(), removeBuilder.getVersionKey(), removeBuilder.contentKeys()));
+                        .domainKey(), removeBuilder.versionKey(), removeBuilder.contentKeys()));
             }
         } else {
             message.keyCollection(new KeyCollection(removeBuilder.keys()));

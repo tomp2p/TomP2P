@@ -5,10 +5,10 @@ public class UtilsDHT {
     	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
     		//we only send a marker
     		return 1;
-    	} else if(putBuilder.getDataMap()!=null) {
-            return putBuilder.getDataMap().size();
+    	} else if(putBuilder.dataMap()!=null) {
+            return putBuilder.dataMap().size();
         } else { 
-            return putBuilder.getDataMapContent().size();
+            return putBuilder.dataMapContent().size();
         }
     }
     

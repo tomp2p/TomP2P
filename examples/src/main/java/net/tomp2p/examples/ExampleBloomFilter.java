@@ -24,7 +24,7 @@ import java.util.Random;
 import net.tomp2p.dht.FutureDigest;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
@@ -55,9 +55,9 @@ public final class ExampleBloomFilter {
         final int peerNr = 100;
         final int port = 4001;
         bloomFilterBasics();
-        Peer[] peers = null;
+        PeerDHT[] peers = null;
         try {
-            peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            peers = ExampleUtils.createAndAttachPeersDHT(peerNr, port);
             ExampleUtils.bootstrap(peers);
             exampleBloomFilter(peers);
         } finally {
@@ -90,7 +90,7 @@ public final class ExampleBloomFilter {
      *            All the peers
      * @throws IOException .
      */
-    private static void exampleBloomFilter(final Peer[] peers) throws IOException {
+    private static void exampleBloomFilter(final PeerDHT[] peers) throws IOException {
         final int nrPeers = 1000;
         final int range1 = 800;
         final int range2 = 1800;
@@ -107,7 +107,7 @@ public final class ExampleBloomFilter {
         for (int i = 0; i < nrPeers; i++) {
             contentMap.put(new Number160(i), new Data("data " + i));
         }
-        FuturePut futurePut = peers[peer30].put(nr1).setDataMapContent(contentMap)
+        FuturePut futurePut = peers[peer30].put(nr1).dataMapContent(contentMap)
                 .domainKey(Number160.createHash("my_domain")).start();
         futurePut.awaitUninterruptibly();
         // store another one
@@ -117,29 +117,29 @@ public final class ExampleBloomFilter {
         for (int i = range1; i < range2; i++) {
             contentMap.put(new Number160(i), new Data("data " + i));
         }
-        futurePut = peers[peer60].put(nr2).setDataMapContent(contentMap).domainKey(Number160.createHash("my_domain"))
+        futurePut = peers[peer60].put(nr2).dataMapContent(contentMap).domainKey(Number160.createHash("my_domain"))
                 .start();
         futurePut.awaitUninterruptibly();
         // digest the first entry
-        FutureDigest futureDigest = peers[peer20].digest(nr1).setAll().returnBloomFilter()
+        FutureDigest futureDigest = peers[peer20].digest(nr1).all().returnBloomFilter()
                 .domainKey(Number160.createHash("my_domain")).start();
         futureDigest.awaitUninterruptibly();
         // we have the bloom filter for the content keys:
-        SimpleBloomFilter<Number160> contentBF = futureDigest.getDigest().contentBloomFilter();
+        SimpleBloomFilter<Number160> contentBF = futureDigest.digest().contentBloomFilter();
                 
         System.out.println("We got bloomfilter for the first key: " + contentBF);
         //TODO: check keyBF.contains(new Number160(123));
         // query for nr2, but return only those that are in this bloom filter
-        FutureGet futureGet1 = peers[peer10].get(nr2).setAll().setKeyBloomFilter(contentBF)
+        FutureGet futureGet1 = peers[peer10].get(nr2).all().keyBloomFilter(contentBF)
                 .domainKey(Number160.createHash("my_domain")).start();
         futureGet1.awaitUninterruptibly();
         System.out.println("For the 2nd key we requested with this Bloom filer and we got "
-                + futureGet1.getDataMap().size() + " items.");
+                + futureGet1.dataMap().size() + " items.");
         
-        FutureGet futureGet2 = peers[peer10].get(nr2).setAll().bloomFilterIntersect().setKeyBloomFilter(contentBF)
+        FutureGet futureGet2 = peers[peer10].get(nr2).all().bloomFilterIntersect().keyBloomFilter(contentBF)
                 .domainKey(Number160.createHash("my_domain")).start();
         futureGet2.awaitUninterruptibly();
         System.out.println("For the 2nd key we requested with this Bloom filer and we got "
-                + futureGet2.getDataMap().size() + " items.");
+                + futureGet2.dataMap().size() + " items.");
     }
 }

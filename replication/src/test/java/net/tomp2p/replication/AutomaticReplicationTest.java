@@ -293,9 +293,9 @@ public class AutomaticReplicationTest {
             //A.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data1, null, false, false);
             //B.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data2, null, false, false);
             //C.getPeerBean().storage().put(new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO), data3, null, false, false);
-            A.put(locationKey).setData(data1).start().awaitUninterruptibly();
-            B.put(locationKey).setData(data2).start().awaitUninterruptibly();
-            C.put(locationKey).setData(data3).start().awaitUninterruptibly();
+            A.put(locationKey).data(data1).start().awaitUninterruptibly();
+            B.put(locationKey).data(data2).start().awaitUninterruptibly();
+            C.put(locationKey).data(data3).start().awaitUninterruptibly();
 
             Utils2.perfectRouting(peers);
 

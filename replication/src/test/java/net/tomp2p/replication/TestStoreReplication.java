@@ -78,8 +78,8 @@ public class TestStoreReplication {
 
             PutBuilder putBuilder = new PutBuilder(master, location);
             putBuilder.domainKey(location);
-            putBuilder.setDataMapContent(dataMap);
-            putBuilder.setVersionKey(Number160.ZERO);
+            putBuilder.dataMapContent(dataMap);
+            putBuilder.versionKey(Number160.ZERO);
 
             FutureResponse fr = master.storeRPC().put(master.peerAddress(), putBuilder, cc);
             fr.awaitUninterruptibly();
@@ -158,8 +158,8 @@ public class TestStoreReplication {
 
             PutBuilder putBuilder = new PutBuilder(master, loc);
             putBuilder.domainKey(domainKey);
-            putBuilder.setDataMapContent(contentMap);
-            putBuilder.setVersionKey(Number160.ZERO);
+            putBuilder.dataMapContent(contentMap);
+            putBuilder.versionKey(Number160.ZERO);
 
             master.storeRPC().put(master.peerAddress(), putBuilder, cc).awaitUninterruptibly();
             slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port + 1).start());
@@ -979,8 +979,8 @@ public class TestStoreReplication {
 			dataMap.put(Number160.ZERO, new Data("string"));
 			PutBuilder putBuilder = new PutBuilder(master, lKey);
 			putBuilder.domainKey(Number160.ZERO);
-			putBuilder.setDataMapContent(dataMap);
-			putBuilder.setVersionKey(Number160.ZERO);
+			putBuilder.dataMapContent(dataMap);
+			putBuilder.versionKey(Number160.ZERO);
 
 			FutureChannelCreator fcc = master.peer().connectionBean().reservation().create(0, 1);
 			fcc.awaitUninterruptibly();

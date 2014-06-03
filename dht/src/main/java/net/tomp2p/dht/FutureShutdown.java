@@ -42,7 +42,7 @@ public class FutureShutdown extends FutureDHT<FutureShutdown> {
     /**
      * Set future as finished and notify listeners.
      */
-    public void setDone() {
+    public void done() {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;

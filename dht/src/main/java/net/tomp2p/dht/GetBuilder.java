@@ -92,43 +92,43 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return keys;
     }
 
-    public GetBuilder setKey(Collection<Number640> keys) {
+    public GetBuilder key(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }
 
-    public Number160 getContentKey() {
+    public Number160 contentKey() {
         return contentKey;
     }
 
-    public GetBuilder setContentKey(Number160 contentKey) {
+    public GetBuilder contentKey(Number160 contentKey) {
         this.contentKey = contentKey;
         return this;
     }
 
-    public SimpleBloomFilter<Number160> getKeyBloomFilter() {
+    public SimpleBloomFilter<Number160> keyBloomFilter() {
         return keyBloomFilter;
     }
 
-    public GetBuilder setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public GetBuilder keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
         return this;
     }
 
-    public SimpleBloomFilter<Number160> getContentBloomFilter() {
+    public SimpleBloomFilter<Number160> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public GetBuilder setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public GetBuilder contentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
         return this;
     }
 
-    public EvaluatingSchemeDHT getEvaluationScheme() {
+    public EvaluatingSchemeDHT evaluationScheme() {
         return evaluationScheme;
     }
 
-    public GetBuilder setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+    public GetBuilder evaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
         this.evaluationScheme = evaluationScheme;
         return this;
     }
@@ -137,12 +137,12 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         return all;
     }
 
-    public GetBuilder setAll(boolean all) {
+    public GetBuilder all(boolean all) {
         this.all = all;
         return this;
     }
 
-    public GetBuilder setAll() {
+    public GetBuilder all() {
         this.all = true;
         return this;
     }

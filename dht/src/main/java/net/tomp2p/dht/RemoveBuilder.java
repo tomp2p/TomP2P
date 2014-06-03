@@ -78,12 +78,12 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         return all;
     }
 
-    public RemoveBuilder setAll(boolean all) {
+    public RemoveBuilder all(boolean all) {
         this.all = all;
         return this;
     }
 
-    public RemoveBuilder setAll() {
+    public RemoveBuilder all() {
         this.all = true;
         return this;
     }
@@ -97,7 +97,7 @@ public class RemoveBuilder extends DHTBuilder<RemoveBuilder> implements Searchab
         return this;
     }
 
-    public RemoveBuilder setReturnResults() {
+    public RemoveBuilder returnResults() {
         this.returnResults = true;
         return this;
     }

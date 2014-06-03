@@ -34,11 +34,11 @@ public class ExampleNATChat {
 			System.out.println("peer started.");
 			for (;;) {
 				Thread.sleep(5000);
-				FutureGet fg = peer.get(new Number160(keyStore)).setAll().start();
+				FutureGet fg = peer.get(new Number160(keyStore)).all().start();
 				fg.awaitUninterruptibly();
-				int size = fg.getDataMap().size();
+				int size = fg.dataMap().size();
 				System.out.println("size " + size);
-				Iterator<Data> iterator = fg.getDataMap().values().iterator();
+				Iterator<Data> iterator = fg.dataMap().values().iterator();
 				while (iterator.hasNext()) {
 					Data d = iterator.next();
 					System.out.println("got: " + d.object().toString());
@@ -86,17 +86,17 @@ public class ExampleNATChat {
 		String inLine = null;
 		while ((inLine = getLine()) != null) {
 			if (inLine.equals("show")) {
-				FutureGet fget = peer.get(new Number160(keyStore)).setAll().start();
+				FutureGet fget = peer.get(new Number160(keyStore)).all().start();
 				fget.awaitUninterruptibly();
-				Iterator<Data> iterator = fget.getDataMap().values().iterator();
+				Iterator<Data> iterator = fget.dataMap().values().iterator();
 				StringBuffer allString = new StringBuffer();
 				FutureGet fg;
 				while (iterator.hasNext()) {
 					Data d = iterator.next();
 					fg = peer.get(new Number160(((Integer) d.object()).intValue())).start();
 					fg.awaitUninterruptibly();
-					if (fg.getData() != null) {
-						allString.append(fg.getData().object().toString()).append("\n");
+					if (fg.data() != null) {
+						allString.append(fg.data().object().toString()).append("\n");
 					} else {
 						System.err.println("Could not find key for val: " + d.object());
 					}
@@ -105,9 +105,9 @@ public class ExampleNATChat {
 			} else {
 				int r2 = new Random().nextInt();
 				System.out.println("Storing DHT address (" + r2 + ") in DHT");
-				peer.add(new Number160(keyStore)).setData(new Data(r2)).start().awaitUninterruptibly();
+				peer.add(new Number160(keyStore)).data(new Data(r2)).start().awaitUninterruptibly();
 				System.out.println("Adding (" + inLine + ") to DHT");
-				peer.put(new Number160(r2)).setData(new Data(inLine)).start().awaitUninterruptibly();
+				peer.put(new Number160(r2)).data(new Data(inLine)).start().awaitUninterruptibly();
 			}
 		}
 		System.out.println("Shutting down...");

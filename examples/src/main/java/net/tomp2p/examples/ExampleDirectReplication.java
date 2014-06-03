@@ -18,16 +18,15 @@ package net.tomp2p.examples;
 
 import java.io.IOException;
 
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.RemoveBuilder;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.AutomaticFuture;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.replication.DirectReplication;
 import net.tomp2p.storage.Data;
-import net.tomp2p.utils.Timings;
 
 /**
  * Example of direct replication with put and remove.
@@ -53,11 +52,11 @@ public final class ExampleDirectReplication {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        Peer[] peers = null;
+        PeerDHT[] peers = null;
         try {
             final int nrPeers = 100;
             final int port = 4001;
-            peers = ExampleUtils.createAndAttachNodes(nrPeers, port);
+            peers = ExampleUtils.createAndAttachPeersDHT(nrPeers, port);
             ExampleUtils.bootstrap(peers);
             exmpleDirectReplication(peers);
         } finally {
@@ -75,8 +74,8 @@ public final class ExampleDirectReplication {
      *            The peers in this P2P network
      * @throws IOException .
      */
-    private static void exmpleDirectReplication(final Peer[] peers) throws IOException {
-        PutBuilder putBuilder = peers[1].put(Number160.ONE).setData(new Data("test"));
+    private static void exmpleDirectReplication(final PeerDHT[] peers) throws IOException {
+        PutBuilder putBuilder = peers[1].put(Number160.ONE).data(new Data("test"));
         DirectReplication replication = new DirectReplication(peers[1]);
         Shutdown shutdown = replication.direct(putBuilder, 1000, -1, new AutomaticFuture() {
 			@Override
@@ -84,7 +83,7 @@ public final class ExampleDirectReplication {
 				System.out.println("put again...");
 			}
 		});
-        Timings.sleepUninterruptibly(NINE_SECONDS);
+        Thread.sleep(NINE_SECONDS);
         System.out.println("stop replication");
         shutdown.shutdown();
         RemoveBuilder removeBuilder = peers[1].remove(Number160.ONE);

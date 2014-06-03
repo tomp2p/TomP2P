@@ -218,10 +218,10 @@ public final class ExampleDST {
             already.add(inter2.toString());
             // get the interval
             System.out.println("get for " + inter2);
-            FutureGet futureGet = peer.get(key).setAll().start();
+            FutureGet futureGet = peer.get(key).all().start();
             futureGet.awaitUninterruptibly();
             dhtCounter.incrementAndGet();
-            for (Map.Entry<Number640, Data> entry : futureGet.getDataMap().entrySet()) {
+            for (Map.Entry<Number640, Data> entry : futureGet.dataMap().entrySet()) {
                 // with each result we get a flag if we should query the children (this should be returned in the
                 // future, e.g., partially_ok)
                 StringBoolean stringBoolean = (StringBoolean) entry.getValue().object();
@@ -254,7 +254,7 @@ public final class ExampleDST {
         Interval inter = interval;
         for (int i = 0; i <= height; i++) {
             Number160 key = Number160.createHash(inter.toString());
-            FuturePut futurePut = peer.put(key).setData(new Number160(index), new Data(word)).start();
+            FuturePut futurePut = peer.put(key).data(new Number160(index), new Data(word)).start();
             futurePut.awaitUninterruptibly();
             System.out.println("stored " + word + " in " + inter + " status: " + futurePut.isSuccess());
             inter = inter.split(index);

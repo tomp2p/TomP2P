@@ -83,8 +83,8 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     /**
      * Finish the future and set the keys that have been stored. Success or failure is determined if the communication
      * was successful. This means that we need to further check if the other peers have denied the storage (e.g., due to
-     * no storage space, no security permissions). Further evaluation can be retrieved with {@link #getAvgStoredKeys()}
-     * or if the evaluation should be done by the user, use {@link #getRawKeys()}.
+     * no storage space, no security permissions). Further evaluation can be retrieved with {@link #avgStoredKeys()}
+     * or if the evaluation should be done by the user, use {@link #rawKeys()}.
      * 
      * @param domainKey
      *            The domain key
@@ -95,7 +95,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys(final Map<PeerAddress, Map<Number640, Byte>> rawKeys640) {
+    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawKeys640) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -112,7 +112,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     /**
      * @return The average keys received from the DHT. Only evaluates rawKeys.
      */
-	public double getAvgStoredKeys() {
+	public double avgStoredKeys() {
 		synchronized (lock) {
 			final int size = rawKeys640.size();
 			int total = 0;
@@ -131,7 +131,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * @param rawData
      *            The keys and data that have been received with information from which peer it has been received.
      */
-    public void setReceivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
+    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -150,7 +150,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number640, Byte>> getRawKeys() {
+    public Map<PeerAddress, Map<Number640, Byte>> rawKeys() {
         synchronized (lock) {
             return rawKeys640;
         }
@@ -170,11 +170,11 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
 
     /**
      * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
-     * information, by either a majority vote or cumulation. Use {@link FutureRemove#getEvalKeys()} instead of this method.
+     * information, by either a majority vote or cumulation. Use {@link FutureRemove#evalKeys()} instead of this method.
      * 
      * @return The keys that have been stored or removed
      */
-    public Collection<Number640> getEvalKeys() {
+    public Collection<Number640> evalKeys() {
         synchronized (lock) {
             return evaluationScheme.evaluate6(rawKeys640);
         }
@@ -185,7 +185,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The raw data and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number640, Data>> getRawData() {
+    public Map<PeerAddress, Map<Number640, Data>> rawData() {
         synchronized (lock) {
             return rawData;
         }
@@ -197,7 +197,7 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
      * 
      * @return The evaluated data that have been received.
      */
-    public Map<Number640, Data> getDataMap() {
+    public Map<Number640, Data> dataMap() {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
         }
@@ -205,11 +205,11 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
     
     /**
      * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
-     * information, by either a majority vote or cumulation. Use {@link FuturePut#getEvalKeys()} instead of this method.
+     * information, by either a majority vote or cumulation. Use {@link FuturePut#evalKeys()} instead of this method.
      * 
      * @return The keys that have been stored or removed
      */
-    public Map<Number640, Integer> getResult() {
+    public Map<Number640, Integer> result() {
         synchronized (lock) {
             if(result == null) {
             	 if(rawKeys640!=null) {
@@ -263,9 +263,9 @@ public class FutureRemove extends FutureDHT<FutureRemove> {
             return false;
         }
         if(rawKeys640 != null) {
-        	return checkResults(getResult(), rawKeys640.size(), dataSize);
+        	return checkResults(result(), rawKeys640.size(), dataSize);
         } else if (rawData!=null) {
-        	return checkResults(getResult(), rawData.size(), dataSize);
+        	return checkResults(result(), rawData.size(), dataSize);
         } else {
         	return false;
         }

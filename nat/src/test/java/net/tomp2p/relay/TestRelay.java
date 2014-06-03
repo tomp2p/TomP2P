@@ -400,8 +400,8 @@ public class TestRelay {
              PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
              slave = new PeerDHT(new PeerBuilder(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).start());
              printMapStatus(slave, peers);
-             FuturePut futurePut = peers[8].put(slave.peerID()).setData(new Data("hello")).start().awaitUninterruptibly();
-             futurePut.getFutureRequests().awaitUninterruptibly();
+             FuturePut futurePut = peers[8].put(slave.peerID()).data(new Data("hello")).start().awaitUninterruptibly();
+             futurePut.futureRequests().awaitUninterruptibly();
              Assert.assertTrue(futurePut.isSuccess());
              Assert.assertFalse(slave.storageLayer().contains(
             		 new Number640(slave.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
@@ -461,9 +461,9 @@ public class TestRelay {
              
              printMapStatus(unreachablePeer, peers);
              
-             FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).setData(new Data("hello")).start().awaitUninterruptibly();
+             FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).start().awaitUninterruptibly();
              //the relayed one is the slowest, so we need to wait for it!
-             futurePut.getFutureRequests().awaitUninterruptibly();
+             futurePut.futureRequests().awaitUninterruptibly();
              Assert.assertTrue(futurePut.isSuccess());
              //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
              Assert.assertTrue(unreachablePeer.storageLayer().contains(new Number640(unreachablePeer.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));

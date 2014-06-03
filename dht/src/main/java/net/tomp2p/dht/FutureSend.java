@@ -72,7 +72,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * @param rawChannels
      *            The raw data that have been sent directly with information on which peer it has been sent
      */
-    public void setDirectData1(final Map<PeerAddress, ByteBuf> rawChannels) {
+    public void directData1(final Map<PeerAddress, ByteBuf> rawChannels) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -93,7 +93,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * @param rawObjects
      *            The objects that have been sent directly with information on which peer it has been sent
      */
-    public void setDirectData2(final Map<PeerAddress, Object> rawObjects) {
+    public void directData2(final Map<PeerAddress, Object> rawObjects) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -113,7 +113,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The raw data from send_dircet and the information which peer has been contacted
      */
-    public Map<PeerAddress, ByteBuf> getRawDirectData1() {
+    public Map<PeerAddress, ByteBuf> rawDirectData1() {
         synchronized (lock) {
             return rawChannels;
         }
@@ -124,7 +124,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The raw data from send_dircet and the information which peer has been contacted
      */
-    public Map<PeerAddress, Object> getRawDirectData2() {
+    public Map<PeerAddress, Object> rawDirectData2() {
         synchronized (lock) {
             return rawObjects;
         }
@@ -136,7 +136,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The data that have been received.
      */
-    public Object getObject() {
+    public Object object() {
         synchronized (lock) {
             return this.evaluationScheme.evaluate3(rawObjects);
         }
@@ -148,7 +148,7 @@ public class FutureSend extends FutureDHT<FutureSend> {
      * 
      * @return The data that have been received.
      */
-    public ByteBuf getChannelBuffer() {
+    public ByteBuf channelBuffer() {
         synchronized (lock) {
             return this.evaluationScheme.evaluate4(rawChannels);
         }

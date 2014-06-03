@@ -106,12 +106,12 @@ public class TestRealNetwork {
         
         PeerDHT myPeerDHT = new PeerDHT(myPeer);
 
-        FuturePut putFuture = myPeerDHT.put(Number160.createHash("key")).setData(new Data(myInetSocketAddress)).start();
+        FuturePut putFuture = myPeerDHT.put(Number160.createHash("key")).data(new Data(myInetSocketAddress)).start();
         putFuture.awaitUninterruptibly();
         FutureGet futureDHT = myPeerDHT.get(Number160.createHash("key")).start();
         futureDHT.awaitUninterruptibly();
-        futureDHT.getFutureRequests().awaitUninterruptibly();
-        Data data = futureDHT.getData();
+        futureDHT.futureRequests().awaitUninterruptibly();
+        Data data = futureDHT.data();
         if (data == null) {
             throw new RuntimeException("Address not available in DHT.");
         }

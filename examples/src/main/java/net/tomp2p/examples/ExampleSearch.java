@@ -82,7 +82,7 @@ public final class ExampleSearch {
         FutureGet futureGet = peers[peer30].get(key).start();
         futureGet.awaitUninterruptibly();
 
-        System.out.println("got: " + key + " = " + futureGet.getData().object());
+        System.out.println("got: " + key + " = " + futureGet.data().object());
 
     }
 
@@ -113,7 +113,7 @@ public final class ExampleSearch {
         // that.
         FutureGet futureGet = peers[peer10].get(termKey).start();
         futureGet.awaitUninterruptibly();
-        System.out.println("searched for [Communication], found " + futureGet.getData().object());
+        System.out.println("searched for [Communication], found " + futureGet.data().object());
     }
 
     /**
@@ -132,7 +132,7 @@ public final class ExampleSearch {
         Number160 keyKeyword = Number160.createHash(keyword);
         FutureGet futureGet = peer.get(keyKeyword).start();
         futureGet.awaitUninterruptibly();
-        Number160 termKey = (Number160) futureGet.getData().object();
+        Number160 termKey = (Number160) futureGet.data().object();
         return termKey;
     }
 

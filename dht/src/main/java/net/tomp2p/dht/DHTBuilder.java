@@ -96,11 +96,11 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
         return self;
     }
 
-    public Number160 getVersionKey() {
+    public Number160 versionKey() {
         return versionKey;
     }
 
-    public K setVersionKey(Number160 versionKey) {
+    public K versionKey(Number160 versionKey) {
         this.versionKey = versionKey;
         return self;
     }
@@ -142,7 +142,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
     /**
      * @return The future of the created channel
      */
-    public FutureChannelCreator getFutureChannelCreator() {
+    public FutureChannelCreator futureChannelCreator() {
         return futureChannelCreator;
     }
 
@@ -151,7 +151,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      *            The future of the created channel
      * @return This object
      */
-    public K setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
+    public K futureChannelCreator(FutureChannelCreator futureChannelCreator) {
         this.futureChannelCreator = futureChannelCreator;
         return self;
     }
@@ -171,7 +171,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      *            key.
      * @return This class
      */
-    public K setProtectDomain(final boolean protectDomain) {
+    public K protectDomain(final boolean protectDomain) {
         this.protectDomain = protectDomain;
         return self;
     }
@@ -180,7 +180,7 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      * @return Set to true if the domain should be set to protected. This means that this domain is flagged an a public
      *         key is stored for this entry. An update or removal can only be made with the matching private key.
      */
-    public K setProtectDomain() {
+    public K protectDomain() {
         this.protectDomain = true;
         if(this.keyPair == null) {
         	sign();
@@ -249,17 +249,17 @@ public abstract class DHTBuilder<K extends DHTBuilder<K>> extends DefaultConnect
      *            True if streaming should be used
      * @return This class
      */
-    public K setStreaming(final boolean streaming) {
+    public K streaming(final boolean streaming) {
         this.streaming = streaming;
         return self;
     }
 
     /**
-     * Set streaming to true. See {@link #setStreaming(boolean)}
+     * Set streaming to true. See {@link #streaming(boolean)}
      * 
      * @return This class
      */
-    public K setStreaming() {
+    public K streaming() {
         this.streaming = true;
         return self;
     }

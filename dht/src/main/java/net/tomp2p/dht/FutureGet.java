@@ -71,7 +71,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * @param rawData
      *            The keys and data that have been received with information from which peer it has been received.
      */
-    public void setReceivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
+    public void receivedData(final Map<PeerAddress, Map<Number640, Data>> rawData) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -90,7 +90,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * 
      * @return The raw data and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number640, Data>> getRawData() {
+    public Map<PeerAddress, Map<Number640, Data>> rawData() {
         synchronized (lock) {
             return rawData;
         }
@@ -102,7 +102,7 @@ public class FutureGet extends FutureDHT<FutureGet> {
      * 
      * @return The evaluated data that have been received.
      */
-    public Map<Number640, Data> getDataMap() {
+    public Map<Number640, Data> dataMap() {
         synchronized (lock) {
             return evaluationScheme.evaluate2(rawData);
         }
@@ -111,8 +111,8 @@ public class FutureGet extends FutureDHT<FutureGet> {
     /**
      * @return The first data object from get() after evaluation.
      */
-    public Data getData() {
-        Map<Number640, Data> dataMap = getDataMap();
+    public Data data() {
+        Map<Number640, Data> dataMap = dataMap();
         if (dataMap.size() == 0) {
             return null;
         }

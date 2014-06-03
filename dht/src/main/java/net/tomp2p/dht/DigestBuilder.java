@@ -94,43 +94,43 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return keys;
     }
 
-    public DigestBuilder setKey(Collection<Number640> keys) {
+    public DigestBuilder key(Collection<Number640> keys) {
         this.keys = keys;
         return this;
     }
 
-    public Number160 getContentKey() {
+    public Number160 contentKey() {
         return contentKey;
     }
 
-    public DigestBuilder setContentKey(Number160 contentKey) {
+    public DigestBuilder contentKey(Number160 contentKey) {
         this.contentKey = contentKey;
         return this;
     }
 
-    public SimpleBloomFilter<Number160> getKeyBloomFilter() {
+    public SimpleBloomFilter<Number160> keyBloomFilter() {
         return keyBloomFilter;
     }
 
-    public DigestBuilder setKeyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
+    public DigestBuilder keyBloomFilter(SimpleBloomFilter<Number160> keyBloomFilter) {
         this.keyBloomFilter = keyBloomFilter;
         return this;
     }
 
-    public SimpleBloomFilter<Number160> getContentBloomFilter() {
+    public SimpleBloomFilter<Number160> contentBloomFilter() {
         return contentBloomFilter;
     }
 
-    public DigestBuilder setContentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
+    public DigestBuilder contentBloomFilter(SimpleBloomFilter<Number160> contentBloomFilter) {
         this.contentBloomFilter = contentBloomFilter;
         return this;
     }
 
-    public EvaluatingSchemeDHT getEvaluationScheme() {
+    public EvaluatingSchemeDHT evaluationScheme() {
         return evaluationScheme;
     }
 
-    public DigestBuilder setEvaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
+    public DigestBuilder evaluationScheme(EvaluatingSchemeDHT evaluationScheme) {
         this.evaluationScheme = evaluationScheme;
         return this;
     }
@@ -139,12 +139,12 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
         return all;
     }
 
-    public DigestBuilder setAll(boolean all) {
+    public DigestBuilder all(boolean all) {
         this.all = all;
         return this;
     }
 
-    public DigestBuilder setAll() {
+    public DigestBuilder all() {
         this.all = true;
         return this;
     }

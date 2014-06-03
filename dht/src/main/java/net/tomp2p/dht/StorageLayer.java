@@ -95,43 +95,43 @@ public class StorageLayer implements DigestStorage {
 		this.backend = backend;
 	}
 
-	public void setProtection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
+	public void protection(ProtectionEnable protectionDomainEnable, ProtectionMode protectionDomainMode,
 	        ProtectionEnable protectionEntryEnable, ProtectionMode protectionEntryMode) {
-		setProtectionDomainEnable(protectionDomainEnable);
-		setProtectionDomainMode(protectionDomainMode);
-		setProtectionEntryEnable(protectionEntryEnable);
-		setProtectionEntryMode(protectionEntryMode);
+		protectionDomainEnable(protectionDomainEnable);
+		protectionDomainMode(protectionDomainMode);
+		protectionEntryEnable(protectionEntryEnable);
+		protectionEntryMode(protectionEntryMode);
 	}
 
-	public void setProtectionDomainMode(ProtectionMode protectionDomainMode) {
+	public void protectionDomainMode(ProtectionMode protectionDomainMode) {
 		this.protectionDomainMode = protectionDomainMode;
 	}
 
-	public ProtectionMode getProtectionDomainMode() {
+	public ProtectionMode protectionDomainMode() {
 		return protectionDomainMode;
 	}
 
-	public void setProtectionDomainEnable(ProtectionEnable protectionDomainEnable) {
+	public void protectionDomainEnable(ProtectionEnable protectionDomainEnable) {
 		this.protectionDomainEnable = protectionDomainEnable;
 	}
 
-	public ProtectionEnable getProtectionDomainEnable() {
+	public ProtectionEnable protectionDomainEnable() {
 		return protectionDomainEnable;
 	}
 
-	public void setProtectionEntryMode(ProtectionMode protectionEntryMode) {
+	public void protectionEntryMode(ProtectionMode protectionEntryMode) {
 		this.protectionEntryMode = protectionEntryMode;
 	}
 
-	public ProtectionMode getProtectionEntryMode() {
+	public ProtectionMode protectionEntryMode() {
 		return protectionEntryMode;
 	}
 
-	public void setProtectionEntryEnable(ProtectionEnable protectionEntryEnable) {
+	public void protectionEntryEnable(ProtectionEnable protectionEntryEnable) {
 		this.protectionEntryEnable = protectionEntryEnable;
 	}
 
-	public ProtectionEnable getProtectionEntryEnable() {
+	public ProtectionEnable protectionEntryEnable() {
 		return protectionEntryEnable;
 	}
 
@@ -484,7 +484,7 @@ public class StorageLayer implements DigestStorage {
 
 	private boolean foreceOverrideDomain(Number160 domainKey, PublicKey publicKey) {
 		// we are in public key mode
-		if (getProtectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
+		if (protectionDomainMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null) {
 			// if the hash of the public key is the same as the domain, we can
 			// overwrite
 			return isMine(domainKey, publicKey);
@@ -494,7 +494,7 @@ public class StorageLayer implements DigestStorage {
 
 	private boolean foreceOverrideEntry(Number160 entryKey, PublicKey publicKey) {
 		// we are in public key mode
-		if (getProtectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null
+		if (protectionEntryMode() == ProtectionMode.MASTER_PUBLIC_KEY && publicKey != null
 		        && publicKey.getEncoded() != null) {
 			// if the hash of the public key is the same as the domain, we can
 			// overwrite
@@ -519,9 +519,9 @@ public class StorageLayer implements DigestStorage {
 		if (isDomainRemoved(domainKey)) {
 			return false;
 		}
-		if (getProtectionDomainEnable() == ProtectionEnable.ALL) {
+		if (protectionDomainEnable() == ProtectionEnable.ALL) {
 			return true;
-		} else if (getProtectionDomainEnable() == ProtectionEnable.NONE) {
+		} else if (protectionDomainEnable() == ProtectionEnable.NONE) {
 			// only if we have the master key
 			return foreceOverrideDomain(domainKey, publicKey);
 		}
@@ -529,9 +529,9 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	private boolean canProtectEntry(Number160 contentKey, PublicKey publicKey) {
-		if (getProtectionEntryEnable() == ProtectionEnable.ALL) {
+		if (protectionEntryEnable() == ProtectionEnable.ALL) {
 			return true;
-		} else if (getProtectionEntryEnable() == ProtectionEnable.NONE) {
+		} else if (protectionEntryEnable() == ProtectionEnable.NONE) {
 			// only if we have the master key
 			return foreceOverrideEntry(contentKey, publicKey);
 		}
@@ -542,19 +542,19 @@ public class StorageLayer implements DigestStorage {
 		return key.equals(Utils.makeSHAHash(publicKey.getEncoded()));
 	}
 
-	public KeyLock<Storage> getLockStorage() {
+	public KeyLock<Storage> lockStorage() {
 		return dataLock;
 	}
 
-	public KeyLock<Number160> getLockNumber160() {
+	public KeyLock<Number160> lockNumber160() {
 		return dataLock160;
 	}
 
-	public KeyLock<Number320> getLockNumber320() {
+	public KeyLock<Number320> lockNumber320() {
 		return dataLock320;
 	}
 
-	public KeyLock<Number480> getLockNumber480() {
+	public KeyLock<Number480> lockNumber480() {
 		return dataLock480;
 	}
 

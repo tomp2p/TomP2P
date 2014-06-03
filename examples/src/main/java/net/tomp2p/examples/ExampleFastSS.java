@@ -64,7 +64,7 @@ public class ExampleFastSS {
         for (String word : title.split(" ")) {
             for (String deletion : deletion(word)) {
                 Object[] tmp = new Object[] { key, word, deletion };
-                peers[15].put(Number160.createHash(deletion)).setData(new Data(tmp)).start().awaitUninterruptibly();
+                peers[15].put(Number160.createHash(deletion)).data(new Data(tmp)).start().awaitUninterruptibly();
             }
         }
         System.out.println("we have indexed [" + title + "]");
@@ -73,7 +73,7 @@ public class ExampleFastSS {
             FutureGet futureGet = peers[20].get(Number160.createHash(deletion)).start().awaitUninterruptibly();
             if (futureGet.isSuccess()) {
                 // if we found a match
-                Object[] tmp = (Object[]) futureGet.getData().object();
+                Object[] tmp = (Object[]) futureGet.data().object();
                 Number160 key1 = (Number160) tmp[0];
                 // get the peers that have this file
                 FutureTracker futureTracker = peers[20].getTracker(key1).start();

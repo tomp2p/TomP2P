@@ -121,12 +121,12 @@ public class TestAddUpdateTTL {
     private void add(PeerDHT peer, byte[] key, byte[] value) throws InterruptedException {
         Data data = new Data(value);
         data.ttlSeconds(3);
-        peer.add(new Number160(key)).setData(data).routingConfiguration(new RoutingConfiguration(1, 0, 10, 1))
+        peer.add(new Number160(key)).data(data).routingConfiguration(new RoutingConfiguration(1, 0, 10, 1))
                 .requestP2PConfiguration(new RequestP2PConfiguration(3, 5, 0)).start()
                 .addListener(new BaseFutureAdapter<FuturePut>() {
                     @Override
                     public void operationComplete(final FuturePut future) throws Exception {
-                        System.out.println(future.getRawResult());
+                        System.out.println(future.rawResult());
                     }
                 });
     }
@@ -165,14 +165,14 @@ public class TestAddUpdateTTL {
         @Override
         public void run() {
             for (final byte[] key : keyValueStore.keySet()) {
-                peer.get(new Number160(key)).setAll().start().addListener(new BaseFutureAdapter<FutureGet>() {
+                peer.get(new Number160(key)).all().start().addListener(new BaseFutureAdapter<FutureGet>() {
                     @Override
                     public void operationComplete(final FutureGet future) throws Exception {
                         if (!future.isSuccess()) {
                             testSuccess = false;
                             System.out.println("getAll failed " + future.failedReason());
                         } else {
-                            System.out.println("getAll result: " + future.getDataMap().size());
+                            System.out.println("getAll result: " + future.dataMap().size());
                         }
                         latch.countDown();
                     }

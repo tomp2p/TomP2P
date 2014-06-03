@@ -244,7 +244,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
                         PutBuilder putBuilder = new PutBuilder(peer, locationKey);
-                        putBuilder.setDataMap(dataMap);
+                        putBuilder.dataMap(dataMap);
                         FutureResponse futureResponse = storageRPC.put(other, putBuilder,
                                 future.channelCreator());
                         Utils.addReleaseListener(future.channelCreator(), futureResponse);

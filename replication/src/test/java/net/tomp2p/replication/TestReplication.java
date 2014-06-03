@@ -216,7 +216,7 @@ public class TestReplication {
                     .start();
             Utils2.perfectRouting(p1, p2, p3);
             Number160 locationKey = Number160.createHash("test1");
-            FuturePut fp = p2.put(locationKey).setData(new Data("hallo")).requestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
+            FuturePut fp = p2.put(locationKey).data(new Data("hallo")).requestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
             fp.awaitUninterruptibly();
             getReplicasCount(locationKey, p1, p2, p3);
             //
@@ -264,7 +264,7 @@ public class TestReplication {
                     .start();
             Utils2.perfectRouting(p1, p2, p3);
             Number160 locationKey = Number160.createHash("test1");
-            FuturePut fp = p2.put(locationKey).setData(new Data("hallo")).requestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
+            FuturePut fp = p2.put(locationKey).data(new Data("hallo")).requestP2PConfiguration(new RequestP2PConfiguration(2, 10, 0)).start();
             fp.awaitUninterruptibly();
             getReplicasCount(locationKey, p1, p2, p3);
             
@@ -343,9 +343,9 @@ public class TestReplication {
             }
             //store data, the two peers do not know each other
             Data data = new Data("Test");
-            FuturePut futureDHT = master.put(Number160.createHash("2")).setData(data).start();
+            FuturePut futureDHT = master.put(Number160.createHash("2")).data(data).start();
             futureDHT.awaitUninterruptibly();
-            futureDHT.getFutureRequests().awaitUninterruptibly();
+            futureDHT.futureRequests().awaitUninterruptibly();
             //now, do the routing, so that each peers know each other. The content should be moved
             Assert.assertEquals(false, peers[1].peerBean().storageLayer().contains(new Number640(Number160.createHash("2"), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
             Utils2.perfectRouting(peers);
@@ -390,9 +390,9 @@ public class TestReplication {
             System.err.println("closest to " + locationKey + " is " + closest);
             // store
             Data data = new Data("Test");
-            FuturePut futureDHT = master.put(locationKey).setData(data).start();
+            FuturePut futureDHT = master.put(locationKey).data(data).start();
             futureDHT.awaitUninterruptibly();
-            futureDHT.getFutureRequests().awaitUninterruptibly();
+            futureDHT.futureRequests().awaitUninterruptibly();
             Assert.assertEquals(true, futureDHT.isSuccess());
             List<FutureBootstrap> tmp2 = new ArrayList<FutureBootstrap>();
             Utils2.perfectRouting(peers);
@@ -521,7 +521,7 @@ public class TestReplication {
 			// do testing
 
 			final int peerTest = 3;
-			peers[peerTest].put(Number160.createHash(1000)).setData(new Data("Test")).start().awaitUninterruptibly();
+			peers[peerTest].put(Number160.createHash(1000)).data(new Data("Test")).start().awaitUninterruptibly();
 
 			for (int i = 0; i < nrPeers; i++) {
 				for (Data d : peers[i].storageLayer().get().values())

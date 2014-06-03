@@ -79,15 +79,15 @@ public class DistributedHashTable {
 
     public FuturePut add(final AddBuilder builder) {
         final FuturePut futureDHT = new FuturePut(builder, builder.requestP2PConfiguration()
-                .minimumResults(), builder.getDataSet().size());
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+                .minimumResults(), builder.dataSet().size());
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.channelCreator());
                 	
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(final FutureRouting futureRouting) throws Exception {
@@ -107,7 +107,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FuturePut futureDHT) {
-                                                futureDHT.setStoredKeys(rawData);
+                                                futureDHT.storedKeys(rawData);
                                             }
 
                                             @Override
@@ -146,7 +146,7 @@ public class DistributedHashTable {
         final FutureSend futureDHT = new FutureSend(builder, builder.requestP2PConfiguration()
                 .minimumResults(), new VotingSchemeDHT());
 
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -154,7 +154,7 @@ public class DistributedHashTable {
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.channelCreator());
 
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(FutureRouting futureRouting) throws Exception {
@@ -178,9 +178,9 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureSend futureDHT) {
                                                 if (builder.isRaw())
-                                                    futureDHT.setDirectData1(rawChannels);
+                                                    futureDHT.directData1(rawChannels);
                                                 else
-                                                    futureDHT.setDirectData2(rawObjects);
+                                                    futureDHT.directData2(rawObjects);
                                             }
 
                                             @Override
@@ -228,7 +228,7 @@ public class DistributedHashTable {
         final int dataSize = UtilsDHT.dataSize(putBuilder);
         final FuturePut futureDHT = new FuturePut(putBuilder, putBuilder.requestP2PConfiguration()
                 .minimumResults(), dataSize);
-        putBuilder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        putBuilder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -236,7 +236,7 @@ public class DistributedHashTable {
                 	final RoutingBuilder routingBuilder = createBuilder(putBuilder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_1, future.channelCreator());
                 	
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(final FutureRouting futureRouting) throws Exception {
@@ -266,7 +266,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(final FuturePut futureDHT) {
-                                                futureDHT.setStoredKeys(rawData);
+                                                futureDHT.storedKeys(rawData);
                                             }
 
                                             @Override
@@ -307,7 +307,7 @@ public class DistributedHashTable {
         final FutureGet futureDHT = new FutureGet(builder, builder.requestP2PConfiguration()
                 .minimumResults(), new VotingSchemeDHT());
 
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -316,7 +316,7 @@ public class DistributedHashTable {
                 	fillRoutingBuilder(builder, routingBuilder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
 
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(FutureRouting futureRouting) throws Exception {
@@ -347,7 +347,7 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureGet futureDHT) {
 
-                                                futureDHT.setReceivedData(rawData);
+                                                futureDHT.receivedData(rawData);
 
                                             }
 
@@ -383,7 +383,7 @@ public class DistributedHashTable {
         final FutureDigest futureDHT = new FutureDigest(builder, builder.requestP2PConfiguration()
                 .minimumResults(), new VotingSchemeDHT());
 
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -392,7 +392,7 @@ public class DistributedHashTable {
                 	fillRoutingBuilder(builder, routingBuilder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
                     
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(FutureRouting futureRouting) throws Exception {
@@ -415,7 +415,7 @@ public class DistributedHashTable {
 
                                             @Override
                                             public void response(FutureDigest futureDHT) {
-                                                futureDHT.setReceivedDigest(rawDigest);
+                                                futureDHT.receivedDigest(rawDigest);
                                             }
 
                                             @Override
@@ -470,7 +470,7 @@ public class DistributedHashTable {
         final FutureRemove futureDHT = new FutureRemove(builder, builder.requestP2PConfiguration()
                 .minimumResults(), new VotingSchemeDHT(), dataSize);
 
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -479,7 +479,7 @@ public class DistributedHashTable {
                     fillRoutingBuilder(builder, routingBuilder);
                 	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
 
-                    futureDHT.setFutureRouting(futureRouting);
+                    futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
                         @Override
                         public void operationComplete(FutureRouting futureRouting) throws Exception {
@@ -508,9 +508,9 @@ public class DistributedHashTable {
                                             @Override
                                             public void response(FutureRemove futureDHT) {
                                                 if (builder.isReturnResults()) {
-                                                    futureDHT.setReceivedData(rawDataResult);
+                                                    futureDHT.receivedData(rawDataResult);
                                                 } else {
-                                                    futureDHT.setStoredKeys(rawDataNoResult);
+                                                    futureDHT.storedKeys(rawDataNoResult);
                                                 }
                                             }
 
@@ -558,7 +558,7 @@ public class DistributedHashTable {
     public FutureShutdown quit(final ShutdownBuilder builder) {
         final FutureShutdown futureShutdown = new FutureShutdown(builder);
 
-        builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
@@ -580,7 +580,7 @@ public class DistributedHashTable {
 
                                 @Override
                                 public void response(final FutureShutdown future) {
-                                    future.setDone();
+                                    future.done();
                                 }
 
                                 // its fire and forget, so don't bother checking the future success

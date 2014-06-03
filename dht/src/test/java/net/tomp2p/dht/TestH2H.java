@@ -71,7 +71,7 @@ public class TestH2H {
 			data.ttlSeconds(10000);
 			data.addBasedOn(bKey);
 			data.setProtectedEntry().sign(keyPair, factory);
-			FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).domainKey(dKey).setVersionKey(vKey)
+			FuturePut futurePut1 = p1.put(lKey).data(cKey, data).domainKey(dKey).versionKey(vKey)
 			        .keyPair(keyPair).start();
 			futurePut1.awaitUninterruptibly();
 			Assert.assertTrue(futurePut1.isSuccess());
@@ -113,19 +113,19 @@ public class TestH2H {
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------
 
-		FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).keyPair(keyPair1).start();
+		FuturePut futurePut1 = p1.put(lKey).data(cKey, data).keyPair(keyPair1).start();
 		futurePut1.awaitUninterruptibly();
 		Assert.assertTrue(futurePut1.isSuccess());
 
-		FutureGet futureGet1a = p1.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet1a = p1.get(lKey).contentKey(cKey).start();
 		futureGet1a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet1a.isSuccess());
-		Assert.assertEquals(testData1, (String) futureGet1a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet1a.data().object());
 
-		FutureGet futureGet1b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet1b = p2.get(lKey).contentKey(cKey).start();
 		futureGet1b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet1b.isSuccess());
-		Assert.assertEquals(testData1, (String) futureGet1b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet1b.data().object());
 
 		// try to remove without key pair
 		// -------------------------------------------------------
@@ -134,21 +134,21 @@ public class TestH2H {
 		futureRemove1a.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove1a.isSuccess());
 
-		FutureGet futureGet2a = p1.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet2a = p1.get(lKey).contentKey(cKey).start();
 		futureGet2a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet2a.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet2a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet2a.data().object());
 
 		FutureRemove futureRemove1b = p2.remove(lKey).contentKey(cKey).start();
 		futureRemove1b.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove1b.isSuccess());
 
-		FutureGet futureGet2b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet2b = p2.get(lKey).contentKey(cKey).start();
 		futureGet2b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet2b.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet2b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet2b.data().object());
 		// try to remove with wrong key pair
 		// ---------------------------------------------------
 
@@ -156,21 +156,21 @@ public class TestH2H {
 		futureRemove2a.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove2a.isSuccess());
 
-		FutureGet futureGet3a = p1.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet3a = p1.get(lKey).contentKey(cKey).start();
 		futureGet3a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet3a.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet3a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet3a.data().object());
 
 		FutureRemove futureRemove2b = p2.remove(lKey).contentKey(cKey).start();
 		futureRemove2b.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove2b.isSuccess());
 
-		FutureGet futureGet3b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet3b = p2.get(lKey).contentKey(cKey).start();
 		futureGet3b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet3b.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet3b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet3b.data().object());
 
 		// remove with correct key pair
 		// ---------------------------------------------------------
@@ -179,16 +179,16 @@ public class TestH2H {
 		futureRemove4.awaitUninterruptibly();
 		Assert.assertTrue(futureRemove4.isSuccess());
 
-		FutureGet futureGet4a = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet4a = p2.get(lKey).contentKey(cKey).start();
 		futureGet4a.awaitUninterruptibly();
 		Assert.assertFalse(futureGet4a.isSuccess());
 		// should have been removed
-		Assert.assertNull(futureGet4a.getData());
-		FutureGet futureGet4b = p2.get(lKey).setContentKey(cKey).start();
+		Assert.assertNull(futureGet4a.data());
+		FutureGet futureGet4b = p2.get(lKey).contentKey(cKey).start();
 		futureGet4b.awaitUninterruptibly();
 		Assert.assertFalse(futureGet4b.isSuccess());
 		// should have been removed
-		Assert.assertNull(futureGet4b.getData());
+		Assert.assertNull(futureGet4b.data());
 
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
@@ -223,19 +223,19 @@ public class TestH2H {
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------
 
-		FuturePut futurePut1 = p1.put(lKey).setData(cKey, data).keyPair(key1).start();
+		FuturePut futurePut1 = p1.put(lKey).data(cKey, data).keyPair(key1).start();
 		futurePut1.awaitUninterruptibly();
 		Assert.assertTrue(futurePut1.isSuccess());
 
-		FutureGet futureGet1a = p1.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet1a = p1.get(lKey).contentKey(cKey).start();
 		futureGet1a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet1a.isSuccess());
-		Assert.assertEquals(testData1, (String) futureGet1a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet1a.data().object());
 
-		FutureGet futureGet1b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet1b = p2.get(lKey).contentKey(cKey).start();
 		futureGet1b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet1b.isSuccess());
-		Assert.assertEquals(testData1, (String) futureGet1b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet1b.data().object());
 
 		// try to remove without key pair using from/to
 		// -----------------------------------------
@@ -245,22 +245,22 @@ public class TestH2H {
 		futureRemove1a.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove1a.isSuccess());
 
-		FutureGet futureGet2a = p1.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet2a = p1.get(lKey).contentKey(cKey).start();
 		futureGet2a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet2a.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet2a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet2a.data().object());
 
 		FutureRemove futureRemove1b = p2.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).start();
 		futureRemove1b.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove1b.isSuccess());
 
-		FutureGet futureGet2b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet2b = p2.get(lKey).contentKey(cKey).start();
 		futureGet2b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet2b.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet2b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet2b.data().object());
 
 		// remove with wrong key pair
 		// -----------------------------------------------------------
@@ -269,21 +269,21 @@ public class TestH2H {
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key2).start();
 		futureRemove2a.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove2a.isSuccess());
-		FutureGet futureGet3a = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet3a = p2.get(lKey).contentKey(cKey).start();
 		futureGet3a.awaitUninterruptibly();
 		Assert.assertTrue(futureGet3a.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet3a.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet3a.data().object());
 		FutureRemove futureRemove2b = p2.remove(lKey).from(new Number640(lKey, Number160.ZERO, cKey, Number160.ZERO))
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key2).start();
 		futureRemove2b.awaitUninterruptibly();
 		Assert.assertFalse(futureRemove2b.isSuccess());
 
-		FutureGet futureGet3b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet3b = p2.get(lKey).contentKey(cKey).start();
 		futureGet3b.awaitUninterruptibly();
 		Assert.assertTrue(futureGet3b.isSuccess());
 		// should have been not modified
-		Assert.assertEquals(testData1, (String) futureGet3b.getData().object());
+		Assert.assertEquals(testData1, (String) futureGet3b.data().object());
 		// remove with correct key pair
 		// -----------------------------------------------------------
 
@@ -291,17 +291,17 @@ public class TestH2H {
 		        .to(new Number640(lKey, Number160.ZERO, cKey, Number160.MAX_VALUE)).keyPair(key1).start();
 		futureRemove4.awaitUninterruptibly();
 		Assert.assertTrue(futureRemove4.isSuccess());
-		FutureGet futureGet4a = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet4a = p2.get(lKey).contentKey(cKey).start();
 		futureGet4a.awaitUninterruptibly();
 		Assert.assertFalse(futureGet4a.isSuccess());
 		// should have been removed
-		Assert.assertNull(futureGet4a.getData());
+		Assert.assertNull(futureGet4a.data());
 
-		FutureGet futureGet4b = p2.get(lKey).setContentKey(cKey).start();
+		FutureGet futureGet4b = p2.get(lKey).contentKey(cKey).start();
 		futureGet4b.awaitUninterruptibly();
 		Assert.assertFalse(futureGet4b.isSuccess());
 		// should have been removed
-		Assert.assertNull(futureGet4b.getData());
+		Assert.assertNull(futureGet4b.data());
 
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();

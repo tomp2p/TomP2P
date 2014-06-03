@@ -46,7 +46,7 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return buffer;
     }
 
-    public SendBuilder setBuffer(Buffer buffer) {
+    public SendBuilder buffer(Buffer buffer) {
         this.buffer = buffer;
         return this;
     }
@@ -55,7 +55,7 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return object;
     }
 
-    public SendBuilder setObject(Object object) {
+    public SendBuilder object(Object object) {
         this.object = object;
         return this;
     }
@@ -64,12 +64,12 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return cancelOnFinish;
     }
 
-    public SendBuilder setCancelOnFinish(boolean cancelOnFinish) {
+    public SendBuilder cancelOnFinish(boolean cancelOnFinish) {
         this.cancelOnFinish = cancelOnFinish;
         return this;
     }
 
-    public SendBuilder setCancelOnFinish() {
+    public SendBuilder cancelOnFinish() {
         this.cancelOnFinish = true;
         return this;
     }
@@ -87,7 +87,7 @@ public class SendBuilder extends DHTBuilder<SendBuilder> implements SendDirectBu
         return streaming;
     }
 
-    public SendBuilder setStreaming() {
+    public SendBuilder streaming() {
         this.streaming = true;
         return this;
     }

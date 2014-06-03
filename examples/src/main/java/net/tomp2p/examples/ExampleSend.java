@@ -32,7 +32,7 @@ public class ExampleSend {
 		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello")
 		        .requestP2PConfiguration(requestP2PConfiguration).start();
 		futureSend.awaitUninterruptibly();
-		for (Object object : futureSend.getRawDirectData2().values()) {
+		for (Object object : futureSend.rawDirectData2().values()) {
 			System.err.println("got:" + object);
 		}
 	}
@@ -40,7 +40,7 @@ public class ExampleSend {
 	private static void exampleSendRedundant(Peer peer) {
 		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello").start();
 		futureSend.awaitUninterruptibly();
-		for (Object object : futureSend.getRawDirectData2().values()) {
+		for (Object object : futureSend.rawDirectData2().values()) {
 			System.err.println("got:" + object);
 		}
 

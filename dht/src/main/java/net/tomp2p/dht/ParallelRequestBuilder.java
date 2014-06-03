@@ -37,11 +37,11 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         self(this);
     }
 
-    public NavigableSet<PeerAddress> getQueue() {
+    public NavigableSet<PeerAddress> queue() {
         return queue;
     }
 
-    public ParallelRequestBuilder<K> setQueue(NavigableSet<PeerAddress> queue) {
+    public ParallelRequestBuilder<K> queue(NavigableSet<PeerAddress> queue) {
         this.queue = queue;
         return this;
     }
@@ -54,11 +54,11 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         return this;
     }
 
-    public OperationMapper<K> getOperation() {
+    public OperationMapper<K> operation() {
         return operation;
     }
 
-    public ParallelRequestBuilder<K> setOperation(OperationMapper<K> operation) {
+    public ParallelRequestBuilder<K> operation(OperationMapper<K> operation) {
         this.operation = operation;
         return this;
     }
@@ -67,12 +67,12 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         return cancelOnFinish;
     }
 
-    public ParallelRequestBuilder<K> setCancelOnFinish() {
+    public ParallelRequestBuilder<K> cancelOnFinish() {
         this.cancelOnFinish = true;
         return this;
     }
 
-    public ParallelRequestBuilder<K> setCancelOnFinish(boolean cancelOnFinish) {
+    public ParallelRequestBuilder<K> cancelOnFinish(boolean cancelOnFinish) {
         this.cancelOnFinish = cancelOnFinish;
         return this;
     }

@@ -74,18 +74,18 @@ public final class ExampleIndirectReplication {
                 .start();
         Peer[] peers = new Peer[] {peer1, peer2, peer3};
         //
-        FuturePut futurePut = peer1.put(new Number160(nr3)).setData(new Data("store on peer1")).start();
+        FuturePut futurePut = peer1.put(new Number160(nr3)).data(new Data("store on peer1")).start();
         futurePut.awaitUninterruptibly();
         FutureDigest futureDigest = peer1.digest(new Number160(nr3)).start();
         futureDigest.awaitUninterruptibly();
-        System.out.println("we found the data on " + futureDigest.getRawDigest().size() + " peers");
+        System.out.println("we found the data on " + futureDigest.rawDigest().size() + " peers");
         // now peer1 gets to know peer2, transfer the data
         peer1.bootstrap().peerAddress(peer2.peerAddress()).start();
         peer1.bootstrap().peerAddress(peer3.peerAddress()).start();
         Thread.sleep(ONE_SECOND);
         futureDigest = peer1.digest(new Number160(nr3)).start();
         futureDigest.awaitUninterruptibly();
-        System.out.println("we found the data on " + futureDigest.getRawDigest().size() + " peers");
+        System.out.println("we found the data on " + futureDigest.rawDigest().size() + " peers");
         shutdown(peers);
     }
 

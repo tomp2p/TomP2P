@@ -40,38 +40,38 @@ public class AddBuilder extends DHTBuilder<AddBuilder> {
         self(this);
     }
 
-    public Collection<Data> getDataSet() {
+    public Collection<Data> dataSet() {
         return dataSet;
     }
 
-    public AddBuilder setDataSet(Collection<Data> dataSet) {
+    public AddBuilder dataSet(Collection<Data> dataSet) {
         this.dataSet = dataSet;
         return this;
     }
 
-    public Data getData() {
+    public Data data() {
         return data;
     }
 
-    public AddBuilder setData(Data data) {
+    public AddBuilder data(Data data) {
         this.data = data;
         return this;
     }
 
-    public AddBuilder setObject(Object object) throws IOException {
-        return setData(new Data(object));
+    public AddBuilder object(Object object) throws IOException {
+        return data(new Data(object));
     }
 
     public boolean isList() {
         return list;
     }
 
-    public AddBuilder setList(boolean list) {
+    public AddBuilder list(boolean list) {
         this.list = list;
         return this;
     }
 
-    public AddBuilder setList() {
+    public AddBuilder list() {
         this.list = true;
         return this;
     }

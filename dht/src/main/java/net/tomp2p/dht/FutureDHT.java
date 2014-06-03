@@ -43,7 +43,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      * 
      * @return A future that finishes if all running futures are finished.
      */
-    public FutureForkJoin<FutureResponse> getFutureRequests() {
+    public FutureForkJoin<FutureResponse> futureRequests() {
         synchronized (lock) {
             final int size = requests.size();
             final FutureResponse[] futureResponses = new FutureResponse[size];
@@ -79,7 +79,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
         addListener(new BaseFutureAdapter<FutureDHT<K>>() {
             @Override
             public void operationComplete(final FutureDHT<K> future) throws Exception {
-                getFutureRequests().addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>() {
+                futureRequests().addListener(new BaseFutureAdapter<FutureForkJoin<FutureResponse>>() {
                     @Override
                     public void operationComplete(FutureForkJoin<FutureResponse> future) throws Exception {
                         channelCreator.shutdown();
@@ -95,7 +95,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      * 
      * @return The future object during the previous routing, or null if routing failed completely.
      */
-    public FutureRouting getFutureRouting() {
+    public FutureRouting futureRouting() {
         synchronized (lock) {
             return futureRouting;
         }
@@ -108,7 +108,7 @@ public abstract class FutureDHT<K extends BaseFuture> extends BaseFutureImpl<K> 
      * @param futureRouting
      *            The future object to set
      */
-    public void setFutureRouting(final FutureRouting futureRouting) {
+    public void futureRouting(final FutureRouting futureRouting) {
         synchronized (lock) {
             this.futureRouting = futureRouting;
         }

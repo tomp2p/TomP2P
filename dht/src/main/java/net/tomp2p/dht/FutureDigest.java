@@ -70,7 +70,7 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
      * @param rawDigest
      *            The hashes of the content stored with information from which peer it has been received.
      */
-    public void setReceivedDigest(final Map<PeerAddress, DigestResult> rawDigest) {
+    public void receivedDigest(final Map<PeerAddress, DigestResult> rawDigest) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -87,7 +87,7 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
     /**
      * @return The raw digest information with hashes of the content and the information which peer has been contacted
      */
-    public Map<PeerAddress, DigestResult> getRawDigest() {
+    public Map<PeerAddress, DigestResult> rawDigest() {
         synchronized (lock) {
             return rawDigest;
         }
@@ -99,7 +99,7 @@ public class FutureDigest extends FutureDHT<FutureDigest> {
      * 
      * @return The evaluated digest information that have been received.
      */
-    public DigestResult getDigest() {
+    public DigestResult digest() {
         synchronized (lock) {
             return evaluationScheme.evaluate5(rawDigest);
         }

@@ -47,7 +47,7 @@ public class ExampleHashMap {
 			MyPeer myPeer2 = new MyPeer(peers[5]);
 			FutureGet futureGet = myPeer2.get("This is my location key", "This is my domain", "This is my content key");
 			futureGet.awaitUninterruptibly();
-			Map<Number640, Data> map = futureGet.getDataMap();
+			Map<Number640, Data> map = futureGet.dataMap();
 			for (Data data : map.values()) {
 				@SuppressWarnings("unchecked")
                 MyData<String> myData = (MyData<String>) data.object();
@@ -70,7 +70,7 @@ public class ExampleHashMap {
 			Number160 locationKey = Number160.createHash(key);
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
-			return peer.get(locationKey).domainKey(domainKey).setContentKey(contentKey).start();
+			return peer.get(locationKey).domainKey(domainKey).contentKey(contentKey).start();
 		}
 
 		private FuturePut put(String key, String domain, String content, String data) throws IOException {
@@ -78,7 +78,7 @@ public class ExampleHashMap {
 			Number160 domainKey = Number160.createHash(domain);
 			Number160 contentKey = Number160.createHash(content);
 			MyData<String> myData = new MyData<String>().key(key).domain(domain).content(content).data(data);
-			return peer.put(locationKey).domainKey(domainKey).setData(contentKey, new Data(myData)).start();
+			return peer.put(locationKey).domainKey(domainKey).data(contentKey, new Data(myData)).start();
 		}
 	}
 

@@ -63,22 +63,22 @@ public class ExampleUnQL {
         Number160 locationKey = Number160.createHash(query.getCollectionName());
         if (query.getQueryType() == QueryType.INSERT) {
             if (query.getValueType() == ValueType.SINGLE) {
-                peer.add(locationKey).setData(new Data(query.getValue())).start().awaitUninterruptibly();
+                peer.add(locationKey).data(new Data(query.getValue())).start().awaitUninterruptibly();
             } else if (query.getValueType() == ValueType.ARRAY) {
                 for (String value : query.getValues()) {
-                    peer.add(locationKey).setData(new Data(value)).start().awaitUninterruptibly();
+                    peer.add(locationKey).data(new Data(value)).start().awaitUninterruptibly();
                 }
             } else if (query.getValueType() == ValueType.MAP) {
                 Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
                 for (Map.Entry<String, String> entry : query.getValueMap().entrySet()) {
                     dataMap.put(Number160.createHash(entry.getKey()), new Data(entry.getValue()));
                 }
-                peer.put(locationKey).setDataMapContent(dataMap).start().awaitUninterruptibly();
+                peer.put(locationKey).dataMapContent(dataMap).start().awaitUninterruptibly();
             }
         } else if (query.getQueryType() == QueryType.SELECT) {
-            FutureGet futureDHT = peer.get(locationKey).setAll().start();
+            FutureGet futureDHT = peer.get(locationKey).all().start();
             futureDHT.awaitUninterruptibly();
-            for (Map.Entry<Number640, Data> entry : futureDHT.getDataMap().entrySet()) {
+            for (Map.Entry<Number640, Data> entry : futureDHT.dataMap().entrySet()) {
                 System.out.print("key: " + entry.getKey());
                 System.out.println(", value: " + entry.getValue().object());
             }

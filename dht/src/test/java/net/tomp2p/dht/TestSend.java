@@ -51,9 +51,9 @@ public class TestSend {
 
         System.out.println(String.format("Sending message '%s' to key '%s' converted to '%s'", message.getType(),
                 "key", keyForID.toString()));
-        FutureSend futureDHT = peers[0].send(keyForID).setObject(message).requestP2PConfiguration(REQ).start();
+        FutureSend futureDHT = peers[0].send(keyForID).object(message).requestP2PConfiguration(REQ).start();
         futureDHT.awaitUninterruptibly();
-        System.out.println("got: " + futureDHT.getObject());
+        System.out.println("got: " + futureDHT.object());
         Thread.sleep(Long.MAX_VALUE);
     }
 

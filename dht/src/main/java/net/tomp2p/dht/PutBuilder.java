@@ -46,36 +46,36 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         self(this);
     }
 
-    public Entry<Number640, Data> getData() {
+    public Entry<Number640, Data> data() {
         return data;
     }
 
-    public PutBuilder setData(final Data data) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
+    public PutBuilder data(final Data data) {
+        return data(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
                 versionKey == null ? Number160.ZERO : versionKey, data);
     }
 
-    public PutBuilder setData(final Number160 contentKey, final Data data) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey,
+    public PutBuilder data(final Number160 contentKey, final Data data) {
+        return data(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey,
                 versionKey == null ? Number160.ZERO : versionKey, data);
     }
 
-    public PutBuilder setData(final Number160 domainKey, final Number160 contentKey, final Data data) {
-        return setData(locationKey, domainKey, contentKey, versionKey == null ? Number160.ZERO : versionKey,
+    public PutBuilder data(final Number160 domainKey, final Number160 contentKey, final Data data) {
+        return data(locationKey, domainKey, contentKey, versionKey == null ? Number160.ZERO : versionKey,
                 data);
     }
 
-    public PutBuilder setData(final Data data, final Number160 versionKey) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
+    public PutBuilder data(final Data data, final Number160 versionKey) {
+        return data(locationKey, domainKey == null ? Number160.ZERO : domainKey, Number160.ZERO,
                 versionKey, data);
     }
 
-    public PutBuilder setData(final Number160 contentKey, final Data data, final Number160 versionKey) {
-        return setData(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey, versionKey,
+    public PutBuilder data(final Number160 contentKey, final Data data, final Number160 versionKey) {
+        return data(locationKey, domainKey == null ? Number160.ZERO : domainKey, contentKey, versionKey,
                 data);
     }
 
-    public PutBuilder setData(final Number160 locationKey, final Number160 domainKey,
+    public PutBuilder data(final Number160 locationKey, final Number160 domainKey,
             final Number160 contentKey, final Number160 versionKey, final Data data) {
         this.data = new Entry<Number640, Data>() {
             @Override
@@ -100,7 +100,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     public PutBuilder domainKey(final Number160 domainKey) {
         // if we set data before we set domain key, we need to adapt the domain key of the data object
         if (data != null) {
-            setData(data.getKey().locationKey(), domainKey, data.getKey().contentKey(), data.getKey()
+            data(data.getKey().locationKey(), domainKey, data.getKey().contentKey(), data.getKey()
                     .versionKey(), data.getValue());
         }
         super.domainKey(domainKey);
@@ -108,38 +108,38 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     }
 
     @Override
-    public PutBuilder setVersionKey(final Number160 versionKey) {
+    public PutBuilder versionKey(final Number160 versionKey) {
         // if we set data before we set domain key, we need to adapt the domain key of the data object
         if (data != null) {
-            setData(data.getKey().locationKey(), data.getKey().domainKey(), data.getKey()
+            data(data.getKey().locationKey(), data.getKey().domainKey(), data.getKey()
                     .contentKey(), versionKey, data.getValue());
         }
-        super.setVersionKey(versionKey);
+        super.versionKey(versionKey);
         return this;
     }
 
-    public PutBuilder setObject(Object object) throws IOException {
-        return setData(new Data(object));
+    public PutBuilder object(Object object) throws IOException {
+        return data(new Data(object));
     }
 
-    public PutBuilder setKeyObject(Number160 contentKey, Object object) throws IOException {
-        return setData(contentKey, new Data(object));
+    public PutBuilder keyObject(Number160 contentKey, Object object) throws IOException {
+        return data(contentKey, new Data(object));
     }
 
-    public Map<Number640, Data> getDataMap() {
+    public Map<Number640, Data> dataMap() {
         return dataMap;
     }
 
-    public PutBuilder setDataMap(Map<Number640, Data> dataMap) {
+    public PutBuilder dataMap(Map<Number640, Data> dataMap) {
         this.dataMap = dataMap;
         return this;
     }
 
-    public Map<Number160, Data> getDataMapContent() {
+    public Map<Number160, Data> dataMapContent() {
         return dataMapConvert;
     }
 
-    public PutBuilder setDataMapContent(Map<Number160, Data> dataMapConvert) {
+    public PutBuilder dataMapContent(Map<Number160, Data> dataMapConvert) {
         this.dataMapConvert = dataMapConvert;
         return this;
     }
@@ -148,12 +148,12 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         return putIfAbsent;
     }
 
-    public PutBuilder setPutIfAbsent(boolean putIfAbsent) {
+    public PutBuilder putIfAbsent(boolean putIfAbsent) {
         this.putIfAbsent = putIfAbsent;
         return this;
     }
 
-    public PutBuilder setPutIfAbsent() {
+    public PutBuilder putIfAbsent() {
         this.putIfAbsent = true;
         return this;
     }
@@ -190,9 +190,9 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         preBuild("put-builder");
         if (data != null) {
             if (dataMap == null) {
-                setDataMap(new HashMap<Number640, Data>(1));
+                dataMap(new HashMap<Number640, Data>(1));
             }
-            getDataMap().put(getData().getKey(), getData().getValue());
+            dataMap().put(data().getKey(), data().getValue());
         }
         if (!putMeta && dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(

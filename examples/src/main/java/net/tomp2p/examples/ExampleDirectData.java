@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import net.tomp2p.dht.FutureSend;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureListener;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
@@ -20,13 +20,13 @@ public class ExampleDirectData {
 	public static void main(String[] args) throws IOException {
 		final Number160 idP1 = Number160.createHash("p1");
 		final Number160 idP2 = Number160.createHash("p2");
-		Peer p1 = new PeerBuilder(idP1).ports(1234).start();
-		Peer p2 = new PeerBuilder(idP2).ports(1235).start();
-		BootstrapBuilder b = p2.bootstrap();
+		PeerDHT p1 = new PeerDHT(new PeerBuilder(idP1).ports(1234).start());
+		PeerDHT p2 = new PeerDHT(new PeerBuilder(idP2).ports(1235).start());
+		BootstrapBuilder b = p2.peer().bootstrap();
 		b.bootstrapTo(Arrays.asList(new PeerAddress(idP1, "localhost", 1234, 1234)));
 		b.start().awaitUninterruptibly();
 
-		p1.objectDataReply(new ObjectDataReply() {
+		p1.peer().objectDataReply(new ObjectDataReply() {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				if (sender.peerId().equals(idP2)) {
@@ -46,7 +46,7 @@ public class ExampleDirectData {
 			}
 		});
 
-		p2.objectDataReply(new ObjectDataReply() {
+		p2.peer().objectDataReply(new ObjectDataReply() {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				if (sender.peerId().equals(idP1)) {
@@ -74,7 +74,7 @@ public class ExampleDirectData {
 
 	}
 
-	static void p1SendNext(final Peer p, final Number160 idP2) {
+	static void p1SendNext(final PeerDHT p, final Number160 idP2) {
 		p1Counter++;
 		p.send(idP2).object(p1Counter - 1).requestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
 		        .addListener(new BaseFutureListener<FutureSend>() {
@@ -82,7 +82,7 @@ public class ExampleDirectData {
 			        @Override
 			        public void operationComplete(FutureSend future) throws Exception {
 
-				        Object[] values = future.getRawDirectData2().values().toArray();
+				        Object[] values = future.rawDirectData2().values().toArray();
 				        if (values.length != 1) {
 					        throw new Exception(String.format("Invalid length %d", values.length));
 				        }
@@ -104,7 +104,7 @@ public class ExampleDirectData {
 
 	}
 
-	static void p2SendNext(final Peer p, final Number160 idP1) {
+	static void p2SendNext(final PeerDHT p, final Number160 idP1) {
 		p2Counter++;
 		p.send(idP1).object(p2Counter - 1).requestP2PConfiguration(new RequestP2PConfiguration(1, 5, 0)).start()
 		        .addListener(new BaseFutureListener<FutureSend>() {
@@ -112,7 +112,7 @@ public class ExampleDirectData {
 			        @Override
 			        public void operationComplete(FutureSend future) throws Exception {
 
-				        Object[] values = future.getRawDirectData2().values().toArray();
+				        Object[] values = future.rawDirectData2().values().toArray();
 				        if (values.length == 1)
 					        System.err.println(String.format("P2 received: %d", values[0]));
 				        else if (values.length != 1) {

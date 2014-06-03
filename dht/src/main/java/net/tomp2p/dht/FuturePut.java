@@ -62,15 +62,15 @@ public class FuturePut extends FutureDHT<FuturePut> {
     /**
      * Finish the future and set the keys that have been stored. Success or failure is determined if the communication
      * was successful. This means that we need to further check if the other peers have denied the storage (e.g., due to
-     * no storage space, no security permissions). Further evaluation can be retrieved with {@link #getAvgStoredKeys()}
-     * or if the evaluation should be done by the user, use {@link #getRawKeys()}.
+     * no storage space, no security permissions). Further evaluation can be retrieved with {@link #avgStoredKeys()}
+     * or if the evaluation should be done by the user, use {@link #rawKeys()}.
      * 
      * @param rawKeys
      *            The keys that have been stored with information on which peer it has been stored
      * @param rawKeys480
      *            The keys with locationKey and domainKey Flag if the user requested putIfAbsent
      */
-    public void setStoredKeys(final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
+    public void storedKeys(final Map<PeerAddress, Map<Number640, Byte>> rawResult) {
         synchronized (lock) {
             if (!completedAndNotify()) {
                 return;
@@ -88,7 +88,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
     /**
      * @return The average keys received from the DHT. Only evaluates rawKeys.
      */
-    public double getAvgStoredKeys() {
+    public double avgStoredKeys() {
         synchronized (lock) {
             final int size = rawResult.size();
             int total = 0;
@@ -107,7 +107,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
      * 
      * @return The raw keys and the information which peer has been contacted
      */
-    public Map<PeerAddress, Map<Number640, Byte>> getRawResult() {
+    public Map<PeerAddress, Map<Number640, Byte>> rawResult() {
         synchronized (lock) {
             return rawResult;
         }
@@ -127,11 +127,11 @@ public class FuturePut extends FutureDHT<FuturePut> {
 
     /**
      * Returns the keys that have been stored or removed after evaluation. The evaluation gets rid of the PeerAddress
-     * information, by either a majority vote or cumulation. Use {@link FuturePut#getEvalKeys()} instead of this method.
+     * information, by either a majority vote or cumulation. Use {@link FuturePut#evalKeys()} instead of this method.
      * 
      * @return The keys that have been stored or removed
      */
-    public Map<Number640, Integer> getResult() {
+    public Map<Number640, Integer> result() {
         synchronized (lock) {
             if(result == null) {
                 result = evaluate(rawResult); 
@@ -162,7 +162,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
         if(!super.isSuccess()) {
             return false;
         }
-        return checkResults(getResult(), rawResult.size(), dataSize);
+        return checkResults(result(), rawResult.size(), dataSize);
     }
     
     private boolean checkResults(Map<Number640, Integer> result2, int peerReports, int dataSize) {
@@ -177,6 +177,6 @@ public class FuturePut extends FutureDHT<FuturePut> {
 
     public boolean isSuccessPartially() {
         boolean networkSuccess = super.isSuccess();
-        return networkSuccess && getResult().size() > 0;
+        return networkSuccess && result().size() > 0;
     }
 }

@@ -25,7 +25,7 @@ import java.util.TreeSet;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.Statistics;
@@ -62,11 +62,11 @@ public final class ExampleConsistency {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        Peer master = null;
+        PeerDHT master = null;
         try {
             final int peerNr = 100;
             final int port = 4001;
-            Peer[] peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(peerNr, port);
             master = peers[0];
             ExampleUtils.bootstrap(peers);
             Number160 key1 = new Number160(RND);
@@ -92,18 +92,18 @@ public final class ExampleConsistency {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleConsistency(final Number160 key1, final Peer[] peers) throws IOException,
+    private static void exampleConsistency(final Number160 key1, final PeerDHT[] peers) throws IOException,
             ClassNotFoundException {
         System.out.println("key is " + key1);
         // find close peers
         NavigableSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(key1));
-        for (Peer peer : peers) {
+        for (PeerDHT peer : peers) {
             set.add(peer.peerAddress());
         }
         System.out.println("closest peer " + set.first());
         
         final int peerStore1 = 22;
-        peers[peerStore1].put(key1).requestP2PConfiguration(REQUEST_3).setData(new Data("Test 1")).start()
+        peers[peerStore1].put(key1).requestP2PConfiguration(REQUEST_3).data(new Data("Test 1")).start()
                 .awaitUninterruptibly();
         // close peers go offline
         System.out.println("the following peers go offline");
@@ -119,37 +119,37 @@ public final class ExampleConsistency {
         // now lets store something else with the same key
         final int peerGet = 33;
         FuturePut futurePut = peers[peerStore1].put(key1).requestP2PConfiguration(REQUEST_3)
-                .setData(new Data("Test 2")).start();
+                .data(new Data("Test 2")).start();
         futurePut.awaitUninterruptibly();
-        System.out.println("stored [Test 2] on " + futurePut.getRawResult().keySet());
+        System.out.println("stored [Test 2] on " + futurePut.rawResult().keySet());
 
-        FutureGet futureGet = peers[peerGet].get(key1).setAll().start();
+        FutureGet futureGet = peers[peerGet].get(key1).all().start();
         futureGet.awaitUninterruptibly();
-        System.out.println("peer[" + peerGet + "] got [" + futureGet.getData().object() + "] should be [Test 2]");
+        System.out.println("peer[" + peerGet + "] got [" + futureGet.data().object() + "] should be [Test 2]");
         // peer 11 and 8 joins again
-        peers[peerOffline1] = new PeerBuilder(peers[peerOffline1].peerID()).masterPeer(peers[0]).start();
-        peers[peerOffline2] = new PeerBuilder(peers[peerOffline2].peerID()).masterPeer(peers[0]).start();
-        peers[peerOffline3] = new PeerBuilder(peers[peerOffline3].peerID()).masterPeer(peers[0]).start();
-        peers[peerOffline1].bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
-        peers[peerOffline2].bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
-        peers[peerOffline3].bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        peers[peerOffline1] = new PeerDHT(new PeerBuilder(peers[peerOffline1].peerID()).masterPeer(peers[0].peer()).start());
+        peers[peerOffline2] = new PeerDHT(new PeerBuilder(peers[peerOffline2].peerID()).masterPeer(peers[0].peer()).start());
+        peers[peerOffline3] = new PeerDHT(new PeerBuilder(peers[peerOffline3].peerID()).masterPeer(peers[0].peer()).start());
+        peers[peerOffline1].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        peers[peerOffline2].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        peers[peerOffline3].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         // load old data
         System.out.println("The 3 peers are now onlyne again, with the old data");
         Number640 key = new Number640(key1, Number160.ZERO, Number160.ZERO, Number160.ZERO);
-        peers[peerOffline1].peerBean().storageLayer()
+        peers[peerOffline1].storageLayer()
                 .put(key, new Data("Test 1"), null, false, false);
-        peers[peerOffline2].peerBean().storageLayer()
+        peers[peerOffline2].storageLayer()
                 .put(key, new Data("Test 1"), null, false, false);
-        peers[peerOffline3].peerBean().storageLayer()
+        peers[peerOffline3].storageLayer()
                 .put(key, new Data("Test 1"), null, false, false);
         // we got Test 1
-        FutureGet futureGet2 = peers[0].get(key1).requestP2PConfiguration(REQUEST_3).setAll().start();
+        FutureGet futureGet2 = peers[0].get(key1).requestP2PConfiguration(REQUEST_3).all().start();
         futureGet2.awaitUninterruptibly();
-        System.out.println("peer[0] got [" + futureGet2.getData().object() + "] should be [Test 2]");
+        System.out.println("peer[0] got [" + futureGet2.data().object() + "] should be [Test 2]");
         // we got Test 1!
-        FutureGet futureGet3 = peers[peerGet].get(key1).requestP2PConfiguration(REQUEST_3).setAll().start();
+        FutureGet futureGet3 = peers[peerGet].get(key1).requestP2PConfiguration(REQUEST_3).all().start();
         futureGet3.awaitUninterruptibly();
-        System.out.println("peer[" + peerGet + "] got [" + futureGet3.getData().object() + "] should be [Test 2]");
+        System.out.println("peer[" + peerGet + "] got [" + futureGet3.data().object() + "] should be [Test 2]");
     }
 
     /**
@@ -163,24 +163,24 @@ public final class ExampleConsistency {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleAttack(final Number160 key1, final Peer[] peers) throws IOException,
+    private static void exampleAttack(final Number160 key1, final PeerDHT[] peers) throws IOException,
             ClassNotFoundException, InterruptedException {
         // lets attack!
         System.out.println("Lets ATTACK!");
-        Peer mpeer1 = new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
-                .masterPeer(peers[0]).start();
-        Peer mpeer2 = new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06892"))
-                .masterPeer(peers[0]).start();
-        Peer mpeer3 = new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
-                .masterPeer(peers[0]).start();
-        mpeer1.bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
-        mpeer2.bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
-        mpeer3.bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        PeerDHT mpeer1 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
+                .masterPeer(peers[0].peer()).start());
+        PeerDHT mpeer2 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06892"))
+                .masterPeer(peers[0].peer()).start());
+        PeerDHT mpeer3 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
+                .masterPeer(peers[0].peer()).start());
+        mpeer1.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        mpeer2.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
+        mpeer3.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         // load old data
         Number640 key = new Number640(key1, Number160.ZERO, Number160.ZERO, Number160.ZERO);
-        mpeer1.peerBean().storageLayer()
+        mpeer1.storageLayer()
                 .put(key, new Data("attack, attack, attack!"), null, false, false);
-        mpeer2.peerBean().storageLayer()
+        mpeer2.storageLayer()
                 .put(key, new Data("attack, attack, attack!"), null, false, false);
         //uncomment below if you want to attack with 3 close peers
         //mpeer3.getPeerBean().storage()
@@ -190,23 +190,23 @@ public final class ExampleConsistency {
         Thread.sleep(3000);
         
         // we got attack!
-        FutureGet futureGet = peers[0].get(key1).setAll().requestP2PConfiguration(REQUEST_3).start();
+        FutureGet futureGet = peers[0].get(key1).all().requestP2PConfiguration(REQUEST_3).start();
         futureGet.awaitUninterruptibly();
-        System.out.println("peer[0] got " + futureGet.getData().object());
-        for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet.getRawData().entrySet()) {
+        System.out.println("peer[0] got " + futureGet.data().object());
+        for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet.rawData().entrySet()) {
             System.out.print("got from (3)" + entry.getKey());
             System.out.println(entry.getValue());
         }
         // increase the replicas we fetch
-        FutureGet futureGet1 = peers[0].get(key1).setAll().requestP2PConfiguration(REQUEST_6).start();
+        FutureGet futureGet1 = peers[0].get(key1).all().requestP2PConfiguration(REQUEST_6).start();
         futureGet1.awaitUninterruptibly();
-        System.out.println("peer[0] got " + futureGet1.getData().object());
+        System.out.println("peer[0] got " + futureGet1.data().object());
 
         // countermeasure - statistics, pick not closest, but random peer that has the data - freshness vs. load
         // also, check distances! 
         Statistics statistics = new Statistics(peers[0].peerBean().peerMap());
         System.out.println("average distance: "+statistics.avgGap());
-        for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet1.getRawData().entrySet()) {
+        for (Entry<PeerAddress, Map<Number640, Data>> entry : futureGet1.rawData().entrySet()) {
             System.out.print("got from (6)" + entry.getKey());
             System.out.print(" distance: "+key1.xor(entry.getKey().peerId()).doubleValue());
             System.out.println(" "+entry.getValue());

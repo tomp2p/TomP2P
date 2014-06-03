@@ -56,7 +56,7 @@ public class ExampleRelay {
                 Thread.sleep(1000);
             }
 
-            FuturePut fp = peer.put(Number160.createHash(args[1])).setData(new Data(args[2].toUpperCase())).start();
+            FuturePut fp = peer.put(Number160.createHash(args[1])).data(new Data(args[2].toUpperCase())).start();
             System.err.println("hash:" + Number160.createHash(args[1]));
             fp.awaitUninterruptibly();
             if (fp.isSuccess()) {
@@ -81,7 +81,7 @@ public class ExampleRelay {
             FutureGet fg = peer.get(Number160.createHash(args[1])).start();
             fg.awaitUninterruptibly();
             if (fg.isSuccess()) {
-                System.err.println("Received: " + fg.getData().object());
+                System.err.println("Received: " + fg.data().object());
             } else {
                 System.err.println(fg.failedReason());
             }

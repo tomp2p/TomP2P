@@ -26,50 +26,31 @@
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-core</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>tomp2p-examples</artifactId>
-			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-nat</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-replication</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-storage</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-dht</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-tracker</artifactId>
 			<version>${project.version}</version>
-			<scope>compile</scope>
-			<optional>true</optional>
 		</dependency>
 	</dependencies>
 

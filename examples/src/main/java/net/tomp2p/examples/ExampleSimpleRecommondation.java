@@ -157,7 +157,7 @@ public final class ExampleSimpleRecommondation {
                 for (String friend : tmp) {
                     dataMap.put(peer.peerID().xor(Number160.createHash(friend)), new Data(friend));
                 }
-                peer.put(entry.getKey()).setDataMapContent(dataMap).start().awaitUninterruptibly();
+                peer.put(entry.getKey()).dataMapContent(dataMap).start().awaitUninterruptibly();
             }
         }
 
@@ -171,12 +171,12 @@ public final class ExampleSimpleRecommondation {
          */
         public void list(final String nickName) throws IOException, ClassNotFoundException {
             Number160 key = Number160.createHash(nickName);
-            FutureGet futureGet = peer.get(key).setAll().start();
+            FutureGet futureGet = peer.get(key).all().start();
             futureGet.awaitUninterruptibly();
-            for (Map.Entry<Number640, Data> entry : futureGet.getDataMap().entrySet()) {
+            for (Map.Entry<Number640, Data> entry : futureGet.dataMap().entrySet()) {
                 System.out.println("this peers' (" + nickName + ") friend:" + entry.getValue().object());
             }
-            System.out.println("DHT reports that " + futureGet.getDataMap().size() + " peer(s) are his friends");
+            System.out.println("DHT reports that " + futureGet.dataMap().size() + " peer(s) are his friends");
         }
 
         /**

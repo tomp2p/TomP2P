@@ -112,10 +112,10 @@ public final class ExampleMultiColumn {
         Number160 contentKey = combine(rowKey1, col1);
         // get entry
         final int peerGet = 22;
-        FutureGet futureGet = peers[peerGet].get(locationKey).setContentKey(contentKey).start();
+        FutureGet futureGet = peers[peerGet].get(locationKey).contentKey(contentKey).start();
         futureGet.awaitUninterruptibly();
         System.out
-                .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureGet.getData().object() + "]");
+                .println("single fetch for (" + rowKey1 + "," + col1 + "): [" + futureGet.data().object() + "]");
         // get list
         
         Number640 from = new Number640(locationKey, Number160.ZERO, createNr(rowKey1, 0), Number160.ZERO);
@@ -125,7 +125,7 @@ public final class ExampleMultiColumn {
         FutureGet futureGet2 = peers[peerGet].get(locationKey).from(from).to(to).start();
         futureGet2.awaitUninterruptibly();
         System.out.println("row fetch [" + rowKey1 + "]");
-        for (Map.Entry<Number640, Data> entry : futureGet2.getDataMap().entrySet()) {
+        for (Map.Entry<Number640, Data> entry : futureGet2.dataMap().entrySet()) {
             System.out.println("multi fetch: " + entry.getValue().object());
         }
         // column get
@@ -137,7 +137,7 @@ public final class ExampleMultiColumn {
         FutureGet futureGet3 = peers[peerGet].get(locationKey).from(from).to(to).start();
         futureGet3.awaitUninterruptibly();
         System.out.println("column fetch [" + search + "]");
-        for (Map.Entry<Number640, Data> entry : futureGet3.getDataMap().entrySet()) {
+        for (Map.Entry<Number640, Data> entry : futureGet3.dataMap().entrySet()) {
             System.out.println("multi fetch: " + entry.getValue().object());
         }
     }
@@ -159,9 +159,9 @@ public final class ExampleMultiColumn {
             throws IOException {
         Number160 locationKey = Number160.createHash("users");
         Number160 contentKey = combine(rowKey, col);
-        peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
+        peer.put(locationKey).data(contentKey, new Data(string)).start().awaitUninterruptibly();
         contentKey = combine(col, rowKey);
-        peer.put(locationKey).setData(contentKey, new Data(string)).start().awaitUninterruptibly();
+        peer.put(locationKey).data(contentKey, new Data(string)).start().awaitUninterruptibly();
     }
 
     /**

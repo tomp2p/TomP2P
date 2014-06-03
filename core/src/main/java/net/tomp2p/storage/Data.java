@@ -65,7 +65,7 @@ public class Data {
 	private boolean basedOnFlag;
 	private boolean signed;
 	private boolean ttl;
-	private boolean flag1;
+	private boolean prepareFlag;
 	private boolean flag2;
 	private boolean protectedEntry;
 	private boolean publicKeyFlag;
@@ -125,7 +125,7 @@ public class Data {
 	 */
 	public Data(final int header, final int length) {
 		this.publicKeyFlag = hasPublicKey(header);
-		this.flag1 = isFlag1(header);
+		this.prepareFlag = hasPrepareFlag(header);
 		this.flag2 = isFlag2(header);
 		this.basedOnFlag = hasBasedOn(header);
 		this.signed = isSigned(header);
@@ -384,7 +384,7 @@ public class Data {
 		if (publicKeyFlag) {
 			header |= 0x02;
 		}
-		if (flag1) {
+		if (prepareFlag) {
 			header |= 0x04;
 		}
 		if (flag2) {
@@ -580,17 +580,17 @@ public class Data {
 		return this;
 	}
 
-	public boolean isFlag1() {
-		return flag1;
+	public boolean hasPrepareFlag() {
+		return prepareFlag;
 	}
 
-	public Data flag1(boolean flag1) {
-		this.flag1 = flag1;
+	public Data prepareFlag(boolean prepareFlag) {
+		this.prepareFlag = prepareFlag;
 		return this;
 	}
 
-	public Data setFlag1() {
-		this.flag1 = true;
+	public Data setPrepareFlag() {
+		this.prepareFlag = true;
 		return this;
 	}
 
@@ -663,7 +663,7 @@ public class Data {
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
-		data.flag1 = flag1;
+		data.prepareFlag = prepareFlag;
 		data.flag2 = flag2;
 		data.basedOnFlag = basedOnFlag;
 		data.signed = signed;
@@ -682,7 +682,7 @@ public class Data {
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
-		data.flag1 = flag1;
+		data.prepareFlag = prepareFlag;
 		data.flag2 = flag2;
 		data.basedOnFlag = basedOnFlag;
 		data.signed = signed;
@@ -701,7 +701,7 @@ public class Data {
 		return (header & 0x02) > 0;
 	}
 
-	private static boolean isFlag1(final int header) {
+	private static boolean hasPrepareFlag(final int header) {
 		return (header & 0x04) > 0;
 	}
 
@@ -777,7 +777,7 @@ public class Data {
 		bs.set(2, basedOnFlag);
 		bs.set(3, protectedEntry);
 		bs.set(4, publicKeyFlag);
-		bs.set(5, flag1);
+		bs.set(5, prepareFlag);
 		bs.set(6, flag2);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
 		for (Number160 basedOn : basedOnSet) {
@@ -799,7 +799,7 @@ public class Data {
 		//ignore ttl -> it's still the same data even if ttl is different
 		if (d.signed != signed  || d.basedOnFlag != basedOnFlag 
 				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
-				|| flag1!=d.flag1 || flag2!=d.flag2) {
+				|| prepareFlag!=d.prepareFlag || flag2!=d.flag2) {
 			return false;
 		}
 		if (d.type != type || d.length != length) {

@@ -121,7 +121,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess()) {
-					Buffer buffer = future.emptyResponse().buffer(0);
+					Buffer buffer = future.responseMessage().buffer(0);
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
 					        message.senderSocket());
 					responseFromUnreachablePeer.restoreContentReferences();

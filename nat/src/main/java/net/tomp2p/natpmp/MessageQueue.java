@@ -22,8 +22,6 @@ import java.util.LinkedList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import net.tomp2p.utils.Timings;
-
 /**
  * MessageQueue manages a queue of {@link Message}s and ensures that only one
  * message at time is sent to the NAT-PMP device. To use the MessageQueue,
@@ -124,7 +122,7 @@ class MessageQueue implements Runnable {
         // Wait for the shutdown to complete.
         while (thread.isAlive()) {
             try {
-                Timings.sleep(25);
+                Thread.sleep(25);
             } catch (InterruptedException ex) {
                 Logger.getLogger(MessageQueue.class.getName()).log(Level.SEVERE, null, ex);
                 break;

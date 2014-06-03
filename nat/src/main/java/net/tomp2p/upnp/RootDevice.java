@@ -51,8 +51,6 @@ import java.net.URL;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
-import net.tomp2p.utils.Timings;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -159,7 +157,7 @@ public class RootDevice extends Device {
         deviceDefLoc = deviceDefinition;
 
         validityTime = Integer.parseInt(maxAge) * 1000;
-        creationTime = Timings.currentTimeMillis();
+        creationTime = System.currentTimeMillis();
 
         this.vendorFirmware = vendorFirmware;
         this.discoveryUSN = discoveryUSN;
@@ -191,7 +189,7 @@ public class RootDevice extends Device {
      *         negative value if the device is outdated
      */
     public long getValidityTime() {
-        long elapsed = Timings.currentTimeMillis() - creationTime;
+        long elapsed = System.currentTimeMillis() - creationTime;
         return validityTime - elapsed;
     }
 
@@ -204,7 +202,7 @@ public class RootDevice extends Device {
      */
     public void resetValidityTime(String newMaxAge) {
         validityTime = Integer.parseInt(newMaxAge) * 1000;
-        creationTime = Timings.currentTimeMillis();
+        creationTime = System.currentTimeMillis();
     }
 
     /**

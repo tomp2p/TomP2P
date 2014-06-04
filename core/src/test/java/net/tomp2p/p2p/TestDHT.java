@@ -1570,6 +1570,101 @@ public class TestDHT {
 		p2.shutdown().awaitUninterruptibly();
 	}
 
+	@Test
+	public void testPutPreparePutConfirmGet() throws Exception {
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+
+			// put data with a prepare flag
+			Data data = new Data("test").setPrepareFlag();
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+			Number160 versionKey = Number160.createHash("version");
+			FuturePut fput = peers[rnd.nextInt(10)].put(locationKey).setData(contentKey, data)
+					.setDomainKey(domainKey).setVersionKey(versionKey).start();
+			fput.awaitUninterruptibly();
+			fput.getFutureRequests().awaitUninterruptibly();
+			Assert.assertEquals(true, fput.isSuccess());
+
+			// get shouldn't see provisional put
+			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey)
+					.setContentKey(contentKey).setVersionKey(versionKey).start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(false, fget.isSuccess());
+
+			// confirm prepared put
+			Data tmp = new Data();
+			FuturePut fputConfirm = peers[rnd.nextInt(10)].put(locationKey).setData(contentKey, tmp)
+					.setDomainKey(domainKey).setVersionKey(versionKey).putConfirm().start();
+			fputConfirm.awaitUninterruptibly();
+			fputConfirm.getFutureRequests().awaitUninterruptibly();
+			Assert.assertEquals(true, fputConfirm.isSuccess());
+
+			// get should see confirmed put
+			fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey).setContentKey(contentKey)
+					.setVersionKey(versionKey).start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(true, fget.isSuccess());
+			Assert.assertEquals(data.object(), fget.getData().object());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	@Test
+	public void testPutPreparePutRejectGet() throws Exception {
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+
+			// put data with a prepare flag
+			Data data = new Data("test").setPrepareFlag();
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+			Number160 versionKey = Number160.createHash("version");
+			FuturePut fput = peers[rnd.nextInt(10)].put(locationKey).setData(contentKey, data)
+					.setDomainKey(domainKey).setVersionKey(versionKey).start();
+			fput.awaitUninterruptibly();
+			fput.getFutureRequests().awaitUninterruptibly();
+			Assert.assertEquals(true, fput.isSuccess());
+
+			// get shouldn't see provisional put
+			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey)
+					.setContentKey(contentKey).setVersionKey(versionKey).start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(false, fget.isSuccess());
+
+			// reject prepared put
+			Data tmp = new Data();
+			FuturePut fputConfirm = peers[rnd.nextInt(10)].put(locationKey).setData(contentKey, tmp)
+					.setDomainKey(domainKey).setVersionKey(versionKey).putReject().start();
+			fputConfirm.awaitUninterruptibly();
+			fputConfirm.getFutureRequests().awaitUninterruptibly();
+			Assert.assertEquals(true, fputConfirm.isSuccess());
+
+			// get still shouldn't see put
+			fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey).setContentKey(contentKey)
+					.setVersionKey(versionKey).start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(false, fget.isSuccess());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
 	public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
 	        boolean replication) throws Exception {
 		if (nrOfPeers < 1) {

@@ -684,6 +684,34 @@ public class StorageLayer {
 		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
 
+	public Enum<?> putConfirm(PublicKey publicKey, Number640 key, Data newData) {
+		boolean found = false;
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+					newData.isProtectedEntry())) {
+				return PutStatus.FAILED_SECURITY;
+			}
+
+			final Data data = backend.get(key);
+			if (data != null) {
+				// remove prepare flag
+				data.prepareFlag(false);
+
+				data.validFromMillis(newData.validFromMillis());
+				data.ttlSeconds(newData.ttlSeconds());
+
+				long expiration = data.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
+				found = backend.put(key, data);
+			}
+		} finally {
+			dataLock640.unlock(lock);
+		}
+		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
+	}
+
 	/**
 	 * Checks for version forks. Iterates through the backend and checks if the
 	 * given based on key appears also as a based on key of another entry.

@@ -199,13 +199,28 @@ public class StorageLayer {
 	}
 
 	private Data getInternal(Number640 key) {
-		return backend.get(key);
+		Data data = backend.get(key);
+		if (data != null && !data.hasPrepareFlag()) {
+			return data;
+		} else {
+			return null;
+		}
 	}
 
 	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
 		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
 		try {
-			return backend.subMap(from, to, limit, ascending);
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+
+			while (iterator.hasNext()) {
+				Map.Entry<Number640, Data> entry = iterator.next();
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+				} 
+			}
+
+			return tmp;
 		} finally {
 			lock.unlock();
 		}
@@ -238,6 +253,12 @@ public class StorageLayer {
 
 			while (iterator.hasNext()) {
 				Map.Entry<Number640, Data> entry = iterator.next();
+
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+					continue;
+				}
+
 				if (isBloomFilterAnd) {
 					if (contentBloomFilter != null && !contentBloomFilter.contains(entry.getKey().getContentKey())) {
 						iterator.remove();
@@ -370,7 +391,9 @@ public class StorageLayer {
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-				digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+				if (!entry.getValue().hasPrepareFlag()) {
+					digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+				}
 			}
 			return digestInfo;
 		} finally {
@@ -414,7 +437,9 @@ public class StorageLayer {
 			try {
 				if (backend.contains(number640)) {
 					Data data = getInternal(number640);
-					digestInfo.put(number640, data.basedOnSet());
+					if (data != null) {
+						digestInfo.put(number640, data.basedOnSet());
+					}
 				}
 			} finally {
 				lock.unlock();

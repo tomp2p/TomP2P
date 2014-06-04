@@ -4,11 +4,15 @@ import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
+import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.StorageLayer.PutStatus;
 
 import org.junit.Assert;
@@ -97,6 +101,95 @@ public class TestStorage {
         Assert.assertEquals(3, result.size());
     }
 
+	@Test
+	public void testPutGetPrepare() throws Exception {
+		Storage storageM = createStorage();
+		testPutGetPrepare(new StorageLayer(storageM));
+		storageM.close();
+	}
+
+	private void testPutGetPrepare(StorageLayer storage) throws IOException {
+		Number640 key1 = new Number640(locationKey, domainKey, content1, new Number160(0));
+		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
+		Data data1 = new Data("test1");
+		Data data2 = new Data("test2").setPrepareFlag();
+		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		Assert.assertEquals(data1, storage.get(key1));
+		Assert.assertNull(storage.get(key2));
+	}
+
+	@Test
+	public void testPutGetRangePrepare() throws Exception {
+		Storage storageM = createStorage();
+		testPutGetRangePrepare(new StorageLayer(storageM));
+		storageM.close();
+	}
+
+	private void testPutGetRangePrepare(StorageLayer storage) throws IOException, ClassNotFoundException {
+		Number640 key1 = new Number640(locationKey, domainKey, content1, new Number160(0));
+		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
+		Data data1 = new Data("test1");
+		Data data2 = new Data("test2").setPrepareFlag();
+		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		NavigableMap<Number640, Data> map = storage.get(new Number640(locationKey, domainKey, content1,
+				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
+				true);
+		Assert.assertEquals(1, map.size());
+		Assert.assertEquals(data1, map.firstEntry().getValue());
+	}
+
+	@Test
+	public void testPutGetDigestPrepare() throws Exception {
+		Storage storageM = createStorage();
+		testPutGetDigestPrepare(new StorageLayer(storageM));
+		storageM.close();
+	}
+
+	private void testPutGetDigestPrepare(StorageLayer storage) throws IOException, ClassNotFoundException {
+		Number640 key1 = new Number640(locationKey, domainKey, content1, new Number160(0));
+		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
+		Data data1 = new Data("test1");
+		Data data2 = new Data("test2").setPrepareFlag();
+		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		Collection<Number640> number640 = new ArrayList<Number640>(2);
+		number640.add(key1);
+		number640.add(key2);
+		DigestInfo digest = storage.digest(number640);
+		Assert.assertEquals(1, digest.getSize());
+		Assert.assertEquals(key1, digest.getDigests().firstEntry().getKey());
+	}
+
+	@Test
+	public void testPutGetDigestRange() throws Exception {
+		Storage storageM = createStorage();
+		testPutGetDigestRange(new StorageLayer(storageM));
+		storageM.close();
+	}
+
+	private void testPutGetDigestRange(StorageLayer storage) throws IOException, ClassNotFoundException {
+		Number640 key1 = new Number640(locationKey, domainKey, content1, new Number160(0));
+		Number640 key2 = new Number640(locationKey, domainKey, content1, new Number160(1));
+		Data data1 = new Data("test1");
+		Data data2 = new Data("test2").setPrepareFlag();
+		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2, data2, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		DigestInfo digest = storage.digest(new Number640(locationKey, domainKey, content1,
+				Number160.ZERO), new Number640(locationKey, domainKey, content1, Number160.MAX_VALUE), -1,
+				true);
+		Assert.assertEquals(1, digest.getSize());
+		Assert.assertEquals(key1, digest.getDigests().firstEntry().getKey());
+	}
     @Test
     public void testPutIfAbsent() throws Exception {
         Storage storageM = createStorage();

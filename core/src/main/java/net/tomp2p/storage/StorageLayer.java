@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -55,7 +56,7 @@ public class StorageLayer {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT, NOT_FOUND
+		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND
 	};
 
 	// Hash of public key is always preferred
@@ -157,16 +158,29 @@ public class StorageLayer {
 			if (putIfAbsent && contains) {
 				return PutStatus.FAILED_NOT_ABSENT;
 			}
+
+			boolean versionFork = false;
+			for (Number160 bKey: newData.basedOnSet()) {
+				versionFork |= checkForForks(bKey);
+			}
+
 			retVal = backend.put(key, newData);
 			if (retVal) {
 				long expiration = newData.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
 			}
+
+			if (retVal && versionFork) {
+				return PutStatus.VERSION_FORK;
+			} else if (retVal) {
+				return PutStatus.OK;
+			} else {
+				return PutStatus.FAILED;
+			}
 		} finally {
 			dataLock640.unlock(lock);
 		}
-		return retVal ? PutStatus.OK : PutStatus.FAILED;
 	}
 
 	public Pair<Data, Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
@@ -669,6 +683,24 @@ public class StorageLayer {
 		}
 		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
 	}
-	
-	
+
+	/**
+	 * Checks for version forks. Iterates through the backend and checks if the
+	 * given based on key appears also as a based on key of another entry.
+	 * 
+	 * @param basedOnKey
+	 * @return <code>true</code> if a version fork is present,
+	 *         <code>false</code> if not
+	 */
+	private boolean checkForForks(Number160 basedOnKey) {
+		NavigableMap<Number640, Data> map = backend.map();
+		for (Entry<Number640, Data> entry: map.entrySet()) {
+			for (Number160 bKey: entry.getValue().basedOnSet()) {
+				if (bKey.equals(basedOnKey)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }

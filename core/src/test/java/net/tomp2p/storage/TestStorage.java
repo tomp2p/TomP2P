@@ -102,6 +102,28 @@ public class TestStorage {
     }
 
 	@Test
+	public void testPutVersionFork() throws Exception {
+		Storage storageM = createStorage();
+		testPutVersionFork(new StorageLayer(storageM));
+		storageM.close();
+	}
+
+	private void testPutVersionFork(StorageLayer storage) throws IOException {
+		Number640 key1 = new Number640(locationKey, domainKey, content1, new Number160(0));
+		Number640 key2a = new Number640(locationKey, domainKey, content1, new Number160(1));
+		Number640 key2b = new Number640(locationKey, domainKey, content1, new Number160(2));
+		Data data1 = new Data("test1");
+		Data data2a = new Data("test2a").addBasedOn(key1.getVersionKey());
+		Data data2b = new Data("test2b").addBasedOn(key1.getVersionKey());
+		Enum<?> store = storage.put(key1, data1, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2a, data2a, null, true, false);
+		Assert.assertEquals(PutStatus.OK, store);
+		store = storage.put(key2b, data2b, null, true, false);
+		Assert.assertEquals(PutStatus.VERSION_FORK, store);
+	}
+
+	@Test
 	public void testPutGetPrepare() throws Exception {
 		Storage storageM = createStorage();
 		testPutGetPrepare(new StorageLayer(storageM));
@@ -190,6 +212,7 @@ public class TestStorage {
 		Assert.assertEquals(1, digest.getSize());
 		Assert.assertEquals(key1, digest.getDigests().firstEntry().getKey());
 	}
+
     @Test
     public void testPutIfAbsent() throws Exception {
         Storage storageM = createStorage();

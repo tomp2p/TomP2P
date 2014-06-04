@@ -868,6 +868,8 @@ public class Utils {
     	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
     		//we only send a marker
     		return 1;
+    	} else if (putBuilder.isPutConfirm() || putBuilder.isPutReject()) {
+    		return 1;
     	} else if(putBuilder.getDataMap()!=null) {
             return putBuilder.getDataMap().size();
         } else { 

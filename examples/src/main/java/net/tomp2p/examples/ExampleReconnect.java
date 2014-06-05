@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -13,7 +14,7 @@ import net.tomp2p.rpc.ObjectDataReply;
 public class ExampleReconnect {
 	public static void main(String[] args) throws IOException, InterruptedException {
 		if(args.length == 0) {
-			final Peer peer = new PeerBuilder(Number160.createHash("master")).ports(1234).start();
+			final PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash("master")).ports(1234).start());
 
 	        while(true){
 	            peer.send(Number160.createHash("client")).object("ping").start();

@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.peers.Number160;
 
 /**
@@ -48,9 +48,9 @@ public final class ExampleSearch {
     public static void main(final String[] args) throws Exception {
         final int peerNr = 100;
         final int port = 4001;
-        Peer[] peers = null;
+        PeerDHT[] peers = null;
         try {
-            peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            peers = ExampleUtils.createAndAttachPeersDHT(peerNr, port);
             ExampleUtils.bootstrap(peers);
             exampleSearch(peers);
             exampleKeywordSearch(peers);
@@ -70,7 +70,7 @@ public final class ExampleSearch {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleSearch(final Peer[] peers) throws IOException, ClassNotFoundException {
+    private static void exampleSearch(final PeerDHT[] peers) throws IOException, ClassNotFoundException {
         final int peer30 = 30;
         final int peer60 = 60;
 
@@ -94,7 +94,7 @@ public final class ExampleSearch {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleKeywordSearch(final Peer[] peers) throws IOException, ClassNotFoundException {
+    private static void exampleKeywordSearch(final PeerDHT[] peers) throws IOException, ClassNotFoundException {
         final int peer10 = 10;
         final int peer20 = 20;
 
@@ -127,7 +127,7 @@ public final class ExampleSearch {
      * @throws ClassNotFoundException .
      * @throws IOException .
      */
-    private static Number160 findReference(final Peer peer, final String keyword) throws ClassNotFoundException,
+    private static Number160 findReference(final PeerDHT peer, final String keyword) throws ClassNotFoundException,
             IOException {
         Number160 keyKeyword = Number160.createHash(keyword);
         FutureGet futureGet = peer.get(keyKeyword).start();

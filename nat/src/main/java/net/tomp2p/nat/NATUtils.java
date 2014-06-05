@@ -60,7 +60,7 @@ public class NATUtils {
      * Constructor.
      */
     public NATUtils() {
-        setShutdownHookEnabled();
+        shutdownHookEnabled();
     }
 
     /**
@@ -191,7 +191,7 @@ public class NATUtils {
      * Registers a shutdownhook to clean the NAT mapping. If this is not called, then the mapping may stay until the
      * router is rebooted.
      */
-    private void setShutdownHookEnabled() {
+    private void shutdownHookEnabled() {
         synchronized (shutdownLock) {
             // Set to enabled.
             // The shutdown hook simply runs the shutdown method.

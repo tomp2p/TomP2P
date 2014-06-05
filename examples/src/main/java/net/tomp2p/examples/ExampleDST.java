@@ -30,13 +30,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
-import net.tomp2p.storage.DigestStorage;
 
 /**
  * Example how to do range queries.
@@ -45,6 +46,9 @@ import net.tomp2p.storage.DigestStorage;
  * 
  */
 public final class ExampleDST {
+	
+	private final static int n = 2;
+	private final static int m = 8; //1024*1024; // 2 items per peer
 
     /**
      * Empty constructor.
@@ -62,9 +66,9 @@ public final class ExampleDST {
     public static void main(final String[] args) throws Exception {
         final int peerNr = 100;
         final int port = 4001;
-        Peer[] peers = null;
+        PeerDHT[] peers = null;
         try {
-            peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            peers = createAndAttachNodes(peerNr, port, n);
             ExampleUtils.bootstrap(peers);
 
             exampleDST(peers);
@@ -75,6 +79,20 @@ public final class ExampleDST {
             }
         }
     }
+    
+    private static PeerDHT[] createAndAttachNodes( int nr, int port, int max ) throws IOException {
+    	PeerDHT[] peers = new PeerDHT[nr];
+        for ( int i = 0; i < nr; i++ ) {
+            if ( i == 0 ) {
+            	Peer peer = new PeerBuilder( new Number160( ExampleUtils.RND ) ).ports( port ).start();
+                peers[0] = new PeerDHT(peer, setupStorage(max));
+            } else {
+            	Peer peer = new PeerBuilder( new Number160( ExampleUtils.RND ) ).masterPeer( peers[0].peer() ).start();
+                peers[i] = new PeerDHT(peer, setupStorage(max));
+            }
+        }
+        return peers;
+    }
 
     /**
      * Adds a custom storage class that has a limited storage size according to the DST size.
@@ -84,9 +102,8 @@ public final class ExampleDST {
      * @param max
      *            The max. number of elements per node.
      */
-    private static void setupStorage(final Peer[] peers, final int max) {
-        for (Peer peer : peers) {
-        	DigestStorage sl = new StorageLayer(new StorageMemory()) {
+    private static StorageLayer setupStorage(final int max) {
+        	StorageLayer sl = new StorageLayer(new StorageMemory()) {
         		@Override
         		public Enum<?> put(Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
         		        boolean domainProtection) {
@@ -126,8 +143,8 @@ public final class ExampleDST {
                     return retVal;
                 }
         	};
-            peer.peerBean().storageLayer(sl);
-        }
+            return sl;
+        
     }
 
     /**
@@ -138,9 +155,8 @@ public final class ExampleDST {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleDST(final Peer[] peers) throws IOException, ClassNotFoundException {
-        final int n = 2;
-        final int m = 8; //1024*1024; // 2 items per peer
+    private static void exampleDST(final PeerDHT[] peers) throws IOException, ClassNotFoundException {
+        
         final int peer16 = 16;
         final int peer55 = 55;
         //
@@ -149,7 +165,6 @@ public final class ExampleDST {
         final int index3 = 3;
         final int index5 = 5;
         final int index7 = 7;
-        setupStorage(peers, n);
         int width = m / n;
         int height = (int) log2(width);
         Interval inter = new Interval(1, m);
@@ -178,7 +193,7 @@ public final class ExampleDST {
      * @throws ClassNotFoundException .
      * @throws IOException .
      */
-    private static Collection<String> getDST(final Peer peer, final Collection<Interval> inters, final int bagSize)
+    private static Collection<String> getDST(final PeerDHT peer, final Collection<Interval> inters, final int bagSize)
             throws ClassNotFoundException, IOException {
         Collection<String> retVal = new ArrayList<String>();
         AtomicInteger dhtCounter = new AtomicInteger();
@@ -206,7 +221,7 @@ public final class ExampleDST {
      * @throws ClassNotFoundException .
      * @throws IOException .
      */
-    private static void getDSTRec(final Peer peer, final Collection<Interval> inters, final Collection<String> result,
+    private static void getDSTRec(final PeerDHT peer, final Collection<Interval> inters, final Collection<String> result,
             final Collection<String> already, final AtomicInteger dhtCounter, final int bagSize)
             throws ClassNotFoundException, IOException {
         for (Interval inter2 : inters) {
@@ -249,7 +264,7 @@ public final class ExampleDST {
      *            The hierarchy level
      * @throws IOException .
      */
-    private static void putDST(final Peer peer, final int index, final String word, final Interval interval,
+    private static void putDST(final PeerDHT peer, final int index, final String word, final Interval interval,
             final int height) throws IOException {
         Interval inter = interval;
         for (int i = 0; i <= height; i++) {

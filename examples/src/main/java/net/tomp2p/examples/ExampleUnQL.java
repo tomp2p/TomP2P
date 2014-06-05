@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.examples.Query.QueryType;
 import net.tomp2p.examples.Query.ValueType;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -32,9 +32,9 @@ public class ExampleUnQL {
     final private static String QUERY_6 = "SELECT FROM abc;";
 
     public static void main(String[] args) throws Exception {
-        Peer master = null;
+        PeerDHT master = null;
         try {
-            Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
+        	PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(100, 4001);
             master = peers[0];
             ExampleUtils.bootstrap(peers);
             exampleUnQL(peers);
@@ -46,7 +46,7 @@ public class ExampleUnQL {
         }
     }
 
-    private static void exampleUnQL(Peer[] peers) throws IOException, ClassNotFoundException {
+    private static void exampleUnQL(PeerDHT[] peers) throws IOException, ClassNotFoundException {
         execute(peers[22], new Query(QUERY_1));
         execute(peers[23], new Query(QUERY_2));
         execute(peers[24], new Query(QUERY_3));
@@ -55,11 +55,11 @@ public class ExampleUnQL {
         execute(peers[27], new Query(QUERY_6));
     }
 
-    public static void execute(Peer peer, String query) throws IOException, ClassNotFoundException {
+    public static void execute(PeerDHT peer, String query) throws IOException, ClassNotFoundException {
         execute(peer, new Query(query));
     }
 
-    private static void execute(Peer peer, Query query) throws IOException, ClassNotFoundException {
+    private static void execute(PeerDHT peer, Query query) throws IOException, ClassNotFoundException {
         Number160 locationKey = Number160.createHash(query.getCollectionName());
         if (query.getQueryType() == QueryType.INSERT) {
             if (query.getValueType() == ValueType.SINGLE) {

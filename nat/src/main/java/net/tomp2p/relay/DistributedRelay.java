@@ -243,7 +243,7 @@ public class DistributedRelay {
 		}
 		if (active == 0) {
 			updatePeerAddress();
-			futureRelay.setDone(new ArrayList<PeerConnection>(relayAddresses));
+			futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
 			return;
 		}
 		if (fail > maxFail) {
@@ -259,7 +259,7 @@ public class DistributedRelay {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
-					futureRelay.setDone(new ArrayList<PeerConnection>(relayAddresses));
+					futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
 				} else if (!peer.isShutdown()){
 					setupPeerConnectionsRecursive(futures, relayCandidates, cc, numberOfRelays, futureRelay,
 					        relaySuccess, fail + 1, maxFail);

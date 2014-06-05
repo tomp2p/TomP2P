@@ -8,9 +8,9 @@ import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -22,7 +22,7 @@ public class ExampleNATChat {
 	private static int clientPort = 4563;
 
 	public void startServer(String addr) throws Exception {
-		Peer peer = null;
+		PeerDHT peer = null;
 		try {
 			Random r = new Random(42L);
 			// peer.getP2PConfiguration().setBehindFirewall(true);
@@ -30,7 +30,7 @@ public class ExampleNATChat {
 			// b.addInterface("eth0");
 			b.addAddress(InetAddress.getByName(addr));
 			// b.addAddress(InetAddress.getByAddress(addr));
-			peer = new PeerBuilder(new Number160(r)).bindings(b).ports(serverPort).start();
+			peer = new PeerDHT(new PeerBuilder(new Number160(r)).bindings(b).ports(serverPort).start());
 			System.out.println("peer started.");
 			for (;;) {
 				Thread.sleep(5000);
@@ -63,9 +63,9 @@ public class ExampleNATChat {
 
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
-		Peer peer = new PeerBuilder(new Number160(r)).ports(clientPort).behindFirewall().start();
+		PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(r)).ports(clientPort).behindFirewall().start());
 		PeerAddress bootStrapServer = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), serverPort, serverPort);
-		FutureDiscover fd = peer.discover().peerAddress(bootStrapServer).start();
+		FutureDiscover fd = peer.peer().discover().peerAddress(bootStrapServer).start();
 		System.out.println("About to wait...");
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) {
@@ -75,7 +75,7 @@ public class ExampleNATChat {
 		}
 
 		bootStrapServer = fd.reporter();
-		FutureBootstrap bootstrap = peer.bootstrap().peerAddress(bootStrapServer).start();
+		FutureBootstrap bootstrap = peer.peer().bootstrap().peerAddress(bootStrapServer).start();
 		bootstrap.awaitUninterruptibly();
 		if (!bootstrap.isSuccess()) {
 			System.out.println("*** COULD NOT BOOTSTRAP!");

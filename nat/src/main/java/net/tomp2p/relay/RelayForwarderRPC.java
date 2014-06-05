@@ -154,7 +154,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 		}
 		Number160 locationKey = message.key(0);
 
-		SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
+		SortedSet<PeerAddress> neighbors = neighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
@@ -174,7 +174,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 		responder.response(responseMessage);
 	}
 	
-	private SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+	private SortedSet<PeerAddress> neighbors(Number160 id, int atLeast) {
         LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", peerConnection.remotePeer(), id);
         if(peerMap == null) {
             return null;
@@ -183,7 +183,7 @@ public class RelayForwarderRPC extends DispatchHandler {
         }
     }
 	
-	public Collection<PeerAddress> getAll() {
+	public Collection<PeerAddress> all() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
 		for(Map<Number160, PeerStatatistic> map:peerMap) {
 			result1.addAll(map.values());

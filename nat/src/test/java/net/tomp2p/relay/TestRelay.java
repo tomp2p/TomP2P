@@ -507,7 +507,7 @@ public class TestRelay {
     	Map<Number160, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
     	for(Map.Entry<Number160, DispatchHandler> entry:handlers.entrySet()) {
     		if(entry.getValue() instanceof RelayForwarderRPC) {
-    			return ((RelayForwarderRPC)entry.getValue()).getAll();  
+    			return ((RelayForwarderRPC)entry.getValue()).all();  
     		}
     	}
     	return null;

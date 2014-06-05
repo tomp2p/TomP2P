@@ -93,7 +93,7 @@ public final class ExampleDirectReplication {
 				System.out.println("remove again...");
 			}
 		});
-        Timings.sleepUninterruptibly(NINE_SECONDS);
+        Thread.sleep(NINE_SECONDS);
         System.out.println("done");
         replication.shutdown().awaitUninterruptibly();
     }

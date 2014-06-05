@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.tomp2p.dht.FutureGet;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -52,11 +52,11 @@ public final class ExampleSimpleRecommondation {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        Peer[] peers = null;
+    	PeerDHT[] peers = null;
         try {
             final int peerNr = 100;
             final int port = 4001;
-            peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            peers = ExampleUtils.createAndAttachPeersDHT(peerNr, port);
             ExampleUtils.bootstrap(peers);
             MyPeer[] myPeers = wrap(peers);
             example(myPeers);
@@ -75,7 +75,7 @@ public final class ExampleSimpleRecommondation {
      *            All the peers
      * @return The converted MyPeers
      */
-    private static MyPeer[] wrap(final Peer[] peers) {
+    private static MyPeer[] wrap(final PeerDHT[] peers) {
         MyPeer[] retVal = new MyPeer[peers.length];
         for (int i = 0; i < peers.length; i++) {
             retVal[i] = new MyPeer(peers[i]);
@@ -117,7 +117,7 @@ public final class ExampleSimpleRecommondation {
      * 
      */
     private static class MyPeer {
-        private final Peer peer;
+        private final PeerDHT peer;
 
         private final Map<Number160, String> friends = new HashMap<Number160, String>();
 
@@ -125,7 +125,7 @@ public final class ExampleSimpleRecommondation {
          * @param peer
          *            The peer that backs this class
          */
-        public MyPeer(final Peer peer) {
+        public MyPeer(final PeerDHT peer) {
             this.peer = peer;
             setReplyHandler(peer);
         }
@@ -183,8 +183,8 @@ public final class ExampleSimpleRecommondation {
          * @param peer
          *            Set reply handler for peer.
          */
-        private void setReplyHandler(final Peer peer) {
-            peer.objectDataReply(new ObjectDataReply() {
+        private void setReplyHandler(final PeerDHT peer) {
+            peer.peer().objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(final PeerAddress sender, final Object request) throws Exception {
                     if (request != null && request instanceof Number160) {

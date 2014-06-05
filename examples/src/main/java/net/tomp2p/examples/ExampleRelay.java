@@ -7,6 +7,7 @@ import java.util.Random;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -41,13 +42,13 @@ public class ExampleRelay {
         } else if (args.length == 3) {
             //put
             int port = (rnd.nextInt() % 10000) + 10000;
-            Peer peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).start();
+            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).start());
             System.err.println("put peer id: " + peer.peerAddress().peerId());
-            PeerNAT pnat = new PeerNAT(peer);
+            PeerNAT pnat = new PeerNAT(peer.peer());
 
             InetAddress address = Inet4Address.getByName(args[0]);
 
-            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().inetAddress(address).ports(PORT)).startRelay();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.peer().bootstrap().inetAddress(address).ports(PORT)).startRelay();
             		
             fbn.awaitUninterruptibly();
 
@@ -65,13 +66,13 @@ public class ExampleRelay {
         } else if (args.length == 2) {
             //get
             int port = (rnd.nextInt() % 10000) + 10000;
-            Peer peer = new PeerBuilder(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).start();
+            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).start());
             System.err.println("get peer id: " + peer.peerAddress().peerId());
             System.err.println("hash:" + Number160.createHash(args[1]));
-            PeerNAT pnat = new PeerNAT(peer);
+            PeerNAT pnat = new PeerNAT(peer.peer());
             
             InetAddress address = Inet4Address.getByName(args[0]);
-            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.bootstrap().inetAddress(address).ports(PORT)).startRelay();
+            FutureRelayNAT fbn = pnat.bootstrapBuilder(peer.peer().bootstrap().inetAddress(address).ports(PORT)).startRelay();
             fbn.awaitUninterruptibly();
 
             if (fbn.isSuccess()) {

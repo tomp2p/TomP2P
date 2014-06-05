@@ -197,9 +197,9 @@ public class RelayRPC extends DispatchHandler {
         NoDirectResponse responder = new NoDirectResponse();
         // TODO: Not sure what to do with the peer connection and sign
         peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
-        LOG.debug("Send reply message to relay peer: {}", responder.getResponse());
+        LOG.debug("Send reply message to relay peer: {}", responder.response());
         Message response = createResponseMessage(message, Type.OK);
-        response.buffer(RelayUtils.encodeMessage(responder.getResponse()));
+        response.buffer(RelayUtils.encodeMessage(responder.response()));
         responderToRelay.response(response);
     }
 

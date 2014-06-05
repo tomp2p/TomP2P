@@ -29,7 +29,7 @@ import net.tomp2p.peers.Number160;
  * @author Thomas Bocek
  */
 public class ExampleUtils {
-    private static final Random RND = new Random( 42L );
+    static final Random RND = new Random( 42L );
 
     /**
      * Bootstraps peers to the first peer in the array.

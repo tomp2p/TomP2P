@@ -18,7 +18,7 @@ class NoDirectResponse implements Responder {
     private Message response;
 
     /**
-     * Saves the response message. The response message can be retrieved using {@link NoDirectResponse#getResponse()}
+     * Saves the response message. The response message can be retrieved using {@link NoDirectResponse#response()}
      */
     public void response(Message responseMessage) {
         this.response = responseMessage;
@@ -29,7 +29,7 @@ class NoDirectResponse implements Responder {
      * 
      * @return the response message
      */
-    public Message getResponse() {
+    public Message response() {
         return response;
     }
 

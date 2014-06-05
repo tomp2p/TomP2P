@@ -22,8 +22,8 @@ import java.util.Random;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
 
@@ -48,12 +48,12 @@ public final class ExamplePutGet {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        Peer master = null;
+    	PeerDHT master = null;
         final int nrPeers = 100;
         final int port = 4001;
         final int waitingTime = 250;
         try {
-            Peer[] peers = ExampleUtils.createAndAttachNodes(nrPeers, port);
+        	PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(nrPeers, port);
             ExampleUtils.bootstrap(peers);
             master = peers[0];
             Number160 nr = new Number160(RND);
@@ -78,7 +78,7 @@ public final class ExamplePutGet {
      * @throws IOException e.
      * @throws ClassNotFoundException .
      */
-    private static void examplePutGet(final Peer[] peers, final Number160 nr) 
+    private static void examplePutGet(final PeerDHT[] peers, final Number160 nr) 
             throws IOException, ClassNotFoundException {
         FuturePut futurePut = peers[PEER_NR_1].put(nr).data(new Data("hallo")).start();
         futurePut.awaitUninterruptibly();
@@ -91,7 +91,7 @@ public final class ExamplePutGet {
         // peer 77 got: "hallo" for the key 0xba419d350dfe8af7aee7bbe10c45c0284f083ce4
     }
 
-    private static void examplePutGetConfig( Peer[] peers, Number160 nr2 )
+    private static void examplePutGetConfig( PeerDHT[] peers, Number160 nr2 )
         throws IOException, ClassNotFoundException
     {
         Number160 nr = new Number160( RND );
@@ -112,7 +112,7 @@ public final class ExamplePutGet {
         // peer 77 got: "hallo" for the key 0x8992a603029824e810fd7416d729ef2eb9ad3cfc
     }
 
-    private static void exampleAddGet( Peer[] peers )
+    private static void exampleAddGet( PeerDHT[] peers )
         throws IOException, ClassNotFoundException
     {
         Number160 nr = new Number160( RND );
@@ -141,7 +141,7 @@ public final class ExamplePutGet {
      * @throws ClassNotFoundException .
      * @throws IOException .
      */
-    private static void exampleGetBlocking(final Peer[] peers, final Number160 nr)
+    private static void exampleGetBlocking(final PeerDHT[] peers, final Number160 nr)
         throws ClassNotFoundException, IOException {
         FutureGet futureGet = peers[PEER_NR_2].get(nr).start();
         // blocking operation
@@ -155,7 +155,7 @@ public final class ExamplePutGet {
      * @param peers The peers in this P2P network
      * @param nr The number where the data is stored
      */
-    private static void exampleGetNonBlocking(final Peer[] peers, final Number160 nr) {
+    private static void exampleGetNonBlocking(final PeerDHT[] peers, final Number160 nr) {
         FutureGet futureGet = peers[PEER_NR_2].get(nr).start();
         // non-blocking operation
         futureGet.addListener(new BaseFutureAdapter<FutureGet>() {

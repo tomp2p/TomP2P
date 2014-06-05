@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import net.tomp2p.dht.FutureGet;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -47,11 +47,11 @@ public final class ExampleMultiColumn {
      * @throws Exception .
      */
     public static void main(final String[] args) throws Exception {
-        Peer master = null;
+    	PeerDHT master = null;
         try {
             final int peerNr = 100;
             final int port = 4001;
-            Peer[] peers = ExampleUtils.createAndAttachNodes(peerNr, port);
+            PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(peerNr, port);
             master = peers[0];
             ExampleUtils.bootstrap(peers);
             exampleMultiColumn(peers);
@@ -70,7 +70,7 @@ public final class ExampleMultiColumn {
      * @throws IOException .
      * @throws ClassNotFoundException .
      */
-    private static void exampleMultiColumn(final Peer[] peers) throws IOException, ClassNotFoundException {
+    private static void exampleMultiColumn(final PeerDHT[] peers) throws IOException, ClassNotFoundException {
         // currently only contentKey splitting supported
         String rowKey1 = "tbocek";
         String rowKey2 = "fhecht";
@@ -155,7 +155,7 @@ public final class ExampleMultiColumn {
      *            The data to store
      * @throws IOException .
      */
-    private static void multiAdd(final Peer peer, final String rowKey, final String col, final String string)
+    private static void multiAdd(final PeerDHT peer, final String rowKey, final String col, final String string)
             throws IOException {
         Number160 locationKey = Number160.createHash("users");
         Number160 contentKey = combine(rowKey, col);

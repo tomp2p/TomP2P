@@ -21,7 +21,7 @@ import java.util.Map;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -36,9 +36,9 @@ import net.tomp2p.storage.Data;
  */
 public class ExampleHashMap {
 	public static void main(String[] args) throws Exception {
-		Peer master = null;
+		PeerDHT master = null;
 		try {
-			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
+			PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(100, 4001);
 			master = peers[0];
 			MyPeer myPeer1 = new MyPeer(peers[0]);
 			ExampleUtils.bootstrap(peers);
@@ -60,9 +60,9 @@ public class ExampleHashMap {
 	}
 
 	private static class MyPeer {
-		final private Peer peer;
+		final private PeerDHT peer;
 
-		private MyPeer(Peer peer) {
+		private MyPeer(PeerDHT peer) {
 			this.peer = peer;
 		}
 

@@ -1,7 +1,7 @@
 package net.tomp2p.examples;
 
 import net.tomp2p.dht.FutureSend;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -9,9 +9,9 @@ import net.tomp2p.rpc.ObjectDataReply;
 
 public class ExampleSend {
 	public static void main(String[] args) throws Exception {
-		Peer master = null;
+		PeerDHT master = null;
 		try {
-			Peer[] peers = ExampleUtils.createAndAttachNodes(100, 4001);
+			PeerDHT[] peers = ExampleUtils.createAndAttachPeersDHT(100, 4001);
 			ExampleUtils.bootstrap(peers);
 			master = peers[0];
 			setupReplyHandler(peers);
@@ -27,7 +27,7 @@ public class ExampleSend {
 		}
 	}
 
-	private static void exampleSendOne(Peer peer) {
+	private static void exampleSendOne(PeerDHT peer) {
 		RequestP2PConfiguration requestP2PConfiguration = new RequestP2PConfiguration(1, 10, 0);
 		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello")
 		        .requestP2PConfiguration(requestP2PConfiguration).start();
@@ -37,7 +37,7 @@ public class ExampleSend {
 		}
 	}
 
-	private static void exampleSendRedundant(Peer peer) {
+	private static void exampleSendRedundant(PeerDHT peer) {
 		FutureSend futureSend = peer.send(Number160.createHash("key")).object("hello").start();
 		futureSend.awaitUninterruptibly();
 		for (Object object : futureSend.rawDirectData2().values()) {
@@ -46,9 +46,9 @@ public class ExampleSend {
 
 	}
 
-	private static void setupReplyHandler(Peer[] peers) {
-		for (final Peer peer : peers) {
-			peer.objectDataReply(new ObjectDataReply() {
+	private static void setupReplyHandler(PeerDHT[] peers) {
+		for (final PeerDHT peer : peers) {
+			peer.peer().objectDataReply(new ObjectDataReply() {
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					System.err.println("I'm " + peer.peerID() + " and I just got the message [" + request

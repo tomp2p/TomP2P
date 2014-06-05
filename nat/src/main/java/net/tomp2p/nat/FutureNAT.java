@@ -29,7 +29,7 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
      * 
      * @return The new un-firewalled peerAddress of this peer
      */
-    public PeerAddress getPeerAddress() {
+    public PeerAddress peerAddress() {
         synchronized (lock) {
             return ourPeerAddress;
         }
@@ -38,7 +38,7 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
     /**
      * @return The reporter that told us what peer address we have
      */
-    public PeerAddress getReporter() {
+    public PeerAddress reporter() {
         synchronized (lock) {
             return reporter;
         }

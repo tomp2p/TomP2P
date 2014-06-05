@@ -11,7 +11,6 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.StorageLayer.ProtectionEnable;
 import net.tomp2p.dht.StorageLayer.ProtectionMode;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.storage.Data;
@@ -73,10 +72,10 @@ public class ExampleDomainProtection
         KeyPair pair2 = gen.generateKeyPair();
         KeyPair pair3 = gen.generateKeyPair();
         final Number160 peer2Owner = Utils.makeSHAHash( pair2.getPublic().getEncoded() );
-        Peer peer1 = new PeerBuilder( pair1 ).ports( 4001 ).start();
-        Peer peer2 = new PeerBuilder( pair2 ).ports( 4002 ).start();
-        Peer peer3 = new PeerBuilder( pair3 ).ports( 4003 ).start();
-        Peer[] peers = new Peer[] { peer1, peer2, peer3 };
+        PeerDHT peer1 = new PeerDHT(new PeerBuilder( pair1 ).ports( 4001 ).start());
+        PeerDHT peer2 = new PeerDHT(new PeerBuilder( pair2 ).ports( 4002 ).start());
+        PeerDHT peer3 = new PeerDHT(new PeerBuilder( pair3 ).ports( 4003 ).start());
+        PeerDHT[] peers = new PeerDHT[] { peer1, peer2, peer3 };
         ExampleUtils.bootstrap( peers );
         setProtection( peers, ProtectionEnable.NONE, ProtectionMode.MASTER_PUBLIC_KEY );
         // peer 1 stores "test" in the domain key of owner peer 2
@@ -109,7 +108,7 @@ public class ExampleDomainProtection
 
     private static void shutdown( PeerDHT[] peers )
     {
-        for ( Peer peer : peers )
+        for ( PeerDHT peer : peers )
         {
             peer.shutdown();
         }

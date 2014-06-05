@@ -43,7 +43,7 @@ public class FutureRelay extends BaseFutureImpl<FutureRelay> {
 		return this;
 	}
 
-	public FutureRelay setDone(Collection<PeerConnection> relays) {
+	public FutureRelay done(Collection<PeerConnection> relays) {
 		synchronized (lock) {
 			if (!completedAndNotify()) {
 				return this;

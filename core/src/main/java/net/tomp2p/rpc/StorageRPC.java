@@ -81,7 +81,8 @@ public class StorageRPC extends DispatchHandler {
         		RPC.Commands.GET.getNr(), RPC.Commands.ADD.getNr(), 
         		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
         		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), RPC.Commands.PUT_META.getNr(), 
-        		RPC.Commands.DIGEST_META_VALUES.getNr(), RPC.Commands.PUT_CONFIRM.getNr());
+				RPC.Commands.DIGEST_META_VALUES.getNr(), RPC.Commands.PUT_CONFIRM.getNr(),
+				RPC.Commands.GET_LATEST.getNr());
         this.factory = peerBean.bloomfilterFactory();
     }
 
@@ -518,6 +519,29 @@ public class StorageRPC extends DispatchHandler {
         }
     }
 
+	public FutureResponse getLatest(final PeerAddress remotePeer, final GetBuilder getBuilder,
+			final ChannelCreator channelCreator) {
+		final Type type = Type.REQUEST_1;
+		final Message message = createMessage(remotePeer, RPC.Commands.GET_LATEST.getNr(), type);
+
+		if (getBuilder.isSign()) {
+			message.setPublicKeyAndSign(getBuilder.keyPair());
+		}
+
+		message.setKey(getBuilder.getLocationKey());
+		message.setKey(getBuilder.getDomainKey());
+		message.setKey(getBuilder.getContentKey());
+
+		final FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandler<FutureResponse> request = new RequestHandler<FutureResponse>(futureResponse,
+				peerBean(), connectionBean(), getBuilder);
+		if (!getBuilder.isForceUDP()) {
+			return request.sendTCP(channelCreator);
+		} else {
+			return request.sendUDP(channelCreator);
+		}
+	}
+
     /**
      * Removes data from a peer. This is an RPC.
      * 
@@ -589,7 +613,7 @@ public class StorageRPC extends DispatchHandler {
         if (!(message.getCommand() == RPC.Commands.ADD.getNr() || message.getCommand() == RPC.Commands.PUT.getNr()
                 || message.getCommand() == RPC.Commands.GET.getNr() || message.getCommand() == RPC.Commands.REMOVE.getNr() 
                 || message.getCommand() == RPC.Commands.DIGEST.getNr() || message.getCommand() == RPC.Commands.DIGEST_BLOOMFILTER.getNr() || message.getCommand() == RPC.Commands.DIGEST_META_VALUES.getNr()
-                || message.getCommand() == RPC.Commands.PUT_META.getNr() || message.getCommand() == RPC.Commands.PUT_CONFIRM.getNr())) {
+                || message.getCommand() == RPC.Commands.PUT_META.getNr() || message.getCommand() == RPC.Commands.PUT_CONFIRM.getNr() || message.getCommand() == RPC.Commands.GET_LATEST.getNr())) {
             throw new IllegalArgumentException("Message content is wrong "+message.getCommand());
         }
         final Message responseMessage = createResponseMessage(message, Type.OK);
@@ -603,6 +627,8 @@ public class StorageRPC extends DispatchHandler {
         	handlePutConfirm(message, responseMessage, message.getType() == Type.REQUEST_2);
         } else if (message.getCommand() == RPC.Commands.GET.getNr()) {
             handleGet(message, responseMessage);
+        } else if (message.getCommand() == RPC.Commands.GET_LATEST.getNr()) {
+            handleGetLatest(message, responseMessage);
         } else if (message.getCommand() == RPC.Commands.DIGEST.getNr() 
         		|| message.getCommand() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
         		|| message.getCommand() == RPC.Commands.DIGEST_META_VALUES.getNr()) {
@@ -830,6 +856,25 @@ public class StorageRPC extends DispatchHandler {
         }
 	    return result;
     }
+
+	private Message handleGetLatest(final Message message, final Message responseMessage) {
+		final Number160 locationKey = message.getKey(0);
+		final Number160 domainKey = message.getKey(1);
+		final Number160 contentKey = message.getKey(2);
+
+		final Map<Number640, Data> result = doGetLatest(locationKey, domainKey, contentKey);
+		responseMessage.setDataMap(new DataMap(result));
+		return responseMessage;
+	}
+
+	private Map<Number640, Data> doGetLatest(final Number160 locationKey, final Number160 domainKey,
+			final Number160 contentKey) {
+		final Map<Number640, Data> result;
+		Number640 from = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
+		Number640 to = new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE);
+		result = peerBean().storage().getLatestVersion(from, to);
+		return result;
+	}
 
     private Message handleDigest(final Message message, final Message responseMessage) {
 

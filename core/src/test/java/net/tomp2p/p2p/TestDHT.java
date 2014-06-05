@@ -1957,6 +1957,74 @@ public class TestDHT {
 		}
 	}
 
+	/**
+	 * 0-1-2
+	 * 
+	 * result should return version 2
+	 */
+	@Test
+	public void testGetLatestVersion3() throws Exception {
+		NavigableMap<Number160, Data> sortedMap = new TreeMap<Number160, Data>();
+
+		String content0 = generateRandomString();
+		Number160 vKey0;
+		vKey0 = generateVersionKey(0, content0);
+		Data data0 = new Data(content0);
+		sortedMap.put(vKey0, data0);
+
+		String content1 = generateRandomString();
+		Number160 vKey1 = generateVersionKey(1, content1);
+		Data data1 = new Data(content1);
+		data1.addBasedOn(vKey0);
+		sortedMap.put(vKey1, data1);
+
+		String content2 = generateRandomString();
+		Number160 vKey2 = generateVersionKey(2, content2);
+		Data data2 = new Data(content2);
+		data2.addBasedOn(vKey1);
+		sortedMap.put(vKey2, data2);
+
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+
+			// put test data
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+			for (Number160 vKey : sortedMap.keySet()) {
+				FuturePut fput = peers[rnd.nextInt(10)].put(locationKey)
+						.setData(contentKey, sortedMap.get(vKey)).setDomainKey(domainKey).setVersionKey(vKey)
+						.start();
+				fput.awaitUninterruptibly();
+				fput.getFutureRequests().awaitUninterruptibly();
+				Assert.assertEquals(true, fput.isSuccess());
+			}
+
+			// get latest versions
+			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey)
+					.setContentKey(contentKey).setGetLatest().start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(true, fget.isSuccess());
+
+			// check result
+			Map<Number640, Data> dataMap = fget.getDataMap();
+			Assert.assertEquals(1, dataMap.size());
+			Number480 key480 = new Number480(locationKey, domainKey, contentKey);
+
+			Number640 key2 = new Number640(key480, vKey2);
+			Assert.assertTrue(dataMap.containsKey(key2));
+			Assert.assertEquals(data2.object(), dataMap.get(key2).object());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
 	private static String generateRandomString() {
 		return UUID.randomUUID().toString();
 	}

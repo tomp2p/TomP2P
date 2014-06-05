@@ -4,8 +4,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +22,7 @@ import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +47,7 @@ import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
+import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -1663,6 +1671,336 @@ public class TestDHT {
 				master.shutdown().await();
 			}
 		}
+	}
+
+	/**
+	 * .../2b../4b-5b../7b..................................
+	 * .....................................................
+	 * 0-1-2a-3-4a-5a-6-7a..................................
+	 * 
+	 * result should be 2b, 5b, 7a, 7b
+	 */
+	@Test
+	public void testGetLatestVersion1() throws Exception {
+		// create test data
+		NavigableMap<Number160, Data> sortedMap = new TreeMap<Number160, Data>();
+
+		String content0 = generateRandomString();
+		Number160 vKey0 = generateVersionKey(0, content0);
+		Data data0 = new Data(content0);
+		sortedMap.put(vKey0, data0);
+
+		String content1 = generateRandomString();
+		Number160 vKey1 = generateVersionKey(1, content1);
+		Data data1 = new Data(content1);
+		data1.addBasedOn(vKey0);
+		sortedMap.put(vKey1, data1);
+
+		String content2a = generateRandomString();
+		Number160 vKey2a = generateVersionKey(2, content2a);
+		Data data2a = new Data(content2a);
+		data2a.addBasedOn(vKey1);
+		sortedMap.put(vKey2a, data2a);
+
+		String content2b = generateRandomString();
+		Number160 vKey2b = generateVersionKey(2, content2b);
+		Data data2b = new Data(content2b);
+		data2b.addBasedOn(vKey1);
+		sortedMap.put(vKey2b, data2b);
+
+		String content3 = generateRandomString();
+		Number160 vKey3 = generateVersionKey(3, content3);
+		Data data3 = new Data(content3);
+		data3.addBasedOn(vKey2a);
+		sortedMap.put(vKey3, data3);
+
+		String content4a = generateRandomString();
+		Number160 vKey4a = generateVersionKey(4, content4a);
+		Data data4a = new Data(content4a);
+		data4a.addBasedOn(vKey3);
+		sortedMap.put(vKey4a, data4a);
+
+		String content4b = generateRandomString();
+		Number160 vKey4b = generateVersionKey(4, content4b);
+		Data data4b = new Data(content4b);
+		data4b.addBasedOn(vKey3);
+		sortedMap.put(vKey4b, data4b);
+
+		String content5a = generateRandomString();
+		Number160 vKey5a = generateVersionKey(5, content5a);
+		Data data5a = new Data(content5a);
+		data5a.addBasedOn(vKey4a);
+		sortedMap.put(vKey5a, data5a);
+
+		String content5b = generateRandomString();
+		Number160 vKey5b = generateVersionKey(5, content5b);
+		Data data5b = new Data(content5b);
+		data5b.addBasedOn(vKey4b);
+		sortedMap.put(vKey5b, data5b);
+
+		String content6 = generateRandomString();
+		Number160 vKey6 = generateVersionKey(6, content6);
+		Data data6 = new Data(content6);
+		data6.addBasedOn(vKey5a);
+		sortedMap.put(vKey6, data6);
+
+		String content7a = generateRandomString();
+		Number160 vKey7a = generateVersionKey(7, content7a);
+		Data data7a = new Data(content7a);
+		data7a.addBasedOn(vKey6);
+		sortedMap.put(vKey7a, data7a);
+
+		String content7b = generateRandomString();
+		Number160 vKey7b = generateVersionKey(7, content7b);
+		Data data7b = new Data(content7b);
+		data7b.addBasedOn(vKey6);
+		sortedMap.put(vKey7b, data7b);
+
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+
+			// put test data
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+			for (Number160 vKey : sortedMap.keySet()) {
+				FuturePut fput = peers[rnd.nextInt(10)].put(locationKey)
+						.setData(contentKey, sortedMap.get(vKey)).setDomainKey(domainKey).setVersionKey(vKey)
+						.start();
+				fput.awaitUninterruptibly();
+				fput.getFutureRequests().awaitUninterruptibly();
+				Assert.assertEquals(true, fput.isSuccess());
+			}
+
+			// get latest versions
+			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey)
+					.setContentKey(contentKey).setGetLatest().start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(true, fget.isSuccess());
+
+			// check result
+			Map<Number640, Data> dataMap = fget.getDataMap();
+			Assert.assertEquals(4, dataMap.size());
+			Number480 key480 = new Number480(locationKey, domainKey, contentKey);
+
+			Number640 key2b = new Number640(key480, vKey2b);
+			Assert.assertTrue(dataMap.containsKey(key2b));
+			Assert.assertEquals(data2b.object(), dataMap.get(key2b).object());
+
+			Number640 key5b = new Number640(key480, vKey5b);
+			Assert.assertTrue(dataMap.containsKey(key5b));
+			Assert.assertEquals(data5b.object(), dataMap.get(key5b).object());
+
+			Number640 key7a = new Number640(key480, vKey7a);
+			Assert.assertTrue(dataMap.containsKey(key7a));
+			Assert.assertEquals(data7a.object(), dataMap.get(key7a).object());
+
+			Number640 key7b = new Number640(key480, vKey7b);
+			Assert.assertTrue(dataMap.containsKey(key7b));
+			Assert.assertEquals(data7b.object(), dataMap.get(key7b).object());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	/**
+	 * .........../5c.......................................
+	 * .....................................................
+	 * .../2b../4b-5b./6b...................................
+	 * .....................................................
+	 * 0-1-2a-3-4a-5a.-6a-7.................................
+	 * 
+	 * result should be 2b, 5b, 5c, 6b, 7
+	 */
+	@Test
+	public void testGetLatestVersion2() throws Exception {
+		NavigableMap<Number160, Data> sortedMap = new TreeMap<Number160, Data>();
+
+		String content0 = generateRandomString();
+		Number160 vKey0;
+		vKey0 = generateVersionKey(0, content0);
+		Data data0 = new Data(content0);
+		sortedMap.put(vKey0, data0);
+
+		String content1 = generateRandomString();
+		Number160 vKey1 = generateVersionKey(1, content1);
+		Data data1 = new Data(content1);
+		data1.addBasedOn(vKey0);
+		sortedMap.put(vKey1, data1);
+
+		String content2a = generateRandomString();
+		Number160 vKey2a = generateVersionKey(2, content2a);
+		Data data2a = new Data(content2a);
+		data2a.addBasedOn(vKey1);
+		sortedMap.put(vKey2a, data2a);
+
+		String content2b = generateRandomString();
+		Number160 vKey2b = generateVersionKey(2, content2b);
+		Data data2b = new Data(content2b);
+		data2b.addBasedOn(vKey1);
+		sortedMap.put(vKey2b, data2b);
+
+		String content3 = generateRandomString();
+		Number160 vKey3 = generateVersionKey(3, content3);
+		Data data3 = new Data(content3);
+		data3.addBasedOn(vKey2a);
+		sortedMap.put(vKey3, data3);
+
+		String content4a = generateRandomString();
+		Number160 vKey4a = generateVersionKey(4, content4a);
+		Data data4a = new Data(content4a);
+		data4a.addBasedOn(vKey3);
+		sortedMap.put(vKey4a, data4a);
+
+		String content4b = generateRandomString();
+		Number160 vKey4b = generateVersionKey(4, content4b);
+		Data data4b = new Data(content4b);
+		data4b.addBasedOn(vKey3);
+		sortedMap.put(vKey4b, data4b);
+
+		String content5a = generateRandomString();
+		Number160 vKey5a = generateVersionKey(5, content5a);
+		Data data5a = new Data(content5a);
+		data5a.addBasedOn(vKey4a);
+		sortedMap.put(vKey5a, data5a);
+
+		String content5b = generateRandomString();
+		Number160 vKey5b = generateVersionKey(5, content5b);
+		Data data5b = new Data(content5b);
+		data5b.addBasedOn(vKey4b);
+		sortedMap.put(vKey5b, data5b);
+
+		String content5c = generateRandomString();
+		Number160 vKey5c = generateVersionKey(5, content5c);
+		Data data5c = new Data(content5c);
+		data5c.addBasedOn(vKey4b);
+		sortedMap.put(vKey5c, data5c);
+
+		String content6a = generateRandomString();
+		Number160 vKey6a = generateVersionKey(6, content6a);
+		Data data6a = new Data(content6a);
+		data6a.addBasedOn(vKey5a);
+		sortedMap.put(vKey6a, data6a);
+
+		String content6b = generateRandomString();
+		Number160 vKey6b = generateVersionKey(6, content6b);
+		Data data6b = new Data(content6b);
+		data6b.addBasedOn(vKey5a);
+		sortedMap.put(vKey6b, data6b);
+
+		String content7 = generateRandomString();
+		Number160 vKey7 = generateVersionKey(7, content7);
+		Data data7 = new Data(content7);
+		data7.addBasedOn(vKey6a);
+		sortedMap.put(vKey7, data7);
+
+		Peer master = null;
+		try {
+			// setup
+			Peer[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+
+			// put test data
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+			for (Number160 vKey : sortedMap.keySet()) {
+				FuturePut fput = peers[rnd.nextInt(10)].put(locationKey)
+						.setData(contentKey, sortedMap.get(vKey)).setDomainKey(domainKey).setVersionKey(vKey)
+						.start();
+				fput.awaitUninterruptibly();
+				fput.getFutureRequests().awaitUninterruptibly();
+				Assert.assertEquals(true, fput.isSuccess());
+			}
+
+			// get latest versions
+			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).setDomainKey(domainKey)
+					.setContentKey(contentKey).setGetLatest().start();
+			fget.awaitUninterruptibly();
+			Assert.assertEquals(true, fget.isSuccess());
+
+			// check result
+			Map<Number640, Data> dataMap = fget.getDataMap();
+			Assert.assertEquals(5, dataMap.size());
+			Number480 key480 = new Number480(locationKey, domainKey, contentKey);
+
+			Number640 key2b = new Number640(key480, vKey2b);
+			Assert.assertTrue(dataMap.containsKey(key2b));
+			Assert.assertEquals(data2b.object(), dataMap.get(key2b).object());
+
+			Number640 key5b = new Number640(key480, vKey5b);
+			Assert.assertTrue(dataMap.containsKey(key5b));
+			Assert.assertEquals(data5b.object(), dataMap.get(key5b).object());
+
+			Number640 key5c = new Number640(key480, vKey5c);
+			Assert.assertTrue(dataMap.containsKey(key5c));
+			Assert.assertEquals(data5c.object(), dataMap.get(key5c).object());
+
+			Number640 key6b = new Number640(key480, vKey6b);
+			Assert.assertTrue(dataMap.containsKey(key6b));
+			Assert.assertEquals(data6b.object(), dataMap.get(key6b).object());
+
+			Number640 key7 = new Number640(key480, vKey7);
+			Assert.assertTrue(dataMap.containsKey(key7));
+			Assert.assertEquals(data7.object(), dataMap.get(key7).object());
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	private static String generateRandomString() {
+		return UUID.randomUUID().toString();
+	}
+
+	private static Number160 generateVersionKey(long basedOnCounter, Serializable object) throws IOException {
+		// get a MD5 hash of the object itself
+		byte[] hash = generateMD5Hash(serializeObject(object));
+		return new Number160(basedOnCounter, new Number160(Arrays.copyOf(hash, Number160.BYTE_ARRAY_SIZE)));
+	}
+
+	private static byte[] generateMD5Hash(byte[] data) {
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+		}
+		md.reset();
+		md.update(data, 0, data.length);
+		return md.digest();
+	}
+
+	private static byte[] serializeObject(Serializable object) throws IOException {
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = null;
+		byte[] result = null;
+
+		try {
+			oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			result = baos.toByteArray();
+		} catch (IOException e) {
+			throw e;
+		} finally {
+			try {
+				if (oos != null)
+					oos.close();
+				if (baos != null)
+					baos.close();
+			} catch (IOException e) {
+				throw e;
+			}
+		}
+		return result;
 	}
 
 	public static Peer[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,

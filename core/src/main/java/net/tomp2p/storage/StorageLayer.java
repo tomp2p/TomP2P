@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -237,6 +238,51 @@ public class StorageLayer {
 			return tmp;
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	public Map<Number640, Data> getLatestVersion(Number640 from, Number640 to) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry<Number640, Data> entry = iterator.next();
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+				} 
+			}
+
+			// delete all predecessors
+			Map<Number640, Data> result = new HashMap<Number640, Data>();
+			while (!tmp.isEmpty()) {
+				// first entry is a latest version
+				Entry<Number640, Data> latest = tmp.lastEntry();
+				// store in results list
+				result.put(latest.getKey(), latest.getValue());
+				// delete all predecessors of latest entry
+				deletePredecessors(tmp, latest.getKey());
+			}
+
+			return result;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void deletePredecessors(NavigableMap<Number640, Data> sortedMap, Number640 key) {
+		Data version = sortedMap.remove(key);
+		// check if version has been already deleted
+		if (version == null) {
+			return;
+		}
+		// check if version is initial version
+		if (version.basedOnSet().isEmpty()) {
+			return;
+		}
+		// remove all predecessor versions recursively
+		for (Number160 basedOnKey : version.basedOnSet()) {
+			deletePredecessors(sortedMap, new Number640(key.locationDomainAndContentKey(), basedOnKey));
 		}
 	}
 

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
 
+import net.tomp2p.dht.ReplicationListener;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class has 3 methods that are called from outside eventes: check, peerInsert, peerRemoved.
  */
-public class Replication implements PeerMapChangeListener {
+public class Replication implements PeerMapChangeListener, ReplicationListener {
     private static final Logger LOG = LoggerFactory.getLogger(Replication.class);
 
     private final List<ResponsibilityListener> listeners = new ArrayList<ResponsibilityListener>();
@@ -73,21 +74,21 @@ public class Replication implements PeerMapChangeListener {
         this.nRootReplication = nRoot;
         peerMap.addPeerMapChangeListener(this);
     }
-
+    
     /**
      * 
-     * @param replicationFactor
-     *            Set the replication factor
+     * @return The replication factor.
      */
-    public void setReplicationFactor(final int replicationFactor) {
+    public Replication replicationFactor(int replicationFactor) {
         this.replicationFactor = replicationFactor;
+        return this;
     }
 
     /**
      * 
      * @return The replication factor.
      */
-    public int getReplicationFactor() {
+    public int replicationFactor() {
         return replicationFactor;
     }
 
@@ -96,7 +97,7 @@ public class Replication implements PeerMapChangeListener {
 	 * @param nRootReplication flag
 	 *            Set <code>true</code> for n-root replication or <code>false</code> for 0-root replication.
 	 */
-	public void setNRootReplication(boolean nRootReplication) {
+	public void nRootReplication(boolean nRootReplication) {
 		this.nRootReplication = nRootReplication;
 	}
 
@@ -104,7 +105,7 @@ public class Replication implements PeerMapChangeListener {
 	 * 
 	 * @return <code>true</code> if n-root replication is enabled
 	 */
-	public boolean isNRootReplicationEnabled() {
+	public boolean isNRootReplication() {
 		return nRootReplication;
 	}
 	
@@ -112,7 +113,7 @@ public class Replication implements PeerMapChangeListener {
 	 * 
 	 * @return <code>true</code> if 0-root replication is enabled
 	 */
-	public boolean is0RootReplicationEnabled() {
+	public boolean is0RootReplication() {
 		return !nRootReplication;
 	}
 
@@ -121,7 +122,7 @@ public class Replication implements PeerMapChangeListener {
      * 
      * @return True if replication is enabled.
      */
-    public boolean isReplicationEnabled() {
+    public boolean isReplication() {
         return listeners.size() > 0;
     }
 
@@ -174,10 +175,18 @@ public class Replication implements PeerMapChangeListener {
      * @param delayed Indicates if the other peer should get notified immediately or delayed. The case for delayed is that
      *            multiple non responsible peers may call this and a delayed call in that case may be better.
      */
-    private void notifyOtherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
+    private void notifyOtherResponsible(final Number160 locationKey, final PeerAddress other) {
         for (ResponsibilityListener responsibilityListener : listeners) {
-            responsibilityListener.otherResponsible(locationKey, other, delayed);
+            responsibilityListener.otherResponsible(locationKey, other);
         }
+    }
+    
+    @Override
+    public void dataRemoved(Number160 locationKey) {
+    	if (!isReplication()) {
+            return;
+        }
+	    // TODO Auto-generated method stub
     }
 
     /**
@@ -186,8 +195,8 @@ public class Replication implements PeerMapChangeListener {
      * @param locationKey
      *            The location key.
      */
-    public void updateAndNotifyResponsibilities(final Number160 locationKey) {
-        if (!isReplicationEnabled()) {
+    public void dataInserted(final Number160 locationKey) {
+        if (!isReplication()) {
             return;
         }
         if (!nRootReplication) {
@@ -201,7 +210,7 @@ public class Replication implements PeerMapChangeListener {
                 if (backend.updateResponsibilities(locationKey, closest.peerId())) {
                     // notify that someone else is now responsible for the
                     // content with key responsibleLocations
-                    notifyOtherResponsible(locationKey, closest, false);
+                    notifyOtherResponsible(locationKey, closest);
                 }
             }
         } else {
@@ -244,7 +253,7 @@ public class Replication implements PeerMapChangeListener {
 
     @Override
     public void peerInserted(final PeerAddress peerAddress, final boolean verified) {
-        if (!isReplicationEnabled() || !verified) {
+        if (!isReplication() || !verified) {
             return;
         }
         LOG.debug("The peer {} was inserted in my map. I'm {}", peerAddress, selfAddress);
@@ -264,7 +273,7 @@ public class Replication implements PeerMapChangeListener {
     								myResponsibleLocation);
     						// notify that someone else is now responsible for the
     						// content with key responsibleLocations
-    						notifyOtherResponsible(myResponsibleLocation, closest, false);
+    						notifyOtherResponsible(myResponsibleLocation, closest);
     						// cancel any pending notifyMeResponsible*, as we are
     						// not responsible anymore.
     					} else {
@@ -273,7 +282,7 @@ public class Replication implements PeerMapChangeListener {
     					}
 					} else {
 						// notify closest replica node about responsibility
-						notifyOtherResponsible(myResponsibleLocation, closest, false);
+						notifyOtherResponsible(myResponsibleLocation, closest);
 						LOG.debug("I {} am no more in the replica set of {}.", selfAddress, myResponsibleLocation);
 						backend.removeResponsibility(myResponsibleLocation);
 					}
@@ -330,7 +339,7 @@ public class Replication implements PeerMapChangeListener {
 								"I {} figured out replication responsibility of newly joined peer {} for {}.",
 								selfAddress, peerAddress, myResponsibleLocation);
 						// newly joined peer has to get notified
-						notifyOtherResponsible(myResponsibleLocation, peerAddress, false);
+						notifyOtherResponsible(myResponsibleLocation, peerAddress);
 						// don't add newly joined peer id and it's new
 						// replication responsibility to our replication map,
 						// because given key doesn't affect us anymore
@@ -369,7 +378,7 @@ public class Replication implements PeerMapChangeListener {
 
     @Override
     public void peerRemoved(final PeerAddress peerAddress, final PeerStatatistic peerStatatistic) {
-        if (!isReplicationEnabled()) {
+        if (!isReplication()) {
             return;
         }
         LOG.debug("The peer {} was removed from my map. I'm {}", peerAddress, selfAddress);
@@ -402,7 +411,7 @@ public class Replication implements PeerMapChangeListener {
 					if (backend.updateResponsibilities(otherResponsibleLocation,
 							closest.peerId())) {
 						LOG.debug("We should check if the closer peer has the content");
-						notifyOtherResponsible(otherResponsibleLocation, closest, true);
+						notifyOtherResponsible(otherResponsibleLocation, closest);
 						// we don't need to check this again, so remove it from
 						// the list if present
 						myResponsibleLocations.remove(otherResponsibleLocation);
@@ -503,5 +512,5 @@ public class Replication implements PeerMapChangeListener {
         SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, replicationFactor);
         tmp.add(selfAddress);
         return tmp.headSet(peerAddress).size() < replicationFactor;
-    }
+    }	
 }

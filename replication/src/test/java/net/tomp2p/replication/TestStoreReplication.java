@@ -12,7 +12,6 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
-import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -43,19 +42,13 @@ public class TestStoreReplication {
         try {
         	StorageMemory s1 = new StorageMemory();
         	master = new PeerDHT(new PeerBuilder(new Number160("0xee")).start(), s1);
+        	IndirectReplication im = new IndirectReplication(master);
+        	
             
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
-            final int replicatioFactor = 5;
-            Replication replication = new Replication(new StorageLayer(s1), master.peerAddress(), master.peerBean()
-                    .peerMap(), replicatioFactor, false);
-            replication.addResponsibilityListener(new ResponsibilityListener() {
-                @Override
-                public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
-                    System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
-                    test1.incrementAndGet();
-                }
 
+            ResponsibilityListener responsibilityListener = new ResponsibilityListener() {
                 @Override
                 public void meResponsible(final Number160 locationKey) {
                     System.err.println("I'm responsible for " + locationKey + " / ");
@@ -66,8 +59,18 @@ public class TestStoreReplication {
                 public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
                 }
-            });
-            master.peerBean().replicationStorage(replication);
+
+				@Override
+                public void otherResponsible(Number160 locationKey, PeerAddress other) {
+					System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
+                    test1.incrementAndGet();
+	                
+                }
+            };
+            
+            im.addResponsibilityListener(responsibilityListener);
+            im.start();
+
             Number160 location = new Number160("0xff");
             Map<Number160, Data> dataMap = new HashMap<Number160, Data>();
             dataMap.put(Number160.ZERO, new Data("string"));
@@ -126,15 +129,12 @@ public class TestStoreReplication {
             final AtomicInteger test2 = new AtomicInteger(0);
             StorageMemory s1 = new StorageMemory();
             master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port).start(), s1);
+            IndirectReplication im = new IndirectReplication(master);
             System.err.println("master is " + master.peerAddress());
 
-            final int replicatioFactor = 5;
-            Replication replication = new Replication(new StorageLayer(s1), master.peerAddress(), master.peerBean()
-                    .peerMap(), replicatioFactor, false);
-
-            replication.addResponsibilityListener(new ResponsibilityListener() {
+            ResponsibilityListener responsibilityListener = new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(final Number160 locationKey, final PeerAddress other, final boolean delayed) {
+                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
                 }
@@ -148,9 +148,10 @@ public class TestStoreReplication {
                 public void meResponsible(Number160 locationKey, PeerAddress newPeer) {
 	                System.err.println("I sync for " + locationKey + " / ");
                 }
-            });
+            };
 
-            master.peerBean().replicationStorage(replication);
+            im.addResponsibilityListener(responsibilityListener);
+            im.start();
 
             FutureChannelCreator fcc = master.peer().connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
@@ -933,32 +934,34 @@ public class TestStoreReplication {
 	private void testReplication(Number160 lKey, int replicationFactor, boolean nRoot, int[][] joins, int[][] leaves)
 			throws IOException, InterruptedException {
 		List<PeerDHT> peers = new ArrayList<PeerDHT>(joins.length);
+		IndirectReplication ind = null;
 		ChannelCreator cc = null;
 		try {
 			char[] letters = { 'a', 'b', 'c', 'd' };
 			StorageMemory storage = new StorageMemory();
 			for (int i = 0; i < joins.length; i++) {
 				if(i == 0) {
-					peers.add(new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start(), storage));
+					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start(), storage);
+					ind = new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
+					peers.add(peer);
 				} else {
-					peers.add(new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start()));	
+					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start()); 
+					new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
+					peers.add(peer);	
 				}
 			}
 			
 			PeerDHT master = peers.get(0);
-			Replication replication = new Replication(new StorageLayer(storage), master.peerAddress(), master.peerBean()
-					.peerMap(), replicationFactor, nRoot);
 			
 			// attach test listener for test verification
 			final AtomicInteger replicateOther = new AtomicInteger(0);
 			final AtomicInteger replicateI = new AtomicInteger(0);
 			final AtomicInteger replicateWe = new AtomicInteger(0);
-			replication.addResponsibilityListener(new ResponsibilityListener() {
+			ind.addResponsibilityListener(new ResponsibilityListener() {
 				@Override
-				public void otherResponsible(final Number160 locationKey, final PeerAddress other,
-						final boolean delayed) {
+				public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
 					replicateOther.incrementAndGet();
 				}
 
@@ -972,7 +975,6 @@ public class TestStoreReplication {
 					replicateWe.incrementAndGet();
 				}
 			});
-			master.peerBean().replicationStorage(replication);
 			
 			// create test data with given location key
 			Map<Number160, Data> dataMap = new HashMap<Number160, Data>();

@@ -12,13 +12,13 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -29,7 +29,6 @@ import net.tomp2p.synchronization.Checksum;
 import net.tomp2p.synchronization.Instruction;
 import net.tomp2p.synchronization.PeerSync;
 import net.tomp2p.synchronization.RSync;
-import net.tomp2p.synchronization.ReplicationSync;
 import net.tomp2p.synchronization.SyncBuilder;
 import net.tomp2p.synchronization.SyncStat;
 import net.tomp2p.utils.Utils;
@@ -189,18 +188,18 @@ public class SynchronizationTest {
 	@Test
 	public void testInfoMessageSAME() throws IOException, InterruptedException {
 
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
 			final AtomicReference<Type> ref = new AtomicReference<Type>(Type.UNKNOWN_ID);
 			final AtomicReference<DataMap> ref2 = new AtomicReference<DataMap>();
 
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(1)).ports(4001).replicationSender(syncSender).start();
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(2)).ports(4002).replicationSender(syncReceiver).start();
-			final PeerSync senderSync = syncSender.peerSync();
-			// final PeerSync receiverSync = syncReceiver.peerSync();
+			//final ReplicationSync syncSender = new ReplicationSync(5);
+			sender = new PeerDHT(new PeerBuilder(new Number160(1)).ports(4001).start());
+			//final ReplicationSync syncReceiver = new ReplicationSync(5);
+			receiver = new PeerDHT(new PeerBuilder(new Number160(2)).ports(4002).start());
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(100);
 			final Number160 domainKey = Number160.ZERO;
@@ -214,9 +213,9 @@ public class SynchronizationTest {
 			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 			receiver.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 
-			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
+			sender.peer().bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
-			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
+			FutureChannelCreator futureChannelCreator = sender.peer().connectionBean().reservation().create(0, 1);
 
 			final CountDownLatch latch = new CountDownLatch(1);
 			final PeerAddress receiverAddress = receiver.peerAddress();
@@ -233,8 +232,8 @@ public class SynchronizationTest {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								System.err.println(future.failedReason());
-								ref.set(future.emptyResponse().type());
-								ref2.set(future.emptyResponse().dataMap(0));
+								ref.set(future.responseMessage().type());
+								ref2.set(future.responseMessage().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -260,18 +259,15 @@ public class SynchronizationTest {
 	@Test
 	public void testInfoMessageNO() throws IOException, InterruptedException {
 
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
-
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
-
-			final PeerSync senderSync = syncSender.peerSync();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(200);
 			final Number160 domainKey = Number160.ZERO;
@@ -284,10 +280,10 @@ public class SynchronizationTest {
 
 			sender.put(locationKey).data(new Data(value)).start().awaitUninterruptibly();
 
-			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
+			sender.peer().bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 			final CountDownLatch latch = new CountDownLatch(1);
 			final PeerAddress receiverAddress = receiver.peerAddress();
-			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
+			FutureChannelCreator futureChannelCreator = sender.peer().connectionBean().reservation().create(0, 1);
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -299,7 +295,7 @@ public class SynchronizationTest {
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								ref.set(future.emptyResponse().dataMap(0));
+								ref.set(future.responseMessage().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -325,18 +321,17 @@ public class SynchronizationTest {
 	@Test
 	public void testInfoMessageNOTSAME() throws IOException, InterruptedException {
 
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
 
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
 
-			final PeerSync senderSync = syncSender.peerSync();
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(300);
 			final Number160 domainKey = Number160.ZERO;
@@ -352,12 +347,12 @@ public class SynchronizationTest {
 			final DataMap dataMap = new DataMap(map);
 			map.put(new Number640(locationKey, domainKey, contentKey, Number160.ZERO), new Data("Test"));
 
-			sender.bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
+			sender.peer().bootstrap().peerAddress(receiver.peerAddress()).start().awaitUninterruptibly();
 
 			final CountDownLatch latch = new CountDownLatch(1);
 			final PeerAddress receiverAddress = receiver.peerAddress();
 
-			FutureChannelCreator futureChannelCreator = sender.connectionBean().reservation().create(0, 1);
+			FutureChannelCreator futureChannelCreator = sender.peer().connectionBean().reservation().create(0, 1);
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -369,7 +364,7 @@ public class SynchronizationTest {
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
-								ref.set(future.emptyResponse().dataMap(0));
+								ref.set(future.responseMessage().dataMap(0));
 								Utils.addReleaseListener(future2.channelCreator(), futureResponse);
 								latch.countDown();
 							}
@@ -396,16 +391,14 @@ public class SynchronizationTest {
 
 	@Test
 	public void testSyncMessageDiff() throws IOException, InterruptedException, ClassNotFoundException {
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
 
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
-
-			final PeerSync senderSync = syncSender.peerSync();
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(500);
 			final Number160 domainKey = Number160.ZERO;
@@ -425,7 +418,7 @@ public class SynchronizationTest {
 			future.awaitUninterruptibly();
 
 			System.err.println(future.object().toString());
-			Data data = receiver.peerBean().storageLayer()
+			Data data = receiver.storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
@@ -444,16 +437,15 @@ public class SynchronizationTest {
 	
 	@Test
 	public void testSyncMessageDiff2() throws IOException, InterruptedException, ClassNotFoundException {
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
-			final ReplicationSync syncSender = new ReplicationSync(32);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
 
-			final ReplicationSync syncReceiver = new ReplicationSync(32);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
-
-			final PeerSync senderSync = syncSender.peerSync();
+			final PeerSync senderSync = new PeerSync(sender, 32);
+			new PeerSync(receiver, 32);
+			
 
 			final Number160 locationKey = new Number160(500);
 			final Number160 domainKey = Number160.ZERO;
@@ -473,7 +465,7 @@ public class SynchronizationTest {
 			future.awaitUninterruptibly();
 
 			System.err.println(future.object().toString());
-			Data data = receiver.peerBean().storageLayer()
+			Data data = receiver.storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
@@ -492,16 +484,14 @@ public class SynchronizationTest {
 
 	@Test
 	public void testSyncMessageSame() throws IOException, InterruptedException, ClassNotFoundException {
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
-
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
-
-			final PeerSync senderSync = syncSender.peerSync();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(500);
 			final Number160 domainKey = Number160.ZERO;
@@ -521,7 +511,7 @@ public class SynchronizationTest {
 			future.awaitUninterruptibly();
 
 			System.err.println(future.object().toString());
-			Data data = receiver.peerBean().storageLayer()
+			Data data = receiver.storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 
@@ -541,16 +531,14 @@ public class SynchronizationTest {
 
 	@Test
 	public void testSyncMessageCopy() throws IOException, InterruptedException, ClassNotFoundException {
-		Peer sender = null;
-		Peer receiver = null;
+		PeerDHT sender = null;
+		PeerDHT receiver = null;
 		try {
-			final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerBuilder(new Number160(3)).ports(4003).replicationSender(syncSender).start();
+			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
 
-			final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerBuilder(new Number160(4)).ports(4004).replicationSender(syncReceiver).start();
-
-			final PeerSync senderSync = syncSender.peerSync();
+			final PeerSync senderSync = new PeerSync(sender, 5);
+			new PeerSync(receiver, 5);
 
 			final Number160 locationKey = new Number160(600);
 			final Number160 domainKey = Number160.ZERO;
@@ -568,7 +556,7 @@ public class SynchronizationTest {
 
 			System.err.println(future.object().toString());
 
-			Data data = receiver.peerBean().storageLayer()
+			Data data = receiver.storageLayer()
 			        .get(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
 			byte[] reconstructedValue = data.toBytes();
 			assertArrayEquals(newValue.getBytes(), reconstructedValue);

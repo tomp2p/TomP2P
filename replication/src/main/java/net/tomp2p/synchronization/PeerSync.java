@@ -16,14 +16,32 @@
 
 package net.tomp2p.synchronization;
 
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
+import java.util.Map;
 
-public class PeerSync {
+import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.ReplicationListener;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.message.DataMap;
+import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number640;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.replication.ReplicationSender;
+import net.tomp2p.storage.Data;
+
+public class PeerSync implements ReplicationSender {
 
 	private final SyncRPC syncRPC;
-	private final Peer peer;
+	private final PeerDHT peer;
 	private final int blockSize;
+	
+	public PeerSync(final PeerDHT peer) {
+		this(peer, null, 700);
+	}
+	
+	public PeerSync(final PeerDHT peer, final int blockSize) {
+		this(peer, null, blockSize);
+	}
+	
 
 	/**
 	 * Create a PeerSync class and register the RPC. Be aware that if you use
@@ -36,13 +54,13 @@ public class PeerSync {
 	 *            The block size as the basis for the checksums, RSync uses a
 	 *            default of 700
 	 */
-	public PeerSync(Peer peer, final int blockSize) {
+	public PeerSync(final PeerDHT peer, final ReplicationListener replicationListener, final int blockSize) {
 		this.peer = peer;
-		this.syncRPC = new SyncRPC(peer.peerBean(), peer.connectionBean(), blockSize);
+		this.syncRPC = new SyncRPC(peer.peerBean(), peer.peer().connectionBean(), blockSize, peer.storageLayer(), replicationListener);
 		this.blockSize = blockSize;
 	}
 
-	public Peer peer() {
+	public PeerDHT peerDHT() {
 		return peer;
 	}
 
@@ -53,4 +71,11 @@ public class PeerSync {
 	public SyncBuilder synchronize(PeerAddress other) {
 		return new SyncBuilder(this, other, blockSize);
 	}
+	
+	@Override
+    public void sendDirect(PeerAddress other, Number160 locationKey, Map<Number640, Data> dataMap) {
+        FutureDone<SyncStat> future = synchronize(other)
+                .dataMap(new DataMap(dataMap)).start();
+        peer.peer().notifyAutomaticFutures(future);
+    }
 }

@@ -83,7 +83,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
      *            The responsible peer that performs synchronization
      */
     public SyncBuilder(final PeerSync peerSync, final PeerAddress other, final int blockSize) {
-        super(peerSync.peer(), Number160.ZERO);
+        super(peerSync.peerDHT(), Number160.ZERO);
         self(this);
         this.other = other;
         this.peerSync = peerSync;
@@ -133,7 +133,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         } else {
             Map<Number640, Data> newDataMap = new HashMap<Number640, Data>();
             if (key != null) {
-                Data data = peer.peerBean().storageLayer().get(key);
+                Data data = peer.storageLayer().get(key);
                 if (data == null) {
                     data = new Data().flag2();
                 }
@@ -141,7 +141,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
             }
             if (keys != null) {
                 for (Number640 key : keys) {
-                    Data data = peer.peerBean().storageLayer().get(key);
+                    Data data = peer.storageLayer().get(key);
                     if (data == null) {
                         data = new Data().flag2();
                     }
@@ -164,18 +164,18 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         	for (Map.Entry<Number640, Number160> entry : dataMap.convertToHash().entrySet()) {
         		Set<Number160> hashSet = new HashSet<Number160>(1);
         		hashSet.add(entry.getValue());
-        		dataMapHash.put(key, hashSet);
+        		dataMapHash.put(entry.getKey(), hashSet);
         	}
         }
         if (key != null) {
         	Set<Number160> hashSet = new HashSet<Number160>(1);
-        	hashSet.add(peer.peerBean().storageLayer().get(key).hash());
+        	hashSet.add(peer.storageLayer().get(key).hash());
             dataMapHash.put(key, hashSet);
         }
         if (keys != null) {
             for (Number640 key : keys) {
             	Set<Number160> hashSet = new HashSet<Number160>(1);
-            	hashSet.add(peer.peerBean().storageLayer().get(key).hash());
+            	hashSet.add(peer.storageLayer().get(key).hash());
                 dataMapHash.put(key, hashSet);
             }
         }
@@ -186,17 +186,12 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         return instructions;
     }
 
-    @Override
-    public SyncBuilder setDomainKey(final Number160 domainKey) {
-        throw new IllegalArgumentException("Cannot be set here");
-    }
-
     public FutureDone<SyncStat> start() {
-        if (peer.isShutdown()) {
+        if (peer.peer().isShutdown()) {
             return FUTURE_SHUTDOWN;
         }
         final FutureDone<SyncStat> futureSync = new FutureDone<SyncStat>();
-        FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation().create(0, 2);
+        FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 2);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -217,7 +212,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                             return;
                         }
 
-                        Message responseMessage = future.emptyResponse();
+                        Message responseMessage = future.responseMessage();
                         DataMap dataMap = responseMessage.dataMap(0);
 
                         if (dataMap == null) {
@@ -243,7 +238,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         		} else if(data.isFlag2()) {
                         			LOG.debug("copy required for key {}",entry.getKey());
                         			syncMessageRequired = true;
-                        			Data data2 = peer.peerBean().storageLayer().get(entry.getKey());
+                        			Data data2 = peer.storageLayer().get(entry.getKey());
                         			dataOrig += data2.length();
                         			//copy
                                     retVal.put(entry.getKey(), data2);
@@ -253,7 +248,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                         	} else {
                         		LOG.debug("sync required");
                         		syncMessageRequired = true;
-                        		Data data2 = peer.peerBean().storageLayer().get(entry.getKey());
+                        		Data data2 = peer.storageLayer().get(entry.getKey());
                         		dataOrig += data2.length();
                         		final ByteBuf buffer = data.buffer();
                         		Number160 versionKey = SyncUtils.decodeHeader(buffer);

@@ -4,6 +4,7 @@ import net.tomp2p.peers.Number160;
 
 public interface ReplicationListener {
 
-	void updateAndNotifyResponsibilities(Number160 locationKey);
+	void dataInserted(Number160 locationKey);
+	void dataRemoved(Number160 locationKey);
 
 }

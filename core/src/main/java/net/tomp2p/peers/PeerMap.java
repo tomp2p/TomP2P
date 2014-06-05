@@ -256,6 +256,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
+    	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
         boolean firstHand = referrer == null || !peerVerification;
         //if we got contacted by this peer, but we did not initiate the connection
         boolean secondHand = remotePeer.equals(referrer);
@@ -354,9 +355,8 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      */
     @Override
     public boolean peerFailed(final PeerAddress remotePeer, final FailReason reason) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("peer " + remotePeer + " is offline");
-        }
+        LOG.debug("peer {} is offline with reason {}", remotePeer, reason);
+        
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {
             return false;

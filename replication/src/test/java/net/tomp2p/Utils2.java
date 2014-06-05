@@ -29,6 +29,7 @@ import java.util.Random;
 import java.util.TreeSet;
 
 import net.tomp2p.connection.Bindings;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message;
@@ -40,7 +41,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.synchronization.ReplicationSync;
+import net.tomp2p.replication.IndirectReplication;
 
 public class Utils2 {
     /**
@@ -105,18 +106,18 @@ public class Utils2 {
         return message;
     }
 
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
+    public static PeerDHT[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);
     }
 
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
+    public static PeerDHT[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
             throws Exception {
         return createNodes(nrOfPeers, rnd, port, automaticFuture, false);
     }
 
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+    public static PeerDHT[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
             boolean replication) throws Exception {
-        return createNodes(nrOfPeers, rnd, port, automaticFuture, replication, false);
+        return createNodes(nrOfPeers, rnd, port, automaticFuture, replication, false, false);
     }
 
     /**
@@ -133,54 +134,48 @@ public class Utils2 {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static Peer[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
-            boolean replication, boolean maintenance) throws Exception {
+    public static PeerDHT[] createNodes(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+            boolean replication, boolean maintenance, boolean rsync) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Bindings bindings = new Bindings().addInterface("lo");
-        Peer[] peers = new Peer[nrOfPeers];
+        PeerDHT[] peers = new PeerDHT[nrOfPeers];
         
-        PeerBuilder pm = new PeerBuilder(new Number160(rnd)).setEnableIndirectReplication(replication)
+        PeerBuilder pm = new PeerBuilder(new Number160(rnd))
                    .ports(port).setEnableMaintenance(maintenance)
                    .externalBindings(bindings);
-        if(replication) {
-        	ReplicationSync rs = new ReplicationSync(10);
-        	pm.replicationSender(rs);
-        }
-        if(automaticFuture!=null) {
-        	pm.addAutomaticFuture(automaticFuture);
-        }
-        peers[0] = pm.start();
         
+        
+        peers[0] = new PeerDHT(pm.start());
+        if(automaticFuture!=null) {
+        	peers[0].peer().addAutomaticFuture(automaticFuture);
+        }
+        if(replication) {
+        	IndirectReplication rep = new IndirectReplication(peers[0]);
+        	if(rsync) {
+        		rep.rsync().blockSize(32);
+        	}
+        	rep.nRoot().start();
+        } 
 
         for (int i = 1; i < nrOfPeers; i++) {
             pm = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(maintenance)
-                        .externalBindings(bindings).setEnableIndirectReplication(replication).masterPeer(peers[0]);
-            if(replication) {
-            	ReplicationSync rs = new ReplicationSync(10);
-              	pm.replicationSender(rs);
-            }
+                        .externalBindings(bindings).masterPeer(peers[0].peer());
+            peers[i] = new PeerDHT(pm.start());
+            
             if(automaticFuture!=null) {
-            	pm.addAutomaticFuture(automaticFuture);
+            	peers[i].peer().addAutomaticFuture(automaticFuture);
             }
-            peers[i] = pm.start();
+            if(replication) {
+            	IndirectReplication rep = new IndirectReplication(peers[i]);
+            	if(rsync) {
+            		rep.rsync().blockSize(32);
+            	}
+            	rep.nRoot().start();
+            }
         }
         System.err.println("peers created.");
-        return peers;
-    }
-
-    public static Peer[] createRealNodes(int nrOfPeers, Random rnd, int startPort,
-            AutomaticFuture automaticFuture) throws Exception {
-        if (nrOfPeers < 1) {
-            throw new IllegalArgumentException("Cannot create less than 1 peer");
-        }
-        Peer[] peers = new Peer[nrOfPeers];
-        for (int i = 0; i < nrOfPeers; i++) {
-            peers[i] = new PeerBuilder(new Number160(rnd)).addAutomaticFuture(automaticFuture)
-                    .ports(startPort + i).start();
-        }
-        System.err.println("real peers created.");
         return peers;
     }
 
@@ -205,7 +200,7 @@ public class Utils2 {
      * @param peers
      *            The peers taking part in the p2p network.
      */
-    public static void perfectRouting(Peer... peers) {
+    public static void perfectRouting(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
                 peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);

@@ -185,7 +185,6 @@ public class StorageLayer implements DigestStorage {
 				return new Pair<Data, Enum<?>>(null, PutStatus.NOT_FOUND);
 			}
 			backend.removeTimeout(key);
-			backend.removeResponsibility(key.locationKey());
 			return new Pair<Data, Enum<?>>(backend.remove(key, returnData), PutStatus.OK);
 		} finally {
 			dataLock640.unlock(lock);
@@ -309,7 +308,6 @@ public class StorageLayer implements DigestStorage {
 				Data data = entry.getValue();
 				if (data.publicKey() == null || data.publicKey().equals(publicKey)) {
 					backend.removeTimeout(entry.getKey());
-					backend.removeResponsibility((entry.getKey().locationKey()));
 				}
 			}
 			return result;

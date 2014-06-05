@@ -72,11 +72,12 @@ public final class ExampleDirectReplication {
      * 
      * @param peers
      *            The peers in this P2P network
+     * @throws InterruptedException 
      * @throws IOException .
      */
-    private static void exmpleDirectReplication(final PeerDHT[] peers) throws IOException {
+    private static void exmpleDirectReplication(final PeerDHT[] peers) throws IOException, InterruptedException {
         PutBuilder putBuilder = peers[1].put(Number160.ONE).data(new Data("test"));
-        DirectReplication replication = new DirectReplication(peers[1]);
+        DirectReplication replication = new DirectReplication(peers[1].peer());
         Shutdown shutdown = replication.direct(putBuilder, 1000, -1, new AutomaticFuture() {
 			@Override
 			public void futureCreated(BaseFuture future) {

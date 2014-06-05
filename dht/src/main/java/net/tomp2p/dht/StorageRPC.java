@@ -658,7 +658,7 @@ public class StorageRPC extends DispatchHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if(putStatus == PutStatus.OK && replicationListener!=null) {
-            	replicationListener.updateAndNotifyResponsibilities(
+            	replicationListener.dataInserted(
                         entry.getKey().locationKey());
             }
            
@@ -690,7 +690,7 @@ public class StorageRPC extends DispatchHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (status == PutStatus.OK && replicationListener!=null) {
-            	replicationListener.updateAndNotifyResponsibilities(
+            	replicationListener.dataInserted(
                         entry.getKey().locationKey());
             }
 
@@ -859,6 +859,7 @@ public class StorageRPC extends DispatchHandler {
         		result1 = new HashMap<Number640, Data>(keys.size());
         		for (Number640 key : keys.keys()) {
                     Pair<Data,Enum<?>> data = storageLayer.remove(key, publicKey, sendBackResults);
+                    notifyRemoveResponsibility(key.locationKey(), data.element1());
                     if(data.element0() != null) {
                     	result1.put(key, data.element0());
                     }
@@ -867,6 +868,7 @@ public class StorageRPC extends DispatchHandler {
         		result2 = new HashMap<Number640, Byte>(keys.size());
         		for (Number640 key : keys.keys()) {
                     Pair<Data,Enum<?>> data = storageLayer.remove(key, publicKey, sendBackResults);
+                    notifyRemoveResponsibility(key.locationKey(), data.element1());
                     result2.put(key, (byte) data.element1().ordinal());
                 }
         	}
@@ -893,14 +895,26 @@ public class StorageRPC extends DispatchHandler {
             throw new IllegalArgumentException("Either two keys or a key set are necessary");
         }
         if (!sendBackResults) {
-            // make a copy, so the iterator in the codec wont conflict with
+        	for(Map.Entry<Number640, Byte> entry:result2.entrySet()) {
+        		notifyRemoveResponsibility(entry.getKey().locationKey(), PutStatus.values()[entry.getValue()]);
+        	}
+        	// make a copy, so the iterator in the codec wont conflict with
             // concurrent calls
             responseMessage.keyMapByte(new KeyMapByte(result2));
         } else {
-            // make a copy, so the iterator in the codec wont conflict with
+        	for(Map.Entry<Number640, Data> entry:result1.entrySet()) {
+        		notifyRemoveResponsibility(entry.getKey().locationKey(), PutStatus.OK);
+        	}
+        	// make a copy, so the iterator in the codec wont conflict with
             // concurrent calls
             responseMessage.setDataMap(new DataMap(result1));
         }
         return responseMessage;
+    }
+
+	private void notifyRemoveResponsibility(Number160 locationKey, Enum<?> status) {
+		if (status == PutStatus.OK && replicationListener!=null) {
+			replicationListener.dataRemoved(locationKey);
+		}
     }
 }

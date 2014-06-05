@@ -20,9 +20,10 @@ import java.io.IOException;
 
 import net.tomp2p.dht.FutureDigest;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.p2p.Peer;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.replication.IndirectReplication;
 import net.tomp2p.storage.Data;
 
 /**
@@ -66,13 +67,16 @@ public final class ExampleIndirectReplication {
         final int nr2 = 2;
         final int port3 = 4003;
         final int nr3 = 4;
-        Peer peer1 = new PeerBuilder(new Number160(nr1)).ports(port1).setEnableIndirectReplication(true)
-                .start();
-        Peer peer2 = new PeerBuilder(new Number160(nr2)).ports(port2).setEnableIndirectReplication(true)
-                .start();
-        Peer peer3 = new PeerBuilder(new Number160(nr3)).ports(port3).setEnableIndirectReplication(true)
-                .start();
-        Peer[] peers = new Peer[] {peer1, peer2, peer3};
+        PeerDHT peer1 = new PeerDHT(new PeerBuilder(new Number160(nr1)).ports(port1).start());
+        PeerDHT peer2 = new PeerDHT(new PeerBuilder(new Number160(nr2)).ports(port2).start());
+        PeerDHT peer3 = new PeerDHT(new PeerBuilder(new Number160(nr3)).ports(port3).start());
+        
+        new IndirectReplication(peer1).start();
+        new IndirectReplication(peer2).start();
+        new IndirectReplication(peer3).start();
+        
+        
+        PeerDHT[] peers = new PeerDHT[] {peer1, peer2, peer3};
         //
         FuturePut futurePut = peer1.put(new Number160(nr3)).data(new Data("store on peer1")).start();
         futurePut.awaitUninterruptibly();
@@ -80,8 +84,8 @@ public final class ExampleIndirectReplication {
         futureDigest.awaitUninterruptibly();
         System.out.println("we found the data on " + futureDigest.rawDigest().size() + " peers");
         // now peer1 gets to know peer2, transfer the data
-        peer1.bootstrap().peerAddress(peer2.peerAddress()).start();
-        peer1.bootstrap().peerAddress(peer3.peerAddress()).start();
+        peer1.peer().bootstrap().peerAddress(peer2.peerAddress()).start();
+        peer1.peer().bootstrap().peerAddress(peer3.peerAddress()).start();
         Thread.sleep(ONE_SECOND);
         futureDigest = peer1.digest(new Number160(nr3)).start();
         futureDigest.awaitUninterruptibly();
@@ -95,8 +99,8 @@ public final class ExampleIndirectReplication {
      * @param peers
      *            The peers in this P2P network
      */
-    private static void shutdown(final Peer[] peers) {
-        for (Peer peer : peers) {
+    private static void shutdown(final PeerDHT[] peers) {
+        for (PeerDHT peer : peers) {
             peer.shutdown();
         }
     }

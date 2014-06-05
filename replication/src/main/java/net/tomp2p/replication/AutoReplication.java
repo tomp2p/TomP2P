@@ -24,13 +24,12 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 	private final HashSet<Number160> removedPeers = new HashSet<Number160>();
 	private final ArrayList<Integer> observations = new ArrayList<Integer>();
 	private final ArrayList<Double> emas = new ArrayList<Double>();
+	private final PeerMap peerMap;
 
 	private double reliability;
 	private int minReplicationFactor = 2;
 	private int maxReplicationFactor = 100;
 	private int observationLength = 10;
-	
-	private PeerMap peerMap;
 
 	/**
 	 * Constructor.
@@ -40,15 +39,16 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 	 * @param peerMap
 	 *            The map of my neighbors
 	 */
-	public AutoReplication() {
+	public AutoReplication(Peer peer) {
 		this.emas.add(0.0);
+		this.peerMap = peer.peerBean().peerMap();
+		
 	}
 	
-	@Override
-    public void init(Peer peer) {
-		this.peerMap = peer.peerBean().peerMap();
+	public AutoReplication start() {
 		peerMap.addPeerMapChangeListener(this);
-    }
+		return this;
+	}
 	
 	@Override
 	public void peerInserted(PeerAddress peerAddress, boolean verified) {}

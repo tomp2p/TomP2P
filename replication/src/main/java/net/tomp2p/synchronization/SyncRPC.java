@@ -34,6 +34,8 @@ import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.dht.ReplicationListener;
+import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.DataMap;
@@ -49,6 +51,7 @@ import net.tomp2p.rpc.RPC;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DataBuffer;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +70,9 @@ public class SyncRPC extends DispatchHandler {
     public static final byte INFO_COMMAND = RPC.Commands.SYNC_INFO.getNr();
     public static final byte SYNC_COMMAND = RPC.Commands.SYNC.getNr();
     
-    final int blockSize;
+    private final int blockSize;
+    private final StorageLayer storageLayer;
+    private final ReplicationListener replicationListener;
 
     /**
      * Constructor that registers this RPC with the message handler.
@@ -76,11 +81,14 @@ public class SyncRPC extends DispatchHandler {
      *            The peer bean that contains data that is unique for each peer
      * @param connectionBean
      *            The connection bean that is unique per connection (multiple peers can share a single connection)
+     * @param storageLayer 
      */
-    public SyncRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final int blockSize) {
+    public SyncRPC(final PeerBean peerBean, final ConnectionBean connectionBean, final int blockSize, StorageLayer storageLayer, ReplicationListener replicationListener) {
         super(peerBean, connectionBean);
         register(INFO_COMMAND, SYNC_COMMAND);
         this.blockSize = blockSize;
+        this.storageLayer = storageLayer;
+        this.replicationListener = replicationListener;
     }
 
     /**
@@ -181,7 +189,7 @@ public class SyncRPC extends DispatchHandler {
         final Map<Number640, Data> retVal = new HashMap<Number640, Data>();
         
         for (Map.Entry<Number640, Collection<Number160>> entry : keysMap.keysMap().entrySet()) {
-            Data data = peerBean().storageLayer().get(entry.getKey());
+            Data data = storageLayer.get(entry.getKey());
             if(entry.getValue().size() != 1) {
             	continue;
             }
@@ -202,7 +210,7 @@ public class SyncRPC extends DispatchHandler {
             } else {
             	if(isSyncFromOldVersion) {
             		//TODO: the client could send us his history to figure out what the latest version in this history is
-            		Entry<Number640, Data> latest = peerBean().storageLayer().
+            		Entry<Number640, Data> latest = storageLayer.
             				get(entry.getKey().minVersionKey(), entry.getKey().maxVersionKey(), 1, false).lastEntry();
             		// TODO: don't copy data, toBytes does a copy!
             		List<Checksum> checksums = RSync.checksums(latest.getValue().toBytes(), blockSize);
@@ -244,7 +252,10 @@ public class SyncRPC extends DispatchHandler {
         for (Map.Entry<Number640, Data> entry : dataMap.dataMap().entrySet()) {
             if (entry.getValue().isFlag2()) {
             	LOG.debug("remove entry {}", entry.getKey());
-                peerBean().storageLayer().remove(entry.getKey(), publicKey, false);
+            	Pair<Data, Enum<?>> result = storageLayer.remove(entry.getKey(), publicKey, false);
+                if (replicationListener != null && result.element1() == PutStatus.OK) {
+                	replicationListener.dataRemoved(entry.getKey().locationKey());
+                }
             } else if (entry.getValue().length() > 0) {
                 if (entry.getValue().isFlag1()) {
                     // diff
@@ -254,7 +265,7 @@ public class SyncRPC extends DispatchHandler {
                 	Number160 hash = SyncUtils.decodeHeader(buf);
                     List<Instruction> instructions = SyncUtils.decodeInstructions(buf);
 
-                    Data dataOld = peerBean().storageLayer().get(new Number640(entry.getKey().locationDomainAndContentKey(), versionKey));
+                    Data dataOld = storageLayer.get(new Number640(entry.getKey().locationDomainAndContentKey(), versionKey));
 
                     if (dataOld == null || !dataOld.hash().equals(hash)) {
                         continue;
@@ -262,25 +273,28 @@ public class SyncRPC extends DispatchHandler {
                     // TODO: don't copy data, toBytes does a copy!
                     DataBuffer reconstructedValue = RSync.reconstruct(dataOld.toBytes(), instructions, blockSize);
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = peerBean().storageLayer().put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
+                    Enum<?> status = storageLayer.put(entry.getKey(), new Data(reconstructedValue), publicKey, false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
+                        if (replicationListener != null) {
+                        	replicationListener.dataInserted(
+                                    entry.getKey().locationKey());
+                        }
                     }
 
                 } else {
                     // copy
                 	LOG.debug("handle copy {}", entry.getKey());
                     //TODO: domain protection?, make the flags configurable
-                    Enum<?> status = peerBean().storageLayer().put(entry.getKey(), entry.getValue(),
+                    Enum<?> status = storageLayer.put(entry.getKey(), entry.getValue(),
                             message.publicKey(0), false, false);
                     if (status == PutStatus.OK) {
                         retVal.add(entry.getKey());
+                        if (replicationListener != null) {
+                        	replicationListener.dataInserted(
+                                    entry.getKey().locationKey());
+                        }
                     }
-
-                }
-                if (peerBean().replicationStorage() != null) {
-                    peerBean().replicationStorage().updateAndNotifyResponsibilities(
-                            entry.getKey().locationKey());
                 }
             }
         }

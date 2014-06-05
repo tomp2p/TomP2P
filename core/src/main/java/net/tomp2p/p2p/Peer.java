@@ -36,6 +36,7 @@ import net.tomp2p.p2p.builder.BroadcastBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.p2p.builder.SendDirectBuilder;
+import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.BroadcastRPC;
@@ -43,6 +44,7 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PingRPC;
+import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
 //import net.tomp2p.rpc.TaskRPC;
 
@@ -84,6 +86,7 @@ public class Peer {
 
     // RPC
     private PingRPC pingRCP;
+    private QuitRPC quitRPC;
     private NeighborRPC neighborRPC;
     private DirectDataRPC directDataRPC;
     private BroadcastRPC broadcastRPC;
@@ -120,8 +123,20 @@ public class Peer {
         return pingRCP;
     }
 
-    public Peer pingRPC(PingRPC handshakeRPC) {
-        this.pingRCP = handshakeRPC;
+    public Peer pingRPC(PingRPC pingRCP) {
+        this.pingRCP = pingRCP;
+        return this;
+    }
+    
+    public QuitRPC quitRPC() {
+    	if (quitRPC == null) {
+            throw new RuntimeException("Not enabled, please enable this RPC in PeerMaker");
+        }
+        return quitRPC;    
+    }
+    
+    public Peer quitRPC(QuitRPC quitRPC) {
+    	this.quitRPC = quitRPC;
         return this;
     }
 
@@ -264,6 +279,15 @@ public class Peer {
     public BootstrapBuilder bootstrap() {
         return new BootstrapBuilder(this);
     }
+    
+    /**
+	 * Sends a friendly shutdown message to my close neighbors in the DHT.
+	 * 
+	 * @return A builder for shutdown that runs asynchronous.
+	 */
+    public ShutdownBuilder announceShutdown() {
+        return new ShutdownBuilder(this);
+    }
 
     public PingBuilder ping() {
         return new PingBuilder(this);
@@ -278,7 +302,7 @@ public class Peer {
     }
 
     /**
-     * Shuts down everything. TODO: test in ExampleDirectReplication, when the direct replication was not yet shut down.
+     * Shuts down everything.
      * 
      * @return The future, when shutdown is completed
      */
@@ -329,4 +353,6 @@ public class Peer {
 		automaticFutures.remove(automaticFuture);
 		return this;
 	}
+
+	
 }

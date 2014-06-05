@@ -63,7 +63,7 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
@@ -97,7 +97,7 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
@@ -131,7 +131,7 @@ public class TestRealPing {
         ChannelCreator cc = null;
         try {
             PeerAddress pa = new PeerAddress(Number160.ZERO, Inet4Address.getByName(IP), PORT, PORT);
-            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).setEnableMaintenance(false)
+            sender = new PeerBuilder(new Number160("0x9876")).ports(PORT).enableMaintenance(false)
                     .start();
             PingRPC handshake = new PingRPC(sender.peerBean(), sender.connectionBean());
             FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
@@ -163,7 +163,7 @@ public class TestRealPing {
     public void receivePing() throws IOException, InterruptedException {
         Peer recv = null;
         try {
-            recv = new PeerBuilder(new Number160("0x1234")).ports(PORT).setEnableMaintenance(false)
+            recv = new PeerBuilder(new Number160("0x1234")).ports(PORT).enableMaintenance(false)
                     .start();
             /**
              * HandshakeRPC with custom debug output.

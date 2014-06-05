@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.SortedSet;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -38,6 +39,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +57,7 @@ public class NeighborRPC extends DispatchHandler {
 
     public static final int NEIGHBOR_SIZE = 30;
     public static final int NEIGHBOR_LIMIT = 1000;
+    private final List<PeerStatusListener> listeners = new ArrayList<PeerStatusListener>();
     
     public NeighborRPC(final PeerBean peerBean, final ConnectionBean connectionBean) {
         this(peerBean, connectionBean, true);
@@ -72,6 +76,18 @@ public class NeighborRPC extends DispatchHandler {
         if(register) {
             register(RPC.Commands.NEIGHBOR.getNr());
         }
+    }
+    
+    /**
+     * Add a peer status listener that gets notified when a peer is offline.
+     * 
+     * @param listener
+     *            The listener
+     * @return This class
+     */
+    public NeighborRPC addPeerStatusListener(final PeerStatusListener listener) {
+        listeners.add(listener);
+        return this;
     }
 
     /**
@@ -239,10 +255,15 @@ public class NeighborRPC extends DispatchHandler {
             		}
             	}
                 responseMessage.intValue(digestInfo.size());
-            } /*
-               * else if (message.getType() == Type.REQUEST_4) { DigestInfo digestInfo =
-               * peerBean().taskManager().digest(); responseMessage.setInteger(digestInfo.getSize()); }
-               */
+            } 
+            else if (message.type() == Type.REQUEST_4) {
+            	synchronized (listeners) {
+                    for (PeerStatusListener listener : listeners) {
+                        listener.peerFailed(message.sender(), FailReason.Shutdown);
+                    }
+                }
+            }
+              
         }
         responder.response(responseMessage);
     }

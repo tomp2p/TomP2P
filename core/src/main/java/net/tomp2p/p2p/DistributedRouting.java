@@ -121,6 +121,12 @@ public class DistributedRouting {
         });
         return futureDone;
     }
+    
+    public FutureRouting quit(final RoutingBuilder routingBuilder, final ChannelCreator cc) {
+    	Collection<PeerAddress> startPeers = peerBean.peerMap().closePeers(routingBuilder.locationKey(),
+                routingBuilder.parallel() * 2);
+        return routing(startPeers, routingBuilder, Type.REQUEST_4, cc);
+    }
 
     /**
      * Looks for a route to the given locationKey.
@@ -189,7 +195,7 @@ public class DistributedRouting {
         alreadyAsked.add(peerBean.serverPeerAddress());
         potentialHits.add(peerBean.serverPeerAddress());
         // domainkey can be null if we bootstrap
-        if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch) {
+        if (type == Type.REQUEST_2 && routingBuilder.domainKey() != null && !randomSearch && peerBean.digestStorage() !=null) {
             final Number640 from;
             final Number640 to;
             if (routingBuilder.from()!=null && routingBuilder.to()!=null) {
@@ -215,7 +221,7 @@ public class DistributedRouting {
             if (digestBean.size() > 0) {
                 directHits.put(peerBean.serverPeerAddress(), digestBean);
             }
-        } else if (type == Type.REQUEST_3 && !randomSearch) {
+        } else if (type == Type.REQUEST_3 && !randomSearch && peerBean.digestTracker() != null) {
             DigestInfo digestInfo = peerBean.digestTracker().digest(routingBuilder.locationKey(),
                     routingBuilder.domainKey(), routingBuilder.contentKey());
             // we always put ourselfs to the tracker list, so we need to check
@@ -224,17 +230,7 @@ public class DistributedRouting {
                 directHits.put(peerBean.serverPeerAddress(), digestInfo);
             }
         }
-        // with request4 we should never see random search, but just to be very
-        // specific here add the flag
-        // TODO: no task manager in the core
-        // else if (type == Type.REQUEST_4 && !randomSearch) {
-        // DigestInfo digestInfo = peerBean.taskManager().digest();
-        // if (digestInfo.getSize() > 0) {
-        // directHits.put(peerBean.serverPeerAddress(), digestInfo);
-        // }
-        // }
-        // peerAddresses is typically only 0 for routing. However, the user may
-        // bootstrap with an empty List<PeerAddress>, which will then also be 0.
+        
         final FutureRouting futureRouting = new FutureRouting();
         if (peerAddresses.size() == 0) {
             futureRouting.neighbors(directHits, potentialHits, alreadyAsked, routingBuilder.isBootstrap(),
@@ -392,6 +388,8 @@ public class DistributedRouting {
     public PeerMap peerMap() {
         return peerBean.peerMap();
     }
+
+	
 
     /**
      * Cancel the future that causes the underlying futures to cancel as well.

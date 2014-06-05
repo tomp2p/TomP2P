@@ -30,7 +30,6 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -78,8 +77,6 @@ public class BootstrapBuilder {
     private int portTCP = Ports.DEFAULT_PORT;
 
     private RoutingConfiguration routingConfiguration;
-
-    private RequestP2PConfiguration requestP2PConfiguration;
 
     private boolean forceRoutingOnlyToSelf = false;
 
@@ -162,15 +159,6 @@ public class BootstrapBuilder {
         return this;
     }
 
-    public RequestP2PConfiguration requestP2PConfiguration() {
-        return requestP2PConfiguration;
-    }
-
-    public BootstrapBuilder requestP2PConfiguration(RequestP2PConfiguration requestP2PConfiguration) {
-        this.requestP2PConfiguration = requestP2PConfiguration;
-        return this;
-    }
-
     public boolean isForceRoutingOnlyToSelf() {
         return forceRoutingOnlyToSelf;
     }
@@ -205,11 +193,7 @@ public class BootstrapBuilder {
         }
 
         if (routingConfiguration == null) {
-            routingConfiguration = new RoutingConfiguration(5, 10, 2);
-        }
-        if (requestP2PConfiguration == null) {
-            int size = peer.peerBean().peerMap().size() + 1;
-            requestP2PConfiguration = new RequestP2PConfiguration(Math.min(size, 3), 5, 3);
+            routingConfiguration = new RoutingConfiguration(8, 10, 2);
         }
         //
         if (broadcast) {
@@ -233,15 +217,14 @@ public class BootstrapBuilder {
     private FutureBootstrap bootstrap() {
         final FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>> result = new FutureWrappedBootstrap<FutureDone<Pair<FutureRouting,FutureRouting>>>();
         result.bootstrapTo(bootstrapTo);
-        int conn = Math.max(routingConfiguration.parallel(), requestP2PConfiguration.parallel());
+        int conn = routingConfiguration.parallel();
         FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
 
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
                 if (futureChannelCreator.isSuccess()) {
-                    RoutingBuilder routingBuilder = createBuilder(requestP2PConfiguration,
-                            routingConfiguration);
+                    RoutingBuilder routingBuilder = createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
                     FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.distributedRouting().bootstrap(
                             bootstrapTo, routingBuilder, futureChannelCreator.channelCreator());
                     Utils.addReleaseListener(futureChannelCreator.channelCreator(), futureBootstrap);
@@ -254,12 +237,10 @@ public class BootstrapBuilder {
         return result;
     }
 
-    private RoutingBuilder createBuilder(RequestP2PConfiguration requestP2PConfiguration,
-            RoutingConfiguration routingConfiguration) {
+    static RoutingBuilder createBuilder(RoutingConfiguration routingConfiguration, boolean forceRoutingOnlyToSelf) {
         RoutingBuilder routingBuilder = new RoutingBuilder();
         routingBuilder.parallel(routingConfiguration.parallel());
-        routingBuilder.setMaxNoNewInfo(routingConfiguration.maxNoNewInfo(requestP2PConfiguration
-                .minimumResults()));
+        routingBuilder.setMaxNoNewInfo(routingConfiguration.maxNoNewInfoDiff());
         routingBuilder.maxDirectHits(Integer.MAX_VALUE);
         routingBuilder.maxFailures(routingConfiguration.maxFailures());
         routingBuilder.maxSuccess(routingConfiguration.maxSuccess());

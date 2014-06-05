@@ -78,7 +78,7 @@ public class TestReplication {
             fp.awaitUninterruptibly();
             getReplicasCount(locationKey, p1, p2, p3);
             //
-            p3.announceShutdown().start().awaitUninterruptibly();
+            p3.peer().announceShutdown().start().awaitUninterruptibly();
             p3.shutdown().awaitUninterruptibly();
             Thread.sleep(500);
             p3 = new PeerDHT(new PeerBuilder(locationKey).ports(PORT+3).start());
@@ -89,9 +89,9 @@ public class TestReplication {
             p3.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
             getReplicasCount(locationKey, p1, p2, p3);
             Thread.sleep(500);
-            p1.announceShutdown().start().awaitUninterruptibly();
+            p1.peer().announceShutdown().start().awaitUninterruptibly();
             p1.shutdown().awaitUninterruptibly();
-            p2.announceShutdown().start().awaitUninterruptibly();
+            p2.peer().announceShutdown().start().awaitUninterruptibly();
             p2.shutdown().awaitUninterruptibly();
             Thread.sleep(500);
             int count = getReplicasCount(locationKey, p1, p2, p3);
@@ -139,9 +139,9 @@ public class TestReplication {
             fp.awaitUninterruptibly();
             getReplicasCount(locationKey, p1, p2, p3);
             
-            p3.announceShutdown().start().awaitUninterruptibly();
+            p3.peer().announceShutdown().start().awaitUninterruptibly();
             p3.shutdown().awaitUninterruptibly();
-            p1.announceShutdown().start().awaitUninterruptibly();
+            p1.peer().announceShutdown().start().awaitUninterruptibly();
             p1.shutdown().awaitUninterruptibly();
             Thread.sleep(500);
             getReplicasCount(locationKey, p1, p2, p3);

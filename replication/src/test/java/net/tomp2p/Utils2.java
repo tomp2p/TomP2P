@@ -143,7 +143,7 @@ public class Utils2 {
         PeerDHT[] peers = new PeerDHT[nrOfPeers];
         
         PeerBuilder pm = new PeerBuilder(new Number160(rnd))
-                   .ports(port).setEnableMaintenance(maintenance)
+                   .ports(port).enableMaintenance(maintenance)
                    .externalBindings(bindings);
         
         
@@ -160,7 +160,7 @@ public class Utils2 {
         } 
 
         for (int i = 1; i < nrOfPeers; i++) {
-            pm = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(maintenance)
+            pm = new PeerBuilder(new Number160(rnd)).enableMaintenance(maintenance)
                         .externalBindings(bindings).masterPeer(peers[0].peer());
             peers[i] = new PeerDHT(pm.start());
             
@@ -184,9 +184,9 @@ public class Utils2 {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-        peers[0] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).ports(port).start();
+        peers[0] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).ports(port).start();
         for (int i = 1; i < nrOfPeers; i++) {
-            peers[i] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).masterPeer(peers[0])
+            peers[i] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).masterPeer(peers[0])
                     .start();
         }
         System.err.println("non-maintenance peers created.");

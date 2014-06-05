@@ -194,11 +194,11 @@ public class AutomaticReplicationTest {
         automaticReplication.reliability(reliability);
         automaticReplication.start();
 
-        peers[3].announceShutdown().start().awaitUninterruptibly();
+        peers[3].peer().announceShutdown().start().awaitUninterruptibly();
         peers[3].shutdown().awaitUninterruptibly();
-        peers[6].announceShutdown().start().awaitUninterruptibly();
+        peers[6].peer().announceShutdown().start().awaitUninterruptibly();
         peers[6].shutdown().awaitUninterruptibly();
-        peers[8].announceShutdown().start().awaitUninterruptibly();
+        peers[8].peer().announceShutdown().start().awaitUninterruptibly();
         peers[8].shutdown().awaitUninterruptibly();
         Thread.sleep(1000);
 

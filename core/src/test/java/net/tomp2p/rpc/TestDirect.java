@@ -275,8 +275,8 @@ public class TestDirect {
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
-            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).setEnableMaintenance(false).ports(2424).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
-            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).setEnableMaintenance(false).ports(8088).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).enableMaintenance(false).ports(2424).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
+            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).enableMaintenance(false).ports(8088).channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             recv1.objectDataReply(new ObjectDataReply() {
                 @Override
                 public Object reply(PeerAddress sender, Object request) throws Exception {
@@ -335,9 +335,9 @@ public class TestDirect {
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
-            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).setEnableMaintenance(false)
+            sender = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false)
                     .channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
-            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).setEnableMaintenance(false)
+            recv1 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false)
             		.channelClientConfiguration(ccc).channelServerConfiguration(csc).start();
             recv1.objectDataReply(new ObjectDataReply() {
                 @Override

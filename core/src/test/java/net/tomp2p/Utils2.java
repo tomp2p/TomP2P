@@ -139,12 +139,12 @@ public class Utils2 {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerBuilder(peerId)
-                    .ports(port).setEnableMaintenance(maintenance)
+                    .ports(port).enableMaintenance(maintenance)
                     .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
                    .peerMap(peerMap).ports(port).start();
         }
 
@@ -154,11 +154,11 @@ public class Utils2 {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerBuilder(peerId)
                         .masterPeer(peers[0])
-                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
-                peers[i] = new PeerBuilder(peerId).setEnableMaintenance(maintenance)
+                peers[i] = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .externalBindings(bindings).peerMap(peerMap).masterPeer(peers[0])
                         .start();
             }
@@ -186,9 +186,9 @@ public class Utils2 {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
         Peer[] peers = new Peer[nrOfPeers];
-        peers[0] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).ports(port).start();
+        peers[0] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).ports(port).start();
         for (int i = 1; i < nrOfPeers; i++) {
-            peers[i] = new PeerBuilder(new Number160(rnd)).setEnableMaintenance(false).masterPeer(peers[0])
+            peers[i] = new PeerBuilder(new Number160(rnd)).enableMaintenance(false).masterPeer(peers[0])
                     .start();
         }
         System.err.println("non-maintenance peers created.");

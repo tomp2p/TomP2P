@@ -31,7 +31,7 @@ public class ExampleRelay {
         if (args.length == 0) {
             //bootstrap node
             Bindings b = new Bindings();
-            Peer peer = new PeerBuilder(Number160.createHash("boot")).setEnableMaintenance(false).ports(PORT).bindings(b).start();
+            Peer peer = new PeerBuilder(Number160.createHash("boot")).enableMaintenance(false).ports(PORT).bindings(b).start();
             System.err.println("bootstrap peer id: " + peer.peerAddress().peerId());
             new PeerNAT(peer);
             System.err.println("bootstrap peer is running");
@@ -42,7 +42,7 @@ public class ExampleRelay {
         } else if (args.length == 3) {
             //put
             int port = (rnd.nextInt() % 10000) + 10000;
-            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash(args[1])).ports(port).setEnableMaintenance(false).start());
+            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash(args[1])).ports(port).enableMaintenance(false).start());
             System.err.println("put peer id: " + peer.peerAddress().peerId());
             PeerNAT pnat = new PeerNAT(peer.peer());
 
@@ -66,7 +66,7 @@ public class ExampleRelay {
         } else if (args.length == 2) {
             //get
             int port = (rnd.nextInt() % 10000) + 10000;
-            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash("bla")).setEnableMaintenance(false).ports(port).start());
+            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash("bla")).enableMaintenance(false).ports(port).start());
             System.err.println("get peer id: " + peer.peerAddress().peerId());
             System.err.println("hash:" + Number160.createHash(args[1]));
             PeerNAT pnat = new PeerNAT(peer.peer());

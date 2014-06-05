@@ -67,14 +67,10 @@ public class DistributedHashTable {
 
     private final DirectDataRPC directDataRPC;
 
-    private final QuitRPC quitRPC;
-
-    public DistributedHashTable(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC,
-            QuitRPC quitRPC) {
+    public DistributedHashTable(DistributedRouting routing, StorageRPC storeRCP, DirectDataRPC directDataRPC) {
         this.routing = routing;
         this.storeRCP = storeRCP;
         this.directDataRPC = directDataRPC;
-        this.quitRPC = quitRPC;
     }
 
     public FuturePut add(final AddBuilder builder) {
@@ -544,60 +540,6 @@ public class DistributedHashTable {
 			
         });
         return futureDHT;
-    }
-
-    /**
-     * Send a friendly shutdown message to your close neighbors.
-     * 
-     * @param connectionReservation
-     *            The connection reservation The routing configuration
-     * @param builder
-     *            All other options
-     * @return future shutdown
-     */
-    public FutureShutdown quit(final ShutdownBuilder builder) {
-        final FutureShutdown futureShutdown = new FutureShutdown(builder);
-
-        builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-            @Override
-            public void operationComplete(final FutureChannelCreator future) throws Exception {
-                if (future.isSuccess()) {
-                    // content key and domain key are not important when sending a friendly shutdown
-
-                    // no need for routing, we can take the close peers from our map, in addition offer a way to add
-                    // peers to notify by the end user.
-                    NavigableSet<PeerAddress> closePeers = routing.peerMap().closePeers(20);
-                    closePeers = builder.filter(closePeers);
-
-                    parallelRequests(builder.requestP2PConfiguration(), closePeers, futureShutdown, false,
-                            future.channelCreator(), new OperationMapper<FutureShutdown>() {
-
-                                @Override
-                                public FutureResponse create(final ChannelCreator channelCreator,
-                                        final PeerAddress address) {
-                                    return quitRPC.quit(address, builder, channelCreator);
-                                }
-
-                                @Override
-                                public void response(final FutureShutdown future) {
-                                    future.done();
-                                }
-
-                                // its fire and forget, so don't bother checking the future success
-                                @Override
-                                public void interMediateResponse(final FutureResponse future) {
-                                    // contactedPeers can be accessed by several threads
-                                    futureShutdown.report(future.request().recipient(),
-                                            future.isSuccess());
-                                }
-                            });
-                    futureShutdown.addFutureDHTReleaseListener(future.channelCreator());
-                } else {
-                    futureShutdown.failed(future);
-                }
-            }
-        });
-        return futureShutdown;
     }
 
     /**

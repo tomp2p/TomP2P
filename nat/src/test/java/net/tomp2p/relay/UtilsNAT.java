@@ -64,14 +64,14 @@ public class UtilsNAT {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	master = new PeerBuilder(peerId)
-                    .ports(port).setEnableMaintenance(maintenance)
+                    .ports(port).enableMaintenance(maintenance)
                     .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
             peers[0] = new PeerDHT(master); 
             
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-        	master = new PeerBuilder(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+        	master = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
                     .peerMap(peerMap).ports(port).start();
         	peers[0] = new PeerDHT(master); 
         }
@@ -82,12 +82,12 @@ public class UtilsNAT {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 Peer peer = new PeerBuilder(peerId)
                         .masterPeer(master)
-                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
                 peers[i] = new PeerDHT(peer); 
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
-            	Peer peer = new PeerBuilder(peerId).setEnableMaintenance(maintenance)
+            	Peer peer = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .externalBindings(bindings).peerMap(peerMap).masterPeer(master)
                         .start();
                 peers[i] = new PeerDHT(peer); 
@@ -154,12 +154,12 @@ public class UtilsNAT {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerBuilder(peerId)
-                    .ports(port).setEnableMaintenance(maintenance)
+                    .ports(port).enableMaintenance(maintenance)
                     .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId).setEnableMaintenance(maintenance).externalBindings(bindings)
+            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
                    .peerMap(peerMap).ports(port).start();
         }
 
@@ -169,11 +169,11 @@ public class UtilsNAT {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerBuilder(peerId)
                         .masterPeer(peers[0])
-                        .setEnableMaintenance(maintenance).setEnableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
-                peers[i] = new PeerBuilder(peerId).setEnableMaintenance(maintenance)
+                peers[i] = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .externalBindings(bindings).peerMap(peerMap).masterPeer(peers[0])
                         .start();
             }

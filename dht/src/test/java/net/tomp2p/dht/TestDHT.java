@@ -28,6 +28,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
@@ -1306,38 +1307,7 @@ public class TestDHT {
 		}
 	}
 
-	/**
-	 * Test the quit messages if they set a peer as offline.
-	 * 
-	 * @throws Exception .
-	 */
-	@Test
-	public void testQuit() throws Exception {
-		PeerDHT master = null;
-		try {
-			// setup
-			final int nrPeers = 200;
-			final int port = 4001;
-			PeerDHT[] peers = UtilsDHT2.createNodes(nrPeers, rnd, port);
-			master = peers[0];
-			UtilsDHT2.perfectRouting(peers);
-			// do testing
-			final int peerTest = 10;
-			System.err.println("counter: " + countOnline(peers, peers[peerTest].peerAddress()));
-			FutureShutdown futureShutdown = peers[peerTest].announceShutdown().start();
-			futureShutdown.awaitUninterruptibly();
-			// we need to wait a bit, since the quit RPC is a fire and forget
-			// and we return immediately
-			Thread.sleep(2000);
-			int counter = countOnline(peers, peers[peerTest].peerAddress());
-			System.err.println("counter: " + counter);
-			Assert.assertEquals(180, nrPeers - 20);
-		} finally {
-			if (master != null) {
-				master.shutdown().await();
-			}
-		}
-	}
+	
 
 	// TODO: make this work
 	@Test
@@ -1353,9 +1323,9 @@ public class TestDHT {
 			// only for the connection, we may run into
 			// too many open files
 			PeerBuilder masterMaker = new PeerBuilder(new Number160(rnd)).ports(4001);
-			master = masterMaker.setEnableMaintenance(false).start();
+			master = masterMaker.enableMaintenance(false).start();
 			PeerBuilder slaveMaker = new PeerBuilder(new Number160(rnd)).ports(4002);
-			slave = slaveMaker.setEnableMaintenance(false).start();
+			slave = slaveMaker.enableMaintenance(false).start();
 
 			System.err.println("peers up and running");
 
@@ -1480,48 +1450,7 @@ public class TestDHT {
 		}
 	}
 	
-	@Test
-	public void testShutdown() throws Exception {
-		PeerDHT master = null;
-		try {
-			// setup
-			Random rnd = new Random();
-			final int nrPeers = 10;
-			final int port = 4001;
-			// Peer[] peers = Utils2.createNodes(nrPeers, rnd, port);
-			// Peer[] peers =
-			// createAndAttachNodesWithReplicationShortId(nrPeers, port);
-			// Peer[] peers = createNodes(nrPeers, rnd, port, null, true);
-			PeerDHT[] peers = createNodesWithShortId(nrPeers, rnd, port, null);
-			master = peers[0];
-			UtilsDHT2.perfectRouting(peers);
-			// do testing
-
-			final int peerTest = 3;
-			peers[peerTest].put(Number160.createHash(1000)).data(new Data("Test")).start().awaitUninterruptibly();
-
-			for (int i = 0; i < nrPeers; i++) {
-				for (Data d : peers[i].storageLayer().get().values())
-					System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
-			}
-
-			FutureShutdown futureShutdown = peers[peerTest].announceShutdown().start();
-			futureShutdown.awaitUninterruptibly();
-			// we need to wait a bit, since the quit RPC is a fire and forget
-			// and we return immediately
-			Thread.sleep(2000);
-			peers[peerTest].shutdown().awaitUninterruptibly();
-			System.out.println("peer " + peerTest + " is shutdown");
-			for (int i = 0; i < nrPeers; i++) {
-				for (Data d : peers[i].storageLayer().get().values())
-					System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
-			}
-		} finally {
-			if (master != null) {
-				master.shutdown().await();
-			}
-		}
-	}
+	
 	
 	@Test
 	public void removeFromToTest3() throws IOException, ClassNotFoundException {
@@ -1574,6 +1503,49 @@ public class TestDHT {
 		p1.shutdown().awaitUninterruptibly();
 		p2.shutdown().awaitUninterruptibly();
 	}
+	
+	@Test
+	public void testShutdown() throws Exception {
+		PeerDHT master = null;
+		try {
+			// setup
+			Random rnd = new Random();
+			final int nrPeers = 10;
+			final int port = 4001;
+			// Peer[] peers = Utils2.createNodes(nrPeers, rnd, port);
+			// Peer[] peers =
+			// createAndAttachNodesWithReplicationShortId(nrPeers, port);
+			// Peer[] peers = createNodes(nrPeers, rnd, port, null, true);
+			PeerDHT[] peers = createNodesWithShortId(nrPeers, rnd, port, null);
+			master = peers[0];
+			UtilsDHT2.perfectRouting(peers);
+			// do testing
+
+			final int peerTest = 3;
+			peers[peerTest].put(Number160.createHash(1000)).data(new Data("Test")).start().awaitUninterruptibly();
+
+			for (int i = 0; i < nrPeers; i++) {
+				for (Data d : peers[i].storageLayer().get().values())
+					System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
+			}
+
+			FutureDone<Void> futureShutdown = peers[peerTest].peer().announceShutdown().start();
+			futureShutdown.awaitUninterruptibly();
+			// we need to wait a bit, since the quit RPC is a fire and forget
+			// and we return immediately
+			Thread.sleep(2000);
+			peers[peerTest].shutdown().awaitUninterruptibly();
+			System.out.println("peer " + peerTest + " is shutdown");
+			for (int i = 0; i < nrPeers; i++) {
+				for (Data d : peers[i].storageLayer().get().values())
+					System.out.println("peer[" + i + "]: " + d.object().toString() + " ");
+			}
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
 
 	public static PeerDHT[] createNodesWithShortId(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture) throws Exception {
 		if (nrOfPeers < 1) {
@@ -1604,16 +1576,6 @@ public class TestDHT {
 		}
 		System.err.println("peers created.");
 		return peers;
-	}
-
-	private static int countOnline(PeerDHT[] peers, PeerAddress peerAddress) {
-		int counter = 0;
-		for (PeerDHT peer : peers) {
-			if (peer.peerBean().peerMap().contains(peerAddress)) {
-				counter++;
-			}
-		}
-		return counter;
 	}
 
 	private void send2(final PeerDHT p1, final PeerDHT p2, final ByteBuf toStore1, final int count) throws IOException {

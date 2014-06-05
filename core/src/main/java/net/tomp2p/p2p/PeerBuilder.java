@@ -50,6 +50,7 @@ import net.tomp2p.rpc.DefaultBloomfilterFactory;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
+import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
@@ -123,6 +124,7 @@ public class PeerBuilder {
 	private boolean enableBroadcast = true;
 	private boolean enableRouting = true;
 	private boolean enableMaintenance = true;
+	private boolean enableQuitRPC = true;
 
 
 	/**
@@ -225,8 +227,14 @@ public class PeerBuilder {
 		//Set/enable RPC
 
 		if (isEnableHandShakeRPC()) {
-			PingRPC handshakeRCP = new PingRPC(peerBean, connectionBean);
-			peer.pingRPC(handshakeRCP);
+			PingRPC pingRPC = new PingRPC(peerBean, connectionBean);
+			peer.pingRPC(pingRPC);
+		}
+		
+		if (isEnableQuitRPC()) {
+			QuitRPC quitRPC = new QuitRPC(peerBean, connectionBean);
+			quitRPC.addPeerStatusListener(peerMap);
+			peer.quitRPC(quitRPC);
 		}
 
 		if (isEnableNeighborRPC()) {
@@ -532,7 +540,7 @@ public class PeerBuilder {
 		return enableDirectDataRPC;
 	}
 
-	public PeerBuilder setEnableDirectDataRPC(boolean enableDirectDataRPC) {
+	public PeerBuilder enableDirectDataRPC(boolean enableDirectDataRPC) {
 		this.enableDirectDataRPC = enableDirectDataRPC;
 		return this;
 	}
@@ -550,10 +558,20 @@ public class PeerBuilder {
 		return enableMaintenance;
 	}
 
-	public PeerBuilder setEnableMaintenance(boolean enableMaintenance) {
+	public PeerBuilder enableMaintenance(boolean enableMaintenance) {
 		this.enableMaintenance = enableMaintenance;
 		return this;
 	}
+	
+	public boolean isEnableQuitRPC() {
+		return enableQuitRPC;
+	}
+
+	public PeerBuilder enableQuitRPC(boolean enableQuitRPC) {
+		this.enableQuitRPC = enableQuitRPC;
+		return this;
+	}
+	
 
 	public boolean isEnableBroadcast() {
 		return enableBroadcast;

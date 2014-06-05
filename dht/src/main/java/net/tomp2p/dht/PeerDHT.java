@@ -11,7 +11,6 @@ public class PeerDHT {
 
 	final private Peer peer;
 	final private StorageRPC storageRPC;
-	final private QuitRPC quitRCP;
 	final private DistributedHashTable dht;
 	final private StorageLayer storageLayer;
 
@@ -25,13 +24,12 @@ public class PeerDHT {
 
 	public PeerDHT(Peer peer, StorageLayer storageLayer) {
 		this.peer = peer;
-		this.quitRCP = new QuitRPC(peer.peerBean(), peer.connectionBean());
 		this.storageLayer = storageLayer;
 		this.storageLayer.init(peer.connectionBean().timer(), storageLayer.storageCheckIntervalMillis());
 		this.storageRPC = new StorageRPC(peer.peerBean(), peer.connectionBean(), storageLayer);
-		this.dht = new DistributedHashTable(peer.distributedRouting(), storageRPC, peer.directDataRPC(), quitRCP);
+		this.dht = new DistributedHashTable(peer.distributedRouting(), storageRPC, peer.directDataRPC());
 		peer.peerBean().digestStorage(storageLayer);
-		quitRCP.addPeerStatusListener(peer.peerBean().peerMap());
+		
     }
 
 	public Peer peer() {
@@ -40,10 +38,6 @@ public class PeerDHT {
 
 	public StorageRPC storeRPC() {
 		return storageRPC;
-	}
-
-	public QuitRPC quitRPC() {
-		return quitRCP;
 	}
 
 	public DistributedHashTable distributedHashTable() {
@@ -97,15 +91,6 @@ public class PeerDHT {
 
 	public ParallelRequestBuilder<?> parallelRequest(Number160 locationKey) {
 		return new ParallelRequestBuilder<FutureDHT<?>>(this, locationKey);
-	}
-
-	/**
-	 * Sends a friendly shutdown message to my close neighbors in the DHT.
-	 * 
-	 * @return A builder for shutdown that runs asynchronous.
-	 */
-	public ShutdownBuilder announceShutdown() {
-		return new ShutdownBuilder(this);
 	}
 
 	// ----- convenicence methods ------

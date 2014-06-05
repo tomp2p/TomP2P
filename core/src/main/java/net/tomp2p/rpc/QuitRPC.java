@@ -13,7 +13,7 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.dht;
+package net.tomp2p.rpc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,11 +27,10 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
-import net.tomp2p.rpc.DispatchHandler;
-import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

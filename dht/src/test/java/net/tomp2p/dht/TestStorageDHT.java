@@ -722,8 +722,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).setEnableMaintenance(false).start(), storeSender) ;
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).setEnableMaintenance(false).start(), storeRecv);
+            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false).start(), storeSender) ;
+            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false).start(), storeRecv);
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };

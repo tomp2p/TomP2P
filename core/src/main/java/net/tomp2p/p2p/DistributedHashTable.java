@@ -356,7 +356,11 @@ public class DistributedHashTable {
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
                                                     PeerAddress address) {
-                                                return storeRCP.get(address, builder, channelCreator);
+                                            	if (builder.isGetLatest()) {
+                                            		return storeRCP.getLatest(address, builder, channelCreator);
+                                            	} else {
+                                            		return storeRCP.get(address, builder, channelCreator);
+                                            	}
                                             }
 
                                             @Override

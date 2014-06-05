@@ -272,6 +272,8 @@ public class DistributedHashTable {
                                                 } else if (putBuilder.isPutMeta()) {
                                                 	return storeRCP.putMeta(address, putBuilder,
                                                             channelCreator);
+                                                } else if (putBuilder.isPutConfirm() || putBuilder.isPutReject()) {
+                                                	return storeRCP.putConfirm(address, putBuilder, channelCreator);
                                                 } else {
                                                     return storeRCP.put(address, putBuilder, channelCreator);
                                                 }
@@ -354,7 +356,11 @@ public class DistributedHashTable {
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
                                                     PeerAddress address) {
-                                                return storeRCP.get(address, builder, channelCreator);
+                                            	if (builder.isGetLatest()) {
+                                            		return storeRCP.getLatest(address, builder, channelCreator);
+                                            	} else {
+                                            		return storeRCP.get(address, builder, channelCreator);
+                                            	}
                                             }
 
                                             @Override

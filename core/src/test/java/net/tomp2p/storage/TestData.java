@@ -153,10 +153,10 @@ public class TestData {
     
     @Test
     public void testData7() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
-        Data data = new Data().setFlag1();
+        Data data = new Data().setPrepareFlag();
         Data newData = encodeDecode(data);
         Assert.assertEquals(data, newData);
-        Assert.assertEquals(true, newData.isFlag1());
+        Assert.assertEquals(true, newData.hasPrepareFlag());
     }
     
     @Test

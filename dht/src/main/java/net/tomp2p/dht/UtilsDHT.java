@@ -5,6 +5,8 @@ public class UtilsDHT {
     	if(putBuilder.isPutMeta() && putBuilder.changePublicKey()!=null) {
     		//we only send a marker
     		return 1;
+    	} else if (putBuilder.isPutConfirm() || putBuilder.isPutReject()) {
+    		return 1;
     	} else if(putBuilder.dataMap()!=null) {
             return putBuilder.dataMap().size();
         } else { 

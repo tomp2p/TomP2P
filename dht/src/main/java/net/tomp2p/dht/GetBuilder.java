@@ -50,6 +50,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     private Number640 to;
 
+    private boolean isGetLatest = false;
+
     //
     private boolean all = false;
 
@@ -144,6 +146,20 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     public GetBuilder all() {
         this.all = true;
+        return this;
+    }
+
+    public boolean isGetLatest() {
+        return isGetLatest;
+    }
+
+    public GetBuilder getLates(boolean getLatest) {
+        this.isGetLatest = getLatest;
+        return this;
+    }
+
+    public GetBuilder getLatest() {
+        this.isGetLatest = true;
         return this;
     }
 
@@ -258,6 +274,11 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
         if (evaluationScheme == null) {
             evaluationScheme = new VotingSchemeDHT();
         }
+		if (isGetLatest) {
+			if (contentKey == null) {
+				throw new IllegalArgumentException("Content key must be set.");
+			}
+		}
         return peer.distributedHashTable().get(this);
     }
 }

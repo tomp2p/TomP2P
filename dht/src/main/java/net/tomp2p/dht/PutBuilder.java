@@ -38,7 +38,10 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     private boolean putIfAbsent = false;
     
     private boolean putMeta = false;
-    
+
+    private boolean putConfim = false;
+    private boolean putReject = false;
+
     private PublicKey changePublicKey = null;
 
     public PutBuilder(PeerDHT peer, Number160 locationKey) {
@@ -171,7 +174,25 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         this.putMeta = true;
         return this;
     }
-    
+
+	public boolean isPutConfirm() {
+		return putConfim;
+	}
+
+	public PutBuilder putConfirm() {
+		this.putConfim = true;
+		return this;
+	}
+
+	public boolean isPutReject() {
+		return putReject;
+	}
+
+	public PutBuilder putReject() {
+		this.putReject = true;
+		return this;
+	}
+
     public PutBuilder changePublicKey(PublicKey changePublicKey) {
     	this.changePublicKey = changePublicKey;
     	this.putMeta = true;
@@ -197,6 +218,18 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
         if (!putMeta && dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
+        }
+        if (!putConfim && dataMap == null && dataMapConvert == null) {
+            throw new IllegalArgumentException(
+                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
+        }
+        if (!putReject && dataMap == null && dataMapConvert == null) {
+            throw new IllegalArgumentException(
+                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
+        }
+        if (putConfim && putReject) {
+            throw new IllegalArgumentException(
+                    "You can't confirm and reject a put.");
         }
         if (locationKey == null) {
             throw new IllegalArgumentException("You must provide a location key.");

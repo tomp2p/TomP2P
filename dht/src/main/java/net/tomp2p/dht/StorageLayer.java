@@ -19,9 +19,11 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -58,7 +60,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_CONFLICT, NOT_FOUND
+		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND
 	};
 
 	// Hash of public key is always preferred
@@ -160,16 +162,30 @@ public class StorageLayer implements DigestStorage {
 			if (putIfAbsent && contains) {
 				return PutStatus.FAILED_NOT_ABSENT;
 			}
+			
+
+			boolean versionFork = false;
+			for (Number160 bKey: newData.basedOnSet()) {
+				versionFork |= checkForForks(bKey);
+			}
+
 			retVal = backend.put(key, newData);
 			if (retVal) {
 				long expiration = newData.expirationMillis();
 				// handle timeout
 				backend.addTimeout(key, expiration);
 			}
+
+			if (retVal && versionFork) {
+				return PutStatus.VERSION_FORK;
+			} else if (retVal) {
+				return PutStatus.OK;
+			} else {
+				return PutStatus.FAILED;
+			}
 		} finally {
 			dataLock640.unlock(lock);
 		}
-		return retVal ? PutStatus.OK : PutStatus.FAILED;
 	}
 
 	public Pair<Data, Enum<?>> remove(Number640 key, PublicKey publicKey, boolean returnData) {
@@ -201,15 +217,75 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	private Data getInternal(Number640 key) {
-		return backend.get(key);
+		Data data = backend.get(key);
+		if (data != null && !data.hasPrepareFlag()) {
+			return data;
+		} else {
+			return null;
+		}
 	}
 
 	public NavigableMap<Number640, Data> get(Number640 from, Number640 to, int limit, boolean ascending) {
 		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
 		try {
-			return backend.subMap(from, to, limit, ascending);
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
+			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+
+			while (iterator.hasNext()) {
+				Map.Entry<Number640, Data> entry = iterator.next();
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+				} 
+			}
+
+			return tmp;
 		} finally {
 			lock.unlock();
+		}
+	}
+
+	public Map<Number640, Data> getLatestVersion(Number640 from, Number640 to) {
+		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+		try {
+			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, -1, true);
+			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry<Number640, Data> entry = iterator.next();
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+				} 
+			}
+
+			// delete all predecessors
+			Map<Number640, Data> result = new HashMap<Number640, Data>();
+			while (!tmp.isEmpty()) {
+				// first entry is a latest version
+				Entry<Number640, Data> latest = tmp.lastEntry();
+				// store in results list
+				result.put(latest.getKey(), latest.getValue());
+				// delete all predecessors of latest entry
+				deletePredecessors(tmp, latest.getKey());
+			}
+
+			return result;
+		} finally {
+			lock.unlock();
+		}
+	}
+
+	private void deletePredecessors(NavigableMap<Number640, Data> sortedMap, Number640 key) {
+		Data version = sortedMap.remove(key);
+		// check if version has been already deleted
+		if (version == null) {
+			return;
+		}
+		// check if version is initial version
+		if (version.basedOnSet().isEmpty()) {
+			return;
+		}
+		// remove all predecessor versions recursively
+		for (Number160 basedOnKey : version.basedOnSet()) {
+			deletePredecessors(sortedMap, new Number640(key.locationDomainAndContentKey(), basedOnKey));
 		}
 	}
 
@@ -240,6 +316,12 @@ public class StorageLayer implements DigestStorage {
 
 			while (iterator.hasNext()) {
 				Map.Entry<Number640, Data> entry = iterator.next();
+
+				if (entry.getValue().hasPrepareFlag()) {
+					iterator.remove();
+					continue;
+				}
+
 				if (isBloomFilterAnd) {
 					if (contentBloomFilter != null && !contentBloomFilter.contains(entry.getKey().contentKey())) {
 						iterator.remove();
@@ -375,7 +457,9 @@ public class StorageLayer implements DigestStorage {
 		try {
 			Map<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
 			for (Map.Entry<Number640, Data> entry : tmp.entrySet()) {
-				digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+				if (!entry.getValue().hasPrepareFlag()) {
+					digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+				}
 			}
 			return digestInfo;
 		} finally {
@@ -427,7 +511,9 @@ public class StorageLayer implements DigestStorage {
 			try {
 				if (backend.contains(number640)) {
 					Data data = getInternal(number640);
-					digestInfo.put(number640, data.basedOnSet());
+					if (data != null) {
+						digestInfo.put(number640, data.basedOnSet());
+					}
 				}
 			} finally {
 				lock.unlock();
@@ -673,6 +759,52 @@ public class StorageLayer implements DigestStorage {
 	public int storageCheckIntervalMillis() {
 	    return backend.storageCheckIntervalMillis();
     }
-	
-	
+
+	public Enum<?> putConfirm(PublicKey publicKey, Number640 key, Data newData) {
+		boolean found = false;
+		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		try {
+			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+					newData.isProtectedEntry())) {
+				return PutStatus.FAILED_SECURITY;
+			}
+
+			final Data data = backend.get(key);
+			if (data != null) {
+				// remove prepare flag
+				data.prepareFlag(false);
+
+				data.validFromMillis(newData.validFromMillis());
+				data.ttlSeconds(newData.ttlSeconds());
+
+				long expiration = data.expirationMillis();
+				// handle timeout
+				backend.addTimeout(key, expiration);
+				found = backend.put(key, data);
+			}
+		} finally {
+			dataLock640.unlock(lock);
+		}
+		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
+	}
+
+	/**
+	 * Checks for version forks. Iterates through the backend and checks if the
+	 * given based on key appears also as a based on key of another entry.
+	 * 
+	 * @param basedOnKey
+	 * @return <code>true</code> if a version fork is present,
+	 *         <code>false</code> if not
+	 */
+	private boolean checkForForks(Number160 basedOnKey) {
+		NavigableMap<Number640, Data> map = backend.map();
+		for (Entry<Number640, Data> entry: map.entrySet()) {
+			for (Number160 bKey: entry.getValue().basedOnSet()) {
+				if (bKey.equals(basedOnKey)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
 }

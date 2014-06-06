@@ -144,7 +144,8 @@ public class FuturePut extends FutureDHT<FuturePut> {
         Map<Number640, Integer> result = new HashMap<Number640, Integer>();
         for(Map<Number640, Byte> map:rawResult2.values()) {
             for(Map.Entry<Number640, Byte> entry: map.entrySet()) {
-                if(entry.getValue().intValue() == PutStatus.OK.ordinal()) {
+                if(entry.getValue().intValue() == PutStatus.OK.ordinal()
+                		|| entry.getValue().intValue() == PutStatus.VERSION_FORK.ordinal()) {
                     Integer integer = result.get(entry.getKey());
                     if(integer == null) {
                         result.put(entry.getKey(), 1);

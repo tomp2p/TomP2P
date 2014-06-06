@@ -21,7 +21,9 @@ public class RPC {
 		RELAY(),
 		DIGEST_META_VALUES(),
 		SYNC(),
-		SYNC_INFO();
+		SYNC_INFO(),
+		PUT_CONFIRM(),
+		GET_LATEST();
 	
 	public byte getNr() {
 		return (byte) ordinal();

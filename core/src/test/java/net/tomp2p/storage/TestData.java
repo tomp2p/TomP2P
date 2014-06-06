@@ -153,10 +153,10 @@ public class TestData {
     
     @Test
     public void testData7() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException {
-        Data data = new Data().prepareFlag();
+        Data data = new Data().flag1();
         Data newData = encodeDecode(data);
         Assert.assertEquals(data, newData);
-        Assert.assertEquals(true, newData.hasPrepareFlag());
+        Assert.assertEquals(true, newData.isFlag1());
     }
     
     @Test
@@ -239,7 +239,7 @@ public class TestData {
         for (int i = 0; i < 255; i++) {
             data.addBasedOn(new Number160(random));
         }
-        data.setProtectedEntry().publicKey(keyPair1.getPublic());
+        data.publicKey(keyPair1.getPublic());
         Data newData = encodeDecode(data);
 
         Assert.assertEquals(data.object(), newData.object());

@@ -63,11 +63,12 @@ public class Data {
 	// these flags can be modified
 	private boolean basedOnFlag;
 	private boolean signed;
+	private boolean flag1;
 	private boolean ttl;
-	private boolean prepareFlag;
 	private boolean flag2;
 	private boolean protectedEntry;
 	private boolean publicKeyFlag;
+	private boolean prepareFlag;
 
 	// can be added later
 	private SignatureCodec signature;
@@ -124,13 +125,14 @@ public class Data {
 	 */
 	public Data(final int header, final int length) {
 		this.publicKeyFlag = hasPublicKey(header);
-		this.prepareFlag = hasPrepareFlag(header);
+		this.flag1 = isFlag1(header);
 		this.flag2 = isFlag2(header);
 		this.basedOnFlag = hasBasedOn(header);
 		this.signed = isSigned(header);
 		this.ttl = hasTTL(header);
 		this.protectedEntry = isProtectedEntry(header);
 		this.type = type(header);
+		this.prepareFlag = hasPrepareFlag(header);
 
 		if (type == Type.SMALL && length > 255) {
 			throw new IllegalArgumentException("Type is not small");
@@ -380,28 +382,28 @@ public class Data {
 	 */
 	public void encodeHeader(final ByteBuf buf, SignatureFactory signatureFactory) {
 		int header = type.ordinal();
-		if (publicKeyFlag) {
+		if (prepareFlag) {
 			header |= 0x02;
 		}
-		if (prepareFlag) {
+		if (flag1) {
 			header |= 0x04;
 		}
 		if (flag2) {
 			header |= 0x08;
 		}
-		if (protectedEntry) {
+		if (ttl) {
 			header |= 0x10;
 		}
-		if (ttl) {
-			header |= 0x20;
-		}
-		if (signed) {
+		if (signed && publicKeyFlag && protectedEntry) {
+			header |= (0x20 | 0x40);
+		} else if (signed && publicKeyFlag) {
 			header |= 0x40;
+		} else if (publicKeyFlag) {
+			header |= 0x20;
 		}
 		if (basedOnFlag) {
 			header |= 0x80;
 		}
-
 		switch (type) {
 		case SMALL:
 			buf.writeByte(header);
@@ -579,17 +581,17 @@ public class Data {
 		return this;
 	}
 
-	public boolean hasPrepareFlag() {
-		return prepareFlag;
+	public boolean isFlag1() {
+		return flag1;
 	}
 
-	public Data prepareFlag(boolean prepareFlag) {
-		this.prepareFlag = prepareFlag;
+	public Data flag1(boolean flag1) {
+		this.flag1 = flag1;
 		return this;
 	}
 
-	public Data prepareFlag() {
-		this.prepareFlag = true;
+	public Data flag1() {
+		this.flag1 = true;
 		return this;
 	}
 
@@ -606,7 +608,21 @@ public class Data {
 		this.flag2 = true;
 		return this;
 	}
-	
+
+	public boolean hasPrepareFlag() {
+		return prepareFlag;
+	}
+
+	public Data prepareFlag(boolean prepareFlag) {
+		this.prepareFlag = prepareFlag;
+		return this;
+	}
+
+	public Data prepareFlag() {
+		this.prepareFlag = true;
+		return this;
+	}
+
 	public boolean hasPublicKey() {
 		return publicKeyFlag;
 	}
@@ -662,7 +678,7 @@ public class Data {
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
-		data.prepareFlag = prepareFlag;
+		data.flag1 = flag1;
 		data.flag2 = flag2;
 		data.basedOnFlag = basedOnFlag;
 		data.signed = signed;
@@ -670,6 +686,7 @@ public class Data {
 		data.protectedEntry = protectedEntry;
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
+		data.prepareFlag = prepareFlag;
 		return data;
 	}
 	
@@ -681,7 +698,7 @@ public class Data {
 		// set all the flags. Although signature, basedOn, and ttlSeconds set a
 		// flag, they will be overwritten with the data from this class
 		data.publicKeyFlag = publicKeyFlag;
-		data.prepareFlag = prepareFlag;
+		data.flag1 = flag1;
 		data.flag2 = flag2;
 		data.basedOnFlag = basedOnFlag;
 		data.signed = signed;
@@ -689,18 +706,19 @@ public class Data {
 		data.protectedEntry = protectedEntry;
 		data.privateKey = privateKey;
 		data.validFromMillis = validFromMillis;
+		data.prepareFlag = prepareFlag;
 		return data;
 	}
 
 	public static Type type(final int header) {
 		return Type.values()[header & 0x1];
 	}
-	
-	private static boolean hasPublicKey(final int header) {
+
+	private static boolean hasPrepareFlag(final int header) {
 		return (header & 0x02) > 0;
 	}
 
-	private static boolean hasPrepareFlag(final int header) {
+	private static boolean isFlag1(final int header) {
 		return (header & 0x04) > 0;
 	}
 
@@ -708,16 +726,22 @@ public class Data {
 		return (header & 0x08) > 0;
 	}
 
-	private static boolean isProtectedEntry(final int header) {
+	private static boolean hasTTL(final int header) {
 		return (header & 0x10) > 0;
 	}
 
-	private static boolean hasTTL(final int header) {
-		return (header & 0x20) > 0;
+	// TODO
+
+	private static boolean hasPublicKey(final int header) {
+		return ((header >> 5) & (0x01 | 0x02)) > 0;
+	}
+
+	private static boolean isProtectedEntry(final int header) {
+		return ((header >> 5) & (0x01 | 0x02)) > 2;
 	}
 
 	private static boolean isSigned(final int header) {
-		return (header & 0x40) > 0;
+		return ((header >> 5) & (0x01 | 0x02)) > 1;
 	}
 
 	private static boolean hasBasedOn(final int header) {
@@ -776,8 +800,9 @@ public class Data {
 		bs.set(2, basedOnFlag);
 		bs.set(3, protectedEntry);
 		bs.set(4, publicKeyFlag);
-		bs.set(5, prepareFlag);
+		bs.set(5, flag1);
 		bs.set(6, flag2);
+		bs.set(7, prepareFlag);
 		int hashCode = bs.hashCode() ^ ttlSeconds ^ type.ordinal() ^ length;
 		for (Number160 basedOn : basedOnSet) {
 			hashCode = hashCode ^ basedOn.hashCode();
@@ -798,7 +823,7 @@ public class Data {
 		//ignore ttl -> it's still the same data even if ttl is different
 		if (d.signed != signed  || d.basedOnFlag != basedOnFlag 
 				|| d.protectedEntry != protectedEntry || d.publicKeyFlag != publicKeyFlag 
-				|| prepareFlag!=d.prepareFlag || flag2!=d.flag2) {
+				|| flag1!=d.flag1 || flag2!=d.flag2 || prepareFlag!=d.prepareFlag) {
 			return false;
 		}
 		if (d.type != type || d.length != length) {

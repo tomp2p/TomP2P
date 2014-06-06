@@ -730,8 +730,6 @@ public class Data {
 		return (header & 0x10) > 0;
 	}
 
-	// TODO
-
 	private static boolean hasPublicKey(final int header) {
 		return ((header >> 5) & (0x01 | 0x02)) > 0;
 	}

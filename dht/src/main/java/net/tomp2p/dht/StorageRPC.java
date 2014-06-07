@@ -292,12 +292,12 @@ public class StorageRPC extends DispatchHandler {
 		}
 
 		final Type type;
-		if (putBuilder.isPutConfirm()) {
-			// confirm prepared/temporary put
-			type = Type.REQUEST_2;
-		} else {
+		if (putBuilder.isPutReject()) {
 			// reject prepared/temporary put
 			type = Type.REQUEST_1;
+		} else {
+			// confirm prepared/temporary put
+			type = Type.REQUEST_2;
 		}
 
 		final Message message = createMessage(remotePeer, RPC.Commands.PUT_CONFIRM.getNr(), type);
@@ -873,18 +873,11 @@ public class StorageRPC extends DispatchHandler {
 		final Number160 domainKey = message.key(1);
 		final Number160 contentKey = message.key(2);
 
-		final Map<Number640, Data> result = doGetLatest(locationKey, domainKey, contentKey);
+		Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
+		final Map<Number640, Data> result = storageLayer.getLatestVersion(key);
+		
 		responseMessage.setDataMap(new DataMap(result));
 		return responseMessage;
-	}
-
-	private Map<Number640, Data> doGetLatest(final Number160 locationKey, final Number160 domainKey,
-			final Number160 contentKey) {
-		final Map<Number640, Data> result;
-		Number640 from = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
-		Number640 to = new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE);
-		result = storageLayer.getLatestVersion(from, to);
-		return result;
 	}
 
     private Message handleDigest(final Message message, final Message responseMessage) {

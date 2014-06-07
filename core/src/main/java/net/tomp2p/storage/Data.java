@@ -445,13 +445,19 @@ public class Data {
 		buffer.transferTo(buf);
 		return buffer.alreadyTransferred() == length();
 	}
-
+	
 	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		encodeDone(buf, signatureFactory, null);
+	}
+
+	public void encodeDone(final ByteBuf buf, SignatureFactory signatureFactory, PrivateKey messagePrivateKey) throws InvalidKeyException, SignatureException, IOException {
 		if (signed) {
-			if (signature == null && privateKey == null) {
-				throw new IllegalArgumentException("you need to sign the data object first and add a public key!");
-			} else if(privateKey != null) {
+			if(signature == null && privateKey != null) {
 				signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
+			} else if (signature == null && messagePrivateKey != null) {
+				signature = signatureFactory.sign(messagePrivateKey, buffer.toByteBuf());
+			} else if (signature == null) {
+				throw new IllegalArgumentException("you need a private key from somewhere");
 			}
 			signature.write(buf);
 		}
@@ -474,39 +480,81 @@ public class Data {
 	    return this;
     }
 	
-	public Data sign(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public Data signNow(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(keyPair, signatureFactory, false);
+	}
+		
+	public Data protectEntryNow(KeyPair keyPair, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(keyPair, signatureFactory, true);
+	}	
+	
+	private Data signNow(KeyPair keyPair, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
 			this.signature = signatureFactory.sign(keyPair.getPrivate(), buffer.toByteBuf());
 			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
+			this.protectedEntry = protectedEntry;
 		}
 		return this;
 	}
+	
+	public Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(privateKey, signatureFactory, false);
+	}
+		
+	public Data protectEntryNow(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		return signNow(privateKey, signatureFactory, true);
+	}	
 
-	public Data sign(PrivateKey privateKey, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	private Data signNow(PrivateKey privateKey, SignatureFactory signatureFactory, boolean protectedEntry) throws InvalidKeyException, SignatureException, IOException {
 		if (this.signature == null) {
 			this.signed = true;
 			this.signature = signatureFactory.sign(privateKey, buffer.toByteBuf());
-		}
-		return this;
-	}
-	
-	public Data lazySign(KeyPair keyPair) {
-		if (this.signature == null) {
-			this.signed = true;
-			this.privateKey = keyPair.getPrivate();
-			this.publicKey = keyPair.getPublic();
 			this.publicKeyFlag = true;
+			this.protectedEntry = protectedEntry;
 		}
 		return this;
 	}
 	
-	public Data lazySign(PrivateKey privateKey) {
-		if (this.signature == null) {
-			this.signed = true;
-			this.privateKey = privateKey;
-		}
+	public Data sign(KeyPair keyPair) {
+		return sign(keyPair, false);
+	}
+	
+	public Data protectEntry(KeyPair keyPair) {
+		return sign(keyPair, true);
+	}
+	
+	private Data sign(KeyPair keyPair, boolean protectedEntry) {
+		this.signed = true;
+		this.privateKey = keyPair.getPrivate();
+		this.publicKey = keyPair.getPublic();
+		this.publicKeyFlag = true;
+		this.protectedEntry = protectedEntry;
+		return this;
+	}
+	
+	public Data sign() {
+		return sign((PrivateKey)null, false);
+	}
+	
+	public Data sign(PrivateKey privateKey) {
+		return sign(privateKey, false);
+	}
+	
+	public Data protectEntry() {
+		return sign((PrivateKey)null, true);
+	}
+		
+	public Data protectEntry(PrivateKey privateKey) {
+		return sign(privateKey, true);
+	}	
+	
+	private Data sign(PrivateKey privateKey, boolean protectedEntry) {
+		this.signed = true;
+		this.privateKey = privateKey;
+		this.publicKeyFlag = true;
+		this.protectedEntry = protectedEntry;
 		return this;
 	}
 
@@ -561,23 +609,12 @@ public class Data {
 	
 	public Data signed(boolean signed) {
 		this.signed = signed;
+		this.publicKeyFlag = signed;
 		return this;
 	}
 	
 	public Data signed() {
-		this.signed = true;
-		return this;
-	}
-
-	public Data protectedEntry(boolean protectedEntry) {
-		this.protectedEntry = protectedEntry;
-		this.publicKeyFlag = protectedEntry;
-		return this;
-	}
-
-	public Data setProtectedEntry() {
-		protectedEntry = true;
-		publicKeyFlag = true;
+		signed(true);
 		return this;
 	}
 

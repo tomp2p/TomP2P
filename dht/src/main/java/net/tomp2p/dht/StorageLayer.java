@@ -148,7 +148,7 @@ public class StorageLayer implements DigestStorage {
 	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 	        boolean domainProtection) {
 		boolean retVal = false;
-		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
+		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationDomainAndContentKey());
 		try {
 			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 				return PutStatus.FAILED_SECURITY;
@@ -163,11 +163,9 @@ public class StorageLayer implements DigestStorage {
 				return PutStatus.FAILED_NOT_ABSENT;
 			}
 			
-
-			boolean versionFork = false;
-			for (Number160 bKey: newData.basedOnSet()) {
-				versionFork |= checkForForks(bKey);
-			}
+			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
+			tmp.put(key, newData);
+			boolean versionFork = getLatestInternal(tmp).size() > 1;
 
 			retVal = backend.put(key, newData);
 			if (retVal) {
@@ -184,7 +182,7 @@ public class StorageLayer implements DigestStorage {
 				return PutStatus.FAILED;
 			}
 		} finally {
-			dataLock640.unlock(lock);
+			dataLock480.unlock(lock);
 		}
 	}
 
@@ -229,14 +227,7 @@ public class StorageLayer implements DigestStorage {
 		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, limit, ascending);
-			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
-
-			while (iterator.hasNext()) {
-				Map.Entry<Number640, Data> entry = iterator.next();
-				if (entry.getValue().hasPrepareFlag()) {
-					iterator.remove();
-				} 
-			}
+			removePrepared(tmp);
 
 			return tmp;
 		} finally {
@@ -244,36 +235,42 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public Map<Number640, Data> getLatestVersion(Number640 from, Number640 to) {
-		KeyLock<?>.RefCounterLock lock = findAndLock(from, to);
+	public Map<Number640, Data> getLatestVersion(Number640 key) {
+		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationDomainAndContentKey());
 		try {
-			NavigableMap<Number640, Data> tmp = backend.subMap(from, to, -1, true);
-			Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
-			while (iterator.hasNext()) {
-				Map.Entry<Number640, Data> entry = iterator.next();
-				if (entry.getValue().hasPrepareFlag()) {
-					iterator.remove();
-				} 
-			}
-
-			// delete all predecessors
-			Map<Number640, Data> result = new HashMap<Number640, Data>();
-			while (!tmp.isEmpty()) {
-				// first entry is a latest version
-				Entry<Number640, Data> latest = tmp.lastEntry();
-				// store in results list
-				result.put(latest.getKey(), latest.getValue());
-				// delete all predecessors of latest entry
-				deletePredecessors(tmp, latest.getKey());
-			}
-
-			return result;
+			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
+			removePrepared(tmp);
+			return getLatestInternal(tmp);
 		} finally {
-			lock.unlock();
+			dataLock480.unlock(lock);
 		}
 	}
 
-	private void deletePredecessors(NavigableMap<Number640, Data> sortedMap, Number640 key) {
+	private Map<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
+	    // delete all predecessors
+	    Map<Number640, Data> result = new HashMap<Number640, Data>();
+	    while (!tmp.isEmpty()) {
+	    	// first entry is a latest version
+	    	Entry<Number640, Data> latest = tmp.lastEntry();
+	    	// store in results list
+	    	result.put(latest.getKey(), latest.getValue());
+	    	// delete all predecessors of latest entry
+	    	deletePredecessors(latest.getKey(), tmp);
+	    }
+	    return result;
+    }
+
+	private void removePrepared(final NavigableMap<Number640, Data> tmp) {
+		final Iterator<Map.Entry<Number640, Data>> iterator = tmp.entrySet().iterator();
+	    while (iterator.hasNext()) {
+	    	final Map.Entry<Number640, Data> entry = iterator.next();
+	    	if (entry.getValue().hasPrepareFlag()) {
+	    		iterator.remove();
+	    	} 
+	    }
+    }
+
+	private void deletePredecessors(Number640 key, NavigableMap<Number640, Data> sortedMap) {
 		Data version = sortedMap.remove(key);
 		// check if version has been already deleted
 		if (version == null) {
@@ -285,7 +282,7 @@ public class StorageLayer implements DigestStorage {
 		}
 		// remove all predecessor versions recursively
 		for (Number160 basedOnKey : version.basedOnSet()) {
-			deletePredecessors(sortedMap, new Number640(key.locationDomainAndContentKey(), basedOnKey));
+			deletePredecessors(new Number640(key.locationDomainAndContentKey(), basedOnKey), sortedMap);
 		}
 	}
 
@@ -483,13 +480,17 @@ public class StorageLayer implements DigestStorage {
 				if (isBloomFilterAnd) {
 					if (keyBloomFilter == null || keyBloomFilter.contains(entry.getKey().contentKey())) {
 						if (contentBloomFilter == null || contentBloomFilter.contains(entry.getValue().hash())) {
-							digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+							if (!entry.getValue().hasPrepareFlag()) {
+								digestInfo.put(entry.getKey(), entry.getValue().basedOnSet());
+							}
 						}
 					}
 				} else {
 					if (keyBloomFilter == null || !keyBloomFilter.contains(entry.getKey().contentKey())) {
 						if (contentBloomFilter == null || !contentBloomFilter.contains(entry.getValue().hash())) {
-							digestInfo.put(entry.getKey(),entry.getValue().basedOnSet());
+							if (!entry.getValue().hasPrepareFlag()) {
+								digestInfo.put(entry.getKey(),entry.getValue().basedOnSet());
+							}
 						}
 					}
 				}
@@ -786,25 +787,5 @@ public class StorageLayer implements DigestStorage {
 			dataLock640.unlock(lock);
 		}
 		return found ? PutStatus.OK : PutStatus.NOT_FOUND;
-	}
-
-	/**
-	 * Checks for version forks. Iterates through the backend and checks if the
-	 * given based on key appears also as a based on key of another entry.
-	 * 
-	 * @param basedOnKey
-	 * @return <code>true</code> if a version fork is present,
-	 *         <code>false</code> if not
-	 */
-	private boolean checkForForks(Number160 basedOnKey) {
-		NavigableMap<Number640, Data> map = backend.map();
-		for (Entry<Number640, Data> entry: map.entrySet()) {
-			for (Number160 bKey: entry.getValue().basedOnSet()) {
-				if (bKey.equals(basedOnKey)) {
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 }

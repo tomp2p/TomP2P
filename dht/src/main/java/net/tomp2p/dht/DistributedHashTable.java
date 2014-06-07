@@ -255,7 +255,7 @@ public class DistributedHashTable {
                                                 } else if (putBuilder.isPutMeta()) {
                                                 	return storeRCP.putMeta(address, putBuilder,
                                                             channelCreator);
-                                                } else if (putBuilder.isPutConfirm() || putBuilder.isPutReject()) {
+                                                } else if (putBuilder.isPutConfirm()) {
                                                 	return storeRCP.putConfirm(address, putBuilder, channelCreator);
                                                 } else {
                                                     return storeRCP.put(address, putBuilder, channelCreator);

@@ -144,7 +144,7 @@ public class TestData {
         KeyPair keyPair2 = gen.generateKeyPair();
         
     	Data data = new Data(new byte[10000]);
-        data.sign(keyPair1, factory);
+        data.signNow(keyPair1, factory);
         Data newData = encodeDecode(data);
         Assert.assertTrue(newData.verify(keyPair1.getPublic(), factory));
         Assert.assertFalse(newData.verify(keyPair2.getPublic(), factory));
@@ -216,7 +216,7 @@ public class TestData {
             data.addBasedOn(new Number160(random));
         }
         // data.setProtectedEntry().publicKey(gen.generateKeyPair().getPublic());
-        data.sign(keyPair1, factory);
+        data.signNow(keyPair1, factory);
         Data newData = encodeDecode(data);
 
         Assert.assertEquals(data.object(), newData.object());
@@ -239,7 +239,7 @@ public class TestData {
         for (int i = 0; i < 255; i++) {
             data.addBasedOn(new Number160(random));
         }
-        data.publicKey(keyPair1.getPublic());
+        data.protectEntry(keyPair1).publicKey(keyPair1.getPublic());
         Data newData = encodeDecode(data);
 
         Assert.assertEquals(data.object(), newData.object());

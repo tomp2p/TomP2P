@@ -190,6 +190,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 
 	public PutBuilder putReject() {
 		this.putReject = true;
+		this.putConfim = true;
 		return this;
 	}
 
@@ -215,21 +216,9 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             }
             dataMap().put(data().getKey(), data().getValue());
         }
-        if (!putMeta && dataMap == null && dataMapConvert == null) {
+        if (!putMeta && !putConfim && !putReject && dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
-        }
-        if (!putConfim && dataMap == null && dataMapConvert == null) {
-            throw new IllegalArgumentException(
-                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
-        }
-        if (!putReject && dataMap == null && dataMapConvert == null) {
-            throw new IllegalArgumentException(
-                    "You must either set data via setDataMap() or setData(). Cannot add nothing.");
-        }
-        if (putConfim && putReject) {
-            throw new IllegalArgumentException(
-                    "You can't confirm and reject a put.");
         }
         if (locationKey == null) {
             throw new IllegalArgumentException("You must provide a location key.");

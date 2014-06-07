@@ -236,7 +236,7 @@ public class Encoder {
 		}
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
-	    data.encodeDone(buf, signatureFactory);
+	    data.encodeDone(buf, signatureFactory, message.privateKey());
     }
 
     public Message message() {

@@ -70,7 +70,7 @@ public class TestH2H {
 			Data data = new Data(testData);
 			data.ttlSeconds(10000);
 			data.addBasedOn(bKey);
-			data.setProtectedEntry().sign(keyPair, factory);
+			data.protectEntryNow(keyPair, factory);
 			FuturePut futurePut1 = p1.put(lKey).data(cKey, data).domainKey(dKey).versionKey(vKey)
 			        .keyPair(keyPair).start();
 			futurePut1.awaitUninterruptibly();
@@ -108,7 +108,7 @@ public class TestH2H {
 		Number160 cKey = Number160.createHash(contentKey);
 
 		String testData1 = "data1";
-		Data data = new Data(testData1).setProtectedEntry().sign(keyPair1, factory);
+		Data data = new Data(testData1).protectEntryNow(keyPair1, factory);
 
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------
@@ -218,7 +218,7 @@ public class TestH2H {
 		Number160 cKey = Number160.createHash(contentKey);
 
 		String testData1 = "data1";
-		Data data = new Data(testData1).setProtectedEntry().sign(key1, factory);
+		Data data = new Data(testData1).protectEntryNow(key1, factory);
 
 		// put trough peer 1 with key pair
 		// -------------------------------------------------------

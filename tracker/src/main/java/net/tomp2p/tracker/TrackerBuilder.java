@@ -24,7 +24,6 @@ import java.util.Set;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.p2p.builder.Builder;
@@ -40,7 +39,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     protected final static FutureTracker FUTURE_TRACKER_SHUTDOWN = new FutureTracker()
             .failed("Peer is shutting down");
 
-    protected final Peer peer;
+    protected final PeerTracker peer;
 
     protected final Number160 locationKey;
 
@@ -61,7 +60,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     private Collection<PeerFilter> peerFilters;
 
 
-    public TrackerBuilder(Peer peer, Number160 locationKey) {
+    public TrackerBuilder(PeerTracker peer, Number160 locationKey) {
         this.peer = peer;
         this.locationKey = locationKey;
     }
@@ -127,12 +126,12 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
             routingConfiguration = new RoutingConfiguration(5, 10, 2);
         }
         if (trackerConfiguration == null) {
-            int size = peer.peerBean().peerMap().size() + 1;
+            int size = peer.peerMap().size() + 1;
             trackerConfiguration = new TrackerConfiguration(Math.min(size, 3), 5, 3, 30);
         }
         if (futureChannelCreator == null) {
             int conn = Math.max(routingConfiguration.parallel(), trackerConfiguration.parallel());
-            futureChannelCreator = peer.connectionBean().reservation().create(conn, 0);
+            futureChannelCreator = peer.peer().connectionBean().reservation().create(conn, 0);
         }
     }
 
@@ -173,7 +172,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
      * @return Set to true if the message should be signed. For protecting an entry, this needs to be set to true.
      */
     public K sign() {
-        this.keyPair = peer.peerBean().keyPair();
+        this.keyPair = peer.peer().peerBean().keyPair();
         return self;
     }
 

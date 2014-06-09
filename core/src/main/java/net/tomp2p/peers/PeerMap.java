@@ -158,7 +158,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     }
 
     /**
-     * Notifies on insert. Since listeners are never changed, this is thread safe.
+     * Notifies on insert. This is called after the peer has been added to the map.
      * 
      * @param peerAddress
      *            The address of the inserted peers
@@ -452,13 +452,13 @@ public class PeerMap implements PeerStatusListener, Maintainable {
 
     /**
      * Returns close peer from the set to a given key. This method is tread-safe. You can use the returned set as its a
-     * copy of the actual PeerMap and changes in the return set do not affect PeerMap.
+     * copy of the actual PeerMap and changes in the return set do not affect PeerMap. 
      * 
      * @param id
      *            The key that should be close to the keys in the map
      * @param atLeast
      *            The number we want to find at least
-     * @return A sorted set with close peers first in this set.
+     * @return A sorted set with close peers first in this set. Use set.first() to get the closest peer
      */
     public NavigableSet<PeerAddress> closePeers(final Number160 id, final int atLeast) {
     	return closePeers(self(), id, atLeast, peerMapVerified);

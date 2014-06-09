@@ -709,7 +709,7 @@ public class StorageLayer implements DigestStorage {
 		}
 	}
 
-	public void init(ScheduledExecutorService timer, int storageIntervalMillis) {
+	public void start(ScheduledExecutorService timer, int storageIntervalMillis) {
 		timer.scheduleAtFixedRate(new StorageMaintenanceTask(), storageIntervalMillis, storageIntervalMillis,
 		        TimeUnit.MILLISECONDS);
 	}

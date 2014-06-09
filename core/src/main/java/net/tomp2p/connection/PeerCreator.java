@@ -35,7 +35,6 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerStatusListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,10 +87,9 @@ public class PeerCreator {
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
 	        final ChannelServerConficuration channelServerConficuration,
 	        final ChannelClientConfiguration channelClientConfiguration,
-	        final PeerStatusListener[] peerStatusListeners, ScheduledExecutorService timer) throws IOException {
+	        final ScheduledExecutorService timer) throws IOException {
 		//peer bean
 		peerBean = new PeerBean(keyPair);
-		peerBean.peerStatusListeners(peerStatusListeners);
 		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
@@ -102,14 +100,14 @@ public class PeerCreator {
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
 		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,
-		        dispatcher, peerStatusListeners);
+		        dispatcher, peerBean.peerStatusListeners());
 		if(!channelServer.startup()) {
 			shutdownNetty();
 			throw new IOException("Cannot bind to TCP or UDP port.");
 		}
 		
 		//connection bean
-		Sender sender = new Sender(peerId, peerStatusListeners, channelClientConfiguration, dispatcher);
+		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher);
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
 		        channelClientConfiguration, timer);

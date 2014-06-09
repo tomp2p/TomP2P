@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -73,7 +74,7 @@ public final class ChannelServer {
 
 	private final ChannelServerConficuration channelServerConfiguration;
 	private final Dispatcher dispatcher;
-	private final PeerStatusListener[] peerStatusListeners;
+	private final List<PeerStatusListener> peerStatusListeners;
 	
 	private final DropConnectionInboundHandler tcpDropConnectionInboundHandler;
 	private final DropConnectionInboundHandler udpDropConnectionInboundHandler;
@@ -92,7 +93,7 @@ public final class ChannelServer {
 	 *             If device discovery failed.
 	 */
 	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConficuration channelServerConfiguration, final Dispatcher dispatcher,
-	        final PeerStatusListener[] peerStatusListeners) throws IOException {
+	        final List<PeerStatusListener> peerStatusListeners) throws IOException {
 		this.bossGroup = bossGroup;
 		this.workerGroup = workerGroup;
 		this.interfaceBindings = channelServerConfiguration.interfaceBindings();

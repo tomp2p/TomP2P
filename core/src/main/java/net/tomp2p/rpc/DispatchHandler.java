@@ -22,6 +22,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
@@ -140,12 +141,21 @@ public abstract class DispatchHandler {
         // here we need a referral, since we got contacted and we don't know
         // if we can contact the peer with its address. The peer may be
         // behind a NAT
-        peerBean().peerMap().peerFound(requestMessage.sender(), requestMessage.sender());
+        synchronized (peerBean.peerStatusListeners()) {
+			for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+				peerStatusListener.peerFound(requestMessage.sender(), requestMessage.sender());
+			}
+		}
+        
         try {
             handleResponse(requestMessage, peerConnection, sign, responder);
         } catch (Throwable e) {
-            peerBean().peerMap().peerFailed(requestMessage.sender(), FailReason.Exception);
-            LOG.error("Exception in custom handler", e);
+        	synchronized (peerBean.peerStatusListeners()) {
+        		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+					peerStatusListener.peerFailed(requestMessage.sender(), FailReason.Exception);
+				}
+        	}
+        	LOG.error("Exception in custom handler", e);
             responder.failed(Type.EXCEPTION , e.toString());
         }
     }

@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public class Sender {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Sender.class);
-	private final PeerStatusListener[] peerStatusListeners;
+	private final List<PeerStatusListener> peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
 	private final Random random;
@@ -82,7 +82,7 @@ public class Sender {
 	 *            The configuration used to get the signature factory
 	 * @param dispatcher
 	 */
-	public Sender(final Number160 peerId, final PeerStatusListener[] peerStatusListeners,
+	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
 	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
@@ -131,7 +131,6 @@ public class Sender {
 		if(message.sender().isRelayed()) {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
-		
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
@@ -155,6 +154,7 @@ public class Sender {
 
 	/**
 	 * TODO: document what is done here
+	 * 
 	 * @param handler
 	 * @param futureResponse
 	 * @param message
@@ -168,7 +168,7 @@ public class Sender {
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
 	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
 		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(),
-				pingBuilderFactory);
+		        pingBuilderFactory);
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -193,15 +193,15 @@ public class Sender {
 						}
 
 						private void clearInactivePeerSocketAddress(final FutureDone<PeerSocketAddress> futureDone) {
-						    Collection<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
-                            for (PeerSocketAddress psa : message.recipient().peerSocketAddresses()) {
+							Collection<PeerSocketAddress> tmp = new ArrayList<PeerSocketAddress>();
+							for (PeerSocketAddress psa : message.recipient().peerSocketAddresses()) {
 								if (psa != null) {
 									if (!psa.equals(futureDone.object())) {
 										tmp.add(psa);
 									}
 								}
 							}
-                            message.peerSocketAddresses(tmp);
+							message.peerSocketAddresses(tmp);
 						}
 					});
 
@@ -214,23 +214,25 @@ public class Sender {
 
 	/**
 	 * TODO: say what we are doing here
+	 * 
 	 * @param peerSocketAddresses
 	 * @param pingBuilder
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses, PingBuilderFactory pingBuilderFactory) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses,
+	        PingBuilderFactory pingBuilderFactory) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
 		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.size()];
 		int index = 0;
 		for (PeerSocketAddress psa : peerSocketAddresses) {
-            if (psa != null) {
-                InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
-                PingBuilder pingBuilder = pingBuilderFactory.create();
-                forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress())
-                        .port(inetSocketAddress.getPort()).start();
-            }
-        }
+			if (psa != null) {
+				InetSocketAddress inetSocketAddress = PeerSocketAddress.createSocketUDP(psa);
+				PingBuilder pingBuilder = pingBuilderFactory.create();
+				forks[index++] = pingBuilder.inetAddress(inetSocketAddress.getAddress())
+				        .port(inetSocketAddress.getPort()).start();
+			}
+		}
 		FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<BaseFuture>(
 		        forks));
 		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<BaseFuture>>() {
@@ -253,10 +255,10 @@ public class Sender {
 
 		if (timeoutHandler != null) {
 			final int nrTCPHandlers = peerConnection != null ? 10 : 7; // 10 = 7
-																	   // / 0.75
-																	   // ** 7 =
-																	   // 5 /
-																	   // 0.75;
+			                                                           // / 0.75
+			                                                           // ** 7 =
+			                                                           // 5 /
+			                                                           // 0.75;
 			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
 			handlers.put("timeout0",
 			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
@@ -289,7 +291,7 @@ public class Sender {
 		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers,
 		        futureResponse);
 
-		if (peerConnection != null && channelFuture!=null) {
+		if (peerConnection != null && channelFuture != null) {
 			peerConnection.channelFuture(channelFuture);
 			heartBeat.peerConnection(peerConnection);
 		}
@@ -373,8 +375,8 @@ public class Sender {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
-		
-		if(message.sender().isRelayed()) {
+
+		if (message.sender().isRelayed()) {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 
@@ -400,32 +402,33 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.recipient().isRelayed() && 
-				message.command() != RPC.Commands.NEIGHBOR.getNr() && message.command() != RPC.Commands.PING.getNr()) {
-			LOG.warn("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}", message);
+		if (message.recipient().isRelayed() && message.command() != RPC.Commands.NEIGHBOR.getNr()
+		        && message.command() != RPC.Commands.PING.getNr()) {
+			LOG.warn(
+			        "Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
+			        message);
 			futureResponse
 			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
 		} else {
 			final ChannelFuture channelFuture;
-			if(message.recipient().isRelayed()) {
-				
+			if (message.recipient().isRelayed()) {
+
 				List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
 				LOG.debug("send neighbor request to random relay peer {}", psa);
-				if(psa.size() > 0) {
+				if (psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 					PeerAddress recipient = message.recipient();
 					message.recipient(recipient.changePeerSocketAddress(ps));
-				
-					channelFuture = channelCreator.createUDP
-							(PeerSocketAddress.createSocketUDP(ps), broadcast, handlers, futureResponse);
+
+					channelFuture = channelCreator.createUDP(PeerSocketAddress.createSocketUDP(ps), broadcast,
+					        handlers, futureResponse);
 				} else {
-					futureResponse
-			        	.failed("Peer is relayed, but no relay given");
+					futureResponse.failed("Peer is relayed, but no relay given");
 					return;
 				}
 			} else {
-				channelFuture = channelCreator.createUDP(message.recipient().createSocketUDP(),
-						broadcast, handlers, futureResponse);
+				channelFuture = channelCreator.createUDP(message.recipient().createSocketUDP(), broadcast, handlers,
+				        futureResponse);
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
@@ -521,7 +524,7 @@ public class Sender {
 				}
 				if (fireAndForget) {
 					futureResponse.responseLater(null);
-					LOG.debug("fire and forget, close channel now {}, {}",futureResponse.request(), future.channel());
+					LOG.debug("fire and forget, close channel now {}, {}", futureResponse.request(), future.channel());
 					reportMessage(futureResponse, future.channel().close());
 				}
 			}
@@ -586,11 +589,13 @@ public class Sender {
 			@Override
 			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isFailed()) {
-					if(message.recipient().isRelayed()) {
-						//TODO: make the relay go away if failed
+					if (message.recipient().isRelayed()) {
+						// TODO: make the relay go away if failed
 					} else {
-						for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-							peerStatusListener.peerFailed(message.recipient(), FailReason.Exception);
+						synchronized (peerStatusListeners) {
+							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
+								peerStatusListener.peerFailed(message.recipient(), FailReason.Exception);
+							}
 						}
 					}
 				}

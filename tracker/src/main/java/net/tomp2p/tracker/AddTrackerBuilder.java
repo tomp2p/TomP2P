@@ -22,8 +22,8 @@ import net.tomp2p.futures.FutureCreator;
 import net.tomp2p.futures.FutureLateJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureTracker;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
@@ -49,7 +49,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
     
     private PeerAddress peerAddressToAnnounce;
 
-    public AddTrackerBuilder(Peer peer, Number160 locationKey) {
+    public AddTrackerBuilder(PeerTracker peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
     }
@@ -142,7 +142,7 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
 
     @Override
     public FutureTracker start() {
-        if (peer.isShutdown()) {
+        if (peer.peer().isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
         preBuild("add-tracker-build");
@@ -152,11 +152,11 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         }
         // add myself to my local tracker, since we use a mesh we are part of
         // the tracker mesh as well.
-        peer.peerBean()
+        peer
                 .trackerStorage()
-                .put(locationKey, domainKey, peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),
+                .put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),
                         attachement);
-        final FutureTracker futureTracker = peer.getDistributedTracker().add(this);
+        final FutureTracker futureTracker = peer.distributedTracker().add(this);
 
         
         /*if (pexWaitSec > 0) {

@@ -16,6 +16,8 @@
 package net.tomp2p.connection;
 
 import java.security.KeyPair;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.tomp2p.p2p.MaintenanceTask;
 import net.tomp2p.peers.PeerAddress;
@@ -36,7 +38,7 @@ public class PeerBean {
     private KeyPair keyPair;
     private PeerAddress serverPeerAddress;
     private PeerMap peerMap;
-    private PeerStatusListener[] peerStatusListeners;
+    private List<PeerStatusListener> peerStatusListeners = new ArrayList<PeerStatusListener>(1);
     private BloomfilterFactory bloomfilterFactory;
     private MaintenanceTask maintenanceTask;
     private DigestStorage digestStorage;
@@ -115,7 +117,7 @@ public class PeerBean {
      * @return The listeners that are interested in the peer status, e.g., peer is found to be online, or a peer is
      *         offline or failed to respond in time.
      */
-    public PeerStatusListener[] peerStatusListeners() {
+    public List<PeerStatusListener> peerStatusListeners() {
         return peerStatusListeners;
     }
 
@@ -125,8 +127,17 @@ public class PeerBean {
      *            offline or failed to respond in time
      * @return This class
      */
-    public PeerBean peerStatusListeners(final PeerStatusListener[] peerStatusListeners) {
-        this.peerStatusListeners = peerStatusListeners;
+    public PeerBean addPeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    	synchronized (peerStatusListeners) {
+    		peerStatusListeners.add(peerStatusListener);    
+        }
+        return this;
+    }
+    
+    public PeerBean removePeerStatusListeners(final PeerStatusListener peerStatusListener) {
+    	synchronized (peerStatusListeners) {
+    		peerStatusListeners.remove(peerStatusListener);    
+        }
         return this;
     }
     

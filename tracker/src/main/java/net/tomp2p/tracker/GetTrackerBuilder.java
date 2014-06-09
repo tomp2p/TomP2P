@@ -20,7 +20,6 @@ import java.util.Set;
 
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.EvaluatingSchemeTracker;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
@@ -31,9 +30,7 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
 
     private boolean expectAttachement = false;
 
-    private boolean useSecondaryTrackers = false;
-
-    public GetTrackerBuilder(Peer peer, Number160 locationKey) {
+    public GetTrackerBuilder(PeerTracker peer, Number160 locationKey) {
         super(peer, locationKey);
         self(this);
     }
@@ -46,8 +43,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
         this.evaluatingScheme = evaluatingScheme;
         return this;
     }
-
-    
 
     public boolean isExpectAttachement() {
         return expectAttachement;
@@ -63,22 +58,8 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
         return this;
     }
 
-    public boolean isUseSecondaryTrackers() {
-        return useSecondaryTrackers;
-    }
-
-    public GetTrackerBuilder setUseSecondaryTrackers() {
-        this.useSecondaryTrackers = true;
-        return this;
-    }
-
-    public GetTrackerBuilder setUseSecondaryTrackers(boolean useSecondaryTrackers) {
-        this.useSecondaryTrackers = useSecondaryTrackers;
-        return this;
-    }
-
     public FutureTracker start() {
-        if (peer.isShutdown()) {
+        if (peer.peer().isShutdown()) {
             return FUTURE_TRACKER_SHUTDOWN;
         }
 
@@ -88,6 +69,6 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
             knownPeers = new SimpleBloomFilter<Number160>(1024, 1024);
         }
         
-        return peer.getDistributedTracker().get(this);
+        return peer.distributedTracker().get(this);
     }
 }

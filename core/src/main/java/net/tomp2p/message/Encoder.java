@@ -14,6 +14,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -199,8 +200,8 @@ public class Encoder {
             case SET_TRACKER_DATA:
                 TrackerData trackerData = message.trackerData(next.number());
                 buf.writeByte(trackerData.peerAddresses().size()); // 1 bytes - length, max. 255
-                for (Map.Entry<PeerAddress, Data> entry : trackerData.peerAddresses().entrySet()) {
-                    buf.writeBytes(entry.getKey().toByteArray());
+                for (Map.Entry<PeerStatatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
+                    buf.writeBytes(entry.getKey().peerAddress().toByteArray());
                     Data data = entry.getValue().duplicate();
                     encodeData(buf, data, false, !message.isRequest());
                 }

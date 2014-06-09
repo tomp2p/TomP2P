@@ -25,7 +25,7 @@ public class PeerDHT {
 	public PeerDHT(Peer peer, StorageLayer storageLayer) {
 		this.peer = peer;
 		this.storageLayer = storageLayer;
-		this.storageLayer.init(peer.connectionBean().timer(), storageLayer.storageCheckIntervalMillis());
+		this.storageLayer.start(peer.connectionBean().timer(), storageLayer.storageCheckIntervalMillis());
 		this.storageRPC = new StorageRPC(peer.peerBean(), peer.connectionBean(), storageLayer);
 		this.dht = new DistributedHashTable(peer.distributedRouting(), storageRPC, peer.directDataRPC());
 		peer.peerBean().digestStorage(storageLayer);

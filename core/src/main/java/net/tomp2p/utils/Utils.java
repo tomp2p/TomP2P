@@ -62,9 +62,6 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.SimpleBloomFilter;
-import net.tomp2p.storage.Data;
 import net.tomp2p.storage.DataBuffer;
 
 /**
@@ -526,16 +523,6 @@ public class Utils {
         return map;
     }
 
-    public static TrackerData disjunction(TrackerData meshPeers, SimpleBloomFilter<Number160> knownPeers) {
-        TrackerData trackerData = new TrackerData(new HashMap<PeerAddress, Data>(), null);
-        for (Map.Entry<PeerAddress, Data> entry : meshPeers.peerAddresses().entrySet()) {
-            if (!knownPeers.contains(entry.getKey().peerId())) {
-                trackerData.put(entry.getKey(), entry.getValue());
-            }
-        }
-        return trackerData;
-    }
-
     public static <K> Collection<K> limit(final Collection<K> a, final int size) {
         ArrayList<K> list = new ArrayList<K>();
         int i = 0;
@@ -543,18 +530,6 @@ public class Utils {
             list.add(it.next());
         }
         return list;
-    }
-
-    public static TrackerData limit(TrackerData peers, int size) {
-        Map<PeerAddress, Data> map = new HashMap<PeerAddress, Data>(peers.peerAddresses());
-        int i = 0;
-        for (Iterator<Map.Entry<PeerAddress, Data>> it = map.entrySet().iterator(); it.hasNext() && i < size;) {
-            Map.Entry<PeerAddress, Data> entry = it.next();
-            map.put(entry.getKey(), entry.getValue());
-        }
-
-        TrackerData data = new TrackerData(map, peers.referrer());
-        return data;
     }
 
     public static <K, V> Map<K, V> limit(final Map<K, V> a, final int i) {

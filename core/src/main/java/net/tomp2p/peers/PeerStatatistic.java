@@ -36,6 +36,8 @@ public class PeerStatatistic implements Serializable {
     private final AtomicInteger successfullyChecked = new AtomicInteger(0);
 
     private final AtomicInteger failed = new AtomicInteger(0);
+    
+    private final Number160 peerId;
 
     private PeerAddress peerAddress;
 
@@ -49,6 +51,7 @@ public class PeerStatatistic implements Serializable {
         if (peerAddress == null) {
             throw new IllegalArgumentException("PeerAddress cannot be null");
         }
+        this.peerId = peerAddress.peerId();
         this.peerAddress = peerAddress;
     }
 
@@ -116,11 +119,28 @@ public class PeerStatatistic implements Serializable {
      * @return The old peer address
      */
     public PeerAddress peerAddress(final PeerAddress peerAddress) {
-        if (!this.peerAddress.peerId().equals(peerAddress.peerId())) {
+        if (!peerId.equals(peerAddress.peerId())) {
             throw new IllegalArgumentException("can only update the same peer address");
         }
         PeerAddress previousPeerAddress = this.peerAddress;
         this.peerAddress = peerAddress;
         return previousPeerAddress;
+    }
+    
+    @Override
+    public int hashCode() {
+        return peerId.hashCode();
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == this) {
+        	return true;
+        }
+        if(!(obj instanceof PeerStatatistic)) {
+        	return false;
+        }
+        PeerStatatistic p = (PeerStatatistic) obj;
+        return p.peerId.equals(peerId);
     }
 }

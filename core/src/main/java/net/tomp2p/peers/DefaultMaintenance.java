@@ -158,7 +158,7 @@ public class DefaultMaintenance implements Maintenance {
     private PeerStatatistic next(final Map<Number160, PeerStatatistic> map) {
         synchronized (map) {
             for (PeerStatatistic peerStatatistic : map.values()) {
-                if (needMaintenance(peerStatatistic)) {
+                if (needMaintenance(peerStatatistic, intervalSeconds)) {
                     return peerStatatistic;
                 }
             }
@@ -189,7 +189,7 @@ public class DefaultMaintenance implements Maintenance {
      *            The peer with its statistics
      * @return True if the peer needs a maintenance check
      */
-    protected boolean needMaintenance(final PeerStatatistic peerStatatistic) {
+    public static boolean needMaintenance(final PeerStatatistic peerStatatistic, final int[] intervalSeconds) {
         final int onlineSec = peerStatatistic.onlineTime() / 1000;
         int index;
         if (onlineSec <= 0) {

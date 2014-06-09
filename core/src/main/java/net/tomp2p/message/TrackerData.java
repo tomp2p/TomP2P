@@ -19,36 +19,28 @@ import java.util.Iterator;
 import java.util.Map;
 
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.storage.Data;
 
 public class TrackerData {
 
     public final static Data EMTPY_DATA = new Data(0, 0);
 
-    private final Map<PeerAddress, Data> peerAddresses;
-
-    final private PeerAddress referrer;
+    private final Map<PeerStatatistic, Data> peerAddresses;
 
     final private boolean couldProvideMoreData;
 
-    public TrackerData(Map<PeerAddress, Data> peerAddresses, PeerAddress referrer) {
-        this(peerAddresses, referrer, false);
+    public TrackerData(Map<PeerStatatistic, Data> peerAddresses) {
+        this(peerAddresses, false);
     }
 
-    public TrackerData(Map<PeerAddress, Data> peerAddresses, PeerAddress referrer,
-            boolean couldProvideMoreData) {
+    public TrackerData(Map<PeerStatatistic, Data> peerAddresses, boolean couldProvideMoreData) {
         this.peerAddresses = peerAddresses;
-        this.referrer = referrer;
         this.couldProvideMoreData = couldProvideMoreData;
     }
 
-    public Map<PeerAddress, Data> peerAddresses() {
+    public Map<PeerStatatistic, Data> peerAddresses() {
         return peerAddresses;
-    }
-
-    public PeerAddress referrer() {
-        return referrer;
     }
 
     @Override
@@ -66,19 +58,15 @@ public class TrackerData {
         return peerAddresses.size();
     }
 
-    public Map<PeerAddress, Data> map() {
-        return peerAddresses;
-    }
-
-    public void put(PeerAddress remotePeer, Data attachement) {
+    public void put(PeerStatatistic remotePeer, Data attachement) {
         peerAddresses.put(remotePeer, attachement == null ? EMTPY_DATA : attachement);
     }
 
-    public Map.Entry<PeerAddress, Data> remove(Number160 remotePeerId) {
-        for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
+    public Map.Entry<PeerStatatistic, Data> remove(Number160 remotePeerId) {
+        for (Iterator<Map.Entry<PeerStatatistic, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
-            Map.Entry<PeerAddress, Data> entry = iterator.next();
-            if (entry.getKey().peerId().equals(remotePeerId)) {
+            Map.Entry<PeerStatatistic, Data> entry = iterator.next();
+            if (entry.getKey().peerAddress().peerId().equals(remotePeerId)) {
                 iterator.remove();
                 return entry;
             }
@@ -87,10 +75,10 @@ public class TrackerData {
     }
 
     public boolean containsKey(Number160 tmpKey) {
-        for (Iterator<Map.Entry<PeerAddress, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
+        for (Iterator<Map.Entry<PeerStatatistic, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
                 .hasNext();) {
-            Map.Entry<PeerAddress, Data> entry = iterator.next();
-            if (entry.getKey().peerId().equals(tmpKey)) {
+            Map.Entry<PeerStatatistic, Data> entry = iterator.next();
+            if (entry.getKey().peerAddress().peerId().equals(tmpKey)) {
                 return true;
             }
         }

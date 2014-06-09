@@ -33,6 +33,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.AlternativeCompositeByteBuf;
 import net.tomp2p.storage.Data;
@@ -500,8 +501,7 @@ public class Decoder {
 					trackerDataSize = buf.readUnsignedByte();
 				}
 				if (trackerData == null) {
-					trackerData = new TrackerData(new HashMap<PeerAddress, Data>(2 * trackerDataSize),
-							message.sender());
+					trackerData = new TrackerData(new HashMap<PeerStatatistic, Data>(2 * trackerDataSize));
 				}
 				if (currentTrackerData != null) {
 					if (!currentTrackerData.decodeBuffer(buf)) {
@@ -526,12 +526,13 @@ public class Decoder {
 						return false;
 					}
 					PeerAddress pa = new PeerAddress(buf);
+					PeerStatatistic ps = new PeerStatatistic(pa);
 
 					currentTrackerData = Data.decodeHeader(buf, signatureFactory);
 					if (currentTrackerData == null) {
 						return false;
 					}
-					trackerData.map().put(pa, currentTrackerData);
+					trackerData.peerAddresses().put(ps, currentTrackerData);
 					if (message.isSign()) {
 						currentTrackerData.publicKey(message.publicKey(0));
 					}

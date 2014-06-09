@@ -21,6 +21,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
@@ -204,19 +205,21 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     FailReason reason = pe.abortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
-                    boolean added = peerBean.peerMap().peerFailed(futureResponse.request().recipient(), reason);
-                    if (added) {
-                        if (LOG.isWarnEnabled()) {
-                            LOG.warn("removed from map, cause: " + pe.toString() + " msg: " + message);
-                        }
-                    } else if (LOG.isDebugEnabled()) {
-                        LOG.debug(pe.toString() + " msg: " + message);
+                    synchronized (peerBean.peerStatusListeners()) {
+                    	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+							peerStatusListener.peerFailed(futureResponse.request().recipient(), reason);
+						}
                     }
-                } else if (LOG.isWarnEnabled()) {
+                    LOG.warn("removed from map, cause: {} msg: {}", pe.toString(), message);
+                } else {
                     LOG.warn("error in request", cause);
                 }
             } else {
-                peerBean.peerMap().peerFailed(futureResponse.request().recipient(), FailReason.Exception);
+            	synchronized (peerBean.peerStatusListeners()) {
+            		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+						peerStatusListener.peerFailed(futureResponse.request().recipient(), FailReason.Exception);
+					}
+            	}
             }
         }
         
@@ -250,9 +253,13 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
 
         // We got a good answer, let's mark the sender as alive
-        if (responseMessage.isOk() || responseMessage.isNotOk()) {
-            peerBean.peerMap().peerFound(responseMessage.sender(), null);
-        }
+		if (responseMessage.isOk() || responseMessage.isNotOk()) {
+			synchronized (peerBean.peerStatusListeners()) {
+				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+					peerStatusListener.peerFound(responseMessage.sender(), null);
+				}
+			}
+		}
         
         // call this for streaming support
         futureResponse.progress(responseMessage);

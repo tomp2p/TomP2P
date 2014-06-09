@@ -43,7 +43,6 @@ import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.rpc.BroadcastRPC;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
@@ -104,7 +103,6 @@ public class PeerBuilder {
 	private Peer masterPeer = null;
 	private ChannelServerConficuration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
-	private PeerStatusListener[] peerStatusListeners = null;
 	private Storage storage = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
@@ -190,10 +188,7 @@ public class PeerBuilder {
 		channelClientConfiguration.externalBindings(externalBindings);
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-		}
-
-		if (peerStatusListeners == null) {
-			peerStatusListeners = new PeerStatusListener[] { peerMap };
+			
 		}
 
 		if (masterPeer == null && scheduledExecutorService == null) {
@@ -205,12 +200,14 @@ public class PeerBuilder {
 			peerCreator = new PeerCreator(masterPeer.peerCreator(), peerId, keyPair);
 		} else {
 			peerCreator = new PeerCreator(p2pID, peerId, keyPair, channelServerConfiguration,
-			        channelClientConfiguration, peerStatusListeners, scheduledExecutorService);
+			        channelClientConfiguration, scheduledExecutorService);
 		}
 
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
+		peerBean.addPeerStatusListeners(peerMap);
+		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 
 		peerBean.peerMap(peerMap);
@@ -415,15 +412,6 @@ public class PeerBuilder {
 
 	public PeerBuilder channelClientConfiguration(ChannelClientConfiguration channelClientConfiguration) {
 		this.channelClientConfiguration = channelClientConfiguration;
-		return this;
-	}
-
-	public PeerStatusListener[] peerStatusListeners() {
-		return peerStatusListeners;
-	}
-
-	public PeerBuilder peerStatusListeners(PeerStatusListener[] peerStatusListeners) {
-		this.peerStatusListeners = peerStatusListeners;
 		return this;
 	}
 

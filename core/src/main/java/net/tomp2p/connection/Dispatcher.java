@@ -122,8 +122,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.version(), message);
             ctx.close();
-            for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                peerStatusListener.peerFailed(message.sender(), FailReason.Exception);
+            synchronized (peerBean.peerStatusListeners()) {
+            	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+                    peerStatusListener.peerFailed(message.sender(), FailReason.Exception);
+                }
             }
             return;
         }

@@ -18,206 +18,197 @@ package net.tomp2p.nat;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+
+import javax.xml.parsers.ParserConfigurationException;
 
 import net.tomp2p.natpmp.Gateway;
 import net.tomp2p.natpmp.MapRequestMessage;
 import net.tomp2p.natpmp.NatPmpDevice;
 import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.natpmp.ResultCode;
-import net.tomp2p.upnp.InternetGatewayDevice;
-import net.tomp2p.upnp.UPNPResponseException;
 
+import org.bitlet.weupnp.GatewayDevice;
+import org.bitlet.weupnp.GatewayDiscover;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 /**
- * This class is used to do automatic port forwarding. It maps with PMP und UPNP and also unmaps them. It creates a
- * shutdown hook in case the user exits the application without a proper shutdown.
+ * This class is used to do automatic port forwarding. It maps with PMP und UPNP
+ * and also unmaps them. It creates a shutdown hook in case the user exits the
+ * application without a proper shutdown.
  * 
  * @author Thomas Bocek
  */
 public class NATUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NATUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NATUtils.class);
 
-    // UPNP
-    private final Map<InternetGatewayDevice, Integer> internetGatewayDevicesUDP = 
-            new HashMap<InternetGatewayDevice, Integer>();
+	// UPNP
+	private GatewayDevice gatewayDevice;
+	private int externalPortTCP = -1;
+	private int externalPortUDP = -1;
+	// NAT-PMP
+	private NatPmpDevice pmpDevice;
 
-    private final Map<InternetGatewayDevice, Integer> internetGatewayDevicesTCP = 
-            new HashMap<InternetGatewayDevice, Integer>();
+	private final Object shutdownLock = new Object();
 
-    // NAT-PMP
-    private NatPmpDevice pmpDevice;
+	/**
+	 * Constructor.
+	 */
+	public NATUtils() {
+		shutdownHookEnabled();
+	}
 
-    private final Object shutdownLock = new Object();
+	/**
+	 * Maps with the PMP protocol
+	 * (http://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol). One of the
+	 * drawbacks of this protocol is that it needs to know the IP of the router.
+	 * To get the IP of the router in Java, we need to use netstat and parse the
+	 * output.
+	 * 
+	 * @param internalPortUDP
+	 *            The UDP internal port
+	 * @param internalPortTCP
+	 *            The TCP internal port
+	 * @param externalPortUDP
+	 *            The UDP external port
+	 * @param externalPortTCP
+	 *            The TCP external port
+	 * @return True, if the mapping was successful (i.e. the router supports
+	 *         PMP)
+	 * @throws NatPmpException
+	 *             the router does not supports PMP
+	 */
+	public boolean mapPMP(final int internalPortUDP, final int internalPortTCP, final int externalPortUDP,
+	        final int externalPortTCP) throws NatPmpException {
+		InetAddress gateway = Gateway.getIP();
+		pmpDevice = new NatPmpDevice(gateway);
+		MapRequestMessage mapTCP = new MapRequestMessage(true, internalPortTCP, externalPortTCP, Integer.MAX_VALUE,
+		        null);
+		MapRequestMessage mapUDP = new MapRequestMessage(false, internalPortUDP, externalPortUDP, Integer.MAX_VALUE,
+		        null);
+		pmpDevice.enqueueMessage(mapTCP);
+		pmpDevice.enqueueMessage(mapUDP);
+		pmpDevice.waitUntilQueueEmpty();
+		// UDP is nice to have, but we need TCP
+		return mapTCP.getResultCode() == ResultCode.Success;
+	}
 
-    private boolean runOnce = false;
+	/**
+	 * Maps with UPNP protocol
+	 * (http://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol). Since
+	 * this uses broadcasting to discover routers, no calling the external
+	 * program netstat is necessary.
+	 * 
+	 * @param internalHost
+	 *            The internal host to map the ports to
+	 * @param internalPortUDP
+	 *            The UDP internal port
+	 * @param internalPortTCP
+	 *            The TCP internal port
+	 * @param externalPortUDP
+	 *            The UDP external port
+	 * @param externalPortTCP
+	 *            The TCP external port
+	 * @return True, if at least one mapping was successful (i.e. the router
+	 *         supports UPNP)
+	 * @throws IOException
+	 *             Exception
+	 * @throws SAXException
+	 * @throws ParserConfigurationException
+	 */
+	public boolean mapUPNP(final String internalHost, final int internalPortUDP, final int internalPortTCP,
+	        final int externalPortUDP, final int externalPortTCP) throws IOException, SAXException,
+	        ParserConfigurationException {
+		// -1 sets the default timeout to 1500 ms
 
-    /**
-     * Constructor.
-     */
-    public NATUtils() {
-        shutdownHookEnabled();
-    }
+		if (gatewayDevice != null) {
+			gatewayDevice.deletePortMapping(this.externalPortTCP, "TCP");
+			gatewayDevice.deletePortMapping(this.externalPortUDP, "UDP");
+		}
+		GatewayDiscover discover = new GatewayDiscover();
+		discover.discover();
+		gatewayDevice = discover.getValidGateway();
 
-    /**
-     * Maps with the PMP protocol (http://en.wikipedia.org/wiki/NAT_Port_Mapping_Protocol). One of the drawbacks of this
-     * protocol is that it needs to know the IP of the router. To get the IP of the router in Java, we need to use
-     * netstat and parse the output.
-     * 
-     * @param internalPortUDP
-     *            The UDP internal port
-     * @param internalPortTCP
-     *            The TCP internal port
-     * @param externalPortUDP
-     *            The UDP external port
-     * @param externalPortTCP
-     *            The TCP external port
-     * @return True, if the mapping was successful (i.e. the router supports PMP)
-     * @throws NatPmpException
-     *             the router does not supports PMP
-     */
-    public boolean mapPMP(final int internalPortUDP, final int internalPortTCP, 
-            final int externalPortUDP, final int externalPortTCP) throws NatPmpException {
-        InetAddress gateway = Gateway.getIP();
-        pmpDevice = new NatPmpDevice(gateway);
-        MapRequestMessage mapTCP = new MapRequestMessage(true, internalPortTCP, externalPortTCP, Integer.MAX_VALUE,
-                null);
-        MapRequestMessage mapUDP = new MapRequestMessage(false, internalPortUDP, externalPortUDP,
-                Integer.MAX_VALUE, null);
-        pmpDevice.enqueueMessage(mapTCP);
-        pmpDevice.enqueueMessage(mapUDP);
-        pmpDevice.waitUntilQueueEmpty();
-        // UDP is nice to have, but we need TCP
-        return mapTCP.getResultCode() == ResultCode.Success;
-    }
+		if (gatewayDevice == null) {
+			LOGGER.info("no UPNP device found");
+			return false;
+		}
 
-    /**
-     * Maps with UPNP protocol (http://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol). Since this uses
-     * broadcasting to discover routers, no calling the external program netstat is necessary.
-     * 
-     * @param internalHost
-     *            The internal host to map the ports to
-     * @param internalPortUDP
-     *            The UDP internal port
-     * @param internalPortTCP
-     *            The TCP internal port
-     * @param externalPortUDP
-     *            The UDP external port
-     * @param externalPortTCP
-     *            The TCP external port
-     * @return True, if at least one mapping was successful (i.e. the router supports UPNP)
-     * @throws IOException
-     *             Exception
-     */
-    public boolean mapUPNP(final String internalHost, final int internalPortUDP, final int internalPortTCP, 
-            final int externalPortUDP, final int externalPortTCP) throws IOException {
-        // -1 sets the default timeout to 1500 ms
-        Collection<InternetGatewayDevice> internetGDs = InternetGatewayDevice.getDevices(-1);
-        if (internetGDs == null) {
-            LOGGER.info("no UPNP device found");
-            return false;
-        }
-        boolean once = false;
-        for (InternetGatewayDevice igd : internetGDs) {
-            LOGGER.info("Found device " + igd);
-            try {
-                if (externalPortUDP != -1) {
-                    boolean mappedUDP = igd.addPortMapping("TomP2P mapping UDP", "UDP", internalHost,
-                            externalPortUDP, internalPortUDP);
-                    if (mappedUDP) {
-                        internetGatewayDevicesUDP.put(igd, externalPortUDP);
-                    }
-                }
-            } catch (IOException e) {
-                LOGGER.warn("error in mapping UPD UPNP " + e);
-                continue;
+		this.externalPortTCP = externalPortTCP;
+		this.externalPortUDP = externalPortUDP;
 
-            } catch (UPNPResponseException e) {
-                LOGGER.warn("error in mapping UDP UPNP " + e);
-                continue;
-            }
-            try {
-                if (externalPortTCP != -1) {
-                    boolean mappedTCP = igd.addPortMapping("TomP2P mapping TCP", "TCP", internalHost,
-                            externalPortTCP, internalPortTCP);
-                    if (mappedTCP) {
-                        internetGatewayDevicesTCP.put(igd, externalPortTCP);
-                    }
-                }
-            } catch (IOException e) {
-                LOGGER.warn("error in mapping TCP UPNP " + e);
-                continue;
+		boolean mapTCP = gatewayDevice.addPortMapping(externalPortTCP, internalPortTCP, internalHost, "TCP",
+		        "TomP2P mapping TCP");
+		boolean mapUDP = gatewayDevice.addPortMapping(externalPortUDP, internalPortUDP, internalHost, "UDP",
+		        "TomP2P mapping UDP");
 
-            } catch (UPNPResponseException e) {
-                LOGGER.warn("error in mapping TCP UPNP " + e);
-                continue;
-            }
-            once = true;
-        }
-        return once;
-    }
+		if (mapTCP && mapUDP) {
+			return true;
+		} else {
+			if (!mapTCP) {
+				LOGGER.warn("UPNP TCP mapping did failed");
+			}
+			if (!mapUDP) {
+				LOGGER.warn("UPNP UDP mapping did failed");
+			}
+			return false;
+		}
+	}
 
-    /**
-     * Unmap the device that has been mapped previously. Used during shutdown.
-     */
-    private void unmapUPNP() {
-        for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesTCP.entrySet()) {
-            try {
-                entry.getKey().deletePortMapping(null, entry.getValue(), "TCP");
-            } catch (IOException e) {
-                LOGGER.warn("not removed TCP mapping " + entry.toString() + e);
-            } catch (UPNPResponseException e) {
-                LOGGER.warn("not removed TCP mapping " + entry.toString() + e);
-            }
-            LOGGER.info("removed TCP mapping " + entry.toString());
-        }
-        for (Map.Entry<InternetGatewayDevice, Integer> entry : internetGatewayDevicesUDP.entrySet()) {
-            try {
-                entry.getKey().deletePortMapping(null, entry.getValue(), "UDP");
-            } catch (IOException e) {
-                LOGGER.warn("not removed UDP mapping " + entry.toString() + e);
-            } catch (UPNPResponseException e) {
-                LOGGER.warn("not removed UDP mapping " + entry.toString() + e);
-            }
-            LOGGER.info("removed UDP mapping " + entry.toString());
-        }
-    }
+	/**
+	 * Unmap the device that has been mapped previously. Used during shutdown.
+	 * 
+	 * @throws SAXException
+	 * @throws IOException
+	 */
+	private void unmapUPNP() throws SAXException, IOException {
+		if (gatewayDevice != null) {
+			try {
+				boolean unmapTCP = gatewayDevice.deletePortMapping(this.externalPortTCP, "TCP");
+				boolean unmapUDP = gatewayDevice.deletePortMapping(this.externalPortUDP, "UDP");
+				if (!unmapTCP) {
+					LOGGER.warn("UPNP TCP unmapping did failed");
+				}
+				if (!unmapUDP) {
+					LOGGER.warn("UPNP UDP unmapping did failed");
+				}
+			} finally {
+				gatewayDevice = null;
+			}
+		}
+	}
 
-    /**
-     * Registers a shutdownhook to clean the NAT mapping. If this is not called, then the mapping may stay until the
-     * router is rebooted.
-     */
-    private void shutdownHookEnabled() {
-        synchronized (shutdownLock) {
-            // Set to enabled.
-            // The shutdown hook simply runs the shutdown method.
-            Thread t = new Thread(new Runnable() {
-                public void run() {
-                    shutdown();
-                }
-            }, "TomP2P:NATUtils:ShutdownHook");
-            Runtime.getRuntime().addShutdownHook(t);
-        }
-    }
+	/**
+	 * Registers a shutdownhook to clean the NAT mapping. If this is not called,
+	 * then the mapping may stay until the router is rebooted.
+	 */
+	private void shutdownHookEnabled() {
+		// The shutdown hook simply runs the shutdown method.
+		Thread t = new Thread(new Runnable() {
+			public void run() {
+				shutdown();
+			}
+		}, "TomP2P:NATUtils:ShutdownHook");
+		Runtime.getRuntime().addShutdownHook(t);
+	}
 
-    /**
-     * Since shutdown is also called from the shutdown hook, it might get called twice. Thus, this method deregister NAT
-     * mappings only once. If it already has been called, this method does nothing.
-     */
-    public void shutdown() {
-        synchronized (shutdownLock) {
-            if (runOnce) {
-                return;
-            }
-            runOnce = true;
-            unmapUPNP();
-            if (pmpDevice != null) {
-                pmpDevice.shutdown();
-            }
-        }
-    }
+	/**
+	 * Since shutdown is also called from the shutdown hook, it might get called
+	 * twice. Thus, this method deregister NAT mappings only once. If it already
+	 * has been called, this method does nothing.
+	 */
+	public void shutdown() {
+		synchronized (shutdownLock) {
+			try {
+				unmapUPNP();
+			} catch (Exception e) {
+				LOGGER.error("UPNP UDP unmapping did failed", e);
+			}
+			if (pmpDevice != null) {
+				pmpDevice.shutdown();
+				pmpDevice = null;
+			}
+		}
+	}
 }

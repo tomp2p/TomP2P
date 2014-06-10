@@ -1,6 +1,5 @@
 package net.tomp2p.nat;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
@@ -134,7 +133,7 @@ public class PeerNAT {
 		try {
 			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
 			        ports.externalUDPPort(), ports.externalTCPPort());
-		} catch (IOException e) {
+		} catch (Exception e) {
 			success = false;
 		}
 

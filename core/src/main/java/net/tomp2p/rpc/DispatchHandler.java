@@ -159,6 +159,11 @@ public abstract class DispatchHandler {
             responder.failed(Type.EXCEPTION , e.toString());
         }
     }
+    
+    //TODO jwa I might delete this
+    public void rConnectionSetup(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
+    	
+    }
 
     /**
      * If the message is OK, that has been previously checked by the user using checkMessage, a reply to the message is

@@ -143,6 +143,8 @@ public class Sender {
 			if (message.recipient().isRelayed()) {
 				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 				        peerConnection, timeoutHandler);
+			} else if (message.recipient().isRelayed() /* !myAddress isRelayed*/) {
+				
 			} else {
 				recipient = message.recipient().createSocketTCP();
 				channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,

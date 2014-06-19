@@ -145,6 +145,12 @@ public class RelayRPC extends DispatchHandler {
         });
         return futureDone;
     }
+    
+    //TODO jwa --> forwardConnectionSetup
+    @Override
+    public void rConnectionSetup(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
+    	
+    }
 
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {

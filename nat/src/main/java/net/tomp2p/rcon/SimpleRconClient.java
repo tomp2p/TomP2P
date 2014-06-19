@@ -28,6 +28,8 @@ public class SimpleRconClient {
 		// Create a peer with a random peerID, on port 4001, listening to the
 		// interface eth0
 		try {
+			int rand = RandomUtil.getNext();
+			System.out.println("RandomUtil: " + rand);
 			peer = new PeerBuilder(new Number160(RandomUtil.getNext())).ports(
 					port).start();
 
@@ -85,13 +87,13 @@ public class SimpleRconClient {
 	public static boolean sendDummy(String dummy, boolean nat) {
 		boolean success = false;
 		
-		if (nat == true) {
+//		if (nat == true) {
 			try {
 				master = new PeerAddress(Number160.ZERO, InetAddress.getByName(ipAddress), port, port);
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			}
-		}
+//		}
 		
 		FutureDirect fd = peer.sendDirect(master).object(dummy).start();
 		fd.awaitUninterruptibly();

@@ -94,11 +94,20 @@ public class SimpleRconClient {
 		return success;
 	}
 
-	public static boolean sendDummy(String dummy)
+	public static boolean sendDummy(String dummy, String id, String ip)
 			throws IOException {
 		boolean success = false;
-
-		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(dummy).start();
+		PeerAddress recepient = null;
+		
+		if (id == null || ip == null) {			
+			System.out.println("MESSAGE SENT TO MASTER");
+			recepient = masterPeerAddress;
+		} else {			
+			System.out.println("DIRECTED MESSAGE TO " + ip);
+			recepient = new PeerAddress(Number160.createHash(id), Inet4Address.getByName(ip), port, port);
+		}
+		
+		FutureDirect fd = peer.sendDirect(recepient).object(dummy).start();
 		fd.awaitUninterruptibly();
 
 		if (fd.isSuccess()) {

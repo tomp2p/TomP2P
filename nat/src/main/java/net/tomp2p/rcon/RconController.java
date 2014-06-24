@@ -4,8 +4,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 
-import javax.swing.JFrame;
-
 import net.tomp2p.rcon.prototype.SimpleRconClient;
 
 public class RconController {
@@ -15,7 +13,7 @@ public class RconController {
 	public void start() {
 		rconView = new RconView();
 		rconView.make();
-		rconView.getJFrame().setSize(800, 600);
+		rconView.getJFrame().setSize(400, 300);
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {
@@ -23,14 +21,32 @@ public class RconController {
 			}
 		}, "Shutdown-thread"));
 		
-		rconView.getSendMessageButton().addActionListener(new ActionListener() {
+		rconView.getSendTestMessageButton().addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("Button pressed");
+				System.out.println("sendTestMessageButton pressed");
 				try {
-					SimpleRconClient.sendDummy("this is a Dummy");
+					SimpleRconClient.sendDummy("this is a Dummy", null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
+				}
+			}
+		});
+		
+		rconView.getSendDirectedMessageButton().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("sendDirectedMessageButton pressed");
+				if (rconView.getIpField().getText() == null || rconView.getIdField().getText() == null) {
+					System.out.println("either ipfield or idfield is null");
+					return;
+				} else {
+					try {
+						SimpleRconClient.sendDummy("Steam Summer Sale 2014", rconView.getIdField().getText(), rconView.getIpField().getText());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		});

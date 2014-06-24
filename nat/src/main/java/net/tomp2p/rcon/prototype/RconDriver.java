@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.rcon.prototype;
 
 import java.io.IOException;
 import java.net.UnknownHostException;

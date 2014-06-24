@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.rcon.prototype;
 
 import java.io.IOException;
 import java.net.Inet4Address;
@@ -23,8 +23,8 @@ public class SimpleRconClient {
 
 	private static int port = 4001;
 	private static Peer peer;
-	private static PeerAddress master;
-	private static String ipAddress;
+	private static PeerAddress masterPeerAddress;
+	private static String MasterIpAddress;
 
 	public static void start(boolean isMaster) {
 		// Create a peer with a random peerID, on port 4001, listening to the
@@ -39,7 +39,9 @@ public class SimpleRconClient {
 						throws Exception {
 					System.out.println("HITHITHITHITHITHITHITHIT");
 
-					String req = (String) ((Data) request).object();
+					System.out.println("Sender: " + sender.toString()); 
+					
+					String req = (String) request;
 					System.out.println(req);
 
 					String reply = "reply";
@@ -69,9 +71,9 @@ public class SimpleRconClient {
 
 	public static boolean usualBootstrap(String ip) throws UnknownHostException {
 		boolean success = false;
-		ipAddress = ip;
+		MasterIpAddress = ip;
 
-		master = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip), port, port);
+		masterPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(MasterIpAddress), port, port);
 
 		// do PeerDiscover
 		FutureDiscover fd = peer.discover().peerAddress(peer.peerAddress())
@@ -80,7 +82,7 @@ public class SimpleRconClient {
 			return success;
 		}
 
-		FutureBootstrap fb = peer.bootstrap().peerAddress(master).start();
+		FutureBootstrap fb = peer.bootstrap().peerAddress(masterPeerAddress).start();
 		fb.awaitUninterruptibly();
 		if (fb.isSuccess()) {
 			System.out.println("Bootstrap success!");
@@ -96,60 +98,60 @@ public class SimpleRconClient {
 			throws IOException {
 		boolean success = false;
 
-		FutureDirect fd = peer.sendDirect(master).object(new Data(dummy)).start();
+		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(dummy).start();
 		fd.awaitUninterruptibly();
 
 		if (fd.isSuccess()) {
 			System.out.println("FUTURE DIRECT SUCCESS!");
 			success = true;
 		} else {
-
+			System.out.println("FUTURE DIRECT FAIL!");
 		}
-
+		
 		return success;
 	}
 
-	/*
-	 * Creates peer address
-	 */
-	private static PeerAddress createPeerAddress(String ip) {
-
-		// Format IP
-		InetAddress address = null;
-		try {
-			address = Inet4Address.getByName(ip);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-
-		// Create PeerAddress for MasterNode
-		PeerAddress peerAddress = null;
-		FutureDiscover fd = peer.discover().inetAddress(address).ports(port)
-				.start();
-		fd.awaitUninterruptibly();
-		if (fd.isSuccess()) {
-			peerAddress = fd.peerAddress();
-		} else {
-			System.out.println("Discover is not working");
-		}
-
-		if (peerAddress == null) {
-			System.out.println("PeerAddress fail");
-		} else {
-			if (peerAddress.peerId() == null) {
-				System.out.println("PeerAddress ID is zero");
-			} else {
-				System.out.println("Create PeerAddress: "
-						+ peerAddress.toString());
-			}
-		}
-
-		return peerAddress;
-	}
+//	/*
+//	 * Creates peer address
+//	 */
+//	private static PeerAddress createPeerAddress(String ip) {
+//
+//		// Format IP
+//		InetAddress address = null;
+//		try {
+//			address = Inet4Address.getByName(ip);
+//		} catch (UnknownHostException e) {
+//			e.printStackTrace();
+//		}
+//
+//		// Create PeerAddress for MasterNode
+//		PeerAddress peerAddress = null;
+//		FutureDiscover fd = peer.discover().inetAddress(address).ports(port)
+//				.start();
+//		fd.awaitUninterruptibly();
+//		if (fd.isSuccess()) {
+//			peerAddress = fd.peerAddress();
+//		} else {
+//			System.out.println("Discover is not working");
+//		}
+//
+//		if (peerAddress == null) {
+//			System.out.println("PeerAddress fail");
+//		} else {
+//			if (peerAddress.peerId() == null) {
+//				System.out.println("PeerAddress ID is zero");
+//			} else {
+//				System.out.println("Create PeerAddress: "
+//						+ peerAddress.toString());
+//			}
+//		}
+//
+//		return peerAddress;
+//	}
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
 		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip), port, port);
-		master = bootstrapPeerAddress;
+		masterPeerAddress = bootstrapPeerAddress;
 		
 		// Set the isFirewalledUDP and isFirewalledTCP flags
 		PeerAddress upa = peer.peerBean().serverPeerAddress();

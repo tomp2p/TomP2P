@@ -6,15 +6,16 @@ public class RconDriver {
 
 	public static void main(String[] args) throws UnknownHostException {
 		
-		SimpleRconClient.start();
 		if (args.length > 0) {
+			SimpleRconClient.start(false);
+			
 			if (args.length == 1) {
 				SimpleRconClient.usualBootstrap(args[0]);
 				System.out.println();
 				System.out.println("usualBootstrap Success!");
 				System.out.println();
 				sendDummy(false);
-			} else if (args.length > 1){				
+			} else if (args.length > 1){
 				System.out.println();
 				System.out.println("Start relaying");
 				System.out.println();
@@ -22,6 +23,8 @@ public class RconDriver {
 				SimpleRconClient.natBootstrap(args[0]);
 				sendDummy(true);
 			}
+		} else {
+			SimpleRconClient.start(true);
 		}
 	}
 

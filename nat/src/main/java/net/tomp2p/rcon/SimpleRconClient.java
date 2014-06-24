@@ -15,6 +15,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.rpc.ObjectDataReply;
 
 public class SimpleRconClient {
@@ -24,12 +25,11 @@ public class SimpleRconClient {
 	private static PeerAddress master;
 	private static String ipAddress;
 
-	public static void start() {
+	public static void start(boolean isMaster) {
 		// Create a peer with a random peerID, on port 4001, listening to the
 		// interface eth0
 		try {
-			peer = new PeerBuilder(new Number160(RandomUtil.getNext())).ports(
-					port).start();
+			createPeer(isMaster);
 
 			peer.objectDataReply(new ObjectDataReply() {
 
@@ -50,6 +50,16 @@ public class SimpleRconClient {
 			e.printStackTrace();
 		}
 		System.out.println(peer.peerAddress().toString());
+	}
+
+	private static void createPeer(boolean isMaster) throws IOException {
+		if (isMaster) {
+			peer = new PeerBuilder(Number160.createHash("master")).ports(
+					port).start();
+		} else {
+			peer = new PeerBuilder(new Number160(RandomUtil.getNext())).ports(
+					port).start();
+		}
 	}
 
 	public static Peer getPeer() {
@@ -86,14 +96,16 @@ public class SimpleRconClient {
 		boolean success = false;
 
 		if (nat == true) {
-			FutureDiscover fdisc = peer.discover().inetAddress(Inet4Address.getByName(ipAddress)).ports(port).start();
+			FutureDiscover fdisc = peer.discover()
+					.inetAddress(Inet4Address.getByName(ipAddress)).ports(port)
+					.start();
 			fdisc.awaitUninterruptibly();
 			if (fdisc.isSuccess()) {
 				System.out.println("PeerAddress FDISC: " + fdisc.peerAddress());
 			} else {
 				System.out.println("FDISC FAIL!!!");
 			}
-			
+
 			master = null;
 		}
 
@@ -148,41 +160,29 @@ public class SimpleRconClient {
 		return peerAddress;
 	}
 
-	public static void natBootstrap(String ip) {
-		try {
-			peer.shutdown();
-			peer = new PeerBuilder(new Number160(RandomUtil.getNext()))
-					.behindFirewall(true).ports(port).start();
-		} catch (IOException e1) {
-			e1.printStackTrace();
-		}
+	public static void natBootstrap(String ip) throws UnknownHostException {
+		PeerAddress bootstrapPeerAddress = createPeerAddress(ipAddress);
 
-		PeerNAT peerNAT = new PeerNAT(peer);
-		PeerAddress pa = null;
-		try {
-			pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip),
-					port, port);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
+		// Set the isFirewalledUDP and isFirewalledTCP flags
+		PeerAddress upa = peer.peerBean().serverPeerAddress();
+		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		peer.peerBean().serverPeerAddress(upa);
 
-		if (peerNAT.bootstrapBuilder() == null) {
-			System.out.println();
-			System.out.println("BOOTSTRAPBUILDER IS STILL NULL");
-			System.out.println();
-			peerNAT.bootstrapBuilder(peer.bootstrap().peerAddress(pa));
-		}
+		// find neighbors
+		FutureBootstrap futureBootstrap = peer.bootstrap()
+				.peerAddress(bootstrapPeerAddress).start();
+		futureBootstrap.awaitUninterruptibly();
 
-		// Check if peer is reachable from the internet
-		FutureDiscover fd = peer.discover().peerAddress(pa).start();
-		// Try to set up port forwarding with UPNP and NATPMP if peer is not
-		// reachable
-		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);
-		// if port forwarding failed, this will set up relay peers
-		FutureRelayNAT frn = peerNAT.startRelay(fn);
-		fd.awaitUninterruptibly();
-		frn.awaitUninterruptibly();
-		// now the peer should be reachable
+		// setup relay
+		PeerNAT uNat = new PeerNAT(peer);
+		// set up 3 relays
+		FutureRelay futureRelay = uNat.minRelays(1).startSetupRelay();
+		futureRelay.awaitUninterruptibly();
 
+		// find neighbors again
+		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress)
+				.start();
+		fb.awaitUninterruptibly();
 	}
+
 }

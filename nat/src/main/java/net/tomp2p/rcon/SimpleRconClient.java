@@ -161,7 +161,7 @@ public class SimpleRconClient {
 	}
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
-		PeerAddress bootstrapPeerAddress = createPeerAddress(ipAddress);
+		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip), port, port);
 
 		// Set the isFirewalledUDP and isFirewalledTCP flags
 		PeerAddress upa = peer.peerBean().serverPeerAddress();

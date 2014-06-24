@@ -66,11 +66,11 @@ public class SimpleRconClient {
 		return peer;
 	}
 
-	public static boolean usualBootstrap(String ip) {
+	public static boolean usualBootstrap(String ip) throws UnknownHostException {
 		boolean success = false;
 		ipAddress = ip;
 
-		master = createPeerAddress(ipAddress);
+		master = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip), port, port);
 
 		// do PeerDiscover
 		FutureDiscover fd = peer.discover().peerAddress(peer.peerAddress())
@@ -91,23 +91,9 @@ public class SimpleRconClient {
 		return success;
 	}
 
-	public static boolean sendDummy(String dummy, boolean nat)
+	public static boolean sendDummy(String dummy)
 			throws UnknownHostException {
 		boolean success = false;
-
-		if (nat == true) {
-			FutureDiscover fdisc = peer.discover()
-					.inetAddress(Inet4Address.getByName(ipAddress)).ports(port)
-					.start();
-			fdisc.awaitUninterruptibly();
-			if (fdisc.isSuccess()) {
-				System.out.println("PeerAddress FDISC: " + fdisc.peerAddress());
-			} else {
-				System.out.println("FDISC FAIL!!!");
-			}
-
-			master = null;
-		}
 
 		FutureDirect fd = peer.sendDirect(master).object(dummy).start();
 		fd.awaitUninterruptibly();

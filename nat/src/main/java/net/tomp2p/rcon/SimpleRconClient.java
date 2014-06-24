@@ -17,6 +17,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.rpc.ObjectDataReply;
+import net.tomp2p.storage.Data;
 
 public class SimpleRconClient {
 
@@ -38,7 +39,7 @@ public class SimpleRconClient {
 						throws Exception {
 					System.out.println("HITHITHITHITHITHITHITHIT");
 
-					String req = (String) request;
+					String req = (String) ((Data) request).object();
 					System.out.println(req);
 
 					String reply = "reply";
@@ -92,10 +93,10 @@ public class SimpleRconClient {
 	}
 
 	public static boolean sendDummy(String dummy)
-			throws UnknownHostException {
+			throws IOException {
 		boolean success = false;
 
-		FutureDirect fd = peer.sendDirect(master).object(dummy).start();
+		FutureDirect fd = peer.sendDirect(master).object(new Data(dummy)).start();
 		fd.awaitUninterruptibly();
 
 		if (fd.isSuccess()) {
@@ -148,7 +149,8 @@ public class SimpleRconClient {
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
 		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip), port, port);
-
+		master = bootstrapPeerAddress;
+		
 		// Set the isFirewalledUDP and isFirewalledTCP flags
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);

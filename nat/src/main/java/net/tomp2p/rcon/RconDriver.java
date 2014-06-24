@@ -1,10 +1,11 @@
 package net.tomp2p.rcon;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 
 public class RconDriver {
 
-	public static void main(String[] args) throws UnknownHostException {
+	public static void main(String[] args) throws IOException {
 		
 		if (args.length > 0) {
 			SimpleRconClient.start(false);
@@ -27,7 +28,7 @@ public class RconDriver {
 		}
 	}
 
-	private static void sendDummy() throws UnknownHostException {
+	private static void sendDummy() throws IOException {
 		System.out.println();
 		System.out.println("SENDDUMMY");
 		System.out.println();

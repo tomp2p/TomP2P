@@ -37,7 +37,7 @@ public class SimpleRconClient {
 				@Override
 				public Object reply(PeerAddress sender, Object request)
 						throws Exception {
-					System.out.println("HITHITHITHITHITHITHITHIT");
+					System.out.println("SUCCESS HIT");
 
 					System.out.println("Sender: " + sender.toString());
 
@@ -108,11 +108,26 @@ public class SimpleRconClient {
 		} else {
 			System.out.println("DIRECTED MESSAGE TO " + ip);
 			recepient = new PeerAddress(Number160.createHash(id),
-					Inet4Address.getByName(ip), port, port);
+					Inet4Address.getByName(ip), port, port).changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+		}
+		FutureDiscover fDisc = peer.discover().peerAddress(recepient).start();
+		fDisc.awaitUninterruptibly(10000);
+		
+		if (fDisc.isSuccess()) {
+			if (fDisc.isNat()) {
+				System.out.println("RECEIVER IS NAT PEER");
+				recepient = fDisc.peerAddress();
+				System.out.println("RECIPIENT RELAYED = " + recepient.isRelayed());
+			} else {
+				System.out.println("RECEIVER IS USUAL PEER");
+			}
+		} else {
+			System.out.println("FUTURE DISCOVER FAIL");
+			recepient = recepient.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
 		}
 
 		FutureDirect fd = peer.sendDirect(recepient).object(dummy).start();
-		fd.awaitUninterruptibly();
+		fd.awaitUninterruptibly(10000);
 
 		if (fd.isSuccess()) {
 			System.out.println("FUTURE DIRECT SUCCESS!");
@@ -167,7 +182,7 @@ public class SimpleRconClient {
 				Number160.createHash("master"), Inet4Address.getByName(ip),
 				port, port);
 		masterPeerAddress = bootstrapPeerAddress;
-
+		
 		// Set the isFirewalledUDP and isFirewalledTCP flags
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
@@ -188,6 +203,10 @@ public class SimpleRconClient {
 		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress)
 				.start();
 		fb.awaitUninterruptibly();
+		
+		// do maintenance
+		uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
+		uNat.startRelayMaintenance(futureRelay);
 	}
 
 }

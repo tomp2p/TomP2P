@@ -26,7 +26,7 @@ public class RconController {
 			public void actionPerformed(ActionEvent arg0) {
 				System.out.println("sendTestMessageButton pressed");
 				try {
-					SimpleRconClient.sendDummy("this is a Dummy", null, null);
+					SimpleRconClient.sendDummy("Praise Lord GabeN", null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

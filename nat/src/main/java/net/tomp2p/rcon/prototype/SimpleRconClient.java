@@ -205,8 +205,8 @@ public class SimpleRconClient {
 		fb.awaitUninterruptibly();
 		
 		// do maintenance
-		uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
-		uNat.startRelayMaintenance(futureRelay);
+//		uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
+//		uNat.startRelayMaintenance(futureRelay);
 	}
 
 }

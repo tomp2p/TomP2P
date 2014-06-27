@@ -35,8 +35,7 @@ public class SimpleRconClient {
 			peer.objectDataReply(new ObjectDataReply() {
 
 				@Override
-				public Object reply(PeerAddress sender, Object request)
-						throws Exception {
+				public Object reply(PeerAddress sender, Object request) throws Exception {
 					System.out.println("SUCCESS HIT");
 
 					System.out.println("Sender: " + sender.toString());
@@ -55,14 +54,12 @@ public class SimpleRconClient {
 		System.out.println(peer.peerAddress().toString());
 	}
 
-	private static void createPeer(boolean isMaster, String id)
-			throws IOException {
+	private static void createPeer(boolean isMaster, String id) throws IOException {
 		if (isMaster) {
-			peer = new PeerBuilder(Number160.createHash("master")).ports(port)
-					.start();
+			peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
+			new PeerNAT(peer);
 		} else {
-			peer = new PeerBuilder(Number160.createHash(id)).ports(port)
-					.start();
+			peer = new PeerBuilder(Number160.createHash(id)).ports(port).start();
 		}
 	}
 
@@ -74,18 +71,16 @@ public class SimpleRconClient {
 		boolean success = false;
 		MasterIpAddress = ip;
 
-		masterPeerAddress = new PeerAddress(Number160.createHash("master"),
-				Inet4Address.getByName(MasterIpAddress), port, port);
+		masterPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(MasterIpAddress),
+				port, port);
 
 		// do PeerDiscover
-		FutureDiscover fd = peer.discover().peerAddress(peer.peerAddress())
-				.start().awaitUninterruptibly();
+		FutureDiscover fd = peer.discover().peerAddress(peer.peerAddress()).start().awaitUninterruptibly();
 		if (!fd.isSuccess()) {
 			return success;
 		}
 
-		FutureBootstrap fb = peer.bootstrap().peerAddress(masterPeerAddress)
-				.start();
+		FutureBootstrap fb = peer.bootstrap().peerAddress(masterPeerAddress).start();
 		fb.awaitUninterruptibly();
 		if (fb.isSuccess()) {
 			System.out.println("Bootstrap success!");
@@ -97,8 +92,7 @@ public class SimpleRconClient {
 		return success;
 	}
 
-	public static boolean sendDummy(String dummy, String id, String ip)
-			throws IOException {
+	public static boolean sendDummy(String dummy, String id, String ip) throws IOException {
 		boolean success = false;
 		PeerAddress recepient = null;
 
@@ -107,12 +101,11 @@ public class SimpleRconClient {
 			recepient = masterPeerAddress;
 		} else {
 			System.out.println("DIRECTED MESSAGE TO " + ip);
-			recepient = new PeerAddress(Number160.createHash(id),
-					Inet4Address.getByName(ip), port, port).changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+			recepient = new PeerAddress(Number160.createHash(id), Inet4Address.getByName(ip), port, port);
 		}
 		FutureDiscover fDisc = peer.discover().peerAddress(recepient).start();
 		fDisc.awaitUninterruptibly(10000);
-		
+
 		if (fDisc.isSuccess()) {
 			if (fDisc.isNat()) {
 				System.out.println("RECEIVER IS NAT PEER");
@@ -123,7 +116,8 @@ public class SimpleRconClient {
 			}
 		} else {
 			System.out.println("FUTURE DISCOVER FAIL");
-			recepient = recepient.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+			// recepient =
+			// recepient.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
 		}
 
 		FutureDirect fd = peer.sendDirect(recepient).object(dummy).start();
@@ -178,19 +172,17 @@ public class SimpleRconClient {
 	// }
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
-		PeerAddress bootstrapPeerAddress = new PeerAddress(
-				Number160.createHash("master"), Inet4Address.getByName(ip),
+		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip),
 				port, port);
 		masterPeerAddress = bootstrapPeerAddress;
-		
+
 		// Set the isFirewalledUDP and isFirewalledTCP flags
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		peer.peerBean().serverPeerAddress(upa);
 
 		// find neighbors
-		FutureBootstrap futureBootstrap = peer.bootstrap()
-				.peerAddress(bootstrapPeerAddress).start();
+		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
 		futureBootstrap.awaitUninterruptibly();
 
 		// setup relay
@@ -200,13 +192,12 @@ public class SimpleRconClient {
 		futureRelay.awaitUninterruptibly();
 
 		// find neighbors again
-		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress)
-				.start();
+		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
 		fb.awaitUninterruptibly();
-		
+
 		// do maintenance
-//		uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
-//		uNat.startRelayMaintenance(futureRelay);
+		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
+		// uNat.startRelayMaintenance(futureRelay);
 	}
 
 }

@@ -33,10 +33,10 @@ public class RconView {
 
 	private void makePanel() {
 
-		//sendMessageButton
+		// sendMessageButton
 		sendMessageTestButton.setEnabled(true);
 		sendMessageTestButton.setLabel("sendTestMessage()");
-		
+
 		peerAddressField.setToolTipText("My own PeerAddress");
 		peerAddressField.setEditable(false);
 		peerAddressField.setEnabled(false);
@@ -44,13 +44,13 @@ public class RconView {
 
 		sendDirectedMessageButton.setEnabled(true);
 		sendDirectedMessageButton.setLabel("sendDirectedMessage()");
-		
+
 		idField.setEditable(true);
 		idField.setEnabled(true);
 
 		ipField.setEditable(true);
 		ipField.setEnabled(true);
-		
+
 		pane.setLayout(new GridLayout(5, 1));
 		pane.add(peerAddressField, 0);
 		pane.add(sendMessageTestButton, 1);
@@ -64,7 +64,7 @@ public class RconView {
 	public JFrame getJFrame() {
 		return frame;
 	}
-	
+
 	public Button getSendTestMessageButton() {
 		return sendMessageTestButton;
 	}
@@ -84,6 +84,5 @@ public class RconView {
 	public JTextField getIdField() {
 		return idField;
 	}
-	
-	
+
 }

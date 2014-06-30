@@ -16,6 +16,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
@@ -31,6 +32,7 @@ public class PeerNAT {
 	final private Peer peer;
 	final private NATUtils natUtils;
 	final private RelayRPC relayRPC;
+	final private RconRPC rconRPC;
 
 	private BootstrapBuilder bootstrapBuilder;
 	private int peerMapUpdateInterval = 5;
@@ -43,6 +45,7 @@ public class PeerNAT {
 		this.peer = peer;
 		this.natUtils = new NATUtils();
 		this.relayRPC = new RelayRPC(peer);
+		this.rconRPC = new RconRPC(peer);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override

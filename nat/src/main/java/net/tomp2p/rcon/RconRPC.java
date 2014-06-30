@@ -3,27 +3,26 @@ package net.tomp2p.rcon;
 import java.lang.reflect.UndeclaredThrowableException;
 
 import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
 public class RconRPC extends DispatchHandler {
 
-	/**
-	 * Constructor that registers this RPC with the message handler.
-	 * 
-	 * @param peerBean
-	 *            The peer bean that contains data that is unique for each peer
-	 * @param connectionBean
-	 *            The connection bean that is unique per connection (multiple
-	 *            peers can share a single connection)
-	 */
-	public RconRPC(PeerBean peerBean, ConnectionBean connectionBean) {
-		super(peerBean, connectionBean);
+	private final Peer peer;
+	private final ConnectionConfiguration config;
+	
+	public RconRPC(Peer peer) {
+		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.RCON.getNr());
+		this.peer = peer;
+		this.config = new DefaultConnectionConfiguration();
 	}
 
 	/**

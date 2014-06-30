@@ -24,7 +24,7 @@ public class SimpleRconClient {
 	private static int port = 4001;
 	private static Peer peer;
 	private static PeerAddress masterPeerAddress;
-	private static String MasterIpAddress;
+	private static String masterIpAddress;
 
 	public static void start(boolean isMaster, String id) {
 		// Create a peer with a random peerID, on port 4001, listening to the
@@ -60,6 +60,7 @@ public class SimpleRconClient {
 			new PeerNAT(peer);
 		} else {
 			peer = new PeerBuilder(Number160.createHash(id)).ports(port).start();
+			new PeerNAT(peer);
 		}
 	}
 
@@ -69,9 +70,9 @@ public class SimpleRconClient {
 
 	public static boolean usualBootstrap(String ip) throws UnknownHostException {
 		boolean success = false;
-		MasterIpAddress = ip;
+		masterIpAddress = ip;
 
-		masterPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(MasterIpAddress),
+		masterPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(masterIpAddress),
 				port, port);
 
 		// do PeerDiscover
@@ -103,22 +104,6 @@ public class SimpleRconClient {
 			System.out.println("DIRECTED MESSAGE TO " + ip);
 			recepient = new PeerAddress(Number160.createHash(id), Inet4Address.getByName(ip), port, port);
 		}
-		FutureDiscover fDisc = peer.discover().peerAddress(recepient).start();
-		fDisc.awaitUninterruptibly(10000);
-
-		if (fDisc.isSuccess()) {
-			if (fDisc.isNat()) {
-				System.out.println("RECEIVER IS NAT PEER");
-				recepient = fDisc.peerAddress();
-				System.out.println("RECIPIENT RELAYED = " + recepient.isRelayed());
-			} else {
-				System.out.println("RECEIVER IS USUAL PEER");
-			}
-		} else {
-			System.out.println("FUTURE DISCOVER FAIL");
-			// recepient =
-			// recepient.changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
-		}
 
 		FutureDirect fd = peer.sendDirect(recepient).object(dummy).start();
 		fd.awaitUninterruptibly(10000);
@@ -133,43 +118,22 @@ public class SimpleRconClient {
 		return success;
 	}
 
-	// /*
-	// * Creates peer address
-	// */
-	// private static PeerAddress createPeerAddress(String ip) {
-	//
-	// // Format IP
-	// InetAddress address = null;
-	// try {
-	// address = Inet4Address.getByName(ip);
-	// } catch (UnknownHostException e) {
-	// e.printStackTrace();
-	// }
-	//
-	// // Create PeerAddress for MasterNode
-	// PeerAddress peerAddress = null;
-	// FutureDiscover fd = peer.discover().inetAddress(address).ports(port)
-	// .start();
-	// fd.awaitUninterruptibly();
-	// if (fd.isSuccess()) {
-	// peerAddress = fd.peerAddress();
-	// } else {
-	// System.out.println("Discover is not working");
-	// }
-	//
-	// if (peerAddress == null) {
-	// System.out.println("PeerAddress fail");
-	// } else {
-	// if (peerAddress.peerId() == null) {
-	// System.out.println("PeerAddress ID is zero");
-	// } else {
-	// System.out.println("Create PeerAddress: "
-	// + peerAddress.toString());
-	// }
-	// }
-	//
-	// return peerAddress;
-	// }
+	public static boolean sendDummy(String message) throws UnknownHostException {
+		boolean success = false;
+		PeerAddress recipient = new PeerAddress(Number160.createHash("NAT"), Inet4Address.getByName(masterIpAddress), port, port);
+
+		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(message).start();
+		fd.awaitUninterruptibly(10000);
+		
+		if (fd.isSuccess()) {
+			System.out.println("FUTURE DIRECT SUCCESS!");
+			success = true;
+		} else {
+			System.out.println("FUTURE DIRECT FAIL!");
+		}
+
+		return success;
+	}
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
 		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip),

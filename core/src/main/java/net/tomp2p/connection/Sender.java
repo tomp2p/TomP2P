@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
@@ -143,9 +144,8 @@ public class Sender {
 			// check reverse connection setup
 			if (message.recipient().isRelayed() && !message.sender().isRelayed()) {
 				// TODO JWA manipulate message to fit into rcon
-				// handleRelay(handler, futureResponse, message, channelCreator,
-				// idleTCPSeconds, connectTimeoutMillis, peerConnection,
-				// timeoutHandler);
+				 handleRconSetup(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
+						peerConnection, timeoutHandler);
 				// check relay
 			} else if (message.recipient().isRelayed()) {
 				handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
@@ -159,42 +159,39 @@ public class Sender {
 		}
 	}
 
-	// private void handleRcon(final SimpleChannelInboundHandler<Message>
-	// handler,
-	// final FutureResponse futureResponse, final Message message,
-	// final ChannelCreator channelCreator, final int idleTCPSeconds,
-	// final int connectTimeoutMillis, final PeerConnection peerConnection,
-	// final TimeoutFactory timeoutHandler) {
-	//
-	// FutureDone<PeerSocketAddress> futurePing =
-	// pingFirst(message.recipient().peerSocketAddresses(), pingBuilderFactory);
-	// futurePing.addListener(new
-	// BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
-	//
-	// @Override
-	// public void operationComplete(final FutureDone<PeerSocketAddress>
-	// futureDone) throws Exception {
-	// InetSocketAddress recipient = PeerSocketAddress
-	// .createSocketTCP(futureDone.object());
-	// ChannelFuture channelFuture = sendTCPCreateChannel(
-	// recipient, channelCreator, peerConnection,
-	// handler, timeoutHandler,
-	// connectTimeoutMillis, futureResponse);
-	// afterConnect(futureResponse, message,
-	// channelFuture, handler == null);
-	//
-	// futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-	//
-	// @Override
-	// public void operationComplete(FutureResponse future)
-	// throws Exception {
-	// // TODO Auto-generated method stub
-	//
-	// }
-	// });
-	// }
-	// });
-	// }
+
+	private void handleRconSetup(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
+			final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds, final int connectTimeoutMillis,
+			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
+
+		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(),
+				pingBuilderFactory);
+		futurePing.addListener(new BaseFutureListener<FutureDone<PeerSocketAddress>>() {
+
+			@Override
+			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
+				if (futureDone.isSuccess()) {
+					InetSocketAddress recipient = PeerSocketAddress.createSocketTCP(futureDone.object());
+					ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection,
+							handler, timeoutHandler, connectTimeoutMillis, futureResponse);
+					afterConnect(futureResponse, message, channelFuture, handler == null);
+					
+					futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+
+						@Override
+						public void operationComplete(FutureResponse future) throws Exception {
+							
+						}
+					});
+				}
+			}
+
+			@Override
+			public void exceptionCaught(Throwable t) throws Exception {
+				t.printStackTrace();
+			}
+		});
+	}
 
 	/**
 	 * TODO: document what is done here

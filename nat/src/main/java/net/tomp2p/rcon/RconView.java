@@ -16,6 +16,7 @@ public class RconView {
 
 	private Button sendMessageTestButton = new Button();
 	private Button sendDirectedMessageButton = new Button();
+	private Button sendDirectedNatPeerButton = new Button();
 	private JTextField peerAddressField = new JTextField("my PeerAddress");
 	private JTextField ipField = new JTextField("Enter IP of recepient");
 	private JTextField idField = new JTextField("Enter ID of recepient");
@@ -44,6 +45,9 @@ public class RconView {
 
 		sendDirectedMessageButton.setEnabled(true);
 		sendDirectedMessageButton.setLabel("sendDirectedMessage()");
+		
+		sendDirectedNatPeerButton.setEnabled(true);
+		sendDirectedNatPeerButton.setLabel("sendDirectedNatPeerMessage()");
 
 		idField.setEditable(true);
 		idField.setEnabled(true);
@@ -51,12 +55,13 @@ public class RconView {
 		ipField.setEditable(true);
 		ipField.setEnabled(true);
 
-		pane.setLayout(new GridLayout(5, 1));
+		pane.setLayout(new GridLayout(6, 1));
 		pane.add(peerAddressField, 0);
 		pane.add(sendMessageTestButton, 1);
 		pane.add(ipField, 2);
 		pane.add(idField, 3);
 		pane.add(sendDirectedMessageButton, 4);
+		pane.add(sendDirectedNatPeerButton, 5);
 
 		frame.add(pane);
 	}
@@ -71,6 +76,10 @@ public class RconView {
 
 	public Button getSendDirectedMessageButton() {
 		return sendDirectedMessageButton;
+	}
+
+	public Button getSendDirectedNatPeerButton() {
+		return sendDirectedNatPeerButton;
 	}
 
 	public JTextField getPeerAddressField() {

@@ -50,7 +50,6 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -103,16 +102,12 @@ public class PeerBuilder {
 	private Peer masterPeer = null;
 	private ChannelServerConficuration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
-	private Storage storage = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
 	private BloomfilterFactory bloomfilterFactory;
 	private ScheduledExecutorService scheduledExecutorService = null;
 	private MaintenanceTask maintenanceTask = null;
 	private Random random = null;
-	private int delayMillis = -1;
-	private boolean allPeersReplicate = false;
-	private int intervalMillis = -1;
 	private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
 
 	// enable / disable RPC/P2P/other
@@ -378,15 +373,6 @@ public class PeerBuilder {
 		this.peerMap = peerMap;
 		return this;
 	}
-	
-	public Storage storage() {
-		return storage;
-	}
-
-	public PeerBuilder storage(Storage storage) {
-		this.storage = storage;
-		return this;
-	}
 
 	public Peer masterPeer() {
 		return masterPeer;
@@ -448,38 +434,6 @@ public class PeerBuilder {
 
 	public PeerBuilder random(Random random) {
 		this.random = random;
-		return this;
-	}
-
-	public int delayMillis() {
-		return delayMillis;
-	}
-
-	public PeerBuilder delayMillis(int delayMillis) {
-		this.delayMillis = delayMillis;
-		return this;
-	}
-	
-	public boolean isAllPeersReplicate() {
-		return allPeersReplicate;
-	}
-	
-	public PeerBuilder allPeersReplicate() {
-		this.allPeersReplicate = true;
-		return this;
-	}
-
-	public PeerBuilder allPeersReplicate(boolean allPeersReplicate) {
-		this.allPeersReplicate = allPeersReplicate;
-		return this;
-	}
-
-	public int intervalMillis() {
-		return intervalMillis;
-	}
-
-	public PeerBuilder intervalMillis(int intervalMillis) {
-		this.intervalMillis = intervalMillis;
 		return this;
 	}
 

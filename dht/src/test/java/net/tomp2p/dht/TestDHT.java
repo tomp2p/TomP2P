@@ -1832,14 +1832,24 @@ public class TestDHT {
 			Assert.assertTrue(dataMap.containsKey(key7b));
 			Assert.assertEquals(data7b.object(), dataMap.get(key7b).object());
 
-//			// get latest versions with digest
-//			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
-//					.contentKey(contentKey).getLatest().withDigest().start();
-//			fgetWithDigest.awaitUninterruptibly();
-//			Assert.assertEquals(true, fgetWithDigest.isSuccess());
-//
-//			System.err.println(fgetWithDigest.digest().keyDigest());
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
 
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(12, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1988,6 +1998,25 @@ public class TestDHT {
 			Number640 key7 = new Number640(key480, vKey7);
 			Assert.assertTrue(dataMap.containsKey(key7));
 			Assert.assertEquals(data7.object(), dataMap.get(key7).object());
+
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
+
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(13, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -2056,6 +2085,25 @@ public class TestDHT {
 			Number640 key2 = new Number640(key480, vKey2);
 			Assert.assertTrue(dataMap.containsKey(key2));
 			Assert.assertEquals(data2.object(), dataMap.get(key2).object());
+
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
+
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(3, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

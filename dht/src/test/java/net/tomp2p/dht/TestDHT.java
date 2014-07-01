@@ -797,6 +797,58 @@ public class TestDHT {
 	}
 
 	@Test
+	public void testDigest4() throws Exception {
+		PeerDHT master = null;
+		try {
+			// setup
+			PeerDHT[] peers = UtilsDHT2.createNodes(100, rnd, 4001);
+			master = peers[0];
+			UtilsDHT2.perfectRouting(peers);
+
+			// initialize test data
+			Number160 lKey = new Number160(rnd);
+			Number160 dKey = new Number160(rnd);
+			Number160 ckey = new Number160(rnd);
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			Number160 bKey = Number160.ONE;
+			for (int i = 0; i < 10; i++) {
+				Data data = new Data(UUID.randomUUID());
+				data.addBasedOn(bKey);
+				Number160 vKey = new Number160(i, data.hash());
+				dataMap.put(new Number640(lKey, dKey, ckey, vKey), data);
+				bKey = vKey;
+			}
+
+			// put test data
+			for (Number640 key : dataMap.keySet()) {
+				FuturePut fput = peers[rnd.nextInt(100)].put(lKey).domainKey(dKey)
+						.data(ckey, dataMap.get(key)).versionKey(key.versionKey()).start();
+				fput.awaitUninterruptibly();
+			}
+
+			// get digest
+			FutureDigest fget = peers[rnd.nextInt(100)].digest(lKey)
+					.from(new Number640(lKey, dKey, ckey, Number160.ZERO))
+					.to(new Number640(lKey, dKey, ckey, Number160.MAX_VALUE)).start();
+			fget.awaitUninterruptibly();
+			DigestResult dr = fget.digest();
+			NavigableMap<Number640, Collection<Number160>> fetchedDataMap = dr.keyDigest();
+
+			// verify fetched digest
+			Assert.assertEquals(dataMap.size(), fetchedDataMap.size());
+			for (Number640 key : dataMap.keySet()) {
+				Assert.assertTrue(fetchedDataMap.containsKey(key));
+				Assert.assertEquals(dataMap.get(key).basedOnSet().iterator().next(), fetchedDataMap.get(key)
+						.iterator().next());
+			}
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	@Test
 	public void testData() throws Exception {
 		PeerDHT master = null;
 		try {
@@ -1779,6 +1831,15 @@ public class TestDHT {
 			Number640 key7b = new Number640(key480, vKey7b);
 			Assert.assertTrue(dataMap.containsKey(key7b));
 			Assert.assertEquals(data7b.object(), dataMap.get(key7b).object());
+
+//			// get latest versions with digest
+//			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+//					.contentKey(contentKey).getLatest().withDigest().start();
+//			fgetWithDigest.awaitUninterruptibly();
+//			Assert.assertEquals(true, fgetWithDigest.isSuccess());
+//
+//			System.err.println(fgetWithDigest.digest().keyDigest());
+
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

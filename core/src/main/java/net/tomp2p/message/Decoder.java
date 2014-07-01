@@ -400,8 +400,12 @@ public class Decoder {
 						+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE;
 
 				for (int i = keyMap640Keys.size(); i < keyMap640KeysSize; i++) {
-					if (buf.readableBytes() < meta + Utils.BYTE_SIZE
-							+ (buf.getUnsignedByte(buf.readerIndex() + meta) * Number160.BYTE_ARRAY_SIZE)) {
+					if (buf.readableBytes() < meta + Utils.BYTE_SIZE) {
+						return false;
+					}
+					size = buf.getUnsignedByte(buf.readerIndex() + meta);
+					
+					if (buf.readableBytes() < meta + Utils.BYTE_SIZE + (size * Number160.BYTE_ARRAY_SIZE )) {
 						return false;
 					}
 					byte[] me3 = new byte[Number160.BYTE_ARRAY_SIZE];
@@ -514,7 +518,7 @@ public class Decoder {
 				}
 				for (int i = trackerData.size(); i < trackerDataSize; i++) {
 
-					if (buf.readableBytes() < Utils.BYTE_SIZE) {
+					if (buf.readableBytes() < Utils.SHORT_BYTE_SIZE) {
 						return false;
 					}
 

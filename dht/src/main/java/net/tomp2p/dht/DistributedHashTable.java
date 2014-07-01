@@ -34,6 +34,7 @@ import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.futures.FutureRouting;
+import net.tomp2p.message.KeyMap640Keys;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.DistributedRouting;
 import net.tomp2p.p2p.RequestP2PConfiguration;
@@ -48,6 +49,7 @@ import net.tomp2p.rpc.DefaultBloomfilterFactory;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.DirectDataRPC;
+import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
@@ -335,21 +337,29 @@ public class DistributedHashTable {
                                                 .directHits(), futureDHT, true,
                                         future.channelCreator(), new OperationMapper<FutureGet>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
+                                            Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
 
                                             @Override
                                             public FutureResponse create(ChannelCreator channelCreator,
                                                     PeerAddress address) {
-                                            	if (builder.isGetLatest()) {
-                                            		return storeRCP.getLatest(address, builder, channelCreator);
-                                            	} else {
-                                            		return storeRCP.get(address, builder, channelCreator);
-                                            	}
+												if (builder.isGetLatest()) {
+													if (builder.isWithDigest()) {
+														return storeRCP.getLatest(address, builder,
+																channelCreator, RPC.Commands.GET_LATEST_WITH_DIGEST);
+													} else {
+														return storeRCP.getLatest(address, builder,
+																channelCreator,
+																RPC.Commands.GET_LATEST);
+													}
+												} else {
+													return storeRCP.get(address, builder, channelCreator);
+												}
                                             }
 
                                             @Override
                                             public void response(FutureGet futureDHT) {
 
-                                                futureDHT.receivedData(rawData);
+                                                futureDHT.receivedData(rawData, rawDigest);
 
                                             }
 
@@ -359,8 +369,15 @@ public class DistributedHashTable {
                                                 // ok for digest
                                                 if (future.isSuccess()) {
 
-                                                    rawData.put(future.request().recipient(), future
-                                                            .responseMessage().dataMap(0).dataMap());
+													rawData.put(future.request().recipient(), future
+															.responseMessage().dataMap(0).dataMap());
+													
+													KeyMap640Keys keyMaps = future.responseMessage()
+															.keyMap640Keys(0);
+													if (keyMaps != null && keyMaps.keysMap() != null) {
+														rawDigest.put(future.request().recipient(),
+																new DigestResult(keyMaps.keysMap()));
+													}
 
                                                     logger.debug("set data from {}", future.request()
                                                             .recipient());

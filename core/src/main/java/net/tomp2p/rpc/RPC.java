@@ -23,7 +23,8 @@ public class RPC {
 		SYNC(),
 		SYNC_INFO(),
 		PUT_CONFIRM(),
-		GET_LATEST();
+		GET_LATEST(),
+		GET_LATEST_WITH_DIGEST();
 	
 	public byte getNr() {
 		return (byte) ordinal();

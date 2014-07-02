@@ -33,7 +33,7 @@
   <!--  <logger name="net.tomp2p.p2p.DefaultBroadcastHandler" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DefaultTrackerReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedHashTable" level="TRACE"/> -->
-  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedTask" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.DistributedTracker" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.Peer" level="TRACE"/> -->
@@ -41,7 +41,7 @@
   <!--  <logger name="net.tomp2p.p2p.Statistics" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.p2p.MaintenanceTask" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.peers.PeerMap" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.peers.PeerMap" level="TRACE"/> -->
   
   <!--  <logger name="net.tomp2p.replication.DefaultStorageReplication" level="TRACE"/> -->
   <!--  <logger name="net.tomp2p.replication.DefaultTrackerReplication" level="TRACE"/> -->
@@ -71,7 +71,7 @@
   
   <!--  <logger name="net.tomp2p.utils.ConcurrentCacheMap" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.relay" level="TRACE"/>
+  <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
   

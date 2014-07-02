@@ -31,10 +31,6 @@ import net.tomp2p.storage.Data;
 public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
     private Data attachement;
 
-    private int trackerTimeoutSec = 60;
-
-    private int pexWaitSec = 0;
-
     private SimpleBloomFilter<Number160> bloomFilter;
 
     private FutureCreate<BaseFuture> futureCreate;
@@ -54,30 +50,12 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         self(this);
     }
 
-    public Data getAttachement() {
+    public Data attachement() {
         return attachement;
     }
 
-    public AddTrackerBuilder setAttachement(Data attachement) {
+    public AddTrackerBuilder attachement(Data attachement) {
         this.attachement = attachement;
-        return this;
-    }
-
-    public int getTrackerTimeoutSec() {
-        return trackerTimeoutSec;
-    }
-
-    public AddTrackerBuilder setTrackerTimeoutSec(int trackerTimeoutSec) {
-        this.trackerTimeoutSec = trackerTimeoutSec;
-        return this;
-    }
-
-    public int getPexWaitSec() {
-        return pexWaitSec;
-    }
-
-    public AddTrackerBuilder setPexWaitSec(int pexWaitSec) {
-        this.pexWaitSec = pexWaitSec;
         return this;
     }
 
@@ -152,65 +130,12 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         }
         // add myself to my local tracker, since we use a mesh we are part of
         // the tracker mesh as well.
-        peer
-                .trackerStorage()
-                .put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),
+        peer.trackerStorage().put(new Number320(locationKey, domainKey), peer.peerAddress(), keyPair() == null? null: keyPair().getPublic(),
                         attachement);
         final FutureTracker futureTracker = peer.distributedTracker().add(this);
 
-        
-        /*if (pexWaitSec > 0) {
-            if (defaultPEX == null) {
-                defaultPEX = new DefaultPEX();
-            }
-            Runnable runner = new Runnable() {
-                @Override
-                public void run() {
-                    FutureLateJoin<FutureResponse> future = defaultPEX.create();
-                    futureTracker.repeated(future);
-                }
-            };
-            ScheduledFuture<?> tmp = peer.getConnectionBean().getScheduler().getScheduledExecutorServiceReplication()
-                    .scheduleAtFixedRate(runner, pexWaitSec, pexWaitSec, TimeUnit.SECONDS);
-            setupCancel(futureTracker, tmp);
-        }*/
         return futureTracker;
     }
-
-    /*protected void setupCancel(final FutureCleanup futureCleanup, final ScheduledFuture<?> future) {
-        peer.getScheduledFutures().add(future);
-        futureCleanup.addCleanup(new Cancel() {
-            @Override
-            public void cancel() {
-                future.cancel(true);
-                peer.getScheduledFutures().remove(future);
-            }
-        });
-    }
-
-    private class DefaultDirectReplication implements FutureCreator<FutureTracker> {
-        @Override
-        public FutureTracker create() {
-            int conn = Math.max(routingConfiguration.getParallel(), trackerConfiguration.getParallel());
-            final FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation()
-                    .reserve(conn);
-            final FutureTracker futureTracker = peer.getDistributedTracker().addToTracker(locationKey, domainKey,
-                    getAttachement(), routingConfiguration, trackerConfiguration, isMessageSign(), futureCreate,
-                    getBloomFilter(), futureChannelCreator, peer.getConnectionBean().getConnectionReservation());
-            return futureTracker;
-        }
-    }*/
-
-    /*private class DefaultPEX implements FutureCreator<FutureLateJoin<FutureResponse>> {
-        @Override
-        public FutureLateJoin<FutureResponse> create() {
-            final FutureChannelCreator futureChannelCreator = peer.getConnectionBean().getConnectionReservation()
-                    .reserve(TrackerStorage.TRACKER_SIZE);
-            FutureLateJoin<FutureResponse> futureLateJoin = peer.getDistributedTracker().startPeerExchange(locationKey,
-                    domainKey, futureChannelCreator, peer.getConnectionBean().getConnectionReservation(), tcpPEX);
-            return futureLateJoin;
-        }
-    }*/
 
     public boolean isPrimary() {
         return primary;

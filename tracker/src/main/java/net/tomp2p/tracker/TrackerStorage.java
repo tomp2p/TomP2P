@@ -58,6 +58,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		if (oldData!=null && oldData.publicKey()!=null && !oldData.publicKey().equals(publicKey)) {
 			return false;
 		}
+		if(attachement == null) {
+			attachement = new Data();
+		}
 		// now store
 		attachement.publicKey(publicKey);
 		return add(key, new PeerStatatistic(peerAddress), dataMapUnverified, attachement);
@@ -196,7 +199,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				}
 			}
 		}
-		remove(keyToRemove, statToRemove, dataMapUnverified);
+		if(keyToRemove !=null) {
+			remove(keyToRemove, statToRemove, dataMapUnverified);
+		}
 		//
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
 			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
@@ -206,7 +211,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				}
 			}
 		}
-		remove(keyToRemove, statToRemove, dataMap);
+		if(keyToRemove !=null) {
+			remove(keyToRemove, statToRemove, dataMap);
+		}
 		return true;
 	}
 

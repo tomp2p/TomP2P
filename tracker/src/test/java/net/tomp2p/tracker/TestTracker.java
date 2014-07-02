@@ -18,6 +18,7 @@ import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -28,14 +29,14 @@ public class TestTracker {
     @Test
     public void testTracker() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
-            Peer[] nodes = createNodes(master, 500, rnd);
+            master = new PeerTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start());
+            PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(0, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 1, 0);
@@ -43,26 +44,42 @@ public class TestTracker {
             System.err.println("about to store " + trackerID);
             // FutureTracker ft = nodes[300].addToTracker(trackerID, "test",
             // null, rc, tc);
+            PeerTracker closest = findClosest(nodes, trackerID);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             tc = new TrackerConfiguration(1, 1, 0, 1);
             ft = nodes[301].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             System.err.println(ft.failedReason());
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
 
-    @Test
+    private static PeerTracker findClosest(PeerTracker[] nodes, Number160 trackerID) {
+    	TreeSet<PeerAddress> set = new TreeSet<PeerAddress>(PeerMap.createComparator(trackerID));
+    	for(PeerTracker p:nodes) {
+    		set.add(p.peerAddress());
+    	}
+    	PeerAddress first = set.first();
+    	
+    	for(PeerTracker p:nodes) {
+    		if(p.peerAddress().equals(first)) {
+    			return p;
+    		}
+    	}
+	    return null;
+    }
+
+	@Test
     public void testTracker2() throws Exception {
         final Random rnd = new Random(42L);
         Peer master = null;
@@ -79,14 +96,14 @@ public class TestTracker {
             Number160 trackerID = new Number160(rnd);
             System.err.println("about to store " + trackerID);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 1, 3, 1000, 2);
             ft = nodes[301].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
@@ -117,14 +134,14 @@ public class TestTracker {
             Number160 trackerID = new Number160(rnd);
             System.err.println("about to store " + trackerID);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 2, 3, 1000, 2);
             ft = nodes[301].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
@@ -155,23 +172,23 @@ public class TestTracker {
             Number160 trackerID = new Number160(rnd);
             System.err.println("about to store " + trackerID);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             System.err.println("add the peer to the tracker: " + nodes[300].peerAddress());
             ft.awaitUninterruptibly();
             ft = nodes[301].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             System.err.println("add the peer to the tracker: " + nodes[301].peerAddress());
             ft.awaitUninterruptibly();
             ft = nodes[302].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).start();
             System.err.println("add the peer to the tracker: " + nodes[302].peerAddress());
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 2, 2);
             ft = nodes[299].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             // we return there 1 because we use bloomfilters to not return
@@ -208,7 +225,7 @@ public class TestTracker {
             for (int i = 0; i <= 300; i++) {
                 FutureTracker ft = nodes[300 + i].addTracker(trackerID)
                         .domainKey(Number160.createHash("test")).routingConfiguration(rc)
-                        .setTrackerConfiguration(tc).start();
+                        .trackerConfiguration(tc).start();
                 ft.awaitUninterruptibly();
                 System.err.println("added " + nodes[300 + i].peerAddress().peerId() + " on "
                         + ft.directTrackers());
@@ -220,7 +237,7 @@ public class TestTracker {
             for (int i = 0; i <= 300; i++) {
                 FutureTracker ft = nodes[600 - i].addTracker(trackerID)
                         .domainKey(Number160.createHash("test")).routingConfiguration(rc)
-                        .setTrackerConfiguration(tc).start();
+                        .trackerConfiguration(tc).start();
                 ft.awaitUninterruptibly();
                 System.err.println("added " + nodes[300 + i].peerAddress().peerId() + " on "
                         + ft.directTrackers());
@@ -246,8 +263,8 @@ public class TestTracker {
             System.err.println("SEARCH>>");
             tc = new TrackerConfiguration(1, 1, 30, 301, 0, 20);
             FutureTracker ft1 = nodes[299].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft1.awaitUninterruptibly();
             Assert.assertEquals(true, ft1.isSuccess());
             for (TrackerData pa : ft1.trackers()) {
@@ -258,8 +275,8 @@ public class TestTracker {
             }
             // ctg.setUseSecondaryTrackers(true);
             FutureTracker ft2 = nodes[299].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setEvaluatingScheme(new VotingSchemeTracker()).setKnownPeers(ft1.knownPeers())
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .evaluatingScheme(new VotingSchemeTracker()).knownPeers(ft1.knownPeers())
                     .start();
             ft2.awaitUninterruptibly();
             System.err.println("Reason: " + ft2.failedReason());
@@ -303,27 +320,27 @@ public class TestTracker {
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
             Number160 trackerID = new Number160(rnd);
             FutureTracker ft = nodes[300].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setAttachement(new Data(",.peoueuaoeue")).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .attachement(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[301].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setAttachement(new Data(",.peoueuaoeue")).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .attachement(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[302].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setAttachement(new Data(",.peoueuaoeue")).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .attachement(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             ft = nodes[303].addTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc)
-                    .setAttachement(new Data(",.peoueuaoeue")).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc)
+                    .attachement(new Data(",.peoueuaoeue")).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 0, 1);
             ft = nodes[199].getTracker(trackerID).domainKey(Number160.createHash("test"))
-                    .routingConfiguration(rc).setTrackerConfiguration(tc).setExpectAttachement()
-                    .setEvaluatingScheme(new VotingSchemeTracker()).start();
+                    .routingConfiguration(rc).trackerConfiguration(tc).expectAttachement()
+                    .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
@@ -416,12 +433,13 @@ public class TestTracker {
         }
     }
 
-    private Peer[] createNodes(Peer master, int nr, Random rnd) throws Exception {
+    private PeerTracker[] createNodes(PeerTracker master, int nr, Random rnd) throws Exception {
 
-        Peer[] nodes = new Peer[nr];
+    	PeerTracker[] nodes = new PeerTracker[nr+1];
         for (int i = 0; i < nr; i++) {
-            nodes[i] = new PeerBuilder(new Number160(rnd)).p2pId(1).masterPeer(master).start();
+            nodes[i+1] = new PeerTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).masterPeer(master.peer()).start());
         }
+        nodes[0] = master;
         return nodes;
     }
 }

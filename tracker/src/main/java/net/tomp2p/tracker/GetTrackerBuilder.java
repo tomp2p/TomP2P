@@ -35,11 +35,11 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
         self(this);
     }
 
-    public EvaluatingSchemeTracker getEvaluatingScheme() {
+    public EvaluatingSchemeTracker evaluatingScheme() {
         return evaluatingScheme;
     }
 
-    public GetTrackerBuilder setEvaluatingScheme(EvaluatingSchemeTracker evaluatingScheme) {
+    public GetTrackerBuilder evaluatingScheme(EvaluatingSchemeTracker evaluatingScheme) {
         this.evaluatingScheme = evaluatingScheme;
         return this;
     }
@@ -48,12 +48,12 @@ public class GetTrackerBuilder extends TrackerBuilder<GetTrackerBuilder> {
         return expectAttachement;
     }
 
-    public GetTrackerBuilder setExpectAttachement() {
+    public GetTrackerBuilder expectAttachement() {
         this.expectAttachement = true;
         return this;
     }
 
-    public GetTrackerBuilder setExpectAttachement(boolean expectAttachement) {
+    public GetTrackerBuilder expectAttachement(boolean expectAttachement) {
         this.expectAttachement = expectAttachement;
         return this;
     }

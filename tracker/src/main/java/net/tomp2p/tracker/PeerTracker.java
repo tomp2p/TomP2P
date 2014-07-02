@@ -42,7 +42,6 @@ public class PeerTracker implements Runnable {
 	public PeerTracker(Peer peer) {
 		this(peer, 60, 20, new int[]{2,4,8,16,32,64});
 	}
-	
 
 	public PeerTracker(Peer peer, int ttl, int replicationFactor, int[] maintenanceInterval) {
 		this.peer = peer;

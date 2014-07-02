@@ -183,7 +183,7 @@ public class Sender {
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isFailed()) {
 
-								if (future.emptyResponse() != null
+								if (future.responseMessage() != null
 								        && future.responseMessage().type() != Message.Type.USER1) {
 									clearInactivePeerSocketAddress(futureDone);
 									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds,

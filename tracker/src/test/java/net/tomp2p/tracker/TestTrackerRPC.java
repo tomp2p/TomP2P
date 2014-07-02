@@ -41,7 +41,7 @@ public class TestTrackerRPC {
             cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
-            addTrackerBuilder.setDomainKey(dom);
+            addTrackerBuilder.domainKey(dom);
             addTrackerBuilder.setBloomFilter(bloomFilter);
 
             FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.peerAddress(),
@@ -52,13 +52,13 @@ public class TestTrackerRPC {
             bloomFilter = new SimpleBloomFilter<Number160>(100, 10);
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
-            getTrackerBuilder.setKnownPeers(bloomFilter);
+            getTrackerBuilder.knownPeers(bloomFilter);
 
             fr = sender.getTrackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            PeerAddress peerAddress = fr.emptyResponse().trackerData(0).peerAddresses().keySet()
+            PeerAddress peerAddress = fr.responseMessage().trackerData(0).peerAddresses().keySet()
                     .iterator().next();
             Assert.assertEquals(sender.peerAddress(), peerAddress);
 
@@ -98,7 +98,7 @@ public class TestTrackerRPC {
             cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
-            addTrackerBuilder.setDomainKey(dom);
+            addTrackerBuilder.domainKey(dom);
 
             FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.peerAddress(),
                     addTrackerBuilder, cc);
@@ -111,7 +111,7 @@ public class TestTrackerRPC {
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            PeerAddress peerAddress = fr.emptyResponse().trackerData(0).peerAddresses().keySet()
+            PeerAddress peerAddress = fr.responseMessage().trackerData(0).peerAddresses().keySet()
                     .iterator().next();
             Assert.assertEquals(sender.peerAddress(), peerAddress);
         } finally {
@@ -145,8 +145,8 @@ public class TestTrackerRPC {
             cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
-            addTrackerBuilder.setDomainKey(dom);
-            addTrackerBuilder.setAttachement(new Data("data"));
+            addTrackerBuilder.domainKey(dom);
+            addTrackerBuilder.attachement(new Data("data"));
 
             FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.peerAddress(),
                     addTrackerBuilder, cc);
@@ -154,13 +154,13 @@ public class TestTrackerRPC {
             Assert.assertEquals(true, fr.isSuccess());
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
-            getTrackerBuilder.setExpectAttachement(true);
+            getTrackerBuilder.expectAttachement(true);
 
             fr = sender.getTrackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println("ERR:" + fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            PeerAddress peerAddress = fr.emptyResponse().trackerData(0).peerAddresses().keySet()
+            PeerAddress peerAddress = fr.responseMessage().trackerData(0).peerAddresses().keySet()
                     .iterator().next();
             Assert.assertEquals(sender.peerAddress(), peerAddress);
             Data tmp = fr.emptyResponse().trackerData(0).peerAddresses().values().iterator().next();
@@ -197,8 +197,8 @@ public class TestTrackerRPC {
             cc = fcc.channelCreator();
 
             AddTrackerBuilder addTrackerBuilder = new AddTrackerBuilder(sender, loc);
-            addTrackerBuilder.setDomainKey(dom);
-            addTrackerBuilder.setAttachement(new Data("data"));
+            addTrackerBuilder.domainKey(dom);
+            addTrackerBuilder.attachement(new Data("data"));
             addTrackerBuilder.setBloomFilter(bloomFilter);
 
             FutureResponse fr = sender.getTrackerRPC().addToTracker(recv1.peerAddress(),
@@ -208,14 +208,14 @@ public class TestTrackerRPC {
             bloomFilter.add(sender.peerID());
 
             GetTrackerBuilder getTrackerBuilder = new GetTrackerBuilder(sender, loc);
-            getTrackerBuilder.setExpectAttachement(true);
-            getTrackerBuilder.setKnownPeers(bloomFilter);
+            getTrackerBuilder.expectAttachement(true);
+            getTrackerBuilder.knownPeers(bloomFilter);
 
             fr = sender.getTrackerRPC().getFromTracker(recv1.peerAddress(), getTrackerBuilder, cc);
             fr.awaitUninterruptibly();
             System.err.println(fr.failedReason());
             Assert.assertEquals(true, fr.isSuccess());
-            Assert.assertEquals(0, fr.emptyResponse().trackerData(0).size());
+            Assert.assertEquals(0, fr.responseMessage().trackerData(0).size());
         } catch (Throwable t) {
             t.printStackTrace();
             Assert.fail();

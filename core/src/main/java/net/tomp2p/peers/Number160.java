@@ -204,8 +204,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final long timestamp, Number160 number96) {
         this.val = new int[INT_ARRAY_SIZE];
-        this.val[0] = (int) timestamp;
-        this.val[1] = (int) (timestamp >> Integer.SIZE);
+        this.val[0] = (int) (timestamp >> Integer.SIZE);
+        this.val[1] = (int) timestamp;
         this.val[2] = number96.val[2];
         this.val[3] = number96.val[3];
         this.val[4] = number96.val[4];
@@ -215,7 +215,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @return The first (most significant 64bits)
      */
     public long timestamp() {
-        return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[2] & LONG_MASK);
+        return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[1] & LONG_MASK);
     }
     
     /**

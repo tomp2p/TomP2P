@@ -684,7 +684,11 @@ public class StorageLayer implements DigestStorage {
 	
 	public void removeResponsibility(Number160 locationKey) {
 		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(locationKey);
-        try {
+		try {
+			backend.remove(
+					new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
+					new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
+					false);
         	backend.removeResponsibility(locationKey);
         } finally {
             responsibilityLock.unlock(lock);
@@ -695,6 +699,10 @@ public class StorageLayer implements DigestStorage {
 		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
 		KeyLock<Number160>.RefCounterLock lock2 = responsibilityLock.lock(locationKey);
         try {
+			backend.remove(
+					new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
+					new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
+					false);
         	backend.removeResponsibility(locationKey, peerId);
         } finally {
         	responsibilityLock.unlock(lock1);

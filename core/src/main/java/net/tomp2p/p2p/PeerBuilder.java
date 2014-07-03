@@ -159,10 +159,6 @@ public class PeerBuilder {
 		if (channelServerConfiguration == null) {
 			channelServerConfiguration = createDefaultChannelServerConfiguration();
 			channelServerConfiguration.externalPorts(new Ports(tcpPortExternal, udpPortExternal));
-		}
-		
-		if (channelClientConfiguration == null) {
-			channelClientConfiguration = createDefaultChannelClientConfiguration();
 			if (tcpPortInternal == -1) {
 				tcpPortInternal = Ports.DEFAULT_PORT;
 			}
@@ -170,6 +166,11 @@ public class PeerBuilder {
 				udpPortInternal = Ports.DEFAULT_PORT;
 			}
 			channelServerConfiguration.internalPorts(new Ports(tcpPortInternal, udpPortInternal));
+			channelServerConfiguration.behindFirewall(behindFirewall);
+		}
+		
+		if (channelClientConfiguration == null) {
+			channelClientConfiguration = createDefaultChannelClientConfiguration();
 		}
 		if (keyPair == null) {
 			keyPair = EMPTY_KEYPAIR;

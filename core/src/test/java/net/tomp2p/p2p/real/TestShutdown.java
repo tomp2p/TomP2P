@@ -22,8 +22,8 @@ public class TestShutdown {
 				peer = pMaker.start();
 				isConnected = true;
 			} catch (IOException ex) {
-				System.out.println("Port " + pMaker.tcpPort() + " busy");
-				pMaker.ports(pMaker.tcpPort() + 1);
+				System.out.println("Port " + pMaker.tcpPortInternal() + " busy");
+				pMaker.ports(pMaker.tcpPortInternal() + 1);
 			}
 		} while (!isConnected);
 	}

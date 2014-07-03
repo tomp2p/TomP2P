@@ -239,10 +239,10 @@ public class DiscoverBuilder {
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
-                                final Ports ports = peer.connectionBean().channelServer().ports();
-                                if (ports.isSetExternalPortsManually()) {
-                                    serverAddress = serverAddress.changePorts(ports.externalTCPPort(),
-                                            ports.externalUDPPort());
+                                final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().externalPorts();
+                                if (ports.isManualPort()) {
+                                    serverAddress = serverAddress.changePorts(ports.tcpPort(),
+                                            ports.udpPort());
                                     serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                     peer.peerBean().serverPeerAddress(serverAddress);
                                 } else {

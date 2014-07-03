@@ -240,7 +240,7 @@ public class PeerCreator {
 		}
 		InetAddress outsideAddress = channelClientConfiguration.externalBindings().foundAddresses().get(0);
 		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration
-		        .ports().externalTCPPort(), channelServerConficuration.ports().externalUDPPort());
+		        .externalPorts().tcpPort(), channelServerConficuration.externalPorts().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
 		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
 		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);

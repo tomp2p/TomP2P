@@ -80,8 +80,8 @@ public class PeerNAT {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress());
 					if (externalPorts != null) {
 						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
-						serverAddress = serverAddress.changePorts(externalPorts.externalTCPPort(),
-						        externalPorts.externalUDPPort());
+						serverAddress = serverAddress.changePorts(externalPorts.tcpPort(),
+						        externalPorts.udpPort());
 						serverAddress = serverAddress.changeAddress(future.externalAddress());
 						peer.peerBean().serverPeerAddress(serverAddress);
 						// test with discover again
@@ -132,7 +132,7 @@ public class PeerNAT {
 
 		try {
 			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
-			        ports.externalUDPPort(), ports.externalTCPPort());
+			        ports.udpPort(), ports.tcpPort());
 		} catch (Exception e) {
 			success = false;
 		}
@@ -143,7 +143,7 @@ public class PeerNAT {
 			}
 			try {
 				success = natUtils.mapPMP(peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
-				        ports.externalUDPPort(), ports.externalTCPPort());
+				        ports.udpPort(), ports.tcpPort());
 				if (!success) {
 					if (LOG.isWarnEnabled()) {
 						LOG.warn("cannot find NAT-PMP devices");

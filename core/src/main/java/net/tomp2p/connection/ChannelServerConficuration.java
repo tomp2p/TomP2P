@@ -41,7 +41,8 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     private boolean forceTCP;
     private boolean forceUDP;
     
-    private Ports ports;
+    private Ports externalPorts;
+    private Ports internalPorts;
     
     private int maxTCPIncomingConnections = 1000;
     private int maxUDPIncomingConnections = 1000;
@@ -210,12 +211,21 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return this;
     }
 
-    public Ports ports() {
-        return ports;
+    public Ports externalPorts() {
+        return externalPorts;
     }
 
-    public ChannelServerConficuration ports(Ports ports) {
-        this.ports = ports;
+    public ChannelServerConficuration externalPorts(Ports externalPorts) {
+        this.externalPorts = externalPorts;
+        return this;
+    }
+    
+    public Ports internalPorts() {
+        return internalPorts;
+    }
+
+    public ChannelServerConficuration internalPorts(Ports internalPorts) {
+        this.internalPorts = internalPorts;
         return this;
     }
 

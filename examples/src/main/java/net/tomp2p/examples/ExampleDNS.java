@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -33,7 +34,7 @@ public class ExampleDNS {
 	final private PeerDHT peer;
 
 	public ExampleDNS(int nodeId) throws Exception {
-		peer = new PeerDHT(new PeerBuilder(Number160.createHash(nodeId)).ports(4000 + nodeId).start());
+		peer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(nodeId)).ports(4000 + nodeId).start()).start();
 		FutureBootstrap fb = this.peer.peer().bootstrap().broadcast(true).ports(4001).start();
 		fb.awaitUninterruptibly();
 		if(fb.isSuccess()) {

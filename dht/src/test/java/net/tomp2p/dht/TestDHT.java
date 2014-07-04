@@ -205,7 +205,7 @@ public class TestDHT {
 	public void testPutGetAlone() throws Exception {
 		PeerDHT master = null;
 		try {
-			master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fdht = master.put(Number160.ONE).data(new Data("hallo")).start();
 			fdht.awaitUninterruptibly();
 			fdht.futureRequests().awaitUninterruptibly();
@@ -228,7 +228,7 @@ public class TestDHT {
 		PeerDHT master = null;
 		try {
 			Peer pmaster = new PeerBuilder(new Number160(rnd)).ports(4001).start();
-			master = new PeerDHT(pmaster, new StorageMemory(1));
+			master = new PeerBuilderDHT(pmaster).storage(new StorageMemory(1)).start();
 			Data data = new Data("hallo");
 			data.ttlSeconds(1);
 			FuturePut fdht = master.put(Number160.ONE).data(data).start();
@@ -661,9 +661,9 @@ public class TestDHT {
 
 	@Test
 	public void removeTest() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 
@@ -1024,9 +1024,9 @@ public class TestDHT {
 		PeerDHT master2 = null;
 		PeerDHT master3 = null;
 		try {
-			master1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start());
-			master2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start());
-			master3 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start());
+			master1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).start();
+			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
+			master3 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start()).start();
 			// perfect routing
 			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
 			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null);
@@ -1060,7 +1060,7 @@ public class TestDHT {
 
 			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
 			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
-			master2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start());
+			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
 			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
 			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);
 			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null);
@@ -1169,11 +1169,11 @@ public class TestDHT {
 			Data d1 = new Data("hello");
 			Data d2 = new Data("world!");
 			// setup (step 1)
-			p1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			p1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fput = p1.add(n1).data(d1).start();
 			fput.awaitUninterruptibly();
 			Assert.assertEquals(true, fput.isSuccess());
-			p2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start());
+			p2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			// test (step 2)
 			fput = p1.add(n1).data(d2).start();
@@ -1225,11 +1225,11 @@ public class TestDHT {
 			Data d1 = new Data("hello");
 			Data d2 = new Data("world!");
 			// setup (step 1)
-			p1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			p1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fput = p1.put(n1).data(d1).start();
 			fput.awaitUninterruptibly();
 			Assert.assertEquals(true, fput.isSuccess());
-			p2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start());
+			p2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			// test (step 2)
 			fput = p1.put(n2).data(d2).start();
@@ -1467,10 +1467,10 @@ public class TestDHT {
 			ChannelServerConficuration ccs1 = PeerBuilder.createDefaultChannelServerConfiguration();
 			ccs1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
 
-			master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)
-			        .channelServerConfiguration(ccs1).start());
-			slave = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).channelClientConfiguration(ccc1)
-			        .channelServerConfiguration(ccs1).start());
+			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)
+			        .channelServerConfiguration(ccs1).start()).start();
+			slave = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).channelClientConfiguration(ccc1)
+			        .channelServerConfiguration(ccs1).start()).start();
 
 			master.peer().bootstrap().peerAddress(slave.peerAddress()).start().awaitUninterruptibly();
 			slave.peer().bootstrap().peerAddress(master.peerAddress()).start().awaitUninterruptibly();
@@ -1514,9 +1514,9 @@ public class TestDHT {
 	
 	@Test
 	public void removeFromToTest3() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		Number160 lKey = Number160.createHash("location");
@@ -1542,9 +1542,9 @@ public class TestDHT {
 
 	@Test
 	public void removeFromToTest4() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		Number160 lKey = Number160.createHash("location");
@@ -2166,22 +2166,22 @@ public class TestDHT {
 		if (automaticFuture != null) {
 			master = new PeerBuilder(new Number160(1111))
 			        .ports(port).start().addAutomaticFuture(automaticFuture);
-			peers[0] = new PeerDHT(master);
+			peers[0] = new PeerBuilderDHT(master).start();
 		} else {
 			master = new PeerBuilder(new Number160(1111)).ports(port)
 			        .start();
-			peers[0] = new PeerDHT(master);
+			peers[0] = new PeerBuilderDHT(master).start();
 		}
 
 		for (int i = 1; i < nrOfPeers; i++) {
 			if (automaticFuture != null) {
 				Peer peer = new PeerBuilder(new Number160(i))
 				        .masterPeer(master).start().addAutomaticFuture(automaticFuture);
-				peers[i] = new PeerDHT(peer);
+				peers[i] = new PeerBuilderDHT(peer).start();
 			} else {
 				Peer peer = new PeerBuilder(new Number160(i))
 				        .masterPeer(master).start();
-				peers[i] = new PeerDHT(peer);
+				peers[i] = new PeerBuilderDHT(peer).start();
 			}
 		}
 		System.err.println("peers created.");

@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import net.tomp2p.dht.FutureSend;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
@@ -20,8 +21,8 @@ public class ExampleDirectData {
 	public static void main(String[] args) throws IOException {
 		final Number160 idP1 = Number160.createHash("p1");
 		final Number160 idP2 = Number160.createHash("p2");
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(idP1).ports(1234).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(idP2).ports(1235).start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(idP1).ports(1234).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(idP2).ports(1235).start()).start();
 		BootstrapBuilder b = p2.peer().bootstrap();
 		b.bootstrapTo(Arrays.asList(new PeerAddress(idP1, "localhost", 1234, 1234)));
 		b.start().awaitUninterruptibly();

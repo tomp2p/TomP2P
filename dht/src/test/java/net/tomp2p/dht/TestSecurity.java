@@ -58,9 +58,9 @@ public class TestSecurity {
             	}
             };
         	
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start());
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).start();
             // make slave
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start(), sl);
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).storageLayer(sl).start();
             
             // perfect routing
             boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
@@ -107,7 +107,7 @@ public class TestSecurity {
             };
             
             // make master
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start(), sl);
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).storageLayer(sl).start();
             
             //
             Number160 locationKey = new Number160(50);
@@ -141,16 +141,16 @@ public class TestSecurity {
         System.err.println("PPK2 " + pair2.getPublic());
         System.err.println("PPK3 " + pair3.getPublic());
         try {
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start());
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).start();
             master
                     .storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start());
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).start();
             slave1.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start());
+            slave2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start()).start();
             slave2.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
@@ -208,15 +208,15 @@ public class TestSecurity {
         System.err.println("PPK2 " + pair2.getPublic());
         System.err.println("PPK3 " + pair3.getPublic());
         try {
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start());
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).start();
             master.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start());
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).start();
             slave1.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start());
+            slave2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start()).start();
             slave2.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
@@ -278,9 +278,9 @@ public class TestSecurity {
                 }
             };
         	
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start(), slm);
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).storageLayer(slm).start();
             // make slave
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start(), sls);
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).storageLayer(sls).start();
             
             // perfect routing
             boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
@@ -326,15 +326,15 @@ public class TestSecurity {
         try {
 
             // make slave
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start());
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair1).ports(4001).start()).start();
             master.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start());
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).start();
             slave1.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
-            slave2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start());
+            slave2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair3).masterPeer(master.peer()).start()).start();
             slave2.storageLayer()
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
@@ -421,11 +421,11 @@ public class TestSecurity {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
         KeyPair keyPairPeer1 = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPairPeer1).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPairPeer1).start()).start();
         KeyPair keyPairPeer2 = gen.generateKeyPair();
-        PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-                .keyPair(keyPairPeer2).start());
+        PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+                .keyPair(keyPairPeer2).start()).start();
 
         p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
         p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -504,8 +504,8 @@ public class TestSecurity {
         KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
         KeyPair keyPair = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPair).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPair).start()).start();
         
         String locationKey = "location";
         Number160 lKey = Number160.createHash(locationKey);
@@ -539,10 +539,10 @@ public class TestSecurity {
 
         KeyPair keyPair1 = gen.generateKeyPair();
         KeyPair keyPair2 = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPair1).start());
-        PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
-                .keyPair(keyPair2).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPair1).start()).start();
+        PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
+                .keyPair(keyPair2).start()).start();
         
         p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
         p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -589,10 +589,10 @@ public class TestSecurity {
 
         KeyPair keyPair1 = gen.generateKeyPair();
         KeyPair keyPair2 = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPair1).start());
-        PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
-                .keyPair(keyPair2).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPair1).start()).start();
+        PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
+                .keyPair(keyPair2).start()).start();
         
         p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
         p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -618,10 +618,10 @@ public class TestSecurity {
 
         KeyPair keyPair1 = gen.generateKeyPair();
         KeyPair keyPair2 = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPair1).start());
-        PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
-                .keyPair(keyPair2).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPair1).start()).start();
+        PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
+                .keyPair(keyPair2).start()).start();
         
         p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
         p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -650,10 +650,10 @@ public class TestSecurity {
 
         KeyPair keyPair1 = gen.generateKeyPair();
         KeyPair keyPair2 = gen.generateKeyPair();
-        PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
-                .keyPair(keyPair1).start());
-        PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
-                .keyPair(keyPair2).start());
+        PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838)
+                .keyPair(keyPair1).start()).start();
+        PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).ports(4839)
+                .keyPair(keyPair2).start()).start();
         
         p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
         p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -685,10 +685,10 @@ public class TestSecurity {
 		try {
 			StorageMemory sm1 = new StorageMemory(1);
 			StorageMemory sm2 = new StorageMemory(1);
-			p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1))
-			        .ports(4838).start(), sm1);
-			p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2))
-			        .ports(4839).start(), sm2);
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1))
+			        .ports(4838).start()).storage(sm1).start();
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2))
+			        .ports(4839).start()).storage(sm2).start();
 
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -729,11 +729,11 @@ public class TestSecurity {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
 		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
+		        .start()).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-		        .start());
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		        .start()).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -799,11 +799,11 @@ public class TestSecurity {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 
 		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4838).keyPair(keyPairPeer1)
+		        .start()).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-		        .start());
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		        .start()).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -863,11 +863,11 @@ public class TestSecurity {
 	        SignatureException, ClassNotFoundException {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .start()).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-		        .start());
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		KeyPair keyPair1 = gen.generateKeyPair();
@@ -935,11 +935,11 @@ public class TestSecurity {
 		try {
 		KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
-		        .start());
+		p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .start()).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-		        .start());
+		p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		KeyPair keyPair1 = gen.generateKeyPair();
@@ -1009,11 +1009,11 @@ public class TestSecurity {
 		try {
 			KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
 			KeyPair keyPairPeer1 = gen.generateKeyPair();
-			p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
-			        .start());
+			p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+			        .start()).start();
 			KeyPair keyPairPeer2 = gen.generateKeyPair();
-			p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-			        .start());
+			p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+			        .start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 
@@ -1071,11 +1071,11 @@ public class TestSecurity {
 		StorageMemory sm1 = new StorageMemory(1);
 		StorageMemory sm2 = new StorageMemory(1);
 		
-		p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
-		        .start(), sm1);
+		p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		        .start()).storage(sm1).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
-		        .start(), sm2);
+		p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		        .start()).storage(sm2).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
@@ -1150,13 +1150,13 @@ public class TestSecurity {
 		serverConfig.signatureFactory(factory);
 
 		KeyPair keyPairPeer1 = gen.generateKeyPair();
-		p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
+		p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(4834).keyPair(keyPairPeer1)
 		        .channelClientConfiguration(clientConfig)
-		        .channelServerConfiguration(serverConfig).start());
+		        .channelServerConfiguration(serverConfig).start()).start();
 		KeyPair keyPairPeer2 = gen.generateKeyPair();
-		p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
+		p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer()).keyPair(keyPairPeer2)
 		        .channelClientConfiguration(clientConfig)
-		        .channelServerConfiguration(serverConfig).start());
+		        .channelServerConfiguration(serverConfig).start()).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();

@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -195,9 +196,9 @@ public class SynchronizationTest {
 			final AtomicReference<DataMap> ref2 = new AtomicReference<DataMap>();
 
 			//final ReplicationSync syncSender = new ReplicationSync(5);
-			sender = new PeerDHT(new PeerBuilder(new Number160(1)).ports(4001).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(1)).ports(4001).start()).start();
 			//final ReplicationSync syncReceiver = new ReplicationSync(5);
-			receiver = new PeerDHT(new PeerBuilder(new Number160(2)).ports(4002).start());
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(2)).ports(4002).start()).start();
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);
 
@@ -264,8 +265,8 @@ public class SynchronizationTest {
 		try {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);
 
@@ -326,9 +327,9 @@ public class SynchronizationTest {
 		try {
 			final AtomicReference<DataMap> ref = new AtomicReference<DataMap>();
 
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
 
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);
@@ -394,8 +395,8 @@ public class SynchronizationTest {
 		PeerDHT sender = null;
 		PeerDHT receiver = null;
 		try {
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);
@@ -440,8 +441,8 @@ public class SynchronizationTest {
 		PeerDHT sender = null;
 		PeerDHT receiver = null;
 		try {
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 
 			final PeerSync senderSync = new PeerSync(sender, 32);
 			new PeerSync(receiver, 32);
@@ -487,8 +488,8 @@ public class SynchronizationTest {
 		PeerDHT sender = null;
 		PeerDHT receiver = null;
 		try {
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 			
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);
@@ -534,8 +535,8 @@ public class SynchronizationTest {
 		PeerDHT sender = null;
 		PeerDHT receiver = null;
 		try {
-			sender = new PeerDHT(new PeerBuilder(new Number160(3)).ports(4003).start());
-			receiver = new PeerDHT(new PeerBuilder(new Number160(4)).ports(4004).start());
+			sender = new PeerBuilderDHT(new PeerBuilder(new Number160(3)).ports(4003).start()).start();
+			receiver = new PeerBuilderDHT(new PeerBuilder(new Number160(4)).ports(4004).start()).start();
 
 			final PeerSync senderSync = new PeerSync(sender, 5);
 			new PeerSync(receiver, 5);

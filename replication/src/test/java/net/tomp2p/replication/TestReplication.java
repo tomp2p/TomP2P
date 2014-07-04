@@ -26,6 +26,7 @@ import java.util.TreeSet;
 import net.tomp2p.Utils2;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.AutomaticFuture;
@@ -58,12 +59,12 @@ public class TestReplication {
         PeerDHT p3 = null;
         try {
             
-            p1 = new PeerDHT(new PeerBuilder(Number160.createHash("111")).ports(PORT)
-                    .start());
-            p2 = new PeerDHT(new PeerBuilder(Number160.createHash("22")).ports(PORT+1)
-                    .start());
-            p3 = new PeerDHT(new PeerBuilder(Number160.createHash("33")).ports(PORT+2)
-                    .start());
+            p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("111")).ports(PORT)
+                    .start()).start();
+            p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("22")).ports(PORT+1)
+                    .start()).start();
+            p3 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("33")).ports(PORT+2)
+                    .start()).start();
             
             IndirectReplication i1 = new IndirectReplication(p1);
             i1.start();
@@ -81,7 +82,7 @@ public class TestReplication {
             p3.peer().announceShutdown().start().awaitUninterruptibly();
             p3.shutdown().awaitUninterruptibly();
             Thread.sleep(500);
-            p3 = new PeerDHT(new PeerBuilder(locationKey).ports(PORT+3).start());
+            p3 = new PeerBuilderDHT(new PeerBuilder(locationKey).ports(PORT+3).start()).start();
             i3 = new IndirectReplication(p3);
             i3.start();
             
@@ -117,12 +118,12 @@ public class TestReplication {
     	PeerDHT p3 = null;
         try {
             
-            p1 = new PeerDHT(new PeerBuilder(Number160.createHash("111")).ports(PORT)
-                    .start());
-            p2 = new PeerDHT(new PeerBuilder(Number160.createHash("22")).ports(PORT+1)
-                    .start());
-            p3 = new PeerDHT(new PeerBuilder(Number160.createHash("33")).ports(PORT+2)
-                    .start());
+            p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("111")).ports(PORT)
+                    .start()).start();
+            p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("22")).ports(PORT+1)
+                    .start()).start();
+            p3 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("33")).ports(PORT+2)
+                    .start()).start();
             
             IndirectReplication i1 = new IndirectReplication(p1);
             i1.start();
@@ -148,15 +149,15 @@ public class TestReplication {
             
             //
             
-            p3 = new PeerDHT(new PeerBuilder(locationKey).ports(PORT+3).start());
+            p3 = new PeerBuilderDHT(new PeerBuilder(locationKey).ports(PORT+3).start()).start();
             i3 = new IndirectReplication(p3);
             i3.start();
             
             System.out.println("now we add a peer that matches perfectly the key " + locationKey+ ". This will now become the responsible peer");
             p3.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
             
-            p1 = new PeerDHT(new PeerBuilder(Number160.createHash("1111")).ports(PORT+4)
-                    .start());
+            p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("1111")).ports(PORT+4)
+                    .start()).start();
             i1 = new IndirectReplication(p1);
             i1.start();
             

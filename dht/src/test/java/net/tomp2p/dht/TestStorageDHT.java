@@ -81,13 +81,13 @@ public class TestStorageDHT {
         PeerDHT sender = null;
         PeerDHT recv1 = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start());
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).start();
             PeerAddress[] pa = UtilsDHT2.createDummyAddress(300, PORT_TCP, PORT_UDP);
             for (int i = 0; i < pa.length; i++) {
                 sender.peerBean().peerMap().peerFound(pa[i], null);
             }
             new NeighborRPC(sender.peerBean(), sender.peer().connectionBean());
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start());
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).start();
             NeighborRPC neighbors2 = new NeighborRPC(recv1.peerBean(), recv1.peer().connectionBean());
             FutureChannelCreator fcc = recv1.peer().connectionBean().reservation().create(1, 0);
 
@@ -134,8 +134,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             
             StorageRPC smmSender = sender.storeRPC(); 
 
@@ -212,8 +212,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             
             StorageRPC smmSender = sender.storeRPC();
             
@@ -287,8 +287,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -355,8 +355,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -412,8 +412,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -482,8 +482,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -552,8 +552,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[100];
@@ -597,8 +597,8 @@ public class TestStorageDHT {
         PeerDHT sender = null;
         PeerDHT recv1 = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             final StorageRPC smmSender = sender.storeRPC();
             List<FutureResponse> res = new ArrayList<FutureResponse>();
 
@@ -663,8 +663,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -722,8 +722,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false).start(), storeSender) ;
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).enableMaintenance(false).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).enableMaintenance(false).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[] { 1, 2, 3 };
@@ -787,11 +787,11 @@ public class TestStorageDHT {
             ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
-            sender = new PeerDHT(pm1.start(), storeSender);
+            sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
             PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
             pm2.channelServerConfiguration(css);
-            recv1 = new PeerDHT(pm2.start(), storeRecv);
+            recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
@@ -841,11 +841,11 @@ public class TestStorageDHT {
             ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
-            sender = new PeerDHT(pm1.start(), storeSender);
+            sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
             PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
             pm2.channelServerConfiguration(css);
-            recv1 = new PeerDHT(pm2.start(), storeRecv);
+            recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
@@ -902,8 +902,8 @@ public class TestStorageDHT {
         PeerDHT recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start(), storeSender);
-            recv1 = new PeerDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start(), storeRecv);
+            sender = new PeerBuilderDHT(new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424).start()).storage(storeSender).start();
+            recv1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088).start()).storage(storeRecv).start();
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
             byte[] me1 = new byte[50 * 1024 * 1024];
@@ -950,11 +950,11 @@ public class TestStorageDHT {
             ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
-            sender = new PeerDHT(pm1.start(), storeSender);
+            sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
 
             PeerBuilder pm2 = new PeerBuilder(new Number160("0x20")).p2pId(55).ports(8088);
             pm2.channelServerConfiguration(css);
-            recv1 = new PeerDHT(pm2.start(), storeRecv);
+            recv1 = new PeerBuilderDHT(pm2.start()).storage(storeRecv).start();
 
             StorageRPC smmSender = sender.storeRPC();
             Map<Number160, Data> tmp = new HashMap<Number160, Data>();
@@ -1004,8 +1004,8 @@ public class TestStorageDHT {
 		ChannelCreator cc = null;
 		try {
 
-			master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
-			slave = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start());
+			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
+			slave = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			
 			Map<Number640,Data> tmp = new HashMap<Number640,Data>();
 			for(int i=0;i<5;i++) {

@@ -8,6 +8,7 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -42,7 +43,7 @@ public class ExampleRelay {
         } else if (args.length == 3) {
             //put
             int port = (rnd.nextInt() % 10000) + 10000;
-            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash(args[1])).ports(port).enableMaintenance(false).start());
+            PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(args[1])).ports(port).enableMaintenance(false).start()).start();
             System.err.println("put peer id: " + peer.peerAddress().peerId());
             PeerNAT pnat = new PeerNAT(peer.peer());
 
@@ -66,7 +67,7 @@ public class ExampleRelay {
         } else if (args.length == 2) {
             //get
             int port = (rnd.nextInt() % 10000) + 10000;
-            PeerDHT peer = new PeerDHT(new PeerBuilder(Number160.createHash("bla")).enableMaintenance(false).ports(port).start());
+            PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash("bla")).enableMaintenance(false).ports(port).start()).start();
             System.err.println("get peer id: " + peer.peerAddress().peerId());
             System.err.println("hash:" + Number160.createHash(args[1]));
             PeerNAT pnat = new PeerNAT(peer.peer());

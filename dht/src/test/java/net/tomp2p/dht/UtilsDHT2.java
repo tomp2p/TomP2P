@@ -142,14 +142,14 @@ public class UtilsDHT2 {
         	master = new PeerBuilder(peerId)
                     .ports(port).enableMaintenance(maintenance)
                     .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
-            peers[0] = new PeerDHT(master); 
+            peers[0] = new PeerBuilderDHT(master).start(); 
             
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
         	master = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
                     .peerMap(peerMap).ports(port).start();
-        	peers[0] = new PeerDHT(master); 
+        	peers[0] = new PeerBuilderDHT(master).start(); 
         }
 
         for (int i = 1; i < nrOfPeers; i++) {
@@ -159,14 +159,14 @@ public class UtilsDHT2 {
                 Peer peer = new PeerBuilder(peerId)
                         .masterPeer(master)
                         .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
-                peers[i] = new PeerDHT(peer); 
+                peers[i] = new PeerBuilderDHT(peer).start(); 
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
             	Peer peer = new PeerBuilder(peerId).enableMaintenance(maintenance)
                         .externalBindings(bindings).peerMap(peerMap).masterPeer(master)
                         .start();
-                peers[i] = new PeerDHT(peer); 
+                peers[i] = new PeerBuilderDHT(peer).start(); 
             }
         }
         System.err.println("peers created.");

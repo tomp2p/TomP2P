@@ -7,6 +7,7 @@ import java.util.Random;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -398,7 +399,7 @@ public class TestRelay {
             	 new PeerNAT(peer.peer());
              }
              PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
-             slave = new PeerDHT(new PeerBuilder(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).start());
+             slave = new PeerBuilderDHT(new PeerBuilder(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).start()).start();
              printMapStatus(slave, peers);
              FuturePut futurePut = peers[8].put(slave.peerID()).data(new Data("hello")).start().awaitUninterruptibly();
              futurePut.futureRequests().awaitUninterruptibly();
@@ -441,7 +442,7 @@ public class TestRelay {
              }
              
              // Test setting up relay peers
- 			unreachablePeer = new PeerDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start());
+ 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
  			PeerNAT uNat = new PeerNAT(unreachablePeer.peer());
  			uNat.bootstrapBuilder(unreachablePeer.peer().bootstrap().peerAddress(master.peerAddress()));
  			FutureRelayNAT fbn = uNat.startRelay();

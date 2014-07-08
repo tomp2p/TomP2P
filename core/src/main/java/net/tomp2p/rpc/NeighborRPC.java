@@ -239,7 +239,7 @@ public class NeighborRPC extends DispatchHandler {
             		//no tracker to search
             		digestInfo = new DigestInfo();
             	} else {
-            		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, null);
+            		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, contentKey);
             		if (digestInfo.size() == 0) {	
             			LOG.debug("No entry found on peer {}", message.recipient());
             		}

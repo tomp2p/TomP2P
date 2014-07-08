@@ -5,7 +5,7 @@ import net.tomp2p.rpc.DigestInfo;
 
 public interface DigestTracker {
 
-	DigestInfo digest(Number160 locationKey, Number160 domainKey, Object object);
+	DigestInfo digest(Number160 locationKey, Number160 domainKey, Number160 contentKey);
 
 	
 

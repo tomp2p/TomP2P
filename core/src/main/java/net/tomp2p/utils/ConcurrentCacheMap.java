@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -61,7 +62,7 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
     private final CacheMap<K, ExpiringObject>[] segments;
 
-    private final int timeToLive;
+    private final int timeToLiveSeconds;
 
     private final boolean refreshTimeout;
 
@@ -84,15 +85,15 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      * @param maxEntries
      *            Set the maximum number of entries until items gets replaced with LRU
      */
-    public ConcurrentCacheMap(final int timeToLive, final int maxEntries) {
-        this(timeToLive, maxEntries, true);
+    public ConcurrentCacheMap(final int timeToLiveSeconds, final int maxEntries) {
+        this(timeToLiveSeconds, maxEntries, true);
     }
 
     /**
      * Creates a new instance of ConcurrentCacheMap using the supplied values and a {@link CacheMap} for the internal
      * data structure.
      * 
-     * @param timeToLive
+     * @param timeToLiveSeconds
      *            The time-to-live value (seconds)
      * @param maxEntries
      *            The maximum entries to keep in cache, default is 1024
@@ -100,14 +101,14 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
      *            If set to true, timeout will be reset in case of {@link #putIfAbsent(Object, Object)}
      */
     @SuppressWarnings("unchecked")
-    public ConcurrentCacheMap(final int timeToLive, final int maxEntries, final boolean refreshTimeout) {
+    public ConcurrentCacheMap(final int timeToLiveSeconds, final int maxEntries, final boolean refreshTimeout) {
         this.segments = new CacheMap[SEGMENT_NR];
         final int maxEntriesPerSegment = maxEntries / SEGMENT_NR;
         for (int i = 0; i < SEGMENT_NR; i++) {
             // set the cachemap to true, since it should behave as a regular map
             segments[i] = new CacheMap<K, ExpiringObject>(maxEntriesPerSegment, true);
         }
-        this.timeToLive = timeToLive;
+        this.timeToLiveSeconds = timeToLiveSeconds;
         this.refreshTimeout = refreshTimeout;
     }
 
@@ -479,8 +480,6 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
         private final long lastAccessTime;
 
-        private static final int MS_IN_S = 1000;
-
         /**
          * Creates a new expiring object with the given time of access.
          * 
@@ -501,7 +500,8 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
          * @return If entry is expired
          */
         public boolean isExpired() {
-            return System.currentTimeMillis() >= lastAccessTime + (timeToLive * MS_IN_S);
+            return System.currentTimeMillis() >= lastAccessTime + 
+            		(TimeUnit.MILLISECONDS.convert(timeToLiveSeconds, TimeUnit.SECONDS));
         }
 
         /**

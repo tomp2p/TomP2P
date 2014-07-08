@@ -274,13 +274,9 @@ public class DistributedTracker {
 					        atLeastEntriesFromTrackers);
 					// if peer reported that he can provide more data, we keep
 					// the peer in the list
-					if (!finished && isPartial && TrackerRPC.isPrimary(futureResponse)) {
+					if (!finished && isPartial) {
 						LOG.debug("partial1: {}", futureResponse.request().recipient());
 						queueToAsk.add(futureResponse.request().recipient());
-					}
-					if (!finished && isPartial && TrackerRPC.isSecondary(futureResponse)) {
-						LOG.debug("partial2: {}", futureResponse.request().recipient());
-						secondaryQueue.add(futureResponse.request().recipient());
 					}
 					if (!finished && isFull) {
 						LOG.debug("tracker reported to be full. Check if finished due to full trackers.");

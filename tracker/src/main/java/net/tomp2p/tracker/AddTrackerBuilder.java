@@ -41,8 +41,6 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
 
     private boolean tcpPEX = false;
     
-    private boolean primary = false;
-    
     private PeerAddress peerAddressToAnnounce;
 
     public AddTrackerBuilder(PeerTracker peer, Number160 locationKey) {
@@ -135,9 +133,5 @@ public class AddTrackerBuilder extends TrackerBuilder<AddTrackerBuilder> {
         final FutureTracker futureTracker = peer.distributedTracker().add(this);
 
         return futureTracker;
-    }
-
-    public boolean isPrimary() {
-        return primary;
     }
 }

@@ -47,11 +47,11 @@
 			<artifactId>tomp2p-dht</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!-- <dependency>
+		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tomp2p-tracker</artifactId>
 			<version>${project.version}</version>
-		</dependency> -->
+		</dependency>
 	</dependencies>
 
 	<build>

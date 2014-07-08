@@ -60,20 +60,11 @@ public class TrackerRPC extends DispatchHandler {
 		this.trackerStorage = trackerStorage;
 	}
 
-	public static boolean isPrimary(FutureResponse response) {
-		return response.request().type() == Type.REQUEST_3;
-	}
-
-	public static boolean isSecondary(FutureResponse response) {
-		return response.request().type() == Type.REQUEST_1;
-	}
-
 	public FutureResponse addToTracker(final PeerAddress remotePeer, AddTrackerBuilder builder,
 	        ChannelCreator channelCreator) {
 
 		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
-		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(),
-		        builder.isPrimary() ? Type.REQUEST_3 : Type.REQUEST_1);
+		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(), Type.REQUEST_3);
 		if (builder.isSign()) {
 			message.publicKeyAndSign(builder.keyPair());
 		}
@@ -163,6 +154,7 @@ public class TrackerRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 	        throws Exception {
+		LOG.debug("handleResponse on {}", message.recipient());
 		if (!((message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3) && message.key(0) != null && message
 		        .key(1) != null)) {
 			throw new IllegalArgumentException("Message content is wrong");
@@ -178,7 +170,7 @@ public class TrackerRPC extends DispatchHandler {
 		//
 		TrackerData meshPeers = trackerStorage.peers(new Number320(locationKey, domainKey));
 		
-		LOG.debug("found peers on tracker: {}", meshPeers == null?"null":meshPeers.peerAddresses());
+		LOG.debug("found peers on tracker: {}", meshPeers == null ? "null " : meshPeers.peerAddresses());
 
 		boolean couldProvideMoreData = false;
 		if (meshPeers != null) {

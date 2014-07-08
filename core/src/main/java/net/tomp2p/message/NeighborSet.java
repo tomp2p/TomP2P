@@ -1,6 +1,5 @@
 package net.tomp2p.message;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -9,11 +8,6 @@ import net.tomp2p.peers.PeerAddress;
 public class NeighborSet {
     private final int neighborLimit;
     private final Collection<PeerAddress> neighbors;
-
-    public NeighborSet(int neighborLimit) {
-        this.neighborLimit = neighborLimit;
-        this.neighbors = new ArrayList<PeerAddress>();
-    }
 
     public NeighborSet(final int neighborLimit, final Collection<PeerAddress> neighbors) {
         this.neighborLimit = neighborLimit;

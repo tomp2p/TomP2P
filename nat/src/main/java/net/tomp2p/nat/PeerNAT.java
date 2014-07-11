@@ -76,6 +76,14 @@ public class PeerNAT {
 
 			@Override
 			public void operationComplete(FutureDiscover future) throws Exception {
+				
+				//set the peer that we contacted
+				if(future.reporter()!=null) {
+					futureNAT.discoverPeer(future.reporter());
+				} else if(future.discoverPeer() != null) {
+					futureNAT.discoverPeer(future.discoverPeer());
+				}
+				
 				if (future.isFailed() && future.isNat()) {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress());
 					if (externalPorts != null) {
@@ -85,7 +93,7 @@ public class PeerNAT {
 						serverAddress = serverAddress.changeAddress(future.externalAddress());
 						peer.peerBean().serverPeerAddress(serverAddress);
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer);
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.discoverPeer());
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
@@ -244,8 +252,14 @@ public class PeerNAT {
 
 	public FutureRelayNAT startRelay(final FutureNAT futureNAT) {
 		if (bootstrapBuilder() == null) {
-			throw new IllegalArgumentException(
+			if(futureNAT.reporter()!=null) {
+				bootstrapBuilder(peer.bootstrap().peerAddress(futureNAT.reporter()));
+			} else if(futureNAT.discoverPeer() != null) {
+				bootstrapBuilder(peer.bootstrap().peerAddress(futureNAT.discoverPeer()));
+			} else {
+				throw new IllegalArgumentException(
 			        "you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
+			}
 		}
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
 		

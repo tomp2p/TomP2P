@@ -35,6 +35,8 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
     private PeerAddress ourPeerAddress;
 
     private PeerAddress reporter;
+    
+    private PeerAddress discoverPeer;
 
     private boolean discoveredTCP = false;
 
@@ -111,6 +113,19 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         synchronized (lock) {
             return reporter;
         }
+    }
+    
+    public FutureDiscover discoverPeer(PeerAddress discoverPeer) {
+    	synchronized (lock) {
+    		this.discoverPeer = discoverPeer;
+    	}
+    	return this;
+    }
+    
+    public PeerAddress discoverPeer() {
+    	synchronized (lock) {
+    		return discoverPeer;
+    	}
     }
 
     /**

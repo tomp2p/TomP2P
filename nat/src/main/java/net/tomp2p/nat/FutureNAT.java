@@ -7,21 +7,23 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
 	
 	private PeerAddress ourPeerAddress;
     private PeerAddress reporter;
+    private PeerAddress discoverPeer;
 
 	public FutureNAT() {
         self(this);
     }
 
-	public void done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
+	public FutureNAT done(final PeerAddress ourPeerAddress, final PeerAddress reporter) {
         synchronized (lock) {
             if (!completedAndNotify()) {
-                return;
+                return this;
             }
             this.type = FutureType.OK;
             this.ourPeerAddress = ourPeerAddress;
             this.reporter = reporter;
         }
         notifyListeners();
+        return this;
     }
 	
 	/**
@@ -43,4 +45,18 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
             return reporter;
         }
     }
+    
+    public FutureNAT discoverPeer(PeerAddress discoverPeer) {
+        synchronized (lock) {
+            this.discoverPeer = discoverPeer;
+        }
+        return this;
+    }
+    
+    public PeerAddress discoverPeer() {
+        synchronized (lock) {
+            return discoverPeer;
+        }
+    }
+
 }

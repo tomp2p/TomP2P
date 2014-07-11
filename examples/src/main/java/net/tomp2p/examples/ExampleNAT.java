@@ -79,7 +79,7 @@ public class ExampleNAT {
 		
 		FutureDiscover fd = peer.discover().peerAddress(pa).start();
 		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);
-		FutureRelayNAT frn = peerNAT.startRelay(fn);
+		FutureRelayNAT frn = peerNAT.bootstrapBuilder(pa).startRelay(fn);
 		
 		fd.awaitUninterruptibly();
 		if (fd.isSuccess()) {

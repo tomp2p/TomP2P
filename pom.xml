@@ -46,8 +46,8 @@
 		<module>all</module>
 		<module>storage</module>
 		<module>dht</module>
-		<module>tracker</module>
-		<!-- <module>task</module> -->
+		<!-- <module>tracker</module>
+		<module>task</module> -->
 	</modules>
 
 	<distributionManagement>

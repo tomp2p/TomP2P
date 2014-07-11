@@ -247,7 +247,6 @@ public class PeerNAT {
 			throw new IllegalArgumentException(
 			        "you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
 		}
-		// make it firewalled
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
 		
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
@@ -381,6 +380,11 @@ public class PeerNAT {
 	 */
 	public PeerNAT bootstrapBuilder(BootstrapBuilder bootstrapBuilder) {
 		this.bootstrapBuilder = bootstrapBuilder;
+		return this;
+	}
+	
+	public PeerNAT bootstrapBuilder(final PeerAddress peerAddress) {
+		this.bootstrapBuilder = peer.bootstrap().peerAddress(peerAddress);
 		return this;
 	}
 

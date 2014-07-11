@@ -20,7 +20,7 @@
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha18</version>
+    	<version>5.0-Alpha19-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-nat</artifactId>

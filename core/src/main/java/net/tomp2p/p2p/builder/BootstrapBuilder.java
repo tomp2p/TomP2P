@@ -25,8 +25,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FutureLateJoin;
-import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.futures.FutureWrappedBootstrap;
 import net.tomp2p.p2p.Peer;
@@ -250,12 +249,12 @@ public class BootstrapBuilder {
 
     private FutureWrappedBootstrap<FutureBootstrap> bootstrapPing(PeerAddress address) {
         final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-        final FutureResponse tmp = (FutureResponse) peer.ping().peerAddress(address).tcpPing().start();
-        tmp.addListener(new BaseFutureAdapter<FutureResponse>() {
+        final FuturePing futurePing = peer.ping().peerAddress(address).tcpPing().start();
+        futurePing.addListener(new BaseFutureAdapter<FuturePing>() {
             @Override
-            public void operationComplete(final FutureResponse future) throws Exception {
+            public void operationComplete(final FuturePing future) throws Exception {
                 if (future.isSuccess()) {
-                    peerAddress = future.responseMessage().sender();
+                    peerAddress = future.remotePeer();
                     bootstrapTo = new ArrayList<PeerAddress>(1);
                     bootstrapTo.add(peerAddress);
                     result.bootstrapTo(bootstrapTo);
@@ -270,23 +269,15 @@ public class BootstrapBuilder {
 
     private FutureWrappedBootstrap<FutureBootstrap> broadcast0() {
         final FutureWrappedBootstrap<FutureBootstrap> result = new FutureWrappedBootstrap<FutureBootstrap>();
-        // limit after
-        @SuppressWarnings("unchecked")
-        final FutureLateJoin<FutureResponse> tmp = (FutureLateJoin<FutureResponse>) peer.ping()
-                .broadcast().port(portUDP).start();
-        tmp.addListener(new BaseFutureAdapter<FutureLateJoin<FutureResponse>>() {
+        final FuturePing futurePing = peer.ping().broadcast().port(portUDP).start();
+        futurePing.addListener(new BaseFutureAdapter<FuturePing>() {
             @Override
-            public void operationComplete(final FutureLateJoin<FutureResponse> future) throws Exception {
+            public void operationComplete(final FuturePing future) throws Exception {
                 if (future.isSuccess()) {
-                    FutureResponse futureResponse = future.lastSuceessFuture();
-                    if (futureResponse == null) {
-                        result.failed("no futures found", future);
-                        return;
-                    }
                     if (bootstrapTo != null && bootstrapTo.size() > 0) {
                         logger.info("you added peers to bootstrapTo. However with broadcast we found our own peers.");
                     }
-                    peerAddress = futureResponse.responseMessage().sender();
+                    peerAddress = future.remotePeer();
                     bootstrapTo = new ArrayList<PeerAddress>(1);
                     bootstrapTo.add(peerAddress);
                     result.bootstrapTo(bootstrapTo);

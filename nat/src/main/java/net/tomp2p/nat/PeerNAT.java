@@ -80,8 +80,6 @@ public class PeerNAT {
 				//set the peer that we contacted
 				if(future.reporter()!=null) {
 					futureNAT.discoverPeer(future.reporter());
-				} else if(future.discoverPeer() != null) {
-					futureNAT.discoverPeer(future.discoverPeer());
 				}
 				
 				if (future.isFailed() && future.isNat()) {

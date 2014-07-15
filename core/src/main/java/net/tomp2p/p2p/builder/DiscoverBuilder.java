@@ -222,7 +222,7 @@ public class DiscoverBuilder {
                 if (futureResponseTCP.isSuccess()) {
                     Collection<PeerAddress> tmp = futureResponseTCP.responseMessage().neighborsSet(0)
                             .neighbors();
-                    futureDiscover.discoverPeer(futureResponseTCP.responseMessage().sender());
+                    futureDiscover.reporter(futureResponseTCP.responseMessage().sender());
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
                         LOG.info("I'm seen as {} by peer {}. I see myself as "

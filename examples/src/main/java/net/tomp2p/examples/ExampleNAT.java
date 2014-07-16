@@ -23,6 +23,7 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.FutureNAT;
+import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -74,21 +75,19 @@ public class ExampleNAT {
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
 		Peer peer = new PeerBuilder(new Number160(r)).ports(4000).behindFirewall().start();
-		PeerNAT peerNAT = new PeerNAT(peer);
+		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
 		PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), 4000, 4000);
 		
 		FutureDiscover fd = peer.discover().peerAddress(pa).start();
 		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);
-		FutureRelayNAT frn = peerNAT.bootstrapBuilder(fd.reporter()).startRelay(fn);
+		FutureRelayNAT frn = peerNAT.startRelay(fd, fn);
 		
-		fd.awaitUninterruptibly();
+		frn.awaitUninterruptibly();
 		if (fd.isSuccess()) {
 			System.out.println("found that my outside address is " + fd.peerAddress());
 		} else {
 			System.out.println("failed " + fd.failedReason());
 		}
-		
-		frn.awaitUninterruptibly();
 		
 		peer.shutdown();
 	}

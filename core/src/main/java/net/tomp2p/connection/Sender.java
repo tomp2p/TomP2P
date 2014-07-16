@@ -35,11 +35,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.futures.BaseFuture;
+
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
+import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.TomP2PCumulationTCP;
@@ -223,7 +224,7 @@ public class Sender {
 	        PingBuilderFactory pingBuilderFactory) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
-		BaseFuture[] forks = new BaseFuture[peerSocketAddresses.size()];
+		FuturePing[] forks = new FuturePing[peerSocketAddresses.size()];
 		int index = 0;
 		for (PeerSocketAddress psa : peerSocketAddresses) {
 			if (psa != null) {
@@ -233,14 +234,13 @@ public class Sender {
 				        .port(inetSocketAddress.getPort()).start();
 			}
 		}
-		FutureForkJoin<BaseFuture> ffk = new FutureForkJoin<BaseFuture>(1, true, new AtomicReferenceArray<BaseFuture>(
+		FutureForkJoin<FuturePing> ffk = new FutureForkJoin<FuturePing>(1, true, new AtomicReferenceArray<FuturePing>(
 		        forks));
-		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<BaseFuture>>() {
+		ffk.addListener(new BaseFutureAdapter<FutureForkJoin<FuturePing>>() {
 			@Override
-			public void operationComplete(FutureForkJoin<BaseFuture> future) throws Exception {
+			public void operationComplete(FutureForkJoin<FuturePing> future) throws Exception {
 				if (future.isSuccess()) {
-					futureDone.done(((FutureResponse) (future.completed().get(0))).responseMessage().sender()
-					        .peerSocketAddress());
+					futureDone.done(future.first().remotePeer().peerSocketAddress());
 				}
 			}
 		});
@@ -585,9 +585,9 @@ public class Sender {
 	}
 
 	private void removePeerIfFailed(final FutureResponse futureResponse, final Message message) {
-		futureResponse.addListener(new BaseFutureAdapter<BaseFuture>() {
+		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 			@Override
-			public void operationComplete(BaseFuture future) throws Exception {
+			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isFailed()) {
 					if (message.recipient().isRelayed()) {
 						// TODO: make the relay go away if failed

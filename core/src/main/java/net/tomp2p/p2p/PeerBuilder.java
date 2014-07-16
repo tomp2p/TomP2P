@@ -364,7 +364,7 @@ public class PeerBuilder {
 
 	public PeerBuilder ports(int port) {
 		this.udpPort = port;
-		this.udpPort = port;
+		this.tcpPort = port;
 		return this;
 	}
 	

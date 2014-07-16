@@ -202,8 +202,20 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
      */
     public K last() {
         synchronized (lock) {
-            return forksCopy.get(forksCopy.size() - 1);
+        	if(!forksCopy.isEmpty()) {
+        		return forksCopy.get(forksCopy.size() - 1);
+        	}
         }
+        return null;
+    }
+    
+    public K first() {
+    	synchronized (lock) {
+    		if(!forksCopy.isEmpty()) {
+    			return forksCopy.get(0);
+    		}
+        }
+    	return null;
     }
 
     /**

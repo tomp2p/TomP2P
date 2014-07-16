@@ -95,7 +95,7 @@ public final class ChannelServer {
 	        final List<PeerStatusListener> peerStatusListeners) throws IOException {
 		this.bossGroup = bossGroup;
 		this.workerGroup = workerGroup;
-		this.interfaceBindings = channelServerConfiguration.interfaceBindings();
+		this.interfaceBindings = channelServerConfiguration.bindingsIncoming();
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
 		this.peerStatusListeners = peerStatusListeners;
@@ -128,12 +128,12 @@ public final class ChannelServer {
 			if (listenAll) {
 				if (LOG.isInfoEnabled()) {
 					LOG.info("Listening for broadcasts on port udp: "
-					        + channelServerConfiguration.internalPorts().udpPort() + " and tcp:"
-					        + channelServerConfiguration.internalPorts().tcpPort());
+					        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+					        + channelServerConfiguration.ports().tcpPort());
 				}
-				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.internalPorts().tcpPort()),
+				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.ports().tcpPort()),
 				        channelServerConfiguration)
-				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.internalPorts().udpPort()),
+				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.ports().udpPort()),
 				                channelServerConfiguration)) {
 					LOG.warn("cannot bind TCP or UDP");
 					return false;
@@ -143,12 +143,12 @@ public final class ChannelServer {
 				for (InetAddress addr : interfaceBindings.foundAddresses()) {
 					if (LOG.isInfoEnabled()) {
 						LOG.info("Listening on address: " + addr + " on port udp: "
-						        + channelServerConfiguration.internalPorts().udpPort() + " and tcp:"
-						        + channelServerConfiguration.internalPorts().tcpPort());
+						        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+						        + channelServerConfiguration.ports().tcpPort());
 					}
-					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.internalPorts().tcpPort()),
+					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.ports().tcpPort()),
 					        channelServerConfiguration)
-					        || !startupUDP(new InetSocketAddress(addr, channelServerConfiguration.internalPorts()
+					        || !startupUDP(new InetSocketAddress(addr, channelServerConfiguration.ports()
 					                .udpPort()), channelServerConfiguration)) {
 						LOG.warn("cannot bind TCP or UDP");
 						return false;

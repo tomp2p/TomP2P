@@ -115,7 +115,7 @@ public class ChannelCreator {
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
-		this.externalBindings = channelClientConfiguration.externalBindings();
+		this.externalBindings = channelClientConfiguration.bindingsOutgoing();
 	}
 
 	/**

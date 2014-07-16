@@ -241,7 +241,7 @@ public class DiscoverBuilder {
                             } else {
                                 // now we know our internal IP, where we receive
                                 // packets
-                                final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().externalPorts();
+                                final Ports ports = peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding();
                                 if (ports.isManualPort()) {
                                     serverAddress = serverAddress.changePorts(ports.tcpPort(),
                                             ports.udpPort());

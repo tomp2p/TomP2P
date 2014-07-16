@@ -163,7 +163,7 @@ public class PingBuilder {
     //FutureLateJoin<FutureResponse> 
     private FuturePing pingBroadcast(final int port) {
     	final FuturePing futurePing = new FuturePing();
-        final Bindings bindings = peer.connectionBean().sender().channelClientConfiguration().externalBindings();
+        final Bindings bindings = peer.connectionBean().sender().channelClientConfiguration().bindingsOutgoing();
         final int size = bindings.broadcastAddresses().size();
         final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
         if (size > 0) {

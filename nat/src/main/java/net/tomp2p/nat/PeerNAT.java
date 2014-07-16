@@ -38,6 +38,7 @@ public class PeerNAT {
 	private int minRelays = 2;
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
+	private boolean manualPorts = false;
 
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
@@ -56,6 +57,19 @@ public class PeerNAT {
 
 	public RelayRPC relayRPC() {
 		return relayRPC;
+	}
+	
+	public boolean isManualPorts() {
+		return manualPorts;
+	}
+	
+	public PeerNAT manualPorts() {
+		return manualPorts(true);
+	}
+	
+	public PeerNAT manualPorts(boolean manualPorts) {
+		this.manualPorts = manualPorts;
+		return this;
 	}
 
 	/**
@@ -79,11 +93,12 @@ public class PeerNAT {
 				
 				//set the peer that we contacted
 				if(future.reporter()!=null) {
-					futureNAT.discoverPeer(future.reporter());
+					futureNAT.reporter(future.reporter());
 				}
 				
-				if (future.isFailed() && future.isNat()) {
-					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress());
+				if (future.isFailed() && future.isNat() && !isManualPorts()) {
+					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), 
+							peer.connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
 						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
 						serverAddress = serverAddress.changePorts(externalPorts.tcpPort(),
@@ -91,7 +106,7 @@ public class PeerNAT {
 						serverAddress = serverAddress.changeAddress(future.externalAddress());
 						peer.peerBean().serverPeerAddress(serverAddress);
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.discoverPeer());
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter());
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
@@ -131,9 +146,8 @@ public class PeerNAT {
 	 * @return The new external ports if port forwarding seemed to be
 	 *         successful, otherwise null
 	 */
-	public Ports setupPortforwarding(final String internalHost) {
+	public Ports setupPortforwarding(final String internalHost, Ports ports) {
 		// new random ports
-		Ports ports = new Ports();
 		boolean success;
 
 		try {
@@ -252,8 +266,6 @@ public class PeerNAT {
 		if (bootstrapBuilder() == null) {
 			if(futureNAT.reporter()!=null) {
 				bootstrapBuilder(peer.bootstrap().peerAddress(futureNAT.reporter()));
-			} else if(futureNAT.discoverPeer() != null) {
-				bootstrapBuilder(peer.bootstrap().peerAddress(futureNAT.discoverPeer()));
 			} else {
 				throw new IllegalArgumentException(
 			        "you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");

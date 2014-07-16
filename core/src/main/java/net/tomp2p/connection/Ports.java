@@ -64,9 +64,9 @@ public class Ports {
      *            provided, a random port will be used
      */
     public Ports(final int tcpPort, final int udpPort) {
+    	this.randomPorts = tcpPort < 0 && udpPort < 0;
         this.tcpPort = tcpPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : tcpPort;
         this.udpPort = udpPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : udpPort;
-        this.randomPorts = tcpPort < 0 && udpPort < 0;
     }
 
     /**

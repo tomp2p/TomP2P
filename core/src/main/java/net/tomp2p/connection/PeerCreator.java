@@ -231,16 +231,16 @@ public class PeerCreator {
 	private static PeerAddress findPeerAddress(final Number160 peerId,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ChannelServerConficuration channelServerConficuration) throws IOException {
-		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.externalBindings());
+		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.bindingsOutgoing());
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of external search: " + status);
 		}
-		if (channelClientConfiguration.externalBindings().foundAddresses().size() == 0) {
+		if (channelClientConfiguration.bindingsOutgoing().foundAddresses().size() == 0) {
 			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 		}
-		InetAddress outsideAddress = channelClientConfiguration.externalBindings().foundAddresses().get(0);
-		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration
-		        .externalPorts().tcpPort(), channelServerConficuration.externalPorts().udpPort());
+		InetAddress outsideAddress = channelClientConfiguration.bindingsOutgoing().foundAddresses().get(0);
+		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
+				ports().tcpPort(), channelServerConficuration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
 		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
 		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);

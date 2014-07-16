@@ -7,7 +7,6 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
 	
 	private PeerAddress ourPeerAddress;
     private PeerAddress reporter;
-    private PeerAddress discoverPeer;
 
 	public FutureNAT() {
         self(this);
@@ -19,6 +18,12 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
                 return this;
             }
             this.type = FutureType.OK;
+            if(this.reporter != null) {
+    			if(!this.reporter.equals(reporter)) {
+    				this.type = FutureType.FAILED;
+    				this.reason = "the previously reported peer ("+this.reporter+") does not match the peer reported now ("+reporter+")";
+    			}
+            }
             this.ourPeerAddress = ourPeerAddress;
             this.reporter = reporter;
         }
@@ -46,17 +51,15 @@ public class FutureNAT extends BaseFutureImpl<FutureNAT> {
         }
     }
     
-    public FutureNAT discoverPeer(PeerAddress discoverPeer) {
+    public FutureNAT reporter(PeerAddress reporter) {
         synchronized (lock) {
-            this.discoverPeer = discoverPeer;
+        	if(this.reporter != null) {
+    			if(!this.reporter.equals(reporter)) {
+    				throw new IllegalArgumentException("cannot change reporter once its set");
+    			}
+    		}
+            this.reporter = reporter;
         }
         return this;
     }
-    
-    public PeerAddress discoverPeer() {
-        synchronized (lock) {
-            return discoverPeer;
-        }
-    }
-
 }

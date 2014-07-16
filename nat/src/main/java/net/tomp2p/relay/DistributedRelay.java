@@ -197,7 +197,7 @@ public class DistributedRelay {
 			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(
 			        futureDones);
 			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, cc, nrOfRelays, futureRelay,
-			        relaySuccess, 0, maxFail);
+			        relaySuccess, 0, maxFail, new StringBuilder());
 		} else {
 			futureRelay.failed("done");
 		}
@@ -219,7 +219,8 @@ public class DistributedRelay {
 	 */
 	private void setupPeerConnectionsRecursive(final AtomicReferenceArray<FutureDone<PeerConnection>> futures,
 	        final Collection<PeerAddress> relayCandidates, final ChannelCreator cc, final int numberOfRelays,
-	        final FutureRelay futureRelay, final int relaySuccess, final int fail, final int maxFail) {
+	        final FutureRelay futureRelay, final int relaySuccess, final int fail, final int maxFail, 
+	        final StringBuilder status) {
 		int active = 0;
 		for (int i = 0; i < numberOfRelays; i++) {
 			if (futures.get(i) == null) {
@@ -243,12 +244,12 @@ public class DistributedRelay {
 		}
 		if (active == 0) {
 			updatePeerAddress();
-			futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
+			futureRelay.failed("no candidates: " + status.toString());
 			return;
 		}
 		if (fail > maxFail) {
 			updatePeerAddress();
-			futureRelay.failed("maxfail");
+			futureRelay.failed("maxfail: " + status.toString());
 			return;
 		}
 
@@ -260,11 +261,11 @@ public class DistributedRelay {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
 					futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
-				} else if (!peer.isShutdown()){
+				} else if (!peer.isShutdown()) {
 					setupPeerConnectionsRecursive(futures, relayCandidates, cc, numberOfRelays, futureRelay,
-					        relaySuccess, fail + 1, maxFail);
+					        relaySuccess - futureForkJoin.successCounter(), fail + 1, maxFail, status.append(futureForkJoin.failedReason()).append(" "));
 				} else {
-					futureRelay.failed("shutting down");
+					futureRelay.failed(futureForkJoin);
 				}
 			}
 		});

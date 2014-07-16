@@ -181,19 +181,17 @@ public class FutureForkJoin<K extends BaseFuture> extends BaseFutureImpl<FutureF
             return false;
         }
         this.type = type;
+        this.reason = reason();
         return true;
     }
-
-    @Override
-    public String failedReason() {
-        synchronized (lock) {
-            StringBuilder sb = new StringBuilder("FFJ:").append(reason);
-            sb.append(", type:").append(type);
-            for (K k : completed()) {
-                sb.append(",").append(k.failedReason());
-            }
-            return sb.toString();
+    
+    private String reason() {
+    	final StringBuilder sb = new StringBuilder("forkjoin:");
+        sb.append(type.name());
+        for (final K k : completed()) {
+            sb.append(",").append(k.failedReason());
         }
+        return sb.toString();
     }
 
     /**

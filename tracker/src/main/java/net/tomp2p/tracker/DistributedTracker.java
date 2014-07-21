@@ -73,13 +73,12 @@ public class DistributedTracker {
 	}
 
 	public FutureTracker get(final GetTrackerBuilder builder) {
-
 		final FutureTracker futureTracker = new FutureTracker(builder.evaluatingScheme(), builder.knownPeers());
 		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
 				if (futureChannelCreator2.isSuccess()) {
-
+		        	
 					TrackerData peers = trackerStorage.peers(new Number320(builder.locationKey(), builder
 					        .domainKey()));
 					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
@@ -90,11 +89,12 @@ public class DistributedTracker {
 					}
 
 					if (queue.size() > MIN_TRACKER_PEERS) {
+			        	System.err.println("routing failed");
 						startLoop(builder, futureTracker, queue, futureChannelCreator2.channelCreator());
 					}
 
 					else {
-
+						
 						final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_3,
 						        futureChannelCreator2.channelCreator());
 
@@ -102,10 +102,12 @@ public class DistributedTracker {
 							@Override
 							public void operationComplete(FutureRouting future) throws Exception {
 								if (futureRouting.isSuccess()) {
+									System.err.println("routing failed: "+futureRouting.potentialHits());
 									LOG.debug("found direct hits for tracker get: {}", futureRouting.directHits());
 									startLoop(builder, futureTracker, futureRouting.directHits(),
 									        futureChannelCreator2.channelCreator());
 								} else {
+									
 									futureTracker.failed(futureRouting);
 								}
 							}

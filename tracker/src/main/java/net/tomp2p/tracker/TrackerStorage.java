@@ -29,6 +29,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	public static final int TRACKER_CACHE_SIZE = 1000;
 	final private Map<Number320, TrackerData> dataMapUnverified;
 	final private Map<Number320, TrackerData> dataMap;
+	final private boolean verifyPeersOnTracker;
 	private final int[] intervalSeconds;
 	private final ConcurrentCacheMap<Number160, Boolean> peerOffline;
 	private final PeerAddress self;
@@ -39,7 +40,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	private PeerExchange peerExchange;
 
 	public TrackerStorage(int trackerTimoutSeconds, final int[] intervalSeconds,
-	        int replicationFactor, Peer peer) {
+	        int replicationFactor, Peer peer, boolean verifyPeersOnTracker) {
 		dataMapUnverified = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE,
 		        true);
 		dataMap = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
@@ -49,7 +50,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		this.self = peer.peerAddress();
 		this.peerMap = peer.peerBean().peerMap();
 		this.replicationFactor = replicationFactor;
-
+		this.verifyPeersOnTracker = verifyPeersOnTracker;
 	}
 
 	public boolean put(Number320 key, PeerAddress peerAddress, PublicKey publicKey, Data attachement) {
@@ -66,11 +67,18 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		}
 		// now store
 		attachement.publicKey(publicKey);
-		return add(key, new PeerStatatistic(peerAddress), dataMapUnverified, attachement);
+		return add(key, new PeerStatatistic(peerAddress), verifyPeersOnTracker ? dataMapUnverified : dataMap, attachement);
 	}
 
 	private Data findOld(Number320 key, PeerAddress peerAddress) {
 		for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
+			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+				if (entry2.getKey().peerAddress().equals(peerAddress)) {
+					return entry2.getValue();
+				}
+			}
+		}
+		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
 			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (entry2.getKey().peerAddress().equals(peerAddress)) {
 					return entry2.getValue();

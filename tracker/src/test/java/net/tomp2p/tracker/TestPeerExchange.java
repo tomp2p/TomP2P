@@ -8,6 +8,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FuturePing;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
@@ -34,7 +35,7 @@ public class TestPeerExchange {
             
             
             final CountDownLatch c = new CountDownLatch(2);
-            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer);
+            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer, false);
             Random rnd = new Random(42);
             PeerBuilderTracker.DefaultPeerExchangeHandler pe = new PeerBuilderTracker.DefaultPeerExchangeHandler(trackerStorage, recv1Peer.peerAddress(), rnd) {
             	@Override
@@ -53,8 +54,8 @@ public class TestPeerExchange {
             
             sender.trackerStorage().put(key, recv1.peerAddress(), null, new Data("test"));
             PeerStatatistic ps = sender.trackerStorage().nextForMaintenance(new ArrayList<PeerAddress>());
-            BaseFuture bs = sender.peer().ping().peerAddress(ps.peerAddress()).start().awaitListeners();
-            Assert.assertEquals(true, bs.isSuccess());
+            FuturePing fp = sender.peer().ping().peerAddress(ps.peerAddress()).start().awaitListeners();
+            Assert.assertEquals(true, fp.isSuccess());
             
             
             sender.peer().addAutomaticFuture(new AutomaticFuture() {

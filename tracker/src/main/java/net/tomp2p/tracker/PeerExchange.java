@@ -1,9 +1,5 @@
 package net.tomp2p.tracker;
 
-import java.util.Collection;
-import java.util.Map;
-import java.util.Random;
-
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -14,9 +10,6 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.storage.Data;
-import net.tomp2p.utils.Utils;
 
 public class PeerExchange {
 

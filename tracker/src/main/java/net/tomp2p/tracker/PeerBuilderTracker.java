@@ -30,6 +30,7 @@ public class PeerBuilderTracker {
 	private int ttl = -1;
 	private int replicationFactor = -1;
 	private int[] maintenanceInterval = null;
+	private Boolean verifyPeersOnTracker;
 
 	public PeerBuilderTracker(Peer peer) {
 		this.peer = peer;
@@ -52,7 +53,10 @@ public class PeerBuilderTracker {
 		if (maintenanceInterval == null) {
 			maintenanceInterval = new int[] { 2, 4, 8, 16, 32, 64 };
 		}
-		TrackerStorage trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer);
+		if(verifyPeersOnTracker == null) {
+			verifyPeersOnTracker = Boolean.TRUE;
+		}
+		TrackerStorage trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer, verifyPeersOnTracker.booleanValue());
 		if (peerExchangeHandler == null) {
 			peerExchangeHandler = new DefaultPeerExchangeHandler(trackerStorage, peer.peerAddress(), rnd);
 		}
@@ -98,6 +102,22 @@ public class PeerBuilderTracker {
 		return peerTracker;
 	}
 
+	public boolean isVerifyPeersOnTracker() {
+		if(verifyPeersOnTracker == null) {
+			return false;
+		}
+		return verifyPeersOnTracker.booleanValue();
+	}
+	
+	public PeerBuilderTracker verifyPeersOnTracker() {
+		return verifyPeersOnTracker(true);
+	}
+
+	public PeerBuilderTracker verifyPeersOnTracker(boolean verifyPeersOnTracker) {
+		this.verifyPeersOnTracker = verifyPeersOnTracker;
+		return this;
+	}
+	
 	public ConnectionConfiguration connectionConfiguration() {
 		return connectionConfiguration;
 	}

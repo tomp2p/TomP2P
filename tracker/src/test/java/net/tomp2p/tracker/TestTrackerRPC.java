@@ -22,7 +22,7 @@ import org.junit.Test;
 public class TestTrackerRPC {
     final static Random rnd = new Random(0);
 
-    @Test
+    /*@Test
     public void testTrackerPut() throws Exception {
         Peer sender = null;
         Peer recv1 = null;
@@ -230,5 +230,5 @@ public class TestTrackerRPC {
                 recv1.shutdown().await();
             }
         }
-    }
+    }*/
 }

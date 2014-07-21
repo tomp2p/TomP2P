@@ -30,7 +30,7 @@ public class TestTracker {
         final Random rnd = new Random(42L);
         PeerTracker master = null;
         try {
-            master = new PeerTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start());
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).start();
             PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
@@ -84,7 +84,7 @@ public class TestTracker {
         final Random rnd = new Random(42L);
         PeerTracker master = null;
         try {
-            master = new PeerTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start());
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
             PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
@@ -105,14 +105,15 @@ public class TestTracker {
                     .routingConfiguration(rc).trackerConfiguration(tc)
                     .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
+            System.err.println(ft.failedReason());
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
-            Assert.assertEquals(1, ft.potentialTrackers().size());
             Assert.assertEquals(1, ft.directTrackers().size());
+            Assert.assertEquals(1, ft.potentialTrackers().size());
 
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
@@ -437,7 +438,7 @@ public class TestTracker {
 
     	PeerTracker[] nodes = new PeerTracker[nr+1];
         for (int i = 0; i < nr; i++) {
-            nodes[i+1] = new PeerTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).masterPeer(master.peer()).start());
+            nodes[i+1] = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).masterPeer(master.peer()).start()).verifyPeersOnTracker(false).start();
         }
         nodes[0] = master;
         return nodes;

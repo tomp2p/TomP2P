@@ -57,7 +57,7 @@ public class RconController {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
 				try {
-					SimpleRconClient.sendDummy("please give me your PeerConnection!");
+					SimpleRconClient.sendNATDummy("please give me your PeerConnection!");
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
 				}

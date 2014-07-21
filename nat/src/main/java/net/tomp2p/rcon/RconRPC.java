@@ -61,9 +61,10 @@ public class RconRPC extends DispatchHandler {
 
 	private void handleRconSetup(Message message, Responder responder) {
 		//TODO JWA the message reached the relay node
-		message.type(Message.Type.REQUEST_2);
-		
 		Message forwardMessage = new Message();
+		forwardMessage.type(Message.Type.REQUEST_2);
+		forwardMessage.command(RPC.Commands.RCON.getNr());
+		
 		NeighborSet ns= new NeighborSet(1);
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);

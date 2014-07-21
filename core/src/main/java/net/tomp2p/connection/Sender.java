@@ -145,23 +145,24 @@ public class Sender {
 			if (message.recipient().isRelayed()) {
 				// check reverse connection setup
 				final Message rconMessage = message;
-//				if (!message.sender().isRelayed()) {
-//
-//					// TODO JWA manipulate message to fit into rcon
-//					// handleRconSetup(handler, futureResponse, message,
-//					// channelCreator, idleTCPSeconds, connectTimeoutMillis,
-//					// peerConnection, timeoutHandler);
-//					rconMessage.command(RPC.Commands.RCON.getNr());
-//					rconMessage.type(Message.Type.REQUEST_1);
-//
-//					recipient = rconMessage.recipient().createSocketTCP();
-//					channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
-//							timeoutHandler, connectTimeoutMillis, futureResponse);
-//					afterConnect(futureResponse, rconMessage, channelFuture, false);
-//				} else {
+				if (!message.sender().isRelayed()) {
+
+					// TODO JWA manipulate message to fit into rcon
+					// handleRconSetup(handler, futureResponse, message,
+					// channelCreator, idleTCPSeconds, connectTimeoutMillis,
+					// peerConnection, timeoutHandler);
+					// TODO create new Message
+					rconMessage.command(RPC.Commands.RCON.getNr());
+					rconMessage.type(Message.Type.REQUEST_1);
+
+					recipient = rconMessage.recipient().createSocketTCP();
+					channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
+							timeoutHandler, connectTimeoutMillis, futureResponse);
+					afterConnect(futureResponse, rconMessage, channelFuture, false);
+				} else {
 					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 							peerConnection, timeoutHandler);
-//				}
+				}
 			} else {
 				recipient = message.recipient().createSocketTCP();
 				channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,

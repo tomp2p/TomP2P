@@ -11,6 +11,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
@@ -56,5 +64,41 @@ public class RelayUtils {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Send a Message from one Peer to another Peer internally. This avoids the
+	 * overhead of sendDirect. This Method is used for relaying and reverse
+	 * Connection setup.
+	 * 
+	 * @param peerConnection
+	 * @param futureResponse
+	 * @param peerBean
+	 * @param connectionBean
+	 * @param config
+	 * @return
+	 */
+	public static FutureResponse sendSingle(final PeerConnection peerConnection, final FutureResponse futureResponse,
+			PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config) {
+		
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
+				peerBean, connectionBean, config);
+		//TODO JWA remove this comment
+		// final RequestHandler<FutureResponse> requestHandler = new
+		// RequestHandler<FutureResponse>(futureResponse, peerBean(),
+		// connectionBean(), config);
+		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
+		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+			@Override
+			public void operationComplete(FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
+				} else {
+					futureResponse.failed(future);
+				}
+			}
+		});
+	
+		return futureResponse;
 	}
 }

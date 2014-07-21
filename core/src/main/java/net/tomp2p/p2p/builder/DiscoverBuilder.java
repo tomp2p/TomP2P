@@ -225,8 +225,8 @@ public class DiscoverBuilder {
                     futureDiscover.reporter(futureResponseTCP.responseMessage().sender());
                     if (tmp.size() == 1) {
                         PeerAddress seenAs = tmp.iterator().next();
-                        LOG.info("I'm seen as {} by peer {}. I see myself as "
-                                + seenAs, peerAddress, peer.peerAddress().inetAddress());
+                        LOG.info("I'm seen as {} by peer {}. I see myself as {}",
+                                seenAs, peerAddress, peer.peerAddress().inetAddress());
                         if (!peer.peerAddress().inetAddress().equals(seenAs.inetAddress())) {
                             // check if we have this interface in that we can
                             // listen to

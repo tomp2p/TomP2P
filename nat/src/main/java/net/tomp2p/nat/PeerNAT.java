@@ -267,9 +267,9 @@ public class PeerNAT {
 
 	public FutureRelayNAT startRelay(final FutureDiscover futureDiscover, final FutureNAT futureNAT) {
 		final FutureRelayNAT futureRelayNAT = new FutureRelayNAT();
-		futureDiscover.addListener(new BaseFutureAdapter<FutureRelayNAT>() {
+		futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>() {
 			@Override
-			public void operationComplete(FutureRelayNAT future) throws Exception {
+			public void operationComplete(FutureDiscover future) throws Exception {
 				if (future.isSuccess()) {
 					if (futureNAT != null) {
 						handleFutureNat(futureDiscover.reporter(), futureNAT, futureRelayNAT);

@@ -64,10 +64,6 @@ public class RelayForwarderRPC extends DispatchHandler {
 		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
 
-	public PeerConnection peerConnection() {
-		return peerConnection;
-	}
-
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
 			if (command != RPC.Commands.RELAY) {
@@ -205,5 +201,9 @@ public class RelayForwarderRPC extends DispatchHandler {
 
 	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 		this.peerMap = peerMap;
+	}
+
+	public PeerConnection peerConnection() {
+		return peerConnection;
 	}
 }

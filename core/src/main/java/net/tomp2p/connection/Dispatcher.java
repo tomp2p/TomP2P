@@ -286,4 +286,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	}
     	return result;
     }
+
+	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId) {
+		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(peerId);
+		return ioHandlerMap;
+	}
 }

@@ -1,14 +1,13 @@
 package net.tomp2p.rcon;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
@@ -16,8 +15,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerSocketAddress;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.relay.RelayForwarderRPC;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
@@ -69,15 +67,25 @@ public class RconRPC extends DispatchHandler {
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 		
-		DispatchHandler handler = peer.connectionBean().dispatcher().searchHandler(message.recipient().peerId(), RPC.Commands.RELAY.getNr());
-		RelayForwarderRPC relayForwarderRPC = (RelayForwarderRPC) handler;
-		PeerConnection peerConnection2 = relayForwarderRPC.peerConnection();
+//		peer.connectionBean().dispatcher().searchHandler(RPC.Commands.RELAY.ordinal());
+//		DispatchHandler handler = peer.connectionBean().dispatcher().searchHandler(message.recipient().peerId(), RPC.Commands.RELAY.getNr());
+		Dispatcher dispatcher = peer.connectionBean().dispatcher();
+		Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
+		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
+			if (element.getValue().getClass().equals(RelayForwarderRPC.class)) {
+				System.out.println(element.getValue().toString());
+			}
+		}
 		
-		//TODO jwa use random token
-		forwardMessage.longValue(345243);
 		
-		FutureResponse futureResponse = new FutureResponse(forwardMessage);
-		RelayUtils.sendSingle(peerConnection2, futureResponse, peer.peerBean(), peer.connectionBean(), config);
+//		RelayForwarderRPC relayForwarderRPC = (RelayForwarderRPC) handler;
+//		PeerConnection peerConnection2 = relayForwarderRPC.peerConnection();
+//		
+//		//TODO jwa use random token
+//		forwardMessage.longValue(345243);
+//		
+//		FutureResponse futureResponse = new FutureResponse(forwardMessage);
+//		RelayUtils.sendSingle(peerConnection2, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 		
 		responder.response(createResponseMessage(message, Type.OK));
 	}

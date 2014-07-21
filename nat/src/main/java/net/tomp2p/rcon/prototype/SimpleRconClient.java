@@ -135,6 +135,25 @@ public class SimpleRconClient {
 
 		return success;
 	}
+	
+	public static boolean sendNATDummy(String message) throws UnknownHostException {
+		boolean success = false;
+		PeerAddress recipient = masterPeerAddress;
+		recipient = recipient.changeRelayed(true);
+		recipient = recipient.changePeerId(Number160.createHash("NAT"));
+
+		FutureDirect fd = peer.sendDirect(recipient).object(message).start();
+		fd.awaitUninterruptibly(10000);
+		
+		if (fd.isSuccess()) {
+			System.out.println("FUTURE DIRECT SUCCESS!");
+			success = true;
+		} else {
+			System.out.println("FUTURE DIRECT FAIL!");
+		}
+
+		return success;
+	}
 
 	public static void natBootstrap(String ip) throws UnknownHostException {
 		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(ip),

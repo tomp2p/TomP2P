@@ -48,7 +48,7 @@ public class RelayRPC extends DispatchHandler {
 		this.peer = peer;
 		config = new DefaultConnectionConfiguration();
 	}
-
+	
 	/**
 	 * Send the peer map of an unreachable peer to a relay peer, so that the
 	 * relay peer can reply to neighbor requests on behalf of the unreachable

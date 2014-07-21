@@ -120,7 +120,7 @@ public class SimpleRconClient {
 
 	public static boolean sendDummy(String message) throws UnknownHostException {
 		boolean success = false;
-		PeerAddress recipient = new PeerAddress(Number160.createHash("NAT"), Inet4Address.getByName(masterIpAddress), port, port);
+		PeerAddress recipient = masterPeerAddress;
 		recipient = recipient.changeRelayed(true);
 
 		FutureDirect fd = peer.sendDirect(recipient).object(message).start();

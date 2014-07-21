@@ -1,15 +1,18 @@
 package net.tomp2p.rcon;
 
-import java.lang.reflect.UndeclaredThrowableException;
+import java.net.InetSocketAddress;
 
-import net.tomp2p.connection.ConnectionBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
-import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -17,6 +20,7 @@ public class RconRPC extends DispatchHandler {
 
 	private final Peer peer;
 	private final ConnectionConfiguration config;
+	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
 	
 	public RconRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -24,7 +28,7 @@ public class RconRPC extends DispatchHandler {
 		this.peer = peer;
 		this.config = new DefaultConnectionConfiguration();
 	}
-
+	
 	/**
 	 * REQEST_1 = relay rcon forwarding
 	 * REQUEST_2 = open socket and transmit PeerConnection
@@ -33,8 +37,14 @@ public class RconRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 			throws Exception {
+		LOG.debug("received RPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			//TODO JWA the message reached the relay node
+			
+			
+			message.type(Message.Type.REQUEST_2);
+			
+			responder.response(createResponseMessage(message, Type.OK));
 			
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
 			//TODO JWA the message reached the unreachable peer
@@ -46,17 +56,4 @@ public class RconRPC extends DispatchHandler {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 	}
-	
-	private void handleForwarding(Message message, Responder responder, PeerConnection peerConnection) {
-		
-	}
-	
-	private void handleRconSetup(Message message, Responder responder, PeerConnection peerConnection) {
-		
-	}
-	
-	private void sendMessage(Message message, Responder responder, PeerConnection peerConnection) {
-		
-	}
-	
 }

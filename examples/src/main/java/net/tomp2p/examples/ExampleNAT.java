@@ -18,11 +18,10 @@ package net.tomp2p.examples;
 import java.net.InetAddress;
 import java.util.Random;
 
-import net.tomp2p.connection.Bindings;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.FutureNAT;
+import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
@@ -31,13 +30,13 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
 public class ExampleNAT {
+	private final static int PORT_SERVER = 4000;
+	private final static int PORT_CLIENT = 4001;
 	public void startServer() throws Exception {
 		Peer peer = null;
 		try {
 			Random r = new Random(42L);
-			// peer.getP2PConfiguration().setBehindFirewall(true);
-			Bindings b = new Bindings().addInterface("eth0");
-			peer = new PeerBuilder(new Number160(r)).bindings(b).ports(4000).start();
+			peer = new PeerBuilder(new Number160(r)).ports(PORT_SERVER).start();
 			System.out.println("peer started.");
 			for (;;) {
 				for (PeerAddress pa : peer.peerBean().peerMap().all()) {
@@ -74,9 +73,9 @@ public class ExampleNAT {
 
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
-		Peer peer = new PeerBuilder(new Number160(r)).ports(4000).behindFirewall().start();
+		Peer peer = new PeerBuilder(new Number160(r)).ports(PORT_CLIENT).behindFirewall().start();
 		PeerNAT peerNAT = new PeerBuilderNAT(peer).start();
-		PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), 4000, 4000);
+		PeerAddress pa = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), PORT_SERVER, PORT_SERVER);
 		
 		FutureDiscover fd = peer.discover().peerAddress(pa).start();
 		FutureNAT fn = peerNAT.startSetupPortforwarding(fd);

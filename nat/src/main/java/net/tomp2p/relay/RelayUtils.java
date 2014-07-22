@@ -83,10 +83,6 @@ public class RelayUtils {
 		
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse,
 				peerBean, connectionBean, config);
-		//TODO JWA remove this comment
-		// final RequestHandler<FutureResponse> requestHandler = new
-		// RequestHandler<FutureResponse>(futureResponse, peerBean(),
-		// connectionBean(), config);
 		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override

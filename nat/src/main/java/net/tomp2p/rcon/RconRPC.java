@@ -59,7 +59,7 @@ public class RconRPC extends DispatchHandler {
 
 	private void handleRconSetup(Message message, Responder responder) {
 		// TODO JWA handle setup
-		
+		System.out.println(message.toString());
 	}
 
 	private void handleRconForward(Message message, Responder responder) {
@@ -68,6 +68,7 @@ public class RconRPC extends DispatchHandler {
 		RelayForwarderRPC relayForwarderRPC = null;
 		PeerConnection peerConnection = null; // the peerConnection to the unreachable peer
 		
+		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
 		Dispatcher dispatcher = peer.connectionBean().dispatcher();
 		Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
@@ -85,9 +86,6 @@ public class RconRPC extends DispatchHandler {
 		
 		Message forwardMessage = createForwardMessage(message, peerConnection);
 		
-//		//TODO jwa use random token
-//		forwardMessage.longValue(345243);
-		
 		FutureResponse futureResponse = new FutureResponse(forwardMessage);
 		RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 		
@@ -101,11 +99,16 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
+		forwardMessage.version(1); //TODO remove magic number and find out why we need the versionnumber
 		
 		// transmit PeerAddress of reachablePeer
 		NeighborSet ns= new NeighborSet(1);
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
+		
+		//use same message id for new message
+		forwardMessage.messageId(message.messageId());
+
 		return forwardMessage;
 	}
 

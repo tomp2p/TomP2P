@@ -19,7 +19,6 @@ import net.tomp2p.relay.RelayForwarderRPC;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
-import net.tomp2p.rpc.RPC.Commands;
 
 public class RconRPC extends DispatchHandler {
 
@@ -27,17 +26,12 @@ public class RconRPC extends DispatchHandler {
 	private final ConnectionConfiguration config;
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
 	
-	private PeerConnection peerConnection = null;
 	
 	public RconRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.RCON.getNr());
 		this.peer = peer;
 		this.config = new DefaultConnectionConfiguration();
-	}
-	
-	public void peerConnection(PeerConnection peerConnection) {
-		this.peerConnection = peerConnection;
 	}
 	
 	/**
@@ -50,11 +44,11 @@ public class RconRPC extends DispatchHandler {
 			throws Exception {
 		LOG.debug("received RPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
-			handleRconSetup(message, responder);
-			
+			// the message reached the relay peer
+			handleRconForward(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
-			//TODO JWA the message reached the unreachable peer
-			
+			// the message reached the unreachable peer
+			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			//TODO JWA the message reached the requesting peer
 			
@@ -64,55 +58,55 @@ public class RconRPC extends DispatchHandler {
 	}
 
 	private void handleRconSetup(Message message, Responder responder) {
-		//TODO JWA the message reached the relay node
-		Message forwardMessage = new Message();
-		forwardMessage.type(Message.Type.REQUEST_2);
-		forwardMessage.command(RPC.Commands.RCON.getNr());
+		// TODO JWA handle setup
 		
-		NeighborSet ns= new NeighborSet(1);
-		ns.add(message.sender());
-		forwardMessage.neighborsSet(ns);
+	}
+
+	private void handleRconForward(Message message, Responder responder) {
+		
 		
 		RelayForwarderRPC relayForwarderRPC = null;
-		PeerConnection peerConnection2 = null; // the peerConnection to the unreachable peer
+		PeerConnection peerConnection = null; // the peerConnection to the unreachable peer
 		
 		Dispatcher dispatcher = peer.connectionBean().dispatcher();
 		Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
 			if (element.getValue().getClass().equals(RelayForwarderRPC.class)) {
 				relayForwarderRPC = (RelayForwarderRPC) element.getValue();
+				break;
 			}
 		}
 		
 		if (relayForwarderRPC != null) {
-			peerConnection2 = relayForwarderRPC.peerConnection();
+			peerConnection = relayForwarderRPC.peerConnection();
 		} else {
 			LOG.error("no relayForwarder Registered for peerId=" + message.recipient().peerId().toString());
 		}
+		
+		Message forwardMessage = createForwardMessage(message, peerConnection);
 		
 //		//TODO jwa use random token
 //		forwardMessage.longValue(345243);
 		
 		FutureResponse futureResponse = new FutureResponse(forwardMessage);
-		RelayUtils.sendSingle(peerConnection2, futureResponse, peer.peerBean(), peer.connectionBean(), config);
+		RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 		
 		responder.response(createResponseMessage(message, Type.OK));
 	}
 
-	//TODO JWA discuss this with Thomas
-//	public static void register(PeerConnection peerConnection, Peer peer2) {
-//		RconRPC rconRPC = new RconRPC(peer2);
-//		rconRPC.peerConnection(peerConnection);
-//		RconRPC.register(peer2, peerConnection, rconRPC);
-//	}
-//	
-//	private static void register(Peer peer2, PeerConnection peerConnection, RconRPC rconRPC) {
-//		for (Commands command : RPC.Commands.values()) {
-//			if (command != RPC.Commands.RELAY) {
-//				peer2.connectionBean().dispatcher()
-//						.registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, command.getNr());
-//			}
-//		}
-//	}
+	private Message createForwardMessage(Message message, PeerConnection peerConnection) {
+		// create Message to forward
+		Message forwardMessage = new Message();
+		forwardMessage.type(Message.Type.REQUEST_2);
+		forwardMessage.command(RPC.Commands.RCON.getNr());
+		forwardMessage.sender(peer.peerAddress());
+		forwardMessage.recipient(peerConnection.remotePeer());
+		
+		// transmit PeerAddress of reachablePeer
+		NeighborSet ns= new NeighborSet(1);
+		ns.add(message.sender());
+		forwardMessage.neighborsSet(ns);
+		return forwardMessage;
+	}
 
 }

@@ -22,6 +22,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -163,6 +164,9 @@ public class RelayRPC extends DispatchHandler {
 
 		// register relay forwarder
 		RelayForwarderRPC.register(peerConnection, peer, this);
+		
+		// register rcon
+//		RconRPC.register(peerConnection, message.sender());
 
 		// add close listener for the peer connection
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {

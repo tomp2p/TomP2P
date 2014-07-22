@@ -154,6 +154,8 @@ public class Sender {
 					// TODO create new Message
 					rconMessage.command(RPC.Commands.RCON.getNr());
 					rconMessage.type(Message.Type.REQUEST_1);
+					
+					//TODO create random token and store it to ConcurrentCache.class
 
 					recipient = rconMessage.recipient().createSocketTCP();
 					channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,

@@ -10,16 +10,14 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.relay.RelayForwarderRPC;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 
 public class RconRPC extends DispatchHandler {
 
@@ -27,11 +25,17 @@ public class RconRPC extends DispatchHandler {
 	private final ConnectionConfiguration config;
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
 	
+	private PeerConnection peerConnection = null;
+	
 	public RconRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.RCON.getNr());
 		this.peer = peer;
 		this.config = new DefaultConnectionConfiguration();
+	}
+	
+	public void peerConnection(PeerConnection peerConnection) {
+		this.peerConnection = peerConnection;
 	}
 	
 	/**
@@ -89,4 +93,21 @@ public class RconRPC extends DispatchHandler {
 		
 		responder.response(createResponseMessage(message, Type.OK));
 	}
+
+	//TODO JWA discuss this with Thomas
+//	public static void register(PeerConnection peerConnection, Peer peer2) {
+//		RconRPC rconRPC = new RconRPC(peer2);
+//		rconRPC.peerConnection(peerConnection);
+//		RconRPC.register(peer2, peerConnection, rconRPC);
+//	}
+//	
+//	private static void register(Peer peer2, PeerConnection peerConnection, RconRPC rconRPC) {
+//		for (Commands command : RPC.Commands.values()) {
+//			if (command != RPC.Commands.RELAY) {
+//				peer2.connectionBean().dispatcher()
+//						.registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, command.getNr());
+//			}
+//		}
+//	}
+
 }

@@ -60,6 +60,10 @@ public class PeerNAT {
 	public RelayRPC relayRPC() {
 		return relayRPC;
 	}
+	
+	public RconRPC rconRPC() {
+		return rconRPC;
+	}
 
 	/**
 	 * Setup UPNP or NATPMP port forwarding.

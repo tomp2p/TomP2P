@@ -66,7 +66,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
-			if (command != RPC.Commands.RELAY) {
+			if (command != RPC.Commands.RELAY || command != RPC.Commands.RCON) {
 				peer.connectionBean().dispatcher()
 						.registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
 			}

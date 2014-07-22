@@ -22,6 +22,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.RPC;
@@ -47,6 +48,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
 	private final RelayRPC relayRPC;
+	private final RconRPC rconRPC;
 
 	/**
 	 * 
@@ -56,25 +58,29 @@ public class RelayForwarderRPC extends DispatchHandler {
 	 * @param peer
 	 *            The relay peer
 	 */
-	public RelayForwarderRPC(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC) {
+	public RelayForwarderRPC(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		PeerAddress unreachablePeer = peerConnection.remotePeer();
 		this.peerConnection = peerConnection;
 		this.relayRPC = relayRPC;
+		this.rconRPC = rconRPC;
 		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
 
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
-			if (command != RPC.Commands.RELAY || command != RPC.Commands.RCON) {
+			if (command != RPC.Commands.RELAY && command != RPC.Commands.RCON) {
 				peer.connectionBean().dispatcher()
 						.registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
+			} 
+			else if (command == RPC.Commands.RCON) {
+				peer.connectionBean().dispatcher().registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
 			}
 		}
 	}
 
-	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC) {
-		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC);
+	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {
+		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC, rconRPC);
 		relayForwarderRPC.register(peer);
 	}
 

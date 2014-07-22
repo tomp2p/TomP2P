@@ -34,6 +34,7 @@ public class RelayRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
 	private final ConnectionConfiguration config;
 	private final Peer peer;
+	private final RconRPC rconRPC; //TODO document this well
 
 	/**
 	 * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -43,10 +44,11 @@ public class RelayRPC extends DispatchHandler {
 	 *            The peer to register the RelayRPC
 	 * @return
 	 */
-	public RelayRPC(Peer peer) {
+	public RelayRPC(Peer peer, RconRPC rconRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.RELAY.getNr());
 		this.peer = peer;
+		this.rconRPC = rconRPC;
 		config = new DefaultConnectionConfiguration();
 	}
 	
@@ -163,11 +165,8 @@ public class RelayRPC extends DispatchHandler {
 		}
 
 		// register relay forwarder
-		RelayForwarderRPC.register(peerConnection, peer, this);
+		RelayForwarderRPC.register(peerConnection, peer, this, rconRPC);
 		
-		// register rcon
-//		RconRPC.register(peerConnection, message.sender());
-
 		// add close listener for the peer connection
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override

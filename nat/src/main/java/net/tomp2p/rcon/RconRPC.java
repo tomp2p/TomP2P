@@ -10,11 +10,13 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.relay.RelayForwarderRPC;
+import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -71,25 +73,28 @@ public class RconRPC extends DispatchHandler {
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 		
-//		peer.connectionBean().dispatcher().searchHandler(RPC.Commands.RELAY.ordinal());
-//		DispatchHandler handler = peer.connectionBean().dispatcher().searchHandler(message.recipient().peerId(), RPC.Commands.RELAY.getNr());
+		RelayForwarderRPC relayForwarderRPC = null;
+		PeerConnection peerConnection2 = null; // the peerConnection to the unreachable peer
+		
 		Dispatcher dispatcher = peer.connectionBean().dispatcher();
 		Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
 			if (element.getValue().getClass().equals(RelayForwarderRPC.class)) {
-				System.out.println(element.getValue().toString());
+				relayForwarderRPC = (RelayForwarderRPC) element.getValue();
 			}
 		}
 		
+		if (relayForwarderRPC != null) {
+			peerConnection2 = relayForwarderRPC.peerConnection();
+		} else {
+			LOG.error("no relayForwarder Registered for peerId=" + message.recipient().peerId().toString());
+		}
 		
-//		RelayForwarderRPC relayForwarderRPC = (RelayForwarderRPC) handler;
-//		PeerConnection peerConnection2 = relayForwarderRPC.peerConnection();
-//		
 //		//TODO jwa use random token
 //		forwardMessage.longValue(345243);
-//		
-//		FutureResponse futureResponse = new FutureResponse(forwardMessage);
-//		RelayUtils.sendSingle(peerConnection2, futureResponse, peer.peerBean(), peer.connectionBean(), config);
+		
+		FutureResponse futureResponse = new FutureResponse(forwardMessage);
+		RelayUtils.sendSingle(peerConnection2, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 		
 		responder.response(createResponseMessage(message, Type.OK));
 	}

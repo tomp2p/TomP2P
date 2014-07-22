@@ -44,8 +44,8 @@ public class PeerNAT {
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
 		this.natUtils = new NATUtils();
-		this.relayRPC = new RelayRPC(peer);
 		this.rconRPC = new RconRPC(peer);
+		this.relayRPC = new RelayRPC(peer, rconRPC);
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override

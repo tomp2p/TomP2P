@@ -97,6 +97,7 @@ public class RconRPC extends DispatchHandler {
 				LOG.error("no channel could be established");
 			} else {
 				peerConnection = fpc.peerConnection();
+				peer.sendDirect(peerConnection).object("yomama is so fat...!");
 			}
 		}
 		

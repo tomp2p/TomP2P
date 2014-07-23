@@ -5,6 +5,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
@@ -25,6 +26,7 @@ public class SimpleRconClient {
 	private static Peer peer;
 	private static PeerAddress masterPeerAddress;
 	private static String masterIpAddress;
+	private static PeerConnection peerConnection;
 
 	public static void start(boolean isMaster, String id) {
 		// Create a peer with a random peerID, on port 4001, listening to the

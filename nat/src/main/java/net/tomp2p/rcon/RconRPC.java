@@ -13,6 +13,7 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -62,6 +63,8 @@ public class RconRPC extends DispatchHandler {
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// TODO JWA the message reached the requesting peer
 			responder.response(createResponseMessage(message, Type.OK));
+			System.out.println("SUCCESS HIT");
+			System.out.println(message);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
 		}

@@ -148,8 +148,8 @@ public class Sender {
 				// check if reverse connection is possible
 				if (!message.sender().isRelayed()) {
 
-					// TODO create new Message
-					final Message rconMessage = Message.copy(message);
+					// TODO create new Message or use clone
+					final Message rconMessage = message;
 					rconMessage.command(RPC.Commands.RCON.getNr());
 					rconMessage.type(Message.Type.REQUEST_1);
 					rconMessage.messageId(message.messageId());
@@ -167,7 +167,6 @@ public class Sender {
 							PeerConnection peerConnection = future.object();
 							sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection);
 						}
-						
 					});
 					
 					recipient = rconMessage.recipient().createSocketTCP();

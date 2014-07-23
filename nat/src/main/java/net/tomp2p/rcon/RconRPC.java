@@ -96,16 +96,7 @@ public class RconRPC extends DispatchHandler {
 		}
 		
 		if (peerConnection != null) {
-			Message setupMessage = new Message();
-			setupMessage.type(Message.Type.REQUEST_3);
-			setupMessage.command(RPC.Commands.RCON.getNr());
-			setupMessage.sender(peer.peerAddress());
-			setupMessage.recipient(peerConnection.remotePeer());
-			setupMessage.version(1); // TODO remove magic number and find out why
-										// we need the versionnumber
-
-			// use same message id for new message
-			setupMessage.messageId(message.messageId());
+			Message setupMessage = createSetupMessage(message, peerConnection);
 
 			FutureResponse futureResponse = new FutureResponse(setupMessage);
 			RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
@@ -115,6 +106,21 @@ public class RconRPC extends DispatchHandler {
 		}
 		
 		responder.response(createResponseMessage(message, Type.OK));
+	}
+
+	private Message createSetupMessage(final Message message, PeerConnection peerConnection) {
+		Message setupMessage = new Message();
+		setupMessage.type(Message.Type.REQUEST_3);
+		setupMessage.command(RPC.Commands.RCON.getNr());
+		setupMessage.sender(peer.peerAddress());
+		setupMessage.recipient(peerConnection.remotePeer());
+		setupMessage.version(1); // TODO remove magic number and find out why
+									// we need the versionnumber
+
+		// use same message id for new message
+		setupMessage.messageId(message.messageId());
+		setupMessage.keepAlive(true);
+		return setupMessage;
 	}
 
 	private void handleRconForward(Message message, Responder responder) {
@@ -166,6 +172,9 @@ public class RconRPC extends DispatchHandler {
 
 		// use same message id for new message
 		forwardMessage.messageId(message.messageId());
+		
+		// we need to keep the peerConnection between the relay and the unreachable peer open
+		forwardMessage.keepAlive(true);
 
 		return forwardMessage;
 	}

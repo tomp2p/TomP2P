@@ -53,6 +53,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -143,24 +144,37 @@ public class Sender {
 			InetSocketAddress recipient = null;
 			// check relay
 			if (message.recipient().isRelayed()) {
-				// check reverse connection setup
-				final Message rconMessage = message;
+				
+				// check if reverse connection is possible
 				if (!message.sender().isRelayed()) {
 
-					// TODO JWA manipulate message to fit into rcon
-					// handleRconSetup(handler, futureResponse, message,
-					// channelCreator, idleTCPSeconds, connectTimeoutMillis,
-					// peerConnection, timeoutHandler);
 					// TODO create new Message
+					final Message rconMessage = Message.copy(message);
 					rconMessage.command(RPC.Commands.RCON.getNr());
 					rconMessage.type(Message.Type.REQUEST_1);
+					rconMessage.messageId(message.messageId());
 					
 					//TODO create random token and store it to ConcurrentCache.class
+					final ConcurrentCacheMap<Integer, Message> cacheMap = new ConcurrentCacheMap<Integer, Message>();
+					cacheMap.put(message.messageId(), message);
 
+					FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+					futureDone.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
+						
+						@Override
+						public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
+							
+							PeerConnection peerConnection = future.object();
+							sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection);
+						}
+						
+					});
+					
 					recipient = rconMessage.recipient().createSocketTCP();
 					channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
 							timeoutHandler, connectTimeoutMillis, futureResponse);
-					afterConnect(futureResponse, rconMessage, channelFuture, false);
+//					afterConnect(futureResponse, rconMessage, channelFuture, false);
+					
 				} else {
 					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,
 							peerConnection, timeoutHandler);
@@ -173,47 +187,6 @@ public class Sender {
 			}
 		}
 	}
-
-	// private void handleRconSetup(final SimpleChannelInboundHandler<Message>
-	// handler, final FutureResponse futureResponse,
-	// final Message message, final ChannelCreator channelCreator, final int
-	// idleTCPSeconds, final int connectTimeoutMillis,
-	// final PeerConnection peerConnection, final TimeoutFactory timeoutHandler)
-	// {
-	//
-	// FutureDone<PeerSocketAddress> futurePing =
-	// pingFirst(message.recipient().peerSocketAddresses(),
-	// pingBuilderFactory);
-	// futurePing.addListener(new
-	// BaseFutureListener<FutureDone<PeerSocketAddress>>() {
-	//
-	// @Override
-	// public void operationComplete(final FutureDone<PeerSocketAddress>
-	// futureDone) throws Exception {
-	// if (futureDone.isSuccess()) {
-	// InetSocketAddress recipient =
-	// PeerSocketAddress.createSocketTCP(futureDone.object());
-	// ChannelFuture channelFuture = sendTCPCreateChannel(recipient,
-	// channelCreator, peerConnection,
-	// handler, timeoutHandler, connectTimeoutMillis, futureResponse);
-	// afterConnect(futureResponse, message, channelFuture, handler == null);
-	//
-	// futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-	//
-	// @Override
-	// public void operationComplete(FutureResponse future) throws Exception {
-	//
-	// }
-	// });
-	// }
-	// }
-	//
-	// @Override
-	// public void exceptionCaught(Throwable t) throws Exception {
-	// t.printStackTrace();
-	// }
-	// });
-	// }
 
 	/**
 	 * TODO: document what is done here

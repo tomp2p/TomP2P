@@ -152,6 +152,10 @@ public class Message {
     public Message() {
         this.messageId = RND.nextInt();
     }
+    
+    private Message(Message oldMessage) {
+    	this.messageId = RND.nextInt();
+    }
 
     /**
      * Randomly generated message ID.
@@ -1001,5 +1005,9 @@ public class Message {
      */
     public boolean isDone() {
         return done;
+    }
+    
+    public static Message copy(Message oldMessage) {
+    	return new Message(oldMessage);
     }
 }

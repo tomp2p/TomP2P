@@ -172,7 +172,7 @@ public class Sender {
 					recipient = rconMessage.recipient().createSocketTCP();
 					channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
 							timeoutHandler, connectTimeoutMillis, futureResponse);
-//					afterConnect(futureResponse, rconMessage, channelFuture, false);
+					afterConnect(futureResponse, rconMessage, channelFuture, false);
 					
 				} else {
 					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis,

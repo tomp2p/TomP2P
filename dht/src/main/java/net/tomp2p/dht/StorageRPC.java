@@ -21,11 +21,9 @@ import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -890,11 +888,7 @@ public class StorageRPC extends DispatchHandler {
 		responseMessage.setDataMap(new DataMap(result));
 
 		if (withDigest) {
-			Set<Number640> keys = new HashSet<Number640>(2);
-			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
-			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE));
-			final DigestInfo digestInfo = doDigest(locationKey, domainKey, new KeyCollection(keys), null, null, -1, true,
-					true, false, false);
+			final DigestInfo digestInfo = storageLayer.digest(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			responseMessage.keyMap640Keys(new KeyMap640Keys(digestInfo.digests()));
 		}
 

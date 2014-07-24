@@ -867,25 +867,4 @@ public class Utils {
 		}
 		return retVal;
 	}
-
-	/**
-	 * This method can be used for generating a deepCopy for Objects. 
-	 * 
-	 * @param object
-	 * @return copyOfObject
-	 * @throws Exception
-	 */
-	public static Object deepCopy(Object object) throws Exception {
-		// Serialization of object
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		ObjectOutputStream out = new ObjectOutputStream(bos);
-		out.writeObject(object);
-
-		// De-serialization of object
-		ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
-		ObjectInputStream in = new ObjectInputStream(bis);
-		Object copyOfObject = in.readObject();
-
-		return copyOfObject;
-	}
 }

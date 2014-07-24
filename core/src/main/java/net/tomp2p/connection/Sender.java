@@ -164,8 +164,8 @@ public class Sender {
 	 * This method handles the reverse connection setup (or short: rconSetup).
 	 * It creates a new Message and sends it via relay to the unreachable peer
 	 * which then connects to this peer again. After the connectMessage from the
-	 * unreachable peer this peer will send the original Message and its
-	 * content directly.
+	 * unreachable peer this peer will send the original Message and its content
+	 * directly.
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -197,22 +197,19 @@ public class Sender {
 	 * @return rconMessage
 	 */
 	private Message createRconMessage(final Message message) {
+		
 		// we need to make a copy of the original message
-		Message rconMessage = null;
-		try {
-			rconMessage = (Message) Utils.deepCopy(message);
-		} catch (Exception e) {
-			LOG.error("error while creating a copy of the message to send it via reverse connection setup");
-			e.printStackTrace();
-		}
-
-		// we don't want to send data already
-		rconMessage.bufferList().clear();
+		Message rconMessage = new Message();
+		rconMessage.sender(message.sender());
+		rconMessage.recipient(message.recipient());
+		rconMessage.version(message.version());
+		rconMessage.keepAlive(message.isKeepAlive());
+		rconMessage.messageId(message.messageId());
 
 		// making the message ready to send
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
-		rconMessage.messageId(message.messageId());
+		
 		return rconMessage;
 	}
 

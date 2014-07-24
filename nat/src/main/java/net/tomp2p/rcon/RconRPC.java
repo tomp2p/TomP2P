@@ -8,15 +8,11 @@ import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
-import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -42,7 +38,6 @@ public class RconRPC extends DispatchHandler {
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
-	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
 
 	public RconRPC(Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -51,10 +46,6 @@ public class RconRPC extends DispatchHandler {
 		this.config = new DefaultConnectionConfiguration();
 	}
 	
-	public ConcurrentHashMap<Integer, Message> cachedMessages() {
-		return cachedMessages;
-	}
-
 	/**
 	 * REQUEST_1 = relay rcon forwarding REQUEST_2 = open socket and transmit
 	 * PeerConnection REQUEST_3 = open socket and connect via PeerConnection
@@ -82,6 +73,7 @@ public class RconRPC extends DispatchHandler {
 	}
 
 	private void handleRconAfterconnect(Message message, Responder responder, PeerConnection peerConnection) {
+		ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		
 		if (cachedMessages.containsKey(message.messageId())) {
 			

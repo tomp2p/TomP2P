@@ -32,12 +32,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.BaseFutureListener;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
@@ -52,11 +52,8 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
-import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
-import net.tomp2p.utils.ConcurrentCacheMap;
 import net.tomp2p.utils.Pair;
-import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,6 +71,10 @@ public class Sender {
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
 	private final Random random;
+
+	// this map caches all messages which are meant to be sent by a reverse
+	// connection setup
+	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -183,8 +184,8 @@ public class Sender {
 		Message rconMessage = createRconMessage(message);
 
 		// cache the original message until the connection is established
-		dispatcher.searchHandler(message.sender().peerId(), RPC.Commands.RCON.ordinal());
-
+		cachedMessages.put(message.messageId(), message);
+		
 		connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler,
 				rconMessage);
 	}
@@ -197,7 +198,7 @@ public class Sender {
 	 * @return rconMessage
 	 */
 	private Message createRconMessage(final Message message) {
-		
+
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
@@ -209,7 +210,7 @@ public class Sender {
 		// making the message ready to send
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
-		
+
 		return rconMessage;
 	}
 
@@ -687,5 +688,9 @@ public class Sender {
 				}
 			}
 		});
+	}
+
+	public ConcurrentHashMap<Integer, Message> cachedMessages() {
+		return cachedMessages;
 	}
 }

@@ -69,6 +69,7 @@ public class RconRPC extends DispatchHandler {
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// TODO JWA the message reached the requesting peer
+			LOG.debug("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
@@ -97,7 +98,7 @@ public class RconRPC extends DispatchHandler {
 			// TODO JWA discuss this with Thomas Bocek
 			LOG.debug("entering loop");
 			int timeout = 0;
-			while (!fpc.isCompleted() || timeout < MAX_TIMEOUT_CYCLES) {
+			while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
 				//wait
 				timeout++;
 			}

@@ -207,7 +207,7 @@ public class Sender {
 		}
 
 		// we don't want to send data already
-		rconMessage.buffer(null);
+		rconMessage.bufferList().clear();
 
 		// making the message ready to send
 		rconMessage.command(RPC.Commands.RCON.getNr());

@@ -1,6 +1,8 @@
 package net.tomp2p.rcon;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +22,9 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.relay.RelayForwarderRPC;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
@@ -34,6 +38,7 @@ import net.tomp2p.utils.Utils;
  */
 public class RconRPC extends DispatchHandler {
 
+	private static final int MAX_TIMEOUT_CYCLES = 10000000;
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
@@ -64,15 +69,19 @@ public class RconRPC extends DispatchHandler {
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// TODO JWA the message reached the requesting peer
-			responder.response(createResponseMessage(message, Type.OK));
-			System.out.println("SUCCESS HIT");
-			System.out.println(message);
+			handleRconAfterconnect(message, responder);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 	}
 
-	private void handleRconSetup(final Message message, final Responder responder) {
+	private void handleRconAfterconnect(Message message, Responder responder) {
+		responder.response(createResponseMessage(message, Type.OK));
+		System.out.println("SUCCESS HIT");
+		System.out.println(message);
+	}
+
+	private void handleRconSetup(final Message message, final Responder responder) throws TimeoutException {
 		// TODO JWA handle setup
 		System.out.println(message.toString());
 
@@ -84,20 +93,27 @@ public class RconRPC extends DispatchHandler {
 		} else {
 			originalSender = (PeerAddress) message.neighborsSet(0).neighbors().toArray()[0];
 			FuturePeerConnection fpc = peer.createPeerConnection(originalSender);
+			
 			// TODO JWA discuss this with Thomas Bocek
 			LOG.debug("entering loop");
 			int timeout = 0;
-			while (!fpc.isCompleted() || timeout < 10000000) {
+			while (!fpc.isCompleted() || timeout < MAX_TIMEOUT_CYCLES) {
 				//wait
 				timeout++;
 			}
 			LOG.debug("exiting loop");
 			
+			if (timeout == MAX_TIMEOUT_CYCLES) {
+				throw new TimeoutException();
+			}
+			
 			if (fpc.isFailed()) {
 				LOG.error("no channel could be established");
 			} else {
 				peerConnection = fpc.peerConnection();
-				peer.sendDirect(peerConnection).object("yomama is so fat...!");
+				HashMap<Number160, PeerStatatistic> entry = new HashMap<Number160, PeerStatatistic>();
+				entry.put(originalSender.peerId(), new PeerStatatistic(originalSender));
+				peer.peerBean().peerMap().peerMapVerified().add(entry);
 			}
 		}
 		
@@ -148,17 +164,20 @@ public class RconRPC extends DispatchHandler {
 
 		if (relayForwarderRPC != null) {
 			peerConnection = relayForwarderRPC.peerConnection();
+			
+			Message forwardMessage = createForwardMessage(message, peerConnection);
+			
+			// we don't want to use another sendDirect anymore since we don't have to send data
+			FutureResponse futureResponse = new FutureResponse(forwardMessage);
+			RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
+			
+			// Indicate the reachable peer that the message was forwarded
+			responder.response(createResponseMessage(message, Type.OK));
+			
 		} else {
 			LOG.error("no relayForwarder Registered for peerId=" + message.recipient().peerId().toString());
+			responder.response(createResponseMessage(message, Type.EXCEPTION));
 		}
-
-		Message forwardMessage = createForwardMessage(message, peerConnection);
-
-		// we don't want to use another sendDirect anymore since we don't have to send data
-		FutureResponse futureResponse = new FutureResponse(forwardMessage);
-		RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
-
-		responder.response(createResponseMessage(message, Type.OK));
 	}
 
 	private Message createForwardMessage(Message message, PeerConnection peerConnection) {

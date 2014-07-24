@@ -73,26 +73,28 @@ public class DistributedTracker {
 	}
 
 	public FutureTracker get(final GetTrackerBuilder builder) {
-
-		final FutureTracker futureTracker = new FutureTracker(builder.getEvaluatingScheme(), builder.getKnownPeers());
-		builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+		final FutureTracker futureTracker = new FutureTracker(builder.evaluatingScheme(), builder.knownPeers());
+		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
 				if (futureChannelCreator2.isSuccess()) {
-
-					TrackerData peers = trackerStorage.peers(new Number320(builder.getLocationKey(), builder
-					        .getDomainKey()));
+		        	
+					TrackerData peers = trackerStorage.peers(new Number320(builder.locationKey(), builder
+					        .domainKey()));
 					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
-					for (PeerStatatistic peerAddress : peers.peerAddresses().keySet()) {
-						queue.add(peerAddress.peerAddress());
+					if(peers != null && peers.peerAddresses()!=null) {
+						for (PeerStatatistic peerAddress : peers.peerAddresses().keySet()) {
+							queue.add(peerAddress.peerAddress());
+						}
 					}
 
 					if (queue.size() > MIN_TRACKER_PEERS) {
+			        	System.err.println("routing failed");
 						startLoop(builder, futureTracker, queue, futureChannelCreator2.channelCreator());
 					}
 
 					else {
-
+						
 						final FutureRouting futureRouting = createRouting(builder, Type.REQUEST_3,
 						        futureChannelCreator2.channelCreator());
 
@@ -100,10 +102,12 @@ public class DistributedTracker {
 							@Override
 							public void operationComplete(FutureRouting future) throws Exception {
 								if (futureRouting.isSuccess()) {
+									System.err.println("routing failed: "+futureRouting.potentialHits());
 									LOG.debug("found direct hits for tracker get: {}", futureRouting.directHits());
 									startLoop(builder, futureTracker, futureRouting.directHits(),
 									        futureChannelCreator2.channelCreator());
 								} else {
+									
 									futureTracker.failed(futureRouting);
 								}
 							}
@@ -120,11 +124,11 @@ public class DistributedTracker {
 
 	private void startLoop(final GetTrackerBuilder builder, final FutureTracker futureTracker,
 	        final NavigableSet<PeerAddress> queueToAsk, final ChannelCreator cc) {
-		loop(builder.getLocationKey(), builder.getDomainKey(), queueToAsk, builder.getTrackerConfiguration(),
-		        futureTracker, true, builder.getKnownPeers(), new Operation() {
+		loop(builder.locationKey(), builder.domainKey(), queueToAsk, builder.trackerConfiguration(),
+		        futureTracker, true, builder.knownPeers(), new Operation() {
 			        @Override
 			        public FutureResponse create(PeerAddress remotePeer, boolean primary) {
-				        LOG.debug("tracker get: {} location= {}", remotePeer, builder.getLocationKey());
+				        LOG.debug("tracker get: {} location= {}", remotePeer, builder.locationKey());
 				        return trackerRPC.getFromTracker(remotePeer, builder, cc);
 			        }
 		        });
@@ -133,7 +137,7 @@ public class DistributedTracker {
 	public FutureTracker add(final AddTrackerBuilder builder) {
 
 		final FutureTracker futureTracker = new FutureTracker();
-		builder.getFutureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+		builder.futureChannelCreator().addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(final FutureChannelCreator futureChannelCreator2) throws Exception {
 				if (futureChannelCreator2.isSuccess()) {
@@ -146,14 +150,14 @@ public class DistributedTracker {
 						public void operationComplete(FutureRouting future) throws Exception {
 							if (futureRouting.isSuccess()) {
 								LOG.debug("found potential hits for tracker add: {}", futureRouting.potentialHits());
-								loop(builder.getLocationKey(), builder.getDomainKey(), futureRouting.potentialHits(),
-								        builder.getTrackerConfiguration(), futureTracker, false,
-								        builder.getKnownPeers(), new Operation() {
+								loop(builder.locationKey(), builder.domainKey(), futureRouting.potentialHits(),
+								        builder.trackerConfiguration(), futureTracker, false,
+								        builder.knownPeers(), new Operation() {
 									        @Override
 									        public FutureResponse create(PeerAddress remotePeer, boolean primary) {
 										        LOG.debug("tracker add (me={}): {} location={}",
 										                peerBean.serverPeerAddress(), remotePeer,
-										                builder.getLocationKey());
+										                builder.locationKey());
 										        return trackerRPC.addToTracker(remotePeer, builder,
 										                futureChannelCreator2.channelCreator());
 									        }
@@ -250,9 +254,9 @@ public class DistributedTracker {
 				FutureResponse futureResponse = future.last();
 				// success if we could add the tracker, but also if the tracker
 				// is full and sent a denied message
-				boolean isFull = futureResponse != null && futureResponse.emptyResponse() != null
+				boolean isFull = futureResponse != null && futureResponse.responseMessage() != null
 				        && futureResponse.responseMessage().type() == Type.DENIED;
-				boolean isPartial = futureResponse != null && futureResponse.emptyResponse() != null
+				boolean isPartial = futureResponse != null && futureResponse.responseMessage() != null
 				        && futureResponse.responseMessage().type() == Type.PARTIALLY_OK;
 				if (future.isSuccess() || isFull) {
 					if (!isFull) {
@@ -272,13 +276,9 @@ public class DistributedTracker {
 					        atLeastEntriesFromTrackers);
 					// if peer reported that he can provide more data, we keep
 					// the peer in the list
-					if (!finished && isPartial && TrackerRPC.isPrimary(futureResponse)) {
+					if (!finished && isPartial) {
 						LOG.debug("partial1: {}", futureResponse.request().recipient());
 						queueToAsk.add(futureResponse.request().recipient());
-					}
-					if (!finished && isPartial && TrackerRPC.isSecondary(futureResponse)) {
-						LOG.debug("partial2: {}", futureResponse.request().recipient());
-						secondaryQueue.add(futureResponse.request().recipient());
 					}
 					if (!finished && isFull) {
 						LOG.debug("tracker reported to be full. Check if finished due to full trackers.");
@@ -332,9 +332,9 @@ public class DistributedTracker {
 	 */
 
 	private FutureRouting createRouting(TrackerBuilder<?> builder, Type type, ChannelCreator channelCreator) {
-		RoutingBuilder routingBuilder = builder.createBuilder(builder.getRoutingConfiguration());
-		routingBuilder.locationKey(builder.getLocationKey());
-		routingBuilder.domainKey(builder.getDomainKey());
+		RoutingBuilder routingBuilder = builder.createBuilder(builder.routingConfiguration());
+		routingBuilder.locationKey(builder.locationKey());
+		routingBuilder.domainKey(builder.domainKey());
 		routingBuilder.peerFilters(builder.peerFilters());
 		return routing.route(routingBuilder, type, channelCreator);
 	}

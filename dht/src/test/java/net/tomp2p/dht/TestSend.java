@@ -87,7 +87,7 @@ public class TestSend {
         PeerDHT[] peers = new PeerDHT[nr];
         for (int i = 0; i < nr; i++) {
         	Peer peer = new PeerBuilder(Number160.createHash(name + i)).ports(PORT + i).start();
-            peers[i] = new PeerDHT(peer);
+            peers[i] = new PeerBuilderDHT(peer).start();
         }
         return peers;
     }

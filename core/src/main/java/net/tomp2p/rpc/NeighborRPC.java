@@ -18,8 +18,8 @@ package net.tomp2p.rpc;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.SortedSet;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
@@ -176,11 +176,11 @@ public class NeighborRPC extends DispatchHandler {
         Number160 locationKey = message.key(0);
         Number160 domainKey = message.key(1);
         
-        SortedSet<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
+        Collection<PeerAddress> neighbors = getNeighbors(locationKey, NEIGHBOR_SIZE);
         if(neighbors == null) {
             //return empty neighbor set
             Message response = createResponseMessage(message, Type.NOT_FOUND);
-            response.neighborsSet(new NeighborSet(-1));
+            response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
             responder.response(response);
             return;
         }
@@ -239,7 +239,7 @@ public class NeighborRPC extends DispatchHandler {
             		//no tracker to search
             		digestInfo = new DigestInfo();
             	} else {
-            		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, null);
+            		digestInfo = peerBean().digestTracker().digest(locationKey, domainKey, contentKey);
             		if (digestInfo.size() == 0) {	
             			LOG.debug("No entry found on peer {}", message.recipient());
             		}
@@ -261,7 +261,7 @@ public class NeighborRPC extends DispatchHandler {
     /**
      * TODO: explain why protected method here.
      */
-    protected SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
+    protected Collection<PeerAddress> getNeighbors(Number160 id, int atLeast) {
         return peerBean().peerMap().closePeers(id, atLeast);
     }
 

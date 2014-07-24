@@ -70,8 +70,7 @@ public final class ChannelServer {
 
 	// setup
 	private final Bindings interfaceBindings;
-	private final Ports ports;
-
+	
 	private final ChannelServerConficuration channelServerConfiguration;
 	private final Dispatcher dispatcher;
 	private final List<PeerStatusListener> peerStatusListeners;
@@ -96,8 +95,7 @@ public final class ChannelServer {
 	        final List<PeerStatusListener> peerStatusListeners) throws IOException {
 		this.bossGroup = bossGroup;
 		this.workerGroup = workerGroup;
-		this.interfaceBindings = channelServerConfiguration.interfaceBindings();
-		this.ports = channelServerConfiguration.ports();
+		this.interfaceBindings = channelServerConfiguration.bindingsIncoming();
 		this.channelServerConfiguration = channelServerConfiguration;
 		this.dispatcher = dispatcher;
 		this.peerStatusListeners = peerStatusListeners;
@@ -109,13 +107,6 @@ public final class ChannelServer {
 		this.tcpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxTCPIncomingConnections());
 		this.udpDropConnectionInboundHandler = new DropConnectionInboundHandler(channelServerConfiguration.maxUDPIncomingConnections());
 		this.udpDecoderHandler = new TomP2PSinglePacketUDP(channelServerConfiguration.signatureFactory());
-	}
-
-	/**
-	 * @return The binding that was used to setup the incoming connections
-	 */
-	public Ports ports() {
-		return ports;
 	}
 
 	/**
@@ -136,11 +127,14 @@ public final class ChannelServer {
 			final boolean listenAll = interfaceBindings.isListenAll();
 			if (listenAll) {
 				if (LOG.isInfoEnabled()) {
-					LOG.info("Listening for broadcasts on port udp: " + ports.externalUDPPort() + " and tcp:"
-					        + ports.externalTCPPort());
+					LOG.info("Listening for broadcasts on port udp: "
+					        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+					        + channelServerConfiguration.ports().tcpPort());
 				}
-				if (!startupTCP(new InetSocketAddress(ports.externalTCPPort()), channelServerConfiguration)
-				        || !startupUDP(new InetSocketAddress(ports.externalUDPPort()), channelServerConfiguration)) {
+				if (!startupTCP(new InetSocketAddress(channelServerConfiguration.ports().tcpPort()),
+				        channelServerConfiguration)
+				        || !startupUDP(new InetSocketAddress(channelServerConfiguration.ports().udpPort()),
+				                channelServerConfiguration)) {
 					LOG.warn("cannot bind TCP or UDP");
 					return false;
 				}
@@ -148,12 +142,14 @@ public final class ChannelServer {
 			} else {
 				for (InetAddress addr : interfaceBindings.foundAddresses()) {
 					if (LOG.isInfoEnabled()) {
-						LOG.info("Listening on address: " + addr + " on port udp: " + ports.externalUDPPort()
-						        + " and tcp:" + ports.externalTCPPort());
+						LOG.info("Listening on address: " + addr + " on port udp: "
+						        + channelServerConfiguration.ports().udpPort() + " and tcp:"
+						        + channelServerConfiguration.ports().tcpPort());
 					}
-					if (!startupTCP(new InetSocketAddress(addr, ports.externalTCPPort()), channelServerConfiguration)
-					        || !startupUDP(new InetSocketAddress(addr, ports.externalUDPPort()),
-					                channelServerConfiguration)) {
+					if (!startupTCP(new InetSocketAddress(addr, channelServerConfiguration.ports().tcpPort()),
+					        channelServerConfiguration)
+					        || !startupUDP(new InetSocketAddress(addr, channelServerConfiguration.ports()
+					                .udpPort()), channelServerConfiguration)) {
 						LOG.warn("cannot bind TCP or UDP");
 						return false;
 					}

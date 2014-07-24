@@ -5,6 +5,7 @@ import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -154,11 +155,11 @@ public class RelayForwarderRPC extends DispatchHandler {
 		}
 		Number160 locationKey = message.key(0);
 
-		SortedSet<PeerAddress> neighbors = neighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
+		Collection<PeerAddress> neighbors = neighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
-			response.neighborsSet(new NeighborSet(-1));
+			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
 			responder.response(response);
 			return;
 		}

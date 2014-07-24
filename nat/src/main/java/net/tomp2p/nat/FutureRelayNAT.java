@@ -1,5 +1,6 @@
 package net.tomp2p.nat;
 
+import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureImpl;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.p2p.Shutdown;
@@ -26,6 +27,23 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 		}
 		notifyListeners();
 	}
+	
+	public void done() {
+		synchronized (lock) {
+			if (!completedAndNotify()) {
+				return;
+			}
+			this.type = FutureType.OK;
+			this.shutdown = new Shutdown() {
+				@Override
+				public BaseFuture shutdown() {
+					return FutureRelayNAT.this;
+				}
+			};
+		}
+		notifyListeners();
+	    
+    }
 
 	public Shutdown shutdown() {
 		synchronized (lock) {
@@ -71,5 +89,7 @@ public class FutureRelayNAT extends BaseFutureImpl<FutureRelayNAT> {
 			return futureBootstrap0;
 		}
 	}
+
+	
 
 }

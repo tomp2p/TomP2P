@@ -69,51 +69,51 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
         this.self = self;
     }
 
-    public Number160 getDomainKey() {
+    public Number160 domainKey() {
         return domainKey;
     }
 
-    public Number160 getLocationKey() {
+    public Number160 locationKey() {
         return locationKey;
     }
 
-    public K setDomainKey(Number160 domainKey) {
+    public K domainKey(Number160 domainKey) {
         this.domainKey = domainKey;
         return self;
     }
 
-    public RoutingConfiguration getRoutingConfiguration() {
+    public RoutingConfiguration routingConfiguration() {
         return routingConfiguration;
     }
 
-    public K setRoutingConfiguration(RoutingConfiguration routingConfiguration) {
+    public K routingConfiguration(RoutingConfiguration routingConfiguration) {
         this.routingConfiguration = routingConfiguration;
         return self;
     }
 
-    public TrackerConfiguration getTrackerConfiguration() {
+    public TrackerConfiguration trackerConfiguration() {
         return trackerConfiguration;
     }
 
-    public K setTrackerConfiguration(TrackerConfiguration trackerConfiguration) {
+    public K trackerConfiguration(TrackerConfiguration trackerConfiguration) {
         this.trackerConfiguration = trackerConfiguration;
         return self;
     }
 
-    public FutureChannelCreator getFutureChannelCreator() {
+    public FutureChannelCreator futureChannelCreator() {
         return futureChannelCreator;
     }
 
-    public K setFutureChannelCreator(FutureChannelCreator futureChannelCreator) {
+    public K futureChannelCreator(FutureChannelCreator futureChannelCreator) {
         this.futureChannelCreator = futureChannelCreator;
         return self;
     }
 
-    public Set<Number160> getKnownPeers() {
+    public Set<Number160> knownPeers() {
         return knownPeers;
     }
 
-    public K setKnownPeers(Set<Number160> knownPeers) {
+    public K knownPeers(Set<Number160> knownPeers) {
         this.knownPeers = knownPeers;
         return self;
     }

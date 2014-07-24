@@ -237,12 +237,11 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 
     @Override
     public String failedReason() {
-        StringBuffer sb = new StringBuffer("BaseFuture (compl/canc:");
+        final StringBuffer sb = new StringBuffer("Future (compl/canc):");
         synchronized (lock) {
-            sb.append(completed).append(" / ");
-            sb.append(cancel).append(", reason:");
-            sb.append(reason).append(", type:");
-            sb.append(type).append(")");
+            sb.append(completed).append("/")
+            	.append(cancel).append(", ").append(type.name())
+            	.append(", ").append(reason);
             return sb.toString();
         }
     }

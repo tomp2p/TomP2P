@@ -85,7 +85,7 @@ public class TestChannelCreator {
     public void createSink() throws IOException {
         Bindings bindings = new Bindings().addAddress(Inet4Address.getByName("127.0.0.1"));
         ChannelServerConficuration c = new ChannelServerConficuration();
-        c.interfaceBindings(bindings);
+        c.bindingsIncoming(bindings);
         c.ports(new Ports(PORT, PORT));
         c.pipelineFilter(new MyPipeLine());
         final EventLoopGroup bossGroup = new NioEventLoopGroup(2,

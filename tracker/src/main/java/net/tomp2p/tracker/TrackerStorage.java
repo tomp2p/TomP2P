@@ -9,6 +9,7 @@ import java.util.NavigableSet;
 import java.util.SortedSet;
 
 import net.tomp2p.message.TrackerData;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.DefaultMaintenance;
 import net.tomp2p.peers.Maintainable;
 import net.tomp2p.peers.Number160;
@@ -18,35 +19,38 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.peers.PeerStatusListener;
+import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
+import net.tomp2p.storage.DigestTracker;
 import net.tomp2p.utils.ConcurrentCacheMap;
 
-public class TrackerStorage implements Maintainable, PeerMapChangeListener, PeerStatusListener {
+public class TrackerStorage implements Maintainable, PeerMapChangeListener, PeerStatusListener, DigestTracker {
 	// Core
 	public static final int TRACKER_CACHE_SIZE = 1000;
 	final private Map<Number320, TrackerData> dataMapUnverified;
 	final private Map<Number320, TrackerData> dataMap;
+	final private boolean verifyPeersOnTracker;
 	private final int[] intervalSeconds;
 	private final ConcurrentCacheMap<Number160, Boolean> peerOffline;
 	private final PeerAddress self;
-	private final PeerTracker peerTracker;
 	private final int trackerTimoutSeconds;
 	private final PeerMap peerMap;
 	private final int replicationFactor;
+	//comes later
+	private PeerExchange peerExchange;
 
-	public TrackerStorage(int trackerTimoutSeconds, final int[] intervalSeconds, PeerTracker peerTracker,
-	        int replicationFactor) {
+	public TrackerStorage(int trackerTimoutSeconds, final int[] intervalSeconds,
+	        int replicationFactor, Peer peer, boolean verifyPeersOnTracker) {
 		dataMapUnverified = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE,
 		        true);
 		dataMap = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
 		peerOffline = new ConcurrentCacheMap<Number160, Boolean>(trackerTimoutSeconds * 5, TRACKER_CACHE_SIZE, false);
 		this.trackerTimoutSeconds = trackerTimoutSeconds;
 		this.intervalSeconds = intervalSeconds;
-		this.self = peerTracker.peerAddress();
-		this.peerTracker = peerTracker;
-		this.peerMap = peerTracker.peerMap();
+		this.self = peer.peerAddress();
+		this.peerMap = peer.peerBean().peerMap();
 		this.replicationFactor = replicationFactor;
-
+		this.verifyPeersOnTracker = verifyPeersOnTracker;
 	}
 
 	public boolean put(Number320 key, PeerAddress peerAddress, PublicKey publicKey, Data attachement) {
@@ -58,9 +62,12 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		if (oldData!=null && oldData.publicKey()!=null && !oldData.publicKey().equals(publicKey)) {
 			return false;
 		}
+		if(attachement == null) {
+			attachement = new Data();
+		}
 		// now store
 		attachement.publicKey(publicKey);
-		return add(key, new PeerStatatistic(peerAddress), dataMapUnverified, attachement);
+		return add(key, new PeerStatatistic(peerAddress), verifyPeersOnTracker ? dataMapUnverified : dataMap, attachement);
 	}
 
 	private Data findOld(Number320 key, PeerAddress peerAddress) {
@@ -71,7 +78,23 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				}
 			}
 		}
+		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
+			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+				if (entry2.getKey().peerAddress().equals(peerAddress)) {
+					return entry2.getValue();
+				}
+			}
+		}
 		return null;
+	}
+	
+	public PeerExchange peerExchange() {
+		return peerExchange;
+	}
+	
+	public TrackerStorage peerExchange(PeerExchange peerExchange) {
+		this.peerExchange = peerExchange;
+		return this;
 	}
 
 	@Override
@@ -118,9 +141,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			if (meClosest && isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
 				List<PeerAddress> tmp = new ArrayList<PeerAddress>();
 				tmp.addAll(closePeers);
-				if (tmp.size() > replicationFactor) {
+				if (tmp.size() > replicationFactor && peerExchange != null) {
 					PeerAddress nextRemotePeer = tmp.get(replicationFactor - 1);
-					peerTracker.peerExchange(nextRemotePeer, entry.getKey(), entry.getValue());
+					peerExchange.peerExchange(nextRemotePeer, entry.getKey(), entry.getValue());
 				}
 			}
 		}
@@ -138,9 +161,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				meClosest = false;
 			}
 
-			if (meClosest && isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
+			if (meClosest && isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor) && peerExchange != null) {
 				// the other is even closer, so send data to that peer
-				peerTracker.peerExchange(remotePeer, entry.getKey(), entry.getValue());
+				peerExchange.peerExchange(remotePeer, entry.getKey(), entry.getValue());
 			}
 		}
 	}
@@ -196,7 +219,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				}
 			}
 		}
-		remove(keyToRemove, statToRemove, dataMapUnverified);
+		if(keyToRemove !=null) {
+			remove(keyToRemove, statToRemove, dataMapUnverified);
+		}
 		//
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
 			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
@@ -206,7 +231,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 				}
 			}
 		}
-		remove(keyToRemove, statToRemove, dataMap);
+		if(keyToRemove !=null) {
+			remove(keyToRemove, statToRemove, dataMap);
+		}
 		return true;
 	}
 
@@ -244,5 +271,26 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 
 	public int sizeUnverified() {
 		return dataMapUnverified.size();
+    }
+
+	@Override
+    public DigestInfo digest(Number160 locationKey, Number160 domainKey, Number160 contentKey) {
+		Number160 contentDigest = Number160.ZERO;
+		int counter = 0;
+		TrackerData trackerData = dataMap.get(new Number320(locationKey, domainKey));
+		if(trackerData!=null) {
+			if(contentKey!=null) {
+				Map.Entry<PeerStatatistic, Data> entry = trackerData.get(contentKey);
+				if(entry!=null) {
+					return new DigestInfo(Number160.ZERO, contentKey, 1);
+				}
+			} else {
+				for(PeerStatatistic peerStatatistic: trackerData.peerAddresses().keySet()) {
+					contentDigest = contentDigest.xor(peerStatatistic.peerAddress().peerId());
+					counter++;
+				}
+			}
+		}
+		return new DigestInfo(Number160.ZERO, contentKey, counter);
     }
 }

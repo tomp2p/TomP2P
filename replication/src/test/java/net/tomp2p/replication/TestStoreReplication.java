@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -41,7 +42,7 @@ public class TestStoreReplication {
         ChannelCreator cc = null;
         try {
         	StorageMemory s1 = new StorageMemory();
-        	master = new PeerDHT(new PeerBuilder(new Number160("0xee")).start(), s1);
+        	master = new PeerBuilderDHT(new PeerBuilder(new Number160("0xee")).start()).storage(s1).start();
         	IndirectReplication im = new IndirectReplication(master);
         	
             
@@ -88,7 +89,7 @@ public class TestStoreReplication {
             fr.awaitUninterruptibly();
             // s1.put(location, Number160.ZERO, null, dataMap, false, false);
             final int slavePort = 7701;
-            slave = new PeerDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start());
+            slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
             master.peerBean().peerMap().peerFound(slave.peerAddress(), null);
             master.peerBean().peerMap().peerFailed(slave.peerAddress(), FailReason.Shutdown);
             Assert.assertEquals(1, test1.get());
@@ -128,7 +129,7 @@ public class TestStoreReplication {
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
             StorageMemory s1 = new StorageMemory();
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port).start(), s1);
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port).start()).storage(s1).start();
             IndirectReplication im = new IndirectReplication(master);
             System.err.println("master is " + master.peerAddress());
 
@@ -163,8 +164,8 @@ public class TestStoreReplication {
             putBuilder.versionKey(Number160.ZERO);
 
             master.storeRPC().put(master.peerAddress(), putBuilder, cc).awaitUninterruptibly();
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port + 1).start());
-            slave2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port + 2).start());
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port + 1).start()).start();
+            slave2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port + 2).start()).start();
             System.err.println("slave1 is " + slave1.peerAddress());
             System.err.println("slave2 is " + slave2.peerAddress());
             // master peer learns about the slave peers
@@ -941,13 +942,13 @@ public class TestStoreReplication {
 			StorageMemory storage = new StorageMemory();
 			for (int i = 0; i < joins.length; i++) {
 				if(i == 0) {
-					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start(), storage);
+					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start()).storage(storage).start();
 					ind = new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);
 				} else {
-					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start()); 
+					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start()).start(); 
 					new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);	
 				}

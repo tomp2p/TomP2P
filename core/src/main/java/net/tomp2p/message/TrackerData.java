@@ -84,4 +84,15 @@ public class TrackerData {
         }
         return false;
     }
+    
+    public Map.Entry<PeerStatatistic, Data> get(Number160 tmpKey) {
+        for (Iterator<Map.Entry<PeerStatatistic, Data>> iterator = peerAddresses.entrySet().iterator(); iterator
+                .hasNext();) {
+            Map.Entry<PeerStatatistic, Data> entry = iterator.next();
+            if (entry.getKey().peerAddress().peerId().equals(tmpKey)) {
+                return entry;
+            }
+        }
+        return null;
+    }
 }

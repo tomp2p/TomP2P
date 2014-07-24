@@ -2,6 +2,7 @@ package net.tomp2p.relay;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -64,6 +65,10 @@ public class DistributedRelay {
 		// alive
 		futureChannelCreator = peer.connectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
 	}
+	
+	public Peer peer() {
+	    return peer;
+    }
 
 	/**
 	 * Returns addresses of current relay peers
@@ -117,44 +122,30 @@ public class DistributedRelay {
 	 * 
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
-	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> relays,
-	        final int successRelays, final int maxFail) {
+	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays,
+	        final int maxFail) {
 
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
 					final ChannelCreator cc = future.channelCreator();
 					final Collection<PeerAddress> relayCandidates;
-					if (relays == null) {
-						relayCandidates = relayCandidates();
+					if (manualRelays.isEmpty()) {
+						//Get the neighbors of this peer that could possibly act as relays. Relay
+						// candidates are neighboring peers that are not relayed themselves and have
+						// not recently failed as relay or denied acting as relay.
+						relayCandidates = new LinkedHashSet<PeerAddress>(peer.distributedRouting().peerMap().all());
 					} else {
-						relayCandidates = new ArrayList<PeerAddress>(relays);
-						filter(relayCandidates);
+						relayCandidates = new ArrayList<PeerAddress>(manualRelays);
 					}
-					setupPeerConnections(futureRelay, cc, relayCandidates, successRelays, maxFail);
+					filter(relayCandidates);
+					setupPeerConnections(futureRelay, cc, relayCandidates, maxFail);
 				} else {
 					futureRelay.failed(future);
 				}
 			}
 		});
 		return futureRelay;
-	}
-
-	/**
-	 * Get the neighbors of this peer that could possibly act as relays. Relay
-	 * candidates are neighboring peers that are not relayed themselves and have
-	 * not recently failed as relay or denied acting as relay.
-	 * 
-	 * @param bootstrapBuilder
-	 *            The bootstrap builder used to bootstrap
-	 * @return FutureDone containing a collection of relay candidates
-	 */
-	private Set<PeerAddress> relayCandidates() {
-		Set<PeerAddress> relayCandidates = new LinkedHashSet<PeerAddress>(peer.distributedRouting().peerMap()
-		        .all());
-
-		filter(relayCandidates);
-		return relayCandidates;
 	}
 
 	/**
@@ -187,9 +178,8 @@ public class DistributedRelay {
 	 * @return FutureDone
 	 */
 	private void setupPeerConnections(final FutureRelay futureRelay, final ChannelCreator cc,
-	        Collection<PeerAddress> relayCandidates, final int relaySuccess, final int maxFail) {
-		int nrOfRelays = Math.min(PeerAddress.MAX_RELAYS - relayAddresses.size(), relayCandidates.size());
-		nrOfRelays = Math.min(nrOfRelays, futureRelay.nrRelays());
+	        Collection<PeerAddress> relayCandidates, final int maxFail) {
+		final int nrOfRelays = Math.min(PeerAddress.MAX_RELAYS - relayAddresses.size(), relayCandidates.size());
 		LOG.debug("setting up {} relays", nrOfRelays);
 		if (nrOfRelays > 0) {
 			@SuppressWarnings("unchecked")
@@ -197,9 +187,15 @@ public class DistributedRelay {
 			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(
 			        futureDones);
 			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, cc, nrOfRelays, futureRelay,
-			        relaySuccess, 0, maxFail);
+			        0, maxFail, new StringBuilder());
 		} else {
-			futureRelay.failed("done");
+			if(relayCandidates.size() == 0) {
+				//no candidates
+				futureRelay.failed("done");
+			} else {
+				//nothing todo
+				futureRelay.done(Collections.<PeerConnection>emptyList());
+			}
 		}
 	}
 
@@ -219,7 +215,8 @@ public class DistributedRelay {
 	 */
 	private void setupPeerConnectionsRecursive(final AtomicReferenceArray<FutureDone<PeerConnection>> futures,
 	        final Collection<PeerAddress> relayCandidates, final ChannelCreator cc, final int numberOfRelays,
-	        final FutureRelay futureRelay, final int relaySuccess, final int fail, final int maxFail) {
+	        final FutureRelay futureRelay, final int fail, final int maxFail, 
+	        final StringBuilder status) {
 		int active = 0;
 		for (int i = 0; i < numberOfRelays; i++) {
 			if (futures.get(i) == null) {
@@ -243,28 +240,27 @@ public class DistributedRelay {
 		}
 		if (active == 0) {
 			updatePeerAddress();
-			futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
+			futureRelay.failed("no candidates: " + status.toString());
 			return;
 		}
 		if (fail > maxFail) {
 			updatePeerAddress();
-			futureRelay.failed("maxfail");
+			futureRelay.failed("maxfail: " + status.toString());
 			return;
 		}
 
-		FutureForkJoin<FutureDone<PeerConnection>> ffj = new FutureForkJoin<FutureDone<PeerConnection>>(Math.min(
-		        relaySuccess, active), false, futures);
+		FutureForkJoin<FutureDone<PeerConnection>> ffj = new FutureForkJoin<FutureDone<PeerConnection>>(active, false, futures);
 
 		ffj.addListener(new BaseFutureAdapter<FutureForkJoin<FutureDone<PeerConnection>>>() {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
 					futureRelay.done(new ArrayList<PeerConnection>(relayAddresses));
-				} else if (!peer.isShutdown()){
+				} else if (!peer.isShutdown()) {
 					setupPeerConnectionsRecursive(futures, relayCandidates, cc, numberOfRelays, futureRelay,
-					        relaySuccess, fail + 1, maxFail);
+					        fail + 1, maxFail, status.append(futureForkJoin.failedReason()).append(" "));
 				} else {
-					futureRelay.failed("shutting down");
+					futureRelay.failed(futureForkJoin);
 				}
 			}
 		});

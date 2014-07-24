@@ -34,13 +34,15 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
 
     private PipelineFilter pipelineFilter = null;
 
-    private Bindings interfaceBindings = null;
+    //interface bindings
+    private Bindings bindingsIncoming = null;
 
     private SignatureFactory signatureFactory = null;
 
     private boolean forceTCP;
     private boolean forceUDP;
     
+    private Ports portsForwarding;
     private Ports ports;
     
     private int maxTCPIncomingConnections = 1000;
@@ -210,6 +212,15 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return this;
     }
 
+    public Ports portsForwarding() {
+        return portsForwarding;
+    }
+
+    public ChannelServerConficuration portsForwarding(Ports portsForwarding) {
+        this.portsForwarding = portsForwarding;
+        return this;
+    }
+    
     public Ports ports() {
         return ports;
     }
@@ -219,13 +230,13 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return this;
     }
 
-    public ChannelServerConficuration interfaceBindings(Bindings interfaceBindings) {
-        this.interfaceBindings = interfaceBindings;
+    public ChannelServerConficuration bindingsIncoming(Bindings bindingsIncoming) {
+        this.bindingsIncoming = bindingsIncoming;
         return this;
     }
     
-    public Bindings interfaceBindings() {
-        return interfaceBindings;
+    public Bindings bindingsIncoming() {
+        return bindingsIncoming;
     }
     
     

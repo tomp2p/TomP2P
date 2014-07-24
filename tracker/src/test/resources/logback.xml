@@ -15,11 +15,11 @@
     </encoder>
   </appender>
   
-  <!-- <logger name="net" level="TRACE"/> -->
+  <!--  <logger name="net" level="TRACE"/> -->
   
-  <!-- <logger name="net.tomp2p.replication.IndirectReplication" level="TRACE"/> -->
-  <!-- <logger name="net.tomp2p.peers.PeerMap" level="TRACE"/> -->
-
+  <logger name="net.tomp2p.tracker.TrackerRPC" level="TRACE"/>
+  <!-- <logger name="net.tomp2p.p2p.MaintenanceTask" level="TRACE"/> -->
+  
   <!-- Disable Netty Warning that I'm aware of -->
   <logger name="io.netty.util.concurrent.SingleThreadEventExecutor" level="OFF"/>
   

@@ -21,9 +21,12 @@ import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -33,6 +36,7 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,10 +152,34 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
         } else {
-            LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
+        	//do better error handling, if a handler is not present at all, print a warning
+        	if(ioHandlers.isEmpty()) {
+        		LOG.debug("No handler found for {}. Probably we have shutdown this peer.", message);
+        	} else {
+        		final Collection<Integer> knownCommands = knownCommands();
+        		if(!knownCommands.contains(Integer.valueOf(message.command()))) {
+            		StringBuilder sb = new StringBuilder("known cmds");
+            		for(Integer integer:knownCommands()) {
+            			sb.append(", ").append(Commands.find(integer.intValue()));
+            		}
+            		LOG.warn("No handler found for {}. Did you register the RPC command {}? I have {}.", 
+            				message, Commands.find(message.command()), sb);
+        		} else {
+            		LOG.debug("No handler found for {}. Probably we have partially shutdown this peer.", message);
+            	}
+        	}
+        	
             Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBean.serverPeerAddress());
             response(ctx, responseMessage);
         }
+    }
+    
+    private Collection<Integer> knownCommands() {
+    	Set<Integer> retVal = new HashSet<>();
+    	for(final Map.Entry<Number160, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
+    		retVal.addAll(entry.getValue().keySet());
+    	}
+    	return retVal;
     }
     
     public class DirectResponder implements Responder {

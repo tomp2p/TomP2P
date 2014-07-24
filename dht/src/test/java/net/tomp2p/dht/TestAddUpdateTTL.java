@@ -115,7 +115,7 @@ public class TestAddUpdateTTL {
                 t.fillInStackTrace();
             }
         });
-        return new PeerDHT(peer);
+        return new PeerBuilderDHT(peer).start();
     }
 
     private void add(PeerDHT peer, byte[] key, byte[] value) throws InterruptedException {

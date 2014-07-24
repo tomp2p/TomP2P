@@ -114,13 +114,10 @@ public class RconRPC extends DispatchHandler {
 				throw new TimeoutException();
 			}
 
-			if (fpc.isFailed()) {
+			if (!fpc.isSuccess()) {
 				LOG.error("no channel could be established");
 			} else {
 				peerConnection = fpc.peerConnection();
-				HashMap<Number160, PeerStatatistic> entry = new HashMap<Number160, PeerStatatistic>();
-				entry.put(originalSender.peerId(), new PeerStatatistic(originalSender));
-				peer.peerBean().peerMap().peerMapVerified().add(entry);
 			}
 		}
 

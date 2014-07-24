@@ -407,4 +407,12 @@ public class PeerNAT {
 		this.relays = relays;
 		return this;
 	}
+	
+	// -1 = keepAlive forever
+	public FutureDone<PeerConnection> startSetupRcon(PeerAddress peerAddress, int timeoutSeconds) {
+		FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+
+		futureDone.done();
+		return futureDone;
+	}
 }

@@ -29,7 +29,7 @@ public class TestPeerExchange {
         PeerTracker recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).start();
+            sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).peerExchangeRefreshSec(1).start();
  
             Peer recv1Peer = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
             
@@ -46,7 +46,7 @@ public class TestPeerExchange {
             	}
             };
             
-            recv1 = new PeerBuilderTracker(recv1Peer).peerExchangeHandler(pe).start();
+            recv1 = new PeerBuilderTracker(recv1Peer).peerExchangeHandler(pe).peerExchangeRefreshSec(1).start();
             
             Number160 locationKey = new Number160("0x5555");
             Number160 domainKey = new Number160("0x7777");

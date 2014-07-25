@@ -2,7 +2,9 @@ package net.tomp2p.nat;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
@@ -10,6 +12,10 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
@@ -21,6 +27,8 @@ import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +49,8 @@ public class PeerNAT {
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
 
+	private static final int MAX_TIMEOUT_CYCLES = 10000000;
+
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
 		this.natUtils = new NATUtils();
@@ -60,7 +70,7 @@ public class PeerNAT {
 	public RelayRPC relayRPC() {
 		return relayRPC;
 	}
-	
+
 	public RconRPC rconRPC() {
 		return rconRPC;
 	}
@@ -88,7 +98,7 @@ public class PeerNAT {
 					if (externalPorts != null) {
 						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
 						serverAddress = serverAddress.changePorts(externalPorts.externalTCPPort(),
-						        externalPorts.externalUDPPort());
+								externalPorts.externalUDPPort());
 						serverAddress = serverAddress.changeAddress(future.externalAddress());
 						peer.peerBean().serverPeerAddress(serverAddress);
 						// test with discover again
@@ -101,7 +111,7 @@ public class PeerNAT {
 								} else {
 									// indicate relay
 									PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
-									        .changeFirewalledUDP(true);
+											.changeFirewalledUDP(true);
 									peer.peerBean().serverPeerAddress(pa);
 									futureNAT.failed(future);
 								}
@@ -110,7 +120,7 @@ public class PeerNAT {
 					} else {
 						// indicate relay
 						PeerAddress pa = peer.peerBean().serverPeerAddress().changeFirewalledTCP(true)
-						        .changeFirewalledUDP(true);
+								.changeFirewalledUDP(true);
 						peer.peerBean().serverPeerAddress(pa);
 						futureNAT.failed("could not setup NAT");
 					}
@@ -139,7 +149,7 @@ public class PeerNAT {
 
 		try {
 			success = natUtils.mapUPNP(internalHost, peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
-			        ports.externalUDPPort(), ports.externalTCPPort());
+					ports.externalUDPPort(), ports.externalTCPPort());
 		} catch (Exception e) {
 			success = false;
 		}
@@ -150,7 +160,7 @@ public class PeerNAT {
 			}
 			try {
 				success = natUtils.mapPMP(peer.peerAddress().tcpPort(), peer.peerAddress().udpPort(),
-				        ports.externalUDPPort(), ports.externalTCPPort());
+						ports.externalUDPPort(), ports.externalTCPPort());
 				if (!success) {
 					if (LOG.isWarnEnabled()) {
 						LOG.warn("cannot find NAT-PMP devices");
@@ -170,7 +180,7 @@ public class PeerNAT {
 
 	public FutureRelay startSetupRelay(FutureNAT futureNAT) {
 		final FutureRelay futureRelay = new FutureRelay();
-		if(futureNAT == null) {
+		if (futureNAT == null) {
 			startSetupRelay(futureRelay);
 			return futureRelay;
 		}
@@ -219,12 +229,12 @@ public class PeerNAT {
 	public Shutdown startRelayMaintenance(final FutureRelay futureRelay) {
 		if (bootstrapBuilder() == null) {
 			throw new IllegalArgumentException(
-			        "you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
+					"you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
 		}
 		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder(),
-		        futureRelay.distributedRelay());
+				futureRelay.distributedRelay());
 		peer.connectionBean().timer()
-		        .scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval(), TimeUnit.SECONDS);
+				.scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval(), TimeUnit.SECONDS);
 
 		final Shutdown shutdown = new Shutdown() {
 			@Override
@@ -244,7 +254,7 @@ public class PeerNAT {
 			}
 		};
 	}
-	
+
 	public FutureRelayNAT startRelay() {
 		return startRelay(null);
 	}
@@ -252,11 +262,11 @@ public class PeerNAT {
 	public FutureRelayNAT startRelay(final FutureNAT futureNAT) {
 		if (bootstrapBuilder() == null) {
 			throw new IllegalArgumentException(
-			        "you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
+					"you need to set bootstrap builder first with PeerNAT.bootstrapBuilder()");
 		}
 		// make it firewalled
 		final FutureRelayNAT futureBootstrapNAT = new FutureRelayNAT();
-		
+
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		peer.peerBean().serverPeerAddress(upa);
@@ -346,7 +356,7 @@ public class PeerNAT {
 	public int minRelays() {
 		return minRelays;
 	}
-	
+
 	public PeerNAT maxFail(int maxFail) {
 		this.maxFail = maxFail;
 		return this;
@@ -407,12 +417,87 @@ public class PeerNAT {
 		this.relays = relays;
 		return this;
 	}
-	
-	// -1 = keepAlive forever
-	public FutureDone<PeerConnection> startSetupRcon(PeerAddress peerAddress, int timeoutSeconds) {
+
+	/**
+	 * This Method creates a {@link PeerConnection} to a unreachable peer
+	 * via a relay. The connection will be kept open for a certain amount of
+	 * time. If we want the connection to stay open forever, we can call this
+	 * method with timeoutSeconds = -1.
+	 * 
+	 * @param relayPeerAddress
+	 * @param unreachablePeerAddress
+	 * @param timeoutSeconds
+	 * @return {@link FutureDone}
+	 * @throws TimeoutException
+	 */
+	public FutureDone<PeerConnection> startSetupRcon(PeerAddress relayPeerAddress, PeerAddress unreachablePeerAddress,
+			int timeoutSeconds) throws TimeoutException {
 		FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
 
-		futureDone.done();
-		return futureDone;
+		PeerConnection peerConnection = null;
+		FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
+		// TODO JWA discuss this with Thomas Bocek
+		LOG.debug("entering loop");
+		int timeout = 0;
+		while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
+			// wait for maximal 10000000 cycles
+			timeout++;
+		}
+		LOG.debug("exiting loop");
+		checkTimeout(timeout);
+
+		if (!fpc.isSuccess()) {
+			LOG.error("no channel could be established");
+		} else {
+			peerConnection = fpc.peerConnection();
+		}
+
+		if (peerConnection != null) {
+			Message setUpMessage = new Message();
+			setUpMessage.version(1);
+			setUpMessage.sender(peer.peerAddress());
+			setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
+			setUpMessage.command(RPC.Commands.RCON.getNr());
+			setUpMessage.type(Type.REQUEST_1);
+			setUpMessage.longValue(timeoutSeconds);
+
+			Message connectMessage = new Message();
+			connectMessage.messageId(setUpMessage.messageId());
+			connectMessage.version(1);
+			connectMessage.sender(peer.peerAddress());
+			connectMessage.recipient(unreachablePeerAddress);
+			connectMessage.command(RPC.Commands.RCON.getNr());
+			connectMessage.type(Type.REQUEST_4);
+			connectMessage.longValue(timeoutSeconds);
+
+			peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+
+			FutureResponse futureResponse = new FutureResponse(setUpMessage);
+			RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
+					new DefaultConnectionConfiguration());
+
+			timeout = 0;
+			LOG.debug("entering loop");
+			while (!peer.peerBean().openPeerConnections().contains(unreachablePeerAddress.peerId())
+					|| timeout == MAX_TIMEOUT_CYCLES) {
+				// wait
+				timeout++;
+			}
+			LOG.debug("exiting loop");
+			checkTimeout(timeout);
+
+			PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+			futureDone.done(openPeerConnection);
+
+			return futureDone;
+		} else {
+			throw new NullPointerException("peerConnection was null");
+		}
+	}
+
+	private void checkTimeout(int timeout) throws TimeoutException {
+		if (timeout == MAX_TIMEOUT_CYCLES) {
+			throw new TimeoutException();
+		}
 	}
 }

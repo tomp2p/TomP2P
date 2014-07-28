@@ -888,12 +888,7 @@ public class StorageRPC extends DispatchHandler {
 		responseMessage.setDataMap(new DataMap(result));
 
 		if (withDigest) {
-			Collection<Number640> keys = new ArrayList<Number640>(2);
-			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
-			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE));
-			final DigestInfo digestInfo = doDigest(locationKey, domainKey, new KeyCollection(keys), null, null, -1, true,
-					true, false, false);
-			//final DigestInfo digestInfo = storageLayer.digest(key.minVersionKey(), key.maxVersionKey(), -1, true);
+			final DigestInfo digestInfo = storageLayer.digest(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			responseMessage.keyMap640Keys(new KeyMap640Keys(digestInfo.digests()));
 		}
 

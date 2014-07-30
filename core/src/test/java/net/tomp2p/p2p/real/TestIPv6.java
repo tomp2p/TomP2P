@@ -18,7 +18,6 @@ package net.tomp2p.p2p.real;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.StandardProtocolFamily;
 import java.util.Random;
 
 import org.junit.Ignore;
@@ -28,6 +27,7 @@ import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;

@@ -20,7 +20,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
 import java.util.ArrayList;
 import java.util.List;
 

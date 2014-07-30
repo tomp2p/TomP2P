@@ -12,7 +12,6 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.p2p.VotingSchemeTracker;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -99,6 +98,7 @@ public class TestTracker {
                     .routingConfiguration(rc).trackerConfiguration(tc).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
+            //myself and an other
             Assert.assertEquals(2, ft.directTrackers().size());
             tc = new TrackerConfiguration(1, 1, 1, 3, 1000, 2);
             ft = nodes[301].getTracker(trackerID).domainKey(Number160.createHash("test"))
@@ -109,7 +109,7 @@ public class TestTracker {
             Assert.assertEquals(true, ft.isSuccess());
             Assert.assertEquals(1, ft.rawPeersOnTracker().size());
             Assert.assertEquals(1, ft.directTrackers().size());
-            Assert.assertEquals(1, ft.potentialTrackers().size());
+            Assert.assertEquals(2, ft.potentialTrackers().size());
 
         } finally {
             if (master != null) {
@@ -118,17 +118,17 @@ public class TestTracker {
         }
     }
 
-	/*@Test
+	@Test
     public void testTracker2_5() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
-            Peer[] nodes = createNodes(master, 500, rnd);
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
+            PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0, 1000, 2);
@@ -145,28 +145,28 @@ public class TestTracker {
                     .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
-            Assert.assertEquals(1, ft.rawPeersOnTracker().size());
-            Assert.assertEquals(0, ft.potentialTrackers().size());
+            Assert.assertEquals(2, ft.rawPeersOnTracker().size());
+            Assert.assertEquals(1, ft.potentialTrackers().size());
             Assert.assertEquals(2, ft.directTrackers().size());
 
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
 
-    @Test
+	@Test
     public void testTracker3() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
-            Peer[] nodes = createNodes(master, 500, rnd);
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
+            PeerTracker[] nodes = createNodes(master, 500, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
@@ -192,31 +192,31 @@ public class TestTracker {
                     .evaluatingScheme(new VotingSchemeTracker()).start();
             ft.awaitUninterruptibly();
             Assert.assertEquals(true, ft.isSuccess());
-            // we return there 1 because we use bloomfilters to not return
+            // we return there 2 because we use bloomfilters to not return
             // already known peers
-            Assert.assertEquals(1, ft.rawPeersOnTracker().size());
+            Assert.assertEquals(2, ft.rawPeersOnTracker().size());
             // but here we expect 3 peers, since 3 peers are on the tracker
             Assert.assertEquals(3, ft.rawPeersOnTracker().values().iterator().next().size());
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
 
-    @Test
+	@Test
     public void testTracker4() throws Exception {
         final Random rnd = new Random(42L);
-        Peer master = null;
+        PeerTracker master = null;
         try {
-            master = new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start();
-            Peer[] nodes = createNodes(master, 1000, rnd);
+            master = new PeerBuilderTracker(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).verifyPeersOnTracker(false).start();
+            PeerTracker[] nodes = createNodes(master, 1000, rnd);
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 // nodes[i].getPeerBean().getTrackerStorage()
                 // .setTrackerStoreSize(nodes[i].getPeerBean().getTrackerStorage().getTrackerSize());
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             // 3 is good!
@@ -247,21 +247,6 @@ public class TestTracker {
                 // Assert.assertEquals(true, ft.getDirectTrackers().size() == 2
                 // || ft.getDirectTrackers().size() == 3);
             }
-            for (int i = 0; i < nodes.length; i++) {
-                boolean secondary = nodes[i].peerBean().trackerStorage()
-                        .isSecondaryTracker(trackerID, Number160.createHash("test"));
-                TrackerData tdr = nodes[i].peerBean().trackerStorage()
-                        .meshPeers(trackerID, Number160.createHash("test"));
-                TrackerData tdr2 = nodes[i].peerBean().trackerStorage()
-                        .secondaryPeers(trackerID, Number160.createHash("test"));
-
-                if (tdr != null)
-                    System.err.println("size[" + i + "] (" + secondary + "): " + tdr.size() + "/"
-                            + tdr2.size());
-                else
-                    System.err.println("size[" + i + "] (" + secondary + "): " + 0);
-            }
-            System.err.println("SEARCH>>");
             tc = new TrackerConfiguration(1, 1, 30, 301, 0, 20);
             FutureTracker ft1 = nodes[299].getTracker(trackerID).domainKey(Number160.createHash("test"))
                     .routingConfiguration(rc).trackerConfiguration(tc)
@@ -269,9 +254,9 @@ public class TestTracker {
             ft1.awaitUninterruptibly();
             Assert.assertEquals(true, ft1.isSuccess());
             for (TrackerData pa : ft1.trackers()) {
-                for (PeerAddress pas : pa.peerAddresses().keySet()) {
-                    System.err.println("found on DHT1: " + pas.peerId());
-                    tmp.remove(pas.peerId());
+                for (PeerStatatistic pas : pa.peerAddresses().keySet()) {
+                    System.err.println("found on DHT1: " + pas.peerAddress().peerId());
+                    tmp.remove(pas.peerAddress().peerId());
                 }
             }
             // ctg.setUseSecondaryTrackers(true);
@@ -283,9 +268,9 @@ public class TestTracker {
             System.err.println("Reason: " + ft2.failedReason());
             Assert.assertEquals(true, ft2.isSuccess());
             for (TrackerData pa : ft2.trackers()) {
-                for (PeerAddress pas : pa.peerAddresses().keySet()) {
-                    if (tmp.remove(pas.peerId()))
-                        System.err.println("found on DHT2: " + pas.peerId());
+                for (PeerStatatistic pas : pa.peerAddresses().keySet()) {
+                    if (tmp.remove(pas.peerAddress().peerId()))
+                        System.err.println("found on DHT2: " + pas.peerAddress().peerId());
                 }
             }
             //
@@ -300,12 +285,12 @@ public class TestTracker {
 
         } finally {
             if (master != null) {
-                master.shutdown().await();
+                master.peer().shutdown().await();
             }
         }
     }
 
-    @Test
+	/*@Test
     public void testTracker5() throws Exception {
         final Random rnd = new Random(42L);
         Peer master = null;

@@ -25,7 +25,6 @@ import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.p2p.builder.Builder;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.p2p.builder.SignatureBuilder;
@@ -129,10 +128,13 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
             int size = peer.peerMap().size() + 1;
             trackerConfiguration = new TrackerConfiguration(Math.min(size, 3), 5, 3, 30);
         }
-        if (futureChannelCreator == null) {
-            int conn = Math.max(routingConfiguration.parallel(), trackerConfiguration.parallel());
-            futureChannelCreator = peer.peer().connectionBean().reservation().create(conn, 0);
-        }
+        
+		if (futureChannelCreator == null
+		        || (futureChannelCreator.channelCreator() != null && futureChannelCreator.channelCreator().isShutdown())) {
+			futureChannelCreator = peer.peer().connectionBean().reservation()
+			        .create(routingConfiguration, trackerConfiguration, this);
+		}
+        
     }
 
     public abstract FutureTracker start();

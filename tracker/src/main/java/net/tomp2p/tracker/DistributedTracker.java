@@ -39,7 +39,6 @@ import net.tomp2p.futures.FutureTracker;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.DistributedRouting;
-import net.tomp2p.p2p.TrackerConfiguration;
 import net.tomp2p.p2p.builder.RoutingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
@@ -107,7 +106,6 @@ public class DistributedTracker {
 									startLoop(builder, futureTracker, futureRouting.directHits(),
 									        futureChannelCreator2.channelCreator());
 								} else {
-									
 									futureTracker.failed(futureRouting);
 								}
 							}
@@ -163,7 +161,7 @@ public class DistributedTracker {
 									        }
 								        });
 							} else {
-								futureTracker.failed("routing failed");
+								futureTracker.failed(futureRouting);
 							}
 						}
 					});
@@ -277,7 +275,7 @@ public class DistributedTracker {
 					// if peer reported that he can provide more data, we keep
 					// the peer in the list
 					if (!finished && isPartial) {
-						LOG.debug("partial1: {}", futureResponse.request().recipient());
+						LOG.debug("partial1: {}, queue {}", futureResponse.request().recipient(), queueToAsk);
 						queueToAsk.add(futureResponse.request().recipient());
 					}
 					if (!finished && isFull) {

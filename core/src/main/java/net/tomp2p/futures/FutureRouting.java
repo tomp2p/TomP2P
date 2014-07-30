@@ -140,17 +140,12 @@ public class FutureRouting extends BaseFutureImpl<FutureRouting> {
             }
             // some Java implementations always return SortedSet, some don't.
             Set<PeerAddress> tmp = directHits.keySet();
-            // if we have a NavigableSet, we are fine
-            if (tmp instanceof NavigableSet) {
-                return (NavigableSet<PeerAddress>) directHits.keySet();
-            }
-            // otherwise, create a new sorted set, put the existing values
-            // there, and return this.
-            else {
-                NavigableSet<PeerAddress> tmp2 = new TreeSet<PeerAddress>(directHits.comparator());
-                tmp2.addAll(tmp);
-                return tmp2;
-            }
+            // always create a new set, as keyset does not allow adding values
+            //http://stackoverflow.com/questions/19950771/java-lang-unsupportedoperationexception-when-combining-two-sets
+            NavigableSet<PeerAddress> tmp2 = new TreeSet<PeerAddress>(directHits.comparator());
+            tmp2.addAll(tmp);
+            return tmp2;
+            
         }
     }
 

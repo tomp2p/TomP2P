@@ -35,7 +35,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.p2p.RequestP2PConfiguration;
+import net.tomp2p.p2p.RequestConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 
 /**
@@ -117,7 +117,7 @@ public class Reservation {
 	 * @return The future channel creator
 	 */
 	public FutureChannelCreator create(final RoutingConfiguration routingConfiguration,
-	        final RequestP2PConfiguration requestP2PConfiguration, final DefaultConnectionConfiguration builder) {
+	        final RequestConfiguration requestP2PConfiguration, final DefaultConnectionConfiguration builder) {
 		if (routingConfiguration == null && requestP2PConfiguration == null) {
 			throw new IllegalArgumentException("Both routingConfiguration and requestP2PConfiguration cannot be null");
 		}

@@ -242,7 +242,7 @@ public class RconRPC extends DispatchHandler {
 		setupMessage.keepAlive(true);
 		
 		// check if we keep the connection open afterwards
-		if (message.longAt(POSITION_ZERO) == null) {
+		if (!(message.longAt(POSITION_ZERO) == null)) {
 			setupMessage.longValue(message.longAt(POSITION_ZERO));
 		}
 		return setupMessage;

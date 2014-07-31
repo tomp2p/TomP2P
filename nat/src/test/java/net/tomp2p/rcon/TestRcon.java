@@ -121,7 +121,7 @@ public class TestRcon {
 			Assert.assertTrue(fd.isSuccess());
 		}
 		
-		Thread.sleep(5000);
+		Thread.sleep(99999999);
 	}
 	
 	@After

@@ -199,7 +199,7 @@ public class Sender {
 	 * @param message
 	 * @return rconMessage
 	 */
-	private Message createRconMessage(final Message message) {
+	private static Message createRconMessage(final Message message) {
 
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();

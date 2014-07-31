@@ -49,8 +49,6 @@ public class PeerNAT {
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
 
-	private static final int MAX_TIMEOUT_CYCLES = Integer.MAX_VALUE;
-
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
 		this.natUtils = new NATUtils();
@@ -430,76 +428,84 @@ public class PeerNAT {
 	 * @return {@link FutureDone}
 	 * @throws TimeoutException
 	 */
-	public FutureDone<PeerConnection> startSetupRcon(PeerAddress relayPeerAddress, PeerAddress unreachablePeerAddress,
-			int timeoutSeconds) throws TimeoutException {
-		FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
+			final int timeoutSeconds) throws TimeoutException {
+		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
 
-		PeerConnection peerConnection = null;
-		FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
-		// TODO JWA discuss this with Thomas Bocek
-		LOG.debug("entering loop");
-		int timeout = 0;
-		while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
-			// wait for max Interger.MAX_VALUE cycles
-			timeout++;
-		}
-		LOG.debug("exiting loop");
-		checkTimeout(timeout, futureDone);
+		final FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
+		
+		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
 
-		if (!fpc.isSuccess()) {
-			LOG.error("no channel could be established");
-		} else {
-			peerConnection = fpc.peerConnection();
-		}
+			// wait for the connection to the relay Peer
+			@Override
+			public void operationComplete(FuturePeerConnection future) throws Exception {
+				PeerConnection peerConnection = null;
+				
+				if (fpc.isSuccess()) {
+					peerConnection = fpc.peerConnection();
+					
+					if (peerConnection != null) {
+						Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress,
+								timeoutSeconds);
+						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds,
+								setUpMessage);
 
-		if (peerConnection != null) {
-			Message setUpMessage = new Message();
-			setUpMessage.version(1);
-			setUpMessage.sender(peer.peerAddress());
-			setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
-			setUpMessage.command(RPC.Commands.RCON.getNr());
-			setUpMessage.type(Type.REQUEST_1);
-			setUpMessage.longValue(timeoutSeconds);
+						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 
-			Message connectMessage = new Message();
-			connectMessage.messageId(setUpMessage.messageId());
-			connectMessage.version(1);
-			connectMessage.sender(peer.peerAddress());
-			connectMessage.recipient(unreachablePeerAddress);
-			connectMessage.command(RPC.Commands.RCON.getNr());
-			connectMessage.type(Type.REQUEST_4);
-			connectMessage.longValue(timeoutSeconds);
-			connectMessage.keepAlive(true);
+						FutureResponse futureResponse = new FutureResponse(setUpMessage);
+						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
+								new DefaultConnectionConfiguration());
+						
+						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 
-			peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
-
-			FutureResponse futureResponse = new FutureResponse(setUpMessage);
-			RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
-					new DefaultConnectionConfiguration());
-
-			timeout = 0;
-			LOG.debug("entering loop");
-			while (!peer.peerBean().openPeerConnections().contains(unreachablePeerAddress.peerId()) 
-					|| !(timeout == MAX_TIMEOUT_CYCLES)) {
-				// wait for max Interger.MAX_VALUE cycles
-				timeout++;
+							// wait for the setup of the rcon
+							@Override
+							public void operationComplete(FutureResponse future) throws Exception {
+								if (future.isSuccess()) {
+									PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+									futureDone.done(openPeerConnection);
+								} else {
+									String failMessage = "No reverse connection could be established";
+									LOG.error(failMessage);
+									futureDone.failed(failMessage);
+								}
+							}
+						});
+					}
+					
+				} else {
+					String failMessage = "no channel could be established";
+					LOG.error(failMessage);
+					futureDone.failed(failMessage);
+				}
 			}
-			LOG.debug("exiting loop");
-			checkTimeout(timeout, futureDone);
 
-			PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
-			futureDone.done(openPeerConnection);
+			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds,
+					Message setUpMessage) {
+				Message connectMessage = new Message();
+				connectMessage.messageId(setUpMessage.messageId());
+				connectMessage.version(1);
+				connectMessage.sender(peer.peerAddress());
+				connectMessage.recipient(unreachablePeerAddress);
+				connectMessage.command(RPC.Commands.RCON.getNr());
+				connectMessage.type(Type.REQUEST_4);
+				connectMessage.longValue(timeoutSeconds);
+				connectMessage.keepAlive(true);
+				return connectMessage;
+			}
 
-			return futureDone;
-		} else {
-			throw new NullPointerException("peerConnection was null");
-		}
-	}
-
-	private void checkTimeout(int timeout, FutureDone<PeerConnection> futureDone) throws TimeoutException {
-		if (timeout == MAX_TIMEOUT_CYCLES) {
-			futureDone.failed("Timeout");
-			throw new TimeoutException();
-		}
+			private Message createSetupMessage(final PeerAddress relayPeerAddress,
+					final PeerAddress unreachablePeerAddress, final int timeoutSeconds) {
+				Message setUpMessage = new Message();
+				setUpMessage.version(1);
+				setUpMessage.sender(peer.peerAddress());
+				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
+				setUpMessage.command(RPC.Commands.RCON.getNr());
+				setUpMessage.type(Type.REQUEST_1);
+				setUpMessage.longValue(timeoutSeconds);
+				return setUpMessage;
+			}
+		});
+		return futureDone;	
 	}
 }

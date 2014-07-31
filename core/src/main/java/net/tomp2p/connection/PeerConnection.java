@@ -1,5 +1,7 @@
 package net.tomp2p.connection;
 
+//TODO jwa write some countdown/timer to close unused PeerConnections
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;

@@ -468,7 +468,6 @@ public class PeerNAT {
 			connectMessage.recipient(unreachablePeerAddress);
 			connectMessage.command(RPC.Commands.RCON.getNr());
 			connectMessage.type(Type.REQUEST_4);
-			connectMessage.longValue(timeoutSeconds);
 
 			peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 

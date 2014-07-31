@@ -234,6 +234,7 @@ public class RconRPC extends DispatchHandler {
 		setupMessage.command(RPC.Commands.RCON.getNr());
 		setupMessage.sender(peer.peerAddress());
 		setupMessage.recipient(peerConnection.remotePeer());
+		setupMessage.longValue(message.longAt(POSITION_ZERO));
 		setupMessage.version(1); // TODO remove magic number and find out why
 									// we need the versionnumber
 
@@ -317,6 +318,7 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
+		forwardMessage.longValue(message.longAt(POSITION_ZERO));
 		forwardMessage.version(1); // TODO remove magic number and find out why
 									// we need the versionnumber
 

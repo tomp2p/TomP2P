@@ -194,10 +194,11 @@ public class SimpleRconClient {
 	}
 
 	public static void connectFirst(String string) throws UnknownHostException, TimeoutException, UnexpectedException {
-		PeerAddress unreachablePeerAddress = masterPeerAddress;
-		unreachablePeerAddress.changeAddress(Inet4Address.getByName("192.168.10.107")).changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+		PeerAddress recipient = masterPeerAddress;
+		recipient = recipient.changeRelayed(true);
+		recipient = recipient.changePeerId(Number160.createHash("NAT"));
 		
-		FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, unreachablePeerAddress, 60);
+		FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 60);
 		fd.awaitUninterruptibly();
 		
 		if (fd.isSuccess()) {

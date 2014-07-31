@@ -49,7 +49,7 @@ public class PeerNAT {
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
 
-	private static final int MAX_TIMEOUT_CYCLES = 10000000;
+	private static final int MAX_TIMEOUT_CYCLES = 1000000;
 
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
@@ -440,11 +440,11 @@ public class PeerNAT {
 		LOG.debug("entering loop");
 		int timeout = 0;
 		while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
-			// wait for maximal 10000000 cycles
+			// wait for maximal 1000000 cycles
 			timeout++;
 		}
 		LOG.debug("exiting loop");
-		checkTimeout(timeout);
+		checkTimeout(timeout, futureDone);
 
 		if (!fpc.isSuccess()) {
 			LOG.error("no channel could be established");
@@ -469,6 +469,7 @@ public class PeerNAT {
 			connectMessage.command(RPC.Commands.RCON.getNr());
 			connectMessage.type(Type.REQUEST_4);
 			connectMessage.longValue(timeoutSeconds);
+			connectMessage.keepAlive(true);
 
 			peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 
@@ -478,13 +479,13 @@ public class PeerNAT {
 
 			timeout = 0;
 			LOG.debug("entering loop");
-			while (!peer.peerBean().openPeerConnections().contains(unreachablePeerAddress.peerId())
-					|| timeout == MAX_TIMEOUT_CYCLES) {
-				// wait
+			while (!peer.peerBean().openPeerConnections().contains(unreachablePeerAddress.peerId()) 
+					&& timeout == MAX_TIMEOUT_CYCLES) {
+				// wait for max 1000000s
 				timeout++;
 			}
 			LOG.debug("exiting loop");
-			checkTimeout(timeout);
+			checkTimeout(timeout, futureDone);
 
 			PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
 			futureDone.done(openPeerConnection);
@@ -495,8 +496,9 @@ public class PeerNAT {
 		}
 	}
 
-	private void checkTimeout(int timeout) throws TimeoutException {
+	private void checkTimeout(int timeout, FutureDone<PeerConnection> futureDone) throws TimeoutException {
 		if (timeout == MAX_TIMEOUT_CYCLES) {
+			futureDone.failed("Timeout");
 			throw new TimeoutException();
 		}
 	}

@@ -2,20 +2,15 @@ package net.tomp2p.rcon.prototype;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.UnexpectedException;
 import java.util.concurrent.TimeoutException;
-
-import org.junit.After;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.nat.FutureNAT;
-import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -23,7 +18,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.rpc.ObjectDataReply;
-import net.tomp2p.storage.Data;
 
 public class SimpleRconClient {
 
@@ -32,8 +26,6 @@ public class SimpleRconClient {
 	private static PeerNAT peerNAT;
 	private static PeerAddress masterPeerAddress;
 	private static String masterIpAddress;
-	private static PeerAddress natPeerAddress;
-	private static PeerConnection peerConnection;
 
 	public static void start(boolean isMaster, String id) {
 		// Create a peer with a random peerID, on port 4001, listening to the
@@ -202,7 +194,15 @@ public class SimpleRconClient {
 		fd.awaitUninterruptibly();
 		
 		if (fd.isSuccess()) {
-			peer.sendDirect(fd.object()).object(string);
+			PeerConnection connection = fd.object();
+			FutureDirect future = peer.sendDirect(connection).start();
+			future.awaitUninterruptibly();
+			
+			if (future.isSuccess()) {
+				System.out.println("FUTURE DIRECT SUCCESS!");
+			} else {
+				System.out.println("FUTURE DIRECT FAIL!");
+			}
 		} else {
 			throw new UnexpectedException("This should not happen");
 		}

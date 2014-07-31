@@ -20,6 +20,7 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayForwarderRPC;
 import net.tomp2p.relay.RelayUtils;
@@ -110,7 +111,8 @@ public class RconRPC extends DispatchHandler {
 		HashMap<PeerConnection, Integer> connection = new HashMap<PeerConnection, Integer>();
 		connection.put(peerConnection, seconds);
 
-		peer.peerBean().openPeerConnections().put(message.sender().peerId(), connection);
+		ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>> openPeerConnections = peer.peerBean().openPeerConnections();
+		openPeerConnections.put(message.sender().peerId(), connection);
 	}
 
 	private void responseAndKeepAlive(Message message, Responder responder) {

@@ -182,6 +182,9 @@ public class Sender {
 			final Message message, final ChannelCreator channelCreator, final int connectTimeoutMillis,
 			final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
 
+		// the message must have set the keepAlive Flag true
+		message.keepAlive(true);
+		
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}" + message.recipient());
 		Message rconMessage = createRconMessage(message);
 

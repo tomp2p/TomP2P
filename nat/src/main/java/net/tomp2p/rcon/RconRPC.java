@@ -109,10 +109,12 @@ public class RconRPC extends DispatchHandler {
 		// extract the amount of seconds which the connection should remain open
 		long current = message.longAt(POSITION_ZERO);
 		Integer seconds = (int) current;
-
+		
+		//TODO jwa check concurrency!
 		// insert the connection to a HashMap and store it on the PeerBean
-		final Map<PeerConnection, Integer> connection = Collections
-				.synchronizedMap(new HashMap<PeerConnection, Integer>());
+//		final Map<PeerConnection, Integer> connection = Collections
+//				.synchronizedMap(new HashMap<PeerConnection, Integer>());
+		final HashMap<PeerConnection, Integer> connection = new HashMap<PeerConnection, Integer>();
 		connection.put(peerConnection, seconds);
 
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -124,7 +126,7 @@ public class RconRPC extends DispatchHandler {
 
 		ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>> openPeerConnections = peer.peerBean()
 				.openPeerConnections();
-		openPeerConnections.put(message.sender().peerId(), (HashMap<PeerConnection, Integer>) connection);
+		openPeerConnections.put(message.sender().peerId(), connection);
 	}
 
 	private void responseAndKeepAlive(Message message, Responder responder) {
@@ -164,6 +166,7 @@ public class RconRPC extends DispatchHandler {
 						responseAndKeepAlive(message, responder);
 					} else {
 						LOG.error("The Original Message could not be sent!!!");
+						LOG.error(future.failedReason());
 						responder.response(createResponseMessage(message, Type.EXCEPTION));
 					}
 				}
@@ -173,6 +176,7 @@ public class RconRPC extends DispatchHandler {
 			LOG.error("There was no original message for RconMessageId=" + message.messageId()
 					+ "! This should not happen!!!");
 		}
+		
 
 	}
 

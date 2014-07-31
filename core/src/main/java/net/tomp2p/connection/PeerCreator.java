@@ -235,10 +235,10 @@ public class PeerCreator {
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of external search: " + status);
 		}
-		if (channelClientConfiguration.bindingsOutgoing().foundAddresses().size() == 0) {
+		InetAddress outsideAddress = channelClientConfiguration.bindingsOutgoing().foundAddress();
+		if(outsideAddress == null) {
 			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 		}
-		InetAddress outsideAddress = channelClientConfiguration.bindingsOutgoing().foundAddresses().get(0);
 		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
 				ports().tcpPort(), channelServerConficuration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,

@@ -35,7 +35,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
@@ -51,7 +50,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.Pair;
 
@@ -418,17 +416,15 @@ public class Sender {
 				if (psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
 					PeerAddress recipient = message.recipient();
-					message.recipient(recipient.changePeerSocketAddress(ps));
+					message.recipient(recipient.changePeerSocketAddress(ps).changeRelayed(true));
 
-					channelFuture = channelCreator.createUDP(PeerSocketAddress.createSocketUDP(ps), broadcast,
-					        handlers, futureResponse);
+					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 				} else {
 					futureResponse.failed("Peer is relayed, but no relay given");
 					return;
 				}
 			} else {
-				channelFuture = channelCreator.createUDP(message.recipient().createSocketUDP(), broadcast, handlers,
-				        futureResponse);
+				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		}
@@ -594,7 +590,7 @@ public class Sender {
 					} else {
 						synchronized (peerStatusListeners) {
 							for (PeerStatusListener peerStatusListener : peerStatusListeners) {
-								peerStatusListener.peerFailed(message.recipient(), FailReason.Exception);
+								peerStatusListener.peerFailed(message.recipient(), new PeerException(future));
 							}
 						}
 					}

@@ -177,7 +177,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS, false,
+							ChannelFuture channelFuture = cc.createUDP(false,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
 							        }, new FutureResponse(null));
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {

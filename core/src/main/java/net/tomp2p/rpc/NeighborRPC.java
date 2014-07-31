@@ -26,6 +26,8 @@ import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
@@ -39,7 +41,6 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,7 +250,7 @@ public class NeighborRPC extends DispatchHandler {
             else if (message.type() == Type.REQUEST_4) {
             	synchronized (peerBean().peerStatusListeners()) {
             		for (PeerStatusListener peerStatusListener : peerBean().peerStatusListeners()) {
-    					peerStatusListener.peerFailed(message.sender(), FailReason.Shutdown);
+    					peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
     				}
             	}
             }

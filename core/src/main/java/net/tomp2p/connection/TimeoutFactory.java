@@ -26,12 +26,12 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +146,7 @@ public class TimeoutFactory {
 
 					for (PeerStatusListener peerStatusListener : peerStatusListeners) {
 						if (recipient != null) {
-							peerStatusListener.peerFailed(recipient, FailReason.Timeout);
+							peerStatusListener.peerFailed(recipient, new PeerException(AbortCause.TIMEOUT, "timeout!"));
 						} else {
 							InetSocketAddress inetSocketAddress = (InetSocketAddress) ctx.channel().remoteAddress();
 							if (inetSocketAddress == null) {
@@ -156,7 +156,7 @@ public class TimeoutFactory {
 							if (inetSocketAddress != null) {
 								peerStatusListener.peerFailed(
 								        new PeerAddress(Number160.ZERO, inetSocketAddress.getAddress()),
-								        FailReason.Timeout);
+								        new PeerException(AbortCause.TIMEOUT, "timeout!"));
 							} else {
 								LOG.warn("Cannot determine the address!");
 							}

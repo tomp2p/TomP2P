@@ -15,6 +15,8 @@
  */
 package net.tomp2p.connection;
 
+import net.tomp2p.futures.FutureResponse;
+
 /**
  * This exception is used internally and passed over to the method
  * exceptionCaught. A PeerException always has a cause
@@ -33,7 +35,7 @@ public class PeerException extends Exception {
      * @author Thomas Bocek
      */
     public enum AbortCause {
-        USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT
+        USER_ABORT, PEER_ERROR, PEER_ABORT, TIMEOUT, SHUTDOWN, PROBABLY_OFFLINE
     }
 
     private final AbortCause abortCause;
@@ -51,7 +53,17 @@ public class PeerException extends Exception {
         this.abortCause = abortCause;
     }
 
-    /**
+    public PeerException(FutureResponse future) {
+    	super(future.failedReason());
+    	this.abortCause = AbortCause.PEER_ERROR;
+    }
+
+	public PeerException(Throwable cause) {
+		super(cause);
+		this.abortCause = AbortCause.PEER_ERROR;
+    }
+
+	/**
      * @return The cause of the error.
      */
     public AbortCause abortCause() {

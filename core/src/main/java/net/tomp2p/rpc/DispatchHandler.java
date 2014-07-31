@@ -18,12 +18,12 @@ package net.tomp2p.rpc;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,7 +152,7 @@ public abstract class DispatchHandler {
         } catch (Throwable e) {
         	synchronized (peerBean.peerStatusListeners()) {
         		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					peerStatusListener.peerFailed(requestMessage.sender(), FailReason.Exception);
+					peerStatusListener.peerFailed(requestMessage.sender(), new PeerException(e));
 				}
         	}
         	LOG.error("Exception in custom handler", e);

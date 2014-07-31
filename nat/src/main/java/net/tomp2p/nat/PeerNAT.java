@@ -270,7 +270,7 @@ public class PeerNAT {
 		futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>() {
 			@Override
 			public void operationComplete(FutureDiscover future) throws Exception {
-				if (future.isSuccess()) {
+				if (future.isFailed()) {
 					if (futureNAT != null) {
 						handleFutureNat(futureDiscover.reporter(), futureNAT, futureRelayNAT);
 					} else {
@@ -278,7 +278,7 @@ public class PeerNAT {
 						startRelay(futureRelayNAT, bootstrapBuilder);
 					}
 				} else {
-					futureRelayNAT.failed(future);
+					futureRelayNAT.done();
 				}
 			}
 		});
@@ -318,6 +318,7 @@ public class PeerNAT {
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				if (future.isSuccess()) {
 					// setup relay
+					LOG.debug("bootstrap completed");
 					final FutureRelay futureRelay = new FutureRelay(); 
 					final DistributedRelay distributedRelay = startSetupRelay(futureRelay);
 					futureBootstrapNAT.futureRelay(futureRelay);
@@ -336,17 +337,17 @@ public class PeerNAT {
 											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder, distributedRelay);
 											futureBootstrapNAT.done(shutdown);
 										} else {
-											futureBootstrapNAT.failed(future);
+											futureBootstrapNAT.failed("2nd FutureBootstrap failed", future);
 										}
 									}
 								});
 							} else {
-								futureBootstrapNAT.failed(future);
+								futureBootstrapNAT.failed("FutureRelay failed", future);
 							}
 						}
 					});
 				} else {
-					futureBootstrapNAT.failed(future);
+					futureBootstrapNAT.failed("FutureBootstrap failed", future);
 				}
 			}
 		});

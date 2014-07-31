@@ -9,9 +9,11 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.Ports;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -20,7 +22,6 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -91,7 +92,7 @@ public class TestStoreReplication {
             final int slavePort = 7701;
             slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
             master.peerBean().peerMap().peerFound(slave.peerAddress(), null);
-            master.peerBean().peerMap().peerFailed(slave.peerAddress(), FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slave.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
         } catch (Throwable t) {
@@ -175,14 +176,14 @@ public class TestStoreReplication {
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.peerAddress();
             slave1.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress1, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress1, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
 
             PeerAddress slaveAddress2 = slave2.peerAddress();
             slave2.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress2, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress2, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(3, test2.get());
@@ -1013,7 +1014,7 @@ public class TestStoreReplication {
 			
 			for (int i = 0; i < leaves.length; i++) {
 				// remove a peer
-				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), FailReason.Shutdown);
+				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 				// verify replication notifications
 				Assert.assertEquals(leaves[i][0], replicateI.get());
 				replicateI.set(0);

@@ -9,7 +9,7 @@
     </appender>
 
     <logger name="net.tomp2p.nat" level="TRACE"/>
-    <logger name="net.tomp2p.relay" level="TRACE"/>
+    <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
     <logger name="net.tomp2p.connection.HeartBeat" level="TRACE"/>
 
     <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->

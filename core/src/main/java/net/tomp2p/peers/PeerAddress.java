@@ -754,4 +754,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         }
         return size;
     }
+
+	public int relaySize() {
+	    return relaySize;
+    }
 }

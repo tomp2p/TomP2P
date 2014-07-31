@@ -234,13 +234,17 @@ public class RconRPC extends DispatchHandler {
 		setupMessage.command(RPC.Commands.RCON.getNr());
 		setupMessage.sender(peer.peerAddress());
 		setupMessage.recipient(peerConnection.remotePeer());
-		setupMessage.longValue(message.longAt(POSITION_ZERO));
 		setupMessage.version(1); // TODO remove magic number and find out why
 									// we need the versionnumber
 
 		// use same message id for new message
 		setupMessage.messageId(message.messageId());
 		setupMessage.keepAlive(true);
+		
+		// check if we keep the connection open afterwards
+		if (message.longAt(POSITION_ZERO) == null) {
+			setupMessage.longValue(message.longAt(POSITION_ZERO));
+		}
 		return setupMessage;
 	}
 
@@ -318,7 +322,6 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
-		forwardMessage.longValue(message.longAt(POSITION_ZERO));
 		forwardMessage.version(1); // TODO remove magic number and find out why
 									// we need the versionnumber
 
@@ -333,6 +336,11 @@ public class RconRPC extends DispatchHandler {
 		// we need to keep the peerConnection between the relay and the
 		// unreachable peer open
 		forwardMessage.keepAlive(true);
+		
+		// check if we keep the connection open afterwards
+		if (!(message.longAt(POSITION_ZERO) == null)) {
+			forwardMessage.longValue(message.longAt(POSITION_ZERO));
+		}
 
 		return forwardMessage;
 	}

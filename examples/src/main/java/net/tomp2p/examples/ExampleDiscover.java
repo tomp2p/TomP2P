@@ -2,7 +2,6 @@ package net.tomp2p.examples;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.StandardProtocolFamily;
 import java.util.Collection;
 import java.util.Random;
 
@@ -10,6 +9,7 @@ import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
+import net.tomp2p.connection.StandardProtocolFamily;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDiscover;

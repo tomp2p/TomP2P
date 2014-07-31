@@ -17,6 +17,7 @@
 package net.tomp2p.p2p.builder;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -123,6 +124,13 @@ public class BootstrapBuilder {
     public BootstrapBuilder inetAddress(InetAddress inetAddress) {
         this.inetAddress = inetAddress;
         return this;
+    }
+    
+    public BootstrapBuilder inetSocketAddress(InetSocketAddress socket) {
+    	this.inetAddress = socket.getAddress();
+    	this.portTCP = socket.getPort();
+    	this.portUDP = socket.getPort();
+	    return this;
     }
 
     public int portUDP() {
@@ -289,5 +297,7 @@ public class BootstrapBuilder {
         });
         return result;
     }
+
+	
 
 }

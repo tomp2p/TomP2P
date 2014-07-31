@@ -13,9 +13,11 @@
  * License for the specific language governing permissions and limitations under
  * the License.
  */
-package net.tomp2p.p2p;
+package net.tomp2p.tracker;
 
-public class TrackerConfiguration {
+import net.tomp2p.p2p.RequestConfiguration;
+
+public class TrackerConfiguration implements RequestConfiguration {
     final private int maxFailure;
 
     final private int parallel;

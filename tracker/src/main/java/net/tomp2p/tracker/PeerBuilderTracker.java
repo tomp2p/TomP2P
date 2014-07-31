@@ -56,9 +56,13 @@ public class PeerBuilderTracker {
 		if(verifyPeersOnTracker == null) {
 			verifyPeersOnTracker = Boolean.TRUE;
 		}
-		TrackerStorage trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer, verifyPeersOnTracker.booleanValue());
+		
+		final TrackerStorage trackerStorage;
 		if (peerExchangeHandler == null) {
+			trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer, verifyPeersOnTracker.booleanValue());
 			peerExchangeHandler = new DefaultPeerExchangeHandler(trackerStorage, peer.peerAddress(), rnd);
+		} else {
+			trackerStorage = peerExchangeHandler.trackerStorage();
 		}
 		PeerExchangeRPC peerExchangeRPC = new PeerExchangeRPC(peer.peerBean(), peer.connectionBean(),
 		        peerExchangeHandler);
@@ -187,5 +191,10 @@ public class PeerBuilderTracker {
 			PeerStatatistic peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
 			return new TrackerTriple().key(key).data(trackerData).remotePeer(peerStatatistic.peerAddress());
 		}
+
+		@Override
+        public TrackerStorage trackerStorage() {
+	        return trackerStorage;
+        }
 	}
 }

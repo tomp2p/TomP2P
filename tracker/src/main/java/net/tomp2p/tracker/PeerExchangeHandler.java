@@ -10,4 +10,6 @@ public interface PeerExchangeHandler {
 
 	TrackerTriple get();
 
+	TrackerStorage trackerStorage();
+
 }

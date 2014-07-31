@@ -13,13 +13,13 @@ import net.tomp2p.storage.Data;
 public class UtilsTracker {
 	public static TrackerData limit(TrackerData peers, int size) {
 		Map<PeerStatatistic, Data> map = new HashMap<PeerStatatistic, Data>(peers.peerAddresses());
+		Map<PeerStatatistic, Data> retVal = new HashMap<PeerStatatistic, Data>(size);
 		int i = 0;
-		for (Iterator<Map.Entry<PeerStatatistic, Data>> it = map.entrySet().iterator(); it.hasNext() && i < size;) {
+		for (Iterator<Map.Entry<PeerStatatistic, Data>> it = map.entrySet().iterator(); it.hasNext() && i++ < size;) {
 			Map.Entry<PeerStatatistic, Data> entry = it.next();
-			map.put(entry.getKey(), entry.getValue());
+			retVal.put(entry.getKey(), entry.getValue());
 		}
-
-		TrackerData data = new TrackerData(map);
+		TrackerData data = new TrackerData(retVal);
 		return data;
 	}
 

@@ -81,6 +81,12 @@ public class PingBuilder {
         this.inetAddress = inetAddress;
         return this;
     }
+    
+    public PingBuilder inetSocketAddress(InetSocketAddress socket) {
+    	this.inetAddress = socket.getAddress();
+    	this.port = socket.getPort();
+	    return this;
+    }
 
     public int port() {
         return port;
@@ -309,4 +315,6 @@ public class PingBuilder {
             }
         });
     }
+
+	
 }

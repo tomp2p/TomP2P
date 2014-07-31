@@ -85,6 +85,7 @@ public class TrackerRPC extends DispatchHandler {
 			peerAddressToAnnounce = peerBean().serverPeerAddress();
 		}
 		trackerData.put(new PeerStatatistic(peerAddressToAnnounce), builder.attachement());
+		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
 		if (builder.isForceTCP()) {

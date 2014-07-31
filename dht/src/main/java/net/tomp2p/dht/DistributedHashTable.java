@@ -119,7 +119,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                             }
                         }
                     });
@@ -207,7 +207,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                             }
                         }
                     });
@@ -289,7 +289,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                             }
                         }
                     });
@@ -385,7 +385,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                             }
                         }
                     });
@@ -464,7 +464,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else {
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                             }
                         }
                     });
@@ -550,7 +550,7 @@ public class DistributedHashTable {
                                             }
                                         });
                             } else
-                                futureDHT.failed("routing failed");
+                                futureDHT.failed(futureRouting);
                         }
                     });
                     futureDHT.addFutureDHTReleaseListener(future.channelCreator());

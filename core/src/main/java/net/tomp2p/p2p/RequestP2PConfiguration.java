@@ -21,7 +21,7 @@ package net.tomp2p.p2p;
  * 
  * @author Thomas Bocek
  */
-public class RequestP2PConfiguration {
+public class RequestP2PConfiguration implements RequestConfiguration {
     final private int minimumResults;
 
     final private int maxFailure;
@@ -82,14 +82,26 @@ public class RequestP2PConfiguration {
         return parallelDiff;
     }
 
+    /* (non-Javadoc)
+	 * @see net.tomp2p.p2p.RequestConfiguration#parallel()
+	 */
+    @Override
     public int parallel() {
         return minimumResults + parallelDiff;
     }
 
+    /* (non-Javadoc)
+	 * @see net.tomp2p.p2p.RequestConfiguration#isForceUPD()
+	 */
+    @Override
     public boolean isForceUPD() {
         return forceUPD;
     }
 
+    /* (non-Javadoc)
+	 * @see net.tomp2p.p2p.RequestConfiguration#isForceTCP()
+	 */
+    @Override
     public boolean isForceTCP() {
         return forceTCP;
     }

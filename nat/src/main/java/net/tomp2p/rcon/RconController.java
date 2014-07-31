@@ -4,6 +4,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.rmi.UnexpectedException;
+import java.util.concurrent.TimeoutException;
 
 import net.tomp2p.rcon.prototype.SimpleRconClient;
 
@@ -14,7 +16,7 @@ public class RconController {
 	public void start() {
 		rconView = new RconView();
 		rconView.make();
-		rconView.getJFrame().setSize(400, 400);
+		rconView.getJFrame().setSize(400, 600);
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {
@@ -61,6 +63,23 @@ public class RconController {
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
 				}
+			}
+		});
+		
+		rconView.getPermanentPeerConnectionButton().addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					SimpleRconClient.connectFirst("permanent Connection");
+				} catch (UnexpectedException e) {
+					e.printStackTrace();
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (TimeoutException e) {
+					e.printStackTrace();
+				}
+				
 			}
 		});
 	}

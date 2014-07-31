@@ -148,6 +148,8 @@ public class Sender {
 			if (message.recipient().isRelayed()) {
 				// check if reverse connection is possible
 				if (!message.sender().isRelayed()) {
+					
+					// TODO JWA we must use relaying if we are the relay to the unreachable peer
 					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection,
 							timeoutHandler);
 				} else {

@@ -4,11 +4,16 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.rmi.UnexpectedException;
+import java.util.concurrent.TimeoutException;
+
+import org.junit.After;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -24,8 +29,10 @@ public class SimpleRconClient {
 
 	private static int port = 4001;
 	private static Peer peer;
+	private static PeerNAT peerNAT;
 	private static PeerAddress masterPeerAddress;
 	private static String masterIpAddress;
+	private static PeerAddress natPeerAddress;
 	private static PeerConnection peerConnection;
 
 	public static void start(boolean isMaster, String id) {
@@ -62,7 +69,7 @@ public class SimpleRconClient {
 			new PeerNAT(peer);
 		} else {
 			peer = new PeerBuilder(Number160.createHash(id)).ports(port).start();
-			new PeerNAT(peer);
+			peerNAT = new PeerNAT(peer);
 		}
 	}
 
@@ -186,4 +193,17 @@ public class SimpleRconClient {
 		// uNat.startRelayMaintenance(futureRelay);
 	}
 
+	public static void connectFirst(String string) throws UnknownHostException, TimeoutException, UnexpectedException {
+		PeerAddress unreachablePeerAddress = masterPeerAddress;
+		unreachablePeerAddress.changeAddress(Inet4Address.getByName("192.168.10.107")).changeFirewalledTCP(true).changeFirewalledUDP(true).changeRelayed(true);
+		
+		FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, unreachablePeerAddress, 60);
+		fd.awaitUninterruptibly();
+		
+		if (fd.isSuccess()) {
+			peer.sendDirect(fd.object()).object(string);
+		} else {
+			throw new UnexpectedException("This should not happen");
+		}
+	}
 }

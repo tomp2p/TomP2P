@@ -38,7 +38,7 @@ import net.tomp2p.rpc.RPC;
 public class RconRPC extends DispatchHandler {
 
 	private static final int POSITION_ZERO = 0;
-	private static final int MAX_TIMEOUT_CYCLES = 10000000;
+	private static final int MAX_TIMEOUT_CYCLES = Integer.MAX_VALUE;
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private static final Logger LOG = LoggerFactory.getLogger(RconRPC.class);
@@ -54,27 +54,27 @@ public class RconRPC extends DispatchHandler {
 	 * REQUEST_1 = relay rcon forwarding. REQUEST_2 = open socket and transmit
 	 * PeerConnection. REQUEST_3 = use now open PeerConnection to transmit
 	 * original message (and eventually store the {@link PeerConnection}).
-	 * REQUEST_4 = store the {@link PeerConnection} on the unreachable peer side
+	 * (optional) REQUEST_4 = store the {@link PeerConnection} on the unreachable peer side
 	 */
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 			throws Exception {
-		LOG.debug("received RconRPC message {}", message);
+		LOG.warn("received RconRPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the relay peer
-			LOG.debug("handle RconForward for message: " + message);
+			LOG.warn("handle RconForward for message: " + message);
 			handleRconForward(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the unreachable peer
-			LOG.debug("handle RconSetup for message: " + message);
+			LOG.warn("handle RconSetup for message: " + message);
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the requesting peer
-			LOG.debug("handle RconAfterconnect for message: " + message);
+			LOG.warn("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder, peerConnection);
 		} else if (message.type() == Message.Type.REQUEST_4 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the PeerConnection should remain open
-			LOG.debug("handle openConnection for message: " + message);
+			LOG.warn("handle openConnection for message: " + message);
 			handleOpenConnection(message, responder, peerConnection);
 		} else {
 			throw new IllegalArgumentException("Message content is wrong");
@@ -191,7 +191,7 @@ public class RconRPC extends DispatchHandler {
 			LOG.debug("entering loop");
 			int timeout = 0;
 			while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
-				// wait for maximal 10000000 cycles
+				//wait
 				timeout++;
 			}
 			LOG.debug("exiting loop");
@@ -334,5 +334,4 @@ public class RconRPC extends DispatchHandler {
 
 		return forwardMessage;
 	}
-
 }

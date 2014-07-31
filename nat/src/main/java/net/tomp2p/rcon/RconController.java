@@ -16,7 +16,7 @@ public class RconController {
 	public void start() {
 		rconView = new RconView();
 		rconView.make();
-		rconView.getJFrame().setSize(400, 600);
+		rconView.getJFrame().setSize(600, 400);
 		
 		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 			public void run() {

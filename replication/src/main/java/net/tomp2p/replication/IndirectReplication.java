@@ -65,6 +65,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     private int blockSize = -1;
     private ReplicationSender replicationSender;
     private boolean nRoot = false;
+    private boolean keepData = false;
     private Replication replication;
     
     private ScheduledFuture<?> scheduledFuture;
@@ -125,6 +126,22 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     	return this;
     }
     
+    public boolean isKeepingData() {
+    	return keepData;
+    }
+    
+    public IndirectReplication keepData(boolean keepData) {
+    	this.keepData = keepData;
+    	return this;
+    }
+    
+	/**
+	 * Replicated and stored data will be not deleted after loss of replication responsibility.
+	 */
+    public IndirectReplication keepData() {
+    	this.keepData = false;
+    	return this;
+    }
     public IndirectReplication replicationFactor(ReplicationFactor replicationFactor) {
     	this.replicationFactor = replicationFactor;
     	return this;
@@ -195,7 +212,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     	}
     	
     	this.replication = new Replication(peer.storageLayer(), peer.peerAddress(), 
-    			peer.peer().peerBean().peerMap(), replicationFactor.replicationFactor(), nRoot);
+    			peer.peer().peerBean().peerMap(), replicationFactor.replicationFactor(), nRoot, keepData);
     	this.replication.addResponsibilityListener(this);
     	if(responsibilityListeners!=null) {
     		for(ResponsibilityListener responsibilityListener:responsibilityListeners) {

@@ -49,7 +49,7 @@ public class PeerNAT {
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
 
-	private static final int MAX_TIMEOUT_CYCLES = 1000000;
+	private static final int MAX_TIMEOUT_CYCLES = Integer.MAX_VALUE;
 
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
@@ -440,7 +440,7 @@ public class PeerNAT {
 		LOG.debug("entering loop");
 		int timeout = 0;
 		while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
-			// wait for maximal 1000000 cycles
+			// wait for max Interger.MAX_VALUE cycles
 			timeout++;
 		}
 		LOG.debug("exiting loop");
@@ -480,8 +480,8 @@ public class PeerNAT {
 			timeout = 0;
 			LOG.debug("entering loop");
 			while (!peer.peerBean().openPeerConnections().contains(unreachablePeerAddress.peerId()) 
-					&& timeout == MAX_TIMEOUT_CYCLES) {
-				// wait for max 1000000s
+					|| !(timeout == MAX_TIMEOUT_CYCLES)) {
+				// wait for max Interger.MAX_VALUE cycles
 				timeout++;
 			}
 			LOG.debug("exiting loop");

@@ -14,6 +14,7 @@ import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
@@ -179,7 +180,6 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconSetup(final Message message, final Responder responder) throws TimeoutException {
 		PeerAddress originalSender = null;
-		PeerConnection peerConnection = null;
 
 		if (message.neighborsSet(POSITION_ZERO).neighbors().isEmpty()) {
 			LOG.error("the original sender was not transmittet in the neighborsSet!");
@@ -187,39 +187,32 @@ public class RconRPC extends DispatchHandler {
 			// extract the PeerAddress from the reachable peer
 			originalSender = (PeerAddress) message.neighborsSet(0).neighbors().toArray()[0];
 
-			FuturePeerConnection fpc = peer.createPeerConnection(originalSender);
+			final FuturePeerConnection fpc = peer.createPeerConnection(originalSender);
+			
+			fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
 
-			// TODO JWA discuss this with Thomas Bocek
-			LOG.debug("entering loop");
-			int timeout = 0;
-			while (!fpc.isCompleted() && timeout < MAX_TIMEOUT_CYCLES) {
-				//wait
-				timeout++;
+				@Override
+				public void operationComplete(FuturePeerConnection future) throws Exception {
+					if (future.isSuccess()) {
+						PeerConnection peerConnection = future.peerConnection();
+						if (peerConnection != null) {
+							Message setupMessage = createSetupMessage(message, peerConnection);
+
+							FutureResponse futureResponse = new FutureResponse(setupMessage);
+							RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
+							responder.response(createResponseMessage(message, Type.OK));
+						} else { 
+							LOG.error("the peerConnection was null!");
+							responder.response(createResponseMessage(message, Type.EXCEPTION));
+						}
+					} else {
+						LOG.error("no channel could be established");
+						responder.response(createResponseMessage(message, Type.EXCEPTION));
+					}
+				}
+			});
+
 			}
-			LOG.debug("exiting loop");
-
-			if (timeout == MAX_TIMEOUT_CYCLES) {
-				throw new TimeoutException();
-			}
-
-			if (!fpc.isSuccess()) {
-				LOG.error("no channel could be established");
-			} else {
-				peerConnection = fpc.peerConnection();
-			}
-		}
-
-		if (peerConnection != null) {
-			Message setupMessage = createSetupMessage(message, peerConnection);
-
-			FutureResponse futureResponse = new FutureResponse(setupMessage);
-			RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
-
-		} else {
-			LOG.error("the peerConnection was null!");
-		}
-
-		responder.response(createResponseMessage(message, Type.OK));
 	}
 
 	/**

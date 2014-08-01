@@ -123,16 +123,18 @@ public class PeerNAT {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
 					        .connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
-						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
-						serverAddress = serverAddress.changePorts(externalPorts.tcpPort(), externalPorts.udpPort());
-						serverAddress = serverAddress.changeAddress(future.externalAddress());
-						peer.peerBean().serverPeerAddress(serverAddress);
+						final PeerAddress serverAddress = peer.peerBean()
+								.serverPeerAddress().changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
+								.changeAddress(future.externalAddress());
+						
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter());
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter()).senderAddress(serverAddress);
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
+									//change the server address to reflect the ports from the NAT device
+									peer.peerBean().serverPeerAddress(serverAddress);
 									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay

@@ -187,6 +187,9 @@ public class HeartBeat extends ChannelDuplexHandler {
                 PingBuilder builder = pingBuilderFactory.create();
                 BaseFuture baseFuture = builder.peerConnection(peerConnection).start();
                 builder.notifyAutomaticFutures(baseFuture);
+            } else {
+            	LOG.debug("Not sending heart beat to {}, {}", peerConnection.remotePeer(), 
+                		(peerConnection.channelFuture() != null ? peerConnection.channelFuture().channel() : null));
             }
         }
     }

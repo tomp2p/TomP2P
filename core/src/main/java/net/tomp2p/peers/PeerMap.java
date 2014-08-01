@@ -753,6 +753,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         synchronized (tmp) {
             PeerStatatistic old = tmp.get(peerAddress.peerId());
             if (old != null) {
+            	//TODO: this should only be from firsthand!
                 old.peerAddress(peerAddress);
                 if (firstHand) {
                     old.successfullyChecked();

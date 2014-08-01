@@ -1,17 +1,28 @@
 package net.tomp2p.replication;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
@@ -21,7 +32,10 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -1032,6 +1046,128 @@ public class TestStoreReplication {
 				peer.shutdown().await();
 			}
 		}
+	}
+
+	@Test
+	public void testHeavyLoadNRootReplication() throws Exception {
+		PeerDHT master = null;
+		Random rnd = new Random();
+		try {
+			// setup
+			PeerDHT[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			
+			for (int i = 0; i < peers.length; i++) {
+				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(500).nRoot()
+				.replicationFactor(6).start();
+			}
+
+			NavigableMap<Number160, Data> sortedMap = new TreeMap<Number160, Data>();
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+
+			String content = "";
+			for (int i = 0; i < 500; i++) {
+				content += "a";
+				Number160 vKey = generateVersionKey(i, content);
+				Data data = new Data(content);
+				if (!sortedMap.isEmpty()) {
+					data.addBasedOn(sortedMap.lastKey());
+				}
+				data.prepareFlag();
+				sortedMap.put(vKey, data);
+
+				// put test data (prepare)
+				FuturePut fput = peers[rnd.nextInt(10)].put(locationKey)
+						.data(contentKey, sortedMap.get(vKey)).domainKey(domainKey).versionKey(vKey).start();
+				fput.awaitUninterruptibly();
+				fput.futureRequests().awaitUninterruptibly();
+				fput.futureRequests().awaitListenersUninterruptibly();
+				Assert.assertEquals(true, fput.isSuccess());
+
+				// confirm put
+				FuturePut futurePutConfirm = peers[rnd.nextInt(10)].put(locationKey).domainKey(domainKey)
+						.data(contentKey, new Data()).versionKey(vKey).putConfirm().start();
+				futurePutConfirm.awaitUninterruptibly();
+				futurePutConfirm.awaitListenersUninterruptibly();
+
+				// get latest version with digest
+				FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+						.contentKey(contentKey).getLatest().withDigest().start();
+				fget.awaitUninterruptibly();
+				Assert.assertTrue(fget.isSuccess());
+
+				// check result
+				Map<Number640, Data> dataMap = fget.dataMap();
+				Assert.assertEquals(1, dataMap.size());
+				Number480 key480 = new Number480(locationKey, domainKey, contentKey);
+
+				Number640 key = new Number640(key480, vKey);
+				Assert.assertTrue(dataMap.containsKey(key));
+				Assert.assertEquals(data.object(), dataMap.get(key).object());
+
+				// check digest result
+				DigestResult digestResult = fget.digest();
+				Assert.assertEquals(sortedMap.size(), digestResult.keyDigest().size());
+				for (Number160 versionKey : sortedMap.keySet()) {
+					Number640 digestKey = new Number640(locationKey, domainKey, contentKey, versionKey);
+					Assert.assertTrue(digestResult.keyDigest().containsKey(digestKey));
+					Assert.assertEquals(sortedMap.get(versionKey).basedOnSet().size(), digestResult
+							.keyDigest().get(digestKey).size());
+					for (Number160 bKey : sortedMap.get(versionKey).basedOnSet()) {
+						Assert.assertTrue(digestResult.keyDigest().get(digestKey).contains(bKey));
+					}
+				}
+			}
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	private static Number160 generateVersionKey(long basedOnCounter, Serializable object) throws IOException {
+		// get a MD5 hash of the object itself
+		byte[] hash = generateMD5Hash(serializeObject(object));
+		return new Number160(basedOnCounter, new Number160(Arrays.copyOf(hash, Number160.BYTE_ARRAY_SIZE)));
+	}
+
+	private static byte[] generateMD5Hash(byte[] data) {
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+		}
+		md.reset();
+		md.update(data, 0, data.length);
+		return md.digest();
+	}
+
+	private static byte[] serializeObject(Serializable object) throws IOException {
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = null;
+		byte[] result = null;
+
+		try {
+			oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			result = baos.toByteArray();
+		} catch (IOException e) {
+			throw e;
+		} finally {
+			try {
+				if (oos != null)
+					oos.close();
+				if (baos != null)
+					baos.close();
+			} catch (IOException e) {
+				throw e;
+			}
+		}
+		return result;
 	}
 
 }

@@ -51,6 +51,8 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 
     private boolean nRootReplication;
 
+    private boolean keepData;
+
     /**
      * Constructor.
      * 
@@ -64,14 +66,17 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      *            The replication factor
      * @param nRoot
      *            <code>true</code> for n-root replication, <code>false</code> for 0-root replication
+     * @param keepData
+     *           flag indicating if data will be kept in memory after loss of replication responsibility
      */
     public Replication(final StorageLayer backend, final PeerAddress selfAddress,
-            final PeerMap peerMap, final int replicationFactor, final boolean nRoot) {
+            final PeerMap peerMap, final int replicationFactor, final boolean nRoot, final boolean keepData) {
         this.backend = backend;
         this.selfAddress = selfAddress;
         this.peerMap = peerMap;
         this.replicationFactor = replicationFactor;
         this.nRootReplication = nRoot;
+        this.keepData = keepData;
         peerMap.addPeerMapChangeListener(this);
     }
     
@@ -115,6 +120,24 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 	 */
 	public boolean is0RootReplication() {
 		return !nRootReplication;
+	}
+
+	/**
+	 * 
+	 * @param keepData flag
+	 *            If <code>true</code> data will be kept in memory after loosing replication responsibility.
+	 *            If <code>false</code> data will be deleted.
+	 */
+	public void keepData(boolean keepData) {
+		this.keepData = keepData;
+	}
+
+	/**
+	 * 
+	 * @return <code>true</code> if data will keep in memory after loosing replication responsibility
+	 */
+	public boolean isKeepingData() {
+		return keepData;
 	}
 
     /**
@@ -231,7 +254,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 						if (!isInReplicationRange(locationKey, peerAddress, replicationFactor)) {
 							LOG.debug("I {} detected that {} is not responsible anymore for key {}.",
 									selfAddress, peerAddress, locationKey);
-							backend.removeResponsibility(locationKey, otherReplica);
+							backend.removeResponsibility(locationKey, otherReplica, keepData);
 							hasToNotifyReplicaSet = true;
 						} else {
 							LOG.debug("I {} checked that {} is still responsible for key {}.", selfAddress,
@@ -246,7 +269,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 				}
 			} else {
 				LOG.debug("I {} am not responsible for key {}.", selfAddress, locationKey);
-				backend.removeResponsibility(locationKey);
+				backend.removeResponsibility(locationKey, keepData);
 			}
 		}
     }
@@ -284,7 +307,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 						// notify closest replica node about responsibility
 						notifyOtherResponsible(myResponsibleLocation, closest);
 						LOG.debug("I {} am no more in the replica set of {}.", selfAddress, myResponsibleLocation);
-						backend.removeResponsibility(myResponsibleLocation);
+						backend.removeResponsibility(myResponsibleLocation, keepData);
 					}
 				} else if (isInReplicationRange(myResponsibleLocation, peerAddress, replicationFactor)) {
 					LOG.debug("{} is in the replica set for {}.", peerAddress, myResponsibleLocation);
@@ -346,7 +369,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 						LOG.debug("I {} am not responsible anymore for {}.", selfAddress, myResponsibleLocation);
 						// I'm not in replication range, I don't need to know
 						// about all responsibility entries to the given key
-						backend.removeResponsibility(myResponsibleLocation);
+						backend.removeResponsibility(myResponsibleLocation, keepData);
 					}
 				} else {
 					// newly joined peer doesn't have to replicate
@@ -369,7 +392,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 								selfAddress, peerAddress, myResponsibleLocation);
 						// I'm not in replication range, I don't need to know
 						// about all responsibility entries to the given key
-						backend.removeResponsibility(myResponsibleLocation);
+						backend.removeResponsibility(myResponsibleLocation, keepData);
 					}
 				}
 			}
@@ -458,7 +481,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 							peerAddress, otherResponsibleLocation);
 				}
 				// remove stored replication responsibility of leaving node
-				backend.removeResponsibility(otherResponsibleLocation, peerAddress.peerId());
+				backend.removeResponsibility(otherResponsibleLocation, peerAddress.peerId(), keepData);
 			}
 			// now check for our responsibilities. If a peer is gone and it was
 			// in the replication range, we need make sure we have enough copies

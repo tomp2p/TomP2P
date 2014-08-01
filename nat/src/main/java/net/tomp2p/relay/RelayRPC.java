@@ -168,23 +168,26 @@ public class RelayRPC extends DispatchHandler {
         
         if (peerBean().serverPeerAddress().isRelayed()) {
             // peer is behind a NAT as well -> deny request
+        	LOG.warn("I cannot be a relay since I'm relayed as well! {}", message);
             responder.response(createResponseMessage(message, Type.DENIED));
             return;
         }
 
         // register relay forwarder
-        RelayForwarderRPC.register(peerConnection, peer, this);
+        final PeerConnection peerConnection2 = peerConnection.changeRemotePeer(peerConnection.remotePeer().changeRelayed(true));
+        RelayForwarderRPC.register(peerConnection2, peer, this);
 
         // add close listener for the peer connection
-        peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
+        peerConnection2.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
             @Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
                 // unregister relay handler
-            	LOG.debug("Unregister the relay for {}", peerConnection.remotePeer().peerId());
-                RelayForwarderRPC.unregister(peer, peerConnection.remotePeer().peerId());
+            	LOG.debug("Unregister the relay for {}", peerConnection2.remotePeer().peerId());
+                RelayForwarderRPC.unregister(peer, peerConnection2.remotePeer().peerId());
             }
         });
 
+        LOG.debug("I'll be your relay! {}", message);
         responder.response(createResponseMessage(message, Type.OK));
     }
 
@@ -212,6 +215,7 @@ public class RelayRPC extends DispatchHandler {
      * @param responder
      */
     private void handleMap(Message message, Responder responder) {
+    	LOG.debug("handle foreign map {}", message);
         Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
         RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.sender().peerId());
         if (relayForwarderRPC != null) {

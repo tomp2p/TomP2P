@@ -248,13 +248,19 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
+        } else if (message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
+        	String msg = "Message [" + responseMessage
+                    + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";
+            exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            return;
         }
 
         // We got a good answer, let's mark the sender as alive
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					peerStatusListener.peerFound(responseMessage.sender(), null);
+					//don't use the response message as relay peers may reply on behalf of other peers
+					peerStatusListener.peerFound(message.recipient(), null);
 				}
 			}
 		}

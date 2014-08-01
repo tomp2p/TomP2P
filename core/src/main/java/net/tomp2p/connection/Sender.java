@@ -47,7 +47,6 @@ import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
@@ -205,7 +204,7 @@ public class Sender {
 					});
 
 				} else {
-					futureResponse.failed("no relay could be contacted");
+					futureResponse.failed("no relay could be contacted", futureDone);
 				}
 			}
 		});
@@ -239,6 +238,8 @@ public class Sender {
 			public void operationComplete(FutureForkJoin<FuturePing> future) throws Exception {
 				if (future.isSuccess()) {
 					futureDone.done(future.first().remotePeer().peerSocketAddress());
+				} else {
+					futureDone.failed(future);
 				}
 			}
 		});
@@ -252,18 +253,12 @@ public class Sender {
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
 
 		if (timeoutHandler != null) {
-			final int nrTCPHandlers = peerConnection != null ? 10 : 7; // 10 = 7
-			                                                           // / 0.75
-			                                                           // ** 7 =
-			                                                           // 5 /
-			                                                           // 0.75;
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 			handlers.put("timeout0",
 			        new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
 			handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
 		} else {
-			final int nrTCPHandlers = 3; // 2 / 0.75;
-			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+			handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>();
 		}
 
 		handlers.put("decoder", new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PCumulationTCP(
@@ -415,9 +410,7 @@ public class Sender {
 				LOG.debug("send neighbor request to random relay peer {}", psa);
 				if (psa.size() > 0) {
 					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					PeerAddress recipient = message.recipient();
-					message.recipient(recipient.changePeerSocketAddress(ps).changeRelayed(true));
-
+					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
 					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
 				} else {
 					futureResponse.failed("Peer is relayed, but no relay given");

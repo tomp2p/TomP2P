@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -69,7 +70,9 @@ public class Encoder {
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
-            switch (next.content()) {
+        	final int start = buf.writerIndex();
+        	final Content content = next.content(); 
+            switch (content) {
             case KEY:
                 buf.writeBytes(message.key(next.number()).toByteArray());
                 message.contentRefencencs().poll();
@@ -221,6 +224,7 @@ public class Encoder {
             case USER1:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
+            LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);
 
         }
         return true;

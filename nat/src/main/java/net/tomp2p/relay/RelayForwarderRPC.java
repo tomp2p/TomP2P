@@ -95,7 +95,7 @@ public class RelayForwarderRPC extends DispatchHandler {
 	        final Responder responder) throws Exception {
 		// the sender should have the ip/port from the releay peer, the peerId
 		// from the unreachabel peer
-		final PeerAddress sender = peerBean().serverPeerAddress().changePeerId(peerConnection.remotePeer().peerId());
+		final PeerAddress sender = peerBean().serverPeerAddress().changePeerId(peerConnection.remotePeer().peerId()).changeRelayed(true);
 
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
@@ -166,8 +166,12 @@ public class RelayForwarderRPC extends DispatchHandler {
 
 		// Create response message and set neighbors
 		final Message responseMessage = createResponseMessage(message, Type.OK, sender);
-
+		
+		//TODO: the relayed peer must be up-to-date here
+		//neighbors.add(peerConnection.remotePeer());
+		
 		LOG.debug("found the following neighbors {}", neighbors);
+		
 		NeighborSet neighborSet = new NeighborSet(NeighborRPC.NEIGHBOR_LIMIT, neighbors);
 		responseMessage.neighborsSet(neighborSet);
 		

@@ -52,6 +52,7 @@ public class DiscoverBuilder {
     private int portTCP = Ports.DEFAULT_PORT;
 
     private PeerAddress peerAddress;
+    private PeerAddress senderAddress;
 
     private int discoverTimeoutSec = 5;
 
@@ -213,7 +214,7 @@ public class DiscoverBuilder {
         });
 
         final FutureResponse futureResponseTCP = peer.pingRPC().pingTCPDiscover(peerAddress, cc,
-                configuration);
+                configuration, senderAddress);
 
         futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
@@ -282,5 +283,14 @@ public class DiscoverBuilder {
                 }
             }
         });
+    }
+
+	public DiscoverBuilder senderAddress(PeerAddress senderAddress) {
+	    this.senderAddress = senderAddress;
+	    return this;
+    }
+	
+	public PeerAddress senderAddress() {
+	    return senderAddress;
     }
 }

@@ -26,6 +26,9 @@ public class SimpleRconClient {
 	private static PeerNAT peerNAT;
 	private static PeerAddress masterPeerAddress;
 	private static String masterIpAddress;
+	private static boolean lightswitch = true;
+	private static PeerConnection connection;
+	private static int count = 5;
 
 	public static void start(boolean isMaster, String id) {
 		// Create a peer with a random peerID, on port 4001, listening to the
@@ -126,7 +129,7 @@ public class SimpleRconClient {
 
 		FutureDirect fd = peer.sendDirect(recipient).object(message).start();
 		fd.awaitUninterruptibly(10000);
-		
+
 		if (fd.isSuccess()) {
 			System.out.println("FUTURE DIRECT SUCCESS!");
 			success = true;
@@ -136,7 +139,7 @@ public class SimpleRconClient {
 
 		return success;
 	}
-	
+
 	public static boolean sendNATDummy(String message) throws UnknownHostException {
 		boolean success = false;
 		PeerAddress recipient = masterPeerAddress;
@@ -145,7 +148,7 @@ public class SimpleRconClient {
 
 		FutureDirect fd = peer.sendDirect(recipient).object(message).start();
 		fd.awaitUninterruptibly(10000);
-		
+
 		if (fd.isSuccess()) {
 			System.out.println("FUTURE DIRECT SUCCESS!");
 			success = true;
@@ -186,25 +189,48 @@ public class SimpleRconClient {
 	}
 
 	public static void connectFirst(String string) throws UnknownHostException, TimeoutException, UnexpectedException {
-		PeerAddress recipient = masterPeerAddress;
-		recipient = recipient.changeRelayed(true);
-		recipient = recipient.changePeerId(Number160.createHash("NAT"));
-		
-		FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 60);
-		fd.awaitUninterruptibly();
-		
-		if (fd.isSuccess()) {
-			PeerConnection connection = fd.object();
-			FutureDirect future = peer.sendDirect(connection).start();
-			future.awaitUninterruptibly();
-			
-			if (future.isSuccess()) {
-				System.out.println("FUTURE DIRECT SUCCESS!");
+
+		if (lightswitch) {
+
+			PeerAddress recipient = masterPeerAddress;
+			recipient = recipient.changeRelayed(true);
+			recipient = recipient.changePeerId(Number160.createHash("NAT"));
+
+			FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 60);
+			fd.awaitUninterruptibly();
+
+			if (fd.isSuccess()) {
+				connection = fd.object();
+				FutureDirect future = peer.sendDirect(connection)
+						.object("It's time to kickass and chew bubblegum. And I'm all outta gum...").start();
+				future.awaitUninterruptibly();
+
+				if (future.isSuccess()) {
+					System.out.println("FUTURE DIRECT SUCCESS!");
+				} else {
+					System.out.println("FUTURE DIRECT FAIL!");
+				}
 			} else {
-				System.out.println("FUTURE DIRECT FAIL!");
+				throw new UnexpectedException("This should not happen");
 			}
+			count--;
+			lightswitch = false;
 		} else {
-			throw new UnexpectedException("This should not happen");
+			if (count == 0) {
+				connection.close();
+				lightswitch = true;
+				count = 5;
+			} else {
+				FutureDirect future = peer.sendDirect(connection)
+						.object("Countdown till close: " + count + " times.").start();
+				future.awaitUninterruptibly();
+				if (future.isSuccess()) {
+					System.out.println("FUTURE DIRECT SUCCESS!");
+				} else {
+					System.out.println("FUTURE DIRECT FAIL!");
+				}
+				count--;
+			}
 		}
 	}
 }

@@ -26,6 +26,7 @@ import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.utils.CacheMap;
@@ -257,7 +258,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
-    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
+    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection) {    	
     	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
         boolean firstHand = referrer == null || !peerVerification;
         //if we got contacted by this peer, but we did not initiate the connection
@@ -276,6 +277,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         
         if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
+        	return false;
+        }
+        
+        //if a peer is relayed but cannot provide any relays, its useless
+        if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
         	return false;
         }
         
@@ -305,7 +311,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 synchronized (map) {
                     // check again, now we are synchronized
                     if (map.containsKey(remotePeer.peerId())) {
-                        return peerFound(remotePeer, referrer);
+                        return peerFound(remotePeer, referrer, peerConnection);
                     }
                     if (map.size() < bagSizeVerified) {
                         final PeerStatatistic peerStatatistic = new PeerStatatistic(remotePeer);

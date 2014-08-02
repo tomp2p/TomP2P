@@ -8,8 +8,13 @@
         </encoder>
     </appender>
 
-    <!-- <logger name="net.tomp2p.nat" level="WARN"/>
-    <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
+    <logger name="net.tomp2p.nat" level="WARN"/>
+    <!-- <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
+    <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
+    <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
+    <logger name="net.tomp2p.p2p.DistributedRouting" level="TRACE"/>
+    <logger name="net.tomp2p.message.Decoder" level="TRACE"/>
+    <logger name="net.tomp2p.message.Encoder" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayForwarderRPC" level="TRACE"/>
     <logger name="net.tomp2p.nat.PeerMapUpdateTask" level="TRACE"/>
     <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>

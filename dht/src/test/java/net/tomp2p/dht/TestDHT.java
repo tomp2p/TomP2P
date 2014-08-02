@@ -1027,12 +1027,12 @@ public class TestDHT {
 			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
 			master3 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start()).start();
 			// perfect routing
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
 			Number160 id = master2.peerID();
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -1060,10 +1060,10 @@ public class TestDHT {
 			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null);
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
 
 			System.err.println("no more exceptions here!!");
 

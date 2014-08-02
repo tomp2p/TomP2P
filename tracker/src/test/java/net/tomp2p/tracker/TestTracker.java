@@ -34,7 +34,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(0, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 1, 0);
@@ -88,7 +88,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0, 1000, 2);
@@ -128,7 +128,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0, 1000, 2);
@@ -166,7 +166,7 @@ public class TestTracker {
             // perfect routing
             for (int i = 0; i < nodes.length; i++) {
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             TrackerConfiguration tc = new TrackerConfiguration(1, 1, 2, 0);
@@ -216,7 +216,7 @@ public class TestTracker {
                 // nodes[i].getPeerBean().getTrackerStorage()
                 // .setTrackerStoreSize(nodes[i].getPeerBean().getTrackerStorage().getTrackerSize());
                 for (int j = 0; j < nodes.length; j++)
-                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null);
+                    nodes[i].peer().peerBean().peerMap().peerFound(nodes[j].peerAddress(), null, null);
             }
             RoutingConfiguration rc = new RoutingConfiguration(1, 1, 1);
             // 3 is good!

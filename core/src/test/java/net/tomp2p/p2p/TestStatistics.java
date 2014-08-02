@@ -48,7 +48,7 @@ public class TestStatistics {
 			Statistics statistics = new Statistics(peerMap);
 			for (int i = 0; i < nr; i++) {
 				PeerAddress pa = Utils2.createAddress(new Number160(rnd));
-				peerMap.peerFound(pa, null);
+				peerMap.peerFound(pa, null, null);
 			}
 
 			double diff = nr / statistics.estimatedNumberOfNodes();

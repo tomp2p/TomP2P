@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
@@ -239,7 +240,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	}
 
 	@Override
-	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer) {
+	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
 		boolean firsthand = referrer == null;
 		if (firsthand) {
 			peerOffline.remove(remotePeer.peerId());

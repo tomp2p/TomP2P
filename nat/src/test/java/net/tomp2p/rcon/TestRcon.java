@@ -1,11 +1,13 @@
 package net.tomp2p.rcon;
-import java.io.IOException;
-import java.net.ConnectException;
 
+import java.util.Random;
+
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDiscover;
-import net.tomp2p.nat.NATUtils;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
@@ -28,81 +30,65 @@ public class TestRcon {
 
 	private Peer reachable = null;
 	private Peer unreachable = null;
-	private Peer relay = null;
+	private Peer master = null;
 	private Peer[] peers = new Peer[2];
+	private PeerNAT reachableNAT = null;
 
 	private static final int PORTS = 4001;
 	private static final Number160 REACHABLE_ID = Number160.createHash("reachable");
 	private static final Number160 UNREACHABLE_ID = Number160.createHash("unreachable");
 	private static final Number160 RELAY_ID = Number160.createHash("relay");
-	
+	private static final int NUMBER_OF_NODES = 5;
+	private static final Random RND = new Random();
+
 	@Before
-	public void testRconSetup() throws IOException {
-		relay = new PeerBuilder(RELAY_ID).ports(PORTS).start();
-		reachable = new PeerBuilder(REACHABLE_ID).behindFirewall(false).ports(PORTS).masterPeer(relay).start();
-		unreachable = new PeerBuilder(UNREACHABLE_ID).behindFirewall(true).ports(PORTS).masterPeer(relay).start();
-
-		peers[0] = relay;
-		peers[1] = reachable;
-		
+	public void setupRelay() throws Exception {
+		// setup test peers
+		peers = UtilsNAT.createNodes(NUMBER_OF_NODES, RND, PORTS);
+		master = peers[0];
+		reachable = peers[4];
 		UtilsNAT.perfectRouting(peers);
-		makePeerNat();
-		bootstrapUnreachable();
-
-		System.out.println("BOOTSTRAP SUCCESS!!!!");
-		
-//		Assert.assertEquals(true, unreachable.peerAddress().isFirewalledTCP());
-//		Assert.assertEquals(true, unreachable.peerAddress().isFirewalledUDP());
-	}
-
-	private void makePeerNat() {
-		
-		peers = new Peer[3];
-		peers[0] = relay;
-		peers[1] = reachable;
-		peers[2] = unreachable;
-		
-		for (Peer ele : peers) {
-			new PeerNAT(ele);
+		for (Peer peer : peers) {
+			if (peer.equals(reachable)) {
+				reachableNAT = new PeerNAT(peer);
+			} else {
+				new PeerNAT(peer);
+			}
 		}
-	}
 
-	private void bootstrapUnreachable() throws ConnectException {
-		// Set the isFirewalledUDP and isFirewalledTCP flags
-		PeerAddress upa = unreachable.peerBean().serverPeerAddress();
-		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
-		unreachable.peerBean().serverPeerAddress(upa);
-
+		// Test setting up relay peers
+		unreachable = new PeerBuilder(Number160.createHash(RND.nextInt())).ports(PORTS + 1).start();
+		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
+		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		unreachable.peerBean().serverPeerAddress(pa);
 		// find neighbors
-		FutureBootstrap futureBootstrap = unreachable.bootstrap().peerAddress(relay.peerAddress()).start();
+		FutureBootstrap futureBootstrap = unreachable.bootstrap().peerAddress(peers[0].peerAddress()).start();
 		futureBootstrap.awaitUninterruptibly();
-
+		Assert.assertTrue(futureBootstrap.isSuccess());
 		// setup relay
 		PeerNAT uNat = new PeerNAT(unreachable);
-		// set up 3 relays
-		FutureRelay futureRelay = uNat.minRelays(1).startSetupRelay();
-		futureRelay.awaitUninterruptibly();
+		FutureRelay fr = uNat.startSetupRelay();
+		fr.awaitUninterruptibly();
+		Assert.assertTrue(fr.isSuccess());
+		// Assert.assertEquals(2, fr.relays().size());
 
-		// find neighbors again
-		FutureBootstrap fb2 = unreachable.bootstrap().peerAddress(relay.peerAddress()).start();
-		fb2.awaitUninterruptibly();
-		
-		if (fb2.isSuccess()) {
-			LOG.info("unreachable Bootstrap success!");
-		} else {
-			LOG.error("unreachable Bootstrap fail!");
-			throw new ConnectException();
-		}
+		// Check if flags are set correctly
+		Assert.assertTrue(unreachable.peerAddress().isRelayed());
+		Assert.assertFalse(unreachable.peerAddress().isFirewalledTCP());
+		Assert.assertFalse(unreachable.peerAddress().isFirewalledUDP());
+
 	}
 	
 	@Test
-	public void testReverseConnection() throws ClassNotFoundException, IOException, InterruptedException {
-		
+	public void testPermanentReverseConnection() throws Exception {
+
+//		setupRelay();
+
 		final String requestString = "This is a test String";
-		
+
 		for (Peer ele : peers) {
 			ele.objectDataReply(new ObjectDataReply() {
-				
+
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					Assert.assertEquals(requestString, ((String) request));
@@ -110,24 +96,71 @@ public class TestRcon {
 				}
 			});
 		}
-		
-		PeerAddress address = unreachable.peerAddress().changeAddress(relay.peerAddress().inetAddress()).changeFirewalledTCP(true).changeFirewalledUDP(true);
-		FutureDirect fd = reachable.sendDirect(address).object(requestString).connectionTimeoutTCPMillis(60000).start();
+
+		FutureDone<PeerConnection> fd = reachableNAT
+				.startSetupRcon(master.peerAddress(), unreachable.peerAddress(), 60);
+		fd.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
+
+			@Override
+			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
+				Assert.assertTrue(future.isSuccess());
+				FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
+				fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
+
+					@Override
+					public void operationComplete(FutureDirect future) throws Exception {
+						Assert.assertTrue(future.isSuccess());
+						Assert.assertEquals("SUCCESS HIT", (String) future.object());
+					}
+				});
+				fd2.awaitUninterruptibly();
+			}
+		});
+
 		fd.awaitUninterruptibly();
-		
-		if (!fd.isCompleted()) {
-			Assert.fail("The sendDirect Message failed");
-		} else {
-			Assert.assertTrue(fd.isSuccess());
+		if (fd.isFailed()) {
+			Assert.fail(fd.failedReason());
 		}
-		
-		Thread.sleep(99999999);
 	}
-	
+
+	@Test
+	public void testReverseConnection() throws Exception {
+//		setupRelay();
+
+		final String requestString = "This is a test String";
+
+		for (Peer ele : peers) {
+			ele.objectDataReply(new ObjectDataReply() {
+
+				@Override
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					Assert.assertEquals(requestString, ((String) request));
+					return "SUCCESS HIT";
+				}
+			});
+		}
+
+		PeerAddress recipientAddress = master.peerAddress().changePeerId(UNREACHABLE_ID).changeFirewalledTCP(true)
+				.changeFirewalledUDP(true).changeRelayed(true);
+		FutureDirect fd = reachable.sendDirect(recipientAddress).object(requestString).start();
+		fd.awaitUninterruptibly();
+
+		if (fd.isSuccess()) {
+			Assert.assertEquals("SUCCESS HIT", (String) fd.object());
+		} else {
+			Assert.fail(fd.failedReason());
+		}
+
+		Thread.sleep(2000);
+	}
+
 	@After
 	public void shutdown() {
-		for (Peer ele: peers) {
-			ele.shutdown();
+		for (Peer ele : peers) {
+			BaseFuture bf = ele.shutdown();
+			bf.awaitUninterruptibly();
 		}
+		BaseFuture bf = unreachable.shutdown();
+		bf.awaitUninterruptibly();
 	}
 }

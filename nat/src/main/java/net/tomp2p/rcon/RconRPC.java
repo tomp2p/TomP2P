@@ -325,7 +325,7 @@ public class RconRPC extends DispatchHandler {
 
 		} else {
 			LOG.error("no relayForwarder Registered for peerId=" + message.recipient().peerId().toString());
-			responder.response(createResponseMessage(message, Type.UNKNOWN_ID));
+			responder.response(createResponseMessage(message, Type.EXCEPTION));
 		}
 	}
 

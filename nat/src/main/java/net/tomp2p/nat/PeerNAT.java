@@ -429,7 +429,7 @@ public class PeerNAT {
 	 * @throws TimeoutException
 	 */
 	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
-			final int timeoutSeconds) throws TimeoutException {
+			final int timeoutSeconds) {
 		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
 
 		final FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
@@ -447,15 +447,13 @@ public class PeerNAT {
 					if (peerConnection != null) {
 						Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress,
 								timeoutSeconds);
-						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds,
-								setUpMessage);
-
-						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds);
 
 						FutureResponse futureResponse = new FutureResponse(setUpMessage);
 						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
 								new DefaultConnectionConfiguration());
 						
+						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 
 							// wait for the setup of the rcon
@@ -480,10 +478,8 @@ public class PeerNAT {
 				}
 			}
 
-			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds,
-					Message setUpMessage) {
+			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds) {
 				Message connectMessage = new Message();
-				connectMessage.messageId(setUpMessage.messageId());
 				connectMessage.version(1);
 				connectMessage.sender(peer.peerAddress());
 				connectMessage.recipient(unreachablePeerAddress);

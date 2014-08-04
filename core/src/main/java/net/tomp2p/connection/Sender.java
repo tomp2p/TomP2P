@@ -207,9 +207,9 @@ public class Sender {
 	private static Message createRconMessage(final Message message) {
 		// get Relay InetAddress from unreachable peer
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
-		InetAddress inetAddress = null;
+		PeerSocketAddress socketAddress = null;
 		if (relayInetAdresses.length > 0) {
-			inetAddress = ((PeerSocketAddress) relayInetAdresses[0]).inetAddress(); // for simplicity I just take the first available relay
+			socketAddress = (PeerSocketAddress) relayInetAdresses[0]; // for simplicity I just take the first available relay
 		} else {
 			throw new IllegalArgumentException("There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
 		}
@@ -221,7 +221,8 @@ public class Sender {
 		rconMessage.messageId(message.messageId());
 
 		// making the message ready to send
-		rconMessage.recipient(message.recipient().changeAddress(inetAddress));
+		rconMessage.recipient(message.recipient().changeAddress(socketAddress.inetAddress()));
+		rconMessage.recipient(rconMessage.recipient().changePorts(socketAddress.tcpPort(), socketAddress.udpPort()));
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
 

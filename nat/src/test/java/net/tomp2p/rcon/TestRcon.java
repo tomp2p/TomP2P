@@ -21,43 +21,27 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestRcon {
-
-	private static final Logger LOG = LoggerFactory.getLogger(TestRcon.class);
 
 	private Peer reachable = null;
 	private Peer unreachable = null;
 	private Peer master = null;
 	private Peer[] peers = new Peer[2];
 	private PeerNAT reachableNAT = null;
-	private int testcounter = 1;
 
 	private static final int PORTS = 4001;
-	private static final Number160 REACHABLE_ID = Number160.createHash("reachable");
-	private static final Number160 UNREACHABLE_ID = Number160.createHash("unreachable");
-	private static final Number160 RELAY_ID = Number160.createHash("relay");
-	private static final int NUMBER_OF_NODES = 100;
+	private static final int NUMBER_OF_NODES = 5;
 	private static final Random RND = new Random();
 
 	@Before
 	public void setupRelay() throws Exception {
-		int nrOfNodes = NUMBER_OF_NODES;
-		switch (testcounter) {
-		case 1: {
-			nrOfNodes = 5;
-			testcounter++;
-		}
-		default: {
-		}
-		}
 		// setup test peers
-		peers = UtilsNAT.createNodes(nrOfNodes, RND, PORTS);
+		peers = UtilsNAT.createNodes(NUMBER_OF_NODES, RND, PORTS);
 		master = peers[0];
 		reachable = peers[4];
 		UtilsNAT.perfectRouting(peers);
+		// every peer must own a PeerNAT in order to be able to be a relay and set up a reverse connection
 		for (Peer peer : peers) {
 			if (peer.equals(reachable)) {
 				reachableNAT = new PeerNAT(peer);
@@ -87,10 +71,15 @@ public class TestRcon {
 		Assert.assertFalse(unreachable.peerAddress().isFirewalledTCP());
 		Assert.assertFalse(unreachable.peerAddress().isFirewalledUDP());
 
+		System.err.println("master = " + master.peerAddress());
+		System.err.println("reachable = " + reachable.peerAddress());
+		System.err.println("unreachable = " + unreachable.peerAddress());
 	}
 
 	@Test
 	public void testPermanentReverseConnection() throws Exception {
+		System.err.println("testPermanentReverseConnection() start!");
+		
 		final String requestString = "This is a test String";
 		final String replyString = "SUCCESS HIT";
 		final int testTimeout = 60;
@@ -99,6 +88,7 @@ public class TestRcon {
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				Assert.assertEquals(requestString, ((String) request));
+				System.err.println("received: " + (String) request);
 				return replyString;
 			}
 		});
@@ -128,39 +118,42 @@ public class TestRcon {
 		if (fd.isFailed()) {
 			Assert.fail(fd.failedReason());
 		}
+		
+		System.err.println("testPermanentReverseConnection() end!");
 	}
 
 	@Test
 	public void testReverseConnection() throws Exception {
-		// setupRelay();
-
+		System.err.println("testReverseConnection() start!");
+		
 		final String requestString = "This is a test String";
+		final String replyString = "SUCCESS HIT";
 
-		for (Peer ele : peers) {
-			ele.objectDataReply(new ObjectDataReply() {
+		unreachable.objectDataReply(new ObjectDataReply() {
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				Assert.assertEquals(requestString, ((String) request));
+				System.err.println("received: " + (String) request);
+				return replyString;
+			}
+		});
 
-				@Override
-				public Object reply(PeerAddress sender, Object request) throws Exception {
-					Assert.assertEquals(requestString, ((String) request));
-					return "SUCCESS HIT";
-				}
-			});
-		}
+		FutureDirect fd = reachable.sendDirect(unreachable.peerAddress()).object(requestString).start();
+		fd.addListener(new BaseFutureAdapter<FutureDirect>() {
 
-		PeerAddress recipientAddress = master.peerAddress().changePeerId(UNREACHABLE_ID).changeFirewalledTCP(true)
-				.changeFirewalledUDP(true).changeRelayed(true);
-		FutureDirect fd = reachable.sendDirect(recipientAddress).object(requestString).start();
+			@Override
+			public void operationComplete(FutureDirect future) throws Exception {
+				Assert.assertTrue(future.isSuccess());
+			}
+		});
 		fd.awaitUninterruptibly();
-
-		if (fd.isSuccess()) {
-			Assert.assertEquals("SUCCESS HIT", (String) fd.object());
-		} else {
-			Assert.fail(fd.failedReason());
-		}
+		
+		System.err.println("testReverseConnection() end!");
 	}
 
 	@After
 	public void shutdown() {
+		System.err.println("shutdown initiated!");
 		for (Peer ele : peers) {
 			BaseFuture bf = ele.shutdown();
 			bf.awaitUninterruptibly();

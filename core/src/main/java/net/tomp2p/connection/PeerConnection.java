@@ -46,6 +46,7 @@ public class PeerConnection implements Runnable {
 	// much seconds the PeerConnection will stay open until close() is called.
 	// If the value is -1, the connection will stay open forever.
 	private int timeout = -1;
+	private boolean closed = false;
 
 	/**
 	 * If we don't have an open TCP connection, we first need a channel creator
@@ -190,6 +191,10 @@ public class PeerConnection implements Runnable {
 	public int timeout() {
 		return timeout;
 	}
+	
+	public boolean isClosed() {
+		return closed;
+	}
 
 	/**
 	 * This method starts a Counter which calls the run() method once in a
@@ -211,12 +216,15 @@ public class PeerConnection implements Runnable {
 	 */
 	@Override
 	public void run() {
-		if (timeout > 0) {
-			timeout--;
-		} else if (timeout == 0) {
-			close();
-		} else {
+		if (timeout == -1) {
 			// do nothing because, the PeerConnection is permanent (= -1)
-		}
+			// TODO jwa this is not working correctly set Breakpoint to see why
+		} else if (timeout > 0) {
+			timeout--;
+		} else if (!closed){
+			close();
+			closed = true;
+			timeout = -1;
+		} 
 	}
 }

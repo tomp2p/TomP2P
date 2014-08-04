@@ -455,6 +455,8 @@ public class PeerNAT {
 							public void operationComplete(FutureResponse future) throws Exception {
 								if (future.isSuccess()) {
 									PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+									// set the timeout in seconds
+									openPeerConnection.timeout(timeoutSeconds);
 									futureDone.done(openPeerConnection);
 								} else {
 									String failMessage = "No reverse connection could be established";

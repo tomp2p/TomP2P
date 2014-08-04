@@ -201,7 +201,7 @@ public class SimpleRconClient {
 //			recipient = recipient.changeRelayed(true);
 //			recipient = recipient.changePeerId(Number160.createHash("NAT"));
 
-			FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 60);
+			FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 10);
 			fd.awaitUninterruptibly();
 
 			if (fd.isSuccess()) {

@@ -1,6 +1,5 @@
 package net.tomp2p.rcon;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
@@ -32,8 +31,8 @@ import org.slf4j.LoggerFactory;
 /**
  * This RPC handles two things. First of all, it makes sure that messaging via
  * reverse connection setup is possible. Second, it is also able to keep the
- * established @link {@link PeerConnection} and store it to the @link
- * {@link PeerBean}.
+ * established {@link PeerConnection} and store it to the {@link PeerBean}.
+ * Rcon means reverse connection.
  * 
  * @author jonaswagner
  * 
@@ -171,9 +170,8 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
-		forwardMessage.version(MESSAGE_VERSION); // TODO jwa remove magic number
-													// and find out why
-		// we need the versionnumber
+		forwardMessage.version(MESSAGE_VERSION); // TODO jwa and find out why we
+													// need the versionnumber
 
 		// transmit PeerAddress of reachablePeer
 		final NeighborSet ns = new NeighborSet(1);
@@ -335,16 +333,6 @@ public class RconRPC extends DispatchHandler {
 	 * @param peerConnection
 	 */
 	private void storePeerConnection(final Message message, final PeerConnection peerConnection) {
-		// extract the amount of seconds which the connection should remain open
-		final long current = message.longAt(POSITION_ZERO);
-		final Integer seconds = (int) current;
-
-		// TODO jwa check concurrency!
-		// insert the connection to a HashMap and store it on the PeerBean
-		// final Map<PeerConnection, Integer> connection = Collections
-		// .synchronizedMap(new HashMap<PeerConnection, Integer>());
-		final HashMap<PeerConnection, Integer> connection = new HashMap<PeerConnection, Integer>();
-		connection.put(peerConnection, seconds);
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -356,8 +344,8 @@ public class RconRPC extends DispatchHandler {
 		});
 		// put the now open PeerConnection into the openPeerConnections-Map in
 		// the PeerBean
-		final ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>> openPeerConnections = peer.peerBean().openPeerConnections();
-		openPeerConnections.put(message.sender().peerId(), connection);
+		final ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = peer.peerBean().openPeerConnections();
+		openPeerConnections.put(message.sender().peerId(), peerConnection);
 	}
 
 	/**

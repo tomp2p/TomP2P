@@ -160,11 +160,6 @@ public abstract class DispatchHandler {
         }
     }
     
-    //TODO jwa I might delete this
-    public void rConnectionSetup(final Message requestMessage, PeerConnection peerConnection, Responder responder) {
-    	
-    }
-
     /**
      * If the message is OK, that has been previously checked by the user using checkMessage, a reply to the message is
      * generated here.

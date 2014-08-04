@@ -42,11 +42,18 @@ public class PeerConnection implements Runnable {
 	// concurrently within this library
 	private volatile ChannelFuture channelFuture;
 
-	// this value is used for permanent PeerConnections. The value tells how
-	// much seconds the PeerConnection will stay open until close() is called.
-	// If the value is -1, the connection will stay open forever.
+	/**
+	 * This variable is used for permanent {@link PeerConnections}. The value
+	 * tells how much seconds the {@link PeerConnection} will stay open until
+	 * close() is called. If the value is equal to -1, the connection will stay
+	 * open forever.
+	 */
 	private int timeout = -1;
-	// this is used for the countDown method
+	/**
+	 * This object is used for the countDown method. once startContdown() is
+	 * called it calls the run() once in a second. It can be stopped from
+	 * executing via the close() method.
+	 */
 	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
 	/**
@@ -107,8 +114,7 @@ public class PeerConnection implements Runnable {
 		channelFuture.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
 			@Override
 			public void operationComplete(Future<? super Void> arg0) throws Exception {
-				LOG.debug("about to close the connection {}, {}", channelFuture.channel(), initiator ? "initiator"
-						: "from-disptacher");
+				LOG.debug("about to close the connection {}, {}", channelFuture.channel(), initiator ? "initiator" : "from-disptacher");
 				closeFuture.done();
 			}
 		});
@@ -134,6 +140,8 @@ public class PeerConnection implements Runnable {
 			LOG.debug("close connection, not the initiator {}", channel);
 			channelFuture.channel().close();
 		}
+		// shut down the countDown Thread which executes the run() method once
+		// in a second
 		executor.shutdown();
 		return closeFuture;
 	}
@@ -143,8 +151,7 @@ public class PeerConnection implements Runnable {
 		return acquire(futureChannelCreator, futureResponse);
 	}
 
-	private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator,
-			final FutureResponse futureResponse) {
+	private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator, final FutureResponse futureResponse) {
 		if (oneConnection.tryAcquire()) {
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
@@ -186,14 +193,24 @@ public class PeerConnection implements Runnable {
 		}
 	}
 
-	public void timeout(int timeout) {
-		this.timeout = timeout;
+	/**
+	 * This method can be used to reset the timeout to a given amount of
+	 * seconds.
+	 * 
+	 * @param timeoutSeconds
+	 */
+	public void timeout(final int timeoutSeconds) {
+		if (timeoutSeconds < -1) {
+			throw new IllegalArgumentException("The timeout can't be lower than -1");
+		} else {
+			this.timeout = timeoutSeconds;
+		}
 	}
 
 	public int timeout() {
 		return timeout;
 	}
-	
+
 	/**
 	 * This method starts a Counter which calls the run() method once in a
 	 * second.
@@ -203,13 +220,13 @@ public class PeerConnection implements Runnable {
 	}
 
 	/**
-	 * This method should never be called from outside this class!
+	 * This method should never be called from outside!
 	 * 
 	 * This method is responsible for the automatic connection timeout of this
-	 * PeerConnection. It decreases the counter by one and is called once in a
-	 * second by the startCountDown() method. If a PeerConnection has set the
-	 * timeout to 0, this method will close the connection.
-	 * 
+	 * {@link PeerConnection}. It decreases the counter by one and is called once in a
+	 * second by the startCountDown() method. Once a PeerConnection has set the
+	 * timeout equal to 0, this method will call close() to shutdown this
+	 * {@link PeerConnection}.
 	 */
 	@Override
 	public void run() {
@@ -219,6 +236,6 @@ public class PeerConnection implements Runnable {
 			timeout--;
 		} else {
 			close();
-		} 
+		}
 	}
 }

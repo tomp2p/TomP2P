@@ -48,6 +48,9 @@ public class PeerNAT {
 	private int minRelays = 2;
 	private int maxFail = 2;
 	private Collection<PeerAddress> relays;
+	
+	// TODO jwa ask, why we need at least version 1.
+	private static final int MESSAGE_VERSION = 1;
 
 	public PeerNAT(Peer peer) {
 		this.peer = peer;
@@ -430,7 +433,6 @@ public class PeerNAT {
 	 */
 	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
 			final int timeoutSeconds) {
-		
 		checkRconPreconditions(relayPeerAddress, unreachablePeerAddress, timeoutSeconds);
 		
 		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
@@ -439,7 +441,7 @@ public class PeerNAT {
 			// wait for the connection to the relay Peer
 			@Override
 			public void operationComplete(FuturePeerConnection future) throws Exception {
-				PeerConnection peerConnection = null;
+				final PeerConnection peerConnection;
 				if (fpc.isSuccess()) {
 					peerConnection = fpc.peerConnection();
 					if (peerConnection != null) {
@@ -459,34 +461,37 @@ public class PeerNAT {
 							public void operationComplete(FutureResponse future) throws Exception {
 								if (future.isSuccess()) {
 									// get the PeerConnection which is cached in the PeerBean object
-									PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+									final PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
 									// set the timeout in seconds
 									openPeerConnection.timeout(timeoutSeconds);
 									futureDone.done(openPeerConnection);
 								} else {
-									String failMessage = "No reverse connection could be established";
-									LOG.error(failMessage);
-									futureDone.failed(failMessage);
+									final String failMessage = "No reverse connection could be established";
+									handleFail(futureDone, failMessage);
 									// we have to remove the Message from the cache manually if something went wrong.
 									peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
 								}
 							}
 						});
+					} else {
+						handleFail(futureDone, "The PeerConnection was null!");
 					}
-					
 				} else {
-					String failMessage = "no channel could be established";
-					LOG.error(failMessage);
-					futureDone.failed(failMessage);
+					handleFail(futureDone, "no channel could be established");
 				}
+			}
+
+			private void handleFail(final FutureDone<PeerConnection> futureDone, final String failMessage) {
+				LOG.error(failMessage);
+				futureDone.failed(failMessage);
 			}
 
 			// this message is sent to the unreachablePeer after the rcon setup
 			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds,
-					Message setUpMessage) {
+					final Message setUpMessage) {
 				Message connectMessage = new Message();
 				connectMessage.messageId(setUpMessage.messageId());
-				connectMessage.version(1);
+				connectMessage.version(MESSAGE_VERSION);
 				connectMessage.sender(peer.peerAddress());
 				connectMessage.recipient(unreachablePeerAddress);
 				connectMessage.command(RPC.Commands.RCON.getNr());
@@ -500,7 +505,7 @@ public class PeerNAT {
 			private Message createSetupMessage(final PeerAddress relayPeerAddress,
 					final PeerAddress unreachablePeerAddress, final int timeoutSeconds) {
 				Message setUpMessage = new Message();
-				setUpMessage.version(1);
+				setUpMessage.version(MESSAGE_VERSION);
 				setUpMessage.sender(peer.peerAddress());
 				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
 				setUpMessage.command(RPC.Commands.RCON.getNr());
@@ -521,9 +526,10 @@ public class PeerNAT {
 	 */
 	private void checkRconPreconditions(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
 			final int timeoutSeconds) {
-		// TODO JWA check if we are alredy a relay to the targeted peer!
-		if (/*!checkIfIamARelayToThisPeer*/ !true) {
-			throw new IllegalStateException("We are alredy a relay for the target peer. We should never use a reverse connection to connect to the targeted peer!");
+		// If we are already a relay of the unreachable peer, we shouldn't use a reverse connection setup. It just doesn't make sense!
+		// TODO jwa find better check
+		if (peer.peerAddress().peerId().equals(relayPeerAddress.peerId())) {
+			throw new IllegalStateException("We are alredy a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
 		}
 		
 		if (relayPeerAddress == null || unreachablePeerAddress == null) {

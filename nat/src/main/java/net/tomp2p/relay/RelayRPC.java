@@ -34,7 +34,17 @@ public class RelayRPC extends DispatchHandler {
 	private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
 	private final ConnectionConfiguration config;
 	private final Peer peer;
-	private final RconRPC rconRPC; //TODO document this well
+
+	/**
+	 * This variable is needed, because a relay overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
+	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
+	 * guarantee the existence of a {@link RconRPC}. Without this variable, no
+	 * reverse connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final RconRPC rconRPC;
 
 	/**
 	 * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -51,7 +61,7 @@ public class RelayRPC extends DispatchHandler {
 		this.rconRPC = rconRPC;
 		config = new DefaultConnectionConfiguration();
 	}
-	
+
 	/**
 	 * Send the peer map of an unreachable peer to a relay peer, so that the
 	 * relay peer can reply to neighbor requests on behalf of the unreachable
@@ -132,8 +142,8 @@ public class RelayRPC extends DispatchHandler {
 	}
 
 	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
-			Responder responder) throws Exception {
+	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder)
+			throws Exception {
 		LOG.debug("received RPC message {}", message);
 		if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
 			handleSetup(message, peerConnection, responder);
@@ -158,9 +168,9 @@ public class RelayRPC extends DispatchHandler {
 			return;
 		}
 
-		// register relay forwarder
+		// register relay forwarder and the rconRPC (reverse connection RPC)
 		RelayForwarderRPC.register(peerConnection, peer, this, rconRPC);
-		
+
 		// add close listener for the peer connection
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
@@ -177,14 +187,12 @@ public class RelayRPC extends DispatchHandler {
 	private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
 		// TODO: check if we have right setup
 		Buffer requestBuffer = message.buffer(0);
-		Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0),
-				new InetSocketAddress(0));
+		Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
 		LOG.debug("Received message from relay peer: {}", realMessage);
 		realMessage.restoreContentReferences();
 		NoDirectResponse responder = new NoDirectResponse();
 		// TODO: Not sure what to do with the peer connection and sign
-		peer.connectionBean().dispatcher().associatedHandler(realMessage)
-				.handleResponse(realMessage, null, false, responder);
+		peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
 		LOG.debug("Send reply message to relay peer: {}", responder.response());
 		Message response = createResponseMessage(message, Type.OK);
 		response.buffer(RelayUtils.encodeMessage(responder.response()));

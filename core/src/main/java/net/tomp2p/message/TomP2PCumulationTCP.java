@@ -100,7 +100,7 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			}
 		} catch (Throwable t) {
 			LOG.error("Error in TCP (inactive) decoding", t);
-			// TODO jwa same as above
+			//TODO jwa changed --> try catch block to fit java 1.6
             try {
 				throw t;
 			} catch (Throwable e) {

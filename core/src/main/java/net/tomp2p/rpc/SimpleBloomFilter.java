@@ -416,7 +416,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	public SimpleBloomFilter<Number160> not() {
 		BitSet copy = BitSet.valueOf(bitSet.toByteArray());
 		copy.flip(0, copy.length());
-		//TODO jwa change to SimleBloomFilter<Number160>
+		//TODO jwa changed to SimleBloomFilter<Number160>
 		return new SimpleBloomFilter<Number160>(byteArraySize, expectedElements, copy);
 	}
 }

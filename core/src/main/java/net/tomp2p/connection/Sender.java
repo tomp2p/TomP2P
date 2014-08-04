@@ -23,7 +23,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -164,7 +163,7 @@ public class Sender {
 	}
 
 	/**
-	 * This method handles the reverse connection setup (or short: rconSetup).
+	 * This method initiates the reverse connection setup (or short: rconSetup).
 	 * It creates a new Message and sends it via relay to the unreachable peer
 	 * which then connects to this peer again. After the connectMessage from the
 	 * unreachable peer this peer will send the original Message and its content
@@ -231,7 +230,7 @@ public class Sender {
 
 	/**
 	 * This method is extracted by @author jonaswagner to ensure that no
-	 * duplicate code is made.
+	 * duplicate code exist.
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -513,7 +512,7 @@ public class Sender {
 			final ChannelFuture channelFuture;
 			if (message.recipient().isRelayed()) {
 
-				// TODO jwa change to new ArrayList<PeerSocketAddress>
+				// TODO jwa changed to new ArrayList<PeerSocketAddress>
 				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient()
 						.peerSocketAddresses());
 				LOG.debug("send neighbor request to random relay peer {}", psa);

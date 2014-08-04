@@ -27,7 +27,7 @@ public class TestRcon {
 	private Peer reachable = null;
 	private Peer unreachable = null;
 	private Peer master = null;
-	private Peer[] peers = new Peer[2];
+	private Peer[] peers = null;
 	private PeerNAT reachableNAT = null;
 
 	private static final int PORTS = 4001;
@@ -96,7 +96,6 @@ public class TestRcon {
 		FutureDone<PeerConnection> fd = reachableNAT.startSetupRcon(master.peerAddress(), unreachable.peerAddress(),
 				testTimeout);
 		fd.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
-
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				Assert.assertTrue(future.isSuccess());
@@ -104,7 +103,6 @@ public class TestRcon {
 				Assert.assertEquals(testTimeout, future.object().timeout());
 				FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
 				fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
-
 					@Override
 					public void operationComplete(FutureDirect future) throws Exception {
 						Assert.assertTrue(future.isSuccess());
@@ -160,5 +158,6 @@ public class TestRcon {
 		}
 		BaseFuture bf = unreachable.shutdown();
 		bf.awaitUninterruptibly();
+		System.err.println("shutdown done!");
 	}
 }

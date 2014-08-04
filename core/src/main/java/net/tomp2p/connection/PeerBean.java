@@ -17,9 +17,7 @@ package net.tomp2p.connection;
 
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -53,11 +51,12 @@ public class PeerBean {
 	private DigestTracker digestTracker;
 	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
 
-	// this map is used for all open peerConnections which are meant to stay
-	// open
-	// Number160 = peerId
-	// Integer = amount of seconds which this connection should be kept alive
-	private ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>> openPeerConnections = new ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>>();
+	/**
+	 * aThis map is used for all open peerConnections which are meant to stay
+	 * open. {@link Number160} = peerId. {@link Integer} = amount of seconds which this connection
+	 * should be kept alive.
+	 */
+	private ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = new ConcurrentHashMap<Number160, PeerConnection>();
 
 	/**
 	 * Creates a bean with a key pair.
@@ -199,28 +198,24 @@ public class PeerBean {
 	 * 
 	 * @return openPeerConnections
 	 */
-	public ConcurrentHashMap<Number160, HashMap<PeerConnection, Integer>> openPeerConnections() {
+	public ConcurrentHashMap<Number160, PeerConnection> openPeerConnections() {
 		return openPeerConnections;
 	}
 
 	/**
-	 * Returns the {@link PeerConnection} for the given {@link Number160} peerId.
+	 * Returns the {@link PeerConnection} for the given {@link Number160}
+	 * peerId.
 	 * 
 	 * @param {@link Number160} peerId
 	 * @return {@link PeerConnection} peerConnection
 	 */
-	public PeerConnection peerConnection(Number160 peerId) {
-		HashMap<PeerConnection, Integer> map = openPeerConnections.get(peerId);
-		if (map != null && !map.isEmpty()) {
-			for (Map.Entry<PeerConnection, Integer> element : map.entrySet()) {
-				return element.getKey();
-			}
+	public PeerConnection peerConnection(final Number160 peerId) {
+		PeerConnection peerConnection = openPeerConnections.get(peerId);
+		if (peerConnection != null) {
+			return peerConnection;
 		} else {
 			LOG.error("There was no PeerConnection for peerId = " + peerId);
 			return null;
 		}
-
-		LOG.error("this point should never be reached!");
-		return null;
 	}
 }

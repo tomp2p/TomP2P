@@ -33,7 +33,7 @@ public class TestRcon {
 	private Peer master = null;
 	private Peer[] peers = new Peer[2];
 	private PeerNAT reachableNAT = null;
-	private boolean firstTest = true;
+	private int testcounter = 1;
 
 	private static final int PORTS = 4001;
 	private static final Number160 REACHABLE_ID = Number160.createHash("reachable");
@@ -45,9 +45,13 @@ public class TestRcon {
 	@Before
 	public void setupRelay() throws Exception {
 		int nrOfNodes = NUMBER_OF_NODES;
-		if (firstTest) {
-			nrOfNodes -= 95;
-			firstTest = false;
+		switch (testcounter) {
+		case 1: {
+			nrOfNodes = 5;
+			testcounter++;
+		}
+		default: {
+		}
 		}
 		// setup test peers
 		peers = UtilsNAT.createNodes(nrOfNodes, RND, PORTS);
@@ -84,40 +88,39 @@ public class TestRcon {
 		Assert.assertFalse(unreachable.peerAddress().isFirewalledUDP());
 
 	}
-	
+
 	@Test
 	public void testPermanentReverseConnection() throws Exception {
 		final String requestString = "This is a test String";
+		final String replyString = "SUCCESS HIT";
+		final int testTimeout = 60;
 
-		for (Peer ele : peers) {
-			ele.objectDataReply(new ObjectDataReply() {
+		unreachable.objectDataReply(new ObjectDataReply() {
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				Assert.assertEquals(requestString, ((String) request));
+				return replyString;
+			}
+		});
 
-				@Override
-				public Object reply(PeerAddress sender, Object request) throws Exception {
-					Assert.assertEquals(requestString, ((String) request));
-					return "SUCCESS HIT";
-				}
-			});
-		}
-
-		FutureDone<PeerConnection> fd = reachableNAT
-				.startSetupRcon(master.peerAddress(), unreachable.peerAddress(), 60);
+		FutureDone<PeerConnection> fd = reachableNAT.startSetupRcon(master.peerAddress(), unreachable.peerAddress(),
+				testTimeout);
 		fd.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
 
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				Assert.assertTrue(future.isSuccess());
+				Assert.assertEquals(PeerConnection.class, future.object().getClass());
+				Assert.assertEquals(testTimeout, future.object().timeout());
 				FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
 				fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
 
 					@Override
 					public void operationComplete(FutureDirect future) throws Exception {
 						Assert.assertTrue(future.isSuccess());
-						Assert.assertEquals("SUCCESS HIT", (String) future.object());
+						Assert.assertEquals(replyString, (String) future.object());
 					}
 				});
-//				fd2.awaitUninterruptibly();
-				Thread.sleep(2000);
 			}
 		});
 
@@ -129,7 +132,7 @@ public class TestRcon {
 
 	@Test
 	public void testReverseConnection() throws Exception {
-//		setupRelay();
+		// setupRelay();
 
 		final String requestString = "This is a test String";
 

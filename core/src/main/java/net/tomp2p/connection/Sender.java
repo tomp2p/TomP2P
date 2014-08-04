@@ -150,7 +150,6 @@ public class Sender {
 				// check if reverse connection is possible
 				if (!message.sender().isRelayed()) {
 					
-					// TODO JWA we must use relaying if we are the relay to the unreachable peer
 					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection,
 							timeoutHandler);
 				} else {
@@ -169,7 +168,9 @@ public class Sender {
 	 * It creates a new Message and sends it via relay to the unreachable peer
 	 * which then connects to this peer again. After the connectMessage from the
 	 * unreachable peer this peer will send the original Message and its content
-	 * directly.
+	 * directly. 
+	 * 
+	 * This method should not be called directly from outside!
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -206,7 +207,12 @@ public class Sender {
 	private static Message createRconMessage(final Message message) {
 		// get Relay InetAddress from unreachable peer
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
-		InetAddress inetAddress = ((PeerSocketAddress) relayInetAdresses[0]).inetAddress(); // for simplicity I just take the first available relay
+		InetAddress inetAddress = null;
+		if (relayInetAdresses.length > 0) {
+			inetAddress = ((PeerSocketAddress) relayInetAdresses[0]).inetAddress(); // for simplicity I just take the first available relay
+		} else {
+			throw new IllegalArgumentException("There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
+		}
 		
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();

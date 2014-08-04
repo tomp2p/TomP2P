@@ -134,6 +134,7 @@ public class PeerConnection implements Runnable {
 			LOG.debug("close connection, not the initiator {}", channel);
 			channelFuture.channel().close();
 		}
+		executor.shutdown();
 		return closeFuture;
 	}
 
@@ -218,7 +219,6 @@ public class PeerConnection implements Runnable {
 			timeout--;
 		} else {
 			close();
-			executor.shutdown();
 		} 
 	}
 }

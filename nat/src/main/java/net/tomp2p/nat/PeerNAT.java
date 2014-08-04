@@ -430,6 +430,9 @@ public class PeerNAT {
 	 */
 	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
 			final int timeoutSeconds) {
+		
+		checkRconPreconditions(relayPeerAddress, unreachablePeerAddress, timeoutSeconds);
+		
 		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
 		final FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
@@ -440,20 +443,22 @@ public class PeerNAT {
 				if (fpc.isSuccess()) {
 					peerConnection = fpc.peerConnection();
 					if (peerConnection != null) {
-						Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress,
+						// create the necessary messages
+						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress,
 								timeoutSeconds);
-						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds,
+						final Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds,
 								setUpMessage);
-
 						FutureResponse futureResponse = new FutureResponse(setUpMessage);
+						// send the message to the relay so it forwards it to the unreachable peer
 						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
 								new DefaultConnectionConfiguration());
 						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+						// wait for the unreachable peer to answer
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-							// wait for the setup of the rcon
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								if (future.isSuccess()) {
+									// get the PeerConnection which is cached in the PeerBean object
 									PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
 									// set the timeout in seconds
 									openPeerConnection.timeout(timeoutSeconds);
@@ -462,6 +467,8 @@ public class PeerNAT {
 									String failMessage = "No reverse connection could be established";
 									LOG.error(failMessage);
 									futureDone.failed(failMessage);
+									// we have to remove the Message from the cache manually if something went wrong.
+									peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
 								}
 							}
 						});
@@ -503,5 +510,28 @@ public class PeerNAT {
 			}
 		});
 		return futureDone;	
+	}
+
+	/**
+	 * This method checks if a reverse connection setup with startSetupRcon() is possible.
+	 * 
+	 * @param relayPeerAddress
+	 * @param unreachablePeerAddress
+	 * @param timeoutSeconds
+	 */
+	private void checkRconPreconditions(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
+			final int timeoutSeconds) {
+		// TODO JWA check if we are alredy a relay to the targeted peer!
+		if (/*!checkIfIamARelayToThisPeer*/ !true) {
+			throw new IllegalStateException("We are alredy a relay for the target peer. We should never use a reverse connection to connect to the targeted peer!");
+		}
+		
+		if (relayPeerAddress == null || unreachablePeerAddress == null) {
+			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
+		}
+		
+		if (timeoutSeconds < -1) {
+			throw new IllegalArgumentException("The timeout can't be lower than -1");
+		}
 	}
 }

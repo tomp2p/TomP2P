@@ -33,18 +33,24 @@ public class TestRcon {
 	private Peer master = null;
 	private Peer[] peers = new Peer[2];
 	private PeerNAT reachableNAT = null;
+	private boolean firstTest = true;
 
 	private static final int PORTS = 4001;
 	private static final Number160 REACHABLE_ID = Number160.createHash("reachable");
 	private static final Number160 UNREACHABLE_ID = Number160.createHash("unreachable");
 	private static final Number160 RELAY_ID = Number160.createHash("relay");
-	private static final int NUMBER_OF_NODES = 5;
+	private static final int NUMBER_OF_NODES = 100;
 	private static final Random RND = new Random();
 
 	@Before
 	public void setupRelay() throws Exception {
+		int nrOfNodes = NUMBER_OF_NODES;
+		if (firstTest) {
+			nrOfNodes -= 95;
+			firstTest = false;
+		}
 		// setup test peers
-		peers = UtilsNAT.createNodes(NUMBER_OF_NODES, RND, PORTS);
+		peers = UtilsNAT.createNodes(nrOfNodes, RND, PORTS);
 		master = peers[0];
 		reachable = peers[4];
 		UtilsNAT.perfectRouting(peers);
@@ -81,9 +87,6 @@ public class TestRcon {
 	
 	@Test
 	public void testPermanentReverseConnection() throws Exception {
-
-//		setupRelay();
-
 		final String requestString = "This is a test String";
 
 		for (Peer ele : peers) {
@@ -113,7 +116,8 @@ public class TestRcon {
 						Assert.assertEquals("SUCCESS HIT", (String) future.object());
 					}
 				});
-				fd2.awaitUninterruptibly();
+//				fd2.awaitUninterruptibly();
+				Thread.sleep(2000);
 			}
 		});
 
@@ -150,8 +154,6 @@ public class TestRcon {
 		} else {
 			Assert.fail(fd.failedReason());
 		}
-
-		Thread.sleep(2000);
 	}
 
 	@After

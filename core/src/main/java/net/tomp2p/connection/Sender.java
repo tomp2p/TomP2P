@@ -23,6 +23,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -203,16 +204,18 @@ public class Sender {
 	 * @return rconMessage
 	 */
 	private static Message createRconMessage(final Message message) {
-
+		// get Relay InetAddress from unreachable peer
+		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
+		InetAddress inetAddress = ((PeerSocketAddress) relayInetAdresses[0]).inetAddress(); // for simplicity I just take the first available relay
+		
 		// we need to make a copy of the original message
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
-		rconMessage.recipient(message.recipient());
 		rconMessage.version(message.version());
-		rconMessage.keepAlive(message.isKeepAlive());
 		rconMessage.messageId(message.messageId());
 
 		// making the message ready to send
+		rconMessage.recipient(message.recipient().changeAddress(inetAddress));
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
 

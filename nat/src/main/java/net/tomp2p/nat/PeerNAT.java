@@ -431,31 +431,25 @@ public class PeerNAT {
 	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress,
 			final int timeoutSeconds) {
 		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-
 		final FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
-		
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-
 			// wait for the connection to the relay Peer
 			@Override
 			public void operationComplete(FuturePeerConnection future) throws Exception {
 				PeerConnection peerConnection = null;
-				
 				if (fpc.isSuccess()) {
 					peerConnection = fpc.peerConnection();
-					
 					if (peerConnection != null) {
 						Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress,
 								timeoutSeconds);
-						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds);
+						Message connectMessage = createConnectMessage(unreachablePeerAddress, timeoutSeconds,
+								setUpMessage);
 
 						FutureResponse futureResponse = new FutureResponse(setUpMessage);
 						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
 								new DefaultConnectionConfiguration());
-						
 						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-
 							// wait for the setup of the rcon
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
@@ -478,8 +472,11 @@ public class PeerNAT {
 				}
 			}
 
-			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds) {
+			// this message is sent to the unreachablePeer after the rcon setup
+			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final int timeoutSeconds,
+					Message setUpMessage) {
 				Message connectMessage = new Message();
+				connectMessage.messageId(setUpMessage.messageId());
 				connectMessage.version(1);
 				connectMessage.sender(peer.peerAddress());
 				connectMessage.recipient(unreachablePeerAddress);
@@ -489,7 +486,8 @@ public class PeerNAT {
 				connectMessage.keepAlive(true);
 				return connectMessage;
 			}
-
+			
+			// this message is sent to the relay peer to initiate the rcon setup
 			private Message createSetupMessage(final PeerAddress relayPeerAddress,
 					final PeerAddress unreachablePeerAddress, final int timeoutSeconds) {
 				Message setUpMessage = new Message();

@@ -29,6 +29,7 @@ public class SimpleRconClient {
 	private static boolean lightswitch = true;
 	private static PeerConnection connection;
 	private static int count = 5;
+	private static PeerAddress unreachablePeerAddress = null;
 
 	public static void start(boolean isMaster, String id) {
 		// Create a peer with a random peerID, on port 4001, listening to the
@@ -48,6 +49,10 @@ public class SimpleRconClient {
 					System.out.println(req);
 
 					String reply = "reply";
+					
+					if (sender.isRelayed()) {
+						unreachablePeerAddress = sender;
+					}
 					return (Object) reply;
 				}
 			});
@@ -142,9 +147,9 @@ public class SimpleRconClient {
 
 	public static boolean sendNATDummy(String message) throws UnknownHostException {
 		boolean success = false;
-		PeerAddress recipient = masterPeerAddress;
-		recipient = recipient.changeRelayed(true);
-		recipient = recipient.changePeerId(Number160.createHash("NAT"));
+		PeerAddress recipient = unreachablePeerAddress;
+//		recipient = recipient.changeRelayed(true);
+//		recipient = recipient.changePeerId(Number160.createHash("NAT"));
 
 		FutureDirect fd = peer.sendDirect(recipient).object(message).start();
 		fd.awaitUninterruptibly(10000);
@@ -192,9 +197,9 @@ public class SimpleRconClient {
 
 		if (lightswitch) {
 
-			PeerAddress recipient = masterPeerAddress;
-			recipient = recipient.changeRelayed(true);
-			recipient = recipient.changePeerId(Number160.createHash("NAT"));
+			PeerAddress recipient = unreachablePeerAddress;
+//			recipient = recipient.changeRelayed(true);
+//			recipient = recipient.changePeerId(Number160.createHash("NAT"));
 
 			FutureDone<PeerConnection> fd = peerNAT.startSetupRcon(masterPeerAddress, recipient, 60);
 			fd.awaitUninterruptibly();

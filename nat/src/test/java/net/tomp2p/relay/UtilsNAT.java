@@ -148,7 +148,7 @@ public class UtilsNAT {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("en1");
+        Bindings bindings = new Bindings().addInterface("lo0");
         Peer[] peers = new Peer[nrOfPeers];
         if (automaticFuture != null) {
         	Number160 peerId = new Number160(rnd);

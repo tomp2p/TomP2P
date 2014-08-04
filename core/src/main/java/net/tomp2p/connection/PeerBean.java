@@ -17,7 +17,6 @@ package net.tomp2p.connection;
 
 import java.security.KeyPair;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +33,6 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.BloomfilterFactory;
 import net.tomp2p.storage.DigestStorage;
 import net.tomp2p.storage.DigestTracker;
-import net.tomp2p.utils.Scheduler;
-import net.tomp2p.utils.Ticker;
 
 /**
  * A bean that holds non-sharable (unique for each peer) configuration settings
@@ -44,7 +41,7 @@ import net.tomp2p.utils.Ticker;
  * 
  * @author Thomas Bocek
  */
-public class PeerBean implements Ticker {
+public class PeerBean {
 
 	private KeyPair keyPair;
 	private PeerAddress serverPeerAddress;
@@ -70,10 +67,6 @@ public class PeerBean implements Ticker {
 	 */
 	public PeerBean(final KeyPair keyPair) {
 		this.keyPair = keyPair;
-
-		// we need to register ourselves in order to be able to receive a
-		// ticksignal every second
-		Scheduler.getInstance().registerService(this);
 	}
 
 	/**
@@ -229,29 +222,5 @@ public class PeerBean implements Ticker {
 
 		LOG.error("this point should never be reached!");
 		return null;
-	}
-
-	@Override
-	public void receiveTicksignal(Date date) {
-		if (!openPeerConnections.isEmpty()) {
-			for (Map.Entry<Number160, HashMap<PeerConnection, Integer>> element : openPeerConnections.entrySet()) {
-				for (Map.Entry<PeerConnection, Integer> element2 : element.getValue().entrySet()) {
-
-					// decrease the counter of the peerConnection by 1
-					int seconds = element2.getValue();
-					seconds--;
-
-					if (seconds == 0) {
-						element2.getKey().close();
-						element.getValue().remove(element2.getKey());
-					} else if (seconds > 0) {
-						element.getValue().put(element2.getKey(), seconds);
-					} else {
-						// remember: -1 means that the connection should remain
-						// open forever
-					}
-				}
-			}
-		}
 	}
 }

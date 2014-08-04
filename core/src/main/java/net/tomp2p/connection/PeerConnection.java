@@ -61,6 +61,7 @@ public class PeerConnection implements Runnable {
 		this.cc = cc;
 		this.heartBeatMillis = heartBeatMillis;
 		this.initiator = true;
+		startCountDown();
 	}
 
 	/**
@@ -79,6 +80,7 @@ public class PeerConnection implements Runnable {
 		this.cc = null;
 		this.heartBeatMillis = heartBeatMillis;
 		this.initiator = false;
+		startCountDown();
 	}
 
 	public PeerConnection channelFuture(ChannelFuture channelFuture) {
@@ -184,22 +186,37 @@ public class PeerConnection implements Runnable {
 	public void timeout(int timeout) {
 		this.timeout = timeout;
 	}
-	
+
 	public int timeout() {
 		return timeout;
 	}
-	
-	public void startCountDown() {
+
+	/**
+	 * This method starts a Counter which calls the run() method once in a
+	 * second.
+	 */
+	private void startCountDown() {
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 		executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.SECONDS);
 	}
-	
+
+	/**
+	 * This method should never be called from outside this class!
+	 * 
+	 * This method is responsible for the automatic connection timeout of this
+	 * PeerConnection. It decreases the counter by one and is called once in a
+	 * second by the startCountDown() method. If a PeerConnection has set the
+	 * timeout to 0, this method will close the connection.
+	 * 
+	 */
 	@Override
 	public void run() {
 		if (timeout > 0) {
 			timeout--;
 		} else if (timeout == 0) {
-			
+			close();
+		} else {
+			// do nothing because, the PeerConnection is permanent (= -1)
 		}
 	}
 }

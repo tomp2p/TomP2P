@@ -46,7 +46,8 @@ public class PeerConnection implements Runnable {
 	// much seconds the PeerConnection will stay open until close() is called.
 	// If the value is -1, the connection will stay open forever.
 	private int timeout = -1;
-	private boolean closed = false;
+	// this is used for the countDown method
+	private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
 	/**
 	 * If we don't have an open TCP connection, we first need a channel creator
@@ -192,16 +193,11 @@ public class PeerConnection implements Runnable {
 		return timeout;
 	}
 	
-	public boolean isClosed() {
-		return closed;
-	}
-
 	/**
 	 * This method starts a Counter which calls the run() method once in a
 	 * second.
 	 */
 	private void startCountDown() {
-		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 		executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.SECONDS);
 	}
 
@@ -218,13 +214,11 @@ public class PeerConnection implements Runnable {
 	public void run() {
 		if (timeout == -1) {
 			// do nothing because, the PeerConnection is permanent (= -1)
-			// TODO jwa this is not working correctly set Breakpoint to see why
 		} else if (timeout > 0) {
 			timeout--;
-		} else if (!closed){
+		} else {
 			close();
-			closed = true;
-			timeout = -1;
+			executor.shutdown();
 		} 
 	}
 }

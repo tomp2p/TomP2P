@@ -104,7 +104,7 @@ public class RconRPC extends DispatchHandler {
 	 * @param message
 	 * @param peerConnection
 	 */
-	private void storePeerConnection(Message message, final PeerConnection peerConnection) {
+	private void storePeerConnection(final Message message, final PeerConnection peerConnection) {
 		// extract the amount of seconds which the connection should remain open
 		long current = message.longAt(POSITION_ZERO);
 		Integer seconds = (int) current;
@@ -119,7 +119,9 @@ public class RconRPC extends DispatchHandler {
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(FutureDone<Void> future) throws Exception {
-				connection.remove(peerConnection);
+				// remove the open PeerConnection to the other Peer from openPeerConnections in the PeerBean
+				LOG.debug("Permanent PeerConnection to peer=" + message.sender() + " has been closed.");
+				peer.peerBean().openPeerConnections().remove(message.sender().peerId());
 			}
 		});
 

@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.rcon.prototype;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.net.UnknownHostException;
 import java.rmi.UnexpectedException;
 import java.util.concurrent.TimeoutException;
-
-import net.tomp2p.rcon.prototype.SimpleRconClient;
 
 public class RconController {
 

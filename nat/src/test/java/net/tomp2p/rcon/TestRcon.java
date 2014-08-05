@@ -129,10 +129,7 @@ public class TestRcon {
 		});
 		fd.awaitUninterruptibly();
 
-		cLatch.await(10, TimeUnit.SECONDS);
-		if (cLatch.getCount() > 0) {
-			Assert.fail("The test method took more than 10 seconds to complete!");
-		}
+		checkFail(cLatch);
 		
 		System.err.println("testPermanentReverseConnection() end!");
 	}
@@ -159,12 +156,16 @@ public class TestRcon {
 		FutureDirect fd = reachable.sendDirect(unreachable.peerAddress()).object(requestString).start();
 		fd.awaitUninterruptibly();
 
-		cLatch.await(10, TimeUnit.SECONDS);
-		if (cLatch.getCount() > 0) {
-			Assert.fail("The test method took more than 10 seconds to complete!");
-		}
+		checkFail(cLatch);
 		
 		System.err.println("testReverseConnection() end!");
+	}
+
+	private void checkFail(final CountDownLatch cLatch) throws InterruptedException {
+		cLatch.await(10, TimeUnit.SECONDS);
+		if (cLatch.getCount() > 0) {
+			Assert.fail("The test method did not complete successfully!");
+		}
 	}
 
 	@After

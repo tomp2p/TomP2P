@@ -1,8 +1,6 @@
-package net.tomp2p.rcon;
+package net.tomp2p.rcon.prototype;
 
 import java.net.UnknownHostException;
-
-import net.tomp2p.rcon.prototype.SimpleRconClient;
 
 public class RconAppDriver {
 

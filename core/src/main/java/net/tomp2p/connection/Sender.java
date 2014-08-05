@@ -504,7 +504,6 @@ public class Sender {
 			final ChannelFuture channelFuture;
 			if (message.recipient().isRelayed()) {
 
-				// TODO jwa changed to new ArrayList<PeerSocketAddress>
 				List<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>(message.recipient()
 						.peerSocketAddresses());
 				LOG.debug("send neighbor request to random relay peer {}", psa);

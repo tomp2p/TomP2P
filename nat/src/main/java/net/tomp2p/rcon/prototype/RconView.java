@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.rcon.prototype;
 
 import java.awt.Button;
 import java.awt.GridLayout;
@@ -6,8 +6,6 @@ import java.awt.GridLayout;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
-
-import net.tomp2p.rcon.prototype.SimpleRconClient;
 
 public class RconView {
 

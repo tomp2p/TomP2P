@@ -171,8 +171,7 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
-		forwardMessage.version(MESSAGE_VERSION); // TODO jwa and find out why we
-													// need the versionnumber
+		forwardMessage.version(MESSAGE_VERSION); 
 
 		// transmit PeerAddress of reachablePeer
 		// TODO jwa check if this is ok!
@@ -261,9 +260,7 @@ public class RconRPC extends DispatchHandler {
 		setupMessage.command(RPC.Commands.RCON.getNr());
 		setupMessage.sender(peer.peerAddress());
 		setupMessage.recipient(peerConnection.remotePeer());
-		setupMessage.version(MESSAGE_VERSION); // TODO remove magic number and
-												// find out why
-												// we need the versionnumber
+		setupMessage.version(MESSAGE_VERSION);
 
 		// use same message id for new message
 		setupMessage.messageId(message.messageId());

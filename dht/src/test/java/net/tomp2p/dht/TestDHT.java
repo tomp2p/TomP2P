@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -50,7 +52,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
@@ -1056,8 +1057,8 @@ public class TestDHT {
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
 
-			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
-			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
+			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
 			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
 			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);

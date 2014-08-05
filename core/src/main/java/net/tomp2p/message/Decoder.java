@@ -95,7 +95,7 @@ public class Decoder {
 	public boolean decode(ChannelHandlerContext ctx, final ByteBuf buf, InetSocketAddress recipient,
 			final InetSocketAddress sender) {
 
-		LOG.debug("decode of TomP2P starts now");
+		LOG.debug("decode of TomP2P starts now, readable {}", buf.readableBytes());
 
 		try {
 			final int readerBefore = buf.readerIndex();
@@ -188,7 +188,7 @@ public class Decoder {
 
 	public boolean decodePayload(final ByteBuf buf) throws NoSuchAlgorithmException, InvalidKeySpecException,
 			InvalidKeyException {
-		LOG.debug("about to pass message {} to {}", message, message.senderSocket());
+		LOG.debug("about to pass message {} to {}. buffer to read {}", message, message.senderSocket(), buf.readableBytes());
 		if (!message.hasContent()) {
 			return true;
 		}
@@ -198,6 +198,7 @@ public class Decoder {
 		PublicKey receivedPublicKey;
 		while (contentTypes.size() > 0) {
 			Content content = contentTypes.peek();
+			LOG.debug("go for content: {}", content);
 			switch (content) {
 			case INTEGER:
 				if (buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
@@ -260,8 +261,6 @@ public class Decoder {
 				neighborSize = -1;
 				neighborSet = null;
 				break;
-				
-				
 			case SET_PEER_SOCKET:
 				if (peerSocketAddressSize == -1 && buf.readableBytes() < Utils.BYTE_SIZE) {
 					return false;
@@ -276,12 +275,14 @@ public class Decoder {
 					if (buf.readableBytes() < Utils.BYTE_SIZE) {
 						return false;
 					}
-					int header = buf.readUnsignedByte();
+					int header = buf.getUnsignedByte(buf.readerIndex());
 					boolean isIPv4 = header == 0;
-					size = PeerSocketAddress.size(header);
+					size = PeerSocketAddress.size(isIPv4);
 					if (buf.readableBytes() < size) {
 						return false;
 					}
+					//skip the ipv4/ipv6 header
+					buf.skipBytes(1);
 					peerSocketAddresses.add(PeerSocketAddress.create(buf, isIPv4));
 				}
 				message.peerSocketAddresses(peerSocketAddresses);
@@ -289,8 +290,6 @@ public class Decoder {
 				peerSocketAddressSize = -1;
 				peerSocketAddresses = null;
 				break;
-				
-				
 			case SET_KEY640:
 				if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;

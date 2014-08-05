@@ -16,6 +16,8 @@
 
 package net.tomp2p.peers;
 
+import net.tomp2p.connection.PeerException;
+
 /**
  * All classes that are interested if a new peer was discovered or a peer died (that means all classes that store peer
  * addresses) should implement this interface and add itself as a listener.
@@ -24,18 +26,6 @@ package net.tomp2p.peers;
  * 
  */
 public interface PeerStatusListener {
-
-    /**
-     * The reasons why a peer can fail. The first is not a failure yet, just a notification that the peer is not
-     * reacting. Once its confirmed multiple times, its set to probably offline. If a peer shutsdown friendly, then
-     * currently, the peer is marked as such and cannot rejoin within 20 seconds. The same happens for an exception.
-     * 
-     * @author Thomas Bocek
-     * 
-     */
-    public enum FailReason {
-        Timeout, ProbablyOffline, Shutdown, Exception
-    }
 
     /**
      * Called if the peer does not send answer in time. The peer may be busy, so there is a chance of seeing this peer
@@ -47,7 +37,7 @@ public interface PeerStatusListener {
      *            The reason, why the peer failed. This is important to understand if we can reenable the peer.
      * @return False if nothing happened, true if there was a change
      */
-    boolean peerFailed(final PeerAddress remotePeer, final FailReason reason);
+    boolean peerFailed(final PeerAddress remotePeer, final PeerException exception);
 
     /**
      * Called if the peer is online and who reported it. This method may get called many times, for each successful

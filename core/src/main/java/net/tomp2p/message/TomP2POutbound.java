@@ -1,5 +1,7 @@
 package net.tomp2p.message;
 
+import java.net.InetSocketAddress;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -54,10 +56,25 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
             if (buf.isReadable()) {
                 // this will release the buffer
                 if (ctx.channel() instanceof DatagramChannel) {
+                	
+                	final InetSocketAddress recipient;
+                	final InetSocketAddress sender;
                     if (message.senderSocket() == null) {
-                        message.senderSocket(message.recipient().createSocketUDP());
+                    	//in case of a request
+                    	if(message.recipientRelay()!=null) {
+                    		//in case of sending to a relay (the relayed flag is already set)
+                    		recipient = message.recipientRelay().createSocketUDP();
+                    		sender = message.sender().createSocketUDP();
+                    	} else {
+                    		recipient = message.recipient().createSocketUDP();
+                    		sender = message.sender().createSocketUDP();
+                    	}
+                    } else {
+                    	//in case of a reply
+                    	recipient = message.senderSocket();
+                    	sender = message.recipientSocket();
                     }
-                    DatagramPacket d = new DatagramPacket(buf, message.senderSocket(), message.recipientSocket());
+                    DatagramPacket d = new DatagramPacket(buf, recipient, sender);
                     LOG.debug("Send UPD message {}, datagram: {}", message, d);
                     ctx.writeAndFlush(d, promise);
                     

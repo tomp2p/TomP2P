@@ -436,6 +436,32 @@ public class TestRelay {
 	    	 }
 	     }
     }
+	
+	@Test
+    public void testRelayDHTSimple() throws Exception {
+        final Random rnd = new Random(42);
+         PeerDHT master = null;
+         PeerDHT unreachablePeer = null;
+         try {
+        	 PeerDHT[] peers = UtilsNAT.createNodesPeer(1, rnd, 4000);
+             master = peers[0]; // the relay peer
+             new PeerBuilderNAT(master.peer()).start();
+             
+             // Test setting up relay peers
+ 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
+ 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
+ 			
+ 			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
+ 			fbn.awaitUninterruptibly();
+ 			Assert.assertTrue(fbn.isSuccess());
+             
+            System.err.println("DONE!");
+             
+         } finally {
+             master.shutdown().await();
+             unreachablePeer.shutdown().await();
+         }
+    }
     
 	@Test
     public void testRelayDHT() throws Exception {

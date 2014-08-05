@@ -8,9 +8,20 @@
         </encoder>
     </appender>
 
-    <logger name="net.tomp2p.nat" level="TRACE"/>
-    <logger name="net.tomp2p.relay" level="TRACE"/>
+    <!-- <logger name="net.tomp2p.nat" level="WARN"/>
+    <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
+    <logger name="net.tomp2p.relay.RelayForwarderRPC" level="TRACE"/>
+    <logger name="net.tomp2p.nat.PeerMapUpdateTask" level="TRACE"/>
+    <logger name="net.tomp2p.relay.RelayRPC" level="TRACE"/>
     <logger name="net.tomp2p.connection.HeartBeat" level="TRACE"/>
+    <logger name="net.tomp2p.connection" level="WARN"/>
+    <logger name="net.tomp2p.connection.RequestHandler" level="TRACE"/>
+    <logger name="net.tomp2p.rpc.PingRPC" level="TRACE"/>
+    <logger name="net.tomp2p.connection.PeerConnection" level="TRACE"/>
+    <logger name="net.tomp2p.message.Decoder" level="TRACE"/>
+    <logger name="net.tomp2p.message.Encoder" level="TRACE"/>
+    <logger name="net.tomp2p.message.TomP2POutbound" level="TRACE"/>
+    <logger name="net.tomp2p.message.TomP2PCumulationTCP" level="TRACE"/> -->
 
     <!--  <logger name="net.tomp2p.relay" level="TRACE"/> -->
     <!-- Disable Netty Warning that I'm aware of -->

@@ -110,6 +110,7 @@ public class Message {
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;
+    private PeerAddress recipientRelay;
     private int options = 0;
 
     // Payload:
@@ -278,6 +279,16 @@ public class Message {
     public Message recipient(final PeerAddress recipient) {
         this.recipient = recipient;
         return this;
+    }
+    
+    public PeerAddress recipientRelay() {
+        return recipientRelay;
+    }
+    
+    public Message recipientRelay(PeerAddress recipientRelay) {
+    	this.recipientRelay = recipientRelay;
+        return this;
+	    
     }
 
     /**

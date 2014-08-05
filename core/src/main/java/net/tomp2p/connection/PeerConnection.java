@@ -20,21 +20,33 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
 
 public class PeerConnection {
-	final static Logger LOG = LoggerFactory.getLogger(PeerConnection.class);
+	final private static Logger LOG = LoggerFactory.getLogger(PeerConnection.class);
 	final public static int HEART_BEAT_MILLIS = 2000;
-    final private Semaphore oneConnection = new Semaphore(1);
-
+    
+	final private Semaphore oneConnection;
     final private PeerAddress remotePeer;
     final private ChannelCreator cc;
-    
     final private boolean initiator;
 
-    final private Map<FutureChannelCreator, FutureResponse> map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
-    final private FutureDone<Void> closeFuture = new FutureDone<Void>();
-    private final int heartBeatMillis;
+    final private Map<FutureChannelCreator, FutureResponse> map;
+    final private FutureDone<Void> closeFuture;
+    final private int heartBeatMillis;
 
     // these may be called from different threads, but they will never be called concurrently within this library
     private volatile ChannelFuture channelFuture;
+    
+    private PeerConnection(Semaphore oneConnection, PeerAddress remotePeer, ChannelCreator cc, 
+    		boolean initiator, Map<FutureChannelCreator, FutureResponse> map, FutureDone<Void> closeFuture, 
+    		int heartBeatMillis, ChannelFuture channelFuture) {
+    	this.oneConnection = oneConnection;
+    	this.remotePeer = remotePeer;
+    	this.cc = cc;
+    	this.initiator = initiator;
+    	this.map = map;
+    	this.closeFuture = closeFuture;
+    	this.heartBeatMillis = heartBeatMillis;
+    	this.channelFuture = channelFuture;
+    }
     
 
     /**
@@ -50,6 +62,9 @@ public class PeerConnection {
         this.cc = cc;
         this.heartBeatMillis = heartBeatMillis;
         this.initiator = true;
+        this.oneConnection = new Semaphore(1);
+        this.map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
+        this.closeFuture = new FutureDone<Void>();
     }
 
     /**
@@ -67,6 +82,9 @@ public class PeerConnection {
         this.cc = null;
         this.heartBeatMillis = heartBeatMillis;
         this.initiator = false;
+        this.oneConnection = new Semaphore(1);
+        this.map = new LinkedHashMap<FutureChannelCreator, FutureResponse>();
+        this.closeFuture = new FutureDone<Void>();
     }
 
     public PeerConnection channelFuture(ChannelFuture channelFuture) {
@@ -126,11 +144,14 @@ public class PeerConnection {
 
     private FutureChannelCreator acquire(final FutureChannelCreator futureChannelCreator,
             final FutureResponse futureResponse) {
+    	LOG.debug("about to acquire peer connection for {}", remotePeer);
         if (oneConnection.tryAcquire()) {
+        	LOG.debug("acquired peer connection for {}", remotePeer);
             futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
                 @Override
                 public void operationComplete(FutureResponse future) throws Exception {
                     oneConnection.release();
+                    LOG.debug("released peer connection for {}", remotePeer);
                     synchronized (map) {
                         Iterator<Map.Entry<FutureChannelCreator, FutureResponse>> iterator = map.entrySet()
                                 .iterator();
@@ -166,5 +187,9 @@ public class PeerConnection {
     	} else {
     		return false;
     	}
+    }
+    
+    public PeerConnection changeRemotePeer(PeerAddress remotePeer) {
+    	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, channelFuture);
     }
 }

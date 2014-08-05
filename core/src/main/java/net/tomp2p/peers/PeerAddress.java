@@ -23,6 +23,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -281,7 +282,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         } else {
             relaySize = peerSocketAddresses.size();
             if (relaySize > TYPE_BIT_SIZE) {
-                throw new IllegalArgumentException("Can only store up to 5 relay peers");
+                throw new IllegalArgumentException("Can only store up to 5 relay peers. Tried to store: " + relaySize);
             }
             this.peerSocketAddresses = peerSocketAddresses;
             this.relayType = new BitSet(relaySize);
@@ -499,7 +500,12 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("paddr[");
-        return sb.append(peerId.toString()).append(peerSocketAddress.toString()).append("]").toString();
+        return sb.append(peerId.toString()).append(peerSocketAddress.toString())
+        		.append("]/relay(")
+        		.append(isRelayed)
+        		.append(")=")
+        		.append(Arrays.toString(peerSocketAddresses.toArray()))
+        		.toString();
     }
 
     @Override
@@ -753,5 +759,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             }
         }
         return size;
+    }
+
+	public int relaySize() {
+	    return relaySize;
     }
 }

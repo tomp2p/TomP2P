@@ -28,12 +28,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -128,7 +128,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             ctx.close();
             synchronized (peerBean.peerStatusListeners()) {
             	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                    peerStatusListener.peerFailed(message.sender(), FailReason.Exception);
+                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
                 }
             }
             return;

@@ -103,7 +103,7 @@ public class TestRealPing {
             FutureChannelCreator fcc = sender.connectionBean().reservation().create(0, 1);
             fcc.awaitUninterruptibly();
             cc = fcc.channelCreator();
-            FutureResponse fr = handshake.pingTCPDiscover(pa, cc, new DefaultConnectionConfiguration());
+            FutureResponse fr = handshake.pingTCPDiscover(pa, cc, new DefaultConnectionConfiguration(), null);
             fr.awaitUninterruptibly();
             Assert.assertEquals(true, fr.isSuccess());
             Thread.sleep(WAIT);

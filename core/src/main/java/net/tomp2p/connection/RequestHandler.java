@@ -22,7 +22,6 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,12 +201,11 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             if (cause instanceof PeerException) {
                 PeerException pe = (PeerException) cause;
                 if (pe.abortCause() != PeerException.AbortCause.USER_ABORT) {
-                    FailReason reason = pe.abortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
                     synchronized (peerBean.peerStatusListeners()) {
                     	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-							peerStatusListener.peerFailed(futureResponse.request().recipient(), reason);
+							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
                     }
                     LOG.warn("removed from map, cause: {} msg: {}", pe.toString(), message);
@@ -217,7 +215,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             } else {
             	synchronized (peerBean.peerStatusListeners()) {
             		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-						peerStatusListener.peerFailed(futureResponse.request().recipient(), FailReason.Exception);
+						peerStatusListener.peerFailed(futureResponse.request().recipient(), new PeerException(cause));
 					}
             	}
             }
@@ -250,13 +248,19 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
+        } else if (message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
+        	String msg = "Message [" + responseMessage
+                    + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";
+            exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            return;
         }
 
         // We got a good answer, let's mark the sender as alive
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					peerStatusListener.peerFound(responseMessage.sender(), null);
+					//don't use the response message as relay peers may reply on behalf of other peers
+					peerStatusListener.peerFound(message.recipient(), null);
 				}
 			}
 		}

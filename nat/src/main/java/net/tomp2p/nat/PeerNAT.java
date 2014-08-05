@@ -123,16 +123,18 @@ public class PeerNAT {
 					Ports externalPorts = setupPortforwarding(future.internalAddress().getHostAddress(), peer
 					        .connectionBean().channelServer().channelServerConfiguration().portsForwarding());
 					if (externalPorts != null) {
-						PeerAddress serverAddress = peer.peerBean().serverPeerAddress();
-						serverAddress = serverAddress.changePorts(externalPorts.tcpPort(), externalPorts.udpPort());
-						serverAddress = serverAddress.changeAddress(future.externalAddress());
-						peer.peerBean().serverPeerAddress(serverAddress);
+						final PeerAddress serverAddress = peer.peerBean()
+								.serverPeerAddress().changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
+								.changeAddress(future.externalAddress());
+						
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter());
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter()).senderAddress(serverAddress);
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
+									//change the server address to reflect the ports from the NAT device
+									peer.peerBean().serverPeerAddress(serverAddress);
 									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay
@@ -270,7 +272,7 @@ public class PeerNAT {
 		futureDiscover.addListener(new BaseFutureAdapter<FutureDiscover>() {
 			@Override
 			public void operationComplete(FutureDiscover future) throws Exception {
-				if (future.isSuccess()) {
+				if (future.isFailed()) {
 					if (futureNAT != null) {
 						handleFutureNat(futureDiscover.reporter(), futureNAT, futureRelayNAT);
 					} else {
@@ -278,7 +280,7 @@ public class PeerNAT {
 						startRelay(futureRelayNAT, bootstrapBuilder);
 					}
 				} else {
-					futureRelayNAT.failed(future);
+					futureRelayNAT.done();
 				}
 			}
 		});
@@ -318,6 +320,7 @@ public class PeerNAT {
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				if (future.isSuccess()) {
 					// setup relay
+					LOG.debug("bootstrap completed");
 					final FutureRelay futureRelay = new FutureRelay(); 
 					final DistributedRelay distributedRelay = startSetupRelay(futureRelay);
 					futureBootstrapNAT.futureRelay(futureRelay);
@@ -336,17 +339,17 @@ public class PeerNAT {
 											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder, distributedRelay);
 											futureBootstrapNAT.done(shutdown);
 										} else {
-											futureBootstrapNAT.failed(future);
+											futureBootstrapNAT.failed("2nd FutureBootstrap failed", future);
 										}
 									}
 								});
 							} else {
-								futureBootstrapNAT.failed(future);
+								futureBootstrapNAT.failed("FutureRelay failed", future);
 							}
 						}
 					});
 				} else {
-					futureBootstrapNAT.failed(future);
+					futureBootstrapNAT.failed("FutureBootstrap failed", future);
 				}
 			}
 		});

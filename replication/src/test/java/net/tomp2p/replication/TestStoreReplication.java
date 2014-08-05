@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -33,7 +35,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
@@ -105,7 +106,7 @@ public class TestStoreReplication {
             final int slavePort = 7701;
             slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
             master.peerBean().peerMap().peerFound(slave.peerAddress(), null);
-            master.peerBean().peerMap().peerFailed(slave.peerAddress(), FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slave.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
         } catch (Throwable t) {
@@ -189,14 +190,14 @@ public class TestStoreReplication {
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.peerAddress();
             slave1.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress1, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress1, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
 
             PeerAddress slaveAddress2 = slave2.peerAddress();
             slave2.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress2, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress2, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(3, test2.get());
@@ -1027,7 +1028,7 @@ public class TestStoreReplication {
 			
 			for (int i = 0; i < leaves.length; i++) {
 				// remove a peer
-				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), FailReason.Shutdown);
+				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 				// verify replication notifications
 				Assert.assertEquals(leaves[i][0], replicateI.get());
 				replicateI.set(0);
@@ -1068,7 +1069,7 @@ public class TestStoreReplication {
 			Number160 contentKey = Number160.createHash("content");
 
 			String content = "";
-			for (int i = 0; i < 100; i++) {
+			for (int i = 0; i < 500; i++) {
 				content += "a";
 				Number160 vKey = generateVersionKey(i, content);
 				Data data = new Data(content);
@@ -1083,12 +1084,14 @@ public class TestStoreReplication {
 						.data(contentKey, sortedMap.get(vKey)).domainKey(domainKey).versionKey(vKey).start();
 				fput.awaitUninterruptibly();
 				fput.futureRequests().awaitUninterruptibly();
+				fput.futureRequests().awaitListenersUninterruptibly();
 				Assert.assertEquals(true, fput.isSuccess());
 
 				// confirm put
 				FuturePut futurePutConfirm = peers[rnd.nextInt(10)].put(locationKey).domainKey(domainKey)
 						.data(contentKey, new Data()).versionKey(vKey).putConfirm().start();
 				futurePutConfirm.awaitUninterruptibly();
+				futurePutConfirm.awaitListenersUninterruptibly();
 
 				// get latest version with digest
 				FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)

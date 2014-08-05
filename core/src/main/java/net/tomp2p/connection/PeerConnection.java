@@ -10,14 +10,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.peers.PeerAddress;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PeerConnection {
 	final private static Logger LOG = LoggerFactory.getLogger(PeerConnection.class);
@@ -191,5 +191,20 @@ public class PeerConnection {
     
     public PeerConnection changeRemotePeer(PeerAddress remotePeer) {
     	return new PeerConnection(oneConnection, remotePeer, cc, initiator, map, closeFuture, heartBeatMillis, channelFuture);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+    	if (!(obj instanceof PeerConnection)) {
+			return false;
+		}
+		if (obj == this) {
+			return true;
+		}
+		PeerConnection p = (PeerConnection) obj;
+		if(channelFuture!=null) {
+			return channelFuture.channel().equals(p.channelFuture.channel());
+		}
+        return false;
     }
 }

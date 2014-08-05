@@ -63,8 +63,8 @@ public class TestSecurity {
             slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).storageLayer(sl).start();
             
             // perfect routing
-            boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            boolean peerInMap2 = slave1.peerBean().peerMap().peerFound(master.peerAddress(), null);
+            boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            boolean peerInMap2 = slave1.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
             Assert.assertEquals(true, peerInMap1);
             Assert.assertEquals(true, peerInMap2);
             //
@@ -155,14 +155,14 @@ public class TestSecurity {
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
             // perfect routing
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
+            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
             Number160 locationKey = new Number160(50);
             FuturePut fdht1 = master.put(locationKey).data(new Number160(10), new Data("test1"))
                     .domainKey(Utils.makeSHAHash(pair3.getPublic().getEncoded())).protectDomain().start();
@@ -221,14 +221,14 @@ public class TestSecurity {
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
             // perfect routing
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
+            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
             Number160 locationKey = new Number160(50);
             FuturePut fdht1 = master.put(locationKey).data(new Data("test1"))
                     .domainKey(Utils.makeSHAHash(pair1.getPublic().getEncoded())).protectDomain().start();
@@ -283,8 +283,8 @@ public class TestSecurity {
             slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).keyPair(pair2).masterPeer(master.peer()).start()).storageLayer(sls).start();
             
             // perfect routing
-            boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            boolean peerInMap2 = slave1.peerBean().peerMap().peerFound(master.peerAddress(), null);
+            boolean peerInMap1 = master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            boolean peerInMap2 = slave1.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
             Assert.assertEquals(true, peerInMap1);
             Assert.assertEquals(true, peerInMap2);
 
@@ -339,14 +339,14 @@ public class TestSecurity {
                     .protection(ProtectionEnable.ALL, ProtectionMode.MASTER_PUBLIC_KEY, ProtectionEnable.ALL,
                             ProtectionMode.MASTER_PUBLIC_KEY);
             // perfect routing
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            slave1.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave1.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
             //
-            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null);
-            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
+            slave2.peerBean().peerMap().peerFound(master.peerAddress(), null, null);
+            slave2.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
             Number160 locationKey = new Number160(50);
 
             Data data1 = new Data("test1");

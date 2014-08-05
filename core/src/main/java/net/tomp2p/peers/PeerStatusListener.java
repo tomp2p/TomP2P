@@ -16,6 +16,7 @@
 
 package net.tomp2p.peers;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 
 /**
@@ -47,7 +48,8 @@ public interface PeerStatusListener {
      *            The address of the peer that is online.
      * @param referrer
      *            the peer that reported the availability of peerAddress
+     * @param peerConnection 
      * @return False if nothing happened, true if there was a change
      */
-    boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer);
+    boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, PeerConnection peerConnection);
 }

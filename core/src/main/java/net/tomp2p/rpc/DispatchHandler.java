@@ -143,7 +143,7 @@ public abstract class DispatchHandler {
         // behind a NAT
         synchronized (peerBean.peerStatusListeners()) {
 			for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-				peerStatusListener.peerFound(requestMessage.sender(), requestMessage.sender());
+				peerStatusListener.peerFound(requestMessage.sender(), requestMessage.sender(), peerConnection);
 			}
 		}
         

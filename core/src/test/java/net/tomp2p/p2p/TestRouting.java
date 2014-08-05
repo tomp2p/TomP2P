@@ -462,7 +462,7 @@ public class TestRouting {
      */
     private void addToPeerMap(Peer peer, PeerAddress... peers) {
         for (int i = 0; i < peers.length; i++) {
-            peer.peerBean().peerMap().peerFound(peers[i], null);
+            peer.peerBean().peerMap().peerFound(peers[i], null, null);
         }
     }
 

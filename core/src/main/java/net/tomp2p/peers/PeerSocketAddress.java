@@ -153,7 +153,7 @@ public class PeerSocketAddress implements Serializable {
         StringBuilder sb = new StringBuilder("[");
         sb.append(inetAddress);
         if(tcpPort == udpPort) {
-        	return sb.append(",").append(tcpPort).toString();
+        	return sb.append(",").append(tcpPort).append("]").toString();
         } else {
         	return sb.append(",t:").append(tcpPort).append(",u:").append(udpPort).append("]").toString();
         }

@@ -174,18 +174,7 @@ public class RelayRPC extends DispatchHandler {
         }
 
         // register relay forwarder
-        final PeerConnection peerConnection2 = peerConnection.changeRemotePeer(peerConnection.remotePeer().changeRelayed(true));
-        RelayForwarderRPC.register(peerConnection2, peer, this);
-
-        // add close listener for the peer connection
-        peerConnection2.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-            @Override
-            public void operationComplete(FutureDone<Void> future) throws Exception {
-                // unregister relay handler
-            	LOG.debug("Unregister the relay for {}", peerConnection2.remotePeer().peerId());
-                RelayForwarderRPC.unregister(peer, peerConnection2.remotePeer().peerId());
-            }
-        });
+        RelayForwarderRPC.register(peerConnection, peer, this);
 
         LOG.debug("I'll be your relay! {}", message);
         responder.response(createResponseMessage(message, Type.OK));

@@ -128,8 +128,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             ctx.close();
             synchronized (peerBean.peerStatusListeners()) {
             	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
-                }
+                   peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
+            	}
             }
             return;
         }
@@ -138,13 +138,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             ctx.fireChannelRead(message);
             return;
         }
-        //Message responseMessage = null;
+
         Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             boolean isRelay = message.sender().isRelayed();
-            if(isRelay) {
+            if(isRelay && !message.peerSocketAddresses().isEmpty()) {
             	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
             	message.sender(sender);
             }

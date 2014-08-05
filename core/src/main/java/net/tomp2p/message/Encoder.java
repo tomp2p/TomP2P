@@ -51,9 +51,8 @@ public class Encoder {
             resume = true;
         }
 
-        LOG.debug("entering loop");
         boolean done = loop(buf);
-        LOG.debug("exiting loop");
+        LOG.debug("message encoded {}", message);
 
         // write out what we have
         if (buf.isReadable() && done) {

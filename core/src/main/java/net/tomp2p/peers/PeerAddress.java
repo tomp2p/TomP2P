@@ -503,6 +503,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         return sb.append(peerId.toString()).append(peerSocketAddress.toString())
         		.append("]/relay(")
         		.append(isRelayed)
+        		.append(",")
+        		.append(peerSocketAddresses.size())
         		.append(")=")
         		.append(Arrays.toString(peerSocketAddresses.toArray()))
         		.toString();

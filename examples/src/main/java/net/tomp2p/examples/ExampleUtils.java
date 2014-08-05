@@ -41,7 +41,7 @@ public class ExampleUtils {
     	//make perfect bootstrap, the regular can take a while
     	for(int i=0;i<peers.length;i++) {
     		for(int j=0;j<peers.length;j++) {
-    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
+    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
     		}
     	}
     }
@@ -50,7 +50,7 @@ public class ExampleUtils {
     	//make perfect bootstrap, the regular can take a while
     	for(int i=0;i<peers.length;i++) {
     		for(int j=0;j<peers.length;j++) {
-    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
+    			peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
     		}
     	}
     }

@@ -259,8 +259,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					//don't use the response message as relay peers may reply on behalf of other peers
-					peerStatusListener.peerFound(message.recipient(), null);
+					if(responseMessage.sender().isRelayed() && !responseMessage.peerSocketAddresses().isEmpty()) {
+						//use the response message as we have up-to-date data for the relays
+						final PeerAddress remotePeer = responseMessage.sender().changePeerSocketAddresses(responseMessage.peerSocketAddresses());
+						responseMessage.sender(remotePeer);
+					}
+					peerStatusListener.peerFound(responseMessage.sender(), null, null);
 				}
 			}
 		}
@@ -270,14 +274,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         if (!responseMessage.isDone()) {
             LOG.debug("good message is streaming {}", responseMessage);
             return;
-        }
-        
-        // Now we now we have the right message
-        
-        if(message.sender().isRelayed()) {
-        	LOG.debug("good message is relayed {}", responseMessage);	
-        	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
-        	message.sender(sender);
         }
 
         if (!message.isKeepAlive()) {

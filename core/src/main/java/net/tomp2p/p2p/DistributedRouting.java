@@ -358,8 +358,8 @@ public class DistributedRouting {
                     Number160 contentDigest = lastResponse.key(1);
                     DigestInfo digestBean = new DigestInfo(keyDigest, contentDigest, resultSize == null ? 0
                             : resultSize);
-                    LOG.debug("Peer ({}) {} reported {}", (digestBean.size() > 0 ? "direct" : "none"),
-                            remotePeer, newNeighbors);
+                    LOG.debug("Peer ({}) {} reported {} in message {}", (digestBean.size() > 0 ? "direct" : "none"),
+                            remotePeer, newNeighbors, lastResponse);
                     finished = routingMechanism.evaluateSuccess(remotePeer, digestBean, newNeighbors, last, routingBuilder.locationKey());
                     LOG.debug("Routing finished {} / {}", finished,
                             routingMechanism.isStopCreatingNewFutures());

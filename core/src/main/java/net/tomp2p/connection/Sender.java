@@ -23,6 +23,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
@@ -126,7 +127,7 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 		//we need to set the neighbors if we use relays
-		if(message.sender().isRelayed()) {
+		if(message.sender().isRelayed() && !message.sender().peerSocketAddresses().isEmpty()) {
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
 		}
 
@@ -479,7 +480,8 @@ public class Sender {
 					// may have been closed by the other side,
 					// or it may have been canceled from this side
 					if (!(future.cause() instanceof CancellationException)
-					        && !(future.cause() instanceof ClosedChannelException)) {
+					        && !(future.cause() instanceof ClosedChannelException)
+					        && !(future.cause() instanceof ConnectException)) {
 						LOG.warn("Channel creation failed ", future.cause());
 					}
 				}

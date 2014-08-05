@@ -204,7 +204,7 @@ public class Utils2 {
     public static void perfectRouting(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -212,7 +212,7 @@ public class Utils2 {
     public static void perfectRoutingIndirect(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress());
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null);
         }
         System.err.println("perfect routing done.");
     }

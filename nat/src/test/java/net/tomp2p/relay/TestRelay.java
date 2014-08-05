@@ -209,7 +209,7 @@ public class TestRelay {
             FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
             Assert.assertEquals(response, fd.object());
             //make sure we did not receive it from the unreachable peer with port 13337
-            Assert.assertEquals(fd.wrappedFuture().responseMessage().sender().tcpPort(), 4001);
+            Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
             
 
         } finally {
@@ -262,7 +262,7 @@ public class TestRelay {
             Assert.assertEquals(response, fd.object());
             //make sure we did not receive it from the unreachable peer with port 13337
             //System.err.println(fd.getWrappedFuture());
-            Assert.assertEquals(fd.wrappedFuture().responseMessage().sender().tcpPort(), 4001);
+            Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
             
 
         } finally {
@@ -483,6 +483,8 @@ public class TestRelay {
  			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
  			fbn.awaitUninterruptibly();
  			Assert.assertTrue(fbn.isSuccess());
+ 			
+ 			//unreachablePeer.peer().bootstrap().peerAddress(master.peerAddress()).start();
              
             // PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
             
@@ -500,6 +502,8 @@ public class TestRelay {
              FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).start().awaitUninterruptibly();
              //the relayed one is the slowest, so we need to wait for it!
              futurePut.futureRequests().awaitUninterruptibly();
+             System.err.println(futurePut.failedReason());
+             
              Assert.assertTrue(futurePut.isSuccess());
              //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
              Assert.assertTrue(unreachablePeer.storageLayer().contains(new Number640(unreachablePeer.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));

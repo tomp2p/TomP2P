@@ -291,16 +291,7 @@ public class StorageRPC extends DispatchHandler {
 					putBuilder.versionKey(), putBuilder.dataMapContent());
 		}
 
-		final Type type;
-		if (putBuilder.isPutReject()) {
-			// reject prepared/temporary put
-			type = Type.REQUEST_1;
-		} else {
-			// confirm prepared/temporary put
-			type = Type.REQUEST_2;
-		}
-
-		final Message message = createMessage(remotePeer, RPC.Commands.PUT_CONFIRM.getNr(), type);
+		final Message message = createMessage(remotePeer, RPC.Commands.PUT_CONFIRM.getNr(), Type.REQUEST_1);
 
 		if (putBuilder.isSign()) {
 			message.publicKeyAndSign(putBuilder.keyPair());
@@ -642,7 +633,7 @@ public class StorageRPC extends DispatchHandler {
         } else if(message.command() == RPC.Commands.PUT.getNr()) {
             handlePut(message, responseMessage, isStoreIfAbsent(message), isDomainProtected(message));
         } else if (message.command() == RPC.Commands.PUT_CONFIRM.getNr()) {
-        	handlePutConfirm(message, responseMessage, message.type() == Type.REQUEST_2);
+        	handlePutConfirm(message, responseMessage);
         } else if (message.command() == RPC.Commands.GET.getNr()) {
             handleGet(message, responseMessage);
 		} else if (message.command() == RPC.Commands.GET_LATEST.getNr()) {
@@ -747,24 +738,15 @@ public class StorageRPC extends DispatchHandler {
         return responseMessage;
     }
 
-	private void handlePutConfirm(final Message message, final Message responseMessage,
-			final boolean isConfirmed) throws IOException {
+	private void handlePutConfirm(final Message message, final Message responseMessage) throws IOException {
 		final PublicKey publicKey = message.publicKey(0);
 		final DataMap toStore = message.dataMap(0);
 		final int dataSize = toStore.size();
 		final Map<Number640, Byte> result = new HashMap<Number640, Byte>(dataSize);
-		if (isConfirmed) {
-			LOG.debug("Received put confirmation.");
-			for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-				Enum<?> status = storageLayer.putConfirm(publicKey, entry.getKey(), entry.getValue());
-				result.put(entry.getKey(), (byte) status.ordinal());
-			}
-		} else {
-			LOG.debug("Received put retreat.");
-			for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
-				Pair<Data, Enum<?>> pair = storageLayer.remove(entry.getKey(), publicKey, false);
-				result.put(entry.getKey(), (byte) pair.element1().ordinal());
-			}
+		LOG.debug("Received put confirmation.");
+		for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
+			Enum<?> status = storageLayer.putConfirm(publicKey, entry.getKey(), entry.getValue());
+			result.put(entry.getKey(), (byte) status.ordinal());
 		}
 		responseMessage.type(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
 		responseMessage.keyMapByte(new KeyMapByte(result));

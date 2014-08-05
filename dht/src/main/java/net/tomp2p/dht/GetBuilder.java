@@ -52,6 +52,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     private boolean isGetLatest = false;
 
+    private boolean withDigest = false;
+
     //
     private boolean all = false;
 
@@ -160,6 +162,20 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     public GetBuilder getLatest() {
         this.isGetLatest = true;
+        return this;
+    }
+
+    public boolean isWithDigest() {
+        return withDigest;
+    }
+
+    public GetBuilder withDigest(boolean withDigest) {
+        this.withDigest = withDigest;
+        return this;
+    }
+
+    public GetBuilder withDigest() {
+        this.withDigest = true;
         return this;
     }
 

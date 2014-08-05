@@ -119,8 +119,9 @@ public class FutureTracker extends BaseFutureImpl<FutureTracker> {
     public void trackers(Set<PeerAddress> potentialTrackers, Set<PeerAddress> directTrackers,
             Map<PeerAddress, TrackerData> peersOnTracker) {
         synchronized (lock) {
-            if (!completedAndNotify())
+            if (!completedAndNotify()) {
                 return;
+            }
             this.potentialTrackers = potentialTrackers;
             this.directTrackers = directTrackers;
             this.peersOnTracker = peersOnTracker;

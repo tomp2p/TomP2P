@@ -5,7 +5,6 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.storage.Storage;
 
 public class PeerDHT {
 
@@ -14,22 +13,11 @@ public class PeerDHT {
 	final private DistributedHashTable dht;
 	final private StorageLayer storageLayer;
 
-	public PeerDHT(Peer peer) {
-		this(peer, new StorageMemory());
-	}
-
-	public PeerDHT(Peer peer, Storage backend) {
-		this(peer, new StorageLayer(backend));
-	}
-
-	public PeerDHT(Peer peer, StorageLayer storageLayer) {
+	PeerDHT(Peer peer, StorageLayer storageLayer, DistributedHashTable dht, StorageRPC storageRPC) {
 		this.peer = peer;
 		this.storageLayer = storageLayer;
-		this.storageLayer.start(peer.connectionBean().timer(), storageLayer.storageCheckIntervalMillis());
-		this.storageRPC = new StorageRPC(peer.peerBean(), peer.connectionBean(), storageLayer);
-		this.dht = new DistributedHashTable(peer.distributedRouting(), storageRPC, peer.directDataRPC());
-		peer.peerBean().digestStorage(storageLayer);
-		
+		this.dht = dht;
+		this.storageRPC = storageRPC;
     }
 
 	public Peer peer() {

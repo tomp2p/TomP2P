@@ -9,6 +9,7 @@ import java.util.Random;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.p2p.PeerBuilder;
@@ -30,7 +31,7 @@ public class ExampleNATChat {
 			// b.addInterface("eth0");
 			b.addAddress(InetAddress.getByName(addr));
 			// b.addAddress(InetAddress.getByAddress(addr));
-			peer = new PeerDHT(new PeerBuilder(new Number160(r)).bindings(b).ports(serverPort).start());
+			peer = new PeerBuilderDHT(new PeerBuilder(new Number160(r)).bindings(b).ports(serverPort).start()).start();
 			System.out.println("peer started.");
 			for (;;) {
 				Thread.sleep(5000);
@@ -63,7 +64,7 @@ public class ExampleNATChat {
 
 	public static void startClientNAT(String ip) throws Exception {
 		Random r = new Random(43L);
-		PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(r)).ports(clientPort).behindFirewall().start());
+		PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(r)).ports(clientPort).behindFirewall().start()).start();
 		PeerAddress bootStrapServer = new PeerAddress(Number160.ZERO, InetAddress.getByName(ip), serverPort, serverPort);
 		FutureDiscover fd = peer.peer().discover().peerAddress(bootStrapServer).start();
 		System.out.println("About to wait...");

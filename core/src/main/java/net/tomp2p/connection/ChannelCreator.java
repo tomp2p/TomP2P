@@ -115,7 +115,7 @@ public class ChannelCreator {
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
-		this.externalBindings = channelClientConfiguration.externalBindings();
+		this.externalBindings = channelClientConfiguration.bindingsOutgoing();
 	}
 
 	/**
@@ -131,7 +131,7 @@ public class ChannelCreator {
 	 *            The handlers to set
 	 * @return The channel future object or null if we are shut down
 	 */
-	public ChannelFuture createUDP(final SocketAddress recipient, final boolean broadcast,
+	public ChannelFuture createUDP(final boolean broadcast,
 	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readUDP.lock();
 		try {
@@ -154,12 +154,7 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture;
-			if (broadcast) {
-				channelFuture = b.bind(externalBindings.wildCardSocket());
-			} else {
-				channelFuture = b.connect(recipient, externalBindings.wildCardSocket());
-			}
+			final ChannelFuture channelFuture = b.bind(externalBindings.wildCardSocket());
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);

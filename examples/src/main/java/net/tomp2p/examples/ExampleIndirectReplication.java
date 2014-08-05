@@ -21,6 +21,7 @@ import java.io.IOException;
 import net.tomp2p.dht.FutureDigest;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.replication.IndirectReplication;
@@ -67,9 +68,9 @@ public final class ExampleIndirectReplication {
         final int nr2 = 2;
         final int port3 = 4003;
         final int nr3 = 4;
-        PeerDHT peer1 = new PeerDHT(new PeerBuilder(new Number160(nr1)).ports(port1).start());
-        PeerDHT peer2 = new PeerDHT(new PeerBuilder(new Number160(nr2)).ports(port2).start());
-        PeerDHT peer3 = new PeerDHT(new PeerBuilder(new Number160(nr3)).ports(port3).start());
+        PeerDHT peer1 = new PeerBuilderDHT(new PeerBuilder(new Number160(nr1)).ports(port1).start()).start();
+        PeerDHT peer2 = new PeerBuilderDHT(new PeerBuilder(new Number160(nr2)).ports(port2).start()).start();
+        PeerDHT peer3 = new PeerBuilderDHT(new PeerBuilder(new Number160(nr3)).ports(port3).start()).start();
         
         new IndirectReplication(peer1).start();
         new IndirectReplication(peer2).start();

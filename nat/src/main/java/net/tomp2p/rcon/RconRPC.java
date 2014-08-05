@@ -1,5 +1,6 @@
 package net.tomp2p.rcon;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
@@ -174,7 +175,8 @@ public class RconRPC extends DispatchHandler {
 													// need the versionnumber
 
 		// transmit PeerAddress of reachablePeer
-		final NeighborSet ns = new NeighborSet(1);
+		// TODO jwa check if this is ok!
+		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 

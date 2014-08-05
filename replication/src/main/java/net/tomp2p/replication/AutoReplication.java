@@ -50,6 +50,11 @@ public class AutoReplication implements PeerMapChangeListener, ReplicationFactor
 		return this;
 	}
 	
+	public AutoReplication shutdown() {
+		peerMap.removePeerMapChangeListener(this);
+		return this;
+	}
+	
 	@Override
 	public void peerInserted(PeerAddress peerAddress, boolean verified) {}
 	

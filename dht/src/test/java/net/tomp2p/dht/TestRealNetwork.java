@@ -104,7 +104,7 @@ public class TestRealNetwork {
             System.err.println("no success!");
         }
         
-        PeerDHT myPeerDHT = new PeerDHT(myPeer);
+        PeerDHT myPeerDHT = new PeerBuilderDHT(myPeer).start();
 
         FuturePut putFuture = myPeerDHT.put(Number160.createHash("key")).data(new Data(myInetSocketAddress)).start();
         putFuture.awaitUninterruptibly();

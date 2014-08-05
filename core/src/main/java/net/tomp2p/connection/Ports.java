@@ -36,8 +36,8 @@ public class Ports {
 
     // provide this information if you know your mapping beforehand, i.e. manual
     // port-forwarding
-    private final int externalTCPPort;
-    private final int externalUDPPort;
+    private final int tcpPort;
+    private final int udpPort;
     private final boolean randomPorts;
 
     /**
@@ -63,24 +63,24 @@ public class Ports {
      *            The external port, how other peers will see us, if 0 is
      *            provided, a random port will be used
      */
-    public Ports(final int externalTCPPort, final int externalUDPPort) {
-        this.externalTCPPort = externalTCPPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalTCPPort;
-        this.externalUDPPort = externalUDPPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : externalUDPPort;
-        this.randomPorts = externalTCPPort < 0 && externalUDPPort < 0;
+    public Ports(final int tcpPort, final int udpPort) {
+    	this.randomPorts = tcpPort < 0 && udpPort < 0;
+        this.tcpPort = tcpPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : tcpPort;
+        this.udpPort = udpPort < 0 ? (RND.nextInt(RANGE) + MIN_DYN_PORT) : udpPort;
     }
 
     /**
      * @return Returns the external port, how other peers see us
      */
-    public int externalTCPPort() {
-        return externalTCPPort;
+    public int tcpPort() {
+        return tcpPort;
     }
 
     /**
      * @return Returns the external port, how other peers see us
      */
-    public int externalUDPPort() {
-        return externalUDPPort;
+    public int udpPort() {
+        return udpPort;
     }
 
     /**
@@ -88,7 +88,7 @@ public class Ports {
      *         that the user knows about the ports and did a manual
      *         port-forwarding.
      */
-    public boolean isSetExternalPortsManually() {
+    public boolean isManualPort() {
         // set setExternalPortsManually to true if the user specified both ports
         // in advance. This tells us that the user knows about the ports and did
         // a manual port-forwarding.

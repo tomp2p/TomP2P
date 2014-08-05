@@ -22,7 +22,6 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -202,12 +201,11 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             if (cause instanceof PeerException) {
                 PeerException pe = (PeerException) cause;
                 if (pe.abortCause() != PeerException.AbortCause.USER_ABORT) {
-                    FailReason reason = pe.abortCause() == PeerException.AbortCause.TIMEOUT ? FailReason.Timeout : FailReason.Exception;
                     // do not force if we ran into a timeout, the peer may be
                     // busy
                     synchronized (peerBean.peerStatusListeners()) {
                     	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-							peerStatusListener.peerFailed(futureResponse.request().recipient(), reason);
+							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
                     }
                     LOG.warn("removed from map, cause: {} msg: {}", pe.toString(), message);
@@ -217,7 +215,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             } else {
             	synchronized (peerBean.peerStatusListeners()) {
             		for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-						peerStatusListener.peerFailed(futureResponse.request().recipient(), FailReason.Exception);
+						peerStatusListener.peerFailed(futureResponse.request().recipient(), new PeerException(cause));
 					}
             	}
             }
@@ -234,7 +232,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         MessageID recvMessageID = new MessageID(responseMessage);
         // Error handling
         if (responseMessage.type() == Message.Type.UNKNOWN_ID) {
-            String msg = "Message was not delivered successfully, unknow id (peer may be offline): " + this.message;
+            String msg = "Message was not delivered successfully, unknow id (peer may be offline or unknown RPC handler): " + this.message;
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
         } else if (responseMessage.type() == Message.Type.EXCEPTION) {
@@ -250,13 +248,23 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
+        } else if (message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
+        	String msg = "Message [" + responseMessage
+                    + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";
+            exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
+            return;
         }
 
         // We got a good answer, let's mark the sender as alive
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					peerStatusListener.peerFound(responseMessage.sender(), null);
+					if(responseMessage.sender().isRelayed() && !responseMessage.peerSocketAddresses().isEmpty()) {
+						//use the response message as we have up-to-date data for the relays
+						final PeerAddress remotePeer = responseMessage.sender().changePeerSocketAddresses(responseMessage.peerSocketAddresses());
+						responseMessage.sender(remotePeer);
+					}
+					peerStatusListener.peerFound(responseMessage.sender(), null, null);
 				}
 			}
 		}
@@ -266,14 +274,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         if (!responseMessage.isDone()) {
             LOG.debug("good message is streaming {}", responseMessage);
             return;
-        }
-        
-        // Now we now we have the right message
-        
-        if(message.sender().isRelayed()) {
-        	LOG.debug("good message is relayed {}", responseMessage);	
-        	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
-        	message.sender(sender);
         }
 
         if (!message.isKeepAlive()) {

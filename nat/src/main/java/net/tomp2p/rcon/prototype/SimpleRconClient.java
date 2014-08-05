@@ -11,7 +11,10 @@ import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.nat.FutureRelayNAT;
+import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
+import net.tomp2p.natpmp.NatPmpDevice;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -66,10 +69,10 @@ public class SimpleRconClient {
 	private static void createPeer(boolean isMaster, String id) throws IOException {
 		if (isMaster) {
 			peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
-			new PeerNAT(peer);
+			new PeerBuilderNAT(peer).start();
 		} else {
 			peer = new PeerBuilder(Number160.createHash(id)).ports(port).start();
-			peerNAT = new PeerNAT(peer);
+			peerNAT = new PeerBuilderNAT(peer).start();
 		}
 	}
 
@@ -179,10 +182,12 @@ public class SimpleRconClient {
 		futureBootstrap.awaitUninterruptibly();
 
 		// setup relay
-		PeerNAT uNat = new PeerNAT(peer);
+		PeerNAT uNat = new PeerBuilderNAT(peer).start();
 		// set up 3 relays
-		FutureRelay futureRelay = uNat.minRelays(1).startSetupRelay();
-		futureRelay.awaitUninterruptibly();
+//		FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());
+//		futureRelay.awaitUninterruptibly();
+		FutureRelayNAT frn = uNat.startRelay(bootstrapPeerAddress);
+		frn.awaitUninterruptibly();
 
 		// find neighbors again
 		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();

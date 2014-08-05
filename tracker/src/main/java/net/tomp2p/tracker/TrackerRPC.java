@@ -60,31 +60,22 @@ public class TrackerRPC extends DispatchHandler {
 		this.trackerStorage = trackerStorage;
 	}
 
-	public static boolean isPrimary(FutureResponse response) {
-		return response.request().type() == Type.REQUEST_3;
-	}
-
-	public static boolean isSecondary(FutureResponse response) {
-		return response.request().type() == Type.REQUEST_1;
-	}
-
 	public FutureResponse addToTracker(final PeerAddress remotePeer, AddTrackerBuilder builder,
 	        ChannelCreator channelCreator) {
 
-		Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
-		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(),
-		        builder.isPrimary() ? Type.REQUEST_3 : Type.REQUEST_1);
+		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
+		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_ADD.getNr(), Type.REQUEST_3);
 		if (builder.isSign()) {
 			message.publicKeyAndSign(builder.keyPair());
 		}
-		message.key(builder.getLocationKey());
-		message.key(builder.getDomainKey());
+		message.key(builder.locationKey());
+		message.key(builder.domainKey());
 		if (builder.getBloomFilter() != null) {
 			message.bloomFilter(builder.getBloomFilter());
 		}
 		final FutureResponse futureResponse = new FutureResponse(message);
 
-		addTrackerDataListener(futureResponse, new Number320(builder.getLocationKey(), builder.getDomainKey()));
+		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()));
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
@@ -93,7 +84,8 @@ public class TrackerRPC extends DispatchHandler {
 		if (peerAddressToAnnounce == null) {
 			peerAddressToAnnounce = peerBean().serverPeerAddress();
 		}
-		trackerData.put(new PeerStatatistic(peerAddressToAnnounce), builder.getAttachement());
+		trackerData.put(new PeerStatatistic(peerAddressToAnnounce), builder.attachement());
+		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
 		if (builder.isForceTCP()) {
@@ -106,20 +98,20 @@ public class TrackerRPC extends DispatchHandler {
 	public FutureResponse getFromTracker(final PeerAddress remotePeer, GetTrackerBuilder builder,
 	        ChannelCreator channelCreator) {
 
-		Utils.nullCheck(remotePeer, builder.getLocationKey(), builder.getDomainKey());
+		Utils.nullCheck(remotePeer, builder.locationKey(), builder.domainKey());
 		final Message message = createMessage(remotePeer, RPC.Commands.TRACKER_GET.getNr(), Type.REQUEST_1);
 		if (builder.isSign()) {
 			message.publicKeyAndSign(builder.keyPair());
 		}
-		message.key(builder.getLocationKey());
-		message.key(builder.getDomainKey());
+		message.key(builder.locationKey());
+		message.key(builder.domainKey());
 		// TODO: make this always a bloom filter
-		if (builder.getKnownPeers() != null && (builder.getKnownPeers() instanceof SimpleBloomFilter)) {
-			message.bloomFilter((SimpleBloomFilter<Number160>) builder.getKnownPeers());
+		if (builder.knownPeers() != null && (builder.knownPeers() instanceof SimpleBloomFilter)) {
+			message.bloomFilter((SimpleBloomFilter<Number160>) builder.knownPeers());
 		}
 
 		FutureResponse futureResponse = new FutureResponse(message);
-		addTrackerDataListener(futureResponse, new Number320(builder.getLocationKey(), builder.getDomainKey()));
+		addTrackerDataListener(futureResponse, new Number320(builder.locationKey(), builder.domainKey()));
 
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
@@ -163,6 +155,7 @@ public class TrackerRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 	        throws Exception {
+		LOG.debug("handleResponse on {}", message.recipient());
 		if (!((message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_3) && message.key(0) != null && message
 		        .key(1) != null)) {
 			throw new IllegalArgumentException("Message content is wrong");
@@ -177,6 +170,8 @@ public class TrackerRPC extends DispatchHandler {
 		PublicKey publicKey = message.publicKey(0);
 		//
 		TrackerData meshPeers = trackerStorage.peers(new Number320(locationKey, domainKey));
+		
+		LOG.debug("found peers on tracker: {}", meshPeers == null ? "null " : meshPeers.peerAddresses());
 
 		boolean couldProvideMoreData = false;
 		if (meshPeers != null) {

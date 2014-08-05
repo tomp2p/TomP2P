@@ -50,7 +50,6 @@ import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
-import net.tomp2p.storage.Storage;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -97,22 +96,20 @@ public class PeerBuilder {
 	private int p2pID = -1;
 	private int tcpPort = -1;
 	private int udpPort = -1;
+	private int tcpPortForwarding = -1;
+	private int udpPortForwarding = -1;
 	private Bindings interfaceBindings = null;
 	private Bindings externalBindings = null;
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
 	private ChannelServerConficuration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
-	private Storage storage = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
 	private BloomfilterFactory bloomfilterFactory;
 	private ScheduledExecutorService scheduledExecutorService = null;
 	private MaintenanceTask maintenanceTask = null;
 	private Random random = null;
-	private int delayMillis = -1;
-	private boolean allPeersReplicate = false;
-	private int intervalMillis = -1;
 	private List<PeerInit> toInitialize = new ArrayList<PeerInit>(1);
 
 	// enable / disable RPC/P2P/other
@@ -161,7 +158,17 @@ public class PeerBuilder {
 
 		if (channelServerConfiguration == null) {
 			channelServerConfiguration = createDefaultChannelServerConfiguration();
+			channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding));
+			if (tcpPort == -1) {
+				tcpPort = Ports.DEFAULT_PORT;
+			}
+			if (udpPort == -1) {
+				udpPort = Ports.DEFAULT_PORT;
+			}
+			channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
+			channelServerConfiguration.behindFirewall(behindFirewall);
 		}
+		
 		if (channelClientConfiguration == null) {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();
 		}
@@ -171,21 +178,16 @@ public class PeerBuilder {
 		if (p2pID == -1) {
 			p2pID = 1;
 		}
-		if (tcpPort == -1) {
-			tcpPort = Ports.DEFAULT_PORT;
-		}
-		if (udpPort == -1) {
-			udpPort = Ports.DEFAULT_PORT;
-		}
-		channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
+		
+		
 		if (interfaceBindings == null) {
 			interfaceBindings = new Bindings();
 		}
-		channelServerConfiguration.interfaceBindings(interfaceBindings);
+		channelServerConfiguration.bindingsIncoming(interfaceBindings);
 		if (externalBindings == null) {
 			externalBindings = new Bindings();
 		}
-		channelClientConfiguration.externalBindings(externalBindings);
+		channelClientConfiguration.bindingsOutgoing(externalBindings);
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
 			
@@ -281,8 +283,10 @@ public class PeerBuilder {
 
 	public static ChannelServerConficuration createDefaultChannelServerConfiguration() {
 		ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
-		channelServerConfiguration.interfaceBindings(new Bindings());
+		channelServerConfiguration.bindingsIncoming(new Bindings());
+		//these two values may be overwritten in the peer builder
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
+		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
 		channelServerConfiguration.behindFirewall(false);
 		channelServerConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelServerConfiguration.signatureFactory(new DSASignatureFactory());
@@ -291,7 +295,7 @@ public class PeerBuilder {
 
 	public static ChannelClientConfiguration createDefaultChannelClientConfiguration() {
 		ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
-		channelClientConfiguration.externalBindings(new Bindings());
+		channelClientConfiguration.bindingsOutgoing(new Bindings());
 		channelClientConfiguration.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP);
 		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
@@ -322,6 +326,15 @@ public class PeerBuilder {
 		return this;
 	}
 
+	public int tcpPortForwarding() {
+		return tcpPortForwarding;
+	}
+
+	public PeerBuilder tcpPortForwarding(int tcpPortForwarding) {
+		this.tcpPortForwarding = tcpPortForwarding;
+		return this;
+	}
+	
 	public int tcpPort() {
 		return tcpPort;
 	}
@@ -339,10 +352,25 @@ public class PeerBuilder {
 		this.udpPort = udpPort;
 		return this;
 	}
+	
+	public int udpPortForwarding() {
+		return udpPortForwarding;
+	}
+
+	public PeerBuilder udpPortForwarding(int udpPortForwarding) {
+		this.udpPortForwarding = udpPortForwarding;
+		return this;
+	}
 
 	public PeerBuilder ports(int port) {
 		this.udpPort = port;
 		this.tcpPort = port;
+		return this;
+	}
+	
+	public PeerBuilder portsExternal(int port) {
+		this.udpPortForwarding = port;
+		this.tcpPortForwarding = port;
 		return this;
 	}
 
@@ -376,15 +404,6 @@ public class PeerBuilder {
 
 	public PeerBuilder peerMap(PeerMap peerMap) {
 		this.peerMap = peerMap;
-		return this;
-	}
-	
-	public Storage storage() {
-		return storage;
-	}
-
-	public PeerBuilder storage(Storage storage) {
-		this.storage = storage;
 		return this;
 	}
 
@@ -448,38 +467,6 @@ public class PeerBuilder {
 
 	public PeerBuilder random(Random random) {
 		this.random = random;
-		return this;
-	}
-
-	public int delayMillis() {
-		return delayMillis;
-	}
-
-	public PeerBuilder delayMillis(int delayMillis) {
-		this.delayMillis = delayMillis;
-		return this;
-	}
-	
-	public boolean isAllPeersReplicate() {
-		return allPeersReplicate;
-	}
-	
-	public PeerBuilder allPeersReplicate() {
-		this.allPeersReplicate = true;
-		return this;
-	}
-
-	public PeerBuilder allPeersReplicate(boolean allPeersReplicate) {
-		this.allPeersReplicate = allPeersReplicate;
-		return this;
-	}
-
-	public int intervalMillis() {
-		return intervalMillis;
-	}
-
-	public PeerBuilder intervalMillis(int intervalMillis) {
-		this.intervalMillis = intervalMillis;
 		return this;
 	}
 

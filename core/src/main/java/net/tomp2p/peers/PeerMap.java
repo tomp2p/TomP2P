@@ -26,6 +26,9 @@ import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.utils.CacheMap;
 import net.tomp2p.utils.ConcurrentCacheMap;
 
@@ -79,7 +82,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *            The configuration values of this map
      * 
      */
-    public PeerMap(final PeerMapConfiguration peerMapConfiguration) {
+	public PeerMap(final PeerMapConfiguration peerMapConfiguration) {
         this.self = peerMapConfiguration.self();
         if (self == null || self.isZero()) {
             throw new IllegalArgumentException("Zero or null are not a valid IDs");
@@ -255,7 +258,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      * @return True if the neighbor could be added or updated, otherwise false.
      */
     @Override
-    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer) {
+    public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection) {    	
     	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
         boolean firstHand = referrer == null || !peerVerification;
         //if we got contacted by this peer, but we did not initiate the connection
@@ -274,6 +277,11 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         
         if (remotePeer.isFirewalledTCP() || remotePeer.isFirewalledUDP()) {
+        	return false;
+        }
+        
+        //if a peer is relayed but cannot provide any relays, its useless
+        if (remotePeer.isRelayed() && remotePeer.peerSocketAddresses().isEmpty()) {
         	return false;
         }
         
@@ -303,7 +311,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
                 synchronized (map) {
                     // check again, now we are synchronized
                     if (map.containsKey(remotePeer.peerId())) {
-                        return peerFound(remotePeer, referrer);
+                        return peerFound(remotePeer, referrer, peerConnection);
                     }
                     if (map.size() < bagSizeVerified) {
                         final PeerStatatistic peerStatatistic = new PeerStatatistic(remotePeer);
@@ -354,18 +362,19 @@ public class PeerMap implements PeerStatusListener, Maintainable {
      *         already in the peer removed temporarily list.
      */
     @Override
-    public boolean peerFailed(final PeerAddress remotePeer, final FailReason reason) {
-        LOG.debug("peer {} is offline with reason {}", remotePeer, reason);
+    public boolean peerFailed(final PeerAddress remotePeer, final PeerException peerException) {
+        LOG.debug("peer {} is offline with reason {}", remotePeer, peerException);
         
         // TB: ignore ZERO peer Id for the moment, but we should filter for the IP address
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId())) {
             return false;
         }
         final int classMember = classMember(remotePeer.peerId());
-        if (reason != FailReason.Timeout) {
-            if(reason == FailReason.ProbablyOffline) {
+        AbortCause reason = peerException.abortCause();
+        if (reason != AbortCause.TIMEOUT) {
+            if(reason == AbortCause.PROBABLY_OFFLINE) {
                 offlineMap.put(remotePeer.peerId(), remotePeer);
-            } else if(reason == FailReason.Shutdown) {
+            } else if(reason == AbortCause.SHUTDOWN) {
                 shutdownMap.put(remotePeer.peerId(), remotePeer);
             } else { // reason is exception
                 exceptionMap.put(remotePeer.peerId(), remotePeer);
@@ -395,10 +404,10 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         }
         // not forced
         if (updatePeerStatistic(remotePeer, peerMapVerified.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, FailReason.ProbablyOffline);
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in verified map"));
         }
         if (updatePeerStatistic(remotePeer, peerMapOverflow.get(classMember), offlineCount)) {
-            return peerFailed(remotePeer, FailReason.ProbablyOffline);
+            return peerFailed(remotePeer, new PeerException(AbortCause.PROBABLY_OFFLINE, "peer failed in overflow map"));
         }
         return false;
     }
@@ -750,6 +759,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         synchronized (tmp) {
             PeerStatatistic old = tmp.get(peerAddress.peerId());
             if (old != null) {
+            	//TODO: this should only be from firsthand!
                 old.peerAddress(peerAddress);
                 if (firstHand) {
                     old.successfullyChecked();

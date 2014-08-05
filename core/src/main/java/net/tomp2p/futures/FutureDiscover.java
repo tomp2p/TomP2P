@@ -87,6 +87,12 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
                 return;
             }
             this.type = FutureType.OK;
+            if(this.reporter != null) {
+    			if(!this.reporter.equals(reporter)) {
+    				this.type = FutureType.FAILED;
+    				this.reason = "the previously reported peer ("+this.reporter+") does not match the peer reported now ("+reporter+")";
+    			}
+            }
             this.ourPeerAddress = ourPeerAddress;
             this.reporter = reporter;
         }
@@ -111,6 +117,18 @@ public class FutureDiscover extends BaseFutureImpl<FutureDiscover> {
         synchronized (lock) {
             return reporter;
         }
+    }
+    
+    public FutureDiscover reporter(PeerAddress reporter) {
+    	synchronized (lock) {
+    		if(this.reporter != null) {
+    			if(!this.reporter.equals(reporter)) {
+    				throw new IllegalArgumentException("cannot change reporter once its set");
+    			}
+    		}
+    		this.reporter = reporter;
+    	}
+    	return this;
     }
 
     /**

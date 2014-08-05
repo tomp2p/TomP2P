@@ -84,7 +84,7 @@ public class StorageRPC extends DispatchHandler {
         		RPC.Commands.REMOVE.getNr(), RPC.Commands.DIGEST.getNr(), 
         		RPC.Commands.DIGEST_BLOOMFILTER.getNr(), RPC.Commands.PUT_META.getNr(), 
 				RPC.Commands.DIGEST_META_VALUES.getNr(), RPC.Commands.PUT_CONFIRM.getNr(),
-				RPC.Commands.GET_LATEST.getNr());
+				RPC.Commands.GET_LATEST.getNr(), RPC.Commands.GET_LATEST_WITH_DIGEST.getNr());
         this.factory = peerBean.bloomfilterFactory();
         this.storageLayer = storageLayer;
     }
@@ -532,9 +532,9 @@ public class StorageRPC extends DispatchHandler {
     }
 
 	public FutureResponse getLatest(final PeerAddress remotePeer, final GetBuilder getBuilder,
-			final ChannelCreator channelCreator) {
+			final ChannelCreator channelCreator, final RPC.Commands command) {
 		final Type type = Type.REQUEST_1;
-		final Message message = createMessage(remotePeer, RPC.Commands.GET_LATEST.getNr(), type);
+		final Message message = createMessage(remotePeer, command.getNr(), type);
 
 		if (getBuilder.isSign()) {
 			message.publicKeyAndSign(getBuilder.keyPair());
@@ -622,12 +622,18 @@ public class StorageRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign,
             Responder responder) throws Exception {
 
-        if (!(message.command() == RPC.Commands.ADD.getNr() || message.command() == RPC.Commands.PUT.getNr()
-                || message.command() == RPC.Commands.GET.getNr() || message.command() == RPC.Commands.REMOVE.getNr() 
-                || message.command() == RPC.Commands.DIGEST.getNr() || message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr() || message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()
-                || message.command() == RPC.Commands.PUT_META.getNr() || message.command() == RPC.Commands.PUT_CONFIRM.getNr() || message.command() == RPC.Commands.GET_LATEST.getNr())) {
-            throw new IllegalArgumentException("Message content is wrong "+message.command());
-        }
+    	if (!(message.command() == RPC.Commands.ADD.getNr() || message.command() == RPC.Commands.PUT.getNr()
+				|| message.command() == RPC.Commands.GET.getNr()
+				|| message.command() == RPC.Commands.REMOVE.getNr()
+				|| message.command() == RPC.Commands.DIGEST.getNr()
+				|| message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
+				|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()
+				|| message.command() == RPC.Commands.PUT_META.getNr()
+				|| message.command() == RPC.Commands.PUT_CONFIRM.getNr()
+				|| message.command() == RPC.Commands.GET_LATEST.getNr()
+				|| message.command() == RPC.Commands.GET_LATEST_WITH_DIGEST.getNr())) {
+			throw new IllegalArgumentException("Message content is wrong " + message.command());
+		}
         final Message responseMessage = createResponseMessage(message, Type.OK);
 
         //switch/case does not work here out of the box, need to convert byte back to enum, not sure if thats worth it.
@@ -639,8 +645,10 @@ public class StorageRPC extends DispatchHandler {
         	handlePutConfirm(message, responseMessage, message.type() == Type.REQUEST_2);
         } else if (message.command() == RPC.Commands.GET.getNr()) {
             handleGet(message, responseMessage);
-        } else if (message.command() == RPC.Commands.GET_LATEST.getNr()) {
-            handleGetLatest(message, responseMessage);
+		} else if (message.command() == RPC.Commands.GET_LATEST.getNr()) {
+			handleGetLatest(message, responseMessage, false);
+		} else if (message.command() == RPC.Commands.GET_LATEST_WITH_DIGEST.getNr()) {
+			handleGetLatest(message, responseMessage, true);
         } else if (message.command() == RPC.Commands.DIGEST.getNr() 
         		|| message.command() == RPC.Commands.DIGEST_BLOOMFILTER.getNr()
         		|| message.command() == RPC.Commands.DIGEST_META_VALUES.getNr()) {
@@ -726,7 +734,8 @@ public class StorageRPC extends DispatchHandler {
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
-            if(putStatus == PutStatus.OK && replicationListener!=null) {
+			if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
+					&& replicationListener != null) {
             	replicationListener.dataInserted(
                         entry.getKey().locationKey());
             }
@@ -868,15 +877,25 @@ public class StorageRPC extends DispatchHandler {
 	    return result;
     }
 
-	private Message handleGetLatest(final Message message, final Message responseMessage) {
+	private Message handleGetLatest(final Message message, final Message responseMessage,
+			final boolean withDigest) {
 		final Number160 locationKey = message.key(0);
 		final Number160 domainKey = message.key(1);
 		final Number160 contentKey = message.key(2);
 
 		Number640 key = new Number640(locationKey, domainKey, contentKey, Number160.ZERO);
 		final Map<Number640, Data> result = storageLayer.getLatestVersion(key);
-		
 		responseMessage.setDataMap(new DataMap(result));
+
+		if (withDigest) {
+			Collection<Number640> keys = new ArrayList<Number640>(2);
+			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.ZERO));
+			keys.add(new Number640(locationKey, domainKey, contentKey, Number160.MAX_VALUE));
+			final DigestInfo digestInfo = doDigest(locationKey, domainKey, new KeyCollection(keys), null, null, -1, true,
+					true, false, false);
+			responseMessage.keyMap640Keys(new KeyMap640Keys(digestInfo.digests()));
+		}
+
 		return responseMessage;
 	}
 

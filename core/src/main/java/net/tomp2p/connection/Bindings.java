@@ -20,7 +20,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.StandardProtocolFamily;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,10 +89,18 @@ public class Bindings {
      */
     public List<InetAddress> foundAddresses() {
         // first return ipv4, then ipv6
-        List<InetAddress> listenAddresses2 = new ArrayList<InetAddress>();
+        final List<InetAddress> listenAddresses2 = new ArrayList<InetAddress>(foundAddresses4.size() + foundAddresses6.size());
         listenAddresses2.addAll(foundAddresses4);
         listenAddresses2.addAll(foundAddresses6);
         return listenAddresses2;
+    }
+    
+    public InetAddress foundAddress() {
+    	List<InetAddress> addresses = foundAddresses();
+    	if(addresses.isEmpty()) {
+    		return null;
+    	}
+	    return addresses.get(0);
     }
     
     /**

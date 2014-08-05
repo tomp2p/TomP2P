@@ -87,28 +87,29 @@ public class Message {
 		REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, REQUEST_FF_1, REQUEST_FF_2, OK, PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2
 	};
 
-	// Header:
-	private int messageId;
-	private int version;
-	private Type type;
-	// commands so far:
-	// 0: PING
-	// 1: PUT
-	// 2: GET
-	// 3: ADD
-	// 4: REMOVE
-	// 5: NEIGHBORS
-	// 6: QUIT
-	// 7: DIRECT_DATA
-	// 8: TRACKER_ADD
-	// 9: TRACKER_GET
-	// 10: PEX
-	// 11: TASK
-	// 12: BROADCAST_DATA
-	private byte command;
-	private PeerAddress sender;
-	private PeerAddress recipient;
-	private int options = 0;
+    // Header:
+    private int messageId;
+    private int version;
+    private Type type;
+    // commands so far:
+    // 0: PING
+    // 1: PUT
+    // 2: GET
+    // 3: ADD
+    // 4: REMOVE
+    // 5: NEIGHBORS
+    // 6: QUIT
+    // 7: DIRECT_DATA
+    // 8: TRACKER_ADD
+    // 9: TRACKER_GET
+    // 10: PEX
+    // 11: TASK
+    // 12: BROADCAST_DATA
+    private byte command;
+    private PeerAddress sender;
+    private PeerAddress recipient;
+    private PeerAddress recipientRelay;
+    private int options = 0;
 
 	// Payload:
 	// we can send 8 types
@@ -268,19 +269,27 @@ public class Message {
 	public PeerAddress recipient() {
 		return recipient;
 	}
-
-	/**
-	 * Set the ID of the recipient. The IP is used to connect to the recipient,
-	 * but the IP is *not* transferred.
-	 * 
-	 * @param recipient
-	 *            The ID of the recipient
-	 * @return This class
-	 */
-	public Message recipient(final PeerAddress recipient) {
-		this.recipient = recipient;
-		return this;
-	}
+    /**
+     * Set the ID of the recipient. The IP is used to connect to the recipient, but the IP is *not* transferred.
+     * 
+     * @param recipient
+     *            The ID of the recipient
+     * @return This class
+     */
+    public Message recipient(final PeerAddress recipient) {
+        this.recipient = recipient;
+        return this;
+    }
+    
+    public PeerAddress recipientRelay() {
+        return recipientRelay;
+    }
+    
+    public Message recipientRelay(PeerAddress recipientRelay) {
+    	this.recipientRelay = recipientRelay;
+        return this;
+	    
+    }
 
 	/**
 	 * Return content types. Content type can be empty if not set

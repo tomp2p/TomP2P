@@ -103,19 +103,67 @@ public class StorageMemory implements Storage {
     @Override
     public NavigableMap<Number640, Data> remove(Number640 fromKey, Number640 toKey, boolean returnData) {
         NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
-        NavigableMap<Number640, Data> copy = new TreeMap<Number640, Data>(tmp);
+        
+        // new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
+        //
+        //      java.util.NoSuchElementException: null
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
+        //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
+        // 
+        // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
+        // then you will call next() that returns null and an exception is thrown.
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+        for(Map.Entry<Number640, Data> entry:tmp.entrySet()) {
+        	retVal.put(entry.getKey(), entry.getValue());
+        }
+        
         tmp.clear();
-        return copy;
+        return retVal;
     }
 
     @Override
     public NavigableMap<Number640, Data> subMap(Number640 fromKey, Number640 toKey, int limit,
             boolean ascending) {
-        NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+    	final NavigableMap<Number640, Data> tmp = dataMap.subMap(fromKey, true, toKey, true);
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
         if (limit < 0) {
-            return new TreeMap<Number640, Data>(ascending ? tmp : tmp.descendingMap());
+        	
+        	// new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
+            //
+            //      java.util.NoSuchElementException: null
+            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
+            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
+            //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
+            //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
+            //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
+            // 
+            // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
+            // then you will call next() that returns null and an exception is thrown.
+        	for(Map.Entry<Number640, Data> entry:(ascending ? tmp : tmp.descendingMap()).entrySet()) {
+            	retVal.put(entry.getKey(), entry.getValue());
+            }
         } else {
-            NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
             limit = Math.min(limit, tmp.size());
             Iterator<Map.Entry<Number640, Data>> iterator = ascending ? tmp.entrySet().iterator() : tmp
                     .descendingMap().entrySet().iterator();
@@ -123,13 +171,39 @@ public class StorageMemory implements Storage {
                 Map.Entry<Number640, Data> entry = iterator.next();
                 retVal.put(entry.getKey(), entry.getValue());
             }
-            return retVal;
         }
+        return retVal;
     }
 
     @Override
     public NavigableMap<Number640, Data> map() {
-        return new TreeMap<Number640, Data>(dataMap);
+    	
+    	// new TreeMap<Number640, Data>(tmp); is not possible as this may lead to no such element exception:
+        //
+        //      java.util.NoSuchElementException: null
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapIter.advance(ConcurrentSkipListMap.java:3030) ~[na:1.7.0_60]
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3100) ~[na:1.7.0_60]
+        //    	at java.util.concurrent.ConcurrentSkipListMap$SubMap$SubMapEntryIterator.next(ConcurrentSkipListMap.java:3096) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2394) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2418) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.buildFromSorted(TreeMap.java:2344) ~[na:1.7.0_60]
+        //    	at java.util.TreeMap.<init>(TreeMap.java:195) ~[na:1.7.0_60]
+        //    	at net.tomp2p.dht.StorageMemory.subMap(StorageMemory.java:119) ~[classes/:na]
+        // 
+        // the reason is that the size in TreeMap.buildFromSorted is stored beforehand, then iteratated. If the size changes,
+        // then you will call next() that returns null and an exception is thrown.
+        final NavigableMap<Number640, Data> retVal = new TreeMap<Number640, Data>();
+        for(final Map.Entry<Number640, Data> entry:dataMap.entrySet()) {
+        	retVal.put(entry.getKey(), entry.getValue());
+        }
+    	
+        return retVal;
     }
 
     // Maintenance

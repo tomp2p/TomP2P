@@ -26,6 +26,7 @@ import java.util.TreeSet;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.Statistics;
@@ -127,9 +128,9 @@ public final class ExampleConsistency {
         futureGet.awaitUninterruptibly();
         System.out.println("peer[" + peerGet + "] got [" + futureGet.data().object() + "] should be [Test 2]");
         // peer 11 and 8 joins again
-        peers[peerOffline1] = new PeerDHT(new PeerBuilder(peers[peerOffline1].peerID()).masterPeer(peers[0].peer()).start());
-        peers[peerOffline2] = new PeerDHT(new PeerBuilder(peers[peerOffline2].peerID()).masterPeer(peers[0].peer()).start());
-        peers[peerOffline3] = new PeerDHT(new PeerBuilder(peers[peerOffline3].peerID()).masterPeer(peers[0].peer()).start());
+        peers[peerOffline1] = new PeerBuilderDHT(new PeerBuilder(peers[peerOffline1].peerID()).masterPeer(peers[0].peer()).start()).start();
+        peers[peerOffline2] = new PeerBuilderDHT(new PeerBuilder(peers[peerOffline2].peerID()).masterPeer(peers[0].peer()).start()).start();
+        peers[peerOffline3] = new PeerBuilderDHT(new PeerBuilder(peers[peerOffline3].peerID()).masterPeer(peers[0].peer()).start()).start();
         peers[peerOffline1].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         peers[peerOffline2].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         peers[peerOffline3].peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
@@ -167,12 +168,12 @@ public final class ExampleConsistency {
             ClassNotFoundException, InterruptedException {
         // lets attack!
         System.out.println("Lets ATTACK!");
-        PeerDHT mpeer1 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
-                .masterPeer(peers[0].peer()).start());
-        PeerDHT mpeer2 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06892"))
-                .masterPeer(peers[0].peer()).start());
-        PeerDHT mpeer3 = new PeerDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
-                .masterPeer(peers[0].peer()).start());
+        PeerDHT mpeer1 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06893"))
+                .masterPeer(peers[0].peer()).start()).start();
+        PeerDHT mpeer2 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06892"))
+                .masterPeer(peers[0].peer()).start()).start();
+        PeerDHT mpeer3 = new PeerBuilderDHT(new PeerBuilder(new Number160("0x4bca44fd09461db1981e387e99e41e7d22d06895"))
+                .masterPeer(peers[0].peer()).start()).start();
         mpeer1.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         mpeer2.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();
         mpeer3.peer().bootstrap().peerAddress(peers[0].peerAddress()).start().awaitUninterruptibly();

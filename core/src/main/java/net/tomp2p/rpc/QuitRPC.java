@@ -22,6 +22,8 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionBean;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureResponse;
@@ -30,7 +32,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.ShutdownBuilder;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,7 +117,7 @@ public class QuitRPC extends DispatchHandler {
 		LOG.debug("received QUIT message {}", message);
 		synchronized (peerBean().peerStatusListeners()) {
 			for (PeerStatusListener peerStatusListener : peerBean().peerStatusListeners()) {
-				peerStatusListener.peerFailed(message.sender(), FailReason.Shutdown);
+				peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 			}
 		}
 		if (message.isUdp()) {

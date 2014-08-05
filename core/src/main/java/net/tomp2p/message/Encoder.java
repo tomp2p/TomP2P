@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.message.Message.Content;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
@@ -50,9 +51,8 @@ public class Encoder {
             resume = true;
         }
 
-        LOG.debug("entering loop");
         boolean done = loop(buf);
-        LOG.debug("exiting loop");
+        LOG.debug("message encoded {}", message);
 
         // write out what we have
         if (buf.isReadable() && done) {
@@ -69,7 +69,9 @@ public class Encoder {
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
         NumberType next;
         while ((next = message.contentRefencencs().peek()) != null) {
-            switch (next.content()) {
+        	final int start = buf.writerIndex();
+        	final Content content = next.content(); 
+            switch (content) {
             case KEY:
                 buf.writeBytes(message.key(next.number()).toByteArray());
                 message.contentRefencencs().poll();
@@ -201,7 +203,8 @@ public class Encoder {
                 TrackerData trackerData = message.trackerData(next.number());
                 buf.writeByte(trackerData.peerAddresses().size()); // 1 bytes - length, max. 255
                 for (Map.Entry<PeerStatatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
-                    buf.writeBytes(entry.getKey().peerAddress().toByteArray());
+                	byte[] me = entry.getKey().peerAddress().toByteArray();
+                    buf.writeBytes(me);
                     Data data = entry.getValue().duplicate();
                     encodeData(buf, data, false, !message.isRequest());
                 }
@@ -220,12 +223,13 @@ public class Encoder {
             case USER1:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
+            LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);
 
         }
         return true;
     }
 
-	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
+	private int encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
 		if(isConvertMeta) {
 			data = data.duplicateMeta();
 		} else {
@@ -235,9 +239,11 @@ public class Encoder {
 			int ttl = (int) ((data.expirationMillis() - System.currentTimeMillis()) / 1000);
 			data.ttlSeconds(ttl < 0 ? 0:ttl);
 		}
+		final int startWriter = buf.writerIndex();
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory, message.privateKey());
+	    return buf.writerIndex() - startWriter;
     }
 
     public Message message() {

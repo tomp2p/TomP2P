@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.StorageLayer;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.p2p.Peer;
@@ -85,10 +86,10 @@ public final class ExampleDST {
         for ( int i = 0; i < nr; i++ ) {
             if ( i == 0 ) {
             	Peer peer = new PeerBuilder( new Number160( ExampleUtils.RND ) ).ports( port ).start();
-                peers[0] = new PeerDHT(peer, setupStorage(max));
+                peers[0] = new PeerBuilderDHT(peer).storageLayer(setupStorage(max)).start();
             } else {
             	Peer peer = new PeerBuilder( new Number160( ExampleUtils.RND ) ).masterPeer( peers[0].peer() ).start();
-                peers[i] = new PeerDHT(peer, setupStorage(max));
+                peers[i] = new PeerBuilderDHT(peer).storageLayer(setupStorage(max)).start();
             }
         }
         return peers;

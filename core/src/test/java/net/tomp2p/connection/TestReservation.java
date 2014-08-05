@@ -73,7 +73,7 @@ public class TestReservation {
 	public void createSink() throws IOException {
 		Bindings bindings = new Bindings().addAddress(InetAddress.getByName("127.0.0.1"));
 		ChannelServerConficuration c = new ChannelServerConficuration();
-		c.interfaceBindings(bindings);
+		c.bindingsIncoming(bindings);
 		c.ports(new Ports(PORT, PORT));
 		c.pipelineFilter(new MyPipeLine());
 		final EventLoopGroup bossGroup = new NioEventLoopGroup(0,
@@ -177,7 +177,7 @@ public class TestReservation {
 						final ChannelCreator cc = future.channelCreator();
 						final CountDownLatch countDownLatch = new CountDownLatch(conn);
 						for (int k = 0; k < conn; k++) {
-							ChannelFuture channelFuture = cc.createUDP(SOCKET_ADDRESS, false,
+							ChannelFuture channelFuture = cc.createUDP(false,
 							        new HashMap<String, Pair<EventExecutorGroup, ChannelHandler>>() {
 							        }, new FutureResponse(null));
 							channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {

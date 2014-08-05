@@ -14,13 +14,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -31,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
@@ -52,7 +52,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
@@ -205,7 +204,7 @@ public class TestDHT {
 	public void testPutGetAlone() throws Exception {
 		PeerDHT master = null;
 		try {
-			master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fdht = master.put(Number160.ONE).data(new Data("hallo")).start();
 			fdht.awaitUninterruptibly();
 			fdht.futureRequests().awaitUninterruptibly();
@@ -228,7 +227,7 @@ public class TestDHT {
 		PeerDHT master = null;
 		try {
 			Peer pmaster = new PeerBuilder(new Number160(rnd)).ports(4001).start();
-			master = new PeerDHT(pmaster, new StorageMemory(1));
+			master = new PeerBuilderDHT(pmaster).storage(new StorageMemory(1)).start();
 			Data data = new Data("hallo");
 			data.ttlSeconds(1);
 			FuturePut fdht = master.put(Number160.ONE).data(data).start();
@@ -638,7 +637,7 @@ public class TestDHT {
 			Assert.assertEquals(true, fget.isSuccess());
 			Assert.assertEquals(3, fget.digest().keyDigest().size());
 			Number160 test = new Number160("0x37bb570100c9f5445b534757ebc613a32df3836d");
-			Set<Number160> test2 = new HashSet<Number160>();
+			List<Number160> test2 = new ArrayList<Number160>();
 			test2.add(test);
 			fget = peers[67].digest(nr).contentKeys(test2).start();
 			fget.awaitUninterruptibly();
@@ -661,9 +660,9 @@ public class TestDHT {
 
 	@Test
 	public void removeTest() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 
@@ -789,6 +788,58 @@ public class TestDHT {
 			Assert.assertEquals(versionKey2, e3.getValue().iterator().next());
 			Assert.assertEquals(new Number640(lKey, Number160.ZERO, ckey, versionKey2), e3.getKey());
 
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	@Test
+	public void testDigest4() throws Exception {
+		PeerDHT master = null;
+		try {
+			// setup
+			PeerDHT[] peers = UtilsDHT2.createNodes(100, rnd, 4001);
+			master = peers[0];
+			UtilsDHT2.perfectRouting(peers);
+
+			// initialize test data
+			Number160 lKey = new Number160(rnd);
+			Number160 dKey = new Number160(rnd);
+			Number160 ckey = new Number160(rnd);
+			NavigableMap<Number640, Data> dataMap = new TreeMap<Number640, Data>();
+			Number160 bKey = Number160.ONE;
+			for (int i = 0; i < 10; i++) {
+				Data data = new Data(UUID.randomUUID());
+				data.addBasedOn(bKey);
+				Number160 vKey = new Number160(i, data.hash());
+				dataMap.put(new Number640(lKey, dKey, ckey, vKey), data);
+				bKey = vKey;
+			}
+
+			// put test data
+			for (Number640 key : dataMap.keySet()) {
+				FuturePut fput = peers[rnd.nextInt(100)].put(lKey).domainKey(dKey)
+						.data(ckey, dataMap.get(key)).versionKey(key.versionKey()).start();
+				fput.awaitUninterruptibly();
+			}
+
+			// get digest
+			FutureDigest fget = peers[rnd.nextInt(100)].digest(lKey)
+					.from(new Number640(lKey, dKey, ckey, Number160.ZERO))
+					.to(new Number640(lKey, dKey, ckey, Number160.MAX_VALUE)).start();
+			fget.awaitUninterruptibly();
+			DigestResult dr = fget.digest();
+			NavigableMap<Number640, Collection<Number160>> fetchedDataMap = dr.keyDigest();
+
+			// verify fetched digest
+			Assert.assertEquals(dataMap.size(), fetchedDataMap.size());
+			for (Number640 key : dataMap.keySet()) {
+				Assert.assertTrue(fetchedDataMap.containsKey(key));
+				Assert.assertEquals(dataMap.get(key).basedOnSet().iterator().next(), fetchedDataMap.get(key)
+						.iterator().next());
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -972,16 +1023,16 @@ public class TestDHT {
 		PeerDHT master2 = null;
 		PeerDHT master3 = null;
 		try {
-			master1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start());
-			master2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start());
-			master3 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start());
+			master1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4001).start()).start();
+			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
+			master3 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4003).start()).start();
 			// perfect routing
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master1.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
 			Number160 id = master2.peerID();
 			Data data = new Data(new byte[44444]);
 			RoutingConfiguration rc = new RoutingConfiguration(2, 10, 2);
@@ -1006,13 +1057,13 @@ public class TestDHT {
 			fget.awaitUninterruptibly();
 			Assert.assertEquals(true, fget.isSuccess());
 
-			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
-			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), FailReason.Shutdown);
-			master2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start());
-			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null);
-			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null);
+			master1.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+			master3.peerBean().peerMap().peerFailed(master2.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
+			master2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).p2pId(1).ports(4002).start()).start();
+			master1.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master3.peerBean().peerMap().peerFound(master2.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master1.peerAddress(), null, null);
+			master2.peerBean().peerMap().peerFound(master3.peerAddress(), null, null);
 
 			System.err.println("no more exceptions here!!");
 
@@ -1117,11 +1168,11 @@ public class TestDHT {
 			Data d1 = new Data("hello");
 			Data d2 = new Data("world!");
 			// setup (step 1)
-			p1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			p1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fput = p1.add(n1).data(d1).start();
 			fput.awaitUninterruptibly();
 			Assert.assertEquals(true, fput.isSuccess());
-			p2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start());
+			p2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			// test (step 2)
 			fput = p1.add(n1).data(d2).start();
@@ -1173,11 +1224,11 @@ public class TestDHT {
 			Data d1 = new Data("hello");
 			Data d2 = new Data("world!");
 			// setup (step 1)
-			p1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start());
+			p1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).start()).start();
 			FuturePut fput = p1.put(n1).data(d1).start();
 			fput.awaitUninterruptibly();
 			Assert.assertEquals(true, fput.isSuccess());
-			p2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start());
+			p2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).start()).start();
 			p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 			// test (step 2)
 			fput = p1.put(n2).data(d2).start();
@@ -1415,10 +1466,10 @@ public class TestDHT {
 			ChannelServerConficuration ccs1 = PeerBuilder.createDefaultChannelServerConfiguration();
 			ccs1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
 
-			master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)
-			        .channelServerConfiguration(ccs1).start());
-			slave = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(4002).channelClientConfiguration(ccc1)
-			        .channelServerConfiguration(ccs1).start());
+			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)
+			        .channelServerConfiguration(ccs1).start()).start();
+			slave = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4002).channelClientConfiguration(ccc1)
+			        .channelServerConfiguration(ccs1).start()).start();
 
 			master.peer().bootstrap().peerAddress(slave.peerAddress()).start().awaitUninterruptibly();
 			slave.peer().bootstrap().peerAddress(master.peerAddress()).start().awaitUninterruptibly();
@@ -1462,9 +1513,9 @@ public class TestDHT {
 	
 	@Test
 	public void removeFromToTest3() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		Number160 lKey = Number160.createHash("location");
@@ -1490,9 +1541,9 @@ public class TestDHT {
 
 	@Test
 	public void removeFromToTest4() throws IOException, ClassNotFoundException {
-		PeerDHT p1 = new PeerDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start());
-		PeerDHT p2 = new PeerDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
-		        .start());
+		PeerDHT p1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(1)).ports(5000).start()).start();
+		PeerDHT p2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(2)).masterPeer(p1.peer())
+		        .start()).start();
 		p2.peer().bootstrap().peerAddress(p1.peerAddress()).start().awaitUninterruptibly();
 		p1.peer().bootstrap().peerAddress(p2.peerAddress()).start().awaitUninterruptibly();
 		Number160 lKey = Number160.createHash("location");
@@ -1779,6 +1830,25 @@ public class TestDHT {
 			Number640 key7b = new Number640(key480, vKey7b);
 			Assert.assertTrue(dataMap.containsKey(key7b));
 			Assert.assertEquals(data7b.object(), dataMap.get(key7b).object());
+
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
+
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(12, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1927,6 +1997,25 @@ public class TestDHT {
 			Number640 key7 = new Number640(key480, vKey7);
 			Assert.assertTrue(dataMap.containsKey(key7));
 			Assert.assertEquals(data7.object(), dataMap.get(key7).object());
+
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
+
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(13, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -1995,6 +2084,25 @@ public class TestDHT {
 			Number640 key2 = new Number640(key480, vKey2);
 			Assert.assertTrue(dataMap.containsKey(key2));
 			Assert.assertEquals(data2.object(), dataMap.get(key2).object());
+
+			// get latest versions with digest
+			FutureGet fgetWithDigest = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+					.contentKey(contentKey).getLatest().withDigest().start();
+			fgetWithDigest.awaitUninterruptibly();
+			Assert.assertTrue(fgetWithDigest.isSuccess());
+
+			// check digest result
+			DigestResult digestResult = fgetWithDigest.digest();
+			Assert.assertEquals(3, digestResult.keyDigest().size());
+			for (Number160 vKey : sortedMap.keySet()) {
+				Number640 key = new Number640(locationKey, domainKey, contentKey, vKey);
+				Assert.assertTrue(digestResult.keyDigest().containsKey(key));
+				Assert.assertEquals(sortedMap.get(vKey).basedOnSet().size(), digestResult.keyDigest()
+						.get(key).size());
+				for (Number160 bKey : sortedMap.get(vKey).basedOnSet()) {
+					Assert.assertTrue(digestResult.keyDigest().get(key).contains(bKey));
+				}
+			}
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -2057,22 +2165,22 @@ public class TestDHT {
 		if (automaticFuture != null) {
 			master = new PeerBuilder(new Number160(1111))
 			        .ports(port).start().addAutomaticFuture(automaticFuture);
-			peers[0] = new PeerDHT(master);
+			peers[0] = new PeerBuilderDHT(master).start();
 		} else {
 			master = new PeerBuilder(new Number160(1111)).ports(port)
 			        .start();
-			peers[0] = new PeerDHT(master);
+			peers[0] = new PeerBuilderDHT(master).start();
 		}
 
 		for (int i = 1; i < nrOfPeers; i++) {
 			if (automaticFuture != null) {
 				Peer peer = new PeerBuilder(new Number160(i))
 				        .masterPeer(master).start().addAutomaticFuture(automaticFuture);
-				peers[i] = new PeerDHT(peer);
+				peers[i] = new PeerBuilderDHT(peer).start();
 			} else {
 				Peer peer = new PeerBuilder(new Number160(i))
 				        .masterPeer(master).start();
-				peers[i] = new PeerDHT(peer);
+				peers[i] = new PeerBuilderDHT(peer).start();
 			}
 		}
 		System.err.println("peers created.");

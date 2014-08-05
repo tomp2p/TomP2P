@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.Utils2;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -41,7 +42,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetBestSmoothingFactor() throws IOException {
-        PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(peerId)).ports(port7).start());
+        PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(peerId)).ports(port7).start()).start();
         AutoReplication automaticReplication = new AutoReplication(peer.peer());
         automaticReplication.reliability(reliability);
 
@@ -64,7 +65,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetAverage() throws IOException {
-    	PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(peerId)).ports(port8).start());
+    	PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(peerId)).ports(port8).start()).start();
         AutoReplication automaticReplication = new AutoReplication(peer.peer());
         automaticReplication.reliability(reliability);
 
@@ -86,7 +87,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetStandardDeviation() throws IOException {
-    	PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(peerId)).ports(port9).start());
+    	PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(peerId)).ports(port9).start()).start();
         AutoReplication automaticReplication = new AutoReplication(peer.peer());
         automaticReplication.reliability(reliability);
 
@@ -109,7 +110,7 @@ public class AutomaticReplicationTest {
 
     @Test
     public void testGetPredictedValue() throws IOException {
-    	PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160(peerId)).ports(port10).start());
+    	PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160(peerId)).ports(port10).start()).start();
         AutoReplication automaticReplication = new AutoReplication(peer.peer());
         automaticReplication.reliability(reliability);
 

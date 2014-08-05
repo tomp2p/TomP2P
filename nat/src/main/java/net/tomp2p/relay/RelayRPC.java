@@ -160,62 +160,55 @@ public class RelayRPC extends DispatchHandler {
 		return this.peer;
 	}
 
-	private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
+private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
+        
+        if (peerBean().serverPeerAddress().isRelayed()) {
+            // peer is behind a NAT as well -> deny request
+        	LOG.warn("I cannot be a relay since I'm relayed as well! {}", message);
+            responder.response(createResponseMessage(message, Type.DENIED));
+            return;
+        }
 
-		if (peerBean().serverPeerAddress().isRelayed()) {
-			// peer is behind a NAT as well -> deny request
-			responder.response(createResponseMessage(message, Type.DENIED));
-			return;
-		}
+        // register relay forwarder
+        RelayForwarderRPC.register(peerConnection, peer, this, rconRPC);
 
-		// register relay forwarder and the rconRPC (reverse connection RPC)
-		RelayForwarderRPC.register(peerConnection, peer, this, rconRPC);
+        LOG.debug("I'll be your relay! {}", message);
+        responder.response(createResponseMessage(message, Type.OK));
+    }
 
-		// add close listener for the peer connection
-		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-			@Override
-			public void operationComplete(FutureDone<Void> future) throws Exception {
-				// unregister relay handler
-				LOG.debug("Unregister the relay for {}", peerConnection.remotePeer().peerId());
-				RelayForwarderRPC.unregister(peer, peerConnection.remotePeer().peerId());
-			}
-		});
+    private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
+        // TODO: check if we have right setup
+        Buffer requestBuffer = message.buffer(0);
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
+        LOG.debug("Received message from relay peer: {}", realMessage);
+        realMessage.restoreContentReferences();
+        NoDirectResponse responder = new NoDirectResponse();
+        // TODO: Not sure what to do with the peer connection and sign
+        peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
+        LOG.debug("Send reply message to relay peer: {}", responder.response());
+        Message response = createResponseMessage(message, Type.OK);
+        response.buffer(RelayUtils.encodeMessage(responder.response()));
+        responderToRelay.response(response);
+    }
 
-		responder.response(createResponseMessage(message, Type.OK));
-	}
-
-	private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
-		// TODO: check if we have right setup
-		Buffer requestBuffer = message.buffer(0);
-		Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
-		LOG.debug("Received message from relay peer: {}", realMessage);
-		realMessage.restoreContentReferences();
-		NoDirectResponse responder = new NoDirectResponse();
-		// TODO: Not sure what to do with the peer connection and sign
-		peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
-		LOG.debug("Send reply message to relay peer: {}", responder.response());
-		Message response = createResponseMessage(message, Type.OK);
-		response.buffer(RelayUtils.encodeMessage(responder.response()));
-		responderToRelay.response(response);
-	}
-
-	/**
-	 * Updates the peer map of an unreachable peer on the relay peer, so that
-	 * the relay peer can respond to neighbor RPC on behalf of the unreachable
-	 * peer
-	 * 
-	 * @param message
-	 * @param responder
-	 */
-	private void handleMap(Message message, Responder responder) {
-		Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
-		RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.sender().peerId());
-		if (relayForwarderRPC != null) {
-			relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.sender()));
-		} else {
-			LOG.error("need to call setup relay first");
-		}
-		Message response = createResponseMessage(message, Type.OK);
-		responder.response(response);
-	}
+    /**
+     * Updates the peer map of an unreachable peer on the relay peer, so that
+     * the relay peer can respond to neighbor RPC on behalf of the unreachable
+     * peer
+     * 
+     * @param message
+     * @param responder
+     */
+    private void handleMap(Message message, Responder responder) {
+    	LOG.debug("handle foreign map {}", message);
+        Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
+        RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.sender().peerId());
+        if (relayForwarderRPC != null) {
+            relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.sender()));
+        } else {
+            LOG.error("need to call setup relay first");
+        }
+        Message response = createResponseMessage(message, Type.OK);
+        responder.response(response);
+    }
 }

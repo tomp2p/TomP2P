@@ -1,15 +1,29 @@
 package net.tomp2p.replication;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.tomp2p.Utils2;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.PeerException;
+import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.connection.Ports;
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
@@ -18,8 +32,10 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number480;
+import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatusListener.FailReason;
+import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -41,7 +57,7 @@ public class TestStoreReplication {
         ChannelCreator cc = null;
         try {
         	StorageMemory s1 = new StorageMemory();
-        	master = new PeerDHT(new PeerBuilder(new Number160("0xee")).start(), s1);
+        	master = new PeerBuilderDHT(new PeerBuilder(new Number160("0xee")).start()).storage(s1).start();
         	IndirectReplication im = new IndirectReplication(master);
         	
             
@@ -88,9 +104,9 @@ public class TestStoreReplication {
             fr.awaitUninterruptibly();
             // s1.put(location, Number160.ZERO, null, dataMap, false, false);
             final int slavePort = 7701;
-            slave = new PeerDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start());
-            master.peerBean().peerMap().peerFound(slave.peerAddress(), null);
-            master.peerBean().peerMap().peerFailed(slave.peerAddress(), FailReason.Shutdown);
+            slave = new PeerBuilderDHT(new PeerBuilder(new Number160("0xfe")).ports(slavePort).start()).start();
+            master.peerBean().peerMap().peerFound(slave.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFailed(slave.peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
         } catch (Throwable t) {
@@ -128,7 +144,7 @@ public class TestStoreReplication {
             final AtomicInteger test1 = new AtomicInteger(0);
             final AtomicInteger test2 = new AtomicInteger(0);
             StorageMemory s1 = new StorageMemory();
-            master = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port).start(), s1);
+            master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port).start()).storage(s1).start();
             IndirectReplication im = new IndirectReplication(master);
             System.err.println("master is " + master.peerAddress());
 
@@ -163,25 +179,25 @@ public class TestStoreReplication {
             putBuilder.versionKey(Number160.ZERO);
 
             master.storeRPC().put(master.peerAddress(), putBuilder, cc).awaitUninterruptibly();
-            slave1 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port + 1).start());
-            slave2 = new PeerDHT(new PeerBuilder(new Number160(rnd)).ports(port + 2).start());
+            slave1 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port + 1).start()).start();
+            slave2 = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(port + 2).start()).start();
             System.err.println("slave1 is " + slave1.peerAddress());
             System.err.println("slave2 is " + slave2.peerAddress());
             // master peer learns about the slave peers
-            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null);
-            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null);
+            master.peerBean().peerMap().peerFound(slave1.peerAddress(), null, null);
+            master.peerBean().peerMap().peerFound(slave2.peerAddress(), null, null);
 
             System.err.println("both peers online");
             PeerAddress slaveAddress1 = slave1.peerAddress();
             slave1.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress1, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress1, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(2, test2.get());
 
             PeerAddress slaveAddress2 = slave2.peerAddress();
             slave2.shutdown().await();
-            master.peerBean().peerMap().peerFailed(slaveAddress2, FailReason.Shutdown);
+            master.peerBean().peerMap().peerFailed(slaveAddress2, new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 
             Assert.assertEquals(1, test1.get());
             Assert.assertEquals(3, test2.get());
@@ -941,13 +957,13 @@ public class TestStoreReplication {
 			StorageMemory storage = new StorageMemory();
 			for (int i = 0; i < joins.length; i++) {
 				if(i == 0) {
-					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start(), storage);
+					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start()).storage(storage).start();
 					ind = new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);
 				} else {
-					PeerDHT peer = new PeerDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
-							.start()); 
+					PeerDHT peer = new PeerBuilderDHT(new PeerBuilder(new Number160("0x" + letters[i])).ports(Ports.DEFAULT_PORT + i)
+							.start()).start(); 
 					new IndirectReplication(peer).replicationFactor(replicationFactor).nRoot(nRoot).start();
 					peers.add(peer);	
 				}
@@ -1000,7 +1016,7 @@ public class TestStoreReplication {
 			
 			for (int i = 1; i < joins.length; i++) {
 				// insert a peer
-				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null);
+				master.peerBean().peerMap().peerFound(peers.get(i).peerAddress(), null, null);
 				// verify replication notifications
 				Assert.assertEquals(joins[i][0], replicateI.get());
 				replicateI.set(0);
@@ -1012,7 +1028,7 @@ public class TestStoreReplication {
 			
 			for (int i = 0; i < leaves.length; i++) {
 				// remove a peer
-				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), FailReason.Shutdown);
+				master.peerBean().peerMap().peerFailed(peers.get(i+1).peerAddress(), new PeerException(AbortCause.SHUTDOWN, "shutdown"));
 				// verify replication notifications
 				Assert.assertEquals(leaves[i][0], replicateI.get());
 				replicateI.set(0);
@@ -1030,6 +1046,128 @@ public class TestStoreReplication {
 				peer.shutdown().await();
 			}
 		}
+	}
+
+	@Test
+	public void testHeavyLoadNRootReplication() throws Exception {
+		PeerDHT master = null;
+		Random rnd = new Random();
+		try {
+			// setup
+			PeerDHT[] peers = Utils2.createNodes(10, rnd, 4001);
+			master = peers[0];
+			Utils2.perfectRouting(peers);
+			
+			for (int i = 0; i < peers.length; i++) {
+				new net.tomp2p.replication.IndirectReplication(peers[i]).intervalMillis(500).nRoot()
+				.replicationFactor(6).start();
+			}
+
+			NavigableMap<Number160, Data> sortedMap = new TreeMap<Number160, Data>();
+			Number160 locationKey = Number160.createHash("location");
+			Number160 domainKey = Number160.createHash("domain");
+			Number160 contentKey = Number160.createHash("content");
+
+			String content = "";
+			for (int i = 0; i < 500; i++) {
+				content += "a";
+				Number160 vKey = generateVersionKey(i, content);
+				Data data = new Data(content);
+				if (!sortedMap.isEmpty()) {
+					data.addBasedOn(sortedMap.lastKey());
+				}
+				data.prepareFlag();
+				sortedMap.put(vKey, data);
+
+				// put test data (prepare)
+				FuturePut fput = peers[rnd.nextInt(10)].put(locationKey)
+						.data(contentKey, sortedMap.get(vKey)).domainKey(domainKey).versionKey(vKey).start();
+				fput.awaitUninterruptibly();
+				fput.futureRequests().awaitUninterruptibly();
+				fput.futureRequests().awaitListenersUninterruptibly();
+				Assert.assertEquals(true, fput.isSuccess());
+
+				// confirm put
+				FuturePut futurePutConfirm = peers[rnd.nextInt(10)].put(locationKey).domainKey(domainKey)
+						.data(contentKey, new Data()).versionKey(vKey).putConfirm().start();
+				futurePutConfirm.awaitUninterruptibly();
+				futurePutConfirm.awaitListenersUninterruptibly();
+
+				// get latest version with digest
+				FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
+						.contentKey(contentKey).getLatest().withDigest().start();
+				fget.awaitUninterruptibly();
+				Assert.assertTrue(fget.isSuccess());
+
+				// check result
+				Map<Number640, Data> dataMap = fget.dataMap();
+				Assert.assertEquals(1, dataMap.size());
+				Number480 key480 = new Number480(locationKey, domainKey, contentKey);
+
+				Number640 key = new Number640(key480, vKey);
+				Assert.assertTrue(dataMap.containsKey(key));
+				Assert.assertEquals(data.object(), dataMap.get(key).object());
+
+				// check digest result
+				DigestResult digestResult = fget.digest();
+				Assert.assertEquals(sortedMap.size(), digestResult.keyDigest().size());
+				for (Number160 versionKey : sortedMap.keySet()) {
+					Number640 digestKey = new Number640(locationKey, domainKey, contentKey, versionKey);
+					Assert.assertTrue(digestResult.keyDigest().containsKey(digestKey));
+					Assert.assertEquals(sortedMap.get(versionKey).basedOnSet().size(), digestResult
+							.keyDigest().get(digestKey).size());
+					for (Number160 bKey : sortedMap.get(versionKey).basedOnSet()) {
+						Assert.assertTrue(digestResult.keyDigest().get(digestKey).contains(bKey));
+					}
+				}
+			}
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+
+	private static Number160 generateVersionKey(long basedOnCounter, Serializable object) throws IOException {
+		// get a MD5 hash of the object itself
+		byte[] hash = generateMD5Hash(serializeObject(object));
+		return new Number160(basedOnCounter, new Number160(Arrays.copyOf(hash, Number160.BYTE_ARRAY_SIZE)));
+	}
+
+	private static byte[] generateMD5Hash(byte[] data) {
+		MessageDigest md = null;
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+		}
+		md.reset();
+		md.update(data, 0, data.length);
+		return md.digest();
+	}
+
+	private static byte[] serializeObject(Serializable object) throws IOException {
+
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		ObjectOutputStream oos = null;
+		byte[] result = null;
+
+		try {
+			oos = new ObjectOutputStream(baos);
+			oos.writeObject(object);
+			result = baos.toByteArray();
+		} catch (IOException e) {
+			throw e;
+		} finally {
+			try {
+				if (oos != null)
+					oos.close();
+				if (baos != null)
+					baos.close();
+			} catch (IOException e) {
+				throw e;
+			}
+		}
+		return result;
 	}
 
 }

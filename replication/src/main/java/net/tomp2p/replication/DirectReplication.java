@@ -93,11 +93,11 @@ public class DirectReplication implements Shutdown {
 		peer.addShutdownListener(this);
 	}
 
-	public Shutdown direct(final Builder builder, final int intervalMillis, final int repetitions) {
-		return direct(builder, intervalMillis, repetitions, null);
+	public Shutdown start(final Builder builder, final int intervalMillis, final int repetitions) {
+		return start(builder, intervalMillis, repetitions, null);
 	}
 
-	public Shutdown direct(final Builder builder, final int intervalMillis, final int repetitions,
+	public Shutdown start(final Builder builder, final int intervalMillis, final int repetitions,
 	        final AutomaticFuture automaticFuture) {
 		synchronized (this) {
 			if (shutdown) {

@@ -30,6 +30,7 @@ import java.util.TreeSet;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.message.Message;
@@ -147,7 +148,7 @@ public class Utils2 {
                    .externalBindings(bindings);
         
         
-        peers[0] = new PeerDHT(pm.start());
+        peers[0] = new PeerBuilderDHT(pm.start()).start();
         if(automaticFuture!=null) {
         	peers[0].peer().addAutomaticFuture(automaticFuture);
         }
@@ -162,7 +163,7 @@ public class Utils2 {
         for (int i = 1; i < nrOfPeers; i++) {
             pm = new PeerBuilder(new Number160(rnd)).enableMaintenance(maintenance)
                         .externalBindings(bindings).masterPeer(peers[0].peer());
-            peers[i] = new PeerDHT(pm.start());
+            peers[i] = new PeerBuilderDHT(pm.start()).start();
             
             if(automaticFuture!=null) {
             	peers[i].peer().addAutomaticFuture(automaticFuture);
@@ -203,7 +204,7 @@ public class Utils2 {
     public static void perfectRouting(PeerDHT... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null);
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), null, null);
         }
         System.err.println("perfect routing done.");
     }
@@ -211,7 +212,7 @@ public class Utils2 {
     public static void perfectRoutingIndirect(Peer... peers) {
         for (int i = 0; i < peers.length; i++) {
             for (int j = 0; j < peers.length; j++)
-                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress());
+                peers[i].peerBean().peerMap().peerFound(peers[j].peerAddress(), peers[j].peerAddress(), null);
         }
         System.err.println("perfect routing done.");
     }

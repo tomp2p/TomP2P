@@ -89,9 +89,12 @@ public class StorageMemory implements Storage {
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.MAX_VALUE), true);
         	for (int i = 0; i < versions.size() - maxVersions; i++) {
-        		Number640 toRemove = versions.navigableKeySet().iterator().next();
-        		remove(toRemove, false);
-        		removeTimeout(toRemove);
+        		Iterator<Number640> it = versions.navigableKeySet().iterator();
+        		if (it.hasNext()) {
+        			Number640 toRemove = it.next();
+        			remove(toRemove, false);
+        			removeTimeout(toRemove);
+        		}
         	}
         }
         return true;

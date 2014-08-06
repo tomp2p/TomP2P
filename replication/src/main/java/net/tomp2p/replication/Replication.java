@@ -20,9 +20,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.dht.ReplicationListener;
 import net.tomp2p.dht.StorageLayer;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.p2p.ResponsibilityListener;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -198,10 +203,13 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
      * @param delayed Indicates if the other peer should get notified immediately or delayed. The case for delayed is that
      *            multiple non responsible peers may call this and a delayed call in that case may be better.
      */
-    private void notifyOtherResponsible(final Number160 locationKey, final PeerAddress other) {
+    private FutureForkJoin<FutureDone<Void>> notifyOtherResponsible(final Number160 locationKey, final PeerAddress other) {
+    	FutureDone[] futureDones = new FutureDone[listeners.size()];
+    	int index = 0;
         for (ResponsibilityListener responsibilityListener : listeners) {
-            responsibilityListener.otherResponsible(locationKey, other);
+            futureDones[index++] = responsibilityListener.otherResponsible(locationKey, other);
         }
+        return new FutureForkJoin<FutureDone<Void>>(new AtomicReferenceArray<FutureDone<Void>>(futureDones));
     }
     
     @Override
@@ -254,7 +262,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 						if (!isInReplicationRange(locationKey, peerAddress, replicationFactor)) {
 							LOG.debug("I {} detected that {} is not responsible anymore for key {}.",
 									selfAddress, peerAddress, locationKey);
-							backend.removeResponsibility(locationKey, otherReplica, keepData);
+							backend.removeResponsibility(locationKey, otherReplica);
 							hasToNotifyReplicaSet = true;
 						} else {
 							LOG.debug("I {} checked that {} is still responsible for key {}.", selfAddress,
@@ -285,7 +293,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
                 .peerId());
         LOG.debug("I {} have to check replication responsibilities for {}.", selfAddress, myResponsibleLocations);
         
-        for (Number160 myResponsibleLocation : myResponsibleLocations) {
+        for (final Number160 myResponsibleLocation : myResponsibleLocations) {
 			if (!nRootReplication) {
 				// use 0-root replication strategy
 				PeerAddress closest = closest(myResponsibleLocation);
@@ -362,14 +370,36 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 								"I {} figured out replication responsibility of newly joined peer {} for {}.",
 								selfAddress, peerAddress, myResponsibleLocation);
 						// newly joined peer has to get notified
-						notifyOtherResponsible(myResponsibleLocation, peerAddress);
+						FutureForkJoin<FutureDone<Void>> futureForkJoin = notifyOtherResponsible(
+								myResponsibleLocation, peerAddress);
 						// don't add newly joined peer id and it's new
 						// replication responsibility to our replication map,
 						// because given key doesn't affect us anymore
 						LOG.debug("I {} am not responsible anymore for {}.", selfAddress, myResponsibleLocation);
 						// I'm not in replication range, I don't need to know
 						// about all responsibility entries to the given key
-						backend.removeResponsibility(myResponsibleLocation, keepData);
+						futureForkJoin.addListener(new BaseFutureListener<BaseFuture>() {
+							@Override
+							public void operationComplete(BaseFuture future)
+									throws Exception {
+										if (future.isSuccess()) {
+											backend.removeResponsibility(
+													myResponsibleLocation,
+													keepData);
+										} else {
+											LOG.warn(
+													"I {} couldn't notify newly joined peer {} about responsibility for {}."
+															+ " I keep responsibility.",
+													selfAddress, peerAddress,
+													myResponsibleLocation);
+										}
+							}
+							@Override
+							public void exceptionCaught(Throwable t)
+									throws Exception {
+								LOG.error("Unexcepted exception ocurred.", t);
+							}
+						});
 					}
 				} else {
 					// newly joined peer doesn't have to replicate
@@ -481,7 +511,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
 							peerAddress, otherResponsibleLocation);
 				}
 				// remove stored replication responsibility of leaving node
-				backend.removeResponsibility(otherResponsibleLocation, peerAddress.peerId(), keepData);
+				backend.removeResponsibility(otherResponsibleLocation, peerAddress.peerId());
 			}
 			// now check for our responsibilities. If a peer is gone and it was
 			// in the replication range, we need make sure we have enough copies

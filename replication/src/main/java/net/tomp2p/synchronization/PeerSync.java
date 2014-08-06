@@ -73,9 +73,10 @@ public class PeerSync implements ReplicationSender {
 	}
 	
 	@Override
-    public void sendDirect(PeerAddress other, Number160 locationKey, Map<Number640, Data> dataMap) {
+    public FutureDone<SyncStat> sendDirect(PeerAddress other, Number160 locationKey, Map<Number640, Data> dataMap) {
         FutureDone<SyncStat> future = synchronize(other)
                 .dataMap(new DataMap(dataMap)).start();
         peer.peer().notifyAutomaticFutures(future);
+        return future;
     }
 }

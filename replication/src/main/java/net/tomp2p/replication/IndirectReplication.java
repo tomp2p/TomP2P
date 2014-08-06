@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -259,9 +260,9 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
     
 
     @Override
-    public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+    public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
     	if(!nRoot) {
-    		return;
+    		return null;
     	}
         LOG.debug("Other peer {} is responsible for {}. I'm {}", other, locationKey, peer.peerAddress());
         
@@ -269,8 +270,8 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         Number640 max = new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE,
         		Number160.MAX_VALUE);
         final Map<Number640, Data> dataMap = peer.storageLayer().get(min, max, -1, true);
-        replicationSender.sendDirect(other, locationKey, dataMap);
         LOG.debug("transfer from {} to {} for key {}", peer.peerAddress(), other, locationKey);
+        return replicationSender.sendDirect(other, locationKey, dataMap);
     }
 
     @Override
@@ -295,7 +296,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         // we need to make sure that there are enough copies. The easy way is to
         // publish it again... The good way is to do a diff
         Collection<Number160> locationKeys = peer.storageLayer().findContentForResponsiblePeerID(peer.peerID());
-
+        
         for (Number160 locationKey : locationKeys) {
             synchronizeData(locationKey);
         }
@@ -303,6 +304,14 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         int replicationFactor = IndirectReplication.this.replicationFactor.replicationFactor();
         replication.replicationFactor(replicationFactor);
     }
+
+	public static String getVersionKeysFromMap(Map<Number640, Data> dataMap) {
+		String result = "";
+		for (Number640 key : dataMap.keySet()) {
+			result += key.versionKey() + " ";
+		}
+		return result;
+	}
 
     /**
      * Get the data that I'm responsible for and make sure that there are enough replicas.
@@ -375,8 +384,9 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
          * @param dataMapConvert
          *            The data to store
          */
-        public void sendDirect(final PeerAddress other, final Number160 locationKey, final Map<Number640, Data> dataMap) {
-            FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 1);
+        public FutureDone<Void> sendDirect(final PeerAddress other, final Number160 locationKey, final Map<Number640, Data> dataMap) {
+            final FutureDone<Void> futureDone = new FutureDone<Void>();
+        	FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 1);
             futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -385,15 +395,29 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
                         putBuilder.dataMap(dataMap);
                         FutureResponse futureResponse = storageRPC.put(other, putBuilder,
                                 future.channelCreator());
+                        futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+							public void operationComplete(FutureResponse future)
+									throws Exception {
+								if(future.isSuccess()) {
+									futureDone.done();	
+								} else {
+									futureDone.failed(future);
+								}
+								
+							}
+						});
                         Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         peer.peer().notifyAutomaticFutures(futureResponse);
                     } else {
+                    	futureDone.failed(future);
                         if (LOG.isErrorEnabled()) {
-                            LOG.error("otherResponsible failed " + future.failedReason());
+                            LOG.debug("otherResponsible failed " + future.failedReason());
                         }
                     }
                 }
             });
+            return futureDone;
         }   
     }
 }

@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
@@ -53,6 +54,17 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	private final RelayRPC relayRPC;
 
 	/**
+	 * This variable is needed, because a relay peer overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. It
+	 * guarantees the existence of a {@link RconRPC} object in the iohandlers
+	 * map of the {@link Dispatcher}. Without this variable, no reverse
+	 * connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final RconRPC rconRPC;
+
+	/**
 	 * 
 	 * @param peerConnection
 	 *            A peer connection to an unreachable peer that is permanently
@@ -60,7 +72,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	 * @param peer
 	 *            The relay peer
 	 */
-	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC) {
+	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC, RconRPC rconRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peerConnection = peerConnection.changeRemotePeer(peerConnection.remotePeer().changeRelayed(true));
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -73,6 +85,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		
 		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
 		this.relayRPC = relayRPC;
+		this.rconRPC = rconRPC;
 		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
 	
@@ -100,24 +113,29 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
-			if (command != RPC.Commands.RELAY) {
+			if (command != RPC.Commands.RELAY && command != RPC.Commands.RCON) {
+				peer.connectionBean().dispatcher().registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
+			} else if (command == RPC.Commands.RCON) {
+				// We must register the rconRPC for every unreachable peer that
+				// we serve as a relay. Without this registration, no reverse
+				// connection setup is possible.
 				peer.connectionBean().dispatcher()
-				        .registerIoHandler(unreachablePeer.peerId(), this, command.getNr());
+						.registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
 			}
 		}
 		peer.peerBean().addPeerStatusListeners(this);
 	}
-	
-	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC) {
-		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC);
+
+	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {
+		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC, rconRPC);
 		relayForwarderRPC.register(peer);
 	}
-	
+
 	public static RelayForwarderRPC find(Peer peer, Number160 peerId) {
-		//we can search for any command, except RELAY, which is not handled here
-		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(
-				peerId, RPC.Commands.NEIGHBOR.getNr());
-    }
+		// we can search for any command, except RELAY, which is not handled
+		// here
+		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(peerId, RPC.Commands.NEIGHBOR.getNr());
+	}
 
 	@Override
 	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign,
@@ -140,8 +158,8 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		}
 	}
 
-	private void handleRelay(final Message message, final Responder responder, final PeerAddress sender)
-	        throws InvalidKeyException, SignatureException, IOException {
+	private void handleRelay(final Message message, final Responder responder, final PeerAddress sender) throws InvalidKeyException,
+			SignatureException, IOException {
 		// Send message via direct message through the open connection to the
 		// unreachable peer
 		message.restoreContentReferences();
@@ -154,7 +172,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 				if (future.isSuccess()) {
 					Buffer buffer = future.responseMessage().buffer(0);
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
-					        message.senderSocket());
+							message.senderSocket());
 					responseFromUnreachablePeer.restoreContentReferences();
 					responseFromUnreachablePeer.sender(sender);
 					responseFromUnreachablePeer.recipient(message.sender());
@@ -178,9 +196,8 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
-		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
-		        || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
-		        && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
+		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
+				&& (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 		Number160 locationKey = message.key(0);
@@ -204,11 +221,12 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		
 		NeighborSet neighborSet = new NeighborSet(NeighborRPC.NEIGHBOR_LIMIT, neighbors);
 		responseMessage.neighborsSet(neighborSet);
-		
-		//we can't do fast get here, as we only send over the neighbors and not the keys stored
+
+		// we can't do fast get here, as we only send over the neighbors and not
+		// the keys stored
 		responder.response(responseMessage);
 	}
-	
+
 	private SortedSet<PeerAddress> neighbors(Number160 id, int atLeast) {
         LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeer, id);
         if(peerMap == null) {
@@ -220,17 +238,21 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	
 	public Collection<PeerAddress> all() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
-		for(Map<Number160, PeerStatatistic> map:peerMap) {
+		for (Map<Number160, PeerStatatistic> map : peerMap) {
 			result1.addAll(map.values());
 		}
 		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
-	    for(PeerStatatistic peerStatatistic:result1) {
-	    	result2.add(peerStatatistic.peerAddress());
-	    }
-	    return result2;
-    }
+		for (PeerStatatistic peerStatatistic : result1) {
+			result2.add(peerStatatistic.peerAddress());
+		}
+		return result2;
+	}
 
 	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
-	    this.peerMap = peerMap;
-    }
+		this.peerMap = peerMap;
+	}
+
+	public PeerConnection peerConnection() {
+		return peerConnection;
+	}
 }

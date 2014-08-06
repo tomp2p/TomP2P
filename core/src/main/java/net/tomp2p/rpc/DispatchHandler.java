@@ -159,7 +159,7 @@ public abstract class DispatchHandler {
             responder.failed(Type.EXCEPTION , e.toString());
         }
     }
-
+    
     /**
      * If the message is OK, that has been previously checked by the user using checkMessage, a reply to the message is
      * generated here.

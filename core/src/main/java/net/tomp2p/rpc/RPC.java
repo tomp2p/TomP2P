@@ -24,6 +24,7 @@ public class RPC {
 		SYNC_INFO(),
 		PUT_CONFIRM(),
 		GET_LATEST(),
+		RCON(),
 		GET_LATEST_WITH_DIGEST();
 	
 	public byte getNr() {

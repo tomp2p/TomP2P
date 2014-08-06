@@ -15,6 +15,7 @@
  */
 package net.tomp2p.connection;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
@@ -41,7 +42,7 @@ public class ConnectionBean {
     private final Reservation reservation;
     private final ChannelClientConfiguration resourceConfiguration;
     private final ScheduledExecutorService timer;
-
+    
     /**
      * The connection bean with unmodifiable objects. Once its set you cannot change it. If its required to change, then
      * shutdown the peer and create a new one.

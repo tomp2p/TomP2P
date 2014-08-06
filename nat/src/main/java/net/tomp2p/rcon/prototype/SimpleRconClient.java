@@ -44,7 +44,7 @@ public class SimpleRconClient {
 
 				@Override
 				public Object reply(PeerAddress sender, Object request) throws Exception {
-					System.err.println("SUCCESS HIT");
+					System.out.println("SUCCESS HIT");
 
 					System.err.println("Sender: " + sender.toString());
 
@@ -95,10 +95,10 @@ public class SimpleRconClient {
 		FutureBootstrap fb = peer.bootstrap().peerAddress(masterPeerAddress).start();
 		fb.awaitUninterruptibly();
 		if (fb.isSuccess()) {
-			System.err.println("BOOTSTRAP SUCCESS!");
+			System.out.println("BOOTSTRAP SUCCESS!");
 			success = true;
 		} else {
-			System.err.println("BOOTSTRAP FAIL!");
+			System.out.println("BOOTSTRAP FAIL!");
 		}
 
 		return success;
@@ -109,10 +109,10 @@ public class SimpleRconClient {
 		PeerAddress recepient = null;
 
 		if (id == null || ip == null) {
-			System.err.println("MESSAGE SENT TO MASTER");
+			System.out.println("MESSAGE SENT TO MASTER");
 			recepient = masterPeerAddress;
 		} else {
-			System.err.println("DIRECTED MESSAGE TO " + ip);
+			System.out.println("DIRECTED MESSAGE TO " + ip);
 			recepient = new PeerAddress(Number160.createHash(id), Inet4Address.getByName(ip), port, port);
 		}
 
@@ -120,10 +120,10 @@ public class SimpleRconClient {
 		fd.awaitUninterruptibly(10000);
 
 		if (fd.isSuccess()) {
-			System.err.println("FUTURE DIRECT SUCCESS!");
+			System.out.println("FUTURE DIRECT SUCCESS!");
 			success = true;
 		} else {
-			System.err.println("FUTURE DIRECT FAIL!");
+			System.out.println("FUTURE DIRECT FAIL!");
 		}
 
 		return success;
@@ -157,10 +157,10 @@ public class SimpleRconClient {
 		fd.awaitUninterruptibly(10000);
 
 		if (fd.isSuccess()) {
-			System.err.println("FUTURE DIRECT SUCCESS!");
+			System.out.println("FUTURE DIRECT SUCCESS!");
 			success = true;
 		} else {
-			System.err.println("FUTURE DIRECT FAIL!");
+			System.out.println("FUTURE DIRECT FAIL!");
 		}
 
 		return success;
@@ -214,9 +214,9 @@ public class SimpleRconClient {
 				future.awaitUninterruptibly();
 
 				if (future.isSuccess()) {
-					System.err.println("FUTURE DIRECT SUCCESS!");
+					System.out.println("FUTURE DIRECT SUCCESS!");
 				} else {
-					System.err.println("FUTURE DIRECT FAIL!");
+					System.out.println("FUTURE DIRECT FAIL!");
 				}
 			} else {
 				throw new UnexpectedException("This should not happen");
@@ -229,12 +229,12 @@ public class SimpleRconClient {
 				lightswitch = true;
 				count = 5;
 			} else {
-				FutureDirect future = peer.sendDirect(connection).object("Countdown till close: " + count + " times.").start();
+				FutureDirect future = peer.sendDirect(connection).object("Countdown till close: " + count + " time(s).").start();
 				future.awaitUninterruptibly();
 				if (future.isSuccess()) {
-					System.err.println("FUTURE DIRECT SUCCESS!");
+					System.out.println("FUTURE DIRECT SUCCESS!");
 				} else {
-					System.err.println("FUTURE DIRECT FAIL!");
+					System.out.println("FUTURE DIRECT FAIL!");
 				}
 				count--;
 			}

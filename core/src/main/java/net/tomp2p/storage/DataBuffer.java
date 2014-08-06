@@ -197,14 +197,6 @@ public class DataBuffer {
 		return m.toByteBuf().equals(toByteBuf());
 	}
 
-	@Override
-	protected void finalize() throws Throwable {
-		final DataBuffer copy = shallowCopy();
-		for (ByteBuf buf : copy.buffers) {
-			buf.release();
-		}
-	}
-
 	public byte[] bytes() {
 		final ByteBuffer[] bufs = toByteBuffer();
 		final int bufLength = bufs.length;

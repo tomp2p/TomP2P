@@ -290,20 +290,23 @@ public class RconRPC extends DispatchHandler {
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message cachedMessage = cachedMessages.remove(message.messageId());
 		if (cachedMessage != null) {
-			cachedMessage.keepAlive(false);
-			FutureResponse futureResponse = new FutureResponse(cachedMessage);
+			FutureResponse futureResponse = new FutureResponse(cachedMessage.messageId(1));
 			futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(final FutureResponse future) throws Exception {
 					if (future.isSuccess()) {
-						LOG.debug("Original Message was sent successfully to unreachablePeer with PeerAddress{" + message.sender() + "}");
+						LOG.warn("Original Message was sent successfully to unreachablePeer with PeerAddress{" + message.sender() + "}");
 						// check if the PeerConnection should be stored in the
 						// PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
 							storePeerConnection(message, peerConnection, responder);
 						} else {
-							responder.response(createResponseMessage(message, Type.OK));
+							// we must make sure that the PeerConnection is
+							// closed, because it takes a lot of resources from
+							// the running pc
+							responder.response(createResponseMessage(message.keepAlive(false), Type.OK));
+							peerConnection.close();
 						}
 					} else {
 						handleFail(message, responder, "The Original Message could not be sent!!!");
@@ -341,7 +344,7 @@ public class RconRPC extends DispatchHandler {
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
 				// remove the open PeerConnection to the other Peer from
 				// openPeerConnections in the PeerBean
-				LOG.debug("Permanent PeerConnection to peer=" + message.sender() + " has been closed.");
+				LOG.warn("Permanent PeerConnection to peer=" + message.sender() + " has been closed.");
 				peer.peerBean().openPeerConnections().remove(message.sender().peerId());
 			}
 		});

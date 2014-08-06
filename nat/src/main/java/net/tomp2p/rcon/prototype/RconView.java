@@ -35,7 +35,7 @@ public class RconView {
 
 		// sendMessageButton
 		sendMessageTestButton.setEnabled(true);
-		sendMessageTestButton.setLabel("sendTestMessage()");
+		sendMessageTestButton.setLabel("Test message to masterpeer");
 
 		peerAddressField.setToolTipText("My own PeerAddress");
 		peerAddressField.setEditable(false);
@@ -43,13 +43,13 @@ public class RconView {
 		peerAddressField.setText(SimpleRconClient.getPeer().peerAddress().toString());
 
 		sendDirectedMessageButton.setEnabled(true);
-		sendDirectedMessageButton.setLabel("sendDirectedMessage()");
+		sendDirectedMessageButton.setLabel("Directed message");
 		
 		sendDirectedNatPeerButton.setEnabled(true);
-		sendDirectedNatPeerButton.setLabel("sendDirectedNatPeerMessage()");
+		sendDirectedNatPeerButton.setLabel("Reverse connection setup");
 		
 		permanentPeerConnectionButton.setEnabled(true);
-		permanentPeerConnectionButton.setLabel("permanentPeerConnection()");
+		permanentPeerConnectionButton.setLabel("Permanent PeerConnection");
 
 		idField.setEditable(true);
 		idField.setEnabled(true);

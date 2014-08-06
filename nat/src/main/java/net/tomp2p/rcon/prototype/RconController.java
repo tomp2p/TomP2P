@@ -25,9 +25,9 @@ public class RconController {
 		rconView.getSendTestMessageButton().addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("sendTestMessageButton pressed");
+				System.out.println("Test message to masterpeer - Button pressed");
 				try {
-					SimpleRconClient.sendDummy("Praise Lord GabeN", null, null);
+					SimpleRconClient.sendDummy("Test message to masterpeer", null, null);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -38,13 +38,13 @@ public class RconController {
 			
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				System.out.println("sendDirectedMessageButton pressed");
+				System.out.println("Directed message - Button pressed");
 				if (rconView.getIpField().getText() == null || rconView.getIdField().getText() == null) {
 					System.out.println("either ipfield or idfield is null");
 					return;
 				} else {
 					try {
-						SimpleRconClient.sendDummy("Steam Summer Sale 2014", rconView.getIdField().getText(), rconView.getIpField().getText());
+						SimpleRconClient.sendDummy("Directed Message", rconView.getIdField().getText(), rconView.getIpField().getText());
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -56,8 +56,9 @@ public class RconController {
 			
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("Reverse connection setup - Button pressed");
 				try {
-					SimpleRconClient.sendNATDummy("please give me your PeerConnection!");
+					SimpleRconClient.sendNATDummy("This message was sent with a reverse connection setup :-)");
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
 				}
@@ -68,8 +69,9 @@ public class RconController {
 			
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("Permanent PeerConnection - Button pressed");
 				try {
-					SimpleRconClient.connectFirst("permanent Connection");
+					SimpleRconClient.connectFirst();
 				} catch (UnexpectedException e) {
 					e.printStackTrace();
 				} catch (UnknownHostException e) {

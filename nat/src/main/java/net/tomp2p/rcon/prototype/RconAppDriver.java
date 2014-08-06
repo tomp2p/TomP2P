@@ -2,10 +2,16 @@ package net.tomp2p.rcon.prototype;
 
 import java.net.UnknownHostException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+
 public class RconAppDriver {
 
 	private static RconAppDriver appDriver = new RconAppDriver();
-
+	private static final Logger LOG = LoggerFactory.getLogger(RconAppDriver.class);
+	
 	private RconAppDriver() {
 
 	}
@@ -23,21 +29,27 @@ public class RconAppDriver {
 	 */
 	public static void main(String[] args) throws UnknownHostException {
 
+		// set Logger Level
+		ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+				.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+		root.setLevel(Level.WARN);
+		LOG.warn("Logger with Level " + Level.WARN.toString() + " initialized");
+
 		if (args.length > 0) {
 			SimpleRconClient.start(false, args[1]);
 
 			// do usual Bootstrap (normal peer)
 			if (args.length == 2) {
 				SimpleRconClient.usualBootstrap(args[0]);
-				System.out.println();
-				System.out.println("usualBootstrap Success!");
-				System.out.println();
+				System.err.println();
+				System.err.println("usualBootstrap Success!");
+				System.err.println();
 
-			// do relay bootstrapping (nat peer)
+				// do relay bootstrapping (nat peer)
 			} else if (args.length > 2) {
-				System.out.println();
-				System.out.println("Start relaying");
-				System.out.println();
+				System.err.println();
+				System.err.println("Start relaying");
+				System.err.println();
 
 				SimpleRconClient.natBootstrap(args[0]);
 			}

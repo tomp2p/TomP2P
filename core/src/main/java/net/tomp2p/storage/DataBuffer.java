@@ -155,16 +155,18 @@ public class DataBuffer {
 			for (final ByteBuf decom : decoms) {
 				synchronized (buffers) {
 					// this is already a slice
+					//ByteBuf buf2 = Unpooled.wrappedBuffer(buf.slice(index, length));
 					buffers.add(decom);
 				}
-				decom.retain();
+				//decom.retain();
 			}
 
 		} else {
 			synchronized (buffers) {
-				buffers.add(buf.slice(index, length));
+				ByteBuf buf2 = Unpooled.wrappedBuffer(buf.slice(index, length));
+				buffers.add(buf2);
 			}
-			buf.retain();
+			//buf.retain();
 		}
 
 		alreadyTransferred += length;

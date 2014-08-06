@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 /**
  * This RPC handles two things. First of all, it makes sure that messaging via
  * reverse connection setup is possible. Second, it is also able to keep the
- * established {@link PeerConnection} and store it to the {@link PeerBean}.
- * Rcon means reverse connection.
+ * established {@link PeerConnection} and store it to the {@link PeerBean}. Rcon
+ * means reverse connection.
  * 
  * @author jonaswagner
  * 
@@ -123,7 +123,8 @@ public class RconRPC extends DispatchHandler {
 				public void operationComplete(final FutureResponse future) throws Exception {
 					if (future.isSuccess()) {
 						// Indicate the reachable peer that the message was
-						// successfully forwarded
+						// successfully forwarded and send back the same relay
+						// flag (there shouldn'd be an exception anymore).
 						Message reply = createResponseMessage(message, Type.OK);
 						reply.sender(reply.sender().changeRelayed(true));
 						responder.response(reply);
@@ -173,7 +174,7 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.command(RPC.Commands.RCON.getNr());
 		forwardMessage.sender(peer.peerAddress());
 		forwardMessage.recipient(peerConnection.remotePeer());
-		forwardMessage.version(MESSAGE_VERSION); 
+		forwardMessage.version(MESSAGE_VERSION);
 
 		// transmit PeerAddress of reachablePeer
 		// TODO jwa check if this is ok!
@@ -286,7 +287,6 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconAfterconnect(final Message message, final Responder responder, final PeerConnection peerConnection) {
 		// get the original message
-		responder.response(createResponseMessage(message, Type.OK));
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message cachedMessage = cachedMessages.remove(message.messageId());
 		if (cachedMessage != null) {
@@ -302,7 +302,9 @@ public class RconRPC extends DispatchHandler {
 						// PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
 							storePeerConnection(message, peerConnection, responder);
-						} 
+						} else {
+							responder.response(createResponseMessage(message, Type.OK));
+						}
 					} else {
 						handleFail(message, responder, "The Original Message could not be sent!!!");
 					}
@@ -347,7 +349,7 @@ public class RconRPC extends DispatchHandler {
 		// the PeerBean
 		final ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = peer.peerBean().openPeerConnections();
 		openPeerConnections.put(message.sender().peerId(), peerConnection);
-		
+
 		responseAndKeepAlive(message, responder);
 	}
 

@@ -155,18 +155,16 @@ public class DataBuffer {
 			for (final ByteBuf decom : decoms) {
 				synchronized (buffers) {
 					// this is already a slice
-					//ByteBuf buf2 = Unpooled.wrappedBuffer(buf.slice(index, length));
 					buffers.add(decom);
 				}
-				//decom.retain();
+				decom.retain();
 			}
 
 		} else {
 			synchronized (buffers) {
-				ByteBuf buf2 = Unpooled.wrappedBuffer(buf.slice(index, length));
-				buffers.add(buf2);
+				buffers.add(buf.slice(index, length));
 			}
-			//buf.retain();
+			buf.retain();
 		}
 
 		alreadyTransferred += length;
@@ -197,6 +195,14 @@ public class DataBuffer {
 		}
 		final DataBuffer m = (DataBuffer) obj;
 		return m.toByteBuf().equals(toByteBuf());
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		final DataBuffer copy = shallowCopy();
+		for (ByteBuf buf : copy.buffers) {
+			buf.release();
+		}
 	}
 
 	public byte[] bytes() {

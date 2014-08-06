@@ -39,9 +39,9 @@ public class DataBuffer {
 	 *            The ByteBuf is only added, but no retain() is called!
 	 */
 	public DataBuffer(final ByteBuf buf) {
-		ByteBuf slice = Unpooled.wrappedBuffer(buf);
 		buffers = new ArrayList<ByteBuf>(1);
-		buffers.add(slice);
+		buffers.add(buf.slice());
+		buf.retain();
 	}
 
 	private DataBuffer(final List<ByteBuf> buffers) {
@@ -53,8 +53,11 @@ public class DataBuffer {
 	}
 	
 	public DataBuffer add(DataBuffer dataBuffer) {
-		synchronized (buffers) {
-			buffers.addAll(dataBuffer.buffers);
+		synchronized (dataBuffer.buffers) {
+			for (final ByteBuf buf : dataBuffer.buffers) {
+				this.buffers.add(buf.duplicate());
+				buf.retain();
+			}
 		}
 		return this;
     }

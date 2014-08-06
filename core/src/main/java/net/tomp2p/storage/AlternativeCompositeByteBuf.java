@@ -294,6 +294,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			if (b == null) {
 				break;
 			}
+			//We want to use this buffer, so mark is as used
+			b.retain();
 			Component c = new Component(b.order(ByteOrder.BIG_ENDIAN)
 					.duplicate());
 			final int size = components.size();

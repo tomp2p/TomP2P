@@ -17,8 +17,8 @@ public class RconView {
 	private Button sendDirectedNatPeerButton = new Button();
 	private Button permanentPeerConnectionButton = new Button();
 	private JTextField peerAddressField = new JTextField("my PeerAddress");
-	private JTextField ipField = new JTextField("Enter IP of recepient");
-	private JTextField idField = new JTextField("Enter ID of recepient");
+	private JTextField ipField = new JTextField("192.168.10.146");
+	private JTextField idField = new JTextField("33");
 
 	public JFrame make() {
 

@@ -199,9 +199,16 @@ public class DataBuffer {
 
 	@Override
 	protected void finalize() throws Throwable {
-		final DataBuffer copy = shallowCopy();
-		for (ByteBuf buf : copy.buffers) {
-			buf.release();
+		// work on the original buffer, no worries about threading as we are the
+		// finalizer
+		try {
+			for (ByteBuf buf : buffers) {
+				buf.release();
+			}
+		} catch (Throwable t) {
+			throw t;
+		} finally {
+			super.finalize();
 		}
 	}
 

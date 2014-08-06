@@ -124,7 +124,9 @@ public class RconRPC extends DispatchHandler {
 					if (future.isSuccess()) {
 						// Indicate the reachable peer that the message was
 						// successfully forwarded
-						responder.response(createResponseMessage(message, Type.OK));
+						Message reply = createResponseMessage(message, Type.OK);
+						reply.sender(reply.sender().changeRelayed(true));
+						responder.response(reply);
 					} else {
 						handleFail(message, responder, "Exception while forwarding the rconMessage to the unreachable");
 					}
@@ -284,9 +286,11 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconAfterconnect(final Message message, final Responder responder, final PeerConnection peerConnection) {
 		// get the original message
+		responder.response(createResponseMessage(message, Type.OK));
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message cachedMessage = cachedMessages.remove(message.messageId());
 		if (cachedMessage != null) {
+			cachedMessage.keepAlive(false);
 			FutureResponse futureResponse = new FutureResponse(cachedMessage);
 			futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(), config);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -298,10 +302,7 @@ public class RconRPC extends DispatchHandler {
 						// PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
 							storePeerConnection(message, peerConnection, responder);
-						} else {
-							message.keepAlive(false);
-							responder.response(createResponseMessage(message, Type.OK));
-						}
+						} 
 					} else {
 						handleFail(message, responder, "The Original Message could not be sent!!!");
 					}

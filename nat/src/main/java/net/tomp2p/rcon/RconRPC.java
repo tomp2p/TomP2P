@@ -297,9 +297,11 @@ public class RconRPC extends DispatchHandler {
 						// check if the PeerConnection should be stored in the
 						// PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
-							storePeerConnection(message, peerConnection);
+							storePeerConnection(message, peerConnection, responder);
+						} else {
+							message.keepAlive(false);
+							responder.response(createResponseMessage(message, Type.OK));
 						}
-						responseAndKeepAlive(message, responder);
 					} else {
 						handleFail(message, responder, "The Original Message could not be sent!!!");
 					}
@@ -320,8 +322,7 @@ public class RconRPC extends DispatchHandler {
 	 * @param peerConnection
 	 */
 	private void handleOpenConnection(final Message message, final Responder responder, final PeerConnection peerConnection) {
-		storePeerConnection(message, peerConnection);
-		responseAndKeepAlive(message, responder);
+		storePeerConnection(message, peerConnection, responder);
 	}
 
 	/**
@@ -331,7 +332,7 @@ public class RconRPC extends DispatchHandler {
 	 * @param message
 	 * @param peerConnection
 	 */
-	private void storePeerConnection(final Message message, final PeerConnection peerConnection) {
+	private void storePeerConnection(final Message message, final PeerConnection peerConnection, final Responder responder) {
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
@@ -345,6 +346,8 @@ public class RconRPC extends DispatchHandler {
 		// the PeerBean
 		final ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = peer.peerBean().openPeerConnections();
 		openPeerConnections.put(message.sender().peerId(), peerConnection);
+		
+		responseAndKeepAlive(message, responder);
 	}
 
 	/**

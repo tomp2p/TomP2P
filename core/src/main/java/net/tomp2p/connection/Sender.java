@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.Utils2;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.Cancel;
 import net.tomp2p.futures.FutureDone;
@@ -54,6 +53,7 @@ import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.utils.Pair;
+import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,15 +204,8 @@ public class Sender {
 		PeerSocketAddress socketAddress = null;
 		
 		if (relayInetAdresses.length > 0) {
-			socketAddress = (PeerSocketAddress) relayInetAdresses[0]; // for
-																		// simplicity
-																		// I
-																		// just
-																		// take
-																		// the
-																		// first
-																		// available
-																		// relay
+			// we should be fair and choose one of the relays randomly
+			socketAddress = (PeerSocketAddress) relayInetAdresses[Utils.randomPositiveInt(relayInetAdresses.length)]; 
 		} else {
 			throw new IllegalArgumentException(
 					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");

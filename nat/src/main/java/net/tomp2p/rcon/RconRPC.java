@@ -87,7 +87,8 @@ public class RconRPC extends DispatchHandler {
 			LOG.warn("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder, peerConnection);
 		} else if (message.type() == Message.Type.REQUEST_4 && message.command() == RPC.Commands.RCON.getNr()) {
-			// only called if the PeerConnection should remain open
+			// the message reached the unreachable peer (only called if the
+			// PeerConnection should remain open)
 			LOG.warn("handle openConnection for message: " + message);
 			handleOpenConnection(message, responder, peerConnection);
 		} else {

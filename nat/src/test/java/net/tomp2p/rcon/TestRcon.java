@@ -36,7 +36,7 @@ public class TestRcon {
 	private static final int PORTS = 4001;
 	private static final int NUMBER_OF_NODES = 5;
 	private static final Random RND = new Random();
-
+	
 	@Before
 	public void setupRelay() throws Exception {
 		// setup test peers

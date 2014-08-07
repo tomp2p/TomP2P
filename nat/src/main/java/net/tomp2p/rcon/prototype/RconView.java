@@ -17,8 +17,9 @@ public class RconView {
 	private Button sendDirectedNatPeerButton = new Button();
 	private Button permanentPeerConnectionButton = new Button();
 	private JTextField peerAddressField = new JTextField("my PeerAddress");
+	private JTextField messageField = new JTextField("Insert Message here");
 	private JTextField ipField = new JTextField("192.168.10.146");
-	private JTextField idField = new JTextField("33");
+	private JTextField idField = new JTextField("unreachable");
 
 	public JFrame make() {
 
@@ -39,7 +40,7 @@ public class RconView {
 
 		peerAddressField.setToolTipText("My own PeerAddress");
 		peerAddressField.setEditable(false);
-		peerAddressField.setEnabled(false);
+//		peerAddressField.setEnabled(false);
 		peerAddressField.setText(SimpleRconClient.getPeer().peerAddress().toString());
 
 		sendDirectedMessageButton.setEnabled(true);
@@ -57,14 +58,15 @@ public class RconView {
 		ipField.setEditable(true);
 		ipField.setEnabled(true);
 
-		pane.setLayout(new GridLayout(7, 1));
+		pane.setLayout(new GridLayout(8, 1));
 		pane.add(peerAddressField, 0);
 		pane.add(sendMessageTestButton, 1);
-		pane.add(ipField, 2);
-		pane.add(idField, 3);
-		pane.add(sendDirectedMessageButton, 4);
-		pane.add(sendDirectedNatPeerButton, 5);
-		pane.add(permanentPeerConnectionButton, 6);
+		pane.add(messageField, 2);
+		pane.add(sendDirectedMessageButton, 3);
+		pane.add(ipField, 4);
+		pane.add(idField, 5);
+		pane.add(sendDirectedNatPeerButton, 6);
+		pane.add(permanentPeerConnectionButton, 7 );
 
 		frame.add(pane);
 	}
@@ -99,6 +101,10 @@ public class RconView {
 
 	public JTextField getIdField() {
 		return idField;
+	}
+	
+	public JTextField getMessageField() {
+		return messageField;
 	}
 
 }

@@ -3,8 +3,6 @@ package net.tomp2p.rcon.prototype;
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.rmi.UnexpectedException;
-import java.util.concurrent.TimeoutException;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureBootstrap;
@@ -14,12 +12,10 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
-import net.tomp2p.natpmp.NatPmpDevice;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.rpc.ObjectDataReply;
 
 public class SimpleRconClient {
@@ -46,7 +42,7 @@ public class SimpleRconClient {
 				public Object reply(PeerAddress sender, Object request) throws Exception {
 					System.out.println("SUCCESS HIT");
 
-					System.err.println("Sender: " + sender.toString());
+					System.out.println("Sender: " + sender.toString());
 
 					String req = (String) request;
 					System.err.println("Received Message: " + req);
@@ -196,7 +192,7 @@ public class SimpleRconClient {
 		// uNat.startRelayMaintenance(futureRelay);
 	}
 
-	public static void connectFirst() throws UnknownHostException, TimeoutException, UnexpectedException {
+	public static void connectFirst(String message) throws Exception {
 
 		if (lightswitch) {
 
@@ -210,7 +206,7 @@ public class SimpleRconClient {
 			if (fd.isSuccess()) {
 				connection = fd.object();
 				FutureDirect future = peer.sendDirect(connection)
-						.object("Now we have a stable and permanent PeerConnection to " + recipient).start();
+						.object("Now we have a stable and permanent PeerConnection to " + recipient + "\n " + message).start();
 				future.awaitUninterruptibly();
 
 				if (future.isSuccess()) {
@@ -219,7 +215,7 @@ public class SimpleRconClient {
 					System.out.println("FUTURE DIRECT FAIL!");
 				}
 			} else {
-				throw new UnexpectedException("This should not happen");
+				throw new Exception("No connection could be established!");
 			}
 			count--;
 			lightswitch = false;

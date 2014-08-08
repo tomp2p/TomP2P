@@ -178,7 +178,6 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.version(MESSAGE_VERSION);
 
 		// transmit PeerAddress of reachablePeer
-		// TODO jwa check if this is ok!
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);

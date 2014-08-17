@@ -152,9 +152,12 @@ public class PeerNAT {
 						peer.peerBean().serverPeerAddress(pa);
 						futureNAT.failed("could not setup NAT");
 					}
-				} else {
+				} else if (future.isSuccess()) {
 					LOG.info("nothing to do, you are reachable from outside");
 					futureNAT.done(futureDiscover.peerAddress(), futureDiscover.reporter());
+				} else {
+					LOG.info("not reachable, maybe your setup is wrong");
+					futureNAT.failed("could discover anything", future);
 				}
 			}
 		});

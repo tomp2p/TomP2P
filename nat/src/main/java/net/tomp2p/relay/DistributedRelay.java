@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.ChannelCreator;
@@ -137,8 +136,11 @@ public class DistributedRelay {
 						//Get the neighbors of this peer that could possibly act as relays. Relay
 						// candidates are neighboring peers that are not relayed themselves and have
 						// not recently failed as relay or denied acting as relay.
-						relayCandidates = new LinkedHashSet<PeerAddress>(peer.distributedRouting().peerMap().all());
+						relayCandidates = peer.distributedRouting().peerMap().all();
+						//remove those who we know have failed
+						relayCandidates.removeAll(failedRelays);
 					} else {
+						// if the user sets manual relays, the failed relays are not removed, as this has to be done by the user 
 						relayCandidates = new ArrayList<PeerAddress>(manualRelays);
 					}
 					filter(relayCandidates);
@@ -171,7 +173,7 @@ public class DistributedRelay {
 				}
 			}
 		}
-		relayCandidates.removeAll(failedRelays);
+		
 		LOG.debug("Found {} peers that could act as relays", relayCandidates.size());
 	}
 

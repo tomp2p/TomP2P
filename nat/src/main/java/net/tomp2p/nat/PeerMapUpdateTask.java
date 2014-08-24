@@ -59,7 +59,8 @@ class PeerMapUpdateTask extends TimerTask {
 
 	@Override
 	public void run() {
-		if (relayRPC.peer().isShutdown() || !relayRPC.peer().peerAddress().isRelayed()) {
+		//don't cancel, as we can be relayed again in future, only cancel if this peer shuts down.
+		if (relayRPC.peer().isShutdown()) {
 			this.cancel();
 			return;
 		}

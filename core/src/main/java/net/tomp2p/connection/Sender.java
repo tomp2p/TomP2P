@@ -146,6 +146,7 @@ public class Sender {
 				recipient = message.recipient().createSocketTCP();
 				channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler,
 				        timeoutHandler, connectTimeoutMillis, futureResponse);
+				LOG.debug("about to connect to {} with channel {}, ff={}", recipient, channelFuture.channel(), handler == null);
 				afterConnect(futureResponse, message, channelFuture, handler == null);
 			}
 		}
@@ -476,13 +477,14 @@ public class Sender {
 					// this needs to be called first before all other progress
 					futureResponse.progressFirst();
 				} else {
-					futureResponse.failed("Channel creation failed " + future.cause());
+					LOG.debug("Channel creation failed", future.cause());
+					futureResponse.failed("Channel creation failed " + future.channel() + "/" + future.cause());
 					// may have been closed by the other side,
 					// or it may have been canceled from this side
 					if (!(future.cause() instanceof CancellationException)
 					        && !(future.cause() instanceof ClosedChannelException)
 					        && !(future.cause() instanceof ConnectException)) {
-						LOG.warn("Channel creation failed ", future.cause());
+						LOG.warn("Channel creation failed to {} for {}", future.channel(), message);
 					}
 				}
 			}

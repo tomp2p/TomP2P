@@ -118,6 +118,10 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				.equals("An existing connection was forcibly closed by the remote host")) {
 			// with windows we see the following message
 			return; // ignore
+		} else if (cause
+				.getMessage()
+				.equals("Eine vorhandene Verbindung wurde vom Remotehost geschlossen")) {
+			return;
 		}
 		if (msg == null && decoder.lastContent() == null) {
 			LOG.error("exception in decoding TCP, not started decoding", cause);

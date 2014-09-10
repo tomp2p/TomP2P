@@ -26,6 +26,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureRouting;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.RoutingConfiguration;
+import net.tomp2p.utils.Utils;
 
 /**
  * Set the configuration options for the shutdown command. The shutdown does first a rounting, searches for its close
@@ -73,8 +74,9 @@ public class ShutdownBuilder extends DefaultConnectionConfiguration implements S
         
         int conn = routingConfiguration.parallel();
         FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
-        
         final FutureDone<Void> futureShutdown = new FutureDone<Void> ();
+        Utils.addReleaseListener(fcc, futureShutdown);
+        
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {

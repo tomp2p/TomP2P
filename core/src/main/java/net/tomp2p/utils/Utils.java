@@ -58,6 +58,7 @@ import java.util.zip.Inflater;
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number480;
@@ -809,6 +810,20 @@ public class Utils {
                 }
             });
         }
+    }
+    
+    public static void addReleaseListener(final FutureChannelCreator fcc, final BaseFuture baseFuture) {
+    	baseFuture.addListener(new BaseFutureAdapter<BaseFuture>() {
+    		@Override
+            public void operationComplete(final BaseFuture future) throws Exception {
+    			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+					@Override
+                    public void operationComplete(FutureChannelCreator future) throws Exception {
+						future.channelCreator().shutdown();
+                    }
+				});
+    		}
+    	});
     }
 
     /**

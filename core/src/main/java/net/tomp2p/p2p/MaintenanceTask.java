@@ -103,8 +103,9 @@ public class MaintenanceTask implements Runnable {
         return intervalMillis;
     }
 
-    public void intervalMillis(int intervalMillis) {
+    public MaintenanceTask intervalMillis(int intervalMillis) {
         this.intervalMillis = intervalMillis;
+        return this;
     }
     
     public void addMaintainable(Maintainable maintainable) {

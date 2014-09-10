@@ -160,6 +160,8 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                                         future.channelCreator(), broadcastBuilder);
                                 LOG.debug("1st broadcast to {}", peerAddress);
                                 Utils.addReleaseListener(future.channelCreator(), futureResponse);
+                            } else {
+                            	Utils.addReleaseListener(future.channelCreator());
                             }
                         }
                     });
@@ -203,6 +205,8 @@ public class DefaultBroadcastHandler implements BroadcastHandler {
                         LOG.debug("2nd broadcast to {}", randomAddress);
                     }
                     Utils.addReleaseListener(future.channelCreator(), futures);
+                } else {
+                	Utils.addReleaseListener(future.channelCreator());
                 }
             }
         });

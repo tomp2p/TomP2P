@@ -192,6 +192,7 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
         }
         final FutureDone<SyncStat> futureSync = new FutureDone<SyncStat>();
         FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 2);
+        Utils.addReleaseListener(futureChannelCreator, futureSync);
         futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future2) throws Exception {
@@ -283,10 +284,8 @@ public class SyncBuilder extends DHTBuilder<SyncBuilder> {
                                     }
                                 }
                             });
-                            Utils.addReleaseListener(future2.channelCreator(), fr, futureResponse);
                         } else {
                         	futureSync.done(syncStat);
-                            Utils.addReleaseListener(future2.channelCreator(), futureResponse);
                         }
                     }
                 });

@@ -1654,53 +1654,6 @@ public class TestDHT {
 		}
 	}
 
-	@Test
-	public void testPutPreparePutRejectGet() throws Exception {
-		PeerDHT master = null;
-		try {
-			// setup
-			PeerDHT[] peers = UtilsDHT2.createNodes(10, rnd, 4001);
-			master = peers[0];
-			UtilsDHT2.perfectRouting(peers);
-
-			// put data with a prepare flag
-			Data data = new Data("test").prepareFlag();
-			Number160 locationKey = Number160.createHash("location");
-			Number160 domainKey = Number160.createHash("domain");
-			Number160 contentKey = Number160.createHash("content");
-			Number160 versionKey = Number160.createHash("version");
-			FuturePut fput = peers[rnd.nextInt(10)].put(locationKey).data(contentKey, data)
-					.domainKey(domainKey).versionKey(versionKey).start();
-			fput.awaitUninterruptibly();
-			fput.futureRequests().awaitUninterruptibly();
-			Assert.assertEquals(true, fput.isSuccess());
-
-			// get shouldn't see provisional put
-			FutureGet fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey)
-					.contentKey(contentKey).versionKey(versionKey).start();
-			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isSuccess());
-
-			// reject prepared put
-			Data tmp = new Data();
-			FuturePut fputConfirm = peers[rnd.nextInt(10)].put(locationKey).data(contentKey, tmp)
-					.domainKey(domainKey).versionKey(versionKey).putReject().start();
-			fputConfirm.awaitUninterruptibly();
-			fputConfirm.futureRequests().awaitUninterruptibly();
-			Assert.assertEquals(true, fputConfirm.isSuccess());
-
-			// get still shouldn't see put
-			fget = peers[rnd.nextInt(10)].get(locationKey).domainKey(domainKey).contentKey(contentKey)
-					.versionKey(versionKey).start();
-			fget.awaitUninterruptibly();
-			Assert.assertEquals(false, fget.isSuccess());
-		} finally {
-			if (master != null) {
-				master.shutdown().await();
-			}
-		}
-	}
-
 	/**
 	 * .../2b../4b-5b../7b..................................
 	 * .....................................................

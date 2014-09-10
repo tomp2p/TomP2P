@@ -40,7 +40,6 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
     private boolean putMeta = false;
 
     private boolean putConfim = false;
-    private boolean putReject = false;
 
     private PublicKey changePublicKey = null;
 
@@ -184,16 +183,6 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
 		return this;
 	}
 
-	public boolean isPutReject() {
-		return putReject;
-	}
-
-	public PutBuilder putReject() {
-		this.putReject = true;
-		this.putConfim = true;
-		return this;
-	}
-
     public PutBuilder changePublicKey(PublicKey changePublicKey) {
     	this.changePublicKey = changePublicKey;
     	this.putMeta = true;
@@ -216,7 +205,7 @@ public class PutBuilder extends DHTBuilder<PutBuilder> {
             }
             dataMap().put(data().getKey(), data().getValue());
         }
-        if (!putMeta && !putConfim && !putReject && dataMap == null && dataMapConvert == null) {
+        if (!putMeta && !putConfim && dataMap == null && dataMapConvert == null) {
             throw new IllegalArgumentException(
                     "You must either set data via setDataMap() or setData(). Cannot add nothing.");
         }

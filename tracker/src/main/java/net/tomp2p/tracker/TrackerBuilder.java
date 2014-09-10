@@ -140,7 +140,7 @@ public abstract class TrackerBuilder<K extends TrackerBuilder<K>> extends Defaul
     public abstract FutureTracker start();
 
     public RoutingBuilder createBuilder(RoutingConfiguration routingConfiguration2) {
-        RoutingBuilder routingBuilder = new RoutingBuilder();
+        RoutingBuilder routingBuilder = new RoutingBuilder(peer.peer());
         routingBuilder.parallel(routingConfiguration.parallel());
         routingBuilder.setMaxNoNewInfo(routingConfiguration.maxNoNewInfo(0));
         routingBuilder.maxDirectHits(routingConfiguration.maxDirectHits());

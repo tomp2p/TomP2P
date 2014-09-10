@@ -531,6 +531,6 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
             final int replicationFactor) {
         SortedSet<PeerAddress> tmp = peerMap.closePeers(locationKey, replicationFactor);
         tmp.add(selfAddress);
-        return tmp.headSet(peerAddress).size() < replicationFactor;
+        return tmp.headSet(peerAddress).size() < replicationFactor * 2;
     }	
 }

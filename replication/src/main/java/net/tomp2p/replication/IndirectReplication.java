@@ -387,6 +387,7 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
         public FutureDone<Void> sendDirect(final PeerAddress other, final Number160 locationKey, final Map<Number640, Data> dataMap) {
             final FutureDone<Void> futureDone = new FutureDone<Void>();
         	FutureChannelCreator futureChannelCreator = peer.peer().connectionBean().reservation().create(0, 1);
+        	Utils.addReleaseListener(futureChannelCreator, futureDone);
             futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -404,10 +405,8 @@ public class IndirectReplication implements ResponsibilityListener, Runnable {
 								} else {
 									futureDone.failed(future);
 								}
-								
 							}
 						});
-                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         peer.peer().notifyAutomaticFutures(futureResponse);
                     } else {
                     	futureDone.failed(future);

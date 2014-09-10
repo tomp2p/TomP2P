@@ -10,6 +10,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.utils.Utils;
 
 public class PeerExchange {
 
@@ -32,6 +33,7 @@ public class PeerExchange {
 	        final ConnectionConfiguration connectionConfiguration) {
 		final FutureDone<Void> futureDone = new FutureDone<Void>();
 		FutureChannelCreator futureChannelCreator = peer.connectionBean().reservation().create(1, 0);
+		Utils.addReleaseListener(futureChannelCreator, futureDone);
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {

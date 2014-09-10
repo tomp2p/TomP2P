@@ -143,7 +143,10 @@ public class Reservation {
 	}
 
 	/**
-	 * Create a connection creator for short-lived connections.
+	 * Create a connection creator for short-lived connections. Always call
+	 * {@link ChannelCreator#shutdown()} to release all resources. This needs to
+	 * be done in any case, whetere FutureChannelCreator return failed or
+	 * success!
 	 * 
 	 * @param permitsUDP
 	 *            The number of short-lived UDP connections

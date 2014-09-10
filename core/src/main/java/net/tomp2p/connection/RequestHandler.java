@@ -208,7 +208,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 							peerStatusListener.peerFailed(futureResponse.request().recipient(), pe);
 						}
                     }
-                    LOG.warn("removed from map, cause: {} msg: {}", pe.toString(), message);
+                    LOG.debug("removed from map, cause: {} msg: {}", pe.toString(), message);
                 } else {
                     LOG.warn("error in request", cause);
                 }

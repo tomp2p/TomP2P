@@ -170,6 +170,7 @@ public class DiscoverBuilder {
     private FutureDiscover discover(final PeerAddress peerAddress, final ConnectionConfiguration configuration, 
     		final FutureDiscover futureDiscover) {
         FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 2);
+        Utils.addReleaseListener(fcc, futureDiscover);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
@@ -264,19 +265,14 @@ public class DiscoverBuilder {
                                 configuration);
                         FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
-                        Utils.addReleaseListener(cc, fr1, fr2);
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
                         return;
                     } else {
-                        // important to release connection if not needed
-                        cc.shutdown();
                         futureDiscover.failed("Peer " + peerAddress + " did not report our IP address");
                         return;
                     }
                 } else {
-                    // important to release connection if not needed
-                    cc.shutdown();
                     futureDiscover.failed("FutureDiscover: We need at least the TCP connection",
                             futureResponseTCP);
                     return;

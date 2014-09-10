@@ -260,7 +260,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
     @Override
     public boolean peerFound(final PeerAddress remotePeer, final PeerAddress referrer, final PeerConnection peerConnection) {    	
     	LOG.debug("peer {} is online reporter was {}", remotePeer, referrer);
-        boolean firstHand = referrer == null || !peerVerification;
+        boolean firstHand = referrer == null;
         //if we got contacted by this peer, but we did not initiate the connection
         boolean secondHand = remotePeer.equals(referrer);
         //if a peer reported about other peers
@@ -270,6 +270,12 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             offlineMap.remove(remotePeer.peerId());
             shutdownMap.remove(remotePeer.peerId());
         }
+        
+        if (secondHand && !peerVerification) {
+        	offlineMap.remove(remotePeer.peerId());
+            shutdownMap.remove(remotePeer.peerId());
+        }
+        
         // don't add nodes with zero node id, do not add myself and do not add
         // nodes marked as bad
         if (remotePeer.peerId().isZero() || self().equals(remotePeer.peerId()) || reject(remotePeer)) {
@@ -305,7 +311,7 @@ public class PeerMap implements PeerStatusListener, Maintainable {
             notifyUpdate(remotePeer, oldPeerStatatistic);
             return true;
         } else {
-            if (firstHand) {
+            if (firstHand || (secondHand && !peerVerification)) {
                 final Map<Number160, PeerStatatistic> map = peerMapVerified.get(classMember);
                 boolean insterted = false;
                 synchronized (map) {
@@ -685,6 +691,14 @@ public class PeerMap implements PeerStatusListener, Maintainable {
         return new Comparator<PeerAddress>() {
             public int compare(final PeerAddress remotePeer, final PeerAddress remotePeer2) {
                 return isKadCloser(id, remotePeer, remotePeer2);
+            }
+        };
+    }
+    
+    public static Comparator<Number160> createComparator2(final Number160 id) {
+        return new Comparator<Number160>() {
+            public int compare(final Number160 remotePeer, final Number160 remotePeer2) {
+                return isCloser(id, remotePeer, remotePeer2);
             }
         };
     }

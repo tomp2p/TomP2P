@@ -226,7 +226,7 @@ public class BootstrapBuilder {
         result.bootstrapTo(bootstrapTo);
         int conn = routingConfiguration.parallel();
         FutureChannelCreator fcc = peer.connectionBean().reservation().create(conn, 0);
-
+        Utils.addReleaseListener(fcc, result);
         fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
             @Override
             public void operationComplete(final FutureChannelCreator futureChannelCreator) throws Exception {
@@ -234,7 +234,6 @@ public class BootstrapBuilder {
                     RoutingBuilder routingBuilder = createBuilder(routingConfiguration, forceRoutingOnlyToSelf);
                     FutureDone<Pair<FutureRouting,FutureRouting>> futureBootstrap = peer.distributedRouting().bootstrap(
                             bootstrapTo, routingBuilder, futureChannelCreator.channelCreator());
-                    Utils.addReleaseListener(futureChannelCreator.channelCreator(), futureBootstrap);
                     result.waitFor(futureBootstrap);
                 } else {
                     result.failed(futureChannelCreator);

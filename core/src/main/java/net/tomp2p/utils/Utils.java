@@ -819,7 +819,9 @@ public class Utils {
     			fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 					@Override
                     public void operationComplete(FutureChannelCreator future) throws Exception {
-						future.channelCreator().shutdown();
+						if(future.channelCreator()!=null) {
+							future.channelCreator().shutdown();
+						}
                     }
 				});
     		}

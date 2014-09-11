@@ -314,7 +314,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet()? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
 
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -326,14 +326,14 @@ public class DistributedHashTable {
                                 // 2
                                 // peers, we want to get it from one only. Unless its digest, then we want to know
                                 // exactly what is going on
-                                RequestP2PConfiguration p2pConfiguration2 = builder.isRange() ? builder
+                                RequestP2PConfiguration p2pConfiguration2 = builder.isRange() || !builder.isFastGet() ? builder
                                         .requestP2PConfiguration() : adjustConfiguration(
                                         builder.requestP2PConfiguration(),
                                         futureRouting.directHitsDigest());
                                 // store in direct hits
                                 parallelRequests(
                                         p2pConfiguration2,
-                                        builder.isRange() ? futureRouting.potentialHits() : futureRouting
+                                        builder.isRange() || !builder.isFastGet() ? futureRouting.potentialHits() : futureRouting
                                                 .directHits(), futureDHT, true,
                                         future.channelCreator(), new OperationMapper<FutureGet>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
@@ -409,7 +409,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet()? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
                     
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -421,7 +421,7 @@ public class DistributedHashTable {
                                 // store in direct hits
                                 parallelRequests(
                                         builder.requestP2PConfiguration(),
-                                        builder.isRange() ? futureRouting.potentialHits() : futureRouting
+                                        builder.isRange() || !builder.isFastGet() ? futureRouting.potentialHits() : futureRouting
                                                 .directHits(), futureDHT, true,
                                         future.channelCreator(), new OperationMapper<FutureDigest>() {
                                             Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
@@ -496,7 +496,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                     fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet() ? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
 
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -507,12 +507,11 @@ public class DistributedHashTable {
                                 logger.debug("found direct hits for remove: {}",
                                         futureRouting.directHits());
 
-                                RequestP2PConfiguration p2pConfiguration2 = adjustConfiguration(
-                                        builder.requestP2PConfiguration(),
-                                        futureRouting.directHitsDigest());
+                                RequestP2PConfiguration p2pConfiguration2 = !builder.isFastGet() ? builder.requestP2PConfiguration : 
+                                		adjustConfiguration(builder.requestP2PConfiguration(), futureRouting.directHitsDigest());
 
-                                parallelRequests(p2pConfiguration2, futureRouting.directHits(), futureDHT,
-                                        false, future.channelCreator(),
+                                parallelRequests(p2pConfiguration2, !builder.isFastGet()? futureRouting.potentialHits() : futureRouting.directHits(), 
+                                		futureDHT, false, future.channelCreator(),
                                         new OperationMapper<FutureRemove>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number640, Data>>();
 

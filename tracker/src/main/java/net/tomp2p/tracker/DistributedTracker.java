@@ -88,7 +88,6 @@ public class DistributedTracker {
 					}
 
 					if (queue.size() > MIN_TRACKER_PEERS) {
-			        	System.err.println("routing failed");
 						startLoop(builder, futureTracker, queue, futureChannelCreator2.channelCreator());
 					}
 
@@ -101,7 +100,6 @@ public class DistributedTracker {
 							@Override
 							public void operationComplete(FutureRouting future) throws Exception {
 								if (futureRouting.isSuccess()) {
-									System.err.println("routing failed: "+futureRouting.potentialHits());
 									LOG.debug("found direct hits for tracker get: {}", futureRouting.directHits());
 									startLoop(builder, futureTracker, futureRouting.directHits(),
 									        futureChannelCreator2.channelCreator());
@@ -230,7 +228,7 @@ public class DistributedTracker {
 					active++;
 					futureResponses.set(i, operation.create(next, primary));
 				}
-			} else if (futureResponses.get(i) != null) {
+			} else {
 				active++;
 			}
 		}
@@ -265,6 +263,9 @@ public class DistributedTracker {
 						Collection<PeerStatatistic> newPeers = newDataMap.peerAddresses().keySet();
 						mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
 						storeResult(peerOnTracker, newDataMap, futureResponse.request().recipient(), knownPeers);
+						for(PeerStatatistic peerStatatistic:newPeers) {
+							secondaryQueue.add(peerStatatistic.peerAddress());
+						}
 					}
 					int successRequests = isFull ? successfulRequests.get() : successfulRequests.incrementAndGet();
 					finished = evaluate(peerOnTracker, successRequests, atLeastSuccessfullRequests,
@@ -275,7 +276,7 @@ public class DistributedTracker {
 					// if peer reported that he can provide more data, we keep
 					// the peer in the list
 					if (!finished && isPartial) {
-						LOG.debug("partial1: {}, queue {}", futureResponse.request().recipient(), queueToAsk);
+						LOG.debug("partial1: {}, secondaryQueue {}", futureResponse.request().recipient(), queueToAsk);
 						queueToAsk.add(futureResponse.request().recipient());
 					}
 					if (!finished && isFull) {
@@ -310,11 +311,13 @@ public class DistributedTracker {
 
 	private boolean evaluate(Map<?, ?> peerOnTracker, int successfulRequests, int atLeastSuccessfulRequests,
 	        int atLeastEntriesFromTrackers, boolean isGet) {
-		if (isGet)
+		if (isGet) {
 			return successfulRequests >= atLeastSuccessfulRequests
 			        || peerOnTracker.size() >= atLeastEntriesFromTrackers;
-		else
+		}
+		else {
 			return successfulRequests >= atLeastSuccessfulRequests;
+		}
 	}
 
 	/*

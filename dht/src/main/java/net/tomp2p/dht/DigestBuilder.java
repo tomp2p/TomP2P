@@ -62,6 +62,8 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
     private int returnNr = -1;
     
     private boolean returnMetaValues = false;
+    
+    private boolean fastGet = true;
 
     static {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
@@ -243,6 +245,20 @@ public class DigestBuilder extends DHTBuilder<DigestBuilder> implements Searchab
 
     public boolean isRange() {
         return from != null && to != null;
+    }
+    
+    public boolean isFastGet() {
+        return fastGet;
+    }
+
+    public DigestBuilder fastGet(boolean fastGet) {
+        this.fastGet = fastGet;
+        return this;
+    }
+
+    public DigestBuilder fastGet() {
+        this.fastGet = true;
+        return this;
     }
 
     public FutureDigest start() {

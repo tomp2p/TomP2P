@@ -18,7 +18,6 @@ package net.tomp2p.examples;
 import java.net.InetAddress;
 import java.util.Random;
 
-import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.nat.FutureNAT;
 import net.tomp2p.nat.FutureRelayNAT;
@@ -31,34 +30,16 @@ import net.tomp2p.peers.PeerAddress;
 
 public class ExampleNAT {
 	private final static int PORT_SERVER = 4000;
-	private final static int PORT_CLIENT = 4001;
-	public void startServer() throws Exception {
-		Peer peer = null;
-		try {
-			Random r = new Random(42L);
-			peer = new PeerBuilder(new Number160(r)).ports(PORT_SERVER).start();
-			System.out.println("peer started.");
-			for (;;) {
-				for (PeerAddress pa : peer.peerBean().peerMap().all()) {
-					BaseFuture future = peer.ping().peerAddress(pa).tcpPing().start();
-					if (future.isSuccess()) {
-						System.out.println("peer online (TCP):" + pa);
-					}
-					else {
-						System.out.println("offline " + pa);
-					}
-					future = peer.ping().peerAddress(pa).start();
-					if (future.isSuccess()) {
-						System.out.println("peer online (UDP):" + pa);
-					}
-					else {
-						System.out.println("offline " + pa);
-					}
-				}
-				Thread.sleep(1500);
+	private final static int PORT_CLIENT = 4000;
+	public static void startServer() throws Exception {
+		Random r = new Random(42L);
+		Peer peer = new PeerBuilder(new Number160(r)).ports(PORT_SERVER).start();
+		System.out.println("peer started.");
+		for (;;) {
+			for (PeerAddress pa : peer.peerBean().peerMap().all()) {
+					System.out.println("peer online (TCP):" + pa);
 			}
-		} finally {
-			peer.shutdown();
+			Thread.sleep(2000);
 		}
 	}
 
@@ -66,8 +47,7 @@ public class ExampleNAT {
 		if (args.length > 0) {
 			startClientNAT(args[0]);
 		} else {
-			ExampleNAT t = new ExampleNAT();
-			t.startServer();
+			startServer();
 		}
 	}
 

@@ -278,7 +278,7 @@ public class Decoder {
 					int header = buf.getUnsignedByte(buf.readerIndex());
 					boolean isIPv4 = header == 0;
 					size = PeerSocketAddress.size(isIPv4);
-					if (buf.readableBytes() < size) {
+					if (buf.readableBytes() < size + Utils.BYTE_SIZE) {
 						return false;
 					}
 					//skip the ipv4/ipv6 header

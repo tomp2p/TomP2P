@@ -725,10 +725,12 @@ public class StorageRPC extends DispatchHandler {
             result.put(entry.getKey(), (byte) putStatus.ordinal());
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
-			if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
-					&& replicationListener != null) {
-            	replicationListener.dataInserted(
-                        entry.getKey().locationKey());
+            if (!entry.getValue().hasPrepareFlag()) {
+            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
+            			&& replicationListener != null) {
+            		replicationListener.dataInserted(
+            				entry.getKey().locationKey());
+            	}
             }
            
         }
@@ -747,7 +749,13 @@ public class StorageRPC extends DispatchHandler {
 		for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
 			Enum<?> status = storageLayer.putConfirm(publicKey, entry.getKey(), entry.getValue());
 			result.put(entry.getKey(), (byte) status.ordinal());
+			if ((status == PutStatus.OK || status == PutStatus.VERSION_FORK)
+        			&& replicationListener != null) {
+        		replicationListener.dataInserted(
+        				entry.getKey().locationKey());
+        	}
 		}
+		
 		responseMessage.type(result.size() == dataSize ? Type.OK : Type.PARTIALLY_OK);
 		responseMessage.keyMapByte(new KeyMapByte(result));
 	}
@@ -772,9 +780,11 @@ public class StorageRPC extends DispatchHandler {
 
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
-            if (status == PutStatus.OK && replicationListener!=null) {
-            	replicationListener.dataInserted(
-                        entry.getKey().locationKey());
+            if (!entry.getValue().hasPrepareFlag()) {
+            	if (status == PutStatus.OK && replicationListener!=null) {
+            		replicationListener.dataInserted(
+            				entry.getKey().locationKey());
+            	}
             }
 
         }

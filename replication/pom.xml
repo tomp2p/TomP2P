@@ -20,7 +20,7 @@
 	<parent>
     	<groupId>net.tomp2p</groupId>
     	<artifactId>tomp2p-parent</artifactId>
-    	<version>5.0-Alpha24-SNAPSHOT</version>
+    	<version>5.0-Alpha25-SNAPSHOT</version>
   	</parent>
 	
 	<artifactId>tomp2p-replication</artifactId>
@@ -56,7 +56,6 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.13</version>
 			<optional>true</optional>
 			<exclusions>
 				<exclusion>

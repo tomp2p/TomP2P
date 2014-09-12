@@ -172,7 +172,11 @@ public class Data {
 	 *            True if this entry is protected
 	 */
 	public Data(final byte[] buffer, final int offest, final int length) {
-		this.buffer = new DataBuffer(buffer, offest, length);
+		if(buffer.length == 0) {
+			this.buffer = new DataBuffer(0);
+		} else {
+			this.buffer = new DataBuffer(buffer, offest, length);
+		}
 		this.length = length;
 		if (length < MAX_BYTE_SIZE) {
 			this.type = Type.SMALL;
@@ -180,6 +184,10 @@ public class Data {
 			this.type = Type.LARGE;
 		}
 		this.validFromMillis = System.currentTimeMillis();
+	}
+	
+	public boolean isEmpty() {
+		return length == 0;
 	}
 
 	/**
@@ -623,13 +631,15 @@ public class Data {
 	}
 
 	public Data flag1(boolean flag1) {
+		if(flag1 && this.flag2) {
+			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+		}
 		this.flag1 = flag1;
 		return this;
 	}
 
 	public Data flag1() {
-		this.flag1 = true;
-		return this;
+		return flag1(true);
 	}
 
 	public boolean isFlag2() {
@@ -637,13 +647,15 @@ public class Data {
 	}
 
 	public Data flag2(boolean flag2) {
+		if(flag2 && this.flag1) {
+			throw new IllegalArgumentException("cannot set both flags, this means data is deleted");
+		}
 		this.flag2 = flag2;
 		return this;
 	}
 
 	public Data flag2() {
-		this.flag2 = true;
-		return this;
+		return flag2(true);
 	}
 
 	public boolean hasPrepareFlag() {
@@ -658,6 +670,23 @@ public class Data {
 	public Data prepareFlag() {
 		this.prepareFlag = true;
 		return this;
+	}
+	
+	public Data deleted() {
+		return deleted(true);
+	}
+	
+	public Data deleted(boolean deleted) {
+		if(this.flag1 || this.flag2) {
+			throw new IllegalArgumentException("cannot set deleted, as one flag is already set");
+		}
+		this.flag1 = deleted;
+		this.flag2 = deleted;
+		return this;
+	}
+	
+	public boolean isDeleted() {
+		return this.flag1 && this.flag2;
 	}
 
 	public boolean hasPublicKey() {

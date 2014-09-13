@@ -96,6 +96,14 @@ public class StorageMemory implements Storage {
         			removeTimeout(toRemove);
         		}
         	}
+    		if (!versions.isEmpty()) {
+    			while (versions.firstKey().versionKey().timestamp() + maxVersions  <= versions
+    					.lastKey().versionKey().timestamp()) {
+    				Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
+    				remove(entry.getKey(), false);
+    				removeTimeout(entry.getKey());
+    			}
+    		}
         }
         return true;
     }

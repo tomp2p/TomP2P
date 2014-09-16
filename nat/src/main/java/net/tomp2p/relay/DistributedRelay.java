@@ -42,6 +42,7 @@ public class DistributedRelay {
 	private final Collection<RelayListener> relayListeners = new ArrayList<RelayListener>(1);
 	private final FutureChannelCreator futureChannelCreator;
 	private final RelayType relayType;
+	private final String gcmRegistrationId;
 
 	/**
 	 * @param peer
@@ -53,10 +54,11 @@ public class DistributedRelay {
 	 * @param relayType
 	 * 			  the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType, String gcmRegistrationId) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayType = relayType;
+		this.gcmRegistrationId = gcmRegistrationId;
 
 		relayAddresses = Collections.synchronizedList(new ArrayList<PeerConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
@@ -236,7 +238,7 @@ public class DistributedRelay {
 				}
 				if(candidate !=null) {
 					final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
-					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc, relayType);
+					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc, relayType, gcmRegistrationId);
 					setupAddRelays(fpc.remotePeer(), futureDone);
 					futures.set(i, futureDone);
 					active++;

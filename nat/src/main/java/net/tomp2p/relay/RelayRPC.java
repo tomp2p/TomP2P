@@ -1,6 +1,9 @@
 package net.tomp2p.relay;
 
+import io.netty.buffer.ByteBuf;
+
 import java.net.InetSocketAddress;
+import java.nio.charset.CharacterCodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.relay.android.GCMSender;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -35,6 +39,7 @@ public class RelayRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
     private final ConnectionConfiguration config;
     private final Peer peer;
+	private GCMSender gcmSender;
 
     /**
      * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -51,6 +56,10 @@ public class RelayRPC extends DispatchHandler {
         config = new DefaultConnectionConfiguration();
     }
 
+	public void gcmSender(GCMSender gcmSender) {
+		this.gcmSender = gcmSender;
+	}
+	
     /**
      * Send the peer map of an unreachable peer to a relay peer, so that the
      * relay peer can reply to neighbor requests on behalf of the unreachable
@@ -114,16 +123,26 @@ public class RelayRPC extends DispatchHandler {
      * relay is relayed itself, the request will be denied.
      * 
      * @param channelCreator
+     * @param gcmRegistrationId 
      * @param fpcshall
      *            FuturePeerConnection to the peer that shall act as a relay.
      * @return FutureDone with a peer connection to the newly set up relay peer
      */
-    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc, RelayType relayType) {
+    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-        final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), relayType.getSetupMessage());
+        
+        Message message;
+        if(relayType == RelayType.NORMAL) {
+        	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+        	// TODO keep message alive on Android?
+        	message.keepAlive(true);
+        } else if(relayType == RelayType.ANDROID) {
+        	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
+        	message.buffer(RelayUtils.encodeRegistrationId(gcmRegistrationId));
+        } else {
+        	throw new IllegalArgumentException("Unknown relay type " + relayType);
+        }
 
-        // TODO keep message alive on Android?
-        message.keepAlive(true);
         
         final FutureResponse futureResponse = new FutureResponse(message);
         LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
@@ -188,9 +207,30 @@ public class RelayRPC extends DispatchHandler {
      * An android device is behind a firewall and wants to be relayed 
      */
     private void handleSetupAndroid(Message message, final PeerConnection peerConnection, Responder responder) {
-        LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-
-        // TODO
+        Buffer buffer = message.buffer(0);
+        if(buffer == null || buffer.buffer() == null) {
+        	LOG.error("Device {} did not send any GCM registration id", peerConnection.remotePeer());
+            responder.response(createResponseMessage(message, Type.DENIED));
+            return;
+        }
+        
+		String registrationId = RelayUtils.decodeRegistrationId(buffer);
+		if(registrationId == null) {
+			LOG.error("Cannot decode the registrationID from the message");
+            responder.response(createResponseMessage(message, Type.DENIED));
+            return;
+		}
+		
+		if(gcmSender == null) {
+			LOG.error("This relay peer is not capable to serve Android devices");
+			responder.response(createResponseMessage(message, Type.DENIED));
+	        return;
+		}
+        
+		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
+        gcmSender.registerDevice(peerConnection.remotePeer(), registrationId);
+        
+        // TODO handle correct setup
         handleSetup(message, peerConnection, responder);
     }
 

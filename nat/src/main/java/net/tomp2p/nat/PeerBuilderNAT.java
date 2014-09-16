@@ -10,6 +10,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.android.GCMSender;
 
 public class PeerBuilderNAT {
 
@@ -21,7 +22,10 @@ public class PeerBuilderNAT {
 	private int failedRelayWaitTime = -1;
 	private int maxFail = -1;
 	private int peerMapUpdateInterval = -1;
+	
 	private RelayType relayType = RelayType.NORMAL;
+	private String gcmAuthToken;
+	private String gcmRegistrationId;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -83,7 +87,9 @@ public class PeerBuilderNAT {
 	}
 	
 	/**
-	 * Set the kind of relaying. For example mobile devices need special treatment to save energy.
+	 * Set the kind of relaying. For example mobile devices need special treatment
+	 * to save energy. The type needs to be set at the peer behind the NAT only
+	 * (not the relay peer).
 	 */
 	public PeerBuilderNAT relayType(RelayType relayType) {
 		this.relayType = relayType;
@@ -95,6 +101,46 @@ public class PeerBuilderNAT {
 	 */
 	public RelayType relayType() {
 		return relayType;
+	}
+	
+	/**
+	 * Set the Google Cloud Messaging authentication token (API key).
+	 * This is used at the Relay server to serve {@link RelayType#ANDROID} relay requests.
+	 * @param gcmAuthToken the API key for GCM
+	 * @return
+	 */
+	public PeerBuilderNAT gcmAuthToken(String gcmAuthToken) {
+		this.gcmAuthToken = gcmAuthToken;
+		return this;
+	}
+	
+	/**
+	 * @return the Google Cloud Messaging Authentication token (API key)
+	 */
+	public String gcmAuthToken() {
+		return gcmAuthToken;
+	}
+	
+	/**
+	 * Set the Google Cloud Messaging registration id. The registration id is a unique token
+	 * that is received from Google's registration server. This id needs to be set at
+	 * the peer behind the NAT only. It will be sent to the relay peers during the
+	 * setup phase.
+	 * 
+	 * @param gcmRegistrationId
+	 * 				the registration id of the mobile device
+	 * @return this instance
+	 */
+	public PeerBuilderNAT gcmRegistrationId(String gcmRegistrationId) {
+		this.gcmRegistrationId = gcmRegistrationId;
+		return this;
+	}
+	
+	/**
+	 * @return the registration id of the device from GCM
+	 */
+	public String gcmRegistrationId() {
+		return gcmRegistrationId;
 	}
 	
 	/**
@@ -142,6 +188,10 @@ public class PeerBuilderNAT {
 		if(relayType == null) {
 			relayType = RelayType.NORMAL;
 		}
+		
+		if(gcmAuthToken != null) {
+			 relayRPC.gcmSender(new GCMSender(gcmAuthToken));
+		}
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -152,6 +202,6 @@ public class PeerBuilderNAT {
 		});
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime,
-		        maxFail, peerMapUpdateInterval, manualPorts, relayType);
+		        maxFail, peerMapUpdateInterval, manualPorts, relayType, gcmRegistrationId);
 	}
 }

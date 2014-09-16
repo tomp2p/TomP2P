@@ -1,7 +1,16 @@
 package net.tomp2p.relay;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -24,6 +33,10 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class RelayUtils {
 
+	private static Charset charset = Charset.forName("UTF-8");
+	private static CharsetEncoder encoder = charset.newEncoder();
+	private static CharsetDecoder decoder = charset.newDecoder();
+
 	public static Buffer encodeMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
@@ -32,7 +45,7 @@ public class RelayUtils {
 	}
 
 	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender)
-	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
+			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
 		Decoder d = new Decoder(null);
 		d.decodeHeader(buf.buffer(), recipient, sender);
 		d.decodePayload(buf.buffer());
@@ -42,7 +55,7 @@ public class RelayUtils {
 	public static List<Map<Number160, PeerStatatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
-		for(PeerAddress peerAddress:map) {
+		for (PeerAddress peerAddress : map) {
 			peerMap.peerFound(peerAddress, null, null);
 		}
 		return peerMap.peerMapVerified();
@@ -56,5 +69,55 @@ public class RelayUtils {
 			}
 		}
 		return result;
+	}
+
+	/**
+	 * Encodes the Google Cloud messaging registration ID into a buffer to send it to the relay
+	 * 
+	 * @param registrationId the registration ID.
+	 * @return a buffer containing the (encoded) registration ID.
+	 */
+	public static Buffer encodeRegistrationId(String registrationId) {
+		if(registrationId == null) {
+			return null;
+		}
+		
+		ByteBuffer byteBuffer;
+		synchronized (encoder) {
+			encoder.reset();
+			try {
+				byteBuffer = encoder.encode(CharBuffer.wrap(registrationId));
+			} catch (CharacterCodingException e) {
+				return null;
+			}
+			encoder.flush(byteBuffer);
+		}
+		ByteBuf wrappedBuffer = Unpooled.wrappedBuffer(byteBuffer);
+		return new Buffer(wrappedBuffer);
+	}
+
+	/**
+	 * Decodes the Google Cloud messaging registration ID fro a buffer
+	 * 
+	 * @param buffer the buffer received at the relay peer
+	 * @return the registration ID of the device
+	 */
+	public static String decodeRegistrationId(Buffer buffer) {
+		if (buffer == null || buffer.buffer() == null) {
+			return null;
+		}
+
+		ByteBuffer nioBuffer = buffer.buffer().nioBuffer();
+		synchronized (decoder) {
+			decoder.reset();
+			CharBuffer decoded;
+			try {
+				decoded = decoder.decode(nioBuffer);
+			} catch (CharacterCodingException e) {
+				return null;
+			}
+			decoder.flush(decoded);
+			return decoded.toString();
+		}
 	}
 }

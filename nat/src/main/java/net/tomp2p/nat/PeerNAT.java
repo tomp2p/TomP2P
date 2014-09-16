@@ -21,6 +21,7 @@ import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.android.GCMSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +39,10 @@ public class PeerNAT {
 	private final boolean manualPorts;
 	private final Collection<PeerAddress> manualRelays;
 	private final RelayType relayType;
+	private final String gcmRegistrationId;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays, int failedRelayWaitTime,
-	        int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType) {
+	        int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType, String gcmRegistrationId) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
@@ -50,6 +52,7 @@ public class PeerNAT {
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
 		this.relayType = relayType;
+		this.gcmRegistrationId = gcmRegistrationId;
 	}
 
 	public Peer peer() {
@@ -101,7 +104,11 @@ public class PeerNAT {
 	public RelayType relayType() {
 		return relayType;
 	}
-
+	
+	public String gcmRegistrationId() {
+		return gcmRegistrationId;
+	}
+	
 	/**
 	 * Setup UPNP or NATPMP port forwarding.
 	 * 
@@ -216,7 +223,7 @@ public class PeerNAT {
 	}
 
 	public DistributedRelay startSetupRelay(FutureRelay futureRelay) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType());
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType(), gcmRegistrationId());
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {

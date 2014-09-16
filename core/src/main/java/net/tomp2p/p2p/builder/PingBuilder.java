@@ -175,12 +175,11 @@ public class PingBuilder {
         if (size > 0) {
 
             FutureChannelCreator fcc = peer.connectionBean().reservation().create(size, 0);
-
+            Utils.addReleaseListener(fcc, futurePing);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
-                        Utils.addReleaseListener(future.channelCreator(), futureLateJoin);
                         addPingListener(futurePing, futureLateJoin);
                         for (int i = 0; i < size; i++) {
                             final InetAddress broadcastAddress = bindings.broadcastAddresses().get(i);
@@ -233,12 +232,12 @@ public class PingBuilder {
         final RequestHandler<FutureResponse> request = peer.pingRPC().ping(peerAddress, connectionConfiguration);
         if (isUDP) {
             FutureChannelCreator fcc = peer.connectionBean().reservation().create(1, 0);
+            Utils.addReleaseListener(fcc, futurePing);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
                         FutureResponse futureResponse = request.sendUDP(future.channelCreator());
-                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         addPingListener(futurePing, futureResponse);
                     } else {
                     	futurePing.failed(future);
@@ -249,12 +248,12 @@ public class PingBuilder {
             });
         } else {
             FutureChannelCreator fcc = peer.connectionBean().reservation().create(0, 1);
+            Utils.addReleaseListener(fcc, futurePing);
             fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
                 @Override
                 public void operationComplete(final FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
                         FutureResponse futureResponse = request.sendTCP(future.channelCreator());
-                        Utils.addReleaseListener(future.channelCreator(), futureResponse);
                         addPingListener(futurePing, futureResponse);
                     } else {
                     	futurePing.failed(future);

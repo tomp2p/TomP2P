@@ -321,6 +321,7 @@ public class PingRPC extends DispatchHandler {
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
+                                	Utils.addReleaseListener(future.channelCreator());
                                     LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}",
                                             future.failedReason());
                                 }
@@ -338,6 +339,7 @@ public class PingRPC extends DispatchHandler {
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
+                                	Utils.addReleaseListener(future.channelCreator());
                                     LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}",
                                             future.failedReason());
                                 }

@@ -247,6 +247,39 @@ public class TestData {
         Assert.assertEquals(data.basedOnSet(), newData.basedOnSet());
         Assert.assertEquals(data, newData);
     }
+    
+    @Test
+    public void testDataDeleted() throws IOException, ClassNotFoundException, InvalidKeyException,
+            SignatureException, NoSuchAlgorithmException {
+        Data data = new Data(UUID.randomUUID().toString());
+        data.deleted();
+        Data newData = encodeDecode(data);
+
+        Assert.assertEquals(data.isDeleted(), newData.isDeleted());
+        Assert.assertEquals(data, newData);
+    }
+    
+	@Test
+	public void testDataDeleted1() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException,
+	        NoSuchAlgorithmException, IllegalArgumentException {
+		Data data = new Data(UUID.randomUUID().toString());
+		data.deleted();
+		try {
+			data.flag1();
+			Assert.fail("should throw an exception");
+		} catch (IllegalArgumentException e) {}
+	}
+	
+	@Test
+	public void testDataDeleted2() throws IOException, ClassNotFoundException, InvalidKeyException, SignatureException,
+	        NoSuchAlgorithmException, IllegalArgumentException {
+		Data data = new Data(UUID.randomUUID().toString());
+		data.flag2();
+		try {
+			data.deleted();
+			Assert.fail("should throw an exception");
+		} catch (IllegalArgumentException e) {}
+	}
 
 	private Data encodeDecode(Data data) throws InvalidKeyException, SignatureException, IOException {
 	    

@@ -16,6 +16,7 @@
 
 package net.tomp2p.p2p;
 
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 
@@ -46,6 +47,7 @@ public interface ResponsibilityListener {
      * @param delayed
      *            Indicates if the other peer should get notified immediately or delayed. The case for delayed is that
      *            multiple non responsible peers may call this and a delayed call in that case may be better.
+     * @return 
      */
-    void otherResponsible(Number160 locationKey, PeerAddress other);
+    FutureDone<?> otherResponsible(Number160 locationKey, PeerAddress other);
 }

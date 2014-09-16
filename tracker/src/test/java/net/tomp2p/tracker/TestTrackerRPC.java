@@ -24,12 +24,12 @@ public class TestTrackerRPC {
 
     /*@Test
     public void testTrackerPut() throws Exception {
-        Peer sender = null;
-        Peer recv1 = null;
+        PeerTracker sender = null;
+        PeerTracker recv1 = null;
         ChannelCreator cc = null;
         try {
-            sender = new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start();
-            recv1 = new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start();
+            sender = new PeerBuilderTracker(new PeerBuilder(new Number160("0x9876")).p2pId(55).ports(2424).start()).start();
+            recv1 = new PeerBuilderTracker(new PeerBuilder(new Number160("0x1234")).p2pId(55).ports(8088).start()).start();
             Number160 loc = new Number160(rnd);
             Number160 dom = new Number160(rnd);
             // make a good guess based on the config and the maxium tracker that
@@ -70,10 +70,10 @@ public class TestTrackerRPC {
                 cc.shutdown().awaitListenersUninterruptibly();
             }
             if (sender != null) {
-                sender.shutdown().await();
+                sender.peer().shutdown().await();
             }
             if (recv1 != null) {
-                recv1.shutdown().await();
+                recv1.peer().shutdown().await();
             }
         }
     }

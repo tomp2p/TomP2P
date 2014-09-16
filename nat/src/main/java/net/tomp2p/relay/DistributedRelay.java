@@ -39,9 +39,9 @@ public class DistributedRelay {
 	final private Collection<PeerConnection> relayAddresses;
 	final private Collection<PeerAddress> failedRelays;
 
-	final private Collection<RelayListener> relayListeners = new ArrayList<RelayListener>(1);
-
-	final private FutureChannelCreator futureChannelCreator;
+	private final Collection<RelayListener> relayListeners = new ArrayList<RelayListener>(1);
+	private final FutureChannelCreator futureChannelCreator;
+	private final RelayType relayType;
 
 	/**
 	 * @param peer
@@ -50,16 +50,17 @@ public class DistributedRelay {
 	 *            the relay RPC
 	 * @param maxRelays
 	 *            maximum number of relay peers to set up
+	 * @param relayType
+	 * 			  the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime) {
-
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
+		this.relayType = relayType;
 
 		relayAddresses = Collections.synchronizedList(new ArrayList<PeerConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
-		// this needs to be kept open, as we want the peerconnection to stay
-		// alive
+		// this needs to be kept open, as we want the peerconnection to stay alive
 		futureChannelCreator = peer.connectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
 	}
 	
@@ -76,9 +77,8 @@ public class DistributedRelay {
 		return relayAddresses;
 	}
 
-	public DistributedRelay addRelayListener(RelayListener relayListener) {
+	public void addRelayListener(RelayListener relayListener) {
 		relayListeners.add(relayListener);
-		return this;
 	}
 
 	public FutureForkJoin<FutureDone<Void>> shutdown() {
@@ -236,7 +236,7 @@ public class DistributedRelay {
 				}
 				if(candidate !=null) {
 					final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
-					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc);
+					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc, relayType);
 					setupAddRelays(fpc.remotePeer(), futureDone);
 					futures.set(i, futureDone);
 					active++;

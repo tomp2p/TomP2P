@@ -20,6 +20,7 @@ import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.relay.RelayType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,17 +29,18 @@ public class PeerNAT {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerNAT.class);
 
-	final private Peer peer;
-	final private NATUtils natUtils;
-	final private RelayRPC relayRPC;
-	final private int peerMapUpdateInterval;
-	final private int failedRelayWaitTime;
-	final private int maxFail;
-	final private boolean manualPorts;
-	final private Collection<PeerAddress> manualRelays;
+	private final Peer peer;
+	private final NATUtils natUtils;
+	private final RelayRPC relayRPC;
+	private final int peerMapUpdateInterval;
+	private final int failedRelayWaitTime;
+	private final int maxFail;
+	private final boolean manualPorts;
+	private final Collection<PeerAddress> manualRelays;
+	private final RelayType relayType;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays, int failedRelayWaitTime,
-	        int maxFail, int peerMapUpdateInterval, boolean manualPorts) {
+	        int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
@@ -47,6 +49,7 @@ public class PeerNAT {
 		this.maxFail = maxFail;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
+		this.relayType = relayType;
 	}
 
 	public Peer peer() {
@@ -93,6 +96,10 @@ public class PeerNAT {
 
 	public boolean isManualPorts() {
 		return manualPorts;
+	}
+	
+	public RelayType relayType() {
+		return relayType;
 	}
 
 	/**
@@ -209,7 +216,7 @@ public class PeerNAT {
 	}
 
 	public DistributedRelay startSetupRelay(FutureRelay futureRelay) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime());
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType());
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {

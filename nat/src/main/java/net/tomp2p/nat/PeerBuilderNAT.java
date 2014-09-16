@@ -9,6 +9,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.relay.RelayType;
 
 public class PeerBuilderNAT {
 
@@ -20,6 +21,7 @@ public class PeerBuilderNAT {
 	private int failedRelayWaitTime = -1;
 	private int maxFail = -1;
 	private int peerMapUpdateInterval = -1;
+	private RelayType relayType = RelayType.NORMAL;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -79,7 +81,22 @@ public class PeerBuilderNAT {
 	public int maxFail() {
 		return maxFail;
 	}
-
+	
+	/**
+	 * Set the kind of relaying. For example mobile devices need special treatment to save energy.
+	 */
+	public PeerBuilderNAT relayType(RelayType relayType) {
+		this.relayType = relayType;
+		return this;
+	}
+	
+	/**
+	 * @return the kind of relaying.
+	 */
+	public RelayType relayType() {
+		return relayType;
+	}
+	
 	/**
 	 * Defines the time interval of sending the peer map of the unreachable peer
 	 * to its relays. The routing requests are not relayed to the unreachable
@@ -121,6 +138,10 @@ public class PeerBuilderNAT {
 		if(manualRelays == null) {
 			manualRelays = new ArrayList<PeerAddress>(1);
 		}
+		
+		if(relayType == null) {
+			relayType = RelayType.NORMAL;
+		}
 
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -131,6 +152,6 @@ public class PeerBuilderNAT {
 		});
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime,
-		        maxFail, peerMapUpdateInterval, manualPorts);
+		        maxFail, peerMapUpdateInterval, manualPorts, relayType);
 	}
 }

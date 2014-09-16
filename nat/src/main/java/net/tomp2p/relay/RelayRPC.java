@@ -118,10 +118,13 @@ public class RelayRPC extends DispatchHandler {
      *            FuturePeerConnection to the peer that shall act as a relay.
      * @return FutureDone with a peer connection to the newly set up relay peer
      */
-    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc) {
+    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc, RelayType relayType) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-        final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+        final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), relayType.getSetupMessage());
+
+        // TODO keep message alive on Android?
         message.keepAlive(true);
+        
         final FutureResponse futureResponse = new FutureResponse(message);
         LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
 
@@ -151,6 +154,8 @@ public class RelayRPC extends DispatchHandler {
         LOG.debug("received RPC message {}", message);
         if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
             handleSetup(message, peerConnection, responder);
+        } else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	handleSetupAndroid(message, peerConnection, responder);
         } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
             handlePiggyBackMessage(message, responder);
         } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
@@ -165,7 +170,6 @@ public class RelayRPC extends DispatchHandler {
     }
 
     private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
-        
         if (peerBean().serverPeerAddress().isRelayed()) {
             // peer is behind a NAT as well -> deny request
         	LOG.warn("I cannot be a relay since I'm relayed as well! {}", message);
@@ -178,6 +182,16 @@ public class RelayRPC extends DispatchHandler {
 
         LOG.debug("I'll be your relay! {}", message);
         responder.response(createResponseMessage(message, Type.OK));
+    }
+    
+    /** 
+     * An android device is behind a firewall and wants to be relayed 
+     */
+    private void handleSetupAndroid(Message message, final PeerConnection peerConnection, Responder responder) {
+        LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
+
+        // TODO
+        handleSetup(message, peerConnection, responder);
     }
 
     private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {

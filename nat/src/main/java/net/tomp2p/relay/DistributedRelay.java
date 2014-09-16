@@ -237,7 +237,7 @@ public class DistributedRelay {
 				if(candidate !=null) {
 					final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
 					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc);
-					setupAddRealys(fpc.remotePeer(), futureDone);
+					setupAddRelays(fpc.remotePeer(), futureDone);
 					futures.set(i, futureDone);
 					active++;
 				}
@@ -275,7 +275,7 @@ public class DistributedRelay {
 		});
 	}
 
-	private void setupAddRealys(final PeerAddress remotePeer, final FutureDone<PeerConnection> futureDone) {
+	private void setupAddRelays(final PeerAddress remotePeer, final FutureDone<PeerConnection> futureDone) {
 		futureDone.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {

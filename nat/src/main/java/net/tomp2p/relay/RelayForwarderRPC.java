@@ -123,8 +123,8 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign,
 	        final Responder responder) throws Exception {
 		//TODO
-		// the sender should have the ip/port from the releay peer, the peerId
-		// from the unreachabel peer, in order to have 6 relays instead of 5
+		// the sender should have the ip/port from the relay peer, the peerId
+		// from the unreachable peer, in order to have 6 relays instead of 5
 		final PeerAddress sender = unreachablePeer; 
 
 		// special treatment for ping and neighbor

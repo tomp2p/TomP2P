@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The PeerMapUpdateTask is responsible for periodically sending the unreachable
- * peers PeerMap to its relays. This is important as the relay peers respond to
+ * peer's PeerMap to its relays. This is important as the relay peers respond to
  * routing requests on behalf of the unreachable peers
  * 
  */

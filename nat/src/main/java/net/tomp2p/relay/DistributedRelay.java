@@ -200,7 +200,7 @@ public class DistributedRelay {
 				//no candidates
 				futureRelay.failed("done");
 			} else {
-				//nothing todo
+				//nothing to do
 				futureRelay.done(Collections.<PeerConnection>emptyList());
 			}
 		}

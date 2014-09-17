@@ -177,7 +177,7 @@ public class PeerBuilderNAT {
 		}
 
 		if (peerMapUpdateInterval == -1) {
-			peerMapUpdateInterval = 5;
+			peerMapUpdateInterval = 60;
 		}
 		
 		if(manualRelays == null) {

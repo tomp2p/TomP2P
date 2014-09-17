@@ -223,16 +223,20 @@ public class PeerNAT {
 
 	public DistributedRelay startSetupRelay(FutureRelay futureRelay) {
 		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType(), gcmRegistrationId());
+		
+		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {
 				return distributedRelay.shutdown();
 			}
 		});
+		
+		// open new relay when one failed
 		distributedRelay.addRelayListener(new RelayListener() {
 			@Override
-			public void relayFailed(final DistributedRelay distributedRelay, final PeerConnection peerConnection) {
-				// one failed, add one
+			public void relayFailed(PeerAddress relayAddress) {
+				// one failed, add new one
 				final FutureRelay futureRelay2 = new FutureRelay();
 				distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
 				peer.notifyAutomaticFutures(futureRelay2);

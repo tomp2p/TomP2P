@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Raphael Voellmy
  * @author Thomas Bocek
+ * @author Nico Rutishauser
  * 
  */
 public class DistributedRelay {
@@ -236,7 +237,7 @@ public class DistributedRelay {
 					}
 				}
 				if(candidate !=null) {
-					final FuturePeerConnection fpc = relayRPC.peer().createPeerConnection(candidate);
+					final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
 					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc, relayType, gcmRegistrationId);
 					setupAddRelays(fpc.remotePeer(), futureDone);
 					futures.set(i, futureDone);
@@ -283,6 +284,21 @@ public class DistributedRelay {
 				if (future.isSuccess()) {
 					PeerConnection peerConnection = future.object();
 					PeerAddress relayAddress = peerConnection.remotePeer();
+
+					BaseRelayConnection connection = null;
+					switch (relayType) {
+						case OPENTCP:
+							connection = new OpenTCPRelayConnection(peerConnection, peer, relayRPC.config());
+							break;
+						case ANDROID:
+							connection = new AndroidRelayConnection(relayAddress);
+							break;
+						default:
+							LOG.error("Unknown relay type");
+							break;
+					}
+					addCloseListener(connection);
+					
 					synchronized (relays) {
 						if(relays.size() >= 5) {
 							// number of limit exceeded
@@ -290,24 +306,7 @@ public class DistributedRelay {
 						}
 						
 						LOG.debug("Adding peer {} as a relay", relayAddress);
-						switch (relayType) {
-							case OPENTCP:
-								relays.add(new OpenTCPRelayConnection(peerConnection, relayRPC.peerBean(), relayRPC.connectionBean(), relayRPC.config()));
-								break;
-							case ANDROID:
-								relays.add(new AndroidRelayConnection(relayAddress));
-								break;
-							default:
-								LOG.error("Unknown relay type");
-								break;
-						}
-					}
-					
-					if(relayType.keepConnectionOpen()) {
-						addCloseListener(peerConnection);
-					} else {
-						// TODO do something to recognize whether the relay is not alive
-						// anymore
+						relays.add(connection);
 					}
 				} else {
 					LOG.debug("Peer {} denied relay request", remotePeer);
@@ -323,33 +322,25 @@ public class DistributedRelay {
 	 * connection to the relay peer drops, a new relay is found and a new relay
 	 * connection is established
 	 * 
-	 * @param peerConnection
-	 *            the peer connection on which to add a close listener
-	 * @param bootstrapBuilder
-	 *            bootstrap builder, used to find neighbors of this peer
+	 * @param connection
+	 *            the relay connection on which to add a close listener
 	 */
-	private void addCloseListener(final PeerConnection peerConnection) {
-		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-			public void operationComplete(FutureDone<Void> future) throws Exception {
-				if (!peer.isShutdown()) {
-					// peer connection not open anymore -> remove and open a new
-					// relay connection
-					PeerAddress failedRelay = peerConnection.remotePeer();
-					LOG.debug("Relay " + failedRelay + " failed, setting up a new relay peer");
-
-					// used to remove a relay peer from the unreachable peers
-					// peer address. It will <strong>not</strong> cut the
-					// connection to an existing peer, but only update the
-					// unreachable peer's PeerAddress if a relay peer failed.
-					// It will also cancel the {@link PeerMapUpdateTask}
-					// maintenance task if the last relay is removed.
-					relays.remove(peerConnection);
-					failedRelays.add(failedRelay);
-					updatePeerAddress();
-					synchronized (this) {
-						for (RelayListener relayListener : relayListeners) {
-							relayListener.relayFailed(DistributedRelay.this, peerConnection);
-						}
+	private void addCloseListener(final BaseRelayConnection connection) {
+		connection.addCloseListener(new RelayListener() {
+			@Override
+			public void relayFailed(PeerAddress relayAddress) {
+				// used to remove a relay peer from the unreachable peers
+				// peer address. It will <strong>not</strong> cut the
+				// connection to an existing peer, but only update the
+				// unreachable peer's PeerAddress if a relay peer failed.
+				// It will also cancel the {@link PeerMapUpdateTask}
+				// maintenance task if the last relay is removed.
+				relays.remove(connection);
+				failedRelays.add(relayAddress);
+				updatePeerAddress();
+				synchronized (this) {
+					for (RelayListener relayListener : relayListeners) {
+						relayListener.relayFailed(relayAddress);
 					}
 				}
 			}

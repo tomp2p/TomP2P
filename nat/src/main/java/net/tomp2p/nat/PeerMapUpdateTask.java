@@ -85,6 +85,7 @@ class PeerMapUpdateTask extends TimerTask {
 						relays = new ArrayList<BaseRelayConnection>(distributedRelay.relays());
 					}
 					
+					// send the map to all relay peers
 					for (final BaseRelayConnection relay : relays) {
 						sendPeerMap(relay, peerMapVerified);
 					}

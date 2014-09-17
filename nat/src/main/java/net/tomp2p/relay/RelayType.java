@@ -5,10 +5,22 @@ public enum RelayType {
 	/**
 	 * Data exchange will happen over an open TCP connection
 	 */
-	NORMAL(),
+	OPENTCP(true),
 
 	/**
 	 * Data exchange will take place over Google Cloud Messaging
 	 */
-	ANDROID();
+	ANDROID(false);
+	
+	private final boolean keepConnectionOpen;
+
+	private RelayType(boolean keepConnectionOpen) {
+		this.keepConnectionOpen = keepConnectionOpen;
+	}
+
+	public boolean keepConnectionOpen() {
+		return keepConnectionOpen;
+	}
+	
+	
 }

@@ -15,6 +15,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayRPC;
@@ -49,7 +50,7 @@ class PeerMapUpdateTask extends TimerTask {
 	 *            set of the relay addresses
 	 */
 	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay,
-	        Collection<PeerAddress> manualRelays, int maxFail) {
+			Collection<PeerAddress> manualRelays, int maxFail) {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
@@ -59,7 +60,7 @@ class PeerMapUpdateTask extends TimerTask {
 
 	@Override
 	public void run() {
-		//don't cancel, as we can be relayed again in future, only cancel if this peer shuts down.
+		// don't cancel, as we can be relayed again in future, only cancel if this peer shuts down.
 		if (relayRPC.peer().isShutdown()) {
 			this.cancel();
 			return;
@@ -71,24 +72,24 @@ class PeerMapUpdateTask extends TimerTask {
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				if (future.isSuccess()) {
 					List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap()
-					        .peerMapVerified();
+							.peerMapVerified();
 					final Collection<PeerConnection> relays;
 					synchronized (distributedRelay.relayAddresses()) {
 						relays = new ArrayList<PeerConnection>(distributedRelay.relayAddresses());
 					}
-		            for (final PeerConnection pc : relays) {
-		              	final FutureResponse fr = relayRPC.sendPeerMap(pc.remotePeer(), peerMapVerified, pc);
-		               	fr.addListener(new BaseFutureAdapter<BaseFuture>() {
-		               		public void operationComplete(BaseFuture future) throws Exception {
-		               			if (future.isFailed()) {
-		               				LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(),
-		               						future.failedReason());
-		               			} else {
-		               				LOG.trace("Updated peer map on relay {}", pc.remotePeer());
-		               			}
-		               		}
-		               	});
-		            }
+					for (final PeerConnection pc : relays) {
+						final FutureResponse fr = relayRPC.sendPeerMap(pc, peerMapVerified);
+						fr.addListener(new BaseFutureAdapter<BaseFuture>() {
+							public void operationComplete(BaseFuture future) throws Exception {
+								if (future.isFailed()) {
+									LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(),
+											future.failedReason());
+								} else {
+									LOG.trace("Updated peer map on relay {}", pc.remotePeer());
+								}
+							}
+						});
+					}
 				}
 			}
 		});

@@ -20,6 +20,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import net.tomp2p.connection.ConnectionBean;
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.PeerBean;
+import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
@@ -78,10 +86,10 @@ public class RelayUtils {
 	 * @return a buffer containing the (encoded) registration ID.
 	 */
 	public static Buffer encodeRegistrationId(String registrationId) {
-		if(registrationId == null) {
+		if (registrationId == null) {
 			return null;
 		}
-		
+
 		ByteBuffer byteBuffer;
 		synchronized (encoder) {
 			encoder.reset();
@@ -119,5 +127,27 @@ public class RelayUtils {
 			decoder.flush(decoded);
 			return decoded.toString();
 		}
+	}
+
+	/**
+	 * Send a message through an open peer connection (non-blocking)
+	 * @return the response
+	 */
+	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {
+		final FutureResponse futureResponse = new FutureResponse(message);
+		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, config);
+		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
+		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+			@Override
+			public void operationComplete(FutureChannelCreator future) throws Exception {
+				if (future.isSuccess()) {
+					requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
+				} else {
+					futureResponse.failed(future);
+				}
+			}
+		});
+
+		return futureResponse;
 	}
 }

@@ -21,7 +21,6 @@ import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.GCMSender;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

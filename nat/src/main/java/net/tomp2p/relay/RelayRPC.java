@@ -1,12 +1,10 @@
 package net.tomp2p.relay;
 
-import io.netty.buffer.ByteBuf;
-
 import java.net.InetSocketAddress;
-import java.nio.charset.CharacterCodingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -27,9 +25,11 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.relay.android.GCMSender;
+import net.tomp2p.relay.android.GCMForwarderRPC;
+import net.tomp2p.relay.tcp.RelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +39,12 @@ public class RelayRPC extends DispatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
     private final ConnectionConfiguration config;
     private final Peer peer;
-	private GCMSender gcmSender;
+	
+    // used when it should serve as an Android relay server
+    private final String gcmAuthToken;
+	
+	// holds the forwarder for each client
+	private final Map<Number160, BaseRelayForwarderRPC> forwarders;
 
     /**
      * Register the RelayRPC. After the setup, the peer is ready to act as a
@@ -49,16 +54,25 @@ public class RelayRPC extends DispatchHandler {
      *            The peer to register the RelayRPC
      * @return
      */
-    public RelayRPC(Peer peer) {
+    public RelayRPC(Peer peer, String gcmAuthToken) {
         super(peer.peerBean(), peer.connectionBean());
-        register(RPC.Commands.RELAY.getNr());
+		this.gcmAuthToken = gcmAuthToken;
         this.peer = peer;
-        config = new DefaultConnectionConfiguration();
+        this.config = new DefaultConnectionConfiguration();
+        this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
+        
+        // register this handler
+        register(RPC.Commands.RELAY.getNr());
     }
-
-	public void gcmSender(GCMSender gcmSender) {
-		this.gcmSender = gcmSender;
-	}
+    
+    /**
+     * Returns the correct forwarder for a given peer id
+     * @param peerId the peer Id
+     * @return the forwarder or <code>null</code> if none was found.
+     */
+    public BaseRelayForwarderRPC getForwarder(Number160 peerId) {
+    	return forwarders.get(peerId);
+    }
 	
     /**
      * Send the peer map of an unreachable peer to a relay peer, so that the
@@ -69,53 +83,18 @@ public class RelayRPC extends DispatchHandler {
      *            The peer address of the relay peer
      * @param map
      *            The unreachable peer's peer map.
-     * @param fcc
      * @return
      */
-    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, final PeerConnection peerConnection) {
-        final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-        message.keepAlive(true);
+    public FutureResponse sendPeerMap(PeerConnection peerConnection, List<Map<Number160, PeerStatatistic>> map) {
+        final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
         // TODO: neighbor size limit is 256, we might have more here
         message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
-        final FutureResponse futureResponse = new FutureResponse(message);
-        return sendSingle(peerConnection, futureResponse);
-    }
-
-    /**
-     * Forward a message through the open peer connection to the unreachable
-     * peer.
-     * 
-     * @param peerConnection
-     *            The open connection to the unreachable peer
-     * @param buf
-     *            Buffer of the message that needs to be forwarded to the
-     *            unreachable peer
-     * @return
-     */
-    public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf) {
-        final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
-        message.keepAlive(true);
-        message.buffer(buf);
-        final FutureResponse futureResponse = new FutureResponse(message);
-        return sendSingle(peerConnection, futureResponse);
-    }
-
-	private FutureResponse sendSingle(final PeerConnection peerConnection, final FutureResponse futureResponse) {
-		LOG.debug("Acquire exclusively peerConnoction {} for message {}", peerConnection, futureResponse.request());
-        final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), config);
-        final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
-		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-            public void operationComplete(FutureChannelCreator future) throws Exception {
-				if(future.isSuccess()) {
-	            	requestHandler.sendTCP(peerConnection.channelCreator(), peerConnection);
-	            } else {
-	            	futureResponse.failed(future);
-	            }
-            }
-		});
         
-        return futureResponse;
+        return sendToRelayPeer(peerConnection, message);
+    }
+    
+    private FutureResponse sendToRelayPeer(PeerConnection connection, Message message) {
+    	return RelayUtils.send(connection, peerBean(), connectionBean(), config, message);
     }
 
     /**
@@ -128,30 +107,32 @@ public class RelayRPC extends DispatchHandler {
      *            FuturePeerConnection to the peer that shall act as a relay.
      * @return FutureDone with a peer connection to the newly set up relay peer
      */
-    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
+    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, final FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
         
-        Message message;
-        if(relayType == RelayType.NORMAL) {
+        final Message message;
+        if(relayType == RelayType.OPENTCP) {
         	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-        	// TODO keep message alive on Android?
-        	message.keepAlive(true);
         } else if(relayType == RelayType.ANDROID) {
         	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
         	message.buffer(RelayUtils.encodeRegistrationId(gcmRegistrationId));
         } else {
         	throw new IllegalArgumentException("Unknown relay type " + relayType);
         }
+        
+        // depend on the relay type whether to keep the connection open or close it after the setup.
+        message.keepAlive(relayType.keepConnectionOpen());
 
         
-        final FutureResponse futureResponse = new FutureResponse(message);
         LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
 
         fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
             public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
                 if (futurePeerConnection.isSuccess()) {
+                	// successfully created a connection to the relay peer
                 	final PeerConnection peerConnection = futurePeerConnection.object();
-                	sendSingle(peerConnection, futureResponse).addListener(new BaseFutureAdapter<FutureResponse>() {
+                	FutureResponse response = sendToRelayPeer(peerConnection, message);
+                	response.addListener(new BaseFutureAdapter<FutureResponse>() {
                         public void operationComplete(FutureResponse future) throws Exception {
                             if (future.isSuccess()) {
                                 futureDone.done(peerConnection);
@@ -168,16 +149,23 @@ public class RelayRPC extends DispatchHandler {
         return futureDone;
     }
 
+    /**
+     * Receive a message at the relay server and the relay client
+     */
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         LOG.debug("received RPC message {}", message);
         if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// request from unreachable peer to the relay
             handleSetup(message, peerConnection, responder);
         } else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// request from mobile device to the relay
         	handleSetupAndroid(message, peerConnection, responder);
         } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// The unreachable peer receives wrapped messages from the relay
             handlePiggyBackMessage(message, responder);
         } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// the relay server receives the update of the routing table regularly from the unrachable peer
             handleMap(message, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
@@ -197,7 +185,8 @@ public class RelayRPC extends DispatchHandler {
         }
 
         // register relay forwarder
-        RelayForwarderRPC.register(peerConnection, peer, this);
+        RelayForwarderRPC tcpForwarder = new RelayForwarderRPC(peerConnection, peer, config);
+        registerRelayForwarder(tcpForwarder);
 
         LOG.debug("I'll be your relay! {}", message);
         responder.response(createResponseMessage(message, Type.OK));
@@ -221,18 +210,28 @@ public class RelayRPC extends DispatchHandler {
             return;
 		}
 		
-		if(gcmSender == null) {
+		if(gcmAuthToken == null) {
 			LOG.error("This relay peer is not capable to serve Android devices");
 			responder.response(createResponseMessage(message, Type.DENIED));
 	        return;
 		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-        gcmSender.registerDevice(peerConnection.remotePeer(), registrationId);
-        
-        // TODO handle correct setup
-        handleSetup(message, peerConnection, responder);
+		GCMForwarderRPC forwarderRPC = new GCMForwarderRPC(peer, peerConnection, gcmAuthToken, registrationId);
+		registerRelayForwarder(forwarderRPC);
     }
+    
+    private void registerRelayForwarder(BaseRelayForwarderRPC forwarder) {
+		for (Commands command : RPC.Commands.values()) {
+			if (command != RPC.Commands.RELAY) {
+				peer.connectionBean().dispatcher()
+				        .registerIoHandler(forwarder.getUnreachablePeerAddress().peerId(), forwarder, command.getNr());
+			}
+		}
+		
+		peer.peerBean().addPeerStatusListeners(forwarder);
+		forwarders.put(forwarder.getUnreachablePeerId(), forwarder);
+	}
 
     private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
@@ -260,12 +259,13 @@ public class RelayRPC extends DispatchHandler {
     private void handleMap(Message message, Responder responder) {
     	LOG.debug("handle foreign map {}", message);
         Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
-        RelayForwarderRPC relayForwarderRPC = RelayForwarderRPC.find(peer, message.sender().peerId());
-        if (relayForwarderRPC != null) {
-            relayForwarderRPC.setMap(RelayUtils.unflatten(map, message.sender()));
+        BaseRelayForwarderRPC forwarder = forwarders.get(message.sender().peerId());
+        if (forwarder != null) {
+        	forwarder.setMap(RelayUtils.unflatten(map, message.sender()));
         } else {
-            LOG.error("need to call setup relay first");
+            LOG.error("No forwarder for peer {} found. Need to setup relay first");
         }
+        
         Message response = createResponseMessage(message, Type.OK);
         responder.response(response);
     }

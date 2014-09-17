@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.relay.tcp.RelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -377,7 +378,7 @@ public class TestRelay {
             fcc.awaitUninterruptibly();	
 
             final FuturePeerConnection fpc = slave.createPeerConnection(master.peerAddress());
-            FutureDone<PeerConnection> rcf = new PeerBuilderNAT(slave).start().relayRPC().setupRelay(fcc.channelCreator(), fpc, RelayType.NORMAL, null);
+            FutureDone<PeerConnection> rcf = new PeerBuilderNAT(slave).start().relayRPC().setupRelay(fcc.channelCreator(), fpc, RelayType.OPENTCP, null);
             rcf.awaitUninterruptibly();
 
             //Check if permanent peer connection was created

@@ -10,7 +10,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.GCMSender;
+import net.tomp2p.relay.android.GCMForwarderRPC;
 
 public class PeerBuilderNAT {
 
@@ -23,7 +23,7 @@ public class PeerBuilderNAT {
 	private int maxFail = -1;
 	private int peerMapUpdateInterval = -1;
 	
-	private RelayType relayType = RelayType.NORMAL;
+	private RelayType relayType = RelayType.OPENTCP;
 	private String gcmAuthToken;
 	private String gcmRegistrationId;
 
@@ -167,7 +167,7 @@ public class PeerBuilderNAT {
 
 	public PeerNAT start() {
 		final NATUtils natUtils = new NATUtils();
-		final RelayRPC relayRPC = new RelayRPC(peer);
+		final RelayRPC relayRPC = new RelayRPC(peer, gcmAuthToken);
 
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;
@@ -186,13 +186,9 @@ public class PeerBuilderNAT {
 		}
 		
 		if(relayType == null) {
-			relayType = RelayType.NORMAL;
+			relayType = RelayType.OPENTCP;
 		}
 		
-		if(gcmAuthToken != null) {
-			 relayRPC.gcmSender(new GCMSender(gcmAuthToken));
-		}
-
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {

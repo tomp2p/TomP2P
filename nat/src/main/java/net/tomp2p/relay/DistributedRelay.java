@@ -291,7 +291,12 @@ public class DistributedRelay {
 						LOG.debug("Adding peer {} as a relay", relayAddress);
 						relayAddresses.add(peerConnection);
 					}
-					addCloseListener(peerConnection);
+					if(relayType.keepConnectionOpen()) {
+						addCloseListener(peerConnection);
+					} else {
+						// TODO do something to recognize whether the relay is not alive
+						// anymore
+					}
 				} else {
 					LOG.debug("Peer {} denied relay request", remotePeer);
 					failedRelays.add(remotePeer);
@@ -322,12 +327,10 @@ public class DistributedRelay {
 
 					// used to remove a relay peer from the unreachable peers
 					// peer address. It will <strong>not</strong> cut the
-					// connection to an
-					// existing peer, but only update the unreachable peer's
-					// PeerAddress if a
-					// relay peer failed. It will also cancel the {@link
-					// PeerMapUpdateTask} task
-					// if the last relay is removed.
+					// connection to an existing peer, but only update the
+					// unreachable peer's PeerAddress if a relay peer failed.
+					// It will also cancel the {@link PeerMapUpdateTask}
+					// maintenance task if the last relay is removed.
 					relayAddresses.remove(peerConnection);
 					failedRelays.add(failedRelay);
 					updatePeerAddress();

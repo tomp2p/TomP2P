@@ -79,4 +79,14 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 	public void addCloseListener(RelayListener listener) {
 		listeners.add(listener);
 	}
+
+	@Override
+	public void onMapUpdateFailed() {
+		// ignore because we already have a close listener on the TCP connection
+	}
+
+	@Override
+	public void onMapUpdateSuccess() {
+		// success is nice, but we only care about failures
+	}
 }

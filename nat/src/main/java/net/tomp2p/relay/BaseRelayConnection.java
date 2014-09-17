@@ -36,6 +36,17 @@ public abstract class BaseRelayConnection {
 	public abstract FutureDone<Void> shutdown();
 	
 	/**
+	 * Is called when the {@link PeerMapUpdateTask} successfully sent the map
+	 * to the relay peer.
+	 */
+	public abstract void onMapUpdateSuccess();
+	/**
+	 * Is called when the {@link PeerMapUpdateTask} failed to send the new map.
+	 * This can act as an indicator that the relay peer is now offline.
+	 */
+	public abstract void onMapUpdateFailed();
+	
+	/**
 	 * Adds a close listener for an open peer connection, so that if the
 	 * connection to the relay peer drops, a new relay is found and a new relay
 	 * connection is established

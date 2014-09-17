@@ -228,7 +228,7 @@ public class RelayRPC extends DispatchHandler {
      * @param responder
      */
     private void handleMap(Message message, Responder responder) {
-    	LOG.debug("handle foreign map {}", message);
+    	LOG.debug("Handle foreign map update {}", message);
         Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
         BaseRelayForwarderRPC forwarder = forwarders.get(message.sender().peerId());
         if (forwarder != null) {

@@ -6,14 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
@@ -87,6 +86,7 @@ public class PeerMapUpdateTask extends TimerTask {
 				}
 			}
 		});
+		
 		final FutureRelay futureRelay2 = new FutureRelay();
 		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
@@ -104,6 +104,8 @@ public class PeerMapUpdateTask extends TimerTask {
 	 * @return
 	 */
 	public void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
+		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
+		
 		final Message message = relayRPC.createMessage(connection.relayAddress(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
 		// TODO: neighbor size limit is 256, we might have more here
 		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
@@ -112,9 +114,11 @@ public class PeerMapUpdateTask extends TimerTask {
 		fr.addListener(new BaseFutureAdapter<BaseFuture>() {
 			public void operationComplete(BaseFuture future) throws Exception {
 				if (future.isFailed()) {
-					LOG.warn("failed to update peer map on relay peer {}: {}", connection.relayAddress(), future.failedReason());
+					LOG.warn("Failed to update routing table on relay peer {}. Reason: {}", connection.relayAddress(), future.failedReason());
+					connection.onMapUpdateFailed();
 				} else {
-					LOG.trace("Updated peer map on relay {}", connection.relayAddress());
+					LOG.trace("Updated routing table on relay {}", connection.relayAddress());
+					connection.onMapUpdateSuccess();
 				}
 			}
 		});

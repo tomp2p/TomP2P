@@ -30,4 +30,15 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		return RelayType.ANDROID;
 	}
 
+	@Override
+	public void onMapUpdateFailed() {
+		// TODO Auto-generated method stub
+	}
+
+	@Override
+	public void onMapUpdateSuccess() {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

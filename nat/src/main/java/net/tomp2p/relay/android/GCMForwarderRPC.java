@@ -34,6 +34,8 @@ public class GCMForwarderRPC extends BaseRelayForwarderRPC {
 		super(peer, peerConnection);
 		this.registrationId = registrationId;
 		this.sender = new Sender(authToken);
+		
+		// TODO init some listener to detect when the relay is not reachable anymore
 	}
 
 	@Override

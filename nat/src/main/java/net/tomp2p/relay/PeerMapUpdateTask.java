@@ -1,4 +1,4 @@
-package net.tomp2p.nat;
+package net.tomp2p.relay;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,11 +18,6 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.relay.BaseRelayConnection;
-import net.tomp2p.relay.DistributedRelay;
-import net.tomp2p.relay.FutureRelay;
-import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -34,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * routing requests on behalf of the unreachable peers
  * 
  */
-class PeerMapUpdateTask extends TimerTask {
+public class PeerMapUpdateTask extends TimerTask {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
 

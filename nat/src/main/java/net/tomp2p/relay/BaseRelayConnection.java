@@ -29,8 +29,6 @@ public abstract class BaseRelayConnection {
 		return relayAddress;
 	}
 	
-	public abstract RelayType relayType();
-	
 	public abstract FutureResponse sendToRelay(Message message);
 	
 	public abstract FutureDone<Void> shutdown();

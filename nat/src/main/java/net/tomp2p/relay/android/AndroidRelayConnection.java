@@ -26,11 +26,6 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	}
 
 	@Override
-	public RelayType relayType() {
-		return RelayType.ANDROID;
-	}
-
-	@Override
 	public void onMapUpdateFailed() {
 		// TODO Auto-generated method stub
 	}

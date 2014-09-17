@@ -60,11 +60,6 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 		return connection.closeFuture();
 	}
 
-	@Override
-	public RelayType relayType() {
-		return RelayType.OPENTCP;
-	}
-
 	/**
 	 * Adds a close listener for an open peer connection, so that if the
 	 * connection to the relay peer drops, a new relay is found and a new relay

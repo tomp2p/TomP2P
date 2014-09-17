@@ -3,34 +3,21 @@ package net.tomp2p.relay.tcp;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayUtils;
-import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -106,8 +93,7 @@ public class RelayForwarderRPC extends BaseRelayForwarderRPC {
 	@Override
 	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign,
 	        final Responder responder) throws Exception {
-		//TODO
-		// the sender should have the ip/port from the relay peer, the peerId
+		//TODO the sender should have the ip/port from the relay peer, the peerId
 		// from the unreachable peer, in order to have 6 relays instead of 5
 		final PeerAddress sender = getUnreachablePeerAddress(); 
 
@@ -152,14 +138,12 @@ public class RelayForwarderRPC extends BaseRelayForwarderRPC {
 		});
 	}
 	
-
 	@Override
 	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
 		LOG.debug("peerconnection open? {}", peerConnection.isOpen());
 		Message response = createResponseMessage(message, peerConnection.isOpen() ? Type.OK : Type.EXCEPTION, sender);
 		responder.response(response);
 	}
-
 
 	/**
 	 * Forward a message through the open peer connection to the unreachable  peer.

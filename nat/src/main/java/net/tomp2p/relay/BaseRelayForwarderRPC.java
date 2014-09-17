@@ -20,7 +20,6 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.peers.PeerStatusListener;
-import net.tomp2p.relay.tcp.RelayForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
 import net.tomp2p.rpc.RPC;

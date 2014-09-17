@@ -11,13 +11,19 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.NeighborSet;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.relay.BaseRelayConnection;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,28 +78,49 @@ class PeerMapUpdateTask extends TimerTask {
 				if (future.isSuccess()) {
 					List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap()
 							.peerMapVerified();
-					final Collection<PeerConnection> relays;
-					synchronized (distributedRelay.relayAddresses()) {
-						relays = new ArrayList<PeerConnection>(distributedRelay.relayAddresses());
+					
+					// make a copy for faster release of the lock
+					final Collection<BaseRelayConnection> relays;
+					synchronized (distributedRelay.relays()) {
+						relays = new ArrayList<BaseRelayConnection>(distributedRelay.relays());
 					}
-					for (final PeerConnection pc : relays) {
-						final FutureResponse fr = relayRPC.sendPeerMap(pc, peerMapVerified);
-						fr.addListener(new BaseFutureAdapter<BaseFuture>() {
-							public void operationComplete(BaseFuture future) throws Exception {
-								if (future.isFailed()) {
-									LOG.warn("failed to update peer map on relay peer {}: {}", pc.remotePeer(),
-											future.failedReason());
-								} else {
-									LOG.trace("Updated peer map on relay {}", pc.remotePeer());
-								}
-							}
-						});
+					
+					for (final BaseRelayConnection relay : relays) {
+						sendPeerMap(relay, peerMapVerified);
 					}
 				}
 			}
 		});
 		final FutureRelay futureRelay2 = new FutureRelay();
 		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
-		distributedRelay.peer().notifyAutomaticFutures(futureRelay2);
+		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
+	}
+
+	/**
+	 * Send the peer map of an unreachable peer to a relay peer, so that the
+	 * relay peer can reply to neighbor requests on behalf of the unreachable
+	 * peer.
+	 * 
+	 * @param peerAddress
+	 *            The peer address of the relay peer
+	 * @param map
+	 *            The unreachable peer's peer map.
+	 * @return
+	 */
+	public void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
+		final Message message = relayRPC.createMessage(connection.relayAddress(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
+		// TODO: neighbor size limit is 256, we might have more here
+		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
+		
+		final FutureResponse fr = connection.sendToRelay(message);
+		fr.addListener(new BaseFutureAdapter<BaseFuture>() {
+			public void operationComplete(BaseFuture future) throws Exception {
+				if (future.isFailed()) {
+					LOG.warn("failed to update peer map on relay peer {}: {}", connection.relayAddress(), future.failedReason());
+				} else {
+					LOG.trace("Updated peer map on relay {}", connection.relayAddress());
+				}
+			}
+		});
 	}
 }

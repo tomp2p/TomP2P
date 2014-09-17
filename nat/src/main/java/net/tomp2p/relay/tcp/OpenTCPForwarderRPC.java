@@ -30,11 +30,12 @@ import org.slf4j.LoggerFactory;
  * this class at the relay server.
  * 
  * @author Raphael Voellmy
+ * @author Nico Rutishauser
  * 
  */
-public class RelayForwarderRPC extends BaseRelayForwarderRPC {
+public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 
-	private final static Logger LOG = LoggerFactory.getLogger(RelayForwarderRPC.class);
+	private final static Logger LOG = LoggerFactory.getLogger(OpenTCPForwarderRPC.class);
 
 	// connection to unreachable peer
 	private final PeerConnection peerConnection;
@@ -48,21 +49,21 @@ public class RelayForwarderRPC extends BaseRelayForwarderRPC {
 	 * @param peer
 	 *            The relay peer
 	 */
-	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, ConnectionConfiguration config) {
+	public OpenTCPForwarderRPC(final PeerConnection peerConnection, final Peer peer, ConnectionConfiguration config) {
 		super(peer, peerConnection);
 		this.config = config;
-		this.peerConnection = peerConnection.changeRemotePeer(getUnreachablePeerAddress());
+		this.peerConnection = peerConnection.changeRemotePeer(unreachablePeerAddress());
 		
 		// add a listener when the connection is closed
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
-				peer.peerBean().removePeerStatusListeners(RelayForwarderRPC.this);
-				peer.connectionBean().dispatcher().removeIoHandler(getUnreachablePeerId());
+				peer.peerBean().removePeerStatusListeners(OpenTCPForwarderRPC.this);
+				peer.connectionBean().dispatcher().removeIoHandler(unreachablePeerId());
             }
 		});
 		
-		LOG.debug("Created TCP forwarder from peer {} to peer {}", peer.peerAddress(), getUnreachablePeerAddress());
+		LOG.debug("Created TCP forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeerAddress());
 	}
 	
 	@Override
@@ -78,11 +79,11 @@ public class RelayForwarderRPC extends BaseRelayForwarderRPC {
 		boolean samePeerConnection = peerConnection.equals(peerConnection2);
 		//if firsthand, then full trust, if second hand and a stable peerconnection, we can trust as well
 		if((firstHand || (secondHand && samePeerConnection)) 
-				&& remotePeer.peerId().equals(getUnreachablePeerId()) 
+				&& remotePeer.peerId().equals(unreachablePeerId()) 
 				&& remotePeer.isRelayed()) {
 			//we got new information about this peer, e.g. its active relays
-			LOG.debug("Update the unreachable peer to {} based on {}, ref {}", getUnreachablePeerAddress(), remotePeer, referrer);
-			setUnreachablePeerAddress(remotePeer);
+			LOG.debug("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+			unreachablePeerAddress(remotePeer);
 		}
 	    return false;
     }
@@ -95,7 +96,7 @@ public class RelayForwarderRPC extends BaseRelayForwarderRPC {
 	        final Responder responder) throws Exception {
 		//TODO the sender should have the ip/port from the relay peer, the peerId
 		// from the unreachable peer, in order to have 6 relays instead of 5
-		final PeerAddress sender = getUnreachablePeerAddress(); 
+		final PeerAddress sender = unreachablePeerAddress(); 
 
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {

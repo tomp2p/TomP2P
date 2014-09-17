@@ -2,7 +2,6 @@ package net.tomp2p.relay;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,13 +17,11 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
-import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.relay.android.GCMForwarderRPC;
-import net.tomp2p.relay.tcp.RelayForwarderRPC;
+import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
@@ -63,35 +60,11 @@ public class RelayRPC extends DispatchHandler {
         register(RPC.Commands.RELAY.getNr());
     }
     
-    /**
-     * Returns the correct forwarder for a given peer id
-     * @param peerId the peer Id
-     * @return the forwarder or <code>null</code> if none was found.
-     */
-    public BaseRelayForwarderRPC getForwarder(Number160 peerId) {
-    	return forwarders.get(peerId);
-    }
-	
-    /**
-     * Send the peer map of an unreachable peer to a relay peer, so that the
-     * relay peer can reply to neighbor requests on behalf of the unreachable
-     * peer.
-     * 
-     * @param peerAddress
-     *            The peer address of the relay peer
-     * @param map
-     *            The unreachable peer's peer map.
-     * @return
-     */
-    public FutureResponse sendPeerMap(PeerConnection peerConnection, List<Map<Number160, PeerStatatistic>> map) {
-        final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-        // TODO: neighbor size limit is 256, we might have more here
-        message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
-        
-        return sendToRelayPeer(peerConnection, message);
-    }
+	public ConnectionConfiguration config() {
+		return config;
+	}
     
-    private FutureResponse sendToRelayPeer(PeerConnection connection, Message message) {
+    public FutureResponse sendToRelayPeer(PeerConnection connection, Message message) {
     	return RelayUtils.send(connection, peerBean(), connectionBean(), config, message);
     }
 
@@ -183,7 +156,7 @@ public class RelayRPC extends DispatchHandler {
         }
 
         // register relay forwarder
-        RelayForwarderRPC tcpForwarder = new RelayForwarderRPC(peerConnection, peer, config);
+        OpenTCPForwarderRPC tcpForwarder = new OpenTCPForwarderRPC(peerConnection, peer, config);
         registerRelayForwarder(tcpForwarder);
 
         LOG.debug("I'll be your relay! {}", message);
@@ -223,12 +196,12 @@ public class RelayRPC extends DispatchHandler {
 		for (Commands command : RPC.Commands.values()) {
 			if (command != RPC.Commands.RELAY) {
 				peer.connectionBean().dispatcher()
-				        .registerIoHandler(forwarder.getUnreachablePeerAddress().peerId(), forwarder, command.getNr());
+				        .registerIoHandler(forwarder.unreachablePeerAddress().peerId(), forwarder, command.getNr());
 			}
 		}
 		
 		peer.peerBean().addPeerStatusListeners(forwarder);
-		forwarders.put(forwarder.getUnreachablePeerId(), forwarder);
+		forwarders.put(forwarder.unreachablePeerId(), forwarder);
 	}
 
     private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {

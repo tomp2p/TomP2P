@@ -53,16 +53,16 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
 	}
 
-	public final PeerAddress getUnreachablePeerAddress() {
+	public final PeerAddress unreachablePeerAddress() {
 		return unreachablePeer;
 	}
 
-	protected final void setUnreachablePeerAddress(PeerAddress unreachablePeer) {
+	protected final void unreachablePeerAddress(PeerAddress unreachablePeer) {
 		assert unreachablePeer != null;
 		this.unreachablePeer = unreachablePeer;
 	}
 
-	protected final Number160 getUnreachablePeerId() {
+	protected final Number160 unreachablePeerId() {
 		return unreachablePeer.peerId();
 	}
 
@@ -78,18 +78,17 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		// TODO
 		// the sender should have the ip/port from the relay peer, the peerId
 		// from the unreachable peer, in order to have 6 relays instead of 5
-		final PeerAddress sender = getUnreachablePeerAddress();
 
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
-			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, sender);
-			handlePing(message, responder, sender);
+			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, unreachablePeer);
+			handlePing(message, responder, unreachablePeer);
 		} else if (message.command() == RPC.Commands.NEIGHBOR.getNr()) {
-			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, sender);
-			handleNeigbhor(message, responder, sender);
+			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, unreachablePeer);
+			handleNeigbhor(message, responder, unreachablePeer);
 		} else {
-			LOG.debug("Received message {} to forward to unreachable peer {}", message, sender);
-			handleRelay(message, responder, sender);
+			LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeer);
+			handleRelay(message, responder, unreachablePeer);
 		}
 	}
 	
@@ -151,11 +150,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	}
 	
 	private SortedSet<PeerAddress> neighbors(Number160 id, int atLeast) {
-        LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", getUnreachablePeerAddress(), id);
+        LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeerAddress(), id);
         if(peerMap == null) {
             return null;
         } else {
-            return PeerMap.closePeers(getUnreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
+            return PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
         }
     }
 	

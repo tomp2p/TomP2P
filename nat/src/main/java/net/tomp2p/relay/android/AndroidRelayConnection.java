@@ -1,0 +1,33 @@
+package net.tomp2p.relay.android;
+
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.BaseRelayConnection;
+import net.tomp2p.relay.RelayType;
+
+public class AndroidRelayConnection extends BaseRelayConnection {
+
+	public AndroidRelayConnection(PeerAddress relayAddress) {
+		super(relayAddress);
+	}
+	
+	@Override
+	public FutureResponse sendToRelay(Message message) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public FutureDone<Void> shutdown() {
+		// TODO Auto-generated method stub
+		return new FutureDone<Void>().done();
+	}
+
+	@Override
+	public RelayType relayType() {
+		return RelayType.ANDROID;
+	}
+
+}

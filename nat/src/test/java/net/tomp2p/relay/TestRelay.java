@@ -25,7 +25,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.relay.tcp.RelayForwarderRPC;
+import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -314,7 +314,7 @@ public class TestRelay {
          	DistributedRelay dr = uNat.startSetupRelay(fr2);
          	Shutdown shutdown = uNat.startRelayMaintenance(fr2, unreachablePeer.bootstrap().peerAddress(peers[0].peerAddress()), dr);
          	
-            PeerAddress relayPeer = fr.relays().iterator().next().remotePeer(); 
+            PeerAddress relayPeer = fr.relays().iterator().next().relayAddress(); 
             Peer found = null;
             for(Peer p:peers) {
             	if(p.peerAddress().equals(relayPeer)) {
@@ -330,8 +330,8 @@ public class TestRelay {
             Assert.assertEquals(8, nrOfNeighbors);
             
             System.err.println("neighbors: "+nrOfNeighbors);
-            for(PeerConnection pc:fr.relays()) {
-            	System.err.println("pc:"+pc.remotePeer());
+            for(BaseRelayConnection relay : fr.relays()) {
+            	System.err.println("pc:"+relay.relayAddress());
             }
             Assert.assertEquals(5, fr.relays().size());
 
@@ -546,8 +546,8 @@ public class TestRelay {
     private Collection<PeerAddress> getNeighbors(Peer peer) {
     	Map<Number160, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
     	for(Map.Entry<Number160, DispatchHandler> entry:handlers.entrySet()) {
-    		if(entry.getValue() instanceof RelayForwarderRPC) {
-    			return ((RelayForwarderRPC)entry.getValue()).all();  
+    		if(entry.getValue() instanceof OpenTCPForwarderRPC) {
+    			return ((OpenTCPForwarderRPC)entry.getValue()).all();  
     		}
     	}
     	return null;

@@ -4,16 +4,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.dht.FuturePut;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
-import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -25,7 +20,6 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -509,8 +503,8 @@ public class TestRelay {
     private Collection<PeerAddress> getNeighbors(Peer peer) {
     	Map<Number160, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
     	for(Map.Entry<Number160, DispatchHandler> entry:handlers.entrySet()) {
-    		if(entry.getValue() instanceof OpenTCPForwarderRPC) {
-    			return ((OpenTCPForwarderRPC)entry.getValue()).all();  
+    		if(entry.getValue() instanceof BaseRelayForwarderRPC) {
+    			return ((BaseRelayForwarderRPC) entry.getValue()).getPeerMap();  
     		}
     	}
     	return null;

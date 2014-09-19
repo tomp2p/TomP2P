@@ -10,7 +10,6 @@ import java.util.SortedSet;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -72,8 +71,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		return false;
 	}
 
+	/**
+	 * Receive a message at the relay server from a given peer
+	 */
 	@Override
-	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
+	public final void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
 			throws Exception {
 		// TODO
 		// the sender should have the ip/port from the relay peer, the peerId
@@ -114,7 +116,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * @param responder
 	 * @param sender
 	 */
-	protected void handleNeigbhor(final Message message, Responder responder, PeerAddress sender) {
+	private void handleNeigbhor(final Message message, Responder responder, PeerAddress sender) {
 		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
@@ -125,7 +127,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		}
 		Number160 locationKey = message.key(0);
 
-		Collection<PeerAddress> neighbors = neighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
+		Collection<PeerAddress> neighbors = getNeighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
@@ -149,7 +151,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		responder.response(responseMessage);
 	}
 	
-	private SortedSet<PeerAddress> neighbors(Number160 id, int atLeast) {
+	private SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
         LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeerAddress(), id);
         if(peerMap == null) {
             return null;
@@ -158,7 +160,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
         }
     }
 	
-	public Collection<PeerAddress> all() {
+	public Collection<PeerAddress> getPeerMap() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
 		for(Map<Number160, PeerStatatistic> map:peerMap) {
 			result1.addAll(map.values());
@@ -170,15 +172,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	    return result2;
     }
 
-	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
+	public void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 	    this.peerMap = peerMap;
     }
-
-	/**
-	 * Send a message to the firewalled peer
-	 * 
-	 * @param message the message to send
-	 * @return a future response
-	 */
-	public abstract FutureResponse sendSingle(final Message message);
 }

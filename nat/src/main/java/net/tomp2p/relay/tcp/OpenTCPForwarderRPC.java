@@ -86,38 +86,17 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 	    return false;
     }
 	
-	/**
-	 * Receive a message at the relay server from a given peer
-	 */
-	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnectionUnused, final boolean sign,
-	        final Responder responder) throws Exception {
-		//TODO the sender should have the ip/port from the relay peer, the peerId
-		// from the unreachable peer, in order to have 6 relays instead of 5
-		final PeerAddress sender = unreachablePeerAddress(); 
-
-		// special treatment for ping and neighbor
-		if (message.command() == RPC.Commands.PING.getNr()) {
-			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, sender);
-			handlePing(message, responder, sender);
-		} else if (message.command() == RPC.Commands.NEIGHBOR.getNr()) {
-			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, sender);
-			handleNeigbhor(message, responder, sender);
-		} else {
-			LOG.debug("Received message {} to forward to unreachable peer {}", message, sender);
-			handleRelay(message, responder, sender);
-		}
-	}
-
 	@Override
 	protected void handleRelay(final Message message, final Responder responder, final PeerAddress sender) throws InvalidKeyException, SignatureException, IOException {
 		// Send message via direct message through the open connection to the unreachable peer
 		message.restoreContentReferences();
 		
-		final Message enveloppe = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
-		enveloppe.buffer(RelayUtils.encodeMessage(message));
-
-		FutureResponse fr = sendSingle(enveloppe);
+		final Message envelope = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
+		envelope.buffer(RelayUtils.encodeMessage(message));
+		// always keep the connection open
+		envelope.keepAlive(true);
+		// Forward a message through the open peer connection to the unreachable  peer.
+		FutureResponse fr = RelayUtils.send(peerConnection, peerBean(), connectionBean(), config, message);
 
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
@@ -128,7 +107,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 					responseFromUnreachablePeer.restoreContentReferences();
 					responseFromUnreachablePeer.sender(sender);
 					responseFromUnreachablePeer.recipient(message.sender());
-					LOG.debug("response from unreachable peer: {}", responseFromUnreachablePeer);
+					LOG.debug("Response from unreachable peer: {}", responseFromUnreachablePeer);
 					responder.response(responseFromUnreachablePeer);
 				} else {
 					responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());
@@ -142,16 +121,5 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		LOG.debug("peerconnection open? {}", peerConnection.isOpen());
 		Message response = createResponseMessage(message, peerConnection.isOpen() ? Type.OK : Type.EXCEPTION, sender);
 		responder.response(response);
-	}
-
-	/**
-	 * Forward a message through the open peer connection to the unreachable  peer.
-	 */
-	@Override
-	public FutureResponse sendSingle(Message message) {
-		// always keep the connection open
-		message.keepAlive(true);
-		
-		return RelayUtils.send(peerConnection, peerBean(), connectionBean(), config, message);
 	}
 }

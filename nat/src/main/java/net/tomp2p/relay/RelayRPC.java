@@ -171,7 +171,7 @@ public class RelayRPC extends DispatchHandler {
         Collection<PeerAddress> map = message.neighborsSet(0).neighbors();
         BaseRelayForwarderRPC forwarder = forwarders.get(message.sender().peerId());
         if (forwarder != null) {
-        	forwarder.setMap(RelayUtils.unflatten(map, message.sender()));
+        	forwarder.setPeerMap(RelayUtils.unflatten(map, message.sender()));
         } else {
             LOG.error("No forwarder for peer {} found. Need to setup relay first");
         }

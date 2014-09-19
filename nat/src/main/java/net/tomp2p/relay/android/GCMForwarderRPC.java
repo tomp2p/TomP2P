@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -45,35 +44,25 @@ public class GCMForwarderRPC extends BaseRelayForwarderRPC {
 	}
 
 	@Override
-	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
-			throws Exception {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
 	protected void handleRelay(Message message, Responder responder, PeerAddress sender) throws Exception {
-		// TODO Auto-generated method stub
-
+		// TODO Save the message content in a buffer and notify the mobile device
+		sendTickleMessage();
 	}
 
 	@Override
 	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
-		// TODO Auto-generated method stub
-
+		// TODO Check if the mobile device is still alive and answer appropriately
 	}
 
-	@Override
-	// TODO make asynchronous
-	public FutureResponse sendSingle(Message message) {
+	private Result sendTickleMessage() {
 		// Tickle the device with the given registration id.
 		com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
 		try {
-			Result result = sender.send(tickleMessage, registrationId, retries);
+			// TODO make asynchronous
+			return sender.send(tickleMessage, registrationId, retries);
 		} catch (IOException e) {
 			LOG.error("Cannot send tickle message to device {}", registrationId, e);
+			return null;
 		}
-
-		return new FutureResponse(message);
 	}
 }

@@ -72,13 +72,12 @@ public class RelayRPC extends DispatchHandler {
      * Set up a relay connection to a peer. If the peer that is asked to act as
      * relay is relayed itself, the request will be denied.
      * 
-     * @param channelCreator
      * @param gcmRegistrationId 
      * @param fpcshall
      *            FuturePeerConnection to the peer that shall act as a relay.
      * @return FutureDone with a peer connection to the newly set up relay peer
      */
-    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, final FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
+    public FutureDone<PeerConnection> setupRelay(final FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
         
         final Message message;
@@ -93,7 +92,6 @@ public class RelayRPC extends DispatchHandler {
         
         // depend on the relay type whether to keep the connection open or close it after the setup.
         message.keepAlive(relayType.keepConnectionOpen());
-
         
         LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
 

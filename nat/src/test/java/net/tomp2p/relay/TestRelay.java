@@ -378,7 +378,7 @@ public class TestRelay {
             fcc.awaitUninterruptibly();	
 
             final FuturePeerConnection fpc = slave.createPeerConnection(master.peerAddress());
-            FutureDone<PeerConnection> rcf = new PeerBuilderNAT(slave).start().relayRPC().setupRelay(fcc.channelCreator(), fpc, RelayType.OPENTCP, null);
+            FutureDone<PeerConnection> rcf = new PeerBuilderNAT(slave).start().relayRPC().setupRelay(fpc, RelayType.OPENTCP, null);
             rcf.awaitUninterruptibly();
 
             //Check if permanent peer connection was created

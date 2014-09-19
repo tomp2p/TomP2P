@@ -41,7 +41,7 @@ public class DistributedRelay {
 	final private Collection<BaseRelayConnection> relays;
 	final private Collection<PeerAddress> failedRelays;
 
-	private final Collection<RelayListener> relayListeners = new ArrayList<RelayListener>(1);
+	private final Collection<RelayListener> relayListeners;
 	private final FutureChannelCreator futureChannelCreator;
 	private final RelayType relayType;
 	private final String gcmRegistrationId;
@@ -64,6 +64,8 @@ public class DistributedRelay {
 
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
+		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
+		
 		// this needs to be kept open, as we want the peerconnection to stay alive
 		futureChannelCreator = peer.connectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
 	}
@@ -78,17 +80,18 @@ public class DistributedRelay {
 	}
 
 	public void addRelayListener(RelayListener relayListener) {
-		relayListeners.add(relayListener);
+		synchronized (relayListeners) {
+			relayListeners.add(relayListener);
+		}
 	}
 
 	public FutureForkJoin<FutureDone<Void>> shutdown() {
-		
 		final AtomicReferenceArray<FutureDone<Void>> futureDones2;
 		synchronized (relays) {
 			@SuppressWarnings("unchecked")
 			FutureDone<Void>[] futureDones = new FutureDone[relays.size() + 1];
-			futureDones2 = new AtomicReferenceArray<FutureDone<Void>>(
-					futureDones);
+			futureDones2 = new AtomicReferenceArray<FutureDone<Void>>(futureDones);
+			
 			int i = 1;
 			for (BaseRelayConnection relay : relays) {
 				futureDones2.set(i++, relay.shutdown());
@@ -98,9 +101,10 @@ public class DistributedRelay {
 
 		final FutureDone<Void> futureChannelShutdown = new FutureDone<Void>();
 		futureDones2.set(0, futureChannelShutdown);
-		synchronized (this) {
+		synchronized (relayListeners) {
 			relayListeners.clear();
 		}
+		
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			@Override
 			public void operationComplete(FutureChannelCreator future) throws Exception {
@@ -130,7 +134,6 @@ public class DistributedRelay {
 		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 			public void operationComplete(final FutureChannelCreator future) throws Exception {
 				if (future.isSuccess()) {
-					final ChannelCreator cc = future.channelCreator();
 					final Collection<PeerAddress> relayCandidates;
 					if (manualRelays.isEmpty()) {
 						//Get the neighbors of this peer that could possibly act as relays. Relay
@@ -145,7 +148,7 @@ public class DistributedRelay {
 					}
 					
 					filter(relayCandidates);
-					setupPeerConnections(futureRelay, cc, relayCandidates, maxFail);
+					setupPeerConnections(futureRelay, relayCandidates, maxFail);
 				} else {
 					futureRelay.failed(future);
 				}
@@ -161,11 +164,14 @@ public class DistributedRelay {
 	private void filter(Collection<PeerAddress> relayCandidates) {
 		for (Iterator<PeerAddress> iterator = relayCandidates.iterator(); iterator.hasNext();) {
 			PeerAddress pa = iterator.next();
+			
+			// filter peers that are relayed themselves
 			if (pa.isRelayed()) {
 				iterator.remove();
 				continue;
 			}
 			
+			// filter relays that are already connected
 			synchronized (relays) {
 				for (BaseRelayConnection relay : relays) {
 					if (relay.relayAddress().equals(pa)) {
@@ -186,17 +192,14 @@ public class DistributedRelay {
 	 * @param cc
 	 * @return FutureDone
 	 */
-	private void setupPeerConnections(final FutureRelay futureRelay, final ChannelCreator cc,
-	        Collection<PeerAddress> relayCandidates, final int maxFail) {
+	private void setupPeerConnections(final FutureRelay futureRelay, Collection<PeerAddress> relayCandidates, final int maxFail) {
 		final int nrOfRelays = Math.min(PeerAddress.MAX_RELAYS - relays.size(), relayCandidates.size());
-		LOG.debug("setting up {} relays", nrOfRelays);
+		LOG.debug("Setting up {} relays", nrOfRelays);
 		if (nrOfRelays > 0) {
 			@SuppressWarnings("unchecked")
 			FutureDone<PeerConnection>[] futureDones = new FutureDone[nrOfRelays];
-			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(
-			        futureDones);
-			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, cc, nrOfRelays, futureRelay,
-			        0, maxFail, new StringBuilder());
+			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(futureDones);
+			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, nrOfRelays, futureRelay, 0, maxFail, new StringBuilder());
 		} else {
 			if(relayCandidates.size() == 0) {
 				//no candidates
@@ -215,7 +218,6 @@ public class DistributedRelay {
 	 * @param futureRelayConnections
 	 * @param relayCandidates
 	 *            List of peers that could act as relays
-	 * @param cc
 	 * @param numberOfRelays
 	 *            The number of relays to establish.
 	 * @param futureDone
@@ -223,7 +225,7 @@ public class DistributedRelay {
 	 * @throws InterruptedException
 	 */
 	private void setupPeerConnectionsRecursive(final AtomicReferenceArray<FutureDone<PeerConnection>> futures,
-	        final Collection<PeerAddress> relayCandidates, final ChannelCreator cc, final int numberOfRelays,
+	        final Collection<PeerAddress> relayCandidates, final int numberOfRelays,
 	        final FutureRelay futureRelay, final int fail, final int maxFail, 
 	        final StringBuilder status) {
 		int active = 0;
@@ -238,7 +240,7 @@ public class DistributedRelay {
 				}
 				if(candidate !=null) {
 					final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
-					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(cc, fpc, relayType, gcmRegistrationId);
+					FutureDone<PeerConnection> futureDone = relayRPC.setupRelay(fpc, relayType, gcmRegistrationId);
 					setupAddRelays(fpc.remotePeer(), futureDone);
 					futures.set(i, futureDone);
 					active++;
@@ -249,12 +251,12 @@ public class DistributedRelay {
 		}
 		if (active == 0) {
 			updatePeerAddress();
-			futureRelay.failed("no candidates: " + status.toString());
+			futureRelay.failed("No candidates: " + status.toString());
 			return;
 		}
 		if (fail > maxFail) {
 			updatePeerAddress();
-			futureRelay.failed("maxfail: " + status.toString());
+			futureRelay.failed("Maxfail: " + status.toString());
 			return;
 		}
 
@@ -268,7 +270,7 @@ public class DistributedRelay {
 						futureRelay.done(new ArrayList<BaseRelayConnection>(relays));
 					}
 				} else if (!peer.isShutdown()) {
-					setupPeerConnectionsRecursive(futures, relayCandidates, cc, numberOfRelays, futureRelay,
+					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay,
 					        fail + 1, maxFail, status.append(futureForkJoin.failedReason()).append(" "));
 				} else {
 					futureRelay.failed(futureForkJoin);
@@ -338,7 +340,8 @@ public class DistributedRelay {
 				relays.remove(connection);
 				failedRelays.add(relayAddress);
 				updatePeerAddress();
-				synchronized (this) {
+				
+				synchronized (relayListeners) {
 					for (RelayListener relayListener : relayListeners) {
 						relayListener.relayFailed(relayAddress);
 					}
@@ -368,6 +371,6 @@ public class DistributedRelay {
 		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
 		        .changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
 		peer.peerBean().serverPeerAddress(newAddress);
-		LOG.debug("update peer address {}, isrelay = {}", newAddress, hasRelays);
+		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}
 }

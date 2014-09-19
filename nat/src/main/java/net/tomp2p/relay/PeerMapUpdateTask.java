@@ -87,6 +87,7 @@ public class PeerMapUpdateTask extends TimerTask {
 			}
 		});
 		
+		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();
 		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);

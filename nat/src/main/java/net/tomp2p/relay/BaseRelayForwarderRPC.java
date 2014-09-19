@@ -160,7 +160,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
         }
     }
 	
-	public Collection<PeerAddress> getPeerMap() {
+	public final Collection<PeerAddress> getPeerMap() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
 		for(Map<Number160, PeerStatatistic> map:peerMap) {
 			result1.addAll(map.values());
@@ -172,7 +172,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	    return result2;
     }
 
-	public void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
+	public final void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 	    this.peerMap = peerMap;
     }
 }

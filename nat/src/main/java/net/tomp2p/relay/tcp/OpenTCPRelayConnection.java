@@ -59,21 +59,6 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 		return connection.closeFuture();
 	}
 
-	/**
-	 * Adds a close listener for an open peer connection, so that if the
-	 * connection to the relay peer drops, a new relay is found and a new relay
-	 * connection is established
-	 * 
-	 * @param peerConnection
-	 *            the peer connection on which to add a close listener
-	 * @param bootstrapBuilder
-	 *            bootstrap builder, used to find neighbors of this peer
-	 */
-	@Override
-	public void addCloseListener(RelayListener listener) {
-		listeners.add(listener);
-	}
-
 	@Override
 	public void onMapUpdateFailed() {
 		// ignore because we already have a close listener on the TCP connection

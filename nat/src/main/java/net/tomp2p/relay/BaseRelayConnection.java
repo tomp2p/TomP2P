@@ -54,7 +54,7 @@ public abstract class BaseRelayConnection {
 	 * @param bootstrapBuilder
 	 *            bootstrap builder, used to find neighbors of this peer
 	 */
-	public void addCloseListener(RelayListener listener) {
+	public final void addCloseListener(RelayListener listener) {
 		listeners.add(listener);
 	}
 }

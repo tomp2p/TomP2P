@@ -9,10 +9,6 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
-import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -62,60 +58,6 @@ public class RelayRPC extends DispatchHandler {
 	public ConnectionConfiguration config() {
 		return config;
 	}
-    
-    public FutureResponse sendToRelayPeer(PeerConnection connection, Message message) {
-    	return RelayUtils.send(connection, peerBean(), connectionBean(), config, message);
-    }
-
-    /**
-     * Set up a relay connection to a peer. If the peer that is asked to act as
-     * relay is relayed itself, the request will be denied.
-     * 
-     * @param gcmRegistrationId 
-     * @param fpcshall
-     *            FuturePeerConnection to the peer that shall act as a relay.
-     * @return FutureDone with a peer connection to the newly set up relay peer
-     */
-    public FutureDone<PeerConnection> setupRelay(final FuturePeerConnection fpc, RelayType relayType, String gcmRegistrationId) {
-        final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-        
-        final Message message;
-        if(relayType == RelayType.OPENTCP) {
-        	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-        } else if(relayType == RelayType.ANDROID) {
-        	message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
-        	message.buffer(RelayUtils.encodeRegistrationId(gcmRegistrationId));
-        } else {
-        	throw new IllegalArgumentException("Unknown relay type " + relayType);
-        }
-        
-        // depend on the relay type whether to keep the connection open or close it after the setup.
-        message.keepAlive(relayType.keepConnectionOpen());
-        
-        LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
-
-        fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-            public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
-                if (futurePeerConnection.isSuccess()) {
-                	// successfully created a connection to the relay peer
-                	final PeerConnection peerConnection = futurePeerConnection.object();
-                	FutureResponse response = sendToRelayPeer(peerConnection, message);
-                	response.addListener(new BaseFutureAdapter<FutureResponse>() {
-                        public void operationComplete(FutureResponse future) throws Exception {
-                            if (future.isSuccess()) {
-                                futureDone.done(peerConnection);
-                            } else {
-                                futureDone.failed(future);
-                            }
-                        }
-                    });
-                } else {
-                    futureDone.failed(futurePeerConnection);
-                }
-            }
-        });
-        return futureDone;
-    }
 
     /**
      * Receive a message at the relay server and the relay client

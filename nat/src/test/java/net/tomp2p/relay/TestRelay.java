@@ -72,13 +72,10 @@ public class TestRelay {
 			Assert.assertTrue(unreachablePeer.peerAddress().isRelayed());
 			Assert.assertFalse(unreachablePeer.peerAddress().isFirewalledTCP());
 			Assert.assertFalse(unreachablePeer.peerAddress().isFirewalledUDP());
-
-		}
-		
-		finally {
+		} finally {
 			if (master != null) {
 				unreachablePeer.shutdown().await();
-				master.shutdown().await();
+				master.shutdown().awaitUninterruptibly(5000);
 			}
 		}
 	}
@@ -361,40 +358,6 @@ public class TestRelay {
             }
         }
     }
-
-    @Test
-    public void testRelayRPC() throws Exception {
-        Peer master = null;
-        Peer slave = null;
-        try {
-            final Random rnd = new Random(42);
-            Peer[] peers = UtilsNAT.createNodes(2, rnd, 4000);
-            master = peers[0]; // the relay peer
-        	new PeerBuilderNAT(master).start(); // register relayRPC ioHandler
-            slave = peers[1];
-
-            // create channel creator
-            FutureChannelCreator fcc = slave.connectionBean().reservation().create(1, PeerAddress.MAX_RELAYS);
-            fcc.awaitUninterruptibly();	
-
-            final FuturePeerConnection fpc = slave.createPeerConnection(master.peerAddress());
-            FutureDone<PeerConnection> rcf = new PeerBuilderNAT(slave).start().relayRPC().setupRelay(fpc, RelayType.OPENTCP, null);
-            rcf.awaitUninterruptibly();
-
-            //Check if permanent peer connection was created
-            Assert.assertTrue(rcf.isSuccess());
-            Assert.assertEquals(master.peerAddress(), fpc.object().remotePeer());
-            Assert.assertTrue(fpc.object().channelFuture().channel().isActive());
-            Assert.assertTrue(fpc.object().channelFuture().channel().isOpen());
-
-        } finally {
-            master.shutdown().await();
-            slave.shutdown().await();
-        }
-    }	public BaseFuture publishNeighbors() {
-	    return null;
-    }
-
     
     @Test
     public void testNoRelayDHT() throws Exception {

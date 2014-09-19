@@ -184,15 +184,19 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * Returns the current peer map from the mobile device
 	 */
 	public final Collection<PeerAddress> getPeerMap() {
-		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
-		for(Map<Number160, PeerStatatistic> map:peerMap) {
-			result1.addAll(map.values());
+		Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>();
+		if(peerMap == null || peerMap.isEmpty()) {
+			return peerAddresses;
 		}
-		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
-	    for(PeerStatatistic peerStatatistic:result1) {
-	    	result2.add(peerStatatistic.peerAddress());
+		
+		Collection<PeerStatatistic> statistics = new ArrayList<PeerStatatistic>();
+		for(Map<Number160, PeerStatatistic> map : peerMap) {
+			statistics.addAll(map.values());
+		}
+	    for(PeerStatatistic peerStatatistic:statistics) {
+	    	peerAddresses.add(peerStatatistic.peerAddress());
 	    }
-	    return result2;
+	    return peerAddresses;
     }
 
 	/**

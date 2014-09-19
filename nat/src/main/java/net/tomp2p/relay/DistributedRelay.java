@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.PeerConnection;
@@ -41,8 +42,8 @@ public class DistributedRelay {
 	final private Peer peer;
 	final private RelayRPC relayRPC;
 
-	final private Collection<BaseRelayConnection> relays;
-	final private Collection<PeerAddress> failedRelays;
+	final private List<BaseRelayConnection> relays;
+	final private Set<PeerAddress> failedRelays;
 
 	private final Collection<RelayListener> relayListeners;
 	private final RelayType relayType;
@@ -85,26 +86,19 @@ public class DistributedRelay {
 	}
 
 	public FutureForkJoin<FutureDone<Void>> shutdown() {
-		final AtomicReferenceArray<FutureDone<Void>> futureDones2;
+		final AtomicReferenceArray<FutureDone<Void>> futureDones;
 		synchronized (relays) {
-			@SuppressWarnings("unchecked")
-			FutureDone<Void>[] futureDones = new FutureDone[relays.size() + 1];
-			futureDones2 = new AtomicReferenceArray<FutureDone<Void>>(futureDones);
-			
-			int i = 1;
-			for (BaseRelayConnection relay : relays) {
-				futureDones2.set(i++, relay.shutdown());
+			futureDones = new AtomicReferenceArray<FutureDone<Void>>(relays.size());
+			for (int i = 0; i < relays.size(); i++) {
+				futureDones.set(i, relays.get(i).shutdown());
 			}
 		}
 		
-
-		final FutureDone<Void> futureChannelShutdown = new FutureDone<Void>();
-		futureDones2.set(0, futureChannelShutdown);
 		synchronized (relayListeners) {
 			relayListeners.clear();
 		}
 		
-		return new FutureForkJoin<FutureDone<Void>>(futureDones2);
+		return new FutureForkJoin<FutureDone<Void>>(futureDones);
 	}
 
 	/**

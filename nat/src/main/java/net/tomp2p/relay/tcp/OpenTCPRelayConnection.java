@@ -56,7 +56,7 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 
 	@Override
 	public FutureDone<Void> shutdown() {
-		return connection.closeFuture();
+		return connection.closeFuture().done();
 	}
 
 	@Override

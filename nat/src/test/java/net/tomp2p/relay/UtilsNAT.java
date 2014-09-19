@@ -59,7 +59,7 @@ public class UtilsNAT {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");
         }
-        Bindings bindings = new Bindings().addInterface("lo");
+        Bindings bindings = new Bindings();// .addInterface("lo");
         PeerDHT[] peers = new PeerDHT[nrOfPeers];
         final Peer master;
         if (automaticFuture != null) {
@@ -115,12 +115,6 @@ public class UtilsNAT {
         }
         System.err.println("perfect routing done.");
     }
-    
-    
-    
-    
-    
-    
     
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {
         return createNodes(nrOfPeers, rnd, port, null);

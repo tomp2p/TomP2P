@@ -5,7 +5,6 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayConnection;
-import net.tomp2p.relay.RelayType;
 
 public class AndroidRelayConnection extends BaseRelayConnection {
 

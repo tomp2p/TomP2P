@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;

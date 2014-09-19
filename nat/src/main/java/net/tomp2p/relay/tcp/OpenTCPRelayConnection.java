@@ -10,7 +10,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayConnection;
 import net.tomp2p.relay.RelayListener;
-import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
 
 import org.slf4j.Logger;

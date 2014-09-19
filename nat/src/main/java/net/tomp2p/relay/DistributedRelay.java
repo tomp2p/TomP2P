@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -296,9 +295,12 @@ public class DistributedRelay {
 							connection = new AndroidRelayConnection(relayAddress);
 							break;
 						default:
-							LOG.error("Unknown relay type");
-							break;
+							LOG.error("Unknown relay type {}", relayType);
+							failedRelays.add(remotePeer);
+							futureDone.failed("Unknown relay type");
+							return;
 					}
+					
 					addCloseListener(connection);
 					
 					synchronized (relays) {

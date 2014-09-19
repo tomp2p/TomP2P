@@ -95,7 +95,7 @@ public abstract class Message {
      * @throws Throwable
      *             Any exception may be thrown by the implementer.
      */
-    abstract void parseResponse(byte[] response) throws Throwable;
+    abstract void parseResponse(byte[] response) throws Exception;
 
     /**
      * Gets the excpetion associated with the response. This exception is
@@ -224,7 +224,7 @@ public abstract class Message {
         // Parse the response.
         try {
             parseResponse(response);
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             if (ex instanceof NatPmpException) {
                 throw (NatPmpException) ex;
             } else {

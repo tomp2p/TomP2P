@@ -10,6 +10,10 @@ import java.util.SortedSet;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.BaseFutureAdapter;
+import net.tomp2p.futures.BaseFutureListener;
+import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.NeighborSet;
@@ -75,7 +79,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * Receive a message at the relay server from a given peer
 	 */
 	@Override
-	public final void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder)
+	public final void handleResponse(Message message, PeerConnection peerConnection, boolean sign, final Responder responder)
 			throws Exception {
 		// TODO
 		// the sender should have the ip/port from the relay peer, the peerId
@@ -90,20 +94,35 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 			handleNeigbhor(message, responder, unreachablePeer);
 		} else {
 			LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeer);
-			handleRelay(message, responder, unreachablePeer);
+			FutureDone<Message> response = handleRelay(message, unreachablePeer);
+			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+				@Override
+				public void operationComplete(FutureDone<Message> future) throws Exception {
+					if(future.isSuccess()) {
+						Message answerMessage = future.object();
+						LOG.debug("Response from unreachable peer: {}", answerMessage);
+						responder.response(answerMessage);
+					} else {
+						responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());
+					}
+				}
+			});
 		}
 	}
 	
 	/**
-	 * When a message for the relay peer has been received
-	 * @param message
-	 * @param responder
-	 * @param sender
+	 * When a message for the relay peer has been received. The implementation should notify the unreachable peer
+	 * and return a response as soon as possible.
+	 * 
+	 * @param message the message that is intended for the unreachable peer
+	 * @param sender the requester
+	 * @return the response to the requester
 	 */
-	protected abstract void handleRelay(Message message, Responder responder, PeerAddress sender) throws Exception;
+	protected abstract FutureDone<Message> handleRelay(Message message, PeerAddress sender) throws Exception;
 
 	/**
 	 * When a ping message is received
+	 * 
 	 * @param message
 	 * @param responder
 	 * @param sender
@@ -112,6 +131,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 
 	/**
 	 * When a neighbor message is received
+	 * 
 	 * @param message
 	 * @param responder
 	 * @param sender
@@ -160,6 +180,9 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
         }
     }
 	
+	/**
+	 * Returns the current peer map from the mobile device
+	 */
 	public final Collection<PeerAddress> getPeerMap() {
 		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
 		for(Map<Number160, PeerStatatistic> map:peerMap) {
@@ -172,6 +195,9 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	    return result2;
     }
 
+	/**
+	 * Update the peerMap of the unreachable peer
+	 */
 	public final void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 	    this.peerMap = peerMap;
     }

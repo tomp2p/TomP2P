@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -22,14 +23,14 @@ import com.google.android.gcm.server.Sender;
  * @author Nico Rutishauser
  *
  */
-public class GCMForwarderRPC extends BaseRelayForwarderRPC {
+public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 
-	private static final Logger LOG = LoggerFactory.getLogger(GCMForwarderRPC.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 	private final int retries = 5; // TODO make configurable if requested
 	private final Sender sender;
 	private final String registrationId;
 
-	public GCMForwarderRPC(Peer peer, PeerConnection peerConnection, String authToken, String registrationId) {
+	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, String authToken, String registrationId) {
 		super(peer, peerConnection);
 		this.registrationId = registrationId;
 		this.sender = new Sender(authToken);
@@ -44,9 +45,12 @@ public class GCMForwarderRPC extends BaseRelayForwarderRPC {
 	}
 
 	@Override
-	protected void handleRelay(Message message, Responder responder, PeerAddress sender) throws Exception {
+	protected FutureDone<Message> handleRelay(Message message, PeerAddress sender) throws Exception {
 		// TODO Save the message content in a buffer and notify the mobile device
 		sendTickleMessage();
+		
+		// TODO create temporal OK message
+		return new FutureDone<Message>().done();
 	}
 
 	@Override

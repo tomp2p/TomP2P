@@ -87,7 +87,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
     }
 	
 	@Override
-	protected void handleRelay(final Message message, final Responder responder, final PeerAddress sender) throws InvalidKeyException, SignatureException, IOException {
+	protected FutureDone<Message> handleRelay(final Message message, final PeerAddress sender) throws InvalidKeyException, SignatureException, IOException {
 		// Send message via direct message through the open connection to the unreachable peer
 		message.restoreContentReferences();
 		
@@ -95,9 +95,12 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		envelope.buffer(RelayUtils.encodeMessage(message));
 		// always keep the connection open
 		envelope.keepAlive(true);
-		// Forward a message through the open peer connection to the unreachable  peer.
-		FutureResponse fr = RelayUtils.send(peerConnection, peerBean(), connectionBean(), config, message);
 
+		// holds the message that will be returned to he requester
+		final FutureDone<Message> futureDone = new FutureDone<Message>();
+		
+		// Forward a message through the open peer connection to the unreachable  peer.
+		FutureResponse fr = RelayUtils.send(peerConnection, peerBean(), connectionBean(), config, envelope);
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess()) {
@@ -107,13 +110,14 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 					responseFromUnreachablePeer.restoreContentReferences();
 					responseFromUnreachablePeer.sender(sender);
 					responseFromUnreachablePeer.recipient(message.sender());
-					LOG.debug("Response from unreachable peer: {}", responseFromUnreachablePeer);
-					responder.response(responseFromUnreachablePeer);
+					futureDone.done(responseFromUnreachablePeer);
 				} else {
-					responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());
+					futureDone.failed("Could not forward message over TCP channel");
 				}
 			}
 		});
+		
+		return futureDone;
 	}
 	
 	@Override

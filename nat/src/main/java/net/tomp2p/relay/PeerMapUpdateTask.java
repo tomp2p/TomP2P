@@ -98,11 +98,10 @@ public class PeerMapUpdateTask extends TimerTask {
 	 * relay peer can reply to neighbor requests on behalf of the unreachable
 	 * peer.
 	 * 
-	 * @param peerAddress
-	 *            The peer address of the relay peer
+	 * @param connection
+	 *            The connection to the relay peer
 	 * @param map
 	 *            The unreachable peer's peer map.
-	 * @return
 	 */
 	public void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
 		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());

@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePeerConnection;
@@ -41,7 +40,6 @@ public class DistributedRelay {
 	final private Collection<PeerAddress> failedRelays;
 
 	private final Collection<RelayListener> relayListeners;
-	private final FutureChannelCreator futureChannelCreator;
 	private final RelayType relayType;
 	private final String gcmRegistrationId;
 
@@ -64,9 +62,6 @@ public class DistributedRelay {
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
 		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
-		
-		// this needs to be kept open, as we want the peerconnection to stay alive
-		futureChannelCreator = peer.connectionBean().reservation().create(0, PeerAddress.MAX_RELAYS);
 	}
 
 	/**
@@ -104,18 +99,6 @@ public class DistributedRelay {
 			relayListeners.clear();
 		}
 		
-		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			@Override
-			public void operationComplete(FutureChannelCreator future) throws Exception {
-				future.channelCreator().shutdown().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
-					@Override
-					public void operationComplete(FutureDone<Void> future) throws Exception {
-						futureChannelShutdown.done();
-					}
-				});
-			}
-		});
-
 		return new FutureForkJoin<FutureDone<Void>>(futureDones2);
 	}
 
@@ -127,32 +110,22 @@ public class DistributedRelay {
 	 * 
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
-	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays,
-	        final int maxFail) {
-
-		futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-			public void operationComplete(final FutureChannelCreator future) throws Exception {
-				if (future.isSuccess()) {
-					final Collection<PeerAddress> relayCandidates;
-					if (manualRelays.isEmpty()) {
-						//Get the neighbors of this peer that could possibly act as relays. Relay
-						// candidates are neighboring peers that are not relayed themselves and have
-						// not recently failed as relay or denied acting as relay.
-						relayCandidates = peer.distributedRouting().peerMap().all();
-						//remove those who we know have failed
-						relayCandidates.removeAll(failedRelays);
-					} else {
-						// if the user sets manual relays, the failed relays are not removed, as this has to be done by the user 
-						relayCandidates = new ArrayList<PeerAddress>(manualRelays);
-					}
-					
-					filter(relayCandidates);
-					setupPeerConnections(futureRelay, relayCandidates, maxFail);
-				} else {
-					futureRelay.failed(future);
-				}
-			}
-		});
+	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays, final int maxFail) {
+		final Collection<PeerAddress> relayCandidates;
+		if (manualRelays.isEmpty()) {
+			// Get the neighbors of this peer that could possibly act as relays. Relay
+			// candidates are neighboring peers that are not relayed themselves and have
+			// not recently failed as relay or denied acting as relay.
+			relayCandidates = peer.distributedRouting().peerMap().all();
+			//remove those who we know have failed
+			relayCandidates.removeAll(failedRelays);
+		} else {
+			// if the user sets manual relays, the failed relays are not removed, as this has to be done by the user 
+			relayCandidates = new ArrayList<PeerAddress>(manualRelays);
+		}
+		
+		filterRelayCandidates(relayCandidates);
+		setupPeerConnections(futureRelay, relayCandidates, maxFail);
 		return futureRelay;
 	}
 
@@ -160,7 +133,7 @@ public class DistributedRelay {
 	 * Remove recently failed relays, peers that are relayed themselves and
 	 * peers that are already relays
 	 */
-	private void filter(Collection<PeerAddress> relayCandidates) {
+	private void filterRelayCandidates(Collection<PeerAddress> relayCandidates) {
 		for (Iterator<PeerAddress> iterator = relayCandidates.iterator(); iterator.hasNext();) {
 			PeerAddress pa = iterator.next();
 			

@@ -73,7 +73,7 @@ public class RelayRPC extends DispatchHandler {
         	handleSetupAndroid(message, peerConnection, responder);
         } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// The unreachable peer receives wrapped messages from the relay
-            handlePiggyBackMessage(message, responder);
+            handlePiggyBackedMessage(message, responder);
         } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// the relay server receives the update of the routing table regularly from the unrachable peer
             handleMap(message, responder);
@@ -143,7 +143,7 @@ public class RelayRPC extends DispatchHandler {
 		forwarders.put(forwarder.unreachablePeerId(), forwarder);
 	}
 
-    private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
+    private void handlePiggyBackedMessage(Message message, Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
         Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));

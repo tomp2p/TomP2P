@@ -91,6 +91,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		// Send message via direct message through the open connection to the unreachable peer
 		message.restoreContentReferences();
 		
+		LOG.debug("Sending to unreachable peer {}:{}", peerConnection.remotePeer(), message);
 		final Message envelope = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
 		envelope.buffer(RelayUtils.encodeMessage(message));
 		// always keep the connection open

@@ -71,7 +71,7 @@ public class GCMForwarderRPC extends BaseRelayForwarderRPC {
 		try {
 			Result result = sender.send(tickleMessage, registrationId, retries);
 		} catch (IOException e) {
-			LOG.error("Cannot send tickle message to device {}", registrationId);
+			LOG.error("Cannot send tickle message to device {}", registrationId, e);
 		}
 
 		return new FutureResponse(message);

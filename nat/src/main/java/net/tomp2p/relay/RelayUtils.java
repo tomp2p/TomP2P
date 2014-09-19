@@ -45,6 +45,10 @@ public class RelayUtils {
 	private static CharsetEncoder encoder = charset.newEncoder();
 	private static CharsetDecoder decoder = charset.newDecoder();
 
+	private RelayUtils() {
+		// only static methods
+	}
+	
 	public static Buffer encodeMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();

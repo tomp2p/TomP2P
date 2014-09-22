@@ -79,7 +79,7 @@ public class FuturePut extends FutureDHT<FuturePut> {
             final int size = rawResult == null ? 0 : rawResult.size();
             this.minReached = size >= min;
             this.type = minReached ? FutureType.OK : FutureType.FAILED;
-            this.reason = minReached ? "Minimun number of results reached" : "Expected " + min
+            this.reason = minReached ? "Minimum number of results reached" : "Expected " + min
                     + " result, but got " + size;
         }
         notifyListeners();

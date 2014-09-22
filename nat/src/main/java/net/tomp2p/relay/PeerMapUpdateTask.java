@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PeerMapUpdateTask.class);
+	private static final long BOOTSTRAP_TIMEOUT_MS = 10000;
 
 	private final RelayRPC relayRPC;
 	private final BootstrapBuilder bootstrapBuilder;
@@ -73,7 +74,10 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 			return;
 		}
 
-		if (updated.get()) {
+		if (bootstap() && updated.get()) {
+			// reset the status since it is now sent to alle relay peers
+			updated.set(false);
+			
 			// send the peer map to the relays
 			updatePeerMap();
 		}
@@ -106,24 +110,21 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 		updated.set(true);
 	}
 
-	private void updatePeerMap() {
+	private boolean bootstap() {
 		// bootstrap to get updated peer map and then push it to the relay peers
-		FutureBootstrap fb = bootstrapBuilder.start();
-		fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
-			public void operationComplete(FutureBootstrap future) throws Exception {
-				if (future.isSuccess()) {
-					// reset the status since it is now sent to alle relay peers
-					updated.set(false);
-					List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap()
-							.peerMapVerified();
+		return bootstrapBuilder.start().awaitUninterruptibly(BOOTSTRAP_TIMEOUT_MS);
+	}
 
-					// send the map to all relay peers
-					for (final BaseRelayConnection relay : distributedRelay.relays()) {
-						sendPeerMap(relay, peerMapVerified);
-					}
-				}
-			}
-		});
+	/**
+	 * Bootstrap to get the latest peer map and then update all relays with the newest version
+	 */
+	private void updatePeerMap() {
+		List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+
+		// send the map to all relay peers
+		for (final BaseRelayConnection relay : distributedRelay.relays()) {
+			sendPeerMap(relay, peerMapVerified);
+		}
 	}
 
 	/**
@@ -136,7 +137,7 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 * @param map
 	 *            The unreachable peer's peer map.
 	 */
-	public void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
+	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
 		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
 
 		final Message message = relayRPC

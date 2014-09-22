@@ -2,17 +2,31 @@ package net.tomp2p.examples.relay;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
 
 /**
- * Just starts a Peer and randomly makes a put / get / remove onto the DHT
+ * Starts three Peers (in this order):
+ * <ul>
+ * <li>Relay Node</li>
+ * <li>Firewalled Node (Mobile)</li>
+ * <li>Query Node</li>
+ * </ul>
+ * The firewalled node is relayed by the relay node. The query node tries to make put / get / remove requests
+ * on these nodes.
  * 
- * @author Nico
+ * The Google Cloud Messaging Authentication Key is required as argument.
+ * 
+ * @author Nico Rutishauser
  * 
  */
 public class RelaySimulator {
+
+	private static final Logger LOG = LoggerFactory.getLogger(RelaySimulator.class);
 
 	private static final Number160 RELAY_PEER_ID = new Number160(2828); // 0xb0c
 	private static final Number160 MOBILE_PEER_ID = new Number160(1111); // 0x457
@@ -26,7 +40,15 @@ public class RelaySimulator {
 	private static final int MEDIUM_DATA_SIZE_BYTES = 1024;
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
-		new RelayNode().start(RELAY_PEER_ID, RELAY_PORT);
+		String gcmKey = null;
+		if(args.length == 0) {
+			LOG.warn("Need the GCM Authentication key as argument when using with Android.");
+		} else {
+			LOG.debug("{} is the GCM key used", args[0]);
+			gcmKey = args[0];
+		}
+		
+		new RelayNode().start(RELAY_PEER_ID, RELAY_PORT, gcmKey);
 		Thread.sleep(1000);
 
 		MobileNode mobile = new MobileNode(MOBILE_PEER_ID, MOBILE_PORT);
@@ -38,9 +60,9 @@ public class RelaySimulator {
 
 		QueryNode queryNode = new QueryNode(MEDIUM_SLEEP_TIME_MS, MEDIUM_DATA_SIZE_BYTES);
 		queryNode.start(QUERY_PEER_ID, QUERY_PORT, RELAY_PORT);
-		System.out.println("GET 1: " + queryNode.get(key));
-		System.out.println("REMOVE: " + queryNode.remove(key));
-		System.out.println("GET 2: " + queryNode.get(key));
+		LOG.debug("GET 1: {}", queryNode.get(key));
+		LOG.debug("REMOVE: {}", queryNode.remove(key));
+		LOG.debug("GET 2: {}", queryNode.get(key));
 
 	}
 

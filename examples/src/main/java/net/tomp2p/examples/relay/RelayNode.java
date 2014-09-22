@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Just starts a Peer and randomly makes a put / get / remove onto the DHT
+ * A node that forwards request to the firewalled node
  * 
  * @author Nico Rutishauser
  * 
@@ -20,9 +20,8 @@ import org.slf4j.LoggerFactory;
 public class RelayNode {
 
 	private static final Logger logger = LoggerFactory.getLogger(RelayNode.class);
-	private static final String GCM_API_KEY = "AIzaSyDZn076gOPgwJPKXtwoUjd0xLFq4XMK5jM";
 
-	public void start(Number160 peerId, int port) {
+	public void start(Number160 peerId, int port, String gcmAPIKey) {
 //		ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 //		ccc.pipelineFilter(new CountingPipelineFilter(CounterType.INBOUND));
 //
@@ -35,7 +34,7 @@ public class RelayNode {
 			Peer peer = new PeerBuilder(peerId).ports(port).start();
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			new PeerBuilderNAT(peer).gcmAuthToken(GCM_API_KEY).start();
+			new PeerBuilderNAT(peer).gcmAuthToken(gcmAPIKey).start();
 			logger.debug("Peer started");
 		} catch (IOException e) {
 			e.printStackTrace();

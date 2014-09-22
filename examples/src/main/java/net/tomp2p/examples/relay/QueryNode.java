@@ -24,14 +24,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Just starts a Peer and randomly makes a put / get / remove onto the DHT
+ * Starts a Peer and randomly makes a put / get / remove onto the DHT
  * 
- * @author Nico
+ * @author Nico Rutishauser
  * 
  */
 public class QueryNode {
 
-	private static final Logger logger = LoggerFactory.getLogger(QueryNode.class);
+	private static final Logger LOG = LoggerFactory.getLogger(QueryNode.class);
 
 	private final Random random;
 	private final long avgSleepTime;
@@ -55,17 +55,20 @@ public class QueryNode {
 		BaseFuture bootstrap = bootstrapBuilder.start().awaitUninterruptibly();
 
 		if (bootstrap == null) {
-			logger.error("Cannot bootstrap");
+			LOG.error("Cannot bootstrap");
 			return;
 		} else if (bootstrap.isFailed()) {
-			logger.error("Cannot bootstrap. Reason: {}", bootstrap.failedReason());
+			LOG.error("Cannot bootstrap. Reason: {}", bootstrap.failedReason());
 			return;
 		}
 
 		peerDHT = new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("QUERY", false)).start();
-		logger.debug("Peer started");
+		LOG.debug("Peer started");
 	}
 
+	/**
+	 * Start put / get / remove random keys
+	 */
 	public void putGetRandom() throws IOException, ClassNotFoundException {
 		while (true) {
 			// put some data
@@ -92,19 +95,17 @@ public class QueryNode {
 	private void put(Number160 key) {
 		Data data = generateRandomData();
 		FuturePut futurePut = peerDHT.put(key).data(data).start().awaitUninterruptibly();
-		logger.debug("Put of {} bytes is success = {}", data.length(), futurePut.isSuccess());
+		LOG.debug("Put of {} bytes is success = {}", data.length(), futurePut.isSuccess());
 		validKeys.add(key);
 	}
 
 	private void get(Number160 key) {
-		FutureGet futureGet = peerDHT.get(key).contentKey(Number160.ZERO).domainKey(Number160.ZERO)
-				.versionKey(Number160.ZERO).requestP2PConfiguration(new RequestP2PConfiguration(1, 1, 1)).start()
-				.awaitUninterruptibly();
-		byte[] data = new byte[0];
-		if (futureGet.data() != null) {
-			data = (byte[]) futureGet.data().toBytes();
+		Data data = get(new Number640(key, Number160.ZERO, Number160.ZERO, Number160.ZERO));
+		byte[] byteArray = new byte[0];
+		if (data != null) {
+			byteArray = (byte[]) data.toBytes();
 		}
-		logger.debug("Got {} bytes", data.length);
+		LOG.debug("Got {} bytes", byteArray.length);
 	}
 
 	public Data get(Number640 key) {
@@ -118,9 +119,12 @@ public class QueryNode {
 	}
 
 	private void remove(Number160 key) {
-		peerDHT.remove(key).all(true).start().awaitUninterruptibly();
-		logger.debug("Removed object {}", key);
-		validKeys.remove(key);
+		if (remove(new Number640(key, Number160.ZERO, Number160.ZERO, Number160.ZERO))) {
+			LOG.debug("Removed object {}", key);
+			validKeys.remove(key);
+		} else {
+			LOG.warn("Could not remove object {}");
+		}
 	}
 
 	public boolean remove(Number640 key) {
@@ -135,7 +139,7 @@ public class QueryNode {
 		if (sleepTime < 0) {
 			sleepTime = 0;
 		}
-		logger.debug("Sleeping for {}ms", sleepTime);
+		LOG.debug("Sleeping for {}ms", sleepTime);
 		try {
 			Thread.sleep(sleepTime);
 		} catch (InterruptedException e) {

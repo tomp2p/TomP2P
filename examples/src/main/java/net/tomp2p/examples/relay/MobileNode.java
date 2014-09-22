@@ -27,6 +27,12 @@ import net.tomp2p.storage.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Starts a peer that is firewalled and can only be reached by the relay peer.
+ * 
+ * @author Nico Rutishauser
+ *
+ */
 public class MobileNode {
 
 	private static final Logger LOG = LoggerFactory.getLogger(MobileNode.class);

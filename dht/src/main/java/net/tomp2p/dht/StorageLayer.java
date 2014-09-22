@@ -60,7 +60,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND
+		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED
 	};
 
 	// Hash of public key is always preferred

@@ -3,6 +3,7 @@ package net.tomp2p.nat;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
@@ -10,6 +11,10 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDiscover;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.futures.FuturePeerConnection;
+import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.natpmp.NatPmpException;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
@@ -20,6 +25,8 @@ import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
+import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +43,9 @@ public class PeerNAT {
 	final private int maxFail;
 	final private boolean manualPorts;
 	final private Collection<PeerAddress> manualRelays;
+
+	private static final int MESSAGE_VERSION = 1;
+	private static final int PERMANENT_FLAG = 1;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays, int failedRelayWaitTime,
 	        int maxFail, int peerMapUpdateInterval, boolean manualPorts) {
@@ -357,5 +367,121 @@ public class PeerNAT {
 			}
 		});
 		return futureBootstrapNAT;
+	}
+	
+	/**
+	 * This Method creates a {@link PeerConnection} to an unreachable (behind a NAT) peer using an active
+	 * relay of the unreachable peer. The connection will be kept open until close() is called.
+	 * 
+	 * @param relayPeerAddress
+	 * @param unreachablePeerAddress
+	 * @param timeoutSeconds
+	 * @return {@link FutureDone}
+	 * @throws TimeoutException
+	 */
+	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
+		checkRconPreconditions(relayPeerAddress, unreachablePeerAddress);
+
+		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+		final FuturePeerConnection fpc = peer.createPeerConnection(relayPeerAddress);
+		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+			// wait for the connection to the relay Peer
+			@Override
+			public void operationComplete(FuturePeerConnection future) throws Exception {
+				final PeerConnection peerConnection;
+				
+				if (fpc.isSuccess()) {
+					peerConnection = fpc.peerConnection();
+					if (peerConnection != null) {
+						// create the necessary messages
+						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress);
+						final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage);
+
+						FutureResponse futureResponse = new FutureResponse(setUpMessage);
+						// send the message to the relay so it forwards it to
+						// the unreachable peer
+						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
+								new DefaultConnectionConfiguration());
+						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+						
+						// wait for the unreachable peer to answer
+						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+							public void operationComplete(FutureResponse future) throws Exception {
+								if (future.isSuccess()) {
+									// get the PeerConnection which is cached in
+									// the PeerBean object
+									final PeerConnection openPeerConnection = peer.peerBean().peerConnection(
+											unreachablePeerAddress.peerId());
+									futureDone.done(openPeerConnection);
+								} else {
+									handleFail(futureDone, "No reverse connection could be established");
+									// we have to remove the Message from the
+									// cache manually if something went wrong.
+									peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
+								}
+							}
+						});
+					} else {
+						handleFail(futureDone, "The PeerConnection was null!");
+					}
+				} else {
+					handleFail(futureDone, "no channel could be established");
+				}
+			}
+
+			private void handleFail(final FutureDone<PeerConnection> futureDone, final String failMessage) {
+				LOG.error(failMessage);
+				futureDone.failed(failMessage);
+			}
+
+			// this message is sent to the unreachablePeer after the rcon setup
+			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final Message setUpMessage) {
+				Message connectMessage = new Message();
+				connectMessage.messageId(setUpMessage.messageId());
+				connectMessage.version(MESSAGE_VERSION);
+				connectMessage.sender(peer.peerAddress());
+				connectMessage.recipient(unreachablePeerAddress);
+				connectMessage.command(RPC.Commands.RCON.getNr());
+				connectMessage.type(Type.REQUEST_4);
+				connectMessage.longValue(PERMANENT_FLAG);
+				connectMessage.keepAlive(true);
+				return connectMessage;
+			}
+
+			// this message is sent to the relay peer to initiate the rcon setup
+			private Message createSetupMessage(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
+				Message setUpMessage = new Message();
+				setUpMessage.version(MESSAGE_VERSION);
+				setUpMessage.sender(peer.peerAddress());
+				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
+				setUpMessage.command(RPC.Commands.RCON.getNr());
+				setUpMessage.type(Type.REQUEST_1);
+				setUpMessage.longValue(PERMANENT_FLAG);
+				return setUpMessage;
+			}
+		});
+		return futureDone;
+	}
+
+	/**
+	 * This method checks if a reverse connection setup with startSetupRcon() is
+	 * possible.
+	 * 
+	 * @param relayPeerAddress
+	 * @param unreachablePeerAddress
+	 * @param timeoutSeconds
+	 */
+	private void checkRconPreconditions(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
+		// If we are already a relay of the unreachable peer, we shouldn't use a
+		// reverse connection setup. It just doesn't make sense!
+		if (peer.peerAddress().peerId().equals(relayPeerAddress.peerId())) {
+			throw new IllegalStateException(
+					"We are alredy a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
+		}
+
+		if (relayPeerAddress == null || unreachablePeerAddress == null) {
+			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
+		}
 	}
 }

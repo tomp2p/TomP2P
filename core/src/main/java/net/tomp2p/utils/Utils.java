@@ -872,4 +872,18 @@ public class Utils {
 		}
 	    return retVal;
     }
+	
+	/**
+	 * This method returns a random positve {@link int} within a given upper limit.
+	 * 
+	 * @param upperBound
+	 * @return randomInt
+	 */
+	public static int randomPositiveInt(int upperBound) {
+		int randomInt = random.nextInt() % upperBound;
+		if (randomInt < 0) {
+			randomInt *= -1;
+		}
+		return randomInt;
+	}
 }

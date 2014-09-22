@@ -175,7 +175,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
     
     private Collection<Integer> knownCommands() {
-    	Set<Integer> retVal = new HashSet<>();
+    	Set<Integer> retVal = new HashSet<Integer>();
     	for(final Map.Entry<Number160, Map<Integer, DispatchHandler>> entry:ioHandlers.entrySet()) {
     		retVal.addAll(entry.getValue().keySet());
     	}
@@ -314,4 +314,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     	}
     	return result;
     }
+
+	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId) {
+		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(peerId);
+		return ioHandlerMap;
+	}
 }

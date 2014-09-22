@@ -18,8 +18,13 @@ package net.tomp2p.connection;
 import java.security.KeyPair;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.tomp2p.p2p.MaintenanceTask;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatusListener;
@@ -43,7 +48,14 @@ public class PeerBean {
     private MaintenanceTask maintenanceTask;
     private DigestStorage digestStorage;
     private DigestTracker digestTracker;
+	private static final Logger LOG = LoggerFactory.getLogger(PeerBean.class);
     
+	/**
+	 * aThis map is used for all open peerConnections which are meant to stay
+	 * open. {@link Number160} = peerId. {@link Integer} = amount of seconds which this connection
+	 * should be kept alive.
+	 */
+	private ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = new ConcurrentHashMap<Number160, PeerConnection>();
 
     /**
      * Creates a bean with a key pair.
@@ -176,4 +188,31 @@ public class PeerBean {
     public DigestTracker digestTracker() {
         return digestTracker;
     }
+
+	/**
+	 * Returns a {@link ConcurrentHashMap} with all currently open
+	 * PeerConnections.
+	 * 
+	 * @return openPeerConnections
+	 */
+	public ConcurrentHashMap<Number160, PeerConnection> openPeerConnections() {
+		return openPeerConnections;
+	}
+
+	/**
+	 * Returns the {@link PeerConnection} for the given {@link Number160}
+	 * peerId.
+	 * 
+	 * @param {@link Number160} peerId
+	 * @return {@link PeerConnection} peerConnection
+	 */
+	public PeerConnection peerConnection(final Number160 peerId) {
+		PeerConnection peerConnection = openPeerConnections.get(peerId);
+		if (peerConnection != null) {
+			return peerConnection;
+		} else {
+			LOG.error("There was no PeerConnection for peerId = " + peerId);
+			return null;
+		}
+	}
 }

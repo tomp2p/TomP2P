@@ -25,6 +25,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
@@ -53,6 +54,17 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	private final RelayRPC relayRPC;
 
 	/**
+	 * This variable is needed, because a relay peer overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. It
+	 * guarantees the existence of a {@link RconRPC} object in the iohandlers
+	 * map of the {@link Dispatcher}. Without this variable, no reverse
+	 * connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final RconRPC rconRPC;
+
+	/**
 	 * 
 	 * @param peerConnection
 	 *            A peer connection to an unreachable peer that is permanently
@@ -60,7 +72,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	 * @param peer
 	 *            The relay peer
 	 */
-	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC) {
+	public RelayForwarderRPC(final PeerConnection peerConnection, final Peer peer, final RelayRPC relayRPC, RconRPC rconRPC) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.peerConnection = peerConnection.changeRemotePeer(peerConnection.remotePeer().changeRelayed(true));
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
@@ -73,6 +85,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		
 		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
 		this.relayRPC = relayRPC;
+		this.rconRPC = rconRPC;
 		LOG.debug("created forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeer);
 	}
 	
@@ -100,16 +113,21 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
-			if (command != RPC.Commands.RELAY) {
+			if (command != RPC.Commands.RELAY && command != RPC.Commands.RCON) {
+				peer.connectionBean().dispatcher().registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
+			} else if (command == RPC.Commands.RCON) {
+				// We must register the rconRPC for every unreachable peer that
+				// we serve as a relay. Without this registration, no reverse
+				// connection setup is possible.
 				peer.connectionBean().dispatcher()
-				        .registerIoHandler(unreachablePeer.peerId(), this, command.getNr());
+						.registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
 			}
 		}
 		peer.peerBean().addPeerStatusListeners(this);
 	}
 	
-	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC) {
-		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC);
+	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {
+		RelayForwarderRPC relayForwarderRPC = new RelayForwarderRPC(peerConnection, peer, relayRPC, rconRPC);
 		relayForwarderRPC.register(peer);
 	}
 	
@@ -233,4 +251,8 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 	    this.peerMap = peerMap;
     }
+
+	public PeerConnection peerConnection() {
+		return peerConnection;
+	}
 }

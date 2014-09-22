@@ -24,9 +24,9 @@ import net.tomp2p.storage.Data;
  * @author Nico Rutishauser
  * 
  */
-public class RelaySimulator {
+public class ExampleRelaySituation {
 
-	private static final Logger LOG = LoggerFactory.getLogger(RelaySimulator.class);
+	private static final Logger LOG = LoggerFactory.getLogger(ExampleRelaySituation.class);
 
 	private static final Number160 RELAY_PEER_ID = new Number160(2828); // 0xb0c
 	private static final Number160 MOBILE_PEER_ID = new Number160(1111); // 0x457

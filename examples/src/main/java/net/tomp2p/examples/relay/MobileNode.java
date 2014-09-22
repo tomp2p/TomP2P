@@ -99,8 +99,11 @@ public class MobileNode {
 		Number640 key = new Number640(peerId, Number160.ZERO, Number160.ZERO, Number160.ZERO);
 		PutBuilder putBuilder = peerDHT.put(key.locationKey()).domainKey(key.domainKey()).versionKey(key.versionKey())
 				.data(key.contentKey(), data);
-		putBuilder.requestP2PConfiguration(new RequestP2PConfiguration(1, 1, 1));
+		
+		// save on mobile peer only
+		putBuilder.requestP2PConfiguration(new RequestP2PConfiguration(1, 1, 0));
 		FuturePut success = putBuilder.start().awaitUninterruptibly();
+		
 		LOG.debug("Result of put: {}. {}", success.isSuccess(), success.failedReason());
 		return key;
 	}

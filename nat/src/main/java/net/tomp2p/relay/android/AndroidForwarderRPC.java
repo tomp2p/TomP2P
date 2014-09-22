@@ -29,11 +29,15 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 	private final int retries = 5; // TODO make configurable if requested
 	private final Sender sender;
 	private final String registrationId;
+	private final MessageBuffer buffer;
 
 	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, String authToken, String registrationId) {
 		super(peer, peerConnection);
 		this.registrationId = registrationId;
 		this.sender = new Sender(authToken);
+		
+		// TODO make customizable
+		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60*1000);
 		
 		// TODO init some listener to detect when the relay is not reachable anymore
 	}
@@ -46,8 +50,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 
 	@Override
 	protected FutureDone<Message> handleRelay(Message message, PeerAddress sender) throws Exception {
-		// TODO Save the message content in a buffer and notify the mobile device
-		sendTickleMessage();
+		buffer.addMessage(message);
+		
+		if(buffer.isFull()) {
+			sendTickleMessage();
+		}
 		
 		// TODO create temporal OK message
 		return new FutureDone<Message>().done();

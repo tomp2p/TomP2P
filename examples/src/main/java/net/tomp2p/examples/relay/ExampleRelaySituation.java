@@ -56,10 +56,10 @@ public class ExampleRelaySituation {
 		Thread.sleep(5000); // give some time to init relaying
 
 		Number640 key = mobile.putOwnStorage(new Data(new String("Test")));
-		Thread.sleep(5000); // give some time to init relaying
 
 		QueryNode queryNode = new QueryNode(MEDIUM_SLEEP_TIME_MS, MEDIUM_DATA_SIZE_BYTES);
 		queryNode.start(QUERY_PEER_ID, QUERY_PORT, RELAY_PORT);
+		
 		LOG.debug("GET 1: {}", queryNode.get(key));
 		LOG.debug("REMOVE: {}", queryNode.remove(key));
 		LOG.debug("GET 2: {}", queryNode.get(key));

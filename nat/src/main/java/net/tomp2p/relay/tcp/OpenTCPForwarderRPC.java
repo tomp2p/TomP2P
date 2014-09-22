@@ -80,7 +80,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		//if firsthand, then full trust, if second hand and a stable peerconnection, we can trust as well
 		if((firstHand || (secondHand && samePeerConnection))  && remotePeer.peerId().equals(unreachablePeerId()) && remotePeer.isRelayed()) {
 			//we got new information about this peer, e.g. its active relays
-			LOG.debug("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
 			unreachablePeerAddress(remotePeer);
 		}
 	    return false;

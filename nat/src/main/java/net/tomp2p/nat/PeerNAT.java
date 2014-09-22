@@ -222,7 +222,7 @@ public class PeerNAT {
 		return null;
 	}
 
-	public DistributedRelay startSetupRelay(FutureRelay futureRelay) {
+	private DistributedRelay startSetupRelay(FutureRelay futureRelay) {
 		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType(), gcmRegistrationId());
 		
 		// close the relay connection when the peer is shutdown
@@ -248,7 +248,7 @@ public class PeerNAT {
 		return distributedRelay;
 	}
 
-	public Shutdown startRelayMaintenance(final FutureRelay futureRelay, BootstrapBuilder bootstrapBuilder, 
+	private Shutdown startRelayMaintenance(final FutureRelay futureRelay, BootstrapBuilder bootstrapBuilder, 
 			DistributedRelay distributedRelay) {
 		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder,
 				distributedRelay, manualRelays, maxFail);

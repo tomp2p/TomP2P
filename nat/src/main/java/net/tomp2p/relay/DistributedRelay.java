@@ -73,10 +73,13 @@ public class DistributedRelay {
 	/**
 	 * Returns addresses of current relay peers
 	 * 
-	 * @return Collection of PeerAddresses of the relay peers
+	 * @return List of PeerAddresses of the relay peers (copy)
 	 */
-	public Collection<BaseRelayConnection> relays() {
-		return relays;
+	public List<BaseRelayConnection> relays() {
+		synchronized (relays) {
+			// make a copy
+			return Collections.unmodifiableList(new ArrayList<BaseRelayConnection>(relays));
+		}
 	}
 
 	public void addRelayListener(RelayListener relayListener) {
@@ -234,9 +237,7 @@ public class DistributedRelay {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
-					synchronized (relays) {
-						futureRelay.done(new ArrayList<BaseRelayConnection>(relays));
-					}
+					futureRelay.done(relays());
 				} else if (!peer.isShutdown()) {
 					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay,
 					        fail + 1, maxFail, status.append(futureForkJoin.failedReason()).append(" "));

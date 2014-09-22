@@ -9,10 +9,8 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
@@ -176,19 +174,47 @@ public class RelayRPC extends DispatchHandler {
         responder.response(createResponseMessage(message, Type.OK));
     }
 
-    private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
+    private void handlePiggyBackMessage(Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
         Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
-        NoDirectResponse responder = new NoDirectResponse();
+        
+        final Message response = createResponseMessage(message, Type.OK);
+        final Responder responder = new Responder() {
+        	
+        	//TODO: add reply leak handler
+        	@Override
+        	public void response(Message responseMessage) {
+        		LOG.debug("Send reply message to relay peer: {}", responseMessage);
+        		try {
+	                response.buffer(RelayUtils.encodeMessage(responseMessage));
+                } catch (Exception e) {
+                	failed(Type.EXCEPTION, e.getMessage());
+	                e.printStackTrace();
+                }
+                responderToRelay.response(response);
+        	}
+
+			@Override
+            public void failed(Type type, String reason) {
+				responderToRelay.failed(type, reason);
+	            
+            }
+
+			@Override
+            public void responseFireAndForget() {
+				responderToRelay.responseFireAndForget();
+            }
+        };
         // TODO: Not sure what to do with the peer connection and sign
-        peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
-        LOG.debug("Send reply message to relay peer: {}", responder.response());
-        Message response = createResponseMessage(message, Type.OK);
-        response.buffer(RelayUtils.encodeMessage(responder.response()));
-        responderToRelay.response(response);
+        DispatchHandler dispatchHandler = peer.connectionBean().dispatcher().associatedHandler(realMessage);
+        if(dispatchHandler == null) {
+        	responder.failed(Type.EXCEPTION, "handler not found, probably not relaying peer anymore");
+        } else {
+        	dispatchHandler.handleResponse(realMessage, null, false, responder);
+        }
     }
 
     /**

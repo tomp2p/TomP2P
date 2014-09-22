@@ -15,6 +15,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
 import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
@@ -37,25 +38,40 @@ public class RelayRPC extends DispatchHandler {
 	private final Map<Number160, BaseRelayForwarderRPC> forwarders;
 
     /**
+	 * This variable is needed, because a relay overwrites every RPC of an
+	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
+	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
+	 * guarantee the existence of a {@link RconRPC}. Without this variable, no
+	 * reverse connections would be possible.
+	 * 
+	 * @author jonaswagner
+	 */
+	private final RconRPC rconRPC;
+
+	/**
      * Register the RelayRPC. After the setup, the peer is ready to act as a
      * relay if asked by an unreachable peer.
      * 
      * @param peer
      *            The peer to register the RelayRPC
+     * @param rconRPC the reverse connection RPC
+     * @param gcmAuthToken the authentication key for Google cloud messaging
      * @return
      */
-    public RelayRPC(Peer peer, String gcmAuthToken) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, String gcmAuthToken) {
         super(peer.peerBean(), peer.connectionBean());
 		this.gcmAuthToken = gcmAuthToken;
         this.peer = peer;
         this.config = new DefaultConnectionConfiguration();
         this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
+        this.rconRPC = rconRPC;
         
         // register this handler
         register(RPC.Commands.RELAY.getNr());
     }
     
 	public ConnectionConfiguration config() {
+		// TODO move to PeerNAT
 		return config;
 	}
 
@@ -133,9 +149,17 @@ public class RelayRPC extends DispatchHandler {
     
     private void registerRelayForwarder(BaseRelayForwarderRPC forwarder) {
 		for (Commands command : RPC.Commands.values()) {
-			if (command != RPC.Commands.RELAY) {
+			if(command == RPC.Commands.RCON) {
+				// We must register the rconRPC for every unreachable peer that
+				// we serve as a relay. Without this registration, no reverse
+				// connection setup is possible.
 				peer.connectionBean().dispatcher()
-				        .registerIoHandler(forwarder.unreachablePeerAddress().peerId(), forwarder, command.getNr());
+						.registerIoHandler(forwarder.unreachablePeerId(), rconRPC, command.getNr());
+			} else if (command == RPC.Commands.RELAY) {
+				// don't register the relay command
+				continue;
+			} else {
+				peer.connectionBean().dispatcher().registerIoHandler(forwarder.unreachablePeerId(), forwarder, command.getNr());
 			}
 		}
 		

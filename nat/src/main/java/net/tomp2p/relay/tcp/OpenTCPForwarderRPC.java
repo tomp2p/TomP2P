@@ -1,9 +1,5 @@
 package net.tomp2p.relay.tcp;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.SignatureException;
-
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
@@ -87,13 +83,20 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
     }
 	
 	@Override
-	protected FutureDone<Message> handleRelay(final Message message, final PeerAddress sender) throws InvalidKeyException, SignatureException, IOException {
+	public FutureDone<Message> forwardToUnreachable(final Message message) {
 		// Send message via direct message through the open connection to the unreachable peer
 		message.restoreContentReferences();
 		
 		LOG.debug("Sending to unreachable peer {}:{}", peerConnection.remotePeer(), message);
 		final Message envelope = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
-		envelope.buffer(RelayUtils.encodeMessage(message));
+		try {
+			// add the message into the payload
+			envelope.buffer(RelayUtils.encodeMessage(message));
+		} catch (Exception e) {
+			LOG.error("Cannot encode the message", e);
+			return new FutureDone<Message>().failed(e);
+		}
+		
 		// always keep the connection open
 		envelope.keepAlive(true);
 
@@ -109,7 +112,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
 					        message.senderSocket());
 					responseFromUnreachablePeer.restoreContentReferences();
-					responseFromUnreachablePeer.sender(sender);
+					responseFromUnreachablePeer.sender(peerConnection.remotePeer());
 					responseFromUnreachablePeer.recipient(message.sender());
 					futureDone.done(responseFromUnreachablePeer);
 				} else {

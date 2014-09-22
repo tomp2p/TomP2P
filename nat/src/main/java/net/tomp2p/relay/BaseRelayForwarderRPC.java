@@ -82,7 +82,13 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		// TODO
 		// the sender should have the ip/port from the relay peer, the peerId
 		// from the unreachable peer, in order to have 6 relays instead of 5
+		handleResponse(message, responder);
+	}
 
+	/**
+	 * Receive a message at the relay server from a given peer
+	 */
+	public final void handleResponse(Message message, final Responder responder) {
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
 			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, unreachablePeer);
@@ -92,11 +98,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 			handleNeigbhor(message, responder, unreachablePeer);
 		} else {
 			LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeer);
-			FutureDone<Message> response = handleRelay(message, unreachablePeer);
+			FutureDone<Message> response = forwardToUnreachable(message);
 			response.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
 				@Override
 				public void operationComplete(FutureDone<Message> future) throws Exception {
-					if(future.isSuccess()) {
+					if (future.isSuccess()) {
 						Message answerMessage = future.object();
 						LOG.debug("Response from unreachable peer: {}", answerMessage);
 						responder.response(answerMessage);
@@ -107,16 +113,16 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 			});
 		}
 	}
-	
+
 	/**
-	 * When a message for the relay peer has been received. The implementation should notify the unreachable peer
+	 * Forwards a message to the unrachable peer. The implementation should notify the unreachable peer
 	 * and return a response as soon as possible.
 	 * 
 	 * @param message the message that is intended for the unreachable peer
 	 * @param sender the requester
 	 * @return the response to the requester
 	 */
-	protected abstract FutureDone<Message> handleRelay(Message message, PeerAddress sender) throws Exception;
+	public abstract FutureDone<Message> forwardToUnreachable(Message message);
 
 	/**
 	 * When a ping message is received
@@ -138,9 +144,8 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
-		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2
-		        || message.type() == Type.REQUEST_3 || message.type() == Type.REQUEST_4)
-		        && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
+		if (!(message.type() == Type.REQUEST_1 || message.type() == Type.REQUEST_2 || message.type() == Type.REQUEST_3 || message
+				.type() == Type.REQUEST_4) && (message.command() == RPC.Commands.NEIGHBOR.getNr())) {
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 		Number160 locationKey = message.key(0);
@@ -149,58 +154,59 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		if (neighbors == null) {
 			// return empty neighbor set
 			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
-			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress>emptyList()));
+			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress> emptyList()));
 			responder.response(response);
 			return;
 		}
 
 		// Create response message and set neighbors
 		final Message responseMessage = createResponseMessage(message, Type.OK, sender);
-		
-		//TODO: the relayed peer must be up-to-date here
-		//neighbors.add(peerConnection.remotePeer());
-		
+
+		// TODO: the relayed peer must be up-to-date here
+		// neighbors.add(peerConnection.remotePeer());
+
 		LOG.debug("found the following neighbors {}", neighbors);
-		
+
 		NeighborSet neighborSet = new NeighborSet(NeighborRPC.NEIGHBOR_LIMIT, neighbors);
 		responseMessage.neighborsSet(neighborSet);
-		
-		//we can't do fast get here, as we only send over the neighbors and not the keys stored
+
+		// we can't do fast get here, as we only send over the neighbors and not the keys stored
 		responder.response(responseMessage);
 	}
-	
+
 	private SortedSet<PeerAddress> getNeighbors(Number160 id, int atLeast) {
-        LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeerAddress(), id);
-        if(peerMap == null) {
-            return null;
-        } else {
-            return PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
-        }
-    }
-	
+		LOG.trace("Answering routing request on behalf of unreachable peer {}, neighbors of {}", unreachablePeerAddress(),
+				id);
+		if (peerMap == null) {
+			return null;
+		} else {
+			return PeerMap.closePeers(unreachablePeerId(), id, NeighborRPC.NEIGHBOR_SIZE, peerMap);
+		}
+	}
+
 	/**
 	 * Returns the current peer map from the mobile device
 	 */
 	public final Collection<PeerAddress> getPeerMap() {
 		Collection<PeerAddress> peerAddresses = new ArrayList<PeerAddress>();
-		if(peerMap == null || peerMap.isEmpty()) {
+		if (peerMap == null || peerMap.isEmpty()) {
 			return peerAddresses;
 		}
-		
+
 		Collection<PeerStatatistic> statistics = new ArrayList<PeerStatatistic>();
-		for(Map<Number160, PeerStatatistic> map : peerMap) {
+		for (Map<Number160, PeerStatatistic> map : peerMap) {
 			statistics.addAll(map.values());
 		}
-	    for(PeerStatatistic peerStatatistic:statistics) {
-	    	peerAddresses.add(peerStatatistic.peerAddress());
-	    }
-	    return peerAddresses;
-    }
+		for (PeerStatatistic peerStatatistic : statistics) {
+			peerAddresses.add(peerStatatistic.peerAddress());
+		}
+		return peerAddresses;
+	}
 
 	/**
 	 * Update the peerMap of the unreachable peer
 	 */
 	public final void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
-	    this.peerMap = peerMap;
-    }
+		this.peerMap = peerMap;
+	}
 }

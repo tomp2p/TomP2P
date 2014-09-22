@@ -10,6 +10,12 @@ import net.tomp2p.storage.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Prints logs when data is stored. Can be set to deny any storage.
+ * 
+ * @author Nico Rutishauser
+ *
+ */
 public class LoggingStorageLayer extends StorageLayer {
 
 	private static final Logger LOG = LoggerFactory.getLogger(LoggingStorageLayer.class);

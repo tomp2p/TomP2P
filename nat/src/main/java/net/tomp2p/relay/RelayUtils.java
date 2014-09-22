@@ -134,7 +134,9 @@ public class RelayUtils {
 	}
 
 	/**
-	 * Send a message through an open peer connection (non-blocking)
+	 * Send a Message from one Peer to another Peer internally. This avoids the
+	 * overhead of sendDirect. This Method is used for relaying and reverse
+	 * Connection setup.
 	 * @return the response
 	 */
 	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {

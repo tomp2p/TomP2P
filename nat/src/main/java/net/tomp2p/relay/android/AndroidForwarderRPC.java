@@ -35,10 +35,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 		super(peer, peerConnection);
 		this.registrationId = registrationId;
 		this.sender = new Sender(authToken);
-		
+
 		// TODO make customizable
-		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60*1000);
-		
+		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60 * 1000);
+
 		// TODO init some listener to detect when the relay is not reachable anymore
 	}
 
@@ -49,13 +49,18 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 	}
 
 	@Override
-	protected FutureDone<Message> handleRelay(Message message, PeerAddress sender) throws Exception {
-		buffer.addMessage(message);
-		
-		if(buffer.isFull()) {
+	public FutureDone<Message> forwardToUnreachable(Message message) {
+		try {
+			buffer.addMessage(message);
+		} catch (Exception e) {
+			LOG.error("Cannot encode the message", e);
+			return new FutureDone<Message>().failed(e);
+		}
+
+		if (buffer.isFull()) {
 			sendTickleMessage();
 		}
-		
+
 		// TODO create temporal OK message
 		return new FutureDone<Message>().done();
 	}

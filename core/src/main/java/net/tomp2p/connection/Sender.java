@@ -49,6 +49,7 @@ import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
@@ -178,8 +179,6 @@ public class Sender {
 			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
 			final TimeoutFactory timeoutHandler) {
 
-		// the message must have set the keepAlive Flag true. If not, the relay
-		// peer will close the PeerConnection to the unreachable peer.
 		message.keepAlive(true);
 
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}" + message.recipient());
@@ -215,11 +214,17 @@ public class Sender {
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
 		rconMessage.version(message.version());
-		rconMessage.messageId(message.messageId());
-
+		
+		// store the message id in the payload to get the cached message later
+		rconMessage.intValue(message.messageId());
+		
+		// the message must have set the keepAlive Flag true. If not, the relay
+		// peer will close the PeerConnection to the unreachable peer.
+		rconMessage.keepAlive(true);
+		
 		// making the message ready to send
-		rconMessage.recipient(message.recipient().changeAddress(socketAddress.inetAddress()));
-		rconMessage.recipient(rconMessage.recipient().changePorts(socketAddress.tcpPort(), socketAddress.udpPort()));
+		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort());
+		rconMessage.recipient(recipient);
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
 

@@ -152,8 +152,8 @@ public class RconRPC extends DispatchHandler {
 		forwardMessage.senderSocket(message.senderSocket());
 		forwardMessage.recipientSocket(recipient.createSocketUDP());
 
-		// use same message id for new message to identify the cached message afterwards
-		forwardMessage.messageId(message.messageId());
+		// store the message id for new message to identify the cached message afterwards
+		forwardMessage.intValue(message.messageId());
 
 		return forwardMessage;
 	}
@@ -189,6 +189,7 @@ public class RconRPC extends DispatchHandler {
 									if (future.isSuccess()) {
 										responder.response(createResponseMessage(message, Type.OK));
 									} else {
+										LOG.error("Cannot setup the reverse connection to the peer. Reason: {}", future.failedReason());
 										handleFail(message, responder,
 												"Exception while setting up the reverse connection from the unreachable to the original peer!");
 									}
@@ -218,8 +219,8 @@ public class RconRPC extends DispatchHandler {
 	private Message createSetupMessage(final Message message, PeerAddress receiver) {
 		Message setupMessage = createMessage(receiver, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_3);
 
-		// use same message id for new message
-		setupMessage.messageId(message.messageId());
+		// forward the message id to indentify the cached message afterwards
+		setupMessage.intValue(message.intAt(0));
 
 		// keep the new connection open
 		setupMessage.keepAlive(true);
@@ -240,8 +241,8 @@ public class RconRPC extends DispatchHandler {
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message afterConnectMessage;
 		final boolean persistConnection;
-		if (cachedMessages.containsKey(message.messageId())) {
-			afterConnectMessage = cachedMessages.remove(message.messageId());
+		if (cachedMessages.containsKey(message.intAt(0))) {
+			afterConnectMessage = cachedMessages.remove(message.intAt(0));
 			LOG.debug("This reverse connection is only used for sending a direct message {}", afterConnectMessage);
 			persistConnection = false;
 		} else {

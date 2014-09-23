@@ -341,6 +341,8 @@ public class Message {
 		for (Content contentType : contentTypes) {
 			if (contentType == Content.EMPTY) {
 				return;
+			} else if(contentType == null) {
+				continue;
 			}
 			
 			int index = 0;

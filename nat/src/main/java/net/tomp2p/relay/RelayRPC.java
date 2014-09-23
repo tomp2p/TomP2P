@@ -1,6 +1,5 @@
 package net.tomp2p.relay;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -173,7 +172,7 @@ public class RelayRPC extends DispatchHandler {
     private void handlePiggyBackedMessage(final Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, message.recipientSocket(), message.senderSocket());
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
         

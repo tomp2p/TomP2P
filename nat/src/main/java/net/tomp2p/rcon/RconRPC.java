@@ -149,6 +149,9 @@ public class RconRPC extends DispatchHandler {
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
+		
+		forwardMessage.senderSocket(message.senderSocket());
+		forwardMessage.recipientSocket(recipient.createSocketUDP());
 
 		// use same message id for new message to identify the cached message afterwards
 		forwardMessage.messageId(message.messageId());

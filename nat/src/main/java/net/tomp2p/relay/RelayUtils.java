@@ -59,12 +59,7 @@ public class RelayUtils {
 	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender)
 			throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
 		Decoder d = new Decoder(null);
-		if(recipient != null && sender != null) {
-			d.decodeHeader(buf.buffer(), recipient, sender);
-		} else {
-			// take any internet address socket for this purpose
-			d.decodeHeader(buf.buffer(), new InetSocketAddress(0), new InetSocketAddress(0));
-		}
+		d.decodeHeader(buf.buffer(), recipient, sender);
 		d.decodePayload(buf.buffer());
 		return d.message();
 	}

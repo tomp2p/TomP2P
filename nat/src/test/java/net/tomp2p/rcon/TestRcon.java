@@ -36,7 +36,7 @@ public class TestRcon {
 	private static final int PORTS = 4001;
 	private static final int NUMBER_OF_NODES = 5;
 	private static final Random RND = new Random();
-	
+
 	@Before
 	public void setupRelay() throws Exception {
 		// setup test peers
@@ -105,32 +105,29 @@ public class TestRcon {
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				if (future.isSuccess()) {
-					if (future.object() instanceof PeerConnection) {
+					System.err.println("received: " + future.object().toString());
 
-						System.err.println("received: " + future.object().toString());
+					FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
+					fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
 
-						FutureDirect fd2 = reachable.sendDirect(future.object()).object(requestString).start();
-						fd2.addListener(new BaseFutureAdapter<FutureDirect>() {
-
-							@Override
-							public void operationComplete(FutureDirect future) throws Exception {
-								if (future.isSuccess()) {
-									if (replyString.equals((String) future.object())) {
-										System.err.println("received: " + (String) future.object());
-										cLatch.countDown();
-									}
+						@Override
+						public void operationComplete(FutureDirect future) throws Exception {
+							if (future.isSuccess()) {
+								if (replyString.equals((String) future.object())) {
+									System.err.println("received: " + (String) future.object());
+									cLatch.countDown();
 								}
 							}
-						});
-						cLatch.countDown();
-					}
+						}
+					});
+					cLatch.countDown();
 				}
 			}
 		});
 		fd.awaitUninterruptibly();
 
 		checkFail(cLatch);
-		
+
 		System.err.println("testPermanentReverseConnection() end!");
 	}
 
@@ -157,7 +154,7 @@ public class TestRcon {
 		fd.awaitUninterruptibly();
 
 		checkFail(cLatch);
-		
+
 		System.err.println("testReverseConnection() end!");
 	}
 

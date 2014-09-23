@@ -691,6 +691,7 @@ public class Sender {
 		});
 	}
 
+	// TODO Nico Rutishauser: Not used by the Recon anymore. Delete or leave?
 	public ConcurrentHashMap<Integer, Message> cachedMessages() {
 		return cachedMessages;
 	}

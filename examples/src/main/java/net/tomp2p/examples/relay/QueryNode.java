@@ -15,6 +15,8 @@ import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.p2p.RequestP2PConfiguration;
+import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -36,16 +38,19 @@ public class QueryNode {
 	private final Random random;
 	private final long avgSleepTime;
 	private final int avgBytes;
+	private final List<Number160> validKeys;
+	private final RoutingConfiguration routingConfig;
+	private final RequestP2PConfiguration requestConfig;
 
 	private PeerDHT peerDHT;
-
-	private final List<Number160> validKeys;
 
 	public QueryNode(long avgSleepTime, int avgBytes) {
 		this.avgSleepTime = avgSleepTime;
 		this.avgBytes = avgBytes;
-		random = new Random(42L);
-		validKeys = new ArrayList<Number160>();
+		this.random = new Random(42L);
+		this.validKeys = new ArrayList<Number160>();
+		this.routingConfig = new RoutingConfiguration(5, 1, 1);
+		this.requestConfig = new RequestP2PConfiguration(1, 1, 0);
 	}
 
 	public void start(Number160 peerId, int port, int bootstrapPort) throws IOException {
@@ -111,7 +116,8 @@ public class QueryNode {
 
 	public Data get(Number640 key) {
 		FutureGet futureGet = peerDHT.get(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
-				.versionKey(key.versionKey()).fastGet(false).start().awaitUninterruptibly();
+				.versionKey(key.versionKey()).fastGet(false).routingConfiguration(routingConfig)
+				.requestP2PConfiguration(requestConfig).start().awaitUninterruptibly();
 		if (futureGet.data() != null) {
 			return futureGet.data();
 		} else {

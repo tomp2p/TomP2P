@@ -598,6 +598,7 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
+    //TODO: have two queues, direct queue + potential queue.
     private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
             NavigableSet<PeerAddress> queue, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
             OperationMapper<K> operation) {

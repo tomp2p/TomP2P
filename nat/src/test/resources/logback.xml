@@ -3,12 +3,16 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} -
-                %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <logger name="net.tomp2p.nat" level="WARN"/>
+    <logger name="net.tomp2p" level="WARN"/>
+    
+    <logger name="net.tomp2p.rcon" level="DEBUG"/>
+    <logger name="net.tomp2p.relay" level="DEBUG"/>
+    <logger name="net.tomp2p.nat" level="DEBUG"/>
+    
     <!-- <logger name="net.tomp2p.dht.StorageRPC" level="TRACE"/>
     <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
     <logger name="net.tomp2p.dht.DistributedHashTable" level="TRACE"/>
@@ -36,7 +40,7 @@
     <!-- default is OFF, options are: TRACE, DEBUG, INFO, WARN, ERROR, OFF.
          See http://logback.qos.ch/manual/architecture.html for more
   information-->
-    <root level="WARN">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

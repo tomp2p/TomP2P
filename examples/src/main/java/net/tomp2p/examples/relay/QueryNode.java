@@ -12,9 +12,9 @@ import net.tomp2p.dht.FutureRemove;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
-import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
@@ -63,6 +63,7 @@ public class QueryNode {
 		}
 
 		peerDHT = new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("QUERY", false)).start();
+		new PeerBuilderNAT(peer).start();
 		LOG.debug("Peer started");
 	}
 
@@ -110,7 +111,7 @@ public class QueryNode {
 
 	public Data get(Number640 key) {
 		FutureGet futureGet = peerDHT.get(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
-				.versionKey(key.versionKey()).start().awaitUninterruptibly();
+				.versionKey(key.versionKey()).fastGet(false).start().awaitUninterruptibly();
 		if (futureGet.data() != null) {
 			return futureGet.data();
 		} else {
@@ -129,8 +130,7 @@ public class QueryNode {
 
 	public boolean remove(Number640 key) {
 		FutureRemove remove = peerDHT.remove(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
-				.versionKey(key.versionKey()).requestP2PConfiguration(new RequestP2PConfiguration(1, 1, 1)).start()
-				.awaitUninterruptibly();
+				.versionKey(key.versionKey()).fastGet(false).start().awaitUninterruptibly();
 		return remove.isSuccess();
 	}
 

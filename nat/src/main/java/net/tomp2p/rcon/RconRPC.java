@@ -45,7 +45,6 @@ public class RconRPC extends DispatchHandler {
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private static final int POSITION_ZERO = 0;
-	private static final int MESSAGE_VERSION = 1;
 
 	public RconRPC(final Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -106,10 +105,8 @@ public class RconRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	private void handleRconForward(final Message message, final Responder responder) {
-		// the existing peerConnection to the unreachable peer
-		final PeerConnection peerConnection;
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarderRPC(message);
+		final BaseRelayForwarderRPC forwarder = extractRelayForwarderRPC(message.recipient().peerId());
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
@@ -123,12 +120,12 @@ public class RconRPC extends DispatchHandler {
 	 * {@link Dispatcher}. This RelayForwarder can then be used to extract the
 	 * {@link PeerConnection} to the unreachable Peer we want to contact.
 	 * 
-	 * @param message
-	 * @return relayForwarderRPC
+	 * @param unreachablePeerId the unreachable peer
+	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarderRPC(final Message message) {
+	private BaseRelayForwarderRPC extractRelayForwarderRPC(Number160 unreachablePeerId) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
+		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(unreachablePeerId);
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
 			if (element.getValue() instanceof BaseRelayForwarderRPC) {
 				return (BaseRelayForwarderRPC) element.getValue();
@@ -147,25 +144,15 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private Message createForwardMessage(final Message message, final PeerAddress recipient) {
 		// creates the Message to forward to the unreachable peer
-		final Message forwardMessage = new Message();
-		forwardMessage.type(Message.Type.REQUEST_2);
-		forwardMessage.command(RPC.Commands.RCON.getNr());
-		forwardMessage.sender(peer.peerAddress());
-		forwardMessage.recipient(recipient);
-		forwardMessage.version(MESSAGE_VERSION);
-
+		Message forwardMessage = createMessage(recipient, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_2);
+		
 		// transmit PeerAddress of reachablePeer
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 
-		// use same message id for new message to identify the cached message
-		// afterwards
+		// use same message id for new message to identify the cached message afterwards
 		forwardMessage.messageId(message.messageId());
-
-		// we need to keep the peerConnection between the relay and the
-		// unreachable peer open
-		forwardMessage.keepAlive(true);
 
 		// check if we keep the connection open afterwards
 		if (!(message.longAt(POSITION_ZERO) == null)) {
@@ -234,16 +221,10 @@ public class RconRPC extends DispatchHandler {
 	 * @return setupMessage
 	 */
 	private Message createSetupMessage(final Message message, final PeerConnection peerConnection) {
-		Message setupMessage = new Message();
-		setupMessage.type(Message.Type.REQUEST_3);
-		setupMessage.command(RPC.Commands.RCON.getNr());
-		setupMessage.sender(peer.peerAddress());
-		setupMessage.recipient(peerConnection.remotePeer());
-		setupMessage.version(MESSAGE_VERSION);
+		Message setupMessage = createMessage(peerConnection.remotePeer(), RPC.Commands.RCON.getNr(), Message.Type.REQUEST_3);
 
 		// use same message id for new message
 		setupMessage.messageId(message.messageId());
-		setupMessage.keepAlive(true);
 
 		// check if we keep the connection open afterwards
 		if (!(message.longAt(POSITION_ZERO) == null)) {

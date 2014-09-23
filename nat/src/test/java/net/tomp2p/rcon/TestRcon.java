@@ -105,7 +105,7 @@ public class TestRcon {
 			@Override
 			public void operationComplete(FutureDone<PeerConnection> future) throws Exception {
 				if (future.isSuccess()) {
-					if (PeerConnection.class.equals(future.object().getClass())) {
+					if (future.object() instanceof PeerConnection) {
 
 						System.err.println("received: " + future.object().toString());
 
@@ -162,9 +162,8 @@ public class TestRcon {
 	}
 
 	private void checkFail(final CountDownLatch cLatch) throws InterruptedException {
-		cLatch.await(10, TimeUnit.SECONDS);
-		if (cLatch.getCount() > 0) {
-			Assert.fail("The test method did not complete successfully!");
+		if (!cLatch.await(10, TimeUnit.SECONDS)) {
+			Assert.fail("The test method did not complete successfully! Still has " + cLatch.getCount() + " counts.");
 		}
 	}
 

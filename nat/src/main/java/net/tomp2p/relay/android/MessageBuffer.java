@@ -41,6 +41,7 @@ public class MessageBuffer {
 	 * Add a message to the buffer
 	 */
 	public void addMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
+		message.restoreContentReferences();
 		Buffer encodedMessage = RelayUtils.encodeMessage(message);
 
 		synchronized (buffer) {

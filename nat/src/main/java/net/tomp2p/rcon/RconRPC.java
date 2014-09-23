@@ -57,12 +57,12 @@ public class RconRPC extends DispatchHandler {
 	 * This method is called from the {@link Dispatcher} and handles the reverse
 	 * connection at each step.
 	 * 
-	 * REQUEST_1 = relay rcon forwarding. REQUEST_2 = open a TCP channel and
-	 * transmit {@link PeerConnection}. REQUEST_3 = use now open
-	 * {@link PeerConnection} to transmit original message (and eventually store
-	 * the {@link PeerConnection}). REQUEST_4 = store the {@link PeerConnection}
-	 * on the unreachable peer side (only called via startSetupRcon from the
-	 * PeerNAT)
+	 * REQUEST_1 = relay rcon forwarding.<br />
+	 * REQUEST_2 = open a TCP channel and transmit {@link PeerConnection}.<br />
+	 * REQUEST_3 = use now open {@link PeerConnection} to transmit original message
+	 * (and eventually store the {@link PeerConnection}).<br />
+	 * REQUEST_4 = store the {@link PeerConnection} on the unreachable peer side
+	 * (only called via startSetupRcon from the PeerNAT)
 	 * 
 	 * @param message
 	 * @param peerConnection
@@ -70,36 +70,35 @@ public class RconRPC extends DispatchHandler {
 	 * @param responder
 	 */
 	@Override
-	public void handleResponse(final Message message, final PeerConnection peerConnection, final boolean sign, final Responder responder)
-			throws Exception {
-		LOG.warn("received RconRPC message {}", message);
+	public void handleResponse(final Message message, final PeerConnection peerConnection, final boolean sign,
+			final Responder responder) throws Exception {
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the relay peer
-			LOG.warn("handle RconForward for message: " + message);
+			LOG.info("handle RconForward for message: " + message);
 			handleRconForward(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the unreachable peer
-			LOG.warn("handle RconSetup for message: " + message);
+			LOG.info("handle RconSetup for message: " + message);
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the requesting peer
-			LOG.warn("handle RconAfterconnect for message: " + message);
+			LOG.info("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder, peerConnection);
 		} else if (message.type() == Message.Type.REQUEST_4 && message.command() == RPC.Commands.RCON.getNr()) {
-			// the message reached the unreachable peer (only called if the
-			// PeerConnection should remain open)
-			LOG.warn("handle openConnection for message: " + message);
+			// the message reached the unreachable peer (only called if the PeerConnection should remain open)
+			LOG.info("handle openConnection for message: " + message);
 			handleOpenConnection(message, responder, peerConnection);
 		} else {
+			LOG.warn("received invalid RconRPC message {}", message);
 			throw new IllegalArgumentException("Message content is wrong");
 		}
 	}
 
 	/**
 	 * This methods is responsible for forwarding the rconSetupMessage from the
-	 * relay to the unreachable Peer. It extracts the already existing
-	 * {@link PeerConnection} of the unreachable peer and forwards then a new
-	 * message with {@link Type} .REQUEST_2.
+	 * relay to the unreachable Peer. It extracts the already existing {@link PeerConnection} of the
+	 * unreachable peer and forwards then a new
+	 * message with {@link Type#REQUEST_2}.
 	 * 
 	 * @param message
 	 * @param responder
@@ -111,14 +110,14 @@ public class RconRPC extends DispatchHandler {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
 		} else {
-			handleFail(message, responder, "no relayForwarder Registered for peerId=" + message.recipient().peerId().toString());
+			handleFail(message, responder, "no relayForwarder Registered for peerId="
+					+ message.recipient().peerId().toString());
 		}
 	}
 
 	/**
-	 * This method extracts a registered RelayForwarderRPC from the
-	 * {@link Dispatcher}. This RelayForwarder can then be used to extract the
-	 * {@link PeerConnection} to the unreachable Peer we want to contact.
+	 * This method extracts a registered RelayForwarderRPC from the {@link Dispatcher}. This RelayForwarder
+	 * can then be used to extract the {@link PeerConnection} to the unreachable Peer we want to contact.
 	 * 
 	 * @param unreachablePeerId the unreachable peer
 	 * @return forwarder
@@ -145,7 +144,7 @@ public class RconRPC extends DispatchHandler {
 	private Message createForwardMessage(final Message message, final PeerAddress recipient) {
 		// creates the Message to forward to the unreachable peer
 		Message forwardMessage = createMessage(recipient, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_2);
-		
+
 		// transmit PeerAddress of reachablePeer
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
@@ -166,7 +165,7 @@ public class RconRPC extends DispatchHandler {
 	 * This method handles the reverse connection setup on the unreachable peer
 	 * side. It extracts the {@link PeerAddress} from the reachable peer and
 	 * creates a new {@link PeerConnection} to it. Then it informs the reachable
-	 * peer that it is ready via a new message with {@link Type}.REQUEST3.
+	 * peer that it is ready via a new message with {@link Type#REQUEST_3}.
 	 * 
 	 * @param message
 	 * @param responder
@@ -186,8 +185,8 @@ public class RconRPC extends DispatchHandler {
 						PeerConnection peerConnection = future.peerConnection();
 						if (peerConnection != null) {
 							final Message setupMessage = createSetupMessage(message, peerConnection);
-							FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
-									config, setupMessage);
+							FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
+									peer.connectionBean(), config, setupMessage);
 							futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 								@Override
 								public void operationComplete(final FutureResponse future) throws Exception {
@@ -226,6 +225,9 @@ public class RconRPC extends DispatchHandler {
 		// use same message id for new message
 		setupMessage.messageId(message.messageId());
 
+		// keep the new connection open
+		setupMessage.keepAlive(true);
+		
 		// check if we keep the connection open afterwards
 		if (!(message.longAt(POSITION_ZERO) == null)) {
 			setupMessage.longValue(message.longAt(POSITION_ZERO));
@@ -247,14 +249,15 @@ public class RconRPC extends DispatchHandler {
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message cachedMessage = cachedMessages.remove(message.messageId());
 		if (cachedMessage != null) {
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, cachedMessage.messageId(1));
+			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
+					cachedMessage.messageId(1));
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(final FutureResponse future) throws Exception {
 					if (future.isSuccess()) {
-						LOG.warn("Original Message was sent successfully to unreachablePeer with PeerAddress{" + message.sender() + "}");
-						// check if the PeerConnection should be stored in the
-						// PeerBean
+						LOG.warn("Original Message was sent successfully to unreachablePeer with PeerAddress{"
+								+ message.sender() + "}");
+						// check if the PeerConnection should be stored in the PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
 							storePeerConnection(message, peerConnection, responder);
 						} else {
@@ -298,8 +301,7 @@ public class RconRPC extends DispatchHandler {
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
-				// remove the open PeerConnection to the other Peer from
-				// openPeerConnections in the PeerBean
+				// remove the open PeerConnection to the other Peer from openPeerConnections in the PeerBean
 				LOG.warn("Permanent PeerConnection to peer=" + message.sender() + " has been closed.");
 				peer.peerBean().openPeerConnections().remove(message.sender().peerId());
 			}

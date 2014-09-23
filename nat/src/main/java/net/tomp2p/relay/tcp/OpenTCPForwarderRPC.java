@@ -85,11 +85,10 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 	@Override
 	public FutureDone<Message> forwardToUnreachable(final Message message) {
 		// Send message via direct message through the open connection to the unreachable peer
-		message.restoreContentReferences();
-		
 		LOG.debug("Sending to unreachable peer {}:{}", peerConnection.remotePeer(), message);
 		final Message envelope = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
 		try {
+			message.restoreContentReferences();
 			// add the message into the payload
 			envelope.buffer(RelayUtils.encodeMessage(message));
 		} catch (Exception e) {

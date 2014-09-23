@@ -184,7 +184,7 @@ public class RconRPC extends DispatchHandler {
 					if (future.isSuccess()) {
 						PeerConnection peerConnection = future.peerConnection();
 						if (peerConnection != null) {
-							final Message setupMessage = createSetupMessage(message, peerConnection);
+							final Message setupMessage = createSetupMessage(message, peerConnection.remotePeer());
 							FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
 									peer.connectionBean(), config, setupMessage);
 							futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -216,18 +216,18 @@ public class RconRPC extends DispatchHandler {
 	 * to the reachable peer.
 	 * 
 	 * @param message
-	 * @param peerConnection
+	 * @param receiver
 	 * @return setupMessage
 	 */
-	private Message createSetupMessage(final Message message, final PeerConnection peerConnection) {
-		Message setupMessage = createMessage(peerConnection.remotePeer(), RPC.Commands.RCON.getNr(), Message.Type.REQUEST_3);
+	private Message createSetupMessage(final Message message, PeerAddress receiver) {
+		Message setupMessage = createMessage(receiver, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_3);
 
 		// use same message id for new message
 		setupMessage.messageId(message.messageId());
 
 		// keep the new connection open
 		setupMessage.keepAlive(true);
-		
+
 		// check if we keep the connection open afterwards
 		if (!(message.longAt(POSITION_ZERO) == null)) {
 			setupMessage.longValue(message.longAt(POSITION_ZERO));
@@ -249,14 +249,12 @@ public class RconRPC extends DispatchHandler {
 		final ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
 		final Message cachedMessage = cachedMessages.remove(message.messageId());
 		if (cachedMessage != null) {
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
-					cachedMessage.messageId(1));
+			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, cachedMessage);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(final FutureResponse future) throws Exception {
 					if (future.isSuccess()) {
-						LOG.warn("Original Message was sent successfully to unreachablePeer with PeerAddress{"
-								+ message.sender() + "}");
+						LOG.debug("Connect message {} was sent successfully to unreachablePeer {}", cachedMessage, peerConnection.remotePeer());
 						// check if the PeerConnection should be stored in the PeerBean
 						if (message.longAt(POSITION_ZERO) != null) {
 							storePeerConnection(message, peerConnection, responder);

@@ -7,7 +7,7 @@
         </encoder>
     </appender>
 
-    <logger name="net.tomp2p" level="WARN"/>
+    <logger name="net.tomp2p" level="ERROR"/>
     
     <logger name="net.tomp2p.rcon" level="DEBUG"/>
     <logger name="net.tomp2p.relay" level="DEBUG"/>

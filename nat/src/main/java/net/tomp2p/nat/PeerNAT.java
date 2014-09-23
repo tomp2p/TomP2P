@@ -406,37 +406,37 @@ public class PeerNAT {
 			// wait for the connection to the relay Peer
 			@Override
 			public void operationComplete(FuturePeerConnection future) throws Exception {
-				final PeerConnection peerConnection;
-				
 				if (fpc.isSuccess()) {
-					peerConnection = fpc.peerConnection();
+					final PeerConnection peerConnection = fpc.peerConnection();
 					if (peerConnection != null) {
 						// create the necessary messages
 						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress);
-						final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage);
+						final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage.messageId());
 
-						// send the message to the relay so it forwards it to
-						// the unreachable peer
+						// cache the message that will be sent to the unreachable peer as sonn as the connection is set up
+						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+
+						// send the message to the relay so it forwards it to the unreachable peer
 						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
 								relayRPC.config(), setUpMessage);
-						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
 						
 						// wait for the unreachable peer to answer
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								if (future.isSuccess()) {
-									// get the PeerConnection which is cached in
-									// the PeerBean object
-									final PeerConnection openPeerConnection = peer.peerBean().peerConnection(
-											unreachablePeerAddress.peerId());
+									// get the PeerConnection which is cached in the PeerBean object
+									final PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
 									futureDone.done(openPeerConnection);
 								} else {
+									LOG.error("The reverse connection to the unreachable peer failed. Reason: {}", future.failedReason());
 									handleFail(futureDone, "No reverse connection could be established");
-									// we have to remove the Message from the
-									// cache manually if something went wrong.
+									// we have to remove the Message from the cache manually if something went wrong.
 									peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
 								}
+								
+								// can close the connection to the relay peer
+								peerConnection.close();
 							}
 						});
 					} else {
@@ -453,9 +453,9 @@ public class PeerNAT {
 			}
 
 			// this message is sent to the unreachablePeer after the rcon setup
-			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final Message setUpMessage) {
+			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, int setupMessageId) {
 				Message connectMessage = new Message();
-				connectMessage.messageId(setUpMessage.messageId());
+				connectMessage.messageId(setupMessageId);
 				connectMessage.version(MESSAGE_VERSION);
 				connectMessage.sender(peer.peerAddress());
 				connectMessage.recipient(unreachablePeerAddress);
@@ -475,6 +475,7 @@ public class PeerNAT {
 				setUpMessage.command(RPC.Commands.RCON.getNr());
 				setUpMessage.type(Type.REQUEST_1);
 				setUpMessage.longValue(PERMANENT_FLAG);
+				setUpMessage.keepAlive(true);
 				return setUpMessage;
 			}
 		});

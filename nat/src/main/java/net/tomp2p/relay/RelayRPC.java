@@ -167,27 +167,30 @@ public class RelayRPC extends DispatchHandler {
 		forwarders.put(forwarder.unreachablePeerId(), forwarder);
 	}
 
-    private void handlePiggyBackedMessage(Message message, final Responder responderToRelay) throws Exception {
+    /**
+     * The unreachable peer received an envelope message with another message insice (piggypacked)
+     */
+    private void handlePiggyBackedMessage(final Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
         Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
         
-        final Message response = createResponseMessage(message, Type.OK);
         final Responder responder = new Responder() {
         	
         	//TODO: add reply leak handler
         	@Override
         	public void response(Message responseMessage) {
+        		Message envelope = createResponseMessage(message, Type.OK);
         		LOG.debug("Send reply message to relay peer: {}", responseMessage);
         		try {
-	                response.buffer(RelayUtils.encodeMessage(responseMessage));
+	                envelope.buffer(RelayUtils.encodeMessage(responseMessage));
                 } catch (Exception e) {
                 	LOG.error("Cannot piggyback the response", e);
                 	failed(Type.EXCEPTION, e.getMessage());
                 }
-                responderToRelay.response(response);
+                responderToRelay.response(envelope);
         	}
 
 			@Override

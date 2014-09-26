@@ -59,10 +59,12 @@ public class TestRcon {
 		PeerAddress pa = unreachable.peerBean().serverPeerAddress();
 		pa = pa.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		unreachable.peerBean().serverPeerAddress(pa);
+		
 		// find neighbors
 		FutureBootstrap futureBootstrap = unreachable.bootstrap().peerAddress(peers[0].peerAddress()).start();
 		futureBootstrap.awaitUninterruptibly();
 		Assert.assertTrue(futureBootstrap.isSuccess());
+		
 		// setup relay
 		PeerNAT uNat = new PeerBuilderNAT(unreachable).start();
 		FutureRelayNAT frn = uNat.startRelay(master.peerAddress());
@@ -88,7 +90,6 @@ public class TestRcon {
 		final CountDownLatch cLatch = new CountDownLatch(3);
 
 		unreachable.objectDataReply(new ObjectDataReply() {
-
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				if (requestString.equals((String) request)) {

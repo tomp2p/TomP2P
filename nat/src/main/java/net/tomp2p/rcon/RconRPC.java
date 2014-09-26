@@ -60,8 +60,6 @@ public class RconRPC extends DispatchHandler {
 	 * REQUEST_2 = open a TCP channel and transmit {@link PeerConnection}.<br />
 	 * REQUEST_3 = use now open {@link PeerConnection} to transmit original message
 	 * (and eventually store the {@link PeerConnection}).<br />
-	 * REQUEST_4 = store the {@link PeerConnection} on the unreachable peer side
-	 * (only called via startSetupRcon from the PeerNAT)
 	 * 
 	 * @param message
 	 * @param peerConnection
@@ -83,10 +81,6 @@ public class RconRPC extends DispatchHandler {
 			// the message reached the requesting peer
 			LOG.info("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder, peerConnection);
-		} else if (message.type() == Message.Type.REQUEST_4 && message.command() == RPC.Commands.RCON.getNr()) {
-			// the message reached the unreachable peer (only called if the PeerConnection should remain open)
-			LOG.info("handle finalizeMessage for message: " + message);
-			storePeerConnection(message, peerConnection, responder);
 		} else {
 			LOG.warn("received invalid RconRPC message {}", message);
 			throw new IllegalArgumentException("Message content is wrong");
@@ -181,8 +175,8 @@ public class RconRPC extends DispatchHandler {
 				public void operationComplete(final FuturePeerConnection future) throws Exception {
 					if (future.isSuccess() && future.peerConnection() != null) {
 						// successfully created a connection from unreachable to the requester
-						PeerConnection peerConnection = future.peerConnection();
-
+						final PeerConnection peerConnection = future.peerConnection();
+						
 						final Message readyMessage = createReadyForRequestMessage(message, peerConnection.remotePeer());
 						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
 								peer.connectionBean(), config, readyMessage);
@@ -191,16 +185,20 @@ public class RconRPC extends DispatchHandler {
 							public void operationComplete(final FutureResponse future) throws Exception {
 								// ready message is sent to reachable peer
 								if (future.isSuccess()) {
-									responder.response(createResponseMessage(message, Type.OK));
+									// store the connection if necessary
+									if(message.intList().isEmpty()) {
+										storePeerConnection(message, peerConnection);
+									}
+									
+									// keep the connection open until at least next message arrives
+									responder.response(createResponseMessage(message, Type.OK).keepAlive(true));
 								} else {
-									LOG.error("Cannot setup the reverse connection to the peer. Reason: {}",
-											future.failedReason());
+									LOG.error("Cannot setup the reverse connection to the peer. Reason: {}", future.failedReason());
 									handleFail(message, responder,
 											"Exception while setting up the reverse connection from the unreachable to the original peer!");
 								}
 							}
 						});
-
 					} else {
 						handleFail(message, responder, "no channel could be established");
 					}
@@ -210,7 +208,7 @@ public class RconRPC extends DispatchHandler {
 			handleFail(message, responder, "the original sender was not transmittet in the neighborsSet!");
 		}
 	}
-
+	
 	/**
 	 * This method creates a message to indicate that the connection is ready for requests.
 	 * It is sent from the unreachable peer to the reachable peer.
@@ -243,56 +241,41 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconAfterconnect(final Message message, final Responder responder, final PeerConnection peerConnection) {
 		// get the original message or create one for permanent connection
-		final Message afterConnectMessage;
-
-		final boolean persistConnection;
 		if (message.intList().isEmpty()) {
-			LOG.debug("This reverse connection is used permanently");
-			afterConnectMessage = createKeepConnectionOpenMessage(peerConnection.remotePeer(), message);
-			persistConnection = true;
+			LOG.debug("This reverse connection is used permanently. Store it!");
+			storePeerConnection(message, peerConnection);
+			responder.response(createResponseMessage(message, Type.OK).keepAlive(true));
 		} else {
-			ConcurrentHashMap<Integer, Message> cachedMessages = peer.connectionBean().sender().cachedMessages();
-			afterConnectMessage = cachedMessages.remove(message.intAt(0));
-			LOG.debug("This reverse connection is only used for sending a direct message {}", afterConnectMessage);
-			persistConnection = false;
-		}
+			ConcurrentHashMap<Integer, FutureResponse> cachedMessages = peer.connectionBean().sender().cachedMessages();
+			final FutureResponse cachedResponse = cachedMessages.remove(message.intAt(0));
+			final Message cachedMessage = cachedResponse.request();
+			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedResponse);
 
-		// send the message to the unreachable peer through the open channel
-		final FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
-				config, afterConnectMessage);
-		futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-			@Override
-			public void operationComplete(final FutureResponse future) throws Exception {
-				if (future.isSuccess()) {
-					LOG.debug("AfterConnectMessage {} was sent successfully to unreachablePeer {}", afterConnectMessage,
-							peerConnection.remotePeer());
-					// check if the PeerConnection should be stored in the PeerBean
-					if (persistConnection) {
-						storePeerConnection(message, peerConnection, responder);
-					} else {
+			// send the message to the unreachable peer through the open channel
+			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
+					cachedMessage);
+			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+				@Override
+				public void operationComplete(final FutureResponse future) throws Exception {
+					if (future.isSuccess()) {
+						LOG.debug("Successfully transmitted request message {} to unreachablePeer {}", cachedMessage,
+								peerConnection.remotePeer());
+						cachedResponse.response(future.responseMessage());
+						
 						// we must make sure that the PeerConnection is closed, because it takes a lot of
 						// resources from the running pc
-						Message responseMessage = createResponseMessage(message.keepAlive(false), Type.OK);
+						Message responseMessage = createResponseMessage(message, Type.OK).keepAlive(false);
 						LOG.debug("Returning OK for delivering single message over reverse connection {}", responseMessage);
 						responder.response(responseMessage);
 						peerConnection.close();
+					} else {
+						cachedResponse.failed("Cannot send the request message", future);
+						handleFail(message, responder, "The AfterConnectMessage could not be sent!");
 					}
-				} else {
-					handleFail(message, responder, "The AfterConnectMessage could not be sent!");
 				}
-			}
-		});
-	}
+			});
+		}
 
-	/**
-	 * This message is sent to the unreachablePeer after the rcon setup to store the {@link PeerConnection}
-	 * permanently.
-	 */
-	private Message createKeepConnectionOpenMessage(PeerAddress unreachablePeerAddress, Message setupMessage) {
-		Message finalizeMessage = createMessage(unreachablePeerAddress, RPC.Commands.RCON.getNr(), Type.REQUEST_4);
-		finalizeMessage.version(setupMessage.version());
-		finalizeMessage.keepAlive(true);
-		return finalizeMessage;
 	}
 
 	/**
@@ -302,23 +285,20 @@ public class RconRPC extends DispatchHandler {
 	 * @param message
 	 * @param peerConnection
 	 */
-	private void storePeerConnection(final Message message, final PeerConnection peerConnection, final Responder responder) {
-		LOG.debug("Storing peerconnection permanently: {}", peerConnection);
+	private void storePeerConnection(final Message message, final PeerConnection peerConnection) {
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
 			public void operationComplete(final FutureDone<Void> future) throws Exception {
 				// remove the open PeerConnection to the other Peer from openPeerConnections in the PeerBean
-				LOG.warn("Permanent PeerConnection to peer=" + message.sender() + " has been closed.");
+				LOG.warn("Permanent PeerConnection {} to peer {} has been closed.", peerConnection, message.sender());
 				peer.peerBean().openPeerConnections().remove(message.sender().peerId());
 			}
 		});
-		// put the now open PeerConnection into the openPeerConnections-Map in
-		// the PeerBean
+
+		// put the now open PeerConnection into the openPeerConnections-Map in the PeerBean
+		LOG.debug("Storing peerconnection {} to peer {} permanently: {}", peerConnection, message.sender().peerId());
 		final ConcurrentHashMap<Number160, PeerConnection> openPeerConnections = peer.peerBean().openPeerConnections();
 		openPeerConnections.put(message.sender().peerId(), peerConnection);
-
-		message.keepAlive(true);
-		responder.response(createResponseMessage(message, Type.OK));
 	}
 
 	/**

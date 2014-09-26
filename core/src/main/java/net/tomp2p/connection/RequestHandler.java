@@ -249,11 +249,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
                     + "] sent to the node is not the same as we expect. We sent [" + this.message + "]";
             exceptionCaught(ctx, new PeerException(PeerException.AbortCause.PEER_ABORT, msg));
             return;
-            // We need to exclude RCON Messages from the sanity check because we
-         	// use this RequestHandler for sending a Type.REQUEST_1,
-         	// RPC.Commands.RCON message on top of it. Therefore the response
-         	// type will never be the same Type as the one the user initially
-         	// used (e.g. DIRECT_DATA).
         } else if (responseMessage.command() != RPC.Commands.RCON.getNr() && message.recipient().isRelayed() != responseMessage.sender().isRelayed()) {
         	String msg = "Message [" + responseMessage
                     + "] sent has a different relay flag than we sent [" + this.message + "]. Recipient ("+message.recipient().isRelayed()+") / Sender ("+responseMessage.sender().isRelayed()+")";

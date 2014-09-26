@@ -202,9 +202,8 @@ public class TestRelay {
 			FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start()
 					.awaitUninterruptibly();
 			Assert.assertEquals(response, fd.object());
-			// make sure we did not receive it from the unreachable peer with port 13337
-			Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
-
+			// make sure we did receive it from the unreachable peer with id
+			Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();
@@ -253,10 +252,8 @@ public class TestRelay {
 					.awaitUninterruptibly();
 			// fd.awaitUninterruptibly();
 			Assert.assertEquals(response, fd.object());
-			// make sure we did not receive it from the unreachable peer with port 13337
-			// System.err.println(fd.getWrappedFuture());
-			Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
-
+			// make sure we did receive it from the unreachable peer with id
+			Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();

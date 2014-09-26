@@ -18,6 +18,7 @@ package net.tomp2p.connection;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -44,6 +45,7 @@ import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
@@ -53,6 +55,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -75,7 +78,7 @@ public class Sender {
 
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup
-	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
+	private final ConcurrentHashMap<Integer, FutureResponse> cachedMessages = new ConcurrentHashMap<Integer, FutureResponse>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -87,6 +90,7 @@ public class Sender {
 	 * @param channelClientConfiguration
 	 *            The configuration used to get the signature factory
 	 * @param dispatcher
+	 * @param concurrentHashMap 
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
 	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
@@ -181,13 +185,58 @@ public class Sender {
 
 		message.keepAlive(true);
 
-		LOG.debug("initiate reverse connection setup to peer with peerAddress {}" + message.recipient());
+		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
 		Message rconMessage = createRconMessage(message);
 
 		// cache the original message until the connection is established
-		cachedMessages.put(message.messageId(), message);
+		cachedMessages.put(message.messageId(), futureResponse);
 
-		connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, rconMessage);
+		// wait for response (whether the reverse connection setup was successful)
+		final FutureResponse rconResponse = new FutureResponse(rconMessage);
+		
+//		rconResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
+//			@Override
+//			public void operationComplete(FutureResponse rconResponse) throws Exception {
+//				if(rconResponse.isSuccess()) {
+//					final PeerConnection openConnection = openConnections.get(message.recipient().peerId());
+//					if(openConnection == null) {
+//						LOG.error("Cannot find an open connection to peer {}", message.recipient().peerId());
+//						futureResponse.failed("Failed to open reverse connection to unreachable peer");
+//					} else {
+//						LOG.debug("Opened reverse connection channel. Send message through it");
+//						FutureChannelCreator futureChannelCreator = openConnection.acquire(futureResponse);
+//						futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
+//							@Override
+//							public void operationComplete(FutureChannelCreator future) throws Exception {
+//								if (future.isSuccess()) {
+//									futureResponse.request().keepAlive(true);
+//									sendTCP(handler, futureResponse, message, openConnection.channelCreator(), ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP, connectTimeoutMillis, openConnection);
+//								} else {
+//									futureResponse.failed("Could not acquire channel of reverse connection", future);
+//								}
+//							}
+//						});
+//					}
+//				}
+//			}
+//		});
+		
+		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
+			@Override
+			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+				if(msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
+					LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
+					rconResponse.response(msg);
+				} else {
+					LOG.debug("Could not acquire a reverse connection to peer {}", message.recipient().peerId());
+					rconResponse.failed("Could not acquire a reverse connection");
+					futureResponse.failed(rconResponse.failedReason());
+				}
+			}
+		};
+		
+		// send reverse connection request instead of normal message
+		sendTCP(rconInboundHandler, rconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
 	}
 
 	/**
@@ -223,7 +272,7 @@ public class Sender {
 		rconMessage.keepAlive(true);
 		
 		// making the message ready to send
-		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort());
+		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
 		rconMessage.recipient(recipient);
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
@@ -697,7 +746,7 @@ public class Sender {
 	}
 
 	// TODO Nico Rutishauser: Not used by the Recon anymore. Delete or leave?
-	public ConcurrentHashMap<Integer, Message> cachedMessages() {
+	public ConcurrentHashMap<Integer, FutureResponse> cachedMessages() {
 		return cachedMessages;
 	}
 }

@@ -194,33 +194,6 @@ public class Sender {
 		// wait for response (whether the reverse connection setup was successful)
 		final FutureResponse rconResponse = new FutureResponse(rconMessage);
 		
-//		rconResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
-//			@Override
-//			public void operationComplete(FutureResponse rconResponse) throws Exception {
-//				if(rconResponse.isSuccess()) {
-//					final PeerConnection openConnection = openConnections.get(message.recipient().peerId());
-//					if(openConnection == null) {
-//						LOG.error("Cannot find an open connection to peer {}", message.recipient().peerId());
-//						futureResponse.failed("Failed to open reverse connection to unreachable peer");
-//					} else {
-//						LOG.debug("Opened reverse connection channel. Send message through it");
-//						FutureChannelCreator futureChannelCreator = openConnection.acquire(futureResponse);
-//						futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-//							@Override
-//							public void operationComplete(FutureChannelCreator future) throws Exception {
-//								if (future.isSuccess()) {
-//									futureResponse.request().keepAlive(true);
-//									sendTCP(handler, futureResponse, message, openConnection.channelCreator(), ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP, connectTimeoutMillis, openConnection);
-//								} else {
-//									futureResponse.failed("Could not acquire channel of reverse connection", future);
-//								}
-//							}
-//						});
-//					}
-//				}
-//			}
-//		});
-		
 		SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
 			@Override
 			protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {

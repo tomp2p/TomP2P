@@ -1,10 +1,12 @@
 package net.tomp2p.relay.android;
 
 import java.io.IOException;
+import java.util.List;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
+import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
@@ -23,9 +25,10 @@ import com.google.android.gcm.server.Sender;
  * @author Nico Rutishauser
  *
  */
-public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
+public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements BufferFullListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
+	
 	private final int retries = 5; // TODO make configurable if requested
 	private final Sender sender;
 	private final String registrationId;
@@ -37,7 +40,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 		this.sender = new Sender(authToken);
 
 		// TODO make customizable
-		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60 * 1000);
+		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60 * 1000, this);
 
 		// TODO init some listener to detect when the relay is not reachable anymore
 	}
@@ -57,10 +60,6 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 			return new FutureDone<Message>().failed(e);
 		}
 
-		if (buffer.isFull()) {
-			sendTickleMessage();
-		}
-
 		// TODO create temporal OK message
 		return new FutureDone<Message>().done();
 	}
@@ -71,6 +70,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 	}
 
 	private Result sendTickleMessage() {
+		LOG.debug("Send GCM message to the device {}", registrationId);
 		// Tickle the device with the given registration id.
 		com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
 		try {
@@ -80,5 +80,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC {
 			LOG.error("Cannot send tickle message to device {}", registrationId, e);
 			return null;
 		}
+	}
+
+	@Override
+	public void bufferFull(List<Buffer> buffer) {
+		// TODO send notification to the mobile device
+		sendTickleMessage();
 	}
 }

@@ -76,9 +76,8 @@ public class Sender {
 	private final Dispatcher dispatcher;
 	private final Random random;
 
-	// this map caches all messages which are meant to be sent by a reverse
-	// connection setup
-	private final ConcurrentHashMap<Integer, FutureResponse> cachedMessages = new ConcurrentHashMap<Integer, FutureResponse>();
+	// this map caches all messages which are meant to be sent by a reverse connection setup
+	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -189,7 +188,7 @@ public class Sender {
 		Message rconMessage = createRconMessage(message);
 
 		// cache the original message until the connection is established
-		cachedMessages.put(message.messageId(), futureResponse);
+		cachedRequests.put(message.messageId(), futureResponse);
 
 		// wait for response (whether the reverse connection setup was successful)
 		final FutureResponse rconResponse = new FutureResponse(rconMessage);
@@ -718,8 +717,12 @@ public class Sender {
 		});
 	}
 
-	// TODO Nico Rutishauser: Not used by the Recon anymore. Delete or leave?
-	public ConcurrentHashMap<Integer, FutureResponse> cachedMessages() {
-		return cachedMessages;
+	/**
+	 * Get currently cached requests. They are cached because for example the receiver is behind a NAT. Instead
+	 * of sending the message directly, a reverse connection is set up beforehand. After a successful connection
+	 * establishment, the cached messages are sent through the direct channel.
+	 */
+	public ConcurrentHashMap<Integer, FutureResponse> cachedRequests() {
+		return cachedRequests;
 	}
 }

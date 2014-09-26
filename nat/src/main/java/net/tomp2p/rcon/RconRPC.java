@@ -246,10 +246,10 @@ public class RconRPC extends DispatchHandler {
 			storePeerConnection(message, peerConnection);
 			responder.response(createResponseMessage(message, Type.OK).keepAlive(true));
 		} else {
-			ConcurrentHashMap<Integer, FutureResponse> cachedMessages = peer.connectionBean().sender().cachedMessages();
-			final FutureResponse cachedResponse = cachedMessages.remove(message.intAt(0));
-			final Message cachedMessage = cachedResponse.request();
-			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedResponse);
+			ConcurrentHashMap<Integer, FutureResponse> cachedRequests = peer.connectionBean().sender().cachedRequests();
+			final FutureResponse cachedRequest = cachedRequests.remove(message.intAt(0));
+			final Message cachedMessage = cachedRequest.request();
+			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
 
 			// send the message to the unreachable peer through the open channel
 			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
@@ -260,7 +260,7 @@ public class RconRPC extends DispatchHandler {
 					if (future.isSuccess()) {
 						LOG.debug("Successfully transmitted request message {} to unreachablePeer {}", cachedMessage,
 								peerConnection.remotePeer());
-						cachedResponse.response(future.responseMessage());
+						cachedRequest.response(future.responseMessage());
 						
 						// we must make sure that the PeerConnection is closed, because it takes a lot of
 						// resources from the running pc
@@ -269,7 +269,7 @@ public class RconRPC extends DispatchHandler {
 						responder.response(responseMessage);
 						peerConnection.close();
 					} else {
-						cachedResponse.failed("Cannot send the request message", future);
+						cachedRequest.failed("Cannot send the request message", future);
 						handleFail(message, responder, "The AfterConnectMessage could not be sent!");
 					}
 				}

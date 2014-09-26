@@ -130,7 +130,7 @@ public class QueryNode {
 			LOG.debug("Removed object {}", key);
 			validKeys.remove(key);
 		} else {
-			LOG.warn("Could not remove object {}");
+			LOG.warn("Could not remove object {}", key);
 		}
 	}
 

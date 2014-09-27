@@ -79,7 +79,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 			@Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
 				peer.peerBean().removePeerStatusListeners(RelayForwarderRPC.this);
-				peer.connectionBean().dispatcher().removeIoHandler(unreachablePeer.peerId());
+				peer.connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
             }
 		});
 		
@@ -114,13 +114,13 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	public void register(Peer peer) {
 		for (Commands command : RPC.Commands.values()) {
 			if (command != RPC.Commands.RELAY && command != RPC.Commands.RCON) {
-				peer.connectionBean().dispatcher().registerIoHandler(peerConnection.remotePeer().peerId(), this, command.getNr());
+				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), this, command.getNr());
 			} else if (command == RPC.Commands.RCON) {
 				// We must register the rconRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
 				peer.connectionBean().dispatcher()
-						.registerIoHandler(peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
+						.registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
 			}
 		}
 		peer.peerBean().addPeerStatusListeners(this);
@@ -133,7 +133,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 	
 	public static RelayForwarderRPC find(Peer peer, Number160 peerId) {
 		//we can search for any command, except RELAY, which is not handled here
-		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(
+		return (RelayForwarderRPC) peer.connectionBean().dispatcher().searchHandler(peer.peerID(),
 				peerId, RPC.Commands.NEIGHBOR.getNr());
     }
 

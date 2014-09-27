@@ -150,7 +150,7 @@ public class RconRPC extends DispatchHandler {
 	private RelayForwarderRPC extractRelayForwarderRPC(final Message message) {
 		RelayForwarderRPC relayForwarderRPC = null;
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(message.recipient().peerId());
+		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
 			if (element.getValue().getClass().equals(RelayForwarderRPC.class)) {
 				relayForwarderRPC = (RelayForwarderRPC) element.getValue();

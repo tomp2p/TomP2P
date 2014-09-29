@@ -1,6 +1,8 @@
 package net.tomp2p.relay.android;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.tomp2p.connection.PeerConnection;
@@ -34,7 +36,9 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	private final Sender sender;
 	private final String registrationId;
 	private final MessageBuffer buffer;
-
+	
+	private final List<Buffer> readyToSend;
+	
 	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, String authToken, String registrationId) {
 		super(peer, peerConnection);
 		this.registrationId = registrationId;
@@ -42,7 +46,9 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 		// TODO make customizable
 		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60 * 1000, this);
-
+		
+		this.readyToSend = Collections.synchronizedList(new ArrayList<Buffer>());
+				
 		// TODO init some listener to detect when the relay is not reachable anymore
 	}
 
@@ -90,7 +96,24 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 	@Override
 	public void bufferFull(List<Buffer> buffer) {
-		// TODO send notification to the mobile device
+		synchronized (readyToSend) {
+			readyToSend.addAll(buffer);
+		}
+		
 		sendTickleMessage();
+	}
+	
+	/**
+	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
+	 * Android device has already been notified.
+	 * @return
+	 */
+	public List<Buffer> getReadyToSendBuffer() {
+		List<Buffer> copy;
+		synchronized (readyToSend) {
+			copy = new ArrayList<Buffer>(readyToSend);
+			readyToSend.clear();
+		}
+		return copy;
 	}
 }

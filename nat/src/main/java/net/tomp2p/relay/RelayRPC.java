@@ -96,12 +96,15 @@ public class RelayRPC extends DispatchHandler {
         } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// the relay server receives the update of the routing table regularly from the unrachable peer
             handleMap(message, responder);
+        } else if(message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// An android unreachable peer requests the buffer
+        	handleBufferRequest(message, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
         }
     }
 
-    public Peer peer() {
+	public Peer peer() {
         return this.peer;
     }
 
@@ -242,4 +245,27 @@ public class RelayRPC extends DispatchHandler {
         Message response = createResponseMessage(message, Type.OK);
         responder.response(response);
     }
+    
+    /**
+     * The relay buffers messages for unreachable peers (like Android devices). They get notified when the buffer is full
+     * or request the buffer content by themselves through this request.
+     * 
+     * @param message
+     * @param responder
+     */
+    private void handleBufferRequest(Message message, Responder responder) {
+    	LOG.debug("Handle buffer request of unreachable peer {}", message.sender());
+		BaseRelayForwarderRPC forwarderRPC = forwarders.get(message.sender().peerId());
+		if(forwarderRPC instanceof AndroidForwarderRPC) {
+			AndroidForwarderRPC androidForwarder = (AndroidForwarderRPC) forwarderRPC;
+			Message response = createResponseMessage(message, Type.OK);
+			// add all buffered messages
+			response.bufferList().addAll(androidForwarder.getReadyToSendBuffer());
+			
+			LOG.debug("Responding {} buffered messages to Android device {}", response.bufferList().size(), message.sender());
+			responder.response(response);
+		} else {
+			responder.failed(Type.EXCEPTION, "This message type is intended for buffering forwarders only");
+		}
+	}
 }

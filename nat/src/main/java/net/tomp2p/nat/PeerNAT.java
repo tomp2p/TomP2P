@@ -237,8 +237,8 @@ public class PeerNAT {
 	}
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType(),
-				gcmRegistrationId(), config);
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType,
+				gcmRegistrationId, config);
 
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {

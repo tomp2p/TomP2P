@@ -7,6 +7,7 @@ import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.relay.android.AndroidRelayConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public class RelayNode {
 			Peer peer = new PeerBuilder(peerId).ports(port).start();
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			new PeerBuilderNAT(peer).gcmAuthToken(gcmAPIKey).start();
+			new PeerBuilderNAT(peer).androidRelayConfiguration(new AndroidRelayConfiguration().gcmAuthenticationToken(gcmAPIKey)).start();
 			logger.debug("Peer started");
 		} catch (IOException e) {
 			e.printStackTrace();

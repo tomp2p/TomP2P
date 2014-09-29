@@ -15,6 +15,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
+import net.tomp2p.relay.android.AndroidRelayConfiguration;
 import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -30,7 +31,7 @@ public class RelayRPC extends DispatchHandler {
     private final ConnectionConfiguration config;
 	
     // used when it should serve as an Android relay server
-    private final String gcmAuthToken;
+    private final AndroidRelayConfiguration androidConfig;
 	
 	// holds the forwarder for each client
 	private final Map<Number160, BaseRelayForwarderRPC> forwarders;
@@ -56,10 +57,10 @@ public class RelayRPC extends DispatchHandler {
      * @param gcmAuthToken the authentication key for Google cloud messaging
      * @return
      */
-	public RelayRPC(Peer peer, RconRPC rconRPC, String gcmAuthToken, ConnectionConfiguration config) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, AndroidRelayConfiguration androidConfig, ConnectionConfiguration config) {
         super(peer.peerBean(), peer.connectionBean());
-		this.gcmAuthToken = gcmAuthToken;
         this.peer = peer;
+		this.androidConfig = androidConfig;
 		this.config = config;
         this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
         this.rconRPC = rconRPC;
@@ -145,14 +146,14 @@ public class RelayRPC extends DispatchHandler {
             return;
 		}
 		
-		if(gcmAuthToken == null) {
+		if(androidConfig == null || androidConfig.gcmAuthenticationToken() == null) {
 			LOG.error("This relay peer is not capable to serve Android devices");
 			responder.response(createResponseMessage(message, Type.DENIED));
 	        return;
 		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, gcmAuthToken, registrationId);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, registrationId);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));

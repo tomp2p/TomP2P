@@ -13,6 +13,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.android.AndroidRelayConfiguration;
 
 public class PeerBuilderNAT {
 
@@ -24,9 +25,9 @@ public class PeerBuilderNAT {
 	private int failedRelayWaitTime = -1;
 	private int maxFail = -1;
 	private int peerMapUpdateInterval = -1;
-	
+
 	private RelayType relayType = RelayType.OPENTCP;
-	private String gcmAuthToken;
+	private AndroidRelayConfiguration androidRelayConfig = new AndroidRelayConfiguration();
 	private String gcmRegistrationId;
 
 	public PeerBuilderNAT(Peer peer) {
@@ -77,8 +78,6 @@ public class PeerBuilderNAT {
 		return failedRelayWaitTime;
 	}
 
-	
-
 	public PeerBuilderNAT maxFail(int maxFail) {
 		this.maxFail = maxFail;
 		return this;
@@ -87,7 +86,7 @@ public class PeerBuilderNAT {
 	public int maxFail() {
 		return maxFail;
 	}
-	
+
 	/**
 	 * Set the kind of relaying. For example mobile devices need special treatment
 	 * to save energy. The type needs to be set at the peer behind the NAT only
@@ -97,32 +96,32 @@ public class PeerBuilderNAT {
 		this.relayType = relayType;
 		return this;
 	}
-	
+
 	/**
 	 * @return the kind of relaying.
 	 */
 	public RelayType relayType() {
 		return relayType;
 	}
-	
+
 	/**
-	 * Set the Google Cloud Messaging authentication token (API key).
-	 * This is used at the Relay server to serve {@link RelayType#ANDROID} relay requests.
-	 * @param gcmAuthToken the API key for GCM
-	 * @return
+	 * @return the android relay configuration.
 	 */
-	public PeerBuilderNAT gcmAuthToken(String gcmAuthToken) {
-		this.gcmAuthToken = gcmAuthToken;
+	public AndroidRelayConfiguration androidRelayConfiguration() {
+		return androidRelayConfig;
+	}
+
+	/**
+	 * Set the android relay configuration. This needs to be set on relay nodes only, not on mobile peers.
+	 * 
+	 * @param androidRelayConfig the configuration
+	 * @return this instance
+	 */
+	public PeerBuilderNAT androidRelayConfiguration(AndroidRelayConfiguration androidRelayConfig) {
+		this.androidRelayConfig = androidRelayConfig;
 		return this;
 	}
-	
-	/**
-	 * @return the Google Cloud Messaging Authentication token (API key)
-	 */
-	public String gcmAuthToken() {
-		return gcmAuthToken;
-	}
-	
+
 	/**
 	 * Set the Google Cloud Messaging registration id. The registration id is a unique token
 	 * that is received from Google's registration server. This id needs to be set at
@@ -130,21 +129,21 @@ public class PeerBuilderNAT {
 	 * setup phase.
 	 * 
 	 * @param gcmRegistrationId
-	 * 				the registration id of the mobile device
+	 *            the registration id of the mobile device
 	 * @return this instance
 	 */
 	public PeerBuilderNAT gcmRegistrationId(String gcmRegistrationId) {
 		this.gcmRegistrationId = gcmRegistrationId;
 		return this;
 	}
-	
+
 	/**
 	 * @return the registration id of the device from GCM
 	 */
 	public String gcmRegistrationId() {
 		return gcmRegistrationId;
 	}
-	
+
 	/**
 	 * Defines the time interval of sending the peer map of the unreachable peer
 	 * to its relays. The routing requests are not relayed to the unreachable
@@ -169,10 +168,14 @@ public class PeerBuilderNAT {
 
 	public PeerNAT start() {
 		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
+
+		if(androidRelayConfig == null) {
+			androidRelayConfig = new AndroidRelayConfiguration();
+		}
 		
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, gcmAuthToken, connectionConfiguration);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, androidRelayConfig, connectionConfiguration);
 
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;
@@ -185,12 +188,12 @@ public class PeerBuilderNAT {
 		if (peerMapUpdateInterval == -1) {
 			peerMapUpdateInterval = 60;
 		}
-		
-		if(manualRelays == null) {
+
+		if (manualRelays == null) {
 			manualRelays = new ArrayList<PeerAddress>(1);
 		}
-		
-		if(relayType == null) {
+
+		if (relayType == null) {
 			relayType = RelayType.OPENTCP;
 		}
 		
@@ -202,7 +205,7 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime,
-		        maxFail, peerMapUpdateInterval, manualPorts, relayType, gcmRegistrationId, connectionConfiguration);
+		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime, maxFail, peerMapUpdateInterval,
+				manualPorts, relayType, gcmRegistrationId, connectionConfiguration);
 	}
 }

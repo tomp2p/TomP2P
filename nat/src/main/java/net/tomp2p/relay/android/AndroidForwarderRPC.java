@@ -32,21 +32,19 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
-	private final int retries = 5; // TODO make configurable if requested
+	private final AndroidRelayConfiguration config;
 	private final Sender sender;
 	private final String registrationId;
 	private final MessageBuffer buffer;
-	
 	private final List<Buffer> readyToSend;
-	
-	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, String authToken, String registrationId) {
-		super(peer, peerConnection);
-		this.registrationId = registrationId;
-		this.sender = new Sender(authToken);
 
-		// TODO make customizable
-		this.buffer = new MessageBuffer(Integer.MAX_VALUE, Integer.MAX_VALUE, 60 * 1000, this);
-		
+	
+	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config, String registrationId) {
+		super(peer, peerConnection);
+		this.config = config;
+		this.registrationId = registrationId;
+		this.sender = new Sender(config.gcmAuthenticationToken());
+		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Buffer>());
 				
 		// TODO init some listener to detect when the relay is not reachable anymore
@@ -87,7 +85,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 		com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
 		try {
 			// TODO make asynchronous
-			return sender.send(tickleMessage, registrationId, retries);
+			return sender.send(tickleMessage, registrationId, config.gcmSendRetries());
 		} catch (IOException e) {
 			LOG.error("Cannot send tickle message to device {}", registrationId, e);
 			return null;

@@ -81,11 +81,18 @@ public class RelayRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         LOG.debug("received RPC message {}", message);
         if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
-        	// request from unreachable peer to the relay
-            handleSetup(message, peerConnection, responder);
-        } else if (message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
-        	// request from mobile device to the relay
-        	handleSetupAndroid(message, peerConnection, responder);
+        	if(message.intList().isEmpty()) {
+                throw new IllegalArgumentException("Setup message should contain an integer value specifying the type");
+        	}
+        	
+        	Integer deviceType = message.intAt(0);
+        	if(deviceType == RelayType.OPENTCP.ordinal()) {
+        		// request from unreachable peer to the relay
+        		handleSetupTCP(message, peerConnection, responder);
+        	} else if(deviceType == RelayType.ANDROID.ordinal()) {
+        		// request from mobile device to the relay
+        		handleSetupAndroid(message, peerConnection, responder);
+        	}
         } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// The unreachable peer receives wrapped messages from the relay
             handlePiggyBackedMessage(message, responder);
@@ -101,7 +108,10 @@ public class RelayRPC extends DispatchHandler {
         return this.peer;
     }
 
-    private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
+    /**
+     * Open a TCP connection to the unreachable peer
+     */
+    private void handleSetupTCP(Message message, final PeerConnection peerConnection, Responder responder) {
         if (peerBean().serverPeerAddress().isRelayed()) {
             // peer is behind a NAT as well -> deny request
         	LOG.warn("I cannot be a relay since I'm relayed as well! {}", message);

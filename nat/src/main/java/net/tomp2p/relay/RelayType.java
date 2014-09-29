@@ -21,6 +21,4 @@ public enum RelayType {
 	public boolean keepConnectionOpen() {
 		return keepConnectionOpen;
 	}
-	
-	
 }

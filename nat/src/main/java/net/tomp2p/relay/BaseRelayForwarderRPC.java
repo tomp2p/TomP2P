@@ -104,6 +104,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 				public void operationComplete(FutureDone<Message> future) throws Exception {
 					if (future.isSuccess()) {
 						Message answerMessage = future.object();
+						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
 						responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());

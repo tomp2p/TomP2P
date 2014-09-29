@@ -258,18 +258,16 @@ public class DistributedRelay {
     private FutureDone<PeerConnection> sendMessage(final PeerAddress candidate) {
         final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
         
-        final Message message;
-        if(relayType == RelayType.OPENTCP) {
-        	message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-        } else if(relayType == RelayType.ANDROID) {
-        	message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_4);
+        final Message message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+        if(relayType == RelayType.ANDROID) {
         	message.buffer(RelayUtils.encodeRegistrationId(gcmRegistrationId));
-        } else {
-        	throw new IllegalArgumentException("Unknown relay type " + relayType);
         }
         
         // depend on the relay type whether to keep the connection open or close it after the setup.
         message.keepAlive(relayType.keepConnectionOpen());
+       
+        // encode the relay type in the message such that the relay node knows how to handle
+        message.intValue(relayType.ordinal());
         
         LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
 

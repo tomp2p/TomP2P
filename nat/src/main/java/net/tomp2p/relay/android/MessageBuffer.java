@@ -67,6 +67,7 @@ public class MessageBuffer {
 		}
 
 		bufferSize.addAndGet(encodedMessage.length());
+		LOG.debug("Added to the buffer: {}", message);
 		checkFull();
 	}
 

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -39,8 +40,9 @@ public class DistributedRelay {
 
 	final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
 
-	final private Peer peer;
-	final private RelayRPC relayRPC;
+	private final Peer peer;
+	private final RelayRPC relayRPC;
+	private final ConnectionConfiguration config;
 
 	final private List<BaseRelayConnection> relays;
 	final private Set<PeerAddress> failedRelays;
@@ -48,6 +50,7 @@ public class DistributedRelay {
 	private final Collection<RelayListener> relayListeners;
 	private final RelayType relayType;
 	private final String gcmRegistrationId;
+
 
 	/**
 	 * @param peer
@@ -59,11 +62,12 @@ public class DistributedRelay {
 	 * @param relayType
 	 * 			  the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType, String gcmRegistrationId) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType, String gcmRegistrationId, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayType = relayType;
 		this.gcmRegistrationId = gcmRegistrationId;
+		this.config = config;
 
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
@@ -279,7 +283,7 @@ public class DistributedRelay {
                 	final PeerConnection peerConnection = futurePeerConnection.object();
                 	
                 	// send the message
-                	FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), relayRPC.config(), message);
+                	FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, message);
                 	response.addListener(new BaseFutureAdapter<FutureResponse>() {
                         public void operationComplete(FutureResponse future) throws Exception {
                             if (future.isSuccess()) {
@@ -311,7 +315,7 @@ public class DistributedRelay {
 		BaseRelayConnection connection = null;
 		switch (relayType) {
 			case OPENTCP:
-				connection = new OpenTCPRelayConnection(peerConnection, peer, relayRPC.config());
+				connection = new OpenTCPRelayConnection(peerConnection, peer, config);
 				break;
 			case ANDROID:
 				connection = new AndroidRelayConnection(relayAddress);

@@ -3,6 +3,8 @@ package net.tomp2p.nat;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.Peer;
@@ -166,9 +168,11 @@ public class PeerBuilderNAT {
 	}
 
 	public PeerNAT start() {
+		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
+		
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, gcmAuthToken);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, gcmAuthToken, connectionConfiguration);
 
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;
@@ -199,6 +203,6 @@ public class PeerBuilderNAT {
 		});
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime,
-		        maxFail, peerMapUpdateInterval, manualPorts, relayType, gcmRegistrationId);
+		        maxFail, peerMapUpdateInterval, manualPorts, relayType, gcmRegistrationId, connectionConfiguration);
 	}
 }

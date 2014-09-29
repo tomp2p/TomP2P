@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFuture;
@@ -47,12 +48,13 @@ public class PeerNAT {
 	private final Collection<PeerAddress> manualRelays;
 	private final RelayType relayType;
 	private final String gcmRegistrationId;
+	private final ConnectionConfiguration config;
 
 	private static final int MESSAGE_VERSION = 1;
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays,
 			int failedRelayWaitTime, int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType,
-			String gcmRegistrationId) {
+			String gcmRegistrationId, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
@@ -63,6 +65,7 @@ public class PeerNAT {
 		this.manualPorts = manualPorts;
 		this.relayType = relayType;
 		this.gcmRegistrationId = gcmRegistrationId;
+		this.config = config;
 	}
 
 	public Peer peer() {
@@ -235,7 +238,7 @@ public class PeerNAT {
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay) {
 		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime(), relayType(),
-				gcmRegistrationId());
+				gcmRegistrationId(), config);
 
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
@@ -415,7 +418,7 @@ public class PeerNAT {
 
 						// send the message to the relay so it forwards it to the unreachable peer
 						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
-								peer.connectionBean(), relayRPC.config(), setUpMessage);
+								peer.connectionBean(), config, setUpMessage);
 
 						// wait for the unreachable peer to answer
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {

@@ -8,6 +8,7 @@ import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
@@ -28,7 +29,7 @@ import com.google.android.gcm.server.Sender;
 public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements BufferFullListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
-	
+
 	private final int retries = 5; // TODO make configurable if requested
 	private final Sender sender;
 	private final String registrationId;
@@ -53,6 +54,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
+		final FutureDone<Message> futureDone = new FutureDone<Message>();
+		final Message response = createResponseMessage(message, Type.OK);
+		response.recipient(message.sender());
+		response.sender(unreachablePeerAddress());
+
 		try {
 			buffer.addMessage(message);
 		} catch (Exception e) {
@@ -61,7 +67,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 		}
 
 		// TODO create temporal OK message
-		return new FutureDone<Message>().done();
+		return futureDone.done(response);
 	}
 
 	@Override

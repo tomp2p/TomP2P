@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.connection.ConnectionConfiguration;
-import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Buffer;
@@ -27,8 +26,8 @@ import org.slf4j.LoggerFactory;
 public class RelayRPC extends DispatchHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
-    private final ConnectionConfiguration config;
     private final Peer peer;
+    private final ConnectionConfiguration config;
 	
     // used when it should serve as an Android relay server
     private final String gcmAuthToken;
@@ -57,22 +56,17 @@ public class RelayRPC extends DispatchHandler {
      * @param gcmAuthToken the authentication key for Google cloud messaging
      * @return
      */
-	public RelayRPC(Peer peer, RconRPC rconRPC, String gcmAuthToken) {
+	public RelayRPC(Peer peer, RconRPC rconRPC, String gcmAuthToken, ConnectionConfiguration config) {
         super(peer.peerBean(), peer.connectionBean());
 		this.gcmAuthToken = gcmAuthToken;
         this.peer = peer;
-        this.config = new DefaultConnectionConfiguration();
+		this.config = config;
         this.forwarders = new ConcurrentHashMap<Number160, BaseRelayForwarderRPC>();
         this.rconRPC = rconRPC;
         
         // register this handler
         register(RPC.Commands.RELAY.getNr());
     }
-    
-	public ConnectionConfiguration config() {
-		// TODO move to PeerNAT
-		return config;
-	}
 
     /**
      * Receive a message at the relay server and the relay client
@@ -81,6 +75,7 @@ public class RelayRPC extends DispatchHandler {
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
         LOG.debug("received RPC message {}", message);
         if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// The relay peer receives the setup message from the unreachable peer
         	if(message.intList().isEmpty()) {
                 throw new IllegalArgumentException("Setup message should contain an integer value specifying the type");
         	}
@@ -92,6 +87,8 @@ public class RelayRPC extends DispatchHandler {
         	} else if(deviceType == RelayType.ANDROID.ordinal()) {
         		// request from mobile device to the relay
         		handleSetupAndroid(message, peerConnection, responder);
+        	} else {
+                throw new IllegalArgumentException("Unknown relay type: " + deviceType);
         	}
         } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// The unreachable peer receives wrapped messages from the relay

@@ -27,11 +27,13 @@ import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Decoder;
 import net.tomp2p.message.Encoder;
 import net.tomp2p.message.Message;
+import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -132,15 +134,12 @@ public class RelayUtils {
 			return decoded.toString();
 		}
 	}
-
+	
 	/**
 	 * Send a Message from one Peer to another Peer internally. This avoids the
-	 * overhead of sendDirect. This Method is used for relaying and reverse
-	 * Connection setup.
-	 * @return the response
+	 * overhead of sendDirect.
 	 */
-	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {
-		final FutureResponse futureResponse = new FutureResponse(message);
+	private static void send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, final FutureResponse futureResponse) {
 		final RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean, connectionBean, config);
 		final FutureChannelCreator fcc = peerConnection.acquire(futureResponse);
 		fcc.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
@@ -153,7 +152,44 @@ public class RelayUtils {
 				}
 			}
 		});
+	}
 
+	/**
+	 * Send a Message from one Peer to another Peer internally. This avoids the
+	 * overhead of sendDirect. This Method is used for relaying and reverse
+	 * Connection setup.
+	 * @return the response
+	 */
+	public static FutureResponse send(final PeerConnection peerConnection, PeerBean peerBean, ConnectionBean connectionBean, ConnectionConfiguration config, Message message) {
+		final FutureResponse futureResponse = new FutureResponse(message);
+		send(peerConnection, peerBean, connectionBean, config, futureResponse);
+		return futureResponse;
+	}
+	
+	/**
+	 * Opens a new peer connection to the receiver and sends the message through it.
+	 * @param peer
+	 * @param message
+	 * @param config
+	 * @return
+	 */
+	public static FutureResponse connectAndSend(final Peer peer, final Message message, final ConnectionConfiguration config) {
+		final FutureResponse futureResponse = new FutureResponse(message);
+		final FuturePeerConnection fpc = peer.createPeerConnection(message.recipient());
+		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+            public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
+                if (futurePeerConnection.isSuccess()) {
+                	// successfully created a connection to the other peer
+                	final PeerConnection peerConnection = futurePeerConnection.object();
+                	
+                	// send the message
+                	send(peerConnection, peer.peerBean(), peer.connectionBean(), config, futureResponse);
+                } else {
+                    futureResponse.failed(fpc);
+                }
+            }
+        });
+		
 		return futureResponse;
 	}
 }

@@ -274,7 +274,6 @@ public class DistributedRelay {
         message.intValue(relayType.ordinal());
         
         LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
-
 		final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
             public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
@@ -318,7 +317,7 @@ public class DistributedRelay {
 				connection = new OpenTCPRelayConnection(peerConnection, peer, config);
 				break;
 			case ANDROID:
-				connection = new AndroidRelayConnection(relayAddress);
+				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config);
 				break;
 			default:
 				LOG.error("Unknown relay type {}", relayType);

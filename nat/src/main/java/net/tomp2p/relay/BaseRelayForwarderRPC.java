@@ -46,12 +46,14 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 
 	private final static Logger LOG = LoggerFactory.getLogger(BaseRelayForwarderRPC.class);
 
+	private final Number160 relayPeerId;
 	private PeerAddress unreachablePeer;
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
 	public BaseRelayForwarderRPC(Peer peer, PeerConnection peerConnection) {
 		super(peer.peerBean(), peer.connectionBean());
 		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
+		this.relayPeerId = peer.peerID();
 	}
 
 	public final PeerAddress unreachablePeerAddress() {
@@ -73,6 +75,10 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		return false;
 	}
 
+	public Number160 relayPeerId() {
+		return relayPeerId;
+	}
+	
 	/**
 	 * Receive a message at the relay server from a given peer
 	 */

@@ -22,6 +22,7 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.p2p.builder.DiscoverBuilder;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.BaseRelayConnection;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.PeerMapUpdateTask;
@@ -47,10 +48,11 @@ public class PeerNAT {
 	private final int maxFail;
 	private final boolean manualPorts;
 	private final Collection<PeerAddress> manualRelays;
-	private final RelayType relayType;
 	private final ConnectionConfiguration config;
-	private final GCMServerCredentials gcmServerCredentials;
-
+	
+	// relaying
+	private final DistributedRelay distributedRelay;
+	
 	private static final int MESSAGE_VERSION = 1;
 
 
@@ -65,9 +67,8 @@ public class PeerNAT {
 		this.maxFail = maxFail;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
-		this.relayType = relayType;
-		this.gcmServerCredentials = gcmServerCredentials;
 		this.config = config;
+		this.distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType, gcmServerCredentials, config);
 	}
 
 	public Peer peer() {
@@ -114,6 +115,10 @@ public class PeerNAT {
 
 	public boolean isManualPorts() {
 		return manualPorts;
+	}
+	
+	public Collection<BaseRelayConnection> currentRelays() {
+		return distributedRelay.relays();
 	}
 
 	/**
@@ -231,9 +236,6 @@ public class PeerNAT {
 	}
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType,
-				gcmServerCredentials, config);
-
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
 			@Override
@@ -333,7 +335,6 @@ public class PeerNAT {
 	}
 
 	private FutureRelayNAT startRelay(final FutureRelayNAT futureBootstrapNAT, final BootstrapBuilder bootstrapBuilder) {
-
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
 		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
 		peer.peerBean().serverPeerAddress(upa);

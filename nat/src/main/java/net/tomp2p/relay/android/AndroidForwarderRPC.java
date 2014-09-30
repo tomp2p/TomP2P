@@ -83,7 +83,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	 * Tickle the device through Google Cloud Messaging
 	 */
 	private FutureDone<Void> sendTickleMessage() {
-		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
+		// the collapse key is the relay's peerId
+		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().collapseKey(relayPeerId().toString()).build();
 		final FutureDone<Void> future = new FutureDone<Void>();
 		new Thread(new Runnable() {
 			@Override

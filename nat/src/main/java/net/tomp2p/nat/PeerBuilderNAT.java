@@ -190,7 +190,7 @@ public class PeerBuilderNAT {
 		}
 
 		if (manualRelays == null) {
-			manualRelays = new ArrayList<PeerAddress>(1);
+			manualRelays = new ArrayList<PeerAddress>(0);
 		}
 
 		if (relayType == null) {

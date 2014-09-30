@@ -38,8 +38,9 @@ import org.slf4j.LoggerFactory;
  */
 public class DistributedRelay {
 
-	final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
-
+	private final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
+	private final static int MAX_NUMBER_RELAY = 5;
+	
 	private final Peer peer;
 	private final RelayRPC relayRPC;
 	private final ConnectionConfiguration config;
@@ -311,6 +312,13 @@ public class DistributedRelay {
      * Is called when the setup with the relay worked. Adds the relay to the list.
      */
 	private void setupAddRelays(PeerAddress relayAddress, PeerConnection peerConnection) {
+		synchronized (relays) {
+			if(relays.size() >= MAX_NUMBER_RELAY) {
+				// number of limit exceeded
+				return;
+			}
+		}
+		
 		BaseRelayConnection connection = null;
 		switch (relayType) {
 			case OPENTCP:
@@ -327,11 +335,6 @@ public class DistributedRelay {
 		addCloseListener(connection);
 			
 		synchronized (relays) {
-			if(relays.size() >= 5) {
-				// number of limit exceeded
-				return;
-			}
-			
 			LOG.debug("Adding peer {} as a relay", relayAddress);
 			relays.add(connection);
 		}

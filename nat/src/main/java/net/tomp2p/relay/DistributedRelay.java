@@ -279,8 +279,10 @@ public class DistributedRelay {
 		if (relayType == RelayType.ANDROID) {
 			if (gcmServerCredentials == null) {
 				LOG.error("No available GCM server found. Seems that they are all occupied. Configure more during peer setup!");
-				futureDone.failed("No GCM server available");
-				return futureDone;
+				return futureDone.failed("No GCM server available");
+			} else if(!gcmServerCredentials.valid()) {
+				LOG.error("GCM Server Configuration is not valid. Please provide a valid configuration");
+				return futureDone.failed("Invalid GCM configuration");
 			} else {
 				message.buffer(RelayUtils.encodeString(gcmServerCredentials.registrationId()));
 				message.buffer(RelayUtils.encodeString(gcmServerCredentials.senderAuthenticationKey()));

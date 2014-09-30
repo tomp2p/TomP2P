@@ -29,7 +29,7 @@ public class PeerBuilderNAT {
 
 	private RelayType relayType = RelayType.OPENTCP;
 	private AndroidRelayConfiguration androidRelayConfig = new AndroidRelayConfiguration();
-	private GCMServerCredentials gcmServerCredentials;
+	private GCMServerCredentials gcmServerCredentials = new GCMServerCredentials();
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;

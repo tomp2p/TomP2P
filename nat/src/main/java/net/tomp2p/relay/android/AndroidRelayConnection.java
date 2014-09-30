@@ -25,7 +25,6 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		this.peer = peer;
 		this.config = config;
 		this.gcmServerCredentials = gcmServerCredentials;
-		
 	}
 	
 	@Override

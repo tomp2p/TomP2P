@@ -2,12 +2,12 @@ package net.tomp2p.examples.relay;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Starts three Peers (in this order):
@@ -41,17 +41,21 @@ public class ExampleRelaySituation {
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 		String gcmKey = null;
-		if(args.length == 0) {
-			LOG.warn("Need the GCM Authentication key as argument when using with Android.");
-		} else {
+		long gcmSender = -1;
+		if (args.length != 2) {
+			LOG.warn("Need the GCM Authentication key and GCM sender ID as arguments when using with Android.");
+		} else if (args.length == 2) {
 			LOG.debug("{} is the GCM key used", args[0]);
 			gcmKey = args[0];
+
+			LOG.debug("{} is the sender ID used", args[0]);
+			gcmSender = Long.valueOf(args[1]);
 		}
-		
+
 		new RelayNode().start(RELAY_PEER_ID, RELAY_PORT, gcmKey);
 		Thread.sleep(1000);
 
-		MobileNode mobile = new MobileNode(MOBILE_PEER_ID, MOBILE_PORT);
+		MobileNode mobile = new MobileNode(MOBILE_PEER_ID, MOBILE_PORT, gcmKey, gcmSender);
 		mobile.start(RELAY_PEER_ID, RELAY_PORT);
 		Thread.sleep(5000); // give some time to init relaying
 
@@ -59,11 +63,12 @@ public class ExampleRelaySituation {
 
 		QueryNode queryNode = new QueryNode(MEDIUM_SLEEP_TIME_MS, MEDIUM_DATA_SIZE_BYTES);
 		queryNode.start(QUERY_PEER_ID, QUERY_PORT, RELAY_PORT);
-		
-		LOG.debug("GET 1: {}", queryNode.get(key));
-		LOG.debug("REMOVE: {}", queryNode.remove(key));
-		LOG.debug("GET 2: {}", queryNode.get(key));
 
+		 LOG.debug("GET 1: {}", queryNode.get(key));
+		 LOG.debug("REMOVE: {}", queryNode.remove(key));
+		 LOG.debug("GET 2: {}", queryNode.get(key));
+
+		// queryNode.putGetSpecific(key);
 	}
 
 }

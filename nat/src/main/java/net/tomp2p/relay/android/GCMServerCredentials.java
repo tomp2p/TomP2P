@@ -63,4 +63,13 @@ public class GCMServerCredentials {
 		this.senderAuthenticationKey = senderAuthenticationKey;
 		return this;
 	}
+
+	/**
+	 * Checks whether all necessary fields are set. The correctness is not checked against Google Servers.
+	 * 
+	 * @return <code>true</code> when the config is valid, otherwise <code>false</code>.
+	 */
+	public boolean valid() {
+		return senderAuthenticationKey != null && registrationId != null && senderId != 0;
+	}
 }

@@ -22,6 +22,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.storage.Data;
 
 import org.slf4j.Logger;
@@ -41,12 +42,17 @@ public class MobileNode {
 
 	private final Number160 peerId;
 	private final int port;
+	private final GCMServerCredentials gcmCredentials;
 
 	private PeerDHT peerDHT;
 
-	public MobileNode(Number160 peerId, int port) {
+	public MobileNode(Number160 peerId, int port, String gcmAuthenticationKey, long gcmSenderId) {
 		this.peerId = peerId;
 		this.port = port;
+
+		// create pseudo-credentials
+		gcmCredentials = new GCMServerCredentials().senderAuthenticationKey(gcmAuthenticationKey).senderId(gcmSenderId)
+				.registrationId(GCM_REGISTRATION_ID);
 	}
 
 	public void start(Number160 relayPeerId, int relayPort) throws UnknownHostException {
@@ -84,7 +90,7 @@ public class MobileNode {
 		Set<PeerAddress> relays = new HashSet<PeerAddress>(1);
 		relays.add(new PeerAddress(relayPeerId, InetAddress.getLocalHost(), relayPort, relayPort));
 		PeerNAT peerNat = new PeerBuilderNAT(peer).peerMapUpdateInterval(PEER_MAP_UPDATE_INTERVAL_S).relays(relays)
-				.relayType(RelayType.OPENTCP).gcmRegistrationId(GCM_REGISTRATION_ID).start();
+				.relayType(RelayType.OPENTCP).gcmServerCredentials(gcmCredentials).start();
 		FutureRelayNAT futureRelayNAT = peerNat.startRelay(bootstrapBuilder).awaitUninterruptibly();
 		if (!futureRelayNAT.isSuccess()) {
 			LOG.error("Cannot connect to Relay. Reason: {}", futureRelayNAT.failedReason());
@@ -99,11 +105,11 @@ public class MobileNode {
 		Number640 key = new Number640(peerId, Number160.ZERO, Number160.ZERO, Number160.ZERO);
 		PutBuilder putBuilder = peerDHT.put(key.locationKey()).domainKey(key.domainKey()).versionKey(key.versionKey())
 				.data(key.contentKey(), data);
-		
+
 		// save on mobile peer only
 		putBuilder.requestP2PConfiguration(new RequestP2PConfiguration(1, 1, 0));
 		FuturePut success = putBuilder.start().awaitUninterruptibly();
-		
+
 		LOG.debug("Result of put: {}. {}", success.isSuccess(), success.failedReason());
 		return key;
 	}

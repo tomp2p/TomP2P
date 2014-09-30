@@ -17,12 +17,14 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	private final DispatchHandler dispatchHandler;
 	private final Peer peer;
 	private final ConnectionConfiguration config;
+	private final GCMServerCredentials gcmServerCredentials;
 
-	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer, ConnectionConfiguration config) {
+	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer, ConnectionConfiguration config, GCMServerCredentials gcmServerCredentials) {
 		super(relayAddress);
 		this.dispatchHandler = dispatchHandler;
 		this.peer = peer;
 		this.config = config;
+		this.gcmServerCredentials = gcmServerCredentials;
 		
 	}
 	
@@ -53,6 +55,10 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	@Override
 	public void onMapUpdateSuccess() {
 		// TODO Auto-generated method stub
+	}
+
+	public GCMServerCredentials gcmServerCredentials() {
+		return gcmServerCredentials;
 	}
 
 }

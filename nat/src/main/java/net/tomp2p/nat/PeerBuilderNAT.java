@@ -1,7 +1,7 @@
 package net.tomp2p.nat;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
@@ -14,6 +14,7 @@ import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.android.AndroidRelayConfiguration;
+import net.tomp2p.relay.android.GCMServerCredentials;
 
 public class PeerBuilderNAT {
 
@@ -28,7 +29,7 @@ public class PeerBuilderNAT {
 
 	private RelayType relayType = RelayType.OPENTCP;
 	private AndroidRelayConfiguration androidRelayConfig = new AndroidRelayConfiguration();
-	private String gcmRegistrationId;
+	private GCMServerCredentials gcmServerCredentials;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -123,25 +124,24 @@ public class PeerBuilderNAT {
 	}
 
 	/**
-	 * Set the Google Cloud Messaging registration id. The registration id is a unique token
-	 * that is received from Google's registration server. This id needs to be set at
-	 * the peer behind the NAT only. It will be sent to the relay peers during the
-	 * setup phase.
+	 * Set the Google Cloud Messaging server credentials. A GCM server can handle 4.
+	 * If this peer is a unreachable Android device, the {@link GCMServerCredentials} must be provided.
 	 * 
-	 * @param gcmRegistrationId
-	 *            the registration id of the mobile device
+	 * @param gcmServerCredentials
+	 *            the GCM server credentials
 	 * @return this instance
 	 */
-	public PeerBuilderNAT gcmRegistrationId(String gcmRegistrationId) {
-		this.gcmRegistrationId = gcmRegistrationId;
+	public PeerBuilderNAT gcmServerCredentials(GCMServerCredentials gcmServerCredentials) {
+		this.gcmServerCredentials = gcmServerCredentials;
 		return this;
 	}
 
 	/**
-	 * @return the registration id of the device from GCM
+	 * @return the currently configured {@link GCMServerCredentials}. If this peer is an unreachable
+	 * Android device, these credentials need to be provided.
 	 */
-	public String gcmRegistrationId() {
-		return gcmRegistrationId;
+	public GCMServerCredentials gcmServerCredentials() {
+		return gcmServerCredentials;
 	}
 
 	/**
@@ -190,7 +190,7 @@ public class PeerBuilderNAT {
 		}
 
 		if (manualRelays == null) {
-			manualRelays = new ArrayList<PeerAddress>(0);
+			manualRelays = Collections.emptyList();
 		}
 
 		if (relayType == null) {
@@ -206,6 +206,6 @@ public class PeerBuilderNAT {
 		});
 
 		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime, maxFail, peerMapUpdateInterval,
-				manualPorts, relayType, gcmRegistrationId, connectionConfiguration);
+				manualPorts, relayType, gcmServerCredentials, connectionConfiguration);
 	}
 }

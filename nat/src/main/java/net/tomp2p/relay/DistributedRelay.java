@@ -21,6 +21,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidRelayConnection;
+import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.tcp.OpenTCPRelayConnection;
 import net.tomp2p.rpc.RPC;
 
@@ -39,8 +40,7 @@ import org.slf4j.LoggerFactory;
 public class DistributedRelay {
 
 	private final static Logger LOG = LoggerFactory.getLogger(DistributedRelay.class);
-	private final static int MAX_NUMBER_RELAY = 5;
-	
+
 	private final Peer peer;
 	private final RelayRPC relayRPC;
 	private final ConnectionConfiguration config;
@@ -50,8 +50,7 @@ public class DistributedRelay {
 
 	private final Collection<RelayListener> relayListeners;
 	private final RelayType relayType;
-	private final String gcmRegistrationId;
-
+	private final GCMServerCredentials gcmServerCredentials;
 
 	/**
 	 * @param peer
@@ -61,13 +60,14 @@ public class DistributedRelay {
 	 * @param maxRelays
 	 *            maximum number of relay peers to set up
 	 * @param relayType
-	 * 			  the kind of the relay connection
+	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType, String gcmRegistrationId, ConnectionConfiguration config) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType,
+			GCMServerCredentials gcmServerCredentials, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayType = relayType;
-		this.gcmRegistrationId = gcmRegistrationId;
+		this.gcmServerCredentials = gcmServerCredentials;
 		this.config = config;
 
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
@@ -101,11 +101,11 @@ public class DistributedRelay {
 				futureDones.set(i, relays.get(i).shutdown());
 			}
 		}
-		
+
 		synchronized (relayListeners) {
 			relayListeners.clear();
 		}
-		
+
 		return new FutureForkJoin<FutureDone<Void>>(futureDones);
 	}
 
@@ -117,20 +117,22 @@ public class DistributedRelay {
 	 * 
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
-	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays, final int maxFail) {
+	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays,
+			final int maxFail) {
 		final List<PeerAddress> relayCandidates;
 		if (manualRelays.isEmpty()) {
 			// Get the neighbors of this peer that could possibly act as relays. Relay
 			// candidates are neighboring peers that are not relayed themselves and have
 			// not recently failed as relay or denied acting as relay.
 			relayCandidates = peer.distributedRouting().peerMap().all();
-			//remove those who we know have failed
+			// remove those who we know have failed
 			relayCandidates.removeAll(failedRelays);
 		} else {
-			// if the user sets manual relays, the failed relays are not removed, as this has to be done by the user 
+			// if the user sets manual relays, the failed relays are not removed, as this has to be done by
+			// the user
 			relayCandidates = new ArrayList<PeerAddress>(manualRelays);
 		}
-		
+
 		filterRelayCandidates(relayCandidates);
 		setupPeerConnections(futureRelay, relayCandidates, maxFail);
 		return futureRelay;
@@ -143,13 +145,13 @@ public class DistributedRelay {
 	private void filterRelayCandidates(Collection<PeerAddress> relayCandidates) {
 		for (Iterator<PeerAddress> iterator = relayCandidates.iterator(); iterator.hasNext();) {
 			PeerAddress pa = iterator.next();
-			
+
 			// filter peers that are relayed themselves
 			if (pa.isRelayed()) {
 				iterator.remove();
 				continue;
 			}
-			
+
 			// filter relays that are already connected
 			synchronized (relays) {
 				for (BaseRelayConnection relay : relays) {
@@ -160,7 +162,7 @@ public class DistributedRelay {
 				}
 			}
 		}
-		
+
 		LOG.debug("Found {} addtional relay candidates", relayCandidates.size());
 	}
 
@@ -178,15 +180,17 @@ public class DistributedRelay {
 
 			@SuppressWarnings("unchecked")
 			FutureDone<PeerConnection>[] futureDones = new FutureDone[nrOfRelays];
-			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(futureDones);
-			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, nrOfRelays, futureRelay, 0, maxFail, new StringBuilder());
+			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(
+					futureDones);
+			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, nrOfRelays, futureRelay, 0, maxFail,
+					new StringBuilder());
 		} else {
-			if(relayCandidates.isEmpty()) {
-				//no candidates
+			if (relayCandidates.isEmpty()) {
+				// no candidates
 				futureRelay.failed("done");
 			} else {
-				//nothing to do
-				futureRelay.done(Collections.<BaseRelayConnection>emptyList());
+				// nothing to do
+				futureRelay.done(Collections.<BaseRelayConnection> emptyList());
 			}
 		}
 	}
@@ -205,9 +209,8 @@ public class DistributedRelay {
 	 * @throws InterruptedException
 	 */
 	private void setupPeerConnectionsRecursive(final AtomicReferenceArray<FutureDone<PeerConnection>> futures,
-	        final List<PeerAddress> relayCandidates, final int numberOfRelays,
-	        final FutureRelay futureRelay, final int fail, final int maxFail, 
-	        final StringBuilder status) {
+			final List<PeerAddress> relayCandidates, final int numberOfRelays, final FutureRelay futureRelay,
+			final int fail, final int maxFail, final StringBuilder status) {
 		int active = 0;
 		for (int i = 0; i < numberOfRelays; i++) {
 			if (futures.get(i) == null) {
@@ -217,7 +220,7 @@ public class DistributedRelay {
 						candidate = relayCandidates.remove(0);
 					}
 				}
-				if(candidate !=null) {
+				if (candidate != null) {
 					// contact the candiate and ask for being my relay
 					FutureDone<PeerConnection> futureDone = sendMessage(candidate);
 					futures.set(i, futureDone);
@@ -237,103 +240,114 @@ public class DistributedRelay {
 			return;
 		}
 
-		FutureForkJoin<FutureDone<PeerConnection>> ffj = new FutureForkJoin<FutureDone<PeerConnection>>(active, false, futures);
+		FutureForkJoin<FutureDone<PeerConnection>> ffj = new FutureForkJoin<FutureDone<PeerConnection>>(active, false,
+				futures);
 		ffj.addListener(new BaseFutureAdapter<FutureForkJoin<FutureDone<PeerConnection>>>() {
 			public void operationComplete(FutureForkJoin<FutureDone<PeerConnection>> futureForkJoin) throws Exception {
 				if (futureForkJoin.isSuccess()) {
 					updatePeerAddress();
 					futureRelay.done(relays());
 				} else if (!peer.isShutdown()) {
-					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay,
-					        fail + 1, maxFail, status.append(futureForkJoin.failedReason()).append(" "));
+					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay, fail + 1, maxFail,
+							status.append(futureForkJoin.failedReason()).append(" "));
 				} else {
 					futureRelay.failed(futureForkJoin);
 				}
 			}
 		});
 	}
-	
+
 	/**
-     * Send the setup-message to the relay peer. If the peer that is asked to act as
-     * relay is relayed itself, the request will be denied.
-     * 
-     * @param candidate the relay's peer address
-     * @return FutureDone with a peer connection to the newly set up relay peer
-     */
-    private FutureDone<PeerConnection> sendMessage(final PeerAddress candidate) {
-        final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-        
-        final Message message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-        if(relayType == RelayType.ANDROID) {
-        	message.buffer(RelayUtils.encodeString(gcmRegistrationId));
-        }
-        
-        // depend on the relay type whether to keep the connection open or close it after the setup.
-        message.keepAlive(relayType.keepConnectionOpen());
-       
-        // encode the relay type in the message such that the relay node knows how to handle
-        message.intValue(relayType.ordinal());
-        
-        LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
+	 * Send the setup-message to the relay peer. If the peer that is asked to act as
+	 * relay is relayed itself, the request will be denied.
+	 * 
+	 * @param candidate the relay's peer address
+	 * @return FutureDone with a peer connection to the newly set up relay peer
+	 */
+	private FutureDone<PeerConnection> sendMessage(final PeerAddress candidate) {
+		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+
+		final Message message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+
+		// depend on the relay type whether to keep the connection open or close it after the setup.
+		message.keepAlive(relayType.keepConnectionOpen());
+
+		// encode the relay type in the message such that the relay node knows how to handle
+		message.intValue(relayType.ordinal());
+
+		// server credentials only used by Android peers
+		if (relayType == RelayType.ANDROID) {
+			if (gcmServerCredentials == null) {
+				LOG.error("No available GCM server found. Seems that they are all occupied. Configure more during peer setup!");
+				futureDone.failed("No GCM server available");
+				return futureDone;
+			} else {
+				message.buffer(RelayUtils.encodeString(gcmServerCredentials.registrationId()));
+				message.buffer(RelayUtils.encodeString(gcmServerCredentials.senderAuthenticationKey()));
+			}
+		}
+
+		LOG.debug("Setting up relay connection to peer {}, message {}", candidate, message);
 		final FuturePeerConnection fpc = peer.createPeerConnection(candidate);
 		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-            public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
-                if (futurePeerConnection.isSuccess()) {
-                	// successfully created a connection to the relay peer
-                	final PeerConnection peerConnection = futurePeerConnection.object();
-                	
-                	// send the message
-                	FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config, message);
-                	response.addListener(new BaseFutureAdapter<FutureResponse>() {
-                        public void operationComplete(FutureResponse future) throws Exception {
-                            if (future.isSuccess()) {
-                            	// finialize the relay setup
-                            	setupAddRelays(candidate, peerConnection);
-                                futureDone.done(peerConnection);
-                            } else {
-            					LOG.debug("Peer {} denied relay request", candidate);
-            					failedRelays.add(candidate);
-                                futureDone.failed(future);
-                            }
-                        }
-                    });
-                } else {
-                	LOG.debug("Unable to setup a connection to relay peer {}", candidate);
+			public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
+				if (futurePeerConnection.isSuccess()) {
+					// successfully created a connection to the relay peer
+					final PeerConnection peerConnection = futurePeerConnection.object();
+
+					// send the message
+					FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
+							config, message);
+					response.addListener(new BaseFutureAdapter<FutureResponse>() {
+						public void operationComplete(FutureResponse future) throws Exception {
+							if (future.isSuccess()) {
+								// finialize the relay setup
+								setupAddRelays(candidate, peerConnection, gcmServerCredentials);
+								futureDone.done(peerConnection);
+							} else {
+								LOG.debug("Peer {} denied relay request", candidate);
+								failedRelays.add(candidate);
+								futureDone.failed(future);
+							}
+						}
+					});
+				} else {
+					LOG.debug("Unable to setup a connection to relay peer {}", candidate);
 					failedRelays.add(candidate);
-                    futureDone.failed(futurePeerConnection);
-                }
-            }
-        });
-		
-        return futureDone;
-    }
-    
-    /**
-     * Is called when the setup with the relay worked. Adds the relay to the list.
-     */
-	private void setupAddRelays(PeerAddress relayAddress, PeerConnection peerConnection) {
+					futureDone.failed(futurePeerConnection);
+				}
+			}
+		});
+
+		return futureDone;
+	}
+
+	/**
+	 * Is called when the setup with the relay worked. Adds the relay to the list.
+	 */
+	private void setupAddRelays(PeerAddress relayAddress, PeerConnection peerConnection, GCMServerCredentials credentials) {
 		synchronized (relays) {
-			if(relays.size() >= MAX_NUMBER_RELAY) {
-				// number of limit exceeded
+			if (relays.size() >= relayType.maxRelayCount()) {
+				LOG.warn("The maximum number ({}) of relays is reached", relayType.maxRelayCount());
 				return;
 			}
 		}
-		
+
 		BaseRelayConnection connection = null;
 		switch (relayType) {
 			case OPENTCP:
 				connection = new OpenTCPRelayConnection(peerConnection, peer, config);
 				break;
 			case ANDROID:
-				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config);
+				connection = new AndroidRelayConnection(relayAddress, relayRPC, peer, config, credentials);
 				break;
 			default:
 				LOG.error("Unknown relay type {}", relayType);
 				return;
 		}
-					
+
 		addCloseListener(connection);
-			
+
 		synchronized (relays) {
 			LOG.debug("Adding peer {} as a relay", relayAddress);
 			relays.add(connection);
@@ -361,7 +375,7 @@ public class DistributedRelay {
 				relays.remove(connection);
 				failedRelays.add(relayAddress);
 				updatePeerAddress();
-				
+
 				synchronized (relayListeners) {
 					for (RelayListener relayListener : relayListeners) {
 						relayListener.relayFailed(relayAddress);
@@ -390,7 +404,7 @@ public class DistributedRelay {
 
 		// update firewalled and isRelayed flags
 		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
-		        .changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
+				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
 		peer.peerBean().serverPeerAddress(newAddress);
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}

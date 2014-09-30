@@ -29,6 +29,7 @@ import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -47,14 +48,15 @@ public class PeerNAT {
 	private final boolean manualPorts;
 	private final Collection<PeerAddress> manualRelays;
 	private final RelayType relayType;
-	private final String gcmRegistrationId;
 	private final ConnectionConfiguration config;
+	private final GCMServerCredentials gcmServerCredentials;
 
 	private static final int MESSAGE_VERSION = 1;
 
+
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays,
 			int failedRelayWaitTime, int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType,
-			String gcmRegistrationId, ConnectionConfiguration config) {
+			GCMServerCredentials gcmServerCredentials, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.natUtils = natUtils;
 		this.relayRPC = relayRPC;
@@ -64,7 +66,7 @@ public class PeerNAT {
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
 		this.relayType = relayType;
-		this.gcmRegistrationId = gcmRegistrationId;
+		this.gcmServerCredentials = gcmServerCredentials;
 		this.config = config;
 	}
 
@@ -112,14 +114,6 @@ public class PeerNAT {
 
 	public boolean isManualPorts() {
 		return manualPorts;
-	}
-
-	public RelayType relayType() {
-		return relayType;
-	}
-
-	public String gcmRegistrationId() {
-		return gcmRegistrationId;
 	}
 
 	/**
@@ -238,7 +232,7 @@ public class PeerNAT {
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay) {
 		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType,
-				gcmRegistrationId, config);
+				gcmServerCredentials, config);
 
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {

@@ -86,13 +86,13 @@ public class RelayUtils {
 	}
 
 	/**
-	 * Encodes the Google Cloud messaging registration ID into a buffer to send it to the relay
+	 * Encodes any String into a buffer to send it with a message
 	 * 
-	 * @param registrationId the registration ID.
-	 * @return a buffer containing the (encoded) registration ID.
+	 * @param content the String to encode into a buffer
+	 * @return a buffer containing the (encoded) String.
 	 */
-	public static Buffer encodeRegistrationId(String registrationId) {
-		if (registrationId == null) {
+	public static Buffer encodeString(String content) {
+		if (content == null) {
 			return null;
 		}
 
@@ -100,7 +100,7 @@ public class RelayUtils {
 		synchronized (encoder) {
 			encoder.reset();
 			try {
-				byteBuffer = encoder.encode(CharBuffer.wrap(registrationId));
+				byteBuffer = encoder.encode(CharBuffer.wrap(content));
 			} catch (CharacterCodingException e) {
 				return null;
 			}
@@ -111,12 +111,12 @@ public class RelayUtils {
 	}
 
 	/**
-	 * Decodes the Google Cloud messaging registration ID fro a buffer
+	 * Decodes buffer containing a String
 	 * 
-	 * @param buffer the buffer received at the relay peer
-	 * @return the registration ID of the device
+	 * @param buffer the buffer received in a message
+	 * @return the encodeed String
 	 */
-	public static String decodeRegistrationId(Buffer buffer) {
+	public static String decodeString(Buffer buffer) {
 		if (buffer == null || buffer.buffer() == null) {
 			return null;
 		}

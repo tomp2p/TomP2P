@@ -265,7 +265,7 @@ public class DistributedRelay {
         
         final Message message = relayRPC.createMessage(candidate, RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
         if(relayType == RelayType.ANDROID) {
-        	message.buffer(RelayUtils.encodeRegistrationId(gcmRegistrationId));
+        	message.buffer(RelayUtils.encodeString(gcmRegistrationId));
         }
         
         // depend on the relay type whether to keep the connection open or close it after the setup.

@@ -139,7 +139,7 @@ public class RelayRPC extends DispatchHandler {
             return;
         }
         
-		String registrationId = RelayUtils.decodeRegistrationId(buffer);
+		String registrationId = RelayUtils.decodeString(buffer);
 		if(registrationId == null) {
 			LOG.error("Cannot decode the registrationID from the message");
             responder.response(createResponseMessage(message, Type.DENIED));

@@ -34,7 +34,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 	private final AndroidRelayConfiguration config;
 	private final Sender sender;
-	private final String registrationId;
+	private String registrationId;
 	private final MessageBuffer buffer;
 	private final List<Buffer> readyToSend;
 
@@ -79,17 +79,37 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 		// TODO Check if the mobile device is still alive and answer appropriately
 	}
 
-	private Result sendTickleMessage() {
-		LOG.debug("Send GCM message to the device {}", registrationId);
-		// Tickle the device with the given registration id.
-		com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
-		try {
-			// TODO make asynchronous
-			return sender.send(tickleMessage, registrationId, config.gcmSendRetries());
-		} catch (IOException e) {
-			LOG.error("Cannot send tickle message to device {}", registrationId, e);
-			return null;
-		}
+	/**
+	 * Tickle the device through Google Cloud Messaging
+	 */
+	private FutureDone<Void> sendTickleMessage() {
+		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().build();
+		final FutureDone<Void> future = new FutureDone<Void>();
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					LOG.debug("Send GCM message to the device {}", registrationId);
+					Result result = sender.send(tickleMessage, registrationId, config.gcmSendRetries());
+					if(result.getMessageId() == null) {
+						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
+						future.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
+					} else if(result.getCanonicalRegistrationId() != null) {
+						LOG.debug("Update the registration id {} to canonical name {}", registrationId, result.getCanonicalRegistrationId());
+						registrationId = result.getCanonicalRegistrationId();
+						future.done();
+					} else {
+						LOG.debug("Successfully sent the message over GCM");
+						future.done();
+					}
+				} catch (IOException e) {
+					LOG.error("Cannot send tickle message to device {}", registrationId, e);
+					future.failed(e);
+				}
+			}
+		});
+		
+		return future;
 	}
 
 	@Override

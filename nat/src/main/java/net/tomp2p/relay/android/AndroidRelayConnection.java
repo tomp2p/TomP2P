@@ -1,5 +1,7 @@
 package net.tomp2p.relay.android;
 
+import java.util.List;
+
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -66,7 +68,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 			@Override
 			public void operationComplete(FutureResponse futureResponse) throws Exception {
 				if (futureResponse.isSuccess()) {
-					LOG.debug("Successfully go the buffer from relay {}", relayAddress());
+					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
 					handleBufferResponse(futureResponse.responseMessage(), futureDone);
 				} else {
 					LOG.error("Cannot get the buffer from relay {}. Reason: ", relayAddress(), futureResponse.failedReason());
@@ -79,16 +81,25 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	}
 
 	private void handleBufferResponse(Message response, FutureDone<Void> futureDone) {
-		for (Buffer buffer : response.bufferList()) {
-			try {
-				Message bufferedMessage = RelayUtils.decodeMessage(buffer, response.recipientSocket(),
-						response.senderSocket());
-				LOG.debug("Received buffered message {}", bufferedMessage);
-				// TODO handle the buffered message
-			} catch (Exception e) {
-				// continue to process the buffers anyway
-				LOG.error("Cannot decode the buffer {}", buffer, e);
+		Buffer sizeBuffer = response.buffer(0);
+		Buffer messageBuffer = response.buffer(1);
+		if (sizeBuffer != null && messageBuffer != null) {
+			// decompose the large buffer into a buffer for each message
+			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer);
+			for (Buffer bufferedMessage : bufferedMessages) {
+				try {
+					Message message = RelayUtils.decodeMessage(bufferedMessage, response.recipientSocket(),
+							response.senderSocket());
+					LOG.debug("Received buffered message {}", message);
+					// TODO handle the buffered message
+				} catch (Exception e) {
+					// continue to process the buffers anyway
+					LOG.error("Cannot decode the buffer {}", bufferedMessage, e);
+				}
 			}
+		} else {
+			LOG.warn("Buffer message does not contain any buffered message");
+			futureDone.failed("Cannot find any buffer in the message");
 		}
 	}
 

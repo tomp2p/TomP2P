@@ -20,6 +20,7 @@ import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,10 +264,11 @@ public class RelayRPC extends DispatchHandler {
 			try {
 				Message response = createResponseMessage(message, Type.OK);
 				// add all buffered messages
-				for (Buffer bufferedMessage : androidForwarder.getReadyToSendBuffer()) {
-					response.buffer(bufferedMessage);
-				}
-				LOG.debug("Responding {} buffered messages to Android device {}", response.bufferList().size(), message.sender());
+				Pair<Buffer,Buffer> buffer = androidForwarder.getBufferedMessages();
+				response.buffer(buffer.element0());
+				response.buffer(buffer.element1());
+				
+				LOG.debug("Responding all buffered messages to Android device {}", message.sender());
 				responder.response(response);
 			} catch(Exception e) {
 				LOG.error("Cannot respond with buffered messages.", e);

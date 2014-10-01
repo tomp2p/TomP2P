@@ -17,17 +17,22 @@
 package net.tomp2p.relay;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.rpc.RPC.Commands;
 
 public class UtilsNAT {
 
@@ -194,4 +199,21 @@ public class UtilsNAT {
         }
         System.err.println("perfect routing done.");
     }
+    
+
+	/**
+	 * Creates a message with random content
+	 */
+	public static Message createRandomMessage() {
+		Random rnd = new Random();
+
+		Message message = new Message();
+		message.command(Commands.values()[rnd.nextInt(Commands.values().length)].getNr());
+		message.type(Type.values()[rnd.nextInt(Type.values().length)]);
+		message.recipientSocket(new InetSocketAddress(0));
+		message.recipient(new PeerAddress(new Number160(rnd), message.recipientSocket()));
+		message.senderSocket(new InetSocketAddress(0));
+		message.sender(new PeerAddress(new Number160(rnd), message.senderSocket()));
+		return message;
+	}
 }

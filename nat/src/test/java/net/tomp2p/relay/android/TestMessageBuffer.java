@@ -141,8 +141,9 @@ public class TestMessageBuffer {
 		}
 
 		@Override
-		public void bufferFull(List<Buffer> buffer) {
-			this.getBuffer().addAll(buffer);
+		public void bufferFull(Buffer sizeBuffer, Buffer messageBuffer) {
+			// instantly decompose since we don't need to send it here
+			this.buffer.addAll(MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer));
 			bufferFullTriggerCount++;
 		}
 

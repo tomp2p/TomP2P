@@ -1,5 +1,9 @@
 package net.tomp2p.relay.android;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
@@ -12,12 +16,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.relay.RelayUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Buffers messages for the unreachable peers. This class is thread-safe.
@@ -34,9 +38,11 @@ public class MessageBuffer {
 	private final long bufferSizeLimit;
 	private final long bufferAgeLimitMS;
 
-	private final List<Buffer> buffer;
 	private final AtomicLong bufferSize;
 	private final BufferFullListener listener;
+
+	private final CompositeByteBuf buffer;
+	private final List<Integer> segmentSizes;
 
 	private BufferAgeRunnable task;
 
@@ -45,7 +51,8 @@ public class MessageBuffer {
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
 		this.listener = listener;
-		this.buffer = Collections.synchronizedList(new ArrayList<Buffer>());
+		this.buffer = Unpooled.compositeBuffer();
+		this.segmentSizes = Collections.synchronizedList(new ArrayList<Integer>());
 		this.bufferSize = new AtomicLong();
 	}
 
@@ -56,14 +63,15 @@ public class MessageBuffer {
 		message.restoreContentReferences();
 		Buffer encodedMessage = RelayUtils.encodeMessage(message);
 
-		synchronized (buffer) {
-			if (buffer.isEmpty()) {
+		synchronized (segmentSizes) {
+			if (buffer.numComponents() == 0) {
 				task = new BufferAgeRunnable();
 				// schedule the task
 				worker.schedule(task, bufferAgeLimitMS, TimeUnit.MILLISECONDS);
 			}
 
-			buffer.add(encodedMessage);
+			buffer.addComponent(encodedMessage.buffer());
+			segmentSizes.add(encodedMessage.length());
 		}
 
 		bufferSize.addAndGet(encodedMessage.length());
@@ -78,8 +86,8 @@ public class MessageBuffer {
 			notify = true;
 		}
 
-		synchronized (buffer) {
-			if (buffer.size() >= messageCountLimit) {
+		synchronized (segmentSizes) {
+			if (segmentSizes.size() >= messageCountLimit) {
 				LOG.debug("The number of messages exceeds the maximum message count of {}", messageCountLimit);
 				notify = true;
 			}
@@ -100,15 +108,23 @@ public class MessageBuffer {
 	 * <code>false</code>.
 	 */
 	private void notifyAndClear() {
-		List<Buffer> copy = new ArrayList<Buffer>();
-		synchronized (buffer) {
-			copy.addAll(buffer);
-			buffer.clear();
-			bufferSize.set(0);
-		}
+		synchronized (segmentSizes) {
+			if (segmentSizes.isEmpty()) {
+				return;
+			}
 
-		if (!copy.isEmpty() && listener != null) {
-			listener.bufferFull(copy);
+			ByteBuf messageBuffer = Unpooled.copiedBuffer(buffer.consolidate().array());
+			ByteBuf sizeBuffer = Unpooled.buffer();
+			for (Integer size : segmentSizes) {
+				sizeBuffer.writeInt(size);
+			}
+
+			// notify the listener with a copy of the buffer and the segmentation indices
+			listener.bufferFull(new Buffer(sizeBuffer), new Buffer(messageBuffer));
+
+			buffer.clear();
+			segmentSizes.clear();
+			bufferSize.set(0);
 		}
 	}
 
@@ -131,6 +147,29 @@ public class MessageBuffer {
 		public void cancel() {
 			cancelled.set(true);
 		}
+	}
 
+	/**
+	 * Decomposes a (large) buffer containing multiple buffers into an (ordered) list of small buffers.
+	 * 
+	 * @param messageBuffer the large buffer
+	 * @param segmentationSizes a list of all sizes of the buffer segments
+	 * @return a list of buffers
+	 */
+	public static List<Buffer> decomposeCompositeBuffer(Buffer sizeBuffer, Buffer messageBuffer) {
+		// decode the sizes first
+		List<Integer> messageSizes = new ArrayList<Integer>();
+		while (sizeBuffer.buffer().readableBytes() >= 4) {
+			messageSizes.add(sizeBuffer.buffer().readInt());
+		}
+
+		List<Buffer> buffers = new ArrayList<Buffer>();
+		int readIndex = 0;
+		for (Integer size : messageSizes) {
+			buffers.add(new Buffer(messageBuffer.buffer().slice(readIndex, size)));
+			readIndex += size;
+		}
+
+		return buffers;
 	}
 }

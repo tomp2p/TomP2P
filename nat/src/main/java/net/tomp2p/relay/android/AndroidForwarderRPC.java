@@ -1,5 +1,8 @@
 package net.tomp2p.relay.android;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +17,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
+import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,17 +40,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	private final Sender sender;
 	private String registrationId;
 	private final MessageBuffer buffer;
-	private final List<Buffer> readyToSend;
+	private final List<Pair<Buffer, Buffer>> readyToSend;
 
-	
-	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config, String authenticationToken, String registrationId) {
+	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config,
+			String authenticationToken, String registrationId) {
 		super(peer, peerConnection);
 		this.config = config;
 		this.registrationId = registrationId;
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
-		this.readyToSend = Collections.synchronizedList(new ArrayList<Buffer>());
-				
+		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
+
 		// TODO init some listener to detect when the relay is not reachable anymore
 	}
 
@@ -77,7 +81,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	@Override
 	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
 		// TODO Check if the mobile device is still alive and answer appropriately
-		
+
 		// TODO just for testing:
 		FutureDone<Message> futureDone = forwardToUnreachable(message);
 		responder.response(futureDone.object());
@@ -88,7 +92,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	 */
 	private FutureDone<Void> sendTickleMessage() {
 		// the collapse key is the relay's peerId
-		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder().collapseKey(relayPeerId().toString()).build();
+		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
+				.collapseKey(relayPeerId().toString()).build();
 		final FutureDone<Void> future = new FutureDone<Void>();
 		new Thread(new Runnable() {
 			@Override
@@ -96,11 +101,12 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 				try {
 					LOG.debug("Send GCM message to the device {}", registrationId);
 					Result result = sender.send(tickleMessage, registrationId, config.gcmSendRetries());
-					if(result.getMessageId() == null) {
+					if (result.getMessageId() == null) {
 						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
 						future.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
-					} else if(result.getCanonicalRegistrationId() != null) {
-						LOG.debug("Update the registration id {} to canonical name {}", registrationId, result.getCanonicalRegistrationId());
+					} else if (result.getCanonicalRegistrationId() != null) {
+						LOG.debug("Update the registration id {} to canonical name {}", registrationId,
+								result.getCanonicalRegistrationId());
 						registrationId = result.getCanonicalRegistrationId();
 						future.done();
 					} else {
@@ -113,30 +119,36 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 				}
 			}
 		}, "Send-GCM-Tickle-Message").start();
-		
+
 		return future;
 	}
 
 	@Override
-	public void bufferFull(List<Buffer> buffer) {
+	public void bufferFull(Buffer sizeBuffer, Buffer messageBuffer) {
 		synchronized (readyToSend) {
-			readyToSend.addAll(buffer);
+			readyToSend.add(new Pair<Buffer, Buffer>(sizeBuffer, messageBuffer));
+			sendTickleMessage();
 		}
-		
-		sendTickleMessage();
 	}
-	
+
 	/**
 	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
 	 * Android device has already been notified.
-	 * @return
+	 * 
+	 * @return a pair of buffers. The first element contains the size of all messages, the second element the data
 	 */
-	public List<Buffer> getReadyToSendBuffer() {
-		List<Buffer> copy;
+	public Pair<Buffer, Buffer> getBufferedMessages() {
+		ByteBuf sizeBuffer = Unpooled.buffer();
+		ByteBuf dataBuffer = Unpooled.buffer();
 		synchronized (readyToSend) {
-			copy = new ArrayList<Buffer>(readyToSend);
+			for (Pair<Buffer, Buffer> rts : readyToSend) {
+				sizeBuffer.writeBytes(rts.element0().buffer());
+				dataBuffer.writeBytes(rts.element1().buffer());
+			}
+
 			readyToSend.clear();
 		}
-		return copy;
+		
+		return new Pair<Buffer, Buffer>(new Buffer(sizeBuffer), new Buffer(dataBuffer));
 	}
 }

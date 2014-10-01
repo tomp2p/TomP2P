@@ -86,12 +86,18 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		if (sizeBuffer != null && messageBuffer != null) {
 			// decompose the large buffer into a buffer for each message
 			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer);
+			LOG.debug("Received {} buffered messages", bufferedMessages.size());
 			for (Buffer bufferedMessage : bufferedMessages) {
 				try {
 					Message message = RelayUtils.decodeMessage(bufferedMessage, response.recipientSocket(),
 							response.senderSocket());
-					LOG.debug("Received buffered message {}", message);
-					// TODO handle the buffered message
+					DispatchHandler handler = peer.connectionBean().dispatcher().associatedHandler(message);
+					if(handler == null) {
+						// ignore the message
+						LOG.error("Cannot find the associated handler to message {}", message);
+					} else {
+						// TODO handle the message
+					}
 				} catch (Exception e) {
 					// continue to process the buffers anyway
 					LOG.error("Cannot decode the buffer {}", bufferedMessage, e);

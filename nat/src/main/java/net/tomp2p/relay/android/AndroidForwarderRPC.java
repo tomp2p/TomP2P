@@ -10,6 +10,7 @@ import java.util.List;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -63,7 +64,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
-		final Message response = createResponseMessage(message, Type.OK);
+		final Message response = createResponseMessage(message, Type.PARTIALLY_OK);
 		response.recipient(message.sender());
 		response.sender(unreachablePeerAddress());
 
@@ -71,7 +72,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 			buffer.addMessage(message);
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
-			return new FutureDone<Message>().failed(e);
+			futureDone.done(createResponseMessage(message, Type.EXCEPTION));
 		}
 
 		// TODO create temporal OK message
@@ -79,12 +80,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	}
 
 	@Override
-	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
+	protected void handlePing(Message message, final Responder responder, PeerAddress sender) {
 		// TODO Check if the mobile device is still alive and answer appropriately
 
 		// TODO just for testing:
-		FutureDone<Message> futureDone = forwardToUnreachable(message);
-		responder.response(futureDone.object());
+		final FutureDone<Message> futureDone = forwardToUnreachable(message);
+		futureDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+			@Override
+			public void operationComplete(FutureDone<Message> future) throws Exception {
+				responder.response(futureDone.object());
+			}
+		});
 	}
 
 	/**

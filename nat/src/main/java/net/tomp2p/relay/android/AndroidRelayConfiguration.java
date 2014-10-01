@@ -12,7 +12,6 @@ public class AndroidRelayConfiguration {
 	private int bufferCountLimit = 10;
 	private long bufferSizeLimit = Long.MAX_VALUE;
 	private long bufferAgeLimit = 5 * 60 * 1000; // 5 minutes
-	private String gcmAuthenticationToken;
 	private int gcmSendRetries = 5;
 
 	public int bufferCountLimit() {
@@ -57,20 +56,6 @@ public class AndroidRelayConfiguration {
 	 */
 	public AndroidRelayConfiguration bufferAgeLimit(long bufferAgeLimit) {
 		this.bufferAgeLimit = bufferAgeLimit;
-		return this;
-	}
-
-	public String gcmAuthenticationToken() {
-		return gcmAuthenticationToken;
-	}
-
-	/**
-	 * The authentication token  (api key) provided by Google Cloud Messaging. Keep this key private.
-	 * 
-	 * @param gcmAuthenticationToken the api key
-	 */
-	public AndroidRelayConfiguration gcmAuthenticationToken(String gcmAuthenticationToken) {
-		this.gcmAuthenticationToken = gcmAuthenticationToken;
 		return this;
 	}
 

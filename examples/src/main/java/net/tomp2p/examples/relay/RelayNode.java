@@ -35,7 +35,7 @@ public class RelayNode {
 			Peer peer = new PeerBuilder(peerId).ports(port).start();
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			new PeerBuilderNAT(peer).androidRelayConfiguration(new AndroidRelayConfiguration().gcmAuthenticationToken(gcmAPIKey)).start();
+			new PeerBuilderNAT(peer).androidRelayConfiguration(new AndroidRelayConfiguration()).start();
 			logger.debug("Peer started");
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -39,11 +39,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	private final List<Buffer> readyToSend;
 
 	
-	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config, String registrationId) {
+	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config, String authenticationToken, String registrationId) {
 		super(peer, peerConnection);
 		this.config = config;
 		this.registrationId = registrationId;
-		this.sender = new Sender(config.gcmAuthenticationToken());
+		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Buffer>());
 				
@@ -77,6 +77,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	@Override
 	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
 		// TODO Check if the mobile device is still alive and answer appropriately
+		
+		// TODO just for testing:
+		FutureDone<Message> futureDone = forwardToUnreachable(message);
+		responder.response(futureDone.object());
 	}
 
 	/**
@@ -108,7 +112,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 					future.failed(e);
 				}
 			}
-		});
+		}, "Send-GCM-Tickle-Message").start();
 		
 		return future;
 	}

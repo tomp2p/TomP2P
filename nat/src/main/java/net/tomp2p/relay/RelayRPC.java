@@ -132,28 +132,28 @@ public class RelayRPC extends DispatchHandler {
      * An android device is behind a firewall and wants to be relayed 
      */
     private void handleSetupAndroid(Message message, final PeerConnection peerConnection, Responder responder) {
-        Buffer buffer = message.buffer(0);
-        if(buffer == null || buffer.buffer() == null) {
-        	LOG.error("Device {} did not send any GCM registration id", peerConnection.remotePeer());
+        if(message.bufferList().size() < 2) {
+        	LOG.error("Device {} did not send any GCM registration id or the authentication key", peerConnection.remotePeer());
             responder.response(createResponseMessage(message, Type.DENIED));
             return;
         }
         
-		String registrationId = RelayUtils.decodeString(buffer);
+		String registrationId = RelayUtils.decodeString(message.buffer(0));
 		if(registrationId == null) {
 			LOG.error("Cannot decode the registrationID from the message");
             responder.response(createResponseMessage(message, Type.DENIED));
             return;
 		}
 		
-		if(androidConfig == null || androidConfig.gcmAuthenticationToken() == null) {
-			LOG.error("This relay peer is not capable to serve Android devices");
+		String authenticationKey = RelayUtils.decodeString(message.buffer(1));
+		if(authenticationKey == null) {
+			LOG.error("Cannot decode the authentication key from the messsage");
 			responder.response(createResponseMessage(message, Type.DENIED));
 	        return;
 		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, registrationId);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, authenticationKey, registrationId);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));
@@ -259,12 +259,19 @@ public class RelayRPC extends DispatchHandler {
 		BaseRelayForwarderRPC forwarderRPC = forwarders.get(message.sender().peerId());
 		if(forwarderRPC instanceof AndroidForwarderRPC) {
 			AndroidForwarderRPC androidForwarder = (AndroidForwarderRPC) forwarderRPC;
-			Message response = createResponseMessage(message, Type.OK);
-			// add all buffered messages
-			response.bufferList().addAll(androidForwarder.getReadyToSendBuffer());
 			
-			LOG.debug("Responding {} buffered messages to Android device {}", response.bufferList().size(), message.sender());
-			responder.response(response);
+			try {
+				Message response = createResponseMessage(message, Type.OK);
+				// add all buffered messages
+				for (Buffer bufferedMessage : androidForwarder.getReadyToSendBuffer()) {
+					response.buffer(bufferedMessage);
+				}
+				LOG.debug("Responding {} buffered messages to Android device {}", response.bufferList().size(), message.sender());
+				responder.response(response);
+			} catch(Exception e) {
+				LOG.error("Cannot respond with buffered messages.", e);
+				responder.response(createResponseMessage(message, Type.EXCEPTION));
+			}
 		} else {
 			responder.failed(Type.EXCEPTION, "This message type is intended for buffering forwarders only");
 		}

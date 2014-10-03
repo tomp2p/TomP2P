@@ -154,8 +154,7 @@ public class PeerNAT {
 								.changeAddress(future.externalAddress());
 
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter()).senderAddress(
-								serverAddress);
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter()).senderAddress(serverAddress);
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
@@ -364,8 +363,7 @@ public class PeerNAT {
 									@Override
 									public void operationComplete(FutureBootstrap future) throws Exception {
 										if (future.isSuccess()) {
-											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder,
-													distributedRelay);
+											Shutdown shutdown = startRelayMaintenance(futureRelay, bootstrapBuilder, distributedRelay);
 											futureBootstrapNAT.done(shutdown);
 										} else {
 											futureBootstrapNAT.failed("2nd FutureBootstrap failed", future);
@@ -395,8 +393,7 @@ public class PeerNAT {
 	 * @return {@link FutureDone}
 	 * @throws TimeoutException
 	 */
-	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress,
-			final PeerAddress unreachablePeerAddress) {
+	public FutureDone<PeerConnection> startSetupRcon(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
 		checkRconPreconditions(relayPeerAddress, unreachablePeerAddress);
 
 		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
@@ -420,7 +417,7 @@ public class PeerNAT {
 							@Override
 							public void operationComplete(FutureResponse future) throws Exception {
 								// get the PeerConnection which is cached in the PeerBean object
-								PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
+								final PeerConnection openPeerConnection = peer.peerBean().peerConnection(unreachablePeerAddress.peerId());
 								if (openPeerConnection != null && openPeerConnection.isOpen()) {
 									futureDone.done(openPeerConnection);
 								} else {
@@ -453,7 +450,7 @@ public class PeerNAT {
 				setUpMessage.recipient(relayPeerAddress.changePeerId(unreachablePeerAddress.peerId()));
 				setUpMessage.command(RPC.Commands.RCON.getNr());
 				setUpMessage.type(Type.REQUEST_1);
-				setUpMessage.keepAlive(true);
+				// setUpMessage.keepAlive(true);
 				return setUpMessage;
 			}
 		});
@@ -477,8 +474,7 @@ public class PeerNAT {
 		}
 
 		if (relayPeerAddress == null || unreachablePeerAddress == null) {
-			throw new IllegalArgumentException(
-					"either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
+			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
 		}
 	}
 }

@@ -93,8 +93,8 @@ public class PingRPC extends DispatchHandler {
         this.enable = enable;
         this.wait = wait;
         if (register) {
-            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), this,
-            		RPC.Commands.PING.getNr());
+            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(),
+            		peerBean.serverPeerAddress().peerId(), this, RPC.Commands.PING.getNr());
         }
     }
 

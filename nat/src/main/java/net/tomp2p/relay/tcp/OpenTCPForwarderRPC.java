@@ -55,7 +55,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 			@Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
 				peer.peerBean().removePeerStatusListeners(OpenTCPForwarderRPC.this);
-				peer.connectionBean().dispatcher().removeIoHandler(unreachablePeerId());
+				peer.connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeerId());
             }
 		});
 		

@@ -19,6 +19,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -238,22 +239,27 @@ public class TestRelay {
 			Assert.assertTrue(fbn.isSuccess());
 
 			System.out.print("Send direct message to unreachable peer");
-			final String request = "Hello ";
-			final String response = "World!";
-
-			unreachablePeer.objectDataReply(new ObjectDataReply() {
-				public Object reply(PeerAddress sender, Object request) throws Exception {
-					Assert.assertEquals(request.toString(), request);
-					return response;
-				}
-			});
-
-			FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start()
-					.awaitUninterruptibly();
-			// fd.awaitUninterruptibly();
-			Assert.assertEquals(response, fd.object());
-			// make sure we did receive it from the unreachable peer with id
-			Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
+            final String request = "Hello ";
+            final String response = "World!";
+            
+            unreachablePeer.objectDataReply(new ObjectDataReply() {
+                public Object reply(PeerAddress sender, Object request) throws Exception {
+                    Assert.assertEquals(request.toString(), request);
+                    return response;
+                }
+            });
+            
+            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true));
+            
+            FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
+            //fd.awaitUninterruptibly();
+            Assert.assertEquals(response, fd.object());
+            //make sure we did not receive it from the unreachable peer with port 13337
+            //System.err.println(fd.getWrappedFuture());
+            //TODO: this case is true for relay
+            //Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
+            //TODO: this case is true for rcon
+            Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();
@@ -526,7 +532,7 @@ public class TestRelay {
 
 			FutureGet futureGet = peers[8].get(unreachablePeer.peerID()).routingConfiguration(r).requestP2PConfiguration(rp)
 					.start();
-			futureGet.futureRequests().awaitUninterruptibly();
+			futureGet.awaitUninterruptibly();
 			Assert.assertTrue(futureGet.isSuccess());
 
 			// we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish
@@ -667,8 +673,8 @@ public class TestRelay {
 	}
 
 	private Collection<PeerAddress> getNeighbors(Peer peer) {
-		Map<Number160, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
-		for (Map.Entry<Number160, DispatchHandler> entry : handlers.entrySet()) {
+		Map<Number320, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
+		for (Map.Entry<Number320, DispatchHandler> entry : handlers.entrySet()) {
 			if (entry.getValue() instanceof BaseRelayForwarderRPC) {
 				return ((BaseRelayForwarderRPC) entry.getValue()).getPeerMap();
 			}

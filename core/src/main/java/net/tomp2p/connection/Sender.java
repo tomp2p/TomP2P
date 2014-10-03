@@ -163,25 +163,24 @@ public class Sender {
 		}
 	}
 	
-	/**
-	 * This method initiates the reverse connection setup (or short: rconSetup).
-	 * It creates a new Message and sends it via relay to the unreachable peer
-	 * which then connects to this peer again. After the connectMessage from the
-	 * unreachable peer this peer will send the original Message and its content
-	 * directly.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 */
-	private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler) {
-
+	 /**
+		 * This method initiates the reverse connection setup (or short: rconSetup).
+		 * It creates a new Message and sends it via relay to the unreachable peer
+		 * which then connects to this peer again. After the connectMessage from the
+		 * unreachable peer this peer will send the original Message and its content
+		 * directly.
+		 * 
+		 * @param handler
+		 * @param futureResponse
+		 * @param message
+		 * @param channelCreator
+		 * @param connectTimeoutMillis
+		 * @param peerConnection
+		 * @param timeoutHandler
+		 */
+		private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
+				final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
+				final TimeoutFactory timeoutHandler) {
 		message.keepAlive(true);
 
 		LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
@@ -242,7 +241,7 @@ public class Sender {
 		// the message must have set the keepAlive Flag true. If not, the relay
 		// peer will close the PeerConnection to the unreachable peer.
 		rconMessage.keepAlive(true);
-		
+
 		// making the message ready to send
 		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
 		rconMessage.recipient(recipient);
@@ -270,7 +269,6 @@ public class Sender {
 		InetSocketAddress recipient = message.recipient().createSocketTCP();
 		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
 				connectTimeoutMillis, futureResponse);
-		LOG.debug("about to connect to {} with channel {}, ff={}", recipient, channelFuture.channel(), handler == null);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
 
@@ -581,6 +579,7 @@ public class Sender {
 			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 			return;
 		}
+		LOG.debug("about to connect to {} with channel {}, ff={}", message.recipient(), channelFuture.channel(), fireAndForget);
 		final Cancel connectCancel = createCancel(channelFuture);
 		futureResponse.addCancel(connectCancel);
 		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {

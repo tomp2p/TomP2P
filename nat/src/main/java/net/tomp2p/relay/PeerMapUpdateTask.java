@@ -80,6 +80,8 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 			// send the peer map to the relays
 			updatePeerMap();
 		}
+		
+		//TODO: add digest to the relay peer
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();

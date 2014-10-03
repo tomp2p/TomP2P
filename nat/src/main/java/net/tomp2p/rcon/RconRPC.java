@@ -69,17 +69,18 @@ public class RconRPC extends DispatchHandler {
 	@Override
 	public void handleResponse(final Message message, final PeerConnection peerConnection, final boolean sign,
 			final Responder responder) throws Exception {
+		LOG.warn("received RconRPC message {}", message);
 		if (message.type() == Message.Type.REQUEST_1 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the relay peer
-			LOG.info("handle RconForward for message: " + message);
+			LOG.debug("handle RconForward for message: " + message);
 			handleRconForward(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_2 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the unreachable peer
-			LOG.info("handle RconSetup for message: " + message);
+			LOG.debug("handle RconSetup for message: " + message);
 			handleRconSetup(message, responder);
 		} else if (message.type() == Message.Type.REQUEST_3 && message.command() == RPC.Commands.RCON.getNr()) {
 			// the message reached the requesting peer
-			LOG.info("handle RconAfterconnect for message: " + message);
+			LOG.debug("handle RconAfterconnect for message: " + message);
 			handleRconAfterconnect(message, responder, peerConnection);
 		} else {
 			LOG.warn("received invalid RconRPC message {}", message);
@@ -98,7 +99,7 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconForward(final Message message, final Responder responder) {
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarderRPC(message.recipient().peerId());
+		final BaseRelayForwarderRPC forwarder = extractRelayForwarderRPC(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
@@ -115,9 +116,9 @@ public class RconRPC extends DispatchHandler {
 	 * @param unreachablePeerId the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarderRPC(Number160 unreachablePeerId) {
+	private BaseRelayForwarderRPC extractRelayForwarderRPC(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
-		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(unreachablePeerId);
+		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
 		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
 			if (element.getValue() instanceof BaseRelayForwarderRPC) {
 				return (BaseRelayForwarderRPC) element.getValue();
@@ -143,8 +144,8 @@ public class RconRPC extends DispatchHandler {
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
 
-		forwardMessage.senderSocket(message.senderSocket());
-		forwardMessage.recipientSocket(recipient.createSocketUDP());
+//		forwardMessage.senderSocket(message.senderSocket());
+//		forwardMessage.recipientSocket(recipient.createSocketUDP());
 
 		if (!message.intList().isEmpty()) {
 			// store the message id for new message to identify the cached message afterwards
@@ -217,7 +218,7 @@ public class RconRPC extends DispatchHandler {
 	 * @param receiver
 	 * @return setupMessage
 	 */
-	private Message createReadyForRequestMessage(final Message message, PeerAddress receiver) {
+	private Message createReadyForRequestMessage(final Message message, final PeerAddress receiver) {
 		Message readyForRequestMessage = createMessage(receiver, RPC.Commands.RCON.getNr(), Message.Type.REQUEST_3);
 
 		if (!message.intList().isEmpty()) {
@@ -275,7 +276,6 @@ public class RconRPC extends DispatchHandler {
 				}
 			});
 		}
-
 	}
 
 	/**

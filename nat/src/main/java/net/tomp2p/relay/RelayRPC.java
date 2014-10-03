@@ -166,13 +166,12 @@ public class RelayRPC extends DispatchHandler {
 				// We must register the rconRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
-				peer.connectionBean().dispatcher()
-						.registerIoHandler(forwarder.unreachablePeerId(), rconRPC, command.getNr());
+				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), rconRPC, command.getNr());
 			} else if (command == RPC.Commands.RELAY) {
 				// don't register the relay command
 				continue;
 			} else {
-				peer.connectionBean().dispatcher().registerIoHandler(forwarder.unreachablePeerId(), forwarder, command.getNr());
+				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), forwarder, command.getNr());
 			}
 		}
 		

@@ -8,7 +8,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rcon.RconRPC;
+import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayRPC;
 
 public class PeerBuilderNAT {

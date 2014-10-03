@@ -163,7 +163,7 @@ public class TestRelay {
             }
         }
     }
-
+    
     @Test
     public void testRelaySendDirect() throws Exception {
         final Random rnd = new Random(42);
@@ -181,22 +181,11 @@ public class TestRelay {
 
             // Test setting up relay peers
          	unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-         	PeerAddress upa = unreachablePeer.peerBean().serverPeerAddress();
-         	upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
-         	unreachablePeer.peerBean().serverPeerAddress(upa);
-         	// find neighbors
-         	FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().peerAddress(peers[0].peerAddress()).start();
-         	futureBootstrap.awaitUninterruptibly();
-         	Assert.assertTrue(futureBootstrap.isSuccess());
-         	//setup relay
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
-			FutureRelay fr = new FutureRelay();
-			uNat.startSetupRelay(fr);
-			fr.awaitUninterruptibly();
-			// find neighbors again
-         	futureBootstrap = unreachablePeer.bootstrap().peerAddress(peers[0].peerAddress()).start();
-         	futureBootstrap.awaitUninterruptibly();
-         	Assert.assertTrue(futureBootstrap.isSuccess());
+         	PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+         	
+         	FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
+         	fbn.awaitUninterruptibly();
+         	Assert.assertTrue(fbn.isSuccess());
             
             
          	System.out.print("Send direct message to unreachable peer");
@@ -210,10 +199,17 @@ public class TestRelay {
                 }
             });
             
+            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true));
+            
             FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
+            //fd.awaitUninterruptibly();
             Assert.assertEquals(response, fd.object());
             //make sure we did not receive it from the unreachable peer with port 13337
-            Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
+            //System.err.println(fd.getWrappedFuture());
+            //TODO: this case is true for relay
+            //Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
+            //TODO: this case is true for rcon
+            Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
             
 
         } finally {
@@ -225,6 +221,7 @@ public class TestRelay {
             }
         }
     }
+
     
     @Test
     public void testRelaySendDirect2() throws Exception {
@@ -263,10 +260,16 @@ public class TestRelay {
             
             FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
             //fd.awaitUninterruptibly();
+            if(fd.futureResponse().responseMessage() == null) {
+            	System.err.println("aoeuo");
+            }
             Assert.assertEquals(response, fd.object());
             //make sure we did not receive it from the unreachable peer with port 13337
             //System.err.println(fd.getWrappedFuture());
-            Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
+            //TODO: this case is true for relay
+            //Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
+            //TODO: this case is true for rcon
+            Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
             
 
         } finally {
@@ -551,7 +554,7 @@ public class TestRelay {
             // System.err.println("relays: "+manager.getRelayAddresses());
             // System.err.println("psa: "+ slave.getPeerAddress().getPeerSocketAddresses());
              //wait for maintenance to kick in
-             Thread.sleep(4000);
+             Thread.sleep(5000);
              
              printMapStatus(unreachablePeer, peers);
              
@@ -562,19 +565,21 @@ public class TestRelay {
              
              FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
              //the relayed one is the slowest, so we need to wait for it!
+             futurePut.awaitUninterruptibly();
              futurePut.futureRequests().awaitUninterruptibly();
              System.err.println(futurePut.failedReason());
+             System.err.println("peer8="+peers[8].peerAddress());
              
              Assert.assertTrue(futurePut.isSuccess());
              Assert.assertTrue(unreachablePeer.storageLayer().contains(new Number640(unreachablePeer.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
-             
+             //Thread.sleep(5000);
              FutureGet futureGet = peers[8].get(unreachablePeer.peerID()).routingConfiguration(r).requestP2PConfiguration(rp).start();
-             futureGet.futureRequests().awaitUninterruptibly();
+             futureGet.awaitUninterruptibly();
              Assert.assertTrue(futureGet.isSuccess());
              
              //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
              
-             System.err.println("DONE!");
+             
              
          } finally {
              master.shutdown().await();
@@ -627,7 +632,7 @@ public class TestRelay {
             // System.err.println("relays: "+manager.getRelayAddresses());
             // System.err.println("psa: "+ slave.getPeerAddress().getPeerSocketAddresses());
              //wait for maintenance to kick in
-             Thread.sleep(4000);
+             Thread.sleep(5000);
              
              printMapStatus(unreachablePeer1, peers);
              
@@ -641,6 +646,7 @@ public class TestRelay {
              
              FuturePut futurePut = unreachablePeer1.put(unreachablePeer2.peerID()).data(new Data("hello")).routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
              //the relayed one is the slowest, so we need to wait for it!
+             futurePut.awaitUninterruptibly();
              futurePut.futureRequests().awaitUninterruptibly();
              System.err.println(futurePut.failedReason());
              

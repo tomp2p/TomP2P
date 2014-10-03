@@ -18,6 +18,7 @@ package net.tomp2p.connection;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
@@ -44,14 +45,17 @@ import net.tomp2p.futures.FutureForkJoin;
 import net.tomp2p.futures.FuturePing;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.TomP2PCumulationTCP;
 import net.tomp2p.message.TomP2POutbound;
 import net.tomp2p.message.TomP2PSinglePacketUDP;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
@@ -74,7 +78,7 @@ public class Sender {
 
 	// this map caches all messages which are meant to be sent by a reverse
 	// connection setup
-	private final ConcurrentHashMap<Integer, Message> cachedMessages = new ConcurrentHashMap<Integer, Message>();
+	private final ConcurrentHashMap<Integer, FutureResponse> cachedRequests = new ConcurrentHashMap<Integer, FutureResponse>();
 
 	private PingBuilderFactory pingBuilderFactory;
 
@@ -159,37 +163,56 @@ public class Sender {
 		}
 	}
 	
-	/**
-	 * This method initiates the reverse connection setup (or short: rconSetup).
-	 * It creates a new Message and sends it via relay to the unreachable peer
-	 * which then connects to this peer again. After the connectMessage from the
-	 * unreachable peer this peer will send the original Message and its content
-	 * directly.
-	 * 
-	 * @param handler
-	 * @param futureResponse
-	 * @param message
-	 * @param channelCreator
-	 * @param connectTimeoutMillis
-	 * @param peerConnection
-	 * @param timeoutHandler
-	 */
-	private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
-			final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
-			final TimeoutFactory timeoutHandler) {
+	 /**
+		 * This method initiates the reverse connection setup (or short: rconSetup).
+		 * It creates a new Message and sends it via relay to the unreachable peer
+		 * which then connects to this peer again. After the connectMessage from the
+		 * unreachable peer this peer will send the original Message and its content
+		 * directly.
+		 * 
+		 * @param handler
+		 * @param futureResponse
+		 * @param message
+		 * @param channelCreator
+		 * @param connectTimeoutMillis
+		 * @param peerConnection
+		 * @param timeoutHandler
+		 */
+		private void handleRcon(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse, final Message message,
+				final ChannelCreator channelCreator, final int connectTimeoutMillis, final PeerConnection peerConnection,
+				final TimeoutFactory timeoutHandler) {
 
-		// the message must have set the keepAlive Flag true. If not, the relay
-		// peer will close the PeerConnection to the unreachable peer.
-		message.keepAlive(true);
+			message.keepAlive(true);
 
-		LOG.debug("initiate reverse connection setup to peer with peerAddress {}" + message.recipient());
-		Message rconMessage = createRconMessage(message);
+			LOG.debug("initiate reverse connection setup to peer with peerAddress {}", message.recipient());
+			Message rconMessage = createRconMessage(message);
 
-		// cache the original message until the connection is established
-		cachedMessages.put(message.messageId(), message);
+			// cache the original message until the connection is established
+			cachedRequests.put(message.messageId(), futureResponse);
 
-		connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, rconMessage);
-	}
+			// wait for response (whether the reverse connection setup was successful)
+			final FutureResponse rconResponse = new FutureResponse(rconMessage);
+			
+			//TODO: expose peer somehow in sender to be able to notify on automatic requests
+			//peer.notifyAutomaticFutures(rconResponse);
+			
+			SimpleChannelInboundHandler<Message> rconInboundHandler = new SimpleChannelInboundHandler<Message>() {
+				@Override
+				protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+					if(msg.command() == Commands.RCON.getNr() && msg.type() == Type.OK) {
+						LOG.debug("Successfully set up the reverse connection to peer {}", message.recipient().peerId());
+						rconResponse.response(msg);
+					} else {
+						LOG.debug("Could not acquire a reverse connection to peer {}", message.recipient().peerId());
+						rconResponse.failed("Could not acquire a reverse connection, got: "+msg);
+						futureResponse.failed(rconResponse.failedReason());
+					}
+				}
+			};
+			
+			// send reverse connection request instead of normal message
+			sendTCP(rconInboundHandler, rconResponse, rconMessage, channelCreator, connectTimeoutMillis, connectTimeoutMillis, peerConnection);
+		}
 
 	/**
 	 * This method makes a copy of the original Message and prepares it for
@@ -215,11 +238,12 @@ public class Sender {
 		Message rconMessage = new Message();
 		rconMessage.sender(message.sender());
 		rconMessage.version(message.version());
-		rconMessage.messageId(message.messageId());
+		rconMessage.intValue(message.messageId());
 
 		// making the message ready to send
-		rconMessage.recipient(message.recipient().changeAddress(socketAddress.inetAddress()));
-		rconMessage.recipient(rconMessage.recipient().changePorts(socketAddress.tcpPort(), socketAddress.udpPort()));
+		PeerAddress recipient = message.recipient().changeAddress(socketAddress.inetAddress()).changePorts(socketAddress.tcpPort(), socketAddress.udpPort()).changeRelayed(false);
+		rconMessage.recipient(recipient);
+		 
 		rconMessage.command(RPC.Commands.RCON.getNr());
 		rconMessage.type(Message.Type.REQUEST_1);
 
@@ -244,7 +268,6 @@ public class Sender {
 		InetSocketAddress recipient = message.recipient().createSocketTCP();
 		final ChannelFuture channelFuture = sendTCPCreateChannel(recipient, channelCreator, peerConnection, handler, timeoutHandler,
 				connectTimeoutMillis, futureResponse);
-		LOG.debug("about to connect to {} with channel {}, ff={}", recipient, channelFuture.channel(), handler == null);
 		afterConnect(futureResponse, message, channelFuture, handler == null);
 	}
 
@@ -555,6 +578,7 @@ public class Sender {
 			futureResponse.failed("could not create a " + (message.isUdp() ? "UDP" : "TCP") + " channel");
 			return;
 		}
+		LOG.debug("about to connect to {} with channel {}, ff={}", message.recipient(), channelFuture.channel(), fireAndForget);
 		final Cancel connectCancel = createCancel(channelFuture);
 		futureResponse.addCancel(connectCancel);
 		channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -691,7 +715,7 @@ public class Sender {
 		});
 	}
 
-	public ConcurrentHashMap<Integer, Message> cachedMessages() {
-		return cachedMessages;
+	public ConcurrentHashMap<Integer, FutureResponse> cachedRequests() {
+		return cachedRequests;
 	}
 }

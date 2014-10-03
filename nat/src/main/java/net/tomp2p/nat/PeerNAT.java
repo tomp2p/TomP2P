@@ -395,14 +395,14 @@ public class PeerNAT {
 					if (peerConnection != null) {
 						// create the necessary messages
 						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress);
-						final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage);
+						//final Message connectMessage = createConnectMessage(unreachablePeerAddress, setUpMessage);
 
 						FutureResponse futureResponse = new FutureResponse(setUpMessage);
 						// send the message to the relay so it forwards it to
 						// the unreachable peer
 						futureResponse = RelayUtils.sendSingle(peerConnection, futureResponse, peer.peerBean(), peer.connectionBean(),
 								new DefaultConnectionConfiguration());
-						peer.connectionBean().sender().cachedMessages().put(connectMessage.messageId(), connectMessage);
+						//peer.connectionBean().sender().cachedRequests().put(connectMessage.messageId(), connectMessage);
 						
 						// wait for the unreachable peer to answer
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
@@ -418,7 +418,7 @@ public class PeerNAT {
 									handleFail(futureDone, "No reverse connection could be established");
 									// we have to remove the Message from the
 									// cache manually if something went wrong.
-									peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
+									//peer.connectionBean().sender().cachedMessages().remove(connectMessage.messageId());
 								}
 							}
 						});
@@ -433,20 +433,6 @@ public class PeerNAT {
 			private void handleFail(final FutureDone<PeerConnection> futureDone, final String failMessage) {
 				LOG.error(failMessage);
 				futureDone.failed(failMessage);
-			}
-
-			// this message is sent to the unreachablePeer after the rcon setup
-			private Message createConnectMessage(final PeerAddress unreachablePeerAddress, final Message setUpMessage) {
-				Message connectMessage = new Message();
-				connectMessage.messageId(setUpMessage.messageId());
-				connectMessage.version(MESSAGE_VERSION);
-				connectMessage.sender(peer.peerAddress());
-				connectMessage.recipient(unreachablePeerAddress);
-				connectMessage.command(RPC.Commands.RCON.getNr());
-				connectMessage.type(Type.REQUEST_4);
-				connectMessage.longValue(PERMANENT_FLAG);
-				connectMessage.keepAlive(true);
-				return connectMessage;
 			}
 
 			// this message is sent to the relay peer to initiate the rcon setup

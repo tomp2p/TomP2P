@@ -110,7 +110,7 @@ public class Message {
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;
-    private PeerAddress recipientRelay;
+    private transient PeerAddress recipientRelay;
     private int options = 0;
 
     // Payload:

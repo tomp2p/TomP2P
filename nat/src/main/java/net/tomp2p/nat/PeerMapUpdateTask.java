@@ -76,6 +76,7 @@ class PeerMapUpdateTask extends TimerTask {
 					synchronized (distributedRelay.relayAddresses()) {
 						relays = new ArrayList<PeerConnection>(distributedRelay.relayAddresses());
 					}
+					//TODO: add digest to the relay peer
 		            for (final PeerConnection pc : relays) {
 		              	final FutureResponse fr = relayRPC.sendPeerMap(pc.remotePeer(), peerMapVerified, pc);
 		               	fr.addListener(new BaseFutureAdapter<BaseFuture>() {

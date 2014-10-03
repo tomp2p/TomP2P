@@ -354,7 +354,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @return the map containing all dispatchers for each {@link Commands} type
      */
 	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
-		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(peerId);
+		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(new Number320(peerId, onBehalfOf));
 		return ioHandlerMap;
 	}
 }

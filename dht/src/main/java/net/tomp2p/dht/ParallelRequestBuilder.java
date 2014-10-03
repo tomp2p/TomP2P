@@ -24,7 +24,8 @@ import net.tomp2p.peers.PeerAddress;
 
 public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         DHTBuilder<ParallelRequestBuilder<K>> {
-    private NavigableSet<PeerAddress> queue;
+    private NavigableSet<PeerAddress> directHits;
+    private NavigableSet<PeerAddress> potentialHits;
 
     private OperationMapper<K> operation;
 
@@ -37,20 +38,32 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
         self(this);
     }
 
-    public NavigableSet<PeerAddress> queue() {
-        return queue;
+    public NavigableSet<PeerAddress> directHits() {
+        return directHits;
     }
 
-    public ParallelRequestBuilder<K> queue(NavigableSet<PeerAddress> queue) {
-        this.queue = queue;
+    public ParallelRequestBuilder<K> directHits(NavigableSet<PeerAddress> directHits) {
+        this.directHits = directHits;
+        return this;
+    }
+    
+    public NavigableSet<PeerAddress> potentialHits() {
+        return potentialHits;
+    }
+
+    public ParallelRequestBuilder<K> potentialHits(NavigableSet<PeerAddress> potentialHits) {
+        this.potentialHits = potentialHits;
         return this;
     }
 
     public ParallelRequestBuilder<K> add(PeerAddress peerAddress) {
-        if (queue == null) {
-            queue = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createComparator());
+        if (directHits == null) {
+        	directHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createComparator());
         }
-        queue.add(peerAddress);
+        if (potentialHits == null) {
+        	potentialHits = new TreeSet<PeerAddress>(peer.peer().peerBean().peerMap().createComparator());
+        }
+        potentialHits.add(peerAddress);
         return this;
     }
 
@@ -89,11 +102,11 @@ public class ParallelRequestBuilder<K extends FutureDHT<?>> extends
     public K start() {
 
         preBuild("parallel-builder");
-        if (queue == null || queue.size() == 0) {
+        if (directHits == null || potentialHits == null || potentialHits.size() == 0) {
             throw new IllegalArgumentException("queue cannot be empty");
         }
 
-        return DistributedHashTable.<K> parallelRequests(requestP2PConfiguration, queue, cancelOnFinish,
+        return DistributedHashTable.<K> parallelRequests(requestP2PConfiguration, directHits, potentialHits, cancelOnFinish,
                 futureChannelCreator, operation, futureDHT);
     }
 }

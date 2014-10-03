@@ -24,6 +24,7 @@ import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number160;
+import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
@@ -690,8 +691,8 @@ public class TestRelay {
     
 
     private Collection<PeerAddress> getNeighbors(Peer peer) {
-    	Map<Number160, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
-    	for(Map.Entry<Number160, DispatchHandler> entry:handlers.entrySet()) {
+    	Map<Number320, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
+    	for(Map.Entry<Number320, DispatchHandler> entry:handlers.entrySet()) {
     		if(entry.getValue() instanceof RelayForwarderRPC) {
     			return ((RelayForwarderRPC)entry.getValue()).all();  
     		}

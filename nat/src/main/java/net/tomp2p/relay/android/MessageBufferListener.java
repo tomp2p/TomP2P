@@ -4,7 +4,7 @@ import java.util.List;
 
 import net.tomp2p.message.Buffer;
 
-public interface BufferFullListener {
+public interface MessageBufferListener {
 
 	/**
 	 * Notification when the buffer at the relay peer is full. Use

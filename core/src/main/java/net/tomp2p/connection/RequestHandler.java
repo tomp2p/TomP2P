@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
+import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
@@ -276,7 +277,12 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             LOG.debug("good message is streaming {}", responseMessage);
             return;
         }
-
+        
+        if(this.message.recipient().isRelayed() && responseMessage.type() == Type.PARTIALLY_OK) {
+        	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
+        	// TODO wait for the (real) answer of the unreachable peer
+        }
+        
         if (!message.isKeepAlive()) {
         	LOG.debug("good message, we can close {}, {}", responseMessage, ctx.channel());
             //set the success now, but trigger the notify when we closed the channel.

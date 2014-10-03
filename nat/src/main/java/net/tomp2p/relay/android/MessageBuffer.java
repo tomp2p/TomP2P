@@ -39,14 +39,14 @@ public class MessageBuffer {
 	private final long bufferAgeLimitMS;
 
 	private final AtomicLong bufferSize;
-	private final BufferFullListener listener;
+	private final MessageBufferListener listener;
 
 	private final CompositeByteBuf buffer;
 	private final List<Integer> segmentSizes;
 
 	private BufferAgeRunnable task;
 
-	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS, BufferFullListener listener) {
+	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS, MessageBufferListener listener) {
 		this.messageCountLimit = messageCountLimit;
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;

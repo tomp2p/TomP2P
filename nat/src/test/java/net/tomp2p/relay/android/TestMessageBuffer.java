@@ -130,7 +130,7 @@ public class TestMessageBuffer {
 		return message;
 	}
 	
-	private class CountingBufferListener implements BufferFullListener {
+	private class CountingBufferListener implements MessageBufferListener {
 
 		private final List<Buffer> buffer;
 		private int bufferFullTriggerCount;

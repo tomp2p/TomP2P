@@ -33,7 +33,7 @@ import com.google.android.gcm.server.Sender;
  * @author Nico Rutishauser
  *
  */
-public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements BufferFullListener {
+public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
@@ -51,18 +51,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
-
-		// TODO init some listener to detect when the relay is not reachable anymore
 	}
 
 	@Override
 	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
-		// TODO Auto-generated method stub
+		// ignore it
 		return false;
 	}
 
 	@Override
 	public FutureDone<Message> forwardToUnreachable(Message message) {
+		// create temporal OK message
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
 		final Message response = createResponseMessage(message, Type.PARTIALLY_OK);
 		response.recipient(message.sender());
@@ -75,13 +74,20 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 			futureDone.done(createResponseMessage(message, Type.EXCEPTION));
 		}
 
-		// TODO create temporal OK message
 		return futureDone.done(response);
 	}
 
 	@Override
 	protected void handlePing(Message message, final Responder responder, PeerAddress sender) {
-		// TODO Check if the mobile device is still alive and answer appropriately
+		// Check if the mobile device is still alive by checking the elements in the queue. If the queue
+		// is twice its intended size (or more), the device is probably offline
+		if (readyToSend.size() < 2) {
+			LOG.debug("Device {} seems to be alive", registrationId);
+			// responder.response(createResponseMessage(message, Type.OK));
+		} else {
+			LOG.warn("Device {} did not request the queue for a long time", registrationId);
+			// responder.response(createResponseMessage(message, Type.DENIED));
+		}
 
 		// TODO just for testing:
 		final FutureDone<Message> futureDone = forwardToUnreachable(message);
@@ -141,7 +147,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
 	 * Android device has already been notified.
 	 * 
-	 * @return a pair of buffers. The first element contains the size of all messages, the second element the data
+	 * @return a pair of buffers. The first element contains the size of all messages, the second element the
+	 *         data
 	 */
 	public Pair<Buffer, Buffer> getBufferedMessages() {
 		ByteBuf sizeBuffer = Unpooled.buffer();
@@ -154,7 +161,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Buffer
 
 			readyToSend.clear();
 		}
-		
+
 		return new Pair<Buffer, Buffer>(new Buffer(sizeBuffer), new Buffer(dataBuffer));
 	}
 }

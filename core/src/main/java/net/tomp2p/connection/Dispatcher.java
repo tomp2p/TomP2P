@@ -58,7 +58,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
 
     private final int p2pID;
-    private final PeerBean peerBean;
+    private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
 
     /** copy on write map. The key {@link Number320} can be devided into two parts: first {@link Number160} is the peerID that registers,
@@ -75,9 +75,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerBean
      *            .
      */
-    public Dispatcher(final int p2pID, final PeerBean peerBean, final int heartBeatMillis) {
+    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
         this.p2pID = p2pID;
-        this.peerBean = peerBean;
+        this.peerBeanMaster = peerBeanMaster;
         this.heartBeatMillis = heartBeatMillis;
     }
 
@@ -134,8 +134,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
                     message.version(), message);
             ctx.close();
-            synchronized (peerBean.peerStatusListeners()) {
-            	for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
+            synchronized (peerBeanMaster.peerStatusListeners()) {
+            	for (PeerStatusListener peerStatusListener : peerBeanMaster.peerStatusListeners()) {
                    peerStatusListener.peerFailed(message.sender(), new PeerException(AbortCause.PEER_ERROR, "wrong P2P version"));
             	}
             }
@@ -177,7 +177,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             	}
         	}
         	
-            Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBean.serverPeerAddress());
+            Message responseMessage = DispatchHandler.createResponseMessage(message, Type.UNKNOWN_ID, peerBeanMaster.serverPeerAddress());
             response(ctx, responseMessage);
         }
     }
@@ -213,7 +213,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
         public void failed(Message.Type type, String reason) {
-            Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBean.serverPeerAddress());
+            Message responseMessage = DispatchHandler.createResponseMessage(requestMessage, type, peerBeanMaster.serverPeerAddress());
             Dispatcher.this.response(ctx, responseMessage);
         }
         
@@ -262,28 +262,45 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         ctx.channel().writeAndFlush(response);
     }
 
-    /**
-     * Checks if we have a handler for the given message.
-     * 
-     * @param message
-     *            the message a handler should be found for
-     * @return the handler for the given message, null if none has been registered for that message.
-     */
-    public DispatchHandler associatedHandler(final Message message) {
-        if (message == null || !(message.isRequest())) {
-            return null;
-        }
-        
-        PeerAddress recipient = message.recipient();
-        Number160 peerId = peerBean.serverPeerAddress().peerId();
-        
-        // Search for handler, 0 is ping
-        if (recipient.peerId().isZero() && message.command() == RPC.Commands.PING.getNr()) {
-            return searchHandler(peerId, peerId, RPC.Commands.PING.getNr());
-        } else {
-            return searchHandler(peerId, recipient.peerId(), message.command());
-        }
-    }
+	/**
+	 * Checks if we have a handler for the given message.
+	 * 
+	 * @param message
+	 *            the message a handler should be found for
+	 * @return the handler for the given message, null if none has been
+	 *         registered for that message.
+	 */
+	public DispatchHandler associatedHandler(final Message message) {
+		if (message == null || !(message.isRequest())) {
+			return null;
+		}
+
+		PeerAddress recipient = message.recipient();
+
+		// Search for handler, 0 is ping. If we send with peerid = ZERO, then we
+		// take the first one we found
+		if (recipient.peerId().isZero() && message.command() == RPC.Commands.PING.getNr()) {
+			Number160 peerId = peerBeanMaster.serverPeerAddress().peerId();
+			return searchHandler(peerId, peerId, RPC.Commands.PING.getNr());
+			// else we search for the handler that we are responsible for
+		} else {
+			DispatchHandler handler = searchHandler(recipient.peerId(), recipient.peerId(), message.command());
+			if (handler != null) {
+				return handler;
+			}
+
+			// if we could not find a handler that we are responsible for, we
+			// are most likely a relay. Since we have no id of the relay, we
+			// just take the first one.
+			Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(message.command()));
+			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+				if (entry.getKey().domainKey().equals(recipient.peerId())) {
+					return entry.getValue();
+				}
+			}
+			return null;
+		}
+	}
 
     /**
      * Looks for a registered handler according to the given parameters.

@@ -1,4 +1,4 @@
-package net.tomp2p.rcon;
+package net.tomp2p.relay;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -21,8 +21,6 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.BaseRelayForwarderRPC;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 

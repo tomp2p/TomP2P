@@ -13,7 +13,6 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
 import net.tomp2p.relay.android.AndroidRelayConfiguration;
 import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;

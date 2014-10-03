@@ -163,7 +163,7 @@ public class DistributedRelay {
 			}
 		}
 
-		LOG.debug("Found {} addtional relay candidates", relayCandidates.size());
+		LOG.trace("Found {} addtional relay candidates", relayCandidates.size());
 	}
 
 	/**
@@ -174,7 +174,7 @@ public class DistributedRelay {
 	 * @return FutureDone
 	 */
 	private void setupPeerConnections(final FutureRelay futureRelay, List<PeerAddress> relayCandidates, final int maxFail) {
-		final int nrOfRelays = Math.min(PeerAddress.MAX_RELAYS - relays.size(), relayCandidates.size());
+		final int nrOfRelays = Math.min(relayType.maxRelayCount() - relays.size(), relayCandidates.size());
 		if (nrOfRelays > 0) {
 			LOG.debug("Setting up {} relays", nrOfRelays);
 

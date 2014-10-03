@@ -139,8 +139,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	public void bufferFull(Buffer sizeBuffer, Buffer messageBuffer) {
 		synchronized (readyToSend) {
 			readyToSend.add(new Pair<Buffer, Buffer>(sizeBuffer, messageBuffer));
-			sendTickleMessage();
 		}
+		sendTickleMessage();
 	}
 
 	/**

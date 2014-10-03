@@ -56,7 +56,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     public static final int MAX_SIZE = 142;
     public static final int MIN_SIZE = 30;
-    public static final int MAX_RELAYS = 5;
     private static final long serialVersionUID = -1316622724169272306L;
 
     private static final int NET6 = 1;

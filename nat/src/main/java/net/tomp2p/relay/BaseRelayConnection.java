@@ -57,4 +57,13 @@ public abstract class BaseRelayConnection {
 	public final void addCloseListener(RelayListener listener) {
 		listeners.add(listener);
 	}
+	
+	/**
+	 * Call this to notify all listeners attached by {@link BaseRelayConnection#addCloseListener(RelayListener)}
+	 */
+	protected final void notifyCloseListeners() {
+		for (RelayListener relayListener : listeners) {
+			relayListener.relayFailed(relayAddress());
+		}
+	}
 }

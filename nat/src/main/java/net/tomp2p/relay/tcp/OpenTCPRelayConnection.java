@@ -7,9 +7,7 @@ import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayConnection;
-import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayUtils;
 
 import org.slf4j.Logger;
@@ -37,12 +35,8 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 			public void operationComplete(FutureDone<Void> future) throws Exception {
 				if (!peer.isShutdown()) {
 					// peer connection not open anymore -> remove and open a new  relay connection
-					PeerAddress failedRelay = connection.remotePeer();
-					LOG.debug("Relay connection {} failed.", failedRelay);
-					
-					for (RelayListener relayListener : listeners) {
-						relayListener.relayFailed(failedRelay);
-					}
+					LOG.debug("Relay connection {} failed.", relayAddress());
+					notifyCloseListeners();
 				}
 			}
 		});

@@ -29,11 +29,17 @@ import org.slf4j.LoggerFactory;
 public class AndroidRelayConnection extends BaseRelayConnection {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidRelayConnection.class);
+	/**
+	 * The maximum number of attempts to reach the relay peer. If the counter exceeds this limit, the relay is
+	 * declared as unreachable
+	 */
+	private static final int MAX_FAIL_COUNT = 5;
 
 	private final DispatchHandler dispatchHandler;
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private final GCMServerCredentials gcmServerCredentials;
+	private int reachRelayFailCounter = 0;
 
 	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer,
 			ConnectionConfiguration config, GCMServerCredentials gcmServerCredentials) {
@@ -68,11 +74,15 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 			@Override
 			public void operationComplete(FutureResponse futureResponse) throws Exception {
 				if (futureResponse.isSuccess()) {
+					// reset the fail counter
+					reachRelayFailCounter = 0;
+					
 					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
 					handleBufferResponse(futureResponse.responseMessage(), futureDone);
 				} else {
 					LOG.error("Cannot get the buffer from relay {}. Reason: ", relayAddress(), futureResponse.failedReason());
 					futureDone.failed(futureResponse);
+					failedToContactRelay();
 				}
 			}
 		});
@@ -92,7 +102,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 					Message message = RelayUtils.decodeMessage(bufferedMessage, response.recipientSocket(),
 							response.senderSocket());
 					DispatchHandler handler = peer.connectionBean().dispatcher().associatedHandler(message);
-					if(handler == null) {
+					if (handler == null) {
 						// ignore the message
 						LOG.error("Cannot find the associated handler to message {}", message);
 					} else {
@@ -111,18 +121,28 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 
 	@Override
 	public FutureDone<Void> shutdown() {
-		// TODO Auto-generated method stub
+		// Nothing to do
 		return new FutureDone<Void>().done();
+	}
+	
+	private void failedToContactRelay() {
+		LOG.warn("Failed to contact the relay peer. Increase the counter to detect long-term disconnections");
+		reachRelayFailCounter++;
+		if(reachRelayFailCounter > MAX_FAIL_COUNT) {
+			LOG.error("The relay {} was not reachable for {} send attempts", relayAddress(), reachRelayFailCounter);
+			notifyCloseListeners();
+		}
 	}
 
 	@Override
 	public void onMapUpdateFailed() {
-		// TODO Auto-generated method stub
+		failedToContactRelay();
 	}
 
 	@Override
 	public void onMapUpdateSuccess() {
-		// TODO Auto-generated method stub
+		// reset the couter
+		reachRelayFailCounter = 0;
 	}
 
 	public GCMServerCredentials gcmServerCredentials() {

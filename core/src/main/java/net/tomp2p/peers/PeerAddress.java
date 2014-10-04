@@ -588,6 +588,13 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
     
     /**
+     * @return if the peer is slow (might be a relayed mobile device)
+     */
+    public boolean isSlow() {
+    	return isSlow;
+    }
+    
+    /**
      * Create a new PeerAddress and change the relayed status.
 
      * @param isRelayed 

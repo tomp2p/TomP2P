@@ -278,7 +278,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
             return;
         }
         
-        if(this.message.recipient().isRelayed() && responseMessage.type() == Type.PARTIALLY_OK) {
+        if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Type.PARTIALLY_OK) {
         	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	// TODO wait for the (real) answer of the unreachable peer
         }

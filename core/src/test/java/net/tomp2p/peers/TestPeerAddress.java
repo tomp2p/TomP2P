@@ -144,7 +144,7 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("192.168.230.236"), RND.nextInt(BIT_16), RND.nextInt(BIT_16)), true, true, true,
-                psa);
+                true, psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -177,7 +177,7 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), true, true, true, psa);
+                RND.nextInt(BIT_16)), true, true, true, true, psa);
 
         final int length = 200;
         byte[] me = new byte[length];
@@ -210,7 +210,7 @@ public class TestPeerAddress {
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         PeerAddress pa3 = new PeerAddress(new Number160("0x657435a424444522456"), new PeerSocketAddress(
                 InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde0"), RND.nextInt(BIT_16),
-                RND.nextInt(BIT_16)), true, true, true, psa);
+                RND.nextInt(BIT_16)), true, true, true, true, psa);
         
         Assert.assertEquals(142, pa3.toByteArray().length);
 

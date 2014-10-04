@@ -242,7 +242,7 @@ public class PeerCreator {
 		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
 				ports().tcpPort(), channelServerConficuration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
-		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
+		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false, false,
 		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
 		return self;
 	}

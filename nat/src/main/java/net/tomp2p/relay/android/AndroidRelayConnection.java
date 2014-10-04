@@ -1,12 +1,9 @@
 package net.tomp2p.relay.android;
 
-import java.util.List;
-
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
@@ -40,6 +37,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	private final ConnectionConfiguration config;
 	private final GCMServerCredentials gcmServerCredentials;
 	private int reachRelayFailCounter = 0;
+	private final BufferedMessageHandler bufferedMessageHandler;
 
 	public AndroidRelayConnection(PeerAddress relayAddress, DispatchHandler dispatchHandler, Peer peer,
 			ConnectionConfiguration config, GCMServerCredentials gcmServerCredentials) {
@@ -48,6 +46,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		this.peer = peer;
 		this.config = config;
 		this.gcmServerCredentials = gcmServerCredentials;
+		this.bufferedMessageHandler = new BufferedMessageHandler(peer);
 	}
 
 	@Override
@@ -78,7 +77,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 					reachRelayFailCounter = 0;
 					
 					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
-					handleBufferResponse(futureResponse.responseMessage(), futureDone);
+					bufferedMessageHandler.handleBufferResponse(futureResponse.responseMessage(), futureDone);
 				} else {
 					LOG.error("Cannot get the buffer from relay {}. Reason: ", relayAddress(), futureResponse.failedReason());
 					futureDone.failed(futureResponse);
@@ -88,35 +87,6 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 		});
 
 		return futureDone;
-	}
-
-	private void handleBufferResponse(Message response, FutureDone<Void> futureDone) {
-		Buffer sizeBuffer = response.buffer(0);
-		Buffer messageBuffer = response.buffer(1);
-		if (sizeBuffer != null && messageBuffer != null) {
-			// decompose the large buffer into a buffer for each message
-			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer);
-			LOG.debug("Received {} buffered messages", bufferedMessages.size());
-			for (Buffer bufferedMessage : bufferedMessages) {
-				try {
-					Message message = RelayUtils.decodeMessage(bufferedMessage, response.recipientSocket(),
-							response.senderSocket());
-					DispatchHandler handler = peer.connectionBean().dispatcher().associatedHandler(message);
-					if (handler == null) {
-						// ignore the message
-						LOG.error("Cannot find the associated handler to message {}", message);
-					} else {
-						// TODO handle the message
-					}
-				} catch (Exception e) {
-					// continue to process the buffers anyway
-					LOG.error("Cannot decode the buffer {}", bufferedMessage, e);
-				}
-			}
-		} else {
-			LOG.warn("Buffer message does not contain any buffered message");
-			futureDone.failed("Cannot find any buffer in the message");
-		}
 	}
 
 	@Override

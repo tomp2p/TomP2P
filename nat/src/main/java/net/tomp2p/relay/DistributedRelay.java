@@ -406,7 +406,7 @@ public class DistributedRelay {
 
 		// update firewalled and isRelayed flags
 		PeerAddress newAddress = peer.peerAddress().changeFirewalledTCP(!hasRelays).changeFirewalledUDP(!hasRelays)
-				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses);
+				.changeRelayed(hasRelays).changePeerSocketAddresses(socketAddresses).changeSlow(relayType.isSlow());
 		peer.peerBean().serverPeerAddress(newAddress);
 		LOG.debug("Updated peer address {}, isrelay = {}", newAddress, hasRelays);
 	}

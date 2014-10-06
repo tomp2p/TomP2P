@@ -10,7 +10,6 @@ import java.util.List;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
-import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -56,7 +55,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 	@Override
 	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
-		// ignore it
+		if(referrer == null && unreachablePeerAddress().peerId().equals(remotePeer.peerId()) && remotePeer.isRelayed() && remotePeer.isSlow()) {
+			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+			unreachablePeerAddress(remotePeer);
+		}
 		return false;
 	}
 

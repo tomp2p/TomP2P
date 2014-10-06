@@ -503,16 +503,20 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("paddr[");
-        return sb.append(peerId.toString()).append(peerSocketAddress.toString())
-        		.append("]/relay(")
-        		.append(isRelayed)
-        		.append(",")
-        		.append(peerSocketAddresses.size())
-        		.append(")=")
-        		.append(Arrays.toString(peerSocketAddresses.toArray()))
-        		.toString();
-    }
+		StringBuilder sb = new StringBuilder("paddr[");
+		sb.append(peerId.toString()).append(peerSocketAddress.toString()).append("]");
+		sb.append("/relay(").append(isRelayed);
+		if (isRelayed) {
+			sb.append(",").append(peerSocketAddresses.size()).append(")=")
+					.append(Arrays.toString(peerSocketAddresses.toArray()));
+		} else {
+			sb.append(")");
+		}
+
+		sb.append("/slow(").append(isSlow).append(")");
+
+		return sb.toString();
+	}
 
     @Override
     public int compareTo(final PeerAddress nodeAddress) {

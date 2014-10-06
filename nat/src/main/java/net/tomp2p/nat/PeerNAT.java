@@ -55,7 +55,6 @@ public class PeerNAT {
 	
 	private static final int MESSAGE_VERSION = 1;
 
-
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays,
 			int failedRelayWaitTime, int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType,
 			GCMServerCredentials gcmServerCredentials, ConnectionConfiguration config) {

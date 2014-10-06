@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
@@ -40,14 +41,21 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private final AndroidRelayConfiguration config;
 	private final Sender sender;
 	private String registrationId;
+	private final int mapUpdateIntervalMS;
 	private final MessageBuffer buffer;
 	private final List<Pair<Buffer, Buffer>> readyToSend;
-
+	private final AtomicLong lastUpdate;
+	
 	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config,
-			String authenticationToken, String registrationId) {
+			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
 		super(peer, peerConnection, RelayType.ANDROID);
 		this.config = config;
 		this.registrationId = registrationId;
+		
+		// stretch the update interval by factor 1.5 to be tolerant for slow messages 
+		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
+		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
+		
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
@@ -74,17 +82,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			buffer.addMessage(message);
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
-			futureDone.done(createResponseMessage(message, Type.EXCEPTION));
+			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));
 		}
 
+		LOG.debug("Added message {} to buffer and returning a partially ok", message);
 		return futureDone.done(response);
 	}
 
 	@Override
 	protected void handlePing(Message message, final Responder responder) {
-		// Check if the mobile device is still alive by checking the elements in the queue. If the queue
-		// is twice its intended size (or more), the device is probably offline
-		if (readyToSend.size() < 2) {
+		// Check if the mobile device is still alive by checking its last update time.
+		if (lastUpdate.get() + mapUpdateIntervalMS > System.currentTimeMillis()) {
 			LOG.debug("Device {} seems to be alive", registrationId);
 			 responder.response(createResponseMessage(message, Type.OK, unreachablePeerAddress()));
 		} else {
@@ -165,6 +173,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			readyToSend.clear();
 		}
 
+		lastUpdate.set(System.currentTimeMillis());
 		return new Pair<Buffer, Buffer>(new Buffer(sizeBuffer), new Buffer(dataBuffer));
 	}
 }

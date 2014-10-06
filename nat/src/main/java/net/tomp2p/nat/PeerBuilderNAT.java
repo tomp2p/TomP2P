@@ -185,16 +185,16 @@ public class PeerBuilderNAT {
 			maxFail = 2;
 		}
 
-		if (peerMapUpdateInterval == -1) {
-			peerMapUpdateInterval = 60;
-		}
-
 		if (manualRelays == null) {
 			manualRelays = Collections.emptyList();
 		}
 
 		if (relayType == null) {
 			relayType = RelayType.OPENTCP;
+		}
+		
+		if (peerMapUpdateInterval == -1) {
+			peerMapUpdateInterval = relayType.defaultMapUpdateInterval();
 		}
 		
 		peer.addShutdownListener(new Shutdown() {

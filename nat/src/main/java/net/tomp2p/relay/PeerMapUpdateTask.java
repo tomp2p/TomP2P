@@ -74,8 +74,8 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 		}
 
 		if (bootstap() && updated.get()) {
-			// reset the status since it is now sent to alle relay peers
-			updated.set(false);
+			// reset the status since it is now sent to all relay peers
+//			updated.set(false);
 			
 			// send the peer map to the relays
 			updatePeerMap();

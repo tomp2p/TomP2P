@@ -151,9 +151,17 @@ public class RelayRPC extends DispatchHandler {
 			responder.response(createResponseMessage(message, Type.DENIED));
 	        return;
 		}
+		
+		int mapUpdateInterval = RelayType.ANDROID.defaultMapUpdateInterval();
+		if(message.intList().isEmpty()) {
+			LOG.warn("Android device did not send the peer map update interval. Take default of {}s", mapUpdateInterval);
+		} else {
+			mapUpdateInterval = message.intAt(0);
+			LOG.debug("Android device sent map update interval of {}s", mapUpdateInterval);
+		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, authenticationKey, registrationId);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, authenticationKey, registrationId, mapUpdateInterval);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));

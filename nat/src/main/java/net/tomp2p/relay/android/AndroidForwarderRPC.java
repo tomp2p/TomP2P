@@ -18,6 +18,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
+import net.tomp2p.relay.RelayType;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config,
 			String authenticationToken, String registrationId) {
-		super(peer, peerConnection);
+		super(peer, peerConnection, RelayType.ANDROID);
 		this.config = config;
 		this.registrationId = registrationId;
 		this.sender = new Sender(authenticationToken);
@@ -78,25 +79,25 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	}
 
 	@Override
-	protected void handlePing(Message message, final Responder responder, PeerAddress sender) {
+	protected void handlePing(Message message, final Responder responder) {
 		// Check if the mobile device is still alive by checking the elements in the queue. If the queue
 		// is twice its intended size (or more), the device is probably offline
 		if (readyToSend.size() < 2) {
 			LOG.debug("Device {} seems to be alive", registrationId);
-			// responder.response(createResponseMessage(message, Type.OK));
+			 responder.response(createResponseMessage(message, Type.OK, unreachablePeerAddress()));
 		} else {
 			LOG.warn("Device {} did not request the queue for a long time", registrationId);
-			// responder.response(createResponseMessage(message, Type.DENIED));
+			 responder.response(createResponseMessage(message, Type.DENIED, unreachablePeerAddress()));
 		}
 
 		// TODO just for testing:
-		final FutureDone<Message> futureDone = forwardToUnreachable(message);
-		futureDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
-			@Override
-			public void operationComplete(FutureDone<Message> future) throws Exception {
-				responder.response(futureDone.object());
-			}
-		});
+//		final FutureDone<Message> futureDone = forwardToUnreachable(message);
+//		futureDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
+//			@Override
+//			public void operationComplete(FutureDone<Message> future) throws Exception {
+//				responder.response(futureDone.object());
+//			}
+//		});
 	}
 
 	/**

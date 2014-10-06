@@ -50,9 +50,10 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	private PeerAddress unreachablePeer;
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
-	public BaseRelayForwarderRPC(Peer peer, PeerConnection peerConnection) {
+
+	public BaseRelayForwarderRPC(Peer peer, PeerConnection peerConnection, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
-		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true);
+		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true).changeSlow(relayType.isSlow());
 		this.relayPeerId = peer.peerID();
 	}
 
@@ -98,10 +99,10 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		// special treatment for ping and neighbor
 		if (message.command() == RPC.Commands.PING.getNr()) {
 			LOG.debug("Received message {} to handle ping for unreachable peer {}", message, unreachablePeer);
-			handlePing(message, responder, unreachablePeer);
+			handlePing(message, responder);
 		} else if (message.command() == RPC.Commands.NEIGHBOR.getNr()) {
 			LOG.debug("Received message {} to handle neighbor request for unreachable peer {}", message, unreachablePeer);
-			handleNeigbhor(message, responder, unreachablePeer);
+			handleNeigbhor(message, responder);
 		} else {
 			LOG.debug("Received message {} to forward to unreachable peer {}", message, unreachablePeer);
 			FutureDone<Message> response = forwardToUnreachable(message);
@@ -137,7 +138,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * @param responder
 	 * @param sender
 	 */
-	protected abstract void handlePing(Message message, Responder responder, PeerAddress sender);
+	protected abstract void handlePing(Message message, Responder responder);
 
 	/**
 	 * When a neighbor message is received
@@ -146,7 +147,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * @param responder
 	 * @param sender
 	 */
-	private void handleNeigbhor(final Message message, Responder responder, PeerAddress sender) {
+	private void handleNeigbhor(final Message message, Responder responder) {
 		if (message.keyList().size() < 2) {
 			throw new IllegalArgumentException("We need the location and domain key at least");
 		}
@@ -159,14 +160,14 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		Collection<PeerAddress> neighbors = getNeighbors(locationKey, NeighborRPC.NEIGHBOR_SIZE);
 		if (neighbors == null) {
 			// return empty neighbor set
-			Message response = createResponseMessage(message, Type.NOT_FOUND, sender);
+			Message response = createResponseMessage(message, Type.NOT_FOUND, unreachablePeer);
 			response.neighborsSet(new NeighborSet(-1, Collections.<PeerAddress> emptyList()));
 			responder.response(response);
 			return;
 		}
 
 		// Create response message and set neighbors
-		final Message responseMessage = createResponseMessage(message, Type.OK, sender);
+		final Message responseMessage = createResponseMessage(message, Type.OK, unreachablePeer);
 
 		// TODO: the relayed peer must be up-to-date here
 		// neighbors.add(peerConnection.remotePeer());

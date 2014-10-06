@@ -13,6 +13,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
+import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.RPC;
 
@@ -46,7 +47,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 	 *            The relay peer
 	 */
 	public OpenTCPForwarderRPC(final PeerConnection peerConnection, final Peer peer, ConnectionConfiguration config) {
-		super(peer, peerConnection);
+		super(peer, peerConnection, RelayType.OPENTCP);
 		this.config = config;
 		this.peerConnection = peerConnection.changeRemotePeer(unreachablePeerAddress());
 		
@@ -124,9 +125,9 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 	}
 	
 	@Override
-	protected void handlePing(Message message, Responder responder, PeerAddress sender) {
+	protected void handlePing(Message message, Responder responder) {
 		LOG.debug("peerconnection open? {}", peerConnection.isOpen());
-		Message response = createResponseMessage(message, peerConnection.isOpen() ? Type.OK : Type.EXCEPTION, sender);
+		Message response = createResponseMessage(message, peerConnection.isOpen() ? Type.OK : Type.EXCEPTION, unreachablePeerAddress());
 		responder.response(response);
 	}
 }

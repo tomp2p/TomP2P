@@ -97,29 +97,29 @@ public class RconRPC extends DispatchHandler {
 	 */
 	private void handleRconForward(final Message message, final Responder responder) {
 		// get the relayForwarderRPC via Dispatcher to retrieve the existing peerConnection
-		final BaseRelayForwarderRPC forwarder = extractRelayForwarderRPC(message);
+		final BaseRelayForwarderRPC forwarder = extractRelayForwarder(message);
 		if (forwarder != null) {
 			final Message forwardMessage = createForwardMessage(message, forwarder.unreachablePeerAddress());
 			forwarder.handleResponse(forwardMessage, responder);
 		} else {
-			handleFail(message, responder, "no relayForwarder Registered for peerId="
+			handleFail(message, responder, "No RelayForwarder registered for peerId="
 					+ message.recipient().peerId().toString());
 		}
 	}
 
 	/**
-	 * This method extracts a registered RelayForwarderRPC from the {@link Dispatcher}. This RelayForwarder
+	 * This method extracts a registered {@link BaseRelayForwarderRPC} from the {@link Dispatcher}. This RelayForwarder
 	 * can then be used to extract the {@link PeerConnection} to the unreachable Peer we want to contact.
 	 * 
 	 * @param unreachablePeerId the unreachable peer
 	 * @return forwarder
 	 */
-	private BaseRelayForwarderRPC extractRelayForwarderRPC(final Message message) {
+	private BaseRelayForwarderRPC extractRelayForwarder(final Message message) {
 		final Dispatcher dispatcher = peer.connectionBean().dispatcher();
 		final Map<Integer, DispatchHandler> ioHandlers = dispatcher.searchHandlerMap(peer.peerID(), message.recipient().peerId());
-		for (Map.Entry<Integer, DispatchHandler> element : ioHandlers.entrySet()) {
-			if (element.getValue() instanceof BaseRelayForwarderRPC) {
-				return (BaseRelayForwarderRPC) element.getValue();
+		for (DispatchHandler handler : ioHandlers.values()) {
+			if (handler instanceof BaseRelayForwarderRPC) {
+				return (BaseRelayForwarderRPC) handler;
 			}
 		}
 		return null;
@@ -141,9 +141,6 @@ public class RconRPC extends DispatchHandler {
 		final NeighborSet ns = new NeighborSet(1, new ArrayList<PeerAddress>(1));
 		ns.add(message.sender());
 		forwardMessage.neighborsSet(ns);
-
-//		forwardMessage.senderSocket(message.senderSocket());
-//		forwardMessage.recipientSocket(recipient.createSocketUDP());
 
 		if (!message.intList().isEmpty()) {
 			// store the message id for new message to identify the cached message afterwards

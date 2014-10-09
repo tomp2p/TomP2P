@@ -93,10 +93,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	protected void handlePing(Message message, final Responder responder) {
 		// Check if the mobile device is still alive by checking its last update time.
 		if (lastUpdate.get() + mapUpdateIntervalMS > System.currentTimeMillis()) {
-			LOG.debug("Device {} seems to be alive", registrationId);
+			LOG.trace("Device {} seems to be alive", registrationId);
 			 responder.response(createResponseMessage(message, Type.OK, unreachablePeerAddress()));
 		} else {
-			LOG.warn("Device {} did not request the queue for a long time", registrationId);
+			LOG.warn("Device {} did not send the map update for a long time", registrationId);
 			 responder.response(createResponseMessage(message, Type.DENIED, unreachablePeerAddress()));
 		}
 

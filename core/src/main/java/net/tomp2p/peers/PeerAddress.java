@@ -484,6 +484,9 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if (isRelayed) {
             result |= IS_RELAYED;
         }
+        if(isSlow) {
+        	result |= IS_SLOW;
+        }
         return result;
     }
 

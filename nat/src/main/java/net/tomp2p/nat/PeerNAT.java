@@ -67,7 +67,7 @@ public class PeerNAT {
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
 		this.config = config;
-		this.distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType, gcmServerCredentials, config);
+		this.distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType, gcmServerCredentials, peerMapUpdateInterval, config);
 	}
 
 	public Peer peer() {

@@ -153,10 +153,10 @@ public class RelayRPC extends DispatchHandler {
 		}
 		
 		int mapUpdateInterval = RelayType.ANDROID.defaultMapUpdateInterval();
-		if(message.intList().isEmpty()) {
+		if(message.intAt(1) == null) {
 			LOG.warn("Android device did not send the peer map update interval. Take default of {}s", mapUpdateInterval);
 		} else {
-			mapUpdateInterval = message.intAt(0);
+			mapUpdateInterval = message.intAt(1);
 			LOG.debug("Android device sent map update interval of {}s", mapUpdateInterval);
 		}
         

@@ -51,6 +51,7 @@ public class DistributedRelay {
 	private final Collection<RelayListener> relayListeners;
 	private final RelayType relayType;
 	private final GCMServerCredentials gcmServerCredentials;
+	private final int mapUpdateInterval;
 
 	/**
 	 * @param peer
@@ -63,11 +64,12 @@ public class DistributedRelay {
 	 *            the kind of the relay connection
 	 */
 	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, RelayType relayType,
-			GCMServerCredentials gcmServerCredentials, ConnectionConfiguration config) {
+			GCMServerCredentials gcmServerCredentials, int mapUpdateInterval, ConnectionConfiguration config) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
 		this.relayType = relayType;
 		this.gcmServerCredentials = gcmServerCredentials;
+		this.mapUpdateInterval = mapUpdateInterval;
 		this.config = config;
 
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
@@ -284,8 +286,10 @@ public class DistributedRelay {
 				LOG.error("GCM Server Configuration is not valid. Please provide a valid configuration");
 				return futureDone.failed("Invalid GCM configuration");
 			} else {
+				// add the registration ID, the GCM authentication key and the map update interval
 				message.buffer(RelayUtils.encodeString(gcmServerCredentials.registrationId()));
 				message.buffer(RelayUtils.encodeString(gcmServerCredentials.senderAuthenticationKey()));
+				message.intValue(mapUpdateInterval);
 			}
 		}
 

@@ -35,7 +35,7 @@ public class TestPeerExchange {
             
             
             final CountDownLatch c = new CountDownLatch(2);
-            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer, false);
+            TrackerStorage trackerStorage = new TrackerStorage(60, new int[]{1,2}, 20, recv1Peer.peerBean().peerMap(), recv1.peerAddress(), false);
             Random rnd = new Random(42);
             PeerBuilderTracker.DefaultPeerExchangeHandler pe = new PeerBuilderTracker.DefaultPeerExchangeHandler(trackerStorage, recv1Peer.peerAddress(), rnd) {
             	@Override

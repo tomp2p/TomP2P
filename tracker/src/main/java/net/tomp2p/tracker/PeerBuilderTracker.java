@@ -59,7 +59,7 @@ public class PeerBuilderTracker {
 		
 		final TrackerStorage trackerStorage;
 		if (peerExchangeHandler == null) {
-			trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer, verifyPeersOnTracker.booleanValue());
+			trackerStorage = new TrackerStorage(ttl, maintenanceInterval, replicationFactor, peer.peerBean().peerMap(), peer.peerAddress(), verifyPeersOnTracker.booleanValue());
 			peerExchangeHandler = new DefaultPeerExchangeHandler(trackerStorage, peer.peerAddress(), rnd);
 		} else {
 			trackerStorage = peerExchangeHandler.trackerStorage();

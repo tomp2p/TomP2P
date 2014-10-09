@@ -161,7 +161,7 @@ public class RelayRPC extends DispatchHandler {
 		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection, androidConfig, authenticationKey, registrationId, mapUpdateInterval);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), androidConfig, authenticationKey, registrationId, mapUpdateInterval);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));

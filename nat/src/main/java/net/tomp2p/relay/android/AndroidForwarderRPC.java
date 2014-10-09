@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -45,17 +44,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private final MessageBuffer buffer;
 	private final List<Pair<Buffer, Buffer>> readyToSend;
 	private final AtomicLong lastUpdate;
-	
-	public AndroidForwarderRPC(Peer peer, PeerConnection peerConnection, AndroidRelayConfiguration config,
+
+	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, AndroidRelayConfiguration config,
 			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
-		super(peer, peerConnection, RelayType.ANDROID);
+		super(peer, unreachablePeer, RelayType.ANDROID);
 		this.config = config;
 		this.registrationId = registrationId;
-		
-		// stretch the update interval by factor 1.5 to be tolerant for slow messages 
+
+		// stretch the update interval by factor 1.5 to be tolerant for slow messages
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
-		
+
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
@@ -63,8 +62,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 	@Override
 	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
-		if(referrer == null && unreachablePeerAddress().peerId().equals(remotePeer.peerId()) && remotePeer.isRelayed() && remotePeer.isSlow()) {
-			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+		if (referrer == null && unreachablePeerAddress().peerId().equals(remotePeer.peerId()) && remotePeer.isRelayed()
+				&& remotePeer.isSlow()) {
+			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer,
+					referrer);
 			unreachablePeerAddress(remotePeer);
 		}
 		return false;
@@ -87,27 +88,6 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 		LOG.debug("Added message {} to buffer and returning a partially ok", message);
 		return futureDone.done(response);
-	}
-
-	@Override
-	protected void handlePing(Message message, final Responder responder) {
-		// Check if the mobile device is still alive by checking its last update time.
-		if (lastUpdate.get() + mapUpdateIntervalMS > System.currentTimeMillis()) {
-			LOG.trace("Device {} seems to be alive", registrationId);
-			 responder.response(createResponseMessage(message, Type.OK, unreachablePeerAddress()));
-		} else {
-			LOG.warn("Device {} did not send the map update for a long time", registrationId);
-			 responder.response(createResponseMessage(message, Type.DENIED, unreachablePeerAddress()));
-		}
-
-		// TODO just for testing:
-//		final FutureDone<Message> futureDone = forwardToUnreachable(message);
-//		futureDone.addListener(new BaseFutureAdapter<FutureDone<Message>>() {
-//			@Override
-//			public void operationComplete(FutureDone<Message> future) throws Exception {
-//				responder.response(futureDone.object());
-//			}
-//		});
 	}
 
 	/**
@@ -175,5 +155,23 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 		lastUpdate.set(System.currentTimeMillis());
 		return new Pair<Buffer, Buffer>(new Buffer(sizeBuffer), new Buffer(dataBuffer));
+	}
+
+	@Override
+	protected void peerMapUpdated() {
+		// take this event as an indicator that the mobile device is online
+		lastUpdate.set(System.currentTimeMillis());
+	}
+
+	@Override
+	protected boolean isAlive() {
+		// Check if the mobile device is still alive by checking its last update time.
+		if (lastUpdate.get() + mapUpdateIntervalMS > System.currentTimeMillis()) {
+			LOG.trace("Device {} seems to be alive", registrationId);
+			return true;
+		} else {
+			LOG.warn("Device {} did not send the map update for a long time", registrationId);
+			return false;
+		}
 	}
 }

@@ -51,9 +51,9 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
 
 
-	public BaseRelayForwarderRPC(Peer peer, PeerConnection peerConnection, RelayType relayType) {
+	public BaseRelayForwarderRPC(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
-		this.unreachablePeer = peerConnection.remotePeer().changeRelayed(true).changeSlow(relayType.isSlow());
+		this.unreachablePeer = unreachablePeer.changeRelayed(true).changeSlow(relayType.isSlow());
 		this.relayPeerId = peer.peerID();
 	}
 
@@ -138,7 +138,17 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * @param responder
 	 * @param sender
 	 */
-	protected abstract void handlePing(Message message, Responder responder);
+	private void handlePing(Message message, Responder responder) {
+		Message response = createResponseMessage(message, isAlive() ? Type.OK : Type.EXCEPTION,
+				unreachablePeerAddress());
+		responder.response(response);
+	}
+	
+	/**
+	 * Checks whether the relayed peer is still alive.
+	 * @return
+	 */
+	protected abstract boolean isAlive();
 
 	/**
 	 * When a neighbor message is received
@@ -215,5 +225,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 */
 	public final void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
 		this.peerMap = peerMap;
+		peerMapUpdated();
 	}
+	
+	/**
+	 * Is called when the unreachable peer sent an update to the relay peer
+	 */
+	protected abstract void peerMapUpdated();
 }

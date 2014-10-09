@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -58,17 +57,6 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
 		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
-	}
-
-	@Override
-	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
-		if (referrer == null && unreachablePeerAddress().peerId().equals(remotePeer.peerId()) && remotePeer.isRelayed()
-				&& remotePeer.isSlow()) {
-			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer,
-					referrer);
-			unreachablePeerAddress(remotePeer);
-		}
-		return false;
 	}
 
 	@Override

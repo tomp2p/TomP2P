@@ -61,21 +61,31 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		return unreachablePeer;
 	}
 
-	protected final void unreachablePeerAddress(PeerAddress unreachablePeer) {
-		assert unreachablePeer != null;
-		this.unreachablePeer = unreachablePeer;
-	}
-
 	protected final Number160 unreachablePeerId() {
 		return unreachablePeer.peerId();
 	}
 
 	@Override
-	public boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
+	public final boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
 		// not handled here
 		return false;
 	}
+	
+	@Override
+	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
+		if (referrer == null || remotePeer.equals(referrer)) {
+			// if firsthand (referrer is null), then full trust.
+			// if second hand and a stable peerconnection, we can trust as well
 
+			if (remotePeer.peerId().equals(unreachablePeerId()) && remotePeer.isRelayed()) {
+				// we got new information about this peer, e.g. its active relays
+				LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+				this.unreachablePeer = remotePeer;
+			}
+		}
+		return false;
+	}
+	
 	public Number160 relayPeerId() {
 		return relayPeerId;
 	}

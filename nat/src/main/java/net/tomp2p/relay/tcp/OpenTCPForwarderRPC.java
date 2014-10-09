@@ -4,7 +4,6 @@ import java.net.InetSocketAddress;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
-import net.tomp2p.connection.PeerException;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
@@ -12,7 +11,6 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
@@ -62,28 +60,6 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		});
 
 		LOG.debug("Created TCP forwarder from peer {} to peer {}", peer.peerAddress(), unreachablePeerAddress());
-	}
-
-	@Override
-	public boolean peerFailed(PeerAddress remotePeer, PeerException exception) {
-		// not handled here
-		return false;
-	}
-
-	@Override
-	public boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection2) {
-		boolean firstHand = referrer == null;
-		boolean secondHand = remotePeer.equals(referrer);
-		boolean samePeerConnection = peerConnection.equals(peerConnection2);
-		// if firsthand, then full trust, if second hand and a stable peerconnection, we can trust as well
-		if ((firstHand || (secondHand && samePeerConnection)) && remotePeer.peerId().equals(unreachablePeerId())
-				&& remotePeer.isRelayed()) {
-			// we got new information about this peer, e.g. its active relays
-			LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer,
-					referrer);
-			unreachablePeerAddress(remotePeer);
-		}
-		return false;
 	}
 
 	@Override

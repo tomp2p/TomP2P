@@ -1,11 +1,12 @@
 package net.tomp2p.utils;
 
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TestCache {
@@ -137,4 +138,37 @@ public class TestCache {
         // putIfAbsent will refresh test0
         Assert.assertEquals("test0", val);
     }
+    
+    @Test
+    public void testIteratorKey() {
+    	String key = "hallo0";
+    	ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, true);
+        test.put(key, "test0");
+        Iterator<Entry<String, String>> iterator = test.entrySet().iterator();
+        while(iterator.hasNext()) {
+        	iterator.next();
+        	iterator.remove();
+        }
+        Assert.assertEquals(0, test.size());
+        
+    }
+    
+	@Test
+	public void testIteratorValue() {
+		String key = "hallo0";
+		ConcurrentCacheMap<String, String> test = new ConcurrentCacheMap<String, String>(1, 1024, true);
+		test.put(key, "test0");
+		Iterator<String> iterator = test.values().iterator();
+		while (iterator.hasNext()) {
+			iterator.next();
+			try {
+				iterator.remove();
+				Assert.fail();
+			} catch (UnsupportedOperationException u) {
+
+			}
+		}
+		Assert.assertEquals(1, test.size());
+
+	}
 }

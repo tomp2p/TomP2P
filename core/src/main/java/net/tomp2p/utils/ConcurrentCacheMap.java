@@ -316,7 +316,30 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
     @Override
     public Collection<V> values() {
-        final Collection<V> retVal = new ArrayList<V>();
+        final Collection<V> retVal = new ArrayList<V>() {
+            private static final long serialVersionUID = 3769009451779243542L;
+
+			@Override
+        	public Iterator<V> iterator() {
+        		final Iterator<V> orig = super.iterator();
+        		return new Iterator<V>() {
+					@Override
+                    public boolean hasNext() {
+	                    return orig.hasNext();
+                    }
+
+					@Override
+                    public V next() {
+	                    return orig.next();
+                    }
+
+					@Override
+                    public void remove() {
+						throw new UnsupportedOperationException("cannot remove from values");
+                    }
+				};
+        	}
+        };
         for (final CacheMap<K, ExpiringObject> segment : segments) {
             synchronized (segment) {
                 final Iterator<ExpiringObject> iterator = segment.values().iterator();

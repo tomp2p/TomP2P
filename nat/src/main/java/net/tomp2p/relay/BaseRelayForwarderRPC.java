@@ -49,10 +49,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	private final Number160 relayPeerId;
 	private PeerAddress unreachablePeer;
 	private List<Map<Number160, PeerStatatistic>> peerMap = null;
-
+	private final RelayType relayType;
 
 	public BaseRelayForwarderRPC(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
+		this.relayType = relayType;
 		this.unreachablePeer = unreachablePeer.changeRelayed(true).changeSlow(relayType.isSlow());
 		this.relayPeerId = peer.peerID();
 	}
@@ -80,13 +81,14 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 			if (remotePeer.peerId().equals(unreachablePeerId()) && remotePeer.isRelayed()) {
 				// we got new information about this peer, e.g. its active relays
 				LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
-				this.unreachablePeer = remotePeer;
+				// TODO remove 'changeSlow()'. But currently, the 'slow' flag is not sent through the network
+				this.unreachablePeer = remotePeer.changeSlow(relayType.isSlow());
 			}
 		}
 		return false;
 	}
 	
-	public Number160 relayPeerId() {
+	public final Number160 relayPeerId() {
 		return relayPeerId;
 	}
 	

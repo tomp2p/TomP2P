@@ -43,17 +43,19 @@ public class PeerNAT {
 	private final Peer peer;
 	private final NATUtils natUtils;
 	private final RelayRPC relayRPC;
-	private final int peerMapUpdateInterval;
 	private final int failedRelayWaitTime;
 	private final int maxFail;
 	private final boolean manualPorts;
-	private final Collection<PeerAddress> manualRelays;
 	private final ConnectionConfiguration config;
 	
 	// relaying
+	private final int peerMapUpdateInterval;
+	private final Collection<PeerAddress> manualRelays;
 	private final DistributedRelay distributedRelay;
+	private final RelayType relayType;
 	
 	private static final int MESSAGE_VERSION = 1;
+
 
 	public PeerNAT(Peer peer, NATUtils natUtils, RelayRPC relayRPC, Collection<PeerAddress> manualRelays,
 			int failedRelayWaitTime, int maxFail, int peerMapUpdateInterval, boolean manualPorts, RelayType relayType,
@@ -66,6 +68,7 @@ public class PeerNAT {
 		this.maxFail = maxFail;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.manualPorts = manualPorts;
+		this.relayType = relayType;
 		this.config = config;
 		this.distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, relayType, gcmServerCredentials, peerMapUpdateInterval, config);
 	}
@@ -334,7 +337,7 @@ public class PeerNAT {
 
 	private FutureRelayNAT startRelay(final FutureRelayNAT futureBootstrapNAT, final BootstrapBuilder bootstrapBuilder) {
 		PeerAddress upa = peer.peerBean().serverPeerAddress();
-		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true).changeSlow(relayType.isSlow());
 		peer.peerBean().serverPeerAddress(upa);
 		// find neighbors
 

@@ -37,7 +37,7 @@ import net.tomp2p.utils.Utils;
  * <pre>
  * 20 bytes - Number160
  * 2 bytes - Header 
- *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP
+ *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP, isRelayed, isSlow
  *  - 1 byte relays:
  *    - first 3 bits: number of relays (max 5.)
  *    - second 5 bits: if the 5 relays are IPv6 (bit set) or not (no bit set)

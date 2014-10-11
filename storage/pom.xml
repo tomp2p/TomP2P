@@ -59,7 +59,7 @@
 		<dependency>
 			<groupId>org.mapdb</groupId>
 			<artifactId>mapdb</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.6</version>
 		</dependency>
 
 		<!-- For testing -->

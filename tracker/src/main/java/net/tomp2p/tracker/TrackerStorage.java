@@ -217,7 +217,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			if(trackerData.peerAddresses().size() == 0) {
 				map.remove(key);
 			}
-			
+			return retVal;
 		}
 		return false;
 	}

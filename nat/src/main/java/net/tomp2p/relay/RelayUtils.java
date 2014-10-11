@@ -16,6 +16,7 @@ import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerBean;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.RequestHandler;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureResponse;
@@ -32,18 +33,20 @@ import net.tomp2p.storage.AlternativeCompositeByteBuf;
 
 public class RelayUtils {
 
-	public static Buffer encodeMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
-		Encoder e = new Encoder(null);
+	public static Buffer encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		Encoder e = new Encoder(signatureFactory);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		e.write(buf, message);
+		e.write(buf, message, message.receivedSignature());
 		return new Buffer(buf);
 	}
 
-	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender)
-	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException {
-		Decoder d = new Decoder(null);
+	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
+	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
+		Decoder d = new Decoder(signatureFactory);
+		final int readerBefore = buf.buffer().readerIndex();
 		d.decodeHeader(buf.buffer(), recipient, sender);
-		d.decodePayload(buf.buffer());
+		final boolean donePayload = d.decodePayload(buf.buffer());
+		d.decodeSignature(buf.buffer(), readerBefore, donePayload);
 		return d.message();
 	}
 

@@ -176,7 +176,7 @@ public class RelayRPC extends DispatchHandler {
     private void handlePiggyBackMessage(Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
         
@@ -188,7 +188,7 @@ public class RelayRPC extends DispatchHandler {
         	public void response(Message responseMessage) {
         		LOG.debug("Send reply message to relay peer: {}", responseMessage);
         		try {
-	                response.buffer(RelayUtils.encodeMessage(responseMessage));
+	                response.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
                 } catch (Exception e) {
                 	failed(Type.EXCEPTION, e.getMessage());
 	                e.printStackTrace();

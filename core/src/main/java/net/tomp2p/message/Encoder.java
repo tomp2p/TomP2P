@@ -37,7 +37,7 @@ public class Encoder {
         this.signatureFactory = signatureFactory;
     }
 
-    public boolean write(final AlternativeCompositeByteBuf buf, final Message message) throws InvalidKeyException,
+    public boolean write(final AlternativeCompositeByteBuf buf, final Message message, SignatureCodec signatureCodec) throws InvalidKeyException,
             SignatureException, IOException {
 
         this.message = message;
@@ -59,8 +59,12 @@ public class Encoder {
 
             // check if we need to sign the message
             if (message.isSign()) {
-            	SignatureCodec decodedSignature = signatureFactory.sign(message.privateKey(), buf);
-            	decodedSignature.write(buf);
+            	//we sign if we did not provide a signature already
+            	if(signatureCodec == null) {
+            		signatureCodec = signatureFactory.sign(message.privateKey(), buf);
+            	}
+            	//in case of relay, we hava a signature, so we need to reuse this
+            	signatureCodec.write(buf);
             }
         }
         return done;

@@ -162,7 +162,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		// Send message via direct message through the open connection to the
 		// unreachable peer
 		message.restoreContentReferences();
-		final Buffer buf = RelayUtils.encodeMessage(message);
+		final Buffer buf = RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 
 		FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf);
 
@@ -171,7 +171,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 				if (future.isSuccess()) {
 					Buffer buffer = future.responseMessage().buffer(0);
 					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, message.recipientSocket(),
-					        message.senderSocket());
+					        message.senderSocket(), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					responseFromUnreachablePeer.restoreContentReferences();
 					responseFromUnreachablePeer.sender(sender);
 					responseFromUnreachablePeer.recipient(message.sender());

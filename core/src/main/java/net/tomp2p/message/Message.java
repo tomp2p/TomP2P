@@ -128,7 +128,7 @@ public class Message {
     private List<Integer> integerList = null;
     private List<Long> longList = null;
     private List<KeyCollection> keyCollectionList = null;
-    private List<KeyMap640Keys> keyMap640ListKeys = null;
+    private List<KeyMap640Keys> keyMap640KeysList = null;
     private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
@@ -712,25 +712,25 @@ public class Message {
         if (!presetContentTypes) {
             contentType(Content.MAP_KEY640_KEYS);
         }
-        if (keyMap640ListKeys == null) {
-            keyMap640ListKeys = new ArrayList<KeyMap640Keys>(1);
+        if (keyMap640KeysList == null) {
+            keyMap640KeysList = new ArrayList<KeyMap640Keys>(1);
         }
-        keyMap640ListKeys.add(keyMap);
+        keyMap640KeysList.add(keyMap);
         return this;
     }
 
     public List<KeyMap640Keys> keyMapKeys640List() {
-        if (keyMap640ListKeys == null) {
+        if (keyMap640KeysList == null) {
             return Collections.emptyList();
         }
-        return keyMap640ListKeys;
+        return keyMap640KeysList;
     }
 
     public KeyMap640Keys keyMap640Keys(final int index) {
-        if (keyMap640ListKeys == null || index > keyMap640ListKeys.size() - 1) {
+        if (keyMap640KeysList == null || index > keyMap640KeysList.size() - 1) {
             return null;
         }
-        return keyMap640ListKeys.get(index);
+        return keyMap640KeysList.get(index);
     }
     
     public Message keyMapByte(final KeyMapByte keyMap) {

@@ -111,6 +111,7 @@ public class HolePTestApp {
 					+ "		2 = putNATPeerAddress() \n"
 					+ "		3 = sendDirectMessage() \n"
 					+ "		4 = sendDirectNATMessage()");
+			System.out.println();
 			int order = scan.nextInt();
 			System.out.println("You've entered the number " + order + ".");
 			switch (order) {

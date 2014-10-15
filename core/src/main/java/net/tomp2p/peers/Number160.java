@@ -460,11 +460,11 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a new Number160 from the long, which fills all the 160bit. A new random object will be created, thus, its
+     * Creates a new Number160 from the long, which fills all the 160 bits. A new random object will be created, thus, its
      * thread safe
      * 
      * @param longValue
-     *            The value to hash from
+     *            The value to hash from (seed)
      * @return A hash based on pseudo random, to fill the 160bits
      */
     public static Number160 createHash(final long longValue) {
@@ -473,7 +473,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a new Number160 using SHA1 on the string.
+     * Creates a new Number160 using SHA1 on the string.
      * 
      * @param string
      *            The value to hash from

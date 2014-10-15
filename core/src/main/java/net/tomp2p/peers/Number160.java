@@ -225,7 +225,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * 
      * @param key
      *            The second operand for the xor operation
-     * @return A new key with the resurt of the xor operation
+     * @return A new key with the result of the xor operation
      */
     public Number160 xor(final Number160 key) {
         final int[] result = new int[INT_ARRAY_SIZE];
@@ -289,7 +289,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * Shows the content in a human readable manner.
      * 
      * @param removeLeadingZero
-     *            Indicates of leading zeros should be removed
+     *            Indicates if leading zeros should be removed
      * @return A human readable representation of this key
      */
     public String toString(final boolean removeLeadingZero) {
@@ -425,9 +425,9 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param integer2
      *            The integer to convert
      * @param removeLeadingZero
-     *            idicate if leading zeros should be ignored
+     *            indicate if leading zeros should be ignored
      * @param sb
-     *            The string bulider where to store the result
+     *            The string builder where to store the result
      */
     private static void toHex(final int integer2, final boolean removeLeadingZero, final StringBuilder sb) {
         // 4 bits form a char, thus we have 160/4=40 chars in a key, with an

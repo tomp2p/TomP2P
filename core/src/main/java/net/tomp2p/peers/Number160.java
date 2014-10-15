@@ -207,14 +207,14 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * @return The first (most significant 64bits)
+     * @return The first (most significant) 64bits
      */
     public long timestamp() {
         return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[1] & LONG_MASK);
     }
     
     /**
-     * @return The lower 96 bits of the 160 bit number
+     * @return The lower (least significant) 96 bits
      */
     public Number160 number96() {
         return new Number160(0, 0, this.val[2], this.val[3], this.val[4]);

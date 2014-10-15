@@ -1,6 +1,7 @@
 package net.tomp2p.holep;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -9,7 +10,9 @@ import org.slf4j.LoggerFactory;
 
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
+import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
@@ -19,46 +22,62 @@ import net.tomp2p.storage.Data;
 public class HolePTestApp {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(HolePTestApp.class);
+	private static final int port = 4001;
 	
 	private static Random rand = new Random(42L);
 	
 	private Peer peer;
-	private PeerAddress serverPeerAddress;
+	private PeerAddress masterPeerAddress;
 	private PeerAddress client1PeerAddress;
 	private PeerAddress client2PeerAddress;
-	private PeerBuilderNAT pNAT;
+	private PeerNAT pNAT;
 
 	public HolePTestApp() {
 		
 	}
 
-	public boolean startServer() throws Exception {
-		peer = new PeerBuilder(Number160.createHash(rand.nextInt())).ports(4001).start();
-		pNAT = new PeerBuilderNAT(peer);
-		FutureBootstrap fb = peer.bootstrap().ports(4001).start();
-		fb.awaitUninterruptibly();
-		if (!fb.isSuccess()) {
-			System.err.println("SERVER BOOTSTRAP FAIL!");
-			return false;
-		}
-		serverPeerAddress = peer.peerAddress();
+	public void startServer() throws Exception {
+		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
+		pNAT = new PeerBuilderNAT(peer).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
-		return true;
 	}
 
-	public boolean startClient() throws Exception {
-		peer = new PeerBuilder(Number160.createHash(rand.nextInt())).ports(4001).start();
-		pNAT = new PeerBuilderNAT(peer);
-		FutureBootstrap fb = peer.bootstrap().peerAddress(serverPeerAddress).start();
-		fb.awaitUninterruptibly();
-		if  (!fb.isSuccess()) {
-			System.err.println("CLIENT BOOTSTRAP FAIL!");
-			return false;
-		}
-		client1PeerAddress = peer.peerAddress();
+	public void startClient(String[] args) throws Exception {
+		peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).start();
+		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(args[0]), port, port);
+		masterPeerAddress = bootstrapPeerAddress;
+
+		// Set the isFirewalledUDP and isFirewalledTCP flags
+		PeerAddress upa = peer.peerBean().serverPeerAddress();
+		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
+		peer.peerBean().serverPeerAddress(upa);
+
+		// find neighbors
+		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
+		futureBootstrap.awaitUninterruptibly();
+
+		// setup relay
+		pNAT = new PeerBuilderNAT(peer).start();
 		
-		System.err.println("CLIENT BOOTSTRAP SUCCESS!");
-		return true;
+		// set up 3 relays
+		// FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());
+		// futureRelay.awaitUninterruptibly();
+		FutureRelayNAT frn = pNAT.startRelay(bootstrapPeerAddress);
+		frn.awaitUninterruptibly();
+
+		// find neighbors again
+		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
+		fb.awaitUninterruptibly();
+		if (!fb.isSuccess()) {
+			System.err.println("ERROR WHILE NAT-BOOTSTRAPPING. THE APPLICATION WILL NOW SHUTDOWN!");
+			System.exit(1);
+		} else {
+			System.err.println("NAT-BOOTSTRAP SUCCESS");
+		}
+
+		// do maintenance
+		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
+		// uNat.startRelayMaintenance(futureRelay);
 	}
 	
 	public void setObjectDataReply() {

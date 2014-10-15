@@ -8,7 +8,7 @@ public class HolePTestDriver {
 		if (!checkArguments(args)) {
 			testApp.startServer();
 		} else {
-			testApp.startClient();
+			testApp.startClient(args);
 		}
 		testApp.setObjectDataReply();
 		testApp.runTextInterface();

@@ -17,6 +17,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
 
 public class HolePTestApp {
@@ -81,7 +82,18 @@ public class HolePTestApp {
 	}
 	
 	public void setObjectDataReply() {
-		
+		peer.objectDataReply(new ObjectDataReply() {
+			
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				System.out.println("SUCCESS HIT");
+				System.out.println("Sender: " + sender.toString());
+				String req = (String) request;
+				System.err.println("Received Message: " + req);
+				String reply = "reply";
+				return (Object) reply;
+			}
+		});
 	}
 	
 	public void runTextInterface() throws Exception {

@@ -133,7 +133,7 @@ public class Message {
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
-    private List<PeerSocketAddress> peerSocketAddresses = null;
+    private List<PeerSocketAddress> peerSocketAddressList = null;
     private SignatureCodec signatureEncode = null;
     
     // this will not be transferred, status variables
@@ -795,18 +795,18 @@ public class Message {
     	if (!presetContentTypes) {
             contentType(Content.SET_PEER_SOCKET);
         }
-    	if(this.peerSocketAddresses == null) {
-    		this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
+    	if(this.peerSocketAddressList == null) {
+    		this.peerSocketAddressList = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
     	}
-    	this.peerSocketAddresses.addAll(peerSocketAddresses);
+    	this.peerSocketAddressList.addAll(peerSocketAddresses);
         return this;
     }
 
     public List<PeerSocketAddress> peerSocketAddresses() {
-    	if (peerSocketAddresses == null) {
+    	if (peerSocketAddressList == null) {
             return Collections.emptyList();
         }
-        return peerSocketAddresses;
+        return peerSocketAddressList;
     }
     
     /*public PublicKey getPublicKey() {

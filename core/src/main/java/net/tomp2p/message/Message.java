@@ -706,7 +706,6 @@ public class Message {
         }
         return keyCollectionList.get(index);
     }
-
     
     public Message keyMap640Keys(final KeyMap640Keys keyMap) {
         if (!presetContentTypes) {
@@ -719,7 +718,7 @@ public class Message {
         return this;
     }
 
-    public List<KeyMap640Keys> keyMapKeys640List() {
+    public List<KeyMap640Keys> keyMap640KeysList() {
         if (keyMap640KeysList == null) {
             return Collections.emptyList();
         }

@@ -8,8 +8,13 @@ import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import net.tomp2p.dht.FutureGet;
+import net.tomp2p.dht.FuturePut;
+import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.futures.FutureShutdown;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -24,26 +29,27 @@ public class HolePTestApp {
 	
 	private static final Logger LOG = LoggerFactory.getLogger(HolePTestApp.class);
 	private static final int port = 4001;
-	
-	private static Random rand = new Random(42L);
+	private static final String PEER_1 = "peer1";
+	private static final String PEER_2 = "peer2";
 	
 	private Peer peer;
-	private PeerAddress masterPeerAddress;
-	private PeerAddress client1PeerAddress;
-	private PeerAddress client2PeerAddress;
 	private PeerNAT pNAT;
+	private PeerDHT pDHT;
+	private PeerAddress masterPeerAddress;
+	private PeerAddress natPeerAddress;
 
 	public HolePTestApp() {
 		
 	}
 
-	public void startServer() throws Exception {
+	public void startMasterPeer() throws Exception {
 		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
 		pNAT = new PeerBuilderNAT(peer).start();
+		pDHT = new PeerBuilderDHT(peer).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
 	}
 
-	public void startClient(String[] args) throws Exception {
+	public void startPeer(String[] args) throws Exception {
 		peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).start();
 		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(args[0]), port, port);
 		masterPeerAddress = bootstrapPeerAddress;
@@ -73,14 +79,14 @@ public class HolePTestApp {
 			System.err.println("ERROR WHILE NAT-BOOTSTRAPPING. THE APPLICATION WILL NOW SHUTDOWN!");
 			System.exit(1);
 		} else {
-			System.err.println("NAT-BOOTSTRAP SUCCESS");
+			System.err.println("NAT-BOOTSTRAP SUCCESS!");
 		}
 
 		// do maintenance
 		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
 		// uNat.startRelayMaintenance(futureRelay);
 	}
-	
+
 	public void setObjectDataReply() {
 		peer.objectDataReply(new ObjectDataReply() {
 			
@@ -109,35 +115,75 @@ public class HolePTestApp {
 			case 0: //end process
 				exit = true;
 				break;
-			case 1: //send Message to peer not behind a NAT
+			case 1: //get PeerAddress of other peer
+				getNATPeerAddress();
+				break;
+			case 2: //put own PeerAddress of myself into DHT
+				putNATPeerAddress();
+			case 3: //send Message to peer not behind a NAT
 				sendDirectMessage();
 				break;
-			case 2: //send Message to peer behind a NAT
+			case 4: //send Message to peer behind a NAT
 				sendDirectNATMessage();
 				break;
 			default: //start process again
 				break;
 			}
+			// if 0 is chosen, the peer should shutdown and the program should end
+			FutureShutdown fs = (FutureShutdown) peer.shutdown();
+			fs.awaitUninterruptibly();
+			System.exit(0);
+		}
+	}
+
+	private void putNATPeerAddress() throws IOException {
+		//store id to DHT (important for finding other natPeer
+		pDHT = new PeerBuilderDHT(peer).start();
+		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
+		fp.awaitUninterruptibly();
+		if (!fp.isSuccess()) {
+			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
+		} else {
+			System.err.println("DHT PUT SUCCESS!");
+		}
+	}
+	
+	private void getNATPeerAddress() {
+		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
+			getOtherNATPeerAddress(PEER_2);
+		} else {
+			getOtherNATPeerAddress(PEER_1);
+		}
+		
+	}
+
+	private void getOtherNATPeerAddress(String peerId) {
+		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
+		fg.awaitUninterruptibly();
+		if (!fg.isSuccess()) {
+			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
+		} else {
+			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
 		}
 	}
 
 	private void sendDirectNATMessage() throws IOException {
-		FutureDirect fd = peer.sendDirect(client2PeerAddress).object(new Data("Hello World")).start();
+		FutureDirect fd = peer.sendDirect(natPeerAddress).object(new Data("Hello World")).start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {
 			System.err.println("SENDDIRECT-NATMESSAGE FAIL!");
 		} else {
-			System.err.println("SENDDIRECT-NATMESSAGE SUCCESS");
+			System.err.println("SENDDIRECT-NATMESSAGE SUCCESS!");
 		}
 	}
 
 	private void sendDirectMessage() throws IOException {
-		FutureDirect fd = peer.sendDirect(client2PeerAddress).object(new Data("Hello World")).start();
+		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Data("Hello World")).start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {
 			System.err.println("SENDDIRECT-MESSAGE FAIL!");
 		} else {
-			System.err.println("SENDDIRECT-MESSAGE SUCCESS");
+			System.err.println("SENDDIRECT-MESSAGE SUCCESS!");
 		}
 	}
 }

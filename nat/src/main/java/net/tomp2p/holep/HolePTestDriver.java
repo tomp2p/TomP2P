@@ -6,17 +6,19 @@ public class HolePTestDriver {
 
 		HolePTestApp testApp = new HolePTestApp();
 		if (!checkArguments(args)) {
-			testApp.startServer();
+			testApp.startMasterPeer();
 		} else {
-			testApp.startClient(args);
+			testApp.startPeer(args);
 		}
 		testApp.setObjectDataReply();
 		testApp.runTextInterface();
 	}
 
 	private static boolean checkArguments(String[] args) {
-		if (args.length > 0) {
+		if (args.length > 1) {
 			return true;
+		} else if (args.length == 1) {
+			throw new IllegalArgumentException("The Application can't start with the given arguments. The arguments have to be like this: \n args[0] = 192.168.2.xxx \n args[1] = \"id\n");
 		} else {
 			return false;
 		}

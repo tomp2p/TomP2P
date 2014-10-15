@@ -2,11 +2,7 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 import java.net.Inet4Address;
-import java.util.Random;
 import java.util.Scanner;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
@@ -27,14 +23,13 @@ import net.tomp2p.storage.Data;
 
 public class HolePTestApp {
 	
-	private static final Logger LOG = LoggerFactory.getLogger(HolePTestApp.class);
 	private static final int port = 4001;
 	private static final String PEER_1 = "peer1";
 	private static final String PEER_2 = "peer2";
 	
 	private Peer peer;
 	private PeerNAT pNAT;
-	private PeerDHT pDHT;
+//	private PeerDHT pDHT;
 	private PeerAddress masterPeerAddress;
 	private PeerAddress natPeerAddress;
 
@@ -45,8 +40,10 @@ public class HolePTestApp {
 	public void startMasterPeer() throws Exception {
 		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
 		pNAT = new PeerBuilderNAT(peer).start();
-		pDHT = new PeerBuilderDHT(peer).start();
+//		pDHT = new PeerBuilderDHT(peer).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
+		System.err.println("IP: " + peer.peerAddress().inetAddress());
+		System.err.println("ID: " + peer.peerID());
 	}
 
 	public void startPeer(String[] args) throws Exception {
@@ -108,7 +105,12 @@ public class HolePTestApp {
 		boolean exit = false;
 		
 		while (!exit) {
-			System.out.println("Choose a valid order. \n 0 = Exit process \n 1 = sendDirectMessage() \n 2 = sendDirectNATMessage()");
+			System.out.println("Choose a valid order. \n"
+					+ "		0 = Exit process \n"
+					+ "		1 = getNatPeerAddress() \n"
+					+ "		2 = putNATPeerAddress() \n"
+					+ "		3 = sendDirectMessage() \n"
+					+ "		4 = sendDirectNATMessage()");
 			int order = scan.nextInt();
 			System.out.println("You've entered the number " + order + ".");
 			switch (order) {
@@ -137,34 +139,34 @@ public class HolePTestApp {
 	}
 
 	private void putNATPeerAddress() throws IOException {
-		//store id to DHT (important for finding other natPeer
-		pDHT = new PeerBuilderDHT(peer).start();
-		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
-		fp.awaitUninterruptibly();
-		if (!fp.isSuccess()) {
-			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
-		} else {
-			System.err.println("DHT PUT SUCCESS!");
-		}
+//		//store id to DHT (important for finding other natPeer
+//		pDHT = new PeerBuilderDHT(peer).start();
+//		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
+//		fp.awaitUninterruptibly();
+//		if (!fp.isSuccess()) {
+//			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
+//		} else {
+//			System.err.println("DHT PUT SUCCESS!");
+//		}
 	}
 	
 	private void getNATPeerAddress() {
-		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
-			getOtherNATPeerAddress(PEER_2);
-		} else {
-			getOtherNATPeerAddress(PEER_1);
-		}
-		
+//		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
+//			getOtherNATPeerAddress(PEER_2);
+//		} else {
+//			getOtherNATPeerAddress(PEER_1);
+//		}
+//		
 	}
 
 	private void getOtherNATPeerAddress(String peerId) {
-		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
-		fg.awaitUninterruptibly();
-		if (!fg.isSuccess()) {
-			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
-		} else {
-			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
-		}
+//		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
+//		fg.awaitUninterruptibly();
+//		if (!fg.isSuccess()) {
+//			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
+//		} else {
+//			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
+//		}
 	}
 
 	private void sendDirectNATMessage() throws IOException {

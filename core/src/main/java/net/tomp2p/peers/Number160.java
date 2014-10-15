@@ -88,7 +88,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a Key from a string. The string has to be of length 40 to fit into the backing array. Note that this
+     * Create a Key from a string. The string has to be of length 42 to fit into the backing array. Note that this
      * string is *always* in hexadecimal, there is no 0x... required before the number.
      * 
      * @param val

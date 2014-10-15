@@ -77,8 +77,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final int... val) {
         if (val.length > INT_ARRAY_SIZE) {
-            throw new IllegalArgumentException("Can only deal with arrays of smaller or equal "
-                    + INT_ARRAY_SIZE + ". Your array has " + val.length);
+            throw new IllegalArgumentException(String.format("Can only deal with arrays of size smaller or equal to %s. Provided array has %s length.", INT_ARRAY_SIZE, val.length));
         }
         this.val = new int[INT_ARRAY_SIZE];
         final int len = val.length;
@@ -96,9 +95,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final String val) {
         if (val.length() > STRING_LENGTH) {
-            throw new IllegalArgumentException(
-                    "Can only deal with strings of size smaller or equal than 42. Your string has "
-                            + val.length());
+            throw new IllegalArgumentException(String.format("Can only deal with strings of size smaller or equal to %s. Provided string has %s length.", STRING_LENGTH, val.length()));
         }
         if (val.indexOf("0x") != 0) {
             throw new IllegalArgumentException(val
@@ -167,9 +164,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final byte[] val, final int offset, final int length) {
         if (length > BYTE_ARRAY_SIZE) {
-            throw new IllegalArgumentException(
-                    "Can only deal with byte arrays of size smaller or equal than 20. Your array has "
-                            + length);
+            throw new IllegalArgumentException(String.format("Can only deal with byte arrays of size smaller or equal to %s. Provided array has %s length.", BYTE_ARRAY_SIZE, length));
         }
         this.val = new int[INT_ARRAY_SIZE];
         for (int i = length + offset - 1, j = BYTE_ARRAY_SIZE - 1, k = 0; i >= offset; i--, j--, k++) {

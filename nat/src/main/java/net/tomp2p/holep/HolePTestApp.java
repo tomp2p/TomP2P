@@ -145,6 +145,16 @@ public class HolePTestApp {
 		PeerAddress p2 = new PeerAddress(Number160.createHash(PEER_2), peer.peerAddress().peerSocketAddress(), true, true, true, peer.peerAddress().peerSocketAddresses());
 		p2.changeAddress(masterPeerAddress.peerSocketAddress().inetAddress());
 		
+		peer.objectDataReply(new ObjectDataReply() {
+			
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				System.err.println(sender);
+				natPeerAddress = sender;
+				return null;
+			}
+		});
+		
 		FutureDirect fd = peer.sendDirect(p2).object("Hello relay World!").start();
 		fd.awaitUninterruptibly(10000);
 		if (fd.isFailed()) {

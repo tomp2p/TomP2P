@@ -93,20 +93,6 @@ public class Message {
     private int messageId;
     private int version;
     private Type type;
-    // commands so far:
-    // 0: PING
-    // 1: PUT
-    // 2: GET
-    // 3: ADD
-    // 4: REMOVE
-    // 5: NEIGHBORS
-    // 6: QUIT
-    // 7: DIRECT_DATA
-    // 8: TRACKER_ADD
-    // 9: TRACKER_GET
-    // 10: PEX
-    // 11: TASK
-    // 12: BROADCAST_DATA
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;

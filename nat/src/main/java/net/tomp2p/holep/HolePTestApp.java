@@ -186,6 +186,8 @@ public class HolePTestApp {
 	}
 
 	private void sendDirectNATMessage() throws IOException {
+		setObjectDataReply();
+		
 		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {
@@ -196,6 +198,8 @@ public class HolePTestApp {
 	}
 
 	private void sendDirectMessage() throws IOException {
+		setObjectDataReply();
+
 		FutureDirect fd = peer.sendDirect(masterPeerAddress).object("Hello World").start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {

@@ -19,7 +19,9 @@ public class HolePRPC extends DispatchHandler {
 
 	private final Peer peer;
 	private final ConnectionConfiguration config;
-	
+
+	// TODO jwa list this in PeerNAT so that it is available to the rendezvous
+	// server
 	public HolePRPC(final Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());
 		register(RPC.Commands.HOLEP.getNr());
@@ -29,13 +31,20 @@ public class HolePRPC extends DispatchHandler {
 
 	@Override
 	public void handleResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) throws Exception {
+		// This means, that a new Holepunch has been initiated.
 		if (message.type() == Message.Type.REQUEST_1) {
+			// initiate hole punch
+		} 
+		// This means that peer1 has answered
+		else if (message.type() == Message.Type.REQUEST_2) {
 			
-		} else if (message.type() == Message.Type.REQUEST_2) {
-			
+		} 
+		// This means that peer2 has answered
+		else if (message.type() == Message.Type.REQUEST_3) {
+
 		} else {
 			throw new IllegalArgumentException("Message Content is wrong!");
 		}
 	}
-	
+
 }

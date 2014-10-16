@@ -1,7 +1,6 @@
 package net.tomp2p.examples.relay;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -9,15 +8,9 @@ import java.util.Random;
 import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.FutureRemove;
-import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
-import net.tomp2p.futures.BaseFuture;
-import net.tomp2p.nat.PeerBuilderNAT;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.RequestP2PConfiguration;
 import net.tomp2p.p2p.RoutingConfiguration;
-import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.storage.Data;
@@ -42,34 +35,16 @@ public class QueryNode {
 	private final RoutingConfiguration routingConfig;
 	private final RequestP2PConfiguration requestConfig;
 
-	private PeerDHT peerDHT;
+	private final PeerDHT peerDHT;
 
-	public QueryNode(long avgSleepTime, int avgBytes) {
+	public QueryNode(PeerDHT peerDHT, long avgSleepTime, int avgBytes) {
+		this.peerDHT = peerDHT;
 		this.avgSleepTime = avgSleepTime;
 		this.avgBytes = avgBytes;
 		this.random = new Random(42L);
 		this.validKeys = new ArrayList<Number160>();
 		this.routingConfig = new RoutingConfiguration(5, 1, 1);
 		this.requestConfig = new RequestP2PConfiguration(1, 1, 0);
-	}
-
-	public void start(Number160 peerId, int port, int bootstrapPort) throws IOException {
-		Peer peer = new PeerBuilder(peerId).ports(port).start();
-		InetAddress bootstrapTo = InetAddress.getLocalHost();
-		BootstrapBuilder bootstrapBuilder = peer.bootstrap().inetAddress(bootstrapTo).ports(bootstrapPort);
-		BaseFuture bootstrap = bootstrapBuilder.start().awaitUninterruptibly();
-
-		if (bootstrap == null) {
-			LOG.error("Cannot bootstrap");
-			return;
-		} else if (bootstrap.isFailed()) {
-			LOG.error("Cannot bootstrap. Reason: {}", bootstrap.failedReason());
-			return;
-		}
-
-		peerDHT = new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("QUERY", false)).start();
-		new PeerBuilderNAT(peer).start();
-		LOG.debug("Peer started");
 	}
 
 	/**
@@ -98,11 +73,35 @@ public class QueryNode {
 		}
 	}
 
+	/**
+	 * Start put / get / remove specific key
+	 */
+	public void putGetSpecific(Number640 key) throws IOException, ClassNotFoundException {
+		while (true) {
+			put(key);
+			sleep();
+
+			get(key);
+			sleep();
+
+			remove(key);
+			sleep();
+		}
+	}
+
 	private void put(Number160 key) {
-		Data data = generateRandomData();
-		FuturePut futurePut = peerDHT.put(key).data(data).start().awaitUninterruptibly();
-		LOG.debug("Put of {} bytes is success = {}", data.length(), futurePut.isSuccess());
+		put(new Number640(key, Number160.ZERO, Number160.ZERO, Number160.ZERO));
 		validKeys.add(key);
+	}
+
+	public boolean put(Number640 key) {
+		Data data = generateRandomData();
+		FuturePut futurePut = peerDHT.put(key.locationKey()).domainKey(key.domainKey()).versionKey(key.versionKey())
+				.data(data, key.contentKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
+				.start().awaitUninterruptibly();
+		LOG.debug("Put of {} bytes is success = {}. Reason: {}", data.length(), futurePut.isSuccess(),
+				futurePut.failedReason());
+		return futurePut.isSuccess();
 	}
 
 	private void get(Number160 key) {
@@ -116,8 +115,10 @@ public class QueryNode {
 
 	public Data get(Number640 key) {
 		FutureGet futureGet = peerDHT.get(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
-				.versionKey(key.versionKey()).fastGet(false).routingConfiguration(routingConfig)
-				.requestP2PConfiguration(requestConfig).start().awaitUninterruptibly();
+				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
+				.start().awaitUninterruptibly();
+		LOG.debug("Get is success {}. Reason: {}", futureGet.isSuccess(), futureGet.failedReason());
+
 		if (futureGet.data() != null) {
 			return futureGet.data();
 		} else {
@@ -136,7 +137,10 @@ public class QueryNode {
 
 	public boolean remove(Number640 key) {
 		FutureRemove remove = peerDHT.remove(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
-				.versionKey(key.versionKey()).fastGet(false).start().awaitUninterruptibly();
+				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
+				.start().awaitUninterruptibly();
+		LOG.debug("Remove is success {}. Reason: {}", remove.isSuccess(), remove.failedReason());
+
 		return remove.isSuccess();
 	}
 

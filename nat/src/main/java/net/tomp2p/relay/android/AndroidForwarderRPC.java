@@ -132,6 +132,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		synchronized (readyToSend) {
 			for (ByteBuf rts : readyToSend) {
 				buffer.writeBytes(rts);
+				rts.release();
 			}
 
 			readyToSend.clear();

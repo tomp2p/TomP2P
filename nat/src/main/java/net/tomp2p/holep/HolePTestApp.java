@@ -129,6 +129,8 @@ public class HolePTestApp {
 			case 4: //send Message to peer behind a NAT
 				sendDirectNATMessage();
 				break;
+			case 5: //send Relay message to get to the PeerAddress of one another
+				sendRelayNATMessage();
 			default: //start process again
 				break;
 			}
@@ -136,6 +138,19 @@ public class HolePTestApp {
 			FutureShutdown fs = (FutureShutdown) peer.shutdown();
 			fs.awaitUninterruptibly();
 			System.exit(0);
+		}
+	}
+
+	private void sendRelayNATMessage() {
+		PeerAddress p2 = new PeerAddress(Number160.createHash(PEER_2), peer.peerAddress().peerSocketAddress(), true, true, true, peer.peerAddress().peerSocketAddresses());
+		p2.changeAddress(masterPeerAddress.peerSocketAddress().inetAddress());
+		
+		FutureDirect fd = peer.sendDirect(p2).object("Hello relay World!").start();
+		fd.awaitUninterruptibly(10000);
+		if (fd.isFailed()) {
+			System.err.println("NO RELAY SENDDIRECT COULD BE MADE!");
+		} else {
+			System.err.println("RELAY SENDDIRECT SUCCESS!");
 		}
 	}
 
@@ -149,6 +164,7 @@ public class HolePTestApp {
 //		} else {
 //			System.err.println("DHT PUT SUCCESS!");
 //		}
+		
 	}
 	
 	private void getNATPeerAddress() {
@@ -157,9 +173,6 @@ public class HolePTestApp {
 //		} else {
 //			getOtherNATPeerAddress(PEER_1);
 //		}
-//		
-		PeerAddress current = peer.peerAddress();
-		current.peerId();
 	}
 
 	private void getOtherNATPeerAddress(String peerId) {

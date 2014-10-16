@@ -1,19 +1,18 @@
 package net.tomp2p.relay.android;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.SignatureException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.connection.SignatureFactory;
@@ -39,11 +38,11 @@ public class MessageBuffer {
 	private final long bufferSizeLimit;
 	private final long bufferAgeLimitMS;
 
+	private final AtomicInteger bufferCount;
 	private final AtomicLong bufferSize;
 	private final MessageBufferListener listener;
 
-	private final CompositeByteBuf buffer;
-	private final List<Integer> segmentSizes;
+	private final ByteBuf buffer;
 
 	private BufferAgeRunnable task;
 
@@ -52,39 +51,42 @@ public class MessageBuffer {
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
 		this.listener = listener;
-		this.buffer = Unpooled.compositeBuffer();
-		this.segmentSizes = Collections.synchronizedList(new ArrayList<Integer>());
+		this.buffer = Unpooled.buffer();
 		this.bufferSize = new AtomicLong();
+		this.bufferCount = new AtomicInteger();
 	}
 
 	/**
 	 * Add a message to the buffer. This method encodes the message first.
-	 * @throws IOException 
-	 * @throws SignatureException 
-	 * @throws InvalidKeyException 
+	 * 
+	 * @throws IOException
+	 * @throws SignatureException
+	 * @throws InvalidKeyException
 	 */
-	public void addMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+	public void addMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException,
+			SignatureException, IOException {
 		message.restoreContentReferences();
 		Buffer encodedMessage = RelayUtils.encodeMessage(message, signatureFactory);
 		addMessage(encodedMessage);
 		LOG.debug("Added to the buffer: {}", message);
 	}
-	
+
 	/**
 	 * Add an encoded message to the buffer
 	 */
 	public void addMessage(Buffer encodedMessage) {
-		synchronized (segmentSizes) {
-			if (buffer.numComponents() == 0) {
+		synchronized (buffer) {
+			if (bufferCount.get() == 0) {
 				task = new BufferAgeRunnable();
 				// schedule the task
 				worker.schedule(task, bufferAgeLimitMS, TimeUnit.MILLISECONDS);
 			}
 
-			buffer.addComponent(encodedMessage.buffer());
-			segmentSizes.add(encodedMessage.length());
+			buffer.writeInt(encodedMessage.length());
+			buffer.writeBytes(encodedMessage.buffer());
 		}
 
+		bufferCount.addAndGet(1);
 		bufferSize.addAndGet(encodedMessage.length());
 		checkFull();
 	}
@@ -96,11 +98,9 @@ public class MessageBuffer {
 			notify = true;
 		}
 
-		synchronized (segmentSizes) {
-			if (segmentSizes.size() >= messageCountLimit) {
-				LOG.debug("The number of messages exceeds the maximum message count of {}", messageCountLimit);
-				notify = true;
-			}
+		if (bufferCount.get() >= messageCountLimit) {
+			LOG.debug("The number of messages exceeds the maximum message count of {}", messageCountLimit);
+			notify = true;
 		}
 
 		if (notify) {
@@ -118,24 +118,21 @@ public class MessageBuffer {
 	 * <code>false</code>.
 	 */
 	private void notifyAndClear() {
-		synchronized (segmentSizes) {
-			if (segmentSizes.isEmpty()) {
-				return;
-			}
+		if (bufferCount.get() == 0) {
+			LOG.warn("Buffer is empty. Listener won't be notified.");
+			return;
+		}
 
-			ByteBuf messageBuffer = Unpooled.copiedBuffer(buffer.consolidate().array());
-			ByteBuf sizeBuffer = Unpooled.buffer();
-			for (Integer size : segmentSizes) {
-				sizeBuffer.writeInt(size);
-			}
-
-			// notify the listener with a copy of the buffer and the segmentation indices
-			listener.bufferFull(new Buffer(sizeBuffer), new Buffer(messageBuffer));
-
+		ByteBuf messageBuffer;
+		synchronized (buffer) {
+			messageBuffer = Unpooled.copiedBuffer(buffer);
 			buffer.clear();
-			segmentSizes.clear();
+			bufferCount.set(0);
 			bufferSize.set(0);
 		}
+
+		// notify the listener with a copy of the buffer and the segmentation indices
+		listener.bufferFull(messageBuffer);
 	}
 
 	private class BufferAgeRunnable implements Runnable {
@@ -160,24 +157,20 @@ public class MessageBuffer {
 	}
 
 	/**
-	 * Decomposes a (large) buffer containing multiple buffers into an (ordered) list of small buffers.
+	 * Decomposes a buffer containing multiple buffers into an (ordered) list of small buffers. Alternating,
+	 * the size of the message and the message itself are encoded in the message buffer. First, the size is
+	 * read, then k bytes are read from the buffer (the message). Then again, the size of the next messages is
+	 * determined.
 	 * 
-	 * @param messageBuffer the large buffer
-	 * @param segmentationSizes a list of all sizes of the buffer segments
+	 * @param messageBuffer the message buffer
 	 * @return a list of buffers
 	 */
-	public static List<Buffer> decomposeCompositeBuffer(Buffer sizeBuffer, Buffer messageBuffer) {
-		// decode the sizes first
-		List<Integer> messageSizes = new ArrayList<Integer>();
-		while (sizeBuffer.buffer().readableBytes() >= 4) {
-			messageSizes.add(sizeBuffer.buffer().readInt());
-		}
-
+	public static List<Buffer> decomposeCompositeBuffer(ByteBuf messageBuffer) {
 		List<Buffer> buffers = new ArrayList<Buffer>();
-		int readIndex = 0;
-		for (Integer size : messageSizes) {
-			buffers.add(new Buffer(messageBuffer.buffer().slice(readIndex, size)));
-			readIndex += size;
+		while (messageBuffer.readableBytes() > 0) {
+			int size = messageBuffer.readInt();
+			ByteBuf message = messageBuffer.readBytes(size);
+			buffers.add(new Buffer(message));
 		}
 
 		return buffers;

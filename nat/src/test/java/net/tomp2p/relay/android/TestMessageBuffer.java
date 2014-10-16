@@ -1,6 +1,7 @@
 package net.tomp2p.relay.android;
 
 import static org.junit.Assert.assertEquals;
+import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -119,6 +120,24 @@ public class TestMessageBuffer {
 		assertEquals(fourth.messageId(), RelayUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
 		assertEquals(fifth.messageId(), RelayUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
 	}
+	
+	@Test
+	public void testGarbageCollect() throws InvalidKeyException, SignatureException, IOException, InterruptedException {
+		CountingBufferListener listener = new CountingBufferListener();
+		MessageBuffer buffer = new MessageBuffer(2, Long.MAX_VALUE, Long.MAX_VALUE, listener);
+
+		// create one message
+		buffer.addMessage(createMessage(), signature);
+
+		// garbage collect
+		System.gc();
+
+		// create another message
+		buffer.addMessage(createMessage(), signature);
+				
+		// buffer triggered two messages
+		assertEquals(2, listener.getBuffer().size());
+	}
 
 	/**
 	 * Creates a message with random content
@@ -145,9 +164,9 @@ public class TestMessageBuffer {
 		}
 
 		@Override
-		public void bufferFull(Buffer sizeBuffer, Buffer messageBuffer) {
+		public void bufferFull(ByteBuf messageBuffer) {
 			// instantly decompose since we don't need to send it here
-			this.buffer.addAll(MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer));
+			this.buffer.addAll(MessageBuffer.decomposeCompositeBuffer(messageBuffer));
 			bufferFullTriggerCount++;
 		}
 

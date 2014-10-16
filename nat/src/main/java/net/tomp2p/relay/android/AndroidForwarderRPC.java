@@ -17,7 +17,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +40,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
 	private final MessageBuffer buffer;
-	private final List<Pair<Buffer, Buffer>> readyToSend;
+	private final List<ByteBuf> readyToSend;
 	private final AtomicLong lastUpdate;
 
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, AndroidRelayConfiguration config,
@@ -56,7 +55,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 		this.sender = new Sender(authenticationToken);
 		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
-		this.readyToSend = Collections.synchronizedList(new ArrayList<Pair<Buffer, Buffer>>());
+		this.readyToSend = Collections.synchronizedList(new ArrayList<ByteBuf>());
 	}
 
 	@Override
@@ -75,7 +74,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		}
 
 		LOG.debug("Added message {} to buffer and returning a partially ok", message);
-		return futureDone.done(response);
+		return futureDone; //.done(response);
 	}
 
 	/**
@@ -115,9 +114,9 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	}
 
 	@Override
-	public void bufferFull(Buffer sizeBuffer, Buffer messageBuffer) {
+	public void bufferFull(ByteBuf messageBuffer) {
 		synchronized (readyToSend) {
-			readyToSend.add(new Pair<Buffer, Buffer>(sizeBuffer, messageBuffer));
+			readyToSend.add(messageBuffer);
 		}
 		sendTickleMessage();
 	}
@@ -126,23 +125,20 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * Retrieves the messages that are ready to send. Ready to send means that they have been buffered and the
 	 * Android device has already been notified.
 	 * 
-	 * @return a pair of buffers. The first element contains the size of all messages, the second element the
-	 *         data
+	 * @return the buffer containing all buffered messages
 	 */
-	public Pair<Buffer, Buffer> getBufferedMessages() {
-		ByteBuf sizeBuffer = Unpooled.buffer();
-		ByteBuf dataBuffer = Unpooled.buffer();
+	public Buffer getBufferedMessages() {
+		ByteBuf buffer = Unpooled.buffer();
 		synchronized (readyToSend) {
-			for (Pair<Buffer, Buffer> rts : readyToSend) {
-				sizeBuffer.writeBytes(rts.element0().buffer());
-				dataBuffer.writeBytes(rts.element1().buffer());
+			for (ByteBuf rts : readyToSend) {
+				buffer.writeBytes(rts);
 			}
 
 			readyToSend.clear();
 		}
 
 		lastUpdate.set(System.currentTimeMillis());
-		return new Pair<Buffer, Buffer>(new Buffer(sizeBuffer), new Buffer(dataBuffer));
+		return new Buffer(buffer);
 	}
 
 	@Override

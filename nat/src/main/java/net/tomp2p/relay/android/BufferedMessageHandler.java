@@ -39,11 +39,10 @@ public class BufferedMessageHandler {
 	 * @param futureDone
 	 */
 	public void handleBufferResponse(Message bufferResponse, FutureDone<Void> futureDone) {
-		Buffer sizeBuffer = bufferResponse.buffer(0);
-		Buffer messageBuffer = bufferResponse.buffer(1);
-		if (sizeBuffer != null && messageBuffer != null) {
+		Buffer buffer = bufferResponse.buffer(0);
+		if (buffer != null) {
 			// decompose the large buffer into a buffer for each message
-			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(sizeBuffer, messageBuffer);
+			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(buffer.buffer());
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
 			for (Buffer bufferedMessage : bufferedMessages) {
 				try {

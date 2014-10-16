@@ -158,6 +158,8 @@ public class HolePTestApp {
 //			getOtherNATPeerAddress(PEER_1);
 //		}
 //		
+		PeerAddress current = peer.peerAddress();
+		current.peerId();
 	}
 
 	private void getOtherNATPeerAddress(String peerId) {

@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.relay.RelayUtils;
@@ -57,12 +58,22 @@ public class MessageBuffer {
 	}
 
 	/**
-	 * Add a message to the buffer
+	 * Add a message to the buffer. This method encodes the message first.
+	 * @throws IOException 
+	 * @throws SignatureException 
+	 * @throws InvalidKeyException 
 	 */
-	public void addMessage(Message message) throws InvalidKeyException, SignatureException, IOException {
+	public void addMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		message.restoreContentReferences();
-		Buffer encodedMessage = RelayUtils.encodeMessage(message);
-
+		Buffer encodedMessage = RelayUtils.encodeMessage(message, signatureFactory);
+		addMessage(encodedMessage);
+		LOG.debug("Added to the buffer: {}", message);
+	}
+	
+	/**
+	 * Add an encoded message to the buffer
+	 */
+	public void addMessage(Buffer encodedMessage) {
 		synchronized (segmentSizes) {
 			if (buffer.numComponents() == 0) {
 				task = new BufferAgeRunnable();
@@ -75,7 +86,6 @@ public class MessageBuffer {
 		}
 
 		bufferSize.addAndGet(encodedMessage.length());
-		LOG.debug("Added to the buffer: {}", message);
 		checkFull();
 	}
 

@@ -70,7 +70,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		try {
 			message.restoreContentReferences();
 			// add the message into the payload
-			envelope.buffer(RelayUtils.encodeMessage(message));
+			envelope.buffer(RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return new FutureDone<Message>().failed(e);
@@ -97,7 +97,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 					}
 
 					Buffer buffer = future.responseMessage().buffer(0);
-					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, recipientSocket, senderSocket);
+					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, recipientSocket, senderSocket, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					responseFromUnreachablePeer.restoreContentReferences();
 					futureDone.done(responseFromUnreachablePeer);
 				} else {

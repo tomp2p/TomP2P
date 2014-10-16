@@ -48,7 +48,7 @@ public class BufferedMessageHandler {
 			for (Buffer bufferedMessage : bufferedMessages) {
 				try {
 					Message message = RelayUtils.decodeMessage(bufferedMessage, bufferResponse.recipientSocket(),
-							bufferResponse.senderSocket());
+							bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					processMessage(message);
 				} catch (Exception e) {
 					// continue to process the buffers anyway

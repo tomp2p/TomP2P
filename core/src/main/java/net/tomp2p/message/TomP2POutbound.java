@@ -45,7 +45,8 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                 } else {
                     buf = alloc.compBuffer(); 
                 }
-                done = encoder.write(buf, message);
+                //null, means create signature
+                done = encoder.write(buf, message, null);
             } else {
                 ctx.write(msg, promise);
                 return;

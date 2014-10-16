@@ -11,6 +11,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 
+import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.relay.RelayUtils;
@@ -28,6 +30,8 @@ import org.junit.Test;
  */
 public class TestBufferComposing {
 
+	private final SignatureFactory signature = new DSASignatureFactory();
+	
 	@Test
 	public void testBufferComposing() throws InvalidKeyException, SignatureException, IOException, NoSuchAlgorithmException,
 			InvalidKeySpecException {
@@ -36,9 +40,9 @@ public class TestBufferComposing {
 		Message second = UtilsNAT.createRandomMessage();
 		Message third = UtilsNAT.createRandomMessage();
 
-		Buffer firstBuffer = RelayUtils.encodeMessage(first);
-		Buffer secondBuffer = RelayUtils.encodeMessage(second);
-		Buffer thirdBuffer = RelayUtils.encodeMessage(third);
+		Buffer firstBuffer = RelayUtils.encodeMessage(first, signature);
+		Buffer secondBuffer = RelayUtils.encodeMessage(second, signature);
+		Buffer thirdBuffer = RelayUtils.encodeMessage(third, signature);
 
 		// buffer the buffers
 		CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
@@ -66,17 +70,17 @@ public class TestBufferComposing {
 
 		// compare the buffers
 		Message firstReceived = RelayUtils.decodeMessage(new Buffer(firstReceivedBuffer), first.recipientSocket(),
-				first.senderSocket());
+				first.senderSocket(), signature);
 		assertEquals(first.messageId(), firstReceived.messageId());
 		assertEquals(first.sender(), firstReceived.sender());
 
 		Message secondReceived = RelayUtils.decodeMessage(new Buffer(secondReceivedBuffer), second.recipientSocket(),
-				second.senderSocket());
+				second.senderSocket(), signature);
 		assertEquals(second.messageId(), secondReceived.messageId());
 		assertEquals(second.sender(), secondReceived.sender());
 
 		Message thirdReceived = RelayUtils.decodeMessage(new Buffer(thirdReceivedBuffer), third.recipientSocket(),
-				third.senderSocket());
+				third.senderSocket(), signature);
 		assertEquals(third.messageId(), thirdReceived.messageId());
 		assertEquals(third.sender(), thirdReceived.sender());
 	}

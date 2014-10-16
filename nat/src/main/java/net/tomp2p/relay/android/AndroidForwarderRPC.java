@@ -68,7 +68,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		response.sender(unreachablePeerAddress());
 
 		try {
-			buffer.addMessage(message);
+			buffer.addMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));

@@ -15,6 +15,7 @@
  */
 package net.tomp2p.message;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -40,13 +41,18 @@ public class TrackerData {
     }
 
     public Map<PeerStatatistic, Data> peerAddresses() {
+    	if(peerAddresses == null) {
+    		return Collections.<PeerStatatistic, Data>emptyMap();
+    	}
         return peerAddresses;
     }
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("p:").append(peerAddresses).append(",l:");
+        StringBuilder sb = new StringBuilder("tdata:");
+        if(peerAddresses != null) {
+        	sb.append("p:").append(peerAddresses);
+        }
         return sb.toString();
     }
 

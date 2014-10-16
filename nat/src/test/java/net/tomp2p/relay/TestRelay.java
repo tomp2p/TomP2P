@@ -1,5 +1,7 @@
 package net.tomp2p.relay;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -642,6 +644,92 @@ public class TestRelay {
 		}
 	}
 
+	@Test
+    public void testRelayDHTPutGetSigned() throws Exception {
+        final Random rnd = new Random(42);
+         PeerDHT master = null;
+         PeerDHT unreachablePeer1 = null;
+         PeerDHT unreachablePeer2 = null;
+         try {
+        	 PeerDHT[] peers = UtilsNAT.createNodesPeer(10, rnd, 4000);
+             master = peers[0]; // the relay peer
+            
+             for(PeerDHT peer:peers) {
+            	 new PeerBuilderNAT(peer.peer()).start();
+             }
+             
+             KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
+             KeyPair pair1 = gen.generateKeyPair();
+             KeyPair pair2 = gen.generateKeyPair();
+             
+             // Test setting up relay peers
+            unreachablePeer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair1).ports(13337).start()).start();
+            unreachablePeer1.peer().peerBean().serverPeerAddress(unreachablePeer1.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
+ 			PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).start();
+ 			FutureRelayNAT fbn1 = uNat1.startRelay(master.peerAddress());
+ 			fbn1.awaitUninterruptibly();
+ 			Assert.assertTrue(fbn1.isSuccess());
+ 			//
+ 			unreachablePeer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair2).ports(13338).start()).start();
+ 			unreachablePeer2.peer().peerBean().serverPeerAddress(unreachablePeer2.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
+ 			PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).start();
+ 			FutureRelayNAT fbn2 = uNat2.startRelay(master.peerAddress());
+ 			fbn2.awaitUninterruptibly();
+ 			Assert.assertTrue(fbn2.isSuccess());
+ 			
+ 			peers[8] = unreachablePeer1;
+ 			peers[9] = unreachablePeer2;
+ 			
+ 			 UtilsNAT.perfectRouting(peers);
+ 			
+ 			//unreachablePeer.peer().bootstrap().peerAddress(master.peerAddress()).start();
+             
+            // PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
+            
+            // slave = new PeerMaker(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).makeAndListen();
+            // FutureRelay rf = new RelayConf(slave).bootstrapAddress(master.getPeerAddress()).start().awaitUninterruptibly();
+            // Assert.assertTrue(rf.isSuccess());
+            // RelayManager manager = rf.relayManager();
+            // System.err.println("relays: "+manager.getRelayAddresses());
+            // System.err.println("psa: "+ slave.getPeerAddress().getPeerSocketAddresses());
+             //wait for maintenance to kick in
+             Thread.sleep(5000);
+             
+             printMapStatus(unreachablePeer1, peers);
+             
+             printMapStatus(unreachablePeer2, peers);
+             
+             RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
+             RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);
+             
+             System.err.println(unreachablePeer1.peerID()); //f1
+             System.err.println(unreachablePeer2.peerID()); //e7
+             
+             FuturePut futurePut = unreachablePeer1.put(unreachablePeer2.peerID()).data(new Data("hello")).sign().routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
+             //the relayed one is the slowest, so we need to wait for it!
+             futurePut.awaitUninterruptibly();
+             futurePut.futureRequests().awaitUninterruptibly();
+             System.err.println(futurePut.failedReason());
+             
+             Assert.assertTrue(futurePut.isSuccess());
+             Assert.assertTrue(unreachablePeer2.storageLayer().contains(new Number640(unreachablePeer2.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
+             
+             FutureGet futureGet = unreachablePeer1.get(unreachablePeer2.peerID()).routingConfiguration(r).sign().requestP2PConfiguration(rp).fastGet(false).start().awaitUninterruptibly();
+             //TODO: try peers even if no data found with fastget
+             System.err.println(futureGet.failedReason());
+             Assert.assertTrue(futureGet.isSuccess());
+             
+             //we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish earlier than that.
+             
+             System.err.println("DONE!");
+             
+         } finally {
+             master.shutdown().await();
+             unreachablePeer1.shutdown().await();
+             unreachablePeer2.shutdown().await();
+         }
+    }
+	
 	@Test
 	public void testVeryFewPeers() throws Exception {
 		final Random rnd = new Random(42);

@@ -401,7 +401,7 @@ public class TestMessage {
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		e.write(buf, m1);
+		e.write(buf, m1, null);
 		Decoder d = new Decoder(null);
 		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
 				new InetSocketAddress(0));

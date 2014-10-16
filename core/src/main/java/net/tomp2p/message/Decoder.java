@@ -119,11 +119,7 @@ public class Decoder {
 			}
 			
 			final boolean donePayload = decodePayload(buf);
-			final int readerAfter = buf.readerIndex();
-			final int len = readerAfter - readerBefore;
-			if(len > 0) {
-				verifySignature(buf, readerBefore, len, donePayload);
-			}
+			decodeSignature(buf, readerBefore, donePayload);
 			// see https://github.com/netty/netty/issues/1976
 			buf.discardSomeReadBytes();
 			return donePayload;
@@ -132,6 +128,14 @@ public class Decoder {
 			ctx.fireExceptionCaught(e);
 			e.printStackTrace();
 			return true;
+		}
+	}
+	
+	public void decodeSignature(final ByteBuf buf, final int readerBefore, final boolean donePayload) throws InvalidKeyException, SignatureException, IOException {
+		final int readerAfter = buf.readerIndex();
+		final int len = readerAfter - readerBefore;
+		if(len > 0) {
+			verifySignature(buf, readerBefore, len, donePayload);
 		}
 	}
 

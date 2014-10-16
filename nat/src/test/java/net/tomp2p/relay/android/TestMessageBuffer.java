@@ -12,6 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import net.tomp2p.connection.DSASignatureFactory;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -24,6 +26,8 @@ import org.junit.Test;
 
 public class TestMessageBuffer {
 
+	private final SignatureFactory signature = new DSASignatureFactory();
+
 	@Test
 	public void testReachCountLimit() throws InvalidKeyException, SignatureException, IOException {
 		CountingBufferListener listener = new CountingBufferListener();
@@ -34,15 +38,15 @@ public class TestMessageBuffer {
 		Message second = createMessage();
 		Message third = createMessage();
 
-		buffer.addMessage(first);
-		buffer.addMessage(second);
+		buffer.addMessage(first, signature);
+		buffer.addMessage(second, signature);
 
 		// buffer did not trigger yet
 		assertEquals(0, listener.getTriggerCount());
 		assertEquals(0, listener.getBuffer().size());
 
 		// buffer triggered now
-		buffer.addMessage(third);
+		buffer.addMessage(third, signature);
 		assertEquals(1, listener.getTriggerCount());
 		assertEquals(3, listener.getBuffer().size());
 	}
@@ -53,7 +57,7 @@ public class TestMessageBuffer {
 		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, 1, Long.MAX_VALUE, listener);
 
 		// create one message
-		buffer.addMessage(createMessage());
+		buffer.addMessage(createMessage(), signature);
 
 		// buffer triggered already
 		assertEquals(1, listener.getTriggerCount());
@@ -68,7 +72,7 @@ public class TestMessageBuffer {
 		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, Long.MAX_VALUE, waitTime, listener);
 
 		// create one message
-		buffer.addMessage(createMessage());
+		buffer.addMessage(createMessage(), signature);
 
 		// buffer did not trigger yet
 		assertEquals(0, listener.getTriggerCount());
@@ -101,19 +105,19 @@ public class TestMessageBuffer {
 		Message fourth = createMessage();
 		Message fifth = createMessage();
 
-		buffer.addMessage(first);
-		buffer.addMessage(second);
-		buffer.addMessage(third);
-		buffer.addMessage(fourth);
-		buffer.addMessage(fifth);
+		buffer.addMessage(first, signature);
+		buffer.addMessage(second, signature);
+		buffer.addMessage(third, signature);
+		buffer.addMessage(fourth, signature);
+		buffer.addMessage(fifth, signature);
 		
 		// buffer triggered by now, check the order
 		List<Buffer> content = listener.getBuffer();
-		assertEquals(first.messageId(), RelayUtils.decodeMessage(content.get(0), new InetSocketAddress(0), new InetSocketAddress(0)).messageId());
-		assertEquals(second.messageId(), RelayUtils.decodeMessage(content.get(1), new InetSocketAddress(0), new InetSocketAddress(0)).messageId());
-		assertEquals(third.messageId(), RelayUtils.decodeMessage(content.get(2), new InetSocketAddress(0), new InetSocketAddress(0)).messageId());
-		assertEquals(fourth.messageId(), RelayUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0)).messageId());
-		assertEquals(fifth.messageId(), RelayUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0)).messageId());
+		assertEquals(first.messageId(), RelayUtils.decodeMessage(content.get(0), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(second.messageId(), RelayUtils.decodeMessage(content.get(1), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(third.messageId(), RelayUtils.decodeMessage(content.get(2), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(fourth.messageId(), RelayUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(fifth.messageId(), RelayUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
 	}
 
 	/**

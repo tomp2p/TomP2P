@@ -110,7 +110,8 @@ public class HolePTestApp {
 					+ "		1 = getNatPeerAddress() \n"
 					+ "		2 = putNATPeerAddress() \n"
 					+ "		3 = sendDirectMessage() \n"
-					+ "		4 = sendDirectNATMessage()");
+					+ "		4 = sendDirectNATMessage() \n"
+					+ "		5 = sendRelayNATMessage()");
 			System.out.println();
 			int order = scan.nextInt();
 			System.out.println("You've entered the number " + order + ".");
@@ -134,11 +135,11 @@ public class HolePTestApp {
 			default: //start process again
 				break;
 			}
-			// if 0 is chosen, the peer should shutdown and the program should end
-			FutureShutdown fs = (FutureShutdown) peer.shutdown();
-			fs.awaitUninterruptibly();
-			System.exit(0);
 		}
+		// if 0 is chosen, the peer should shutdown and the program should end
+		FutureShutdown fs = (FutureShutdown) peer.shutdown();
+		fs.awaitUninterruptibly();
+		System.exit(0);
 	}
 
 	private void sendRelayNATMessage() {

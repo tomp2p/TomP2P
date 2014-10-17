@@ -52,7 +52,6 @@ public class DiscoverBuilder {
     private int portTCP = Ports.DEFAULT_PORT;
 
     private PeerAddress peerAddress;
-    private PeerAddress senderAddress;
 
     private int discoverTimeoutSec = 5;
 
@@ -215,8 +214,8 @@ public class DiscoverBuilder {
         });
 
         final FutureResponse futureResponseTCP = peer.pingRPC().pingTCPDiscover(peerAddress, cc,
-                configuration, senderAddress);
-
+                configuration);
+        
         futureResponseTCP.addListener(new BaseFutureAdapter<FutureResponse>() {
             @Override
             public void operationComplete(FutureResponse future) throws Exception {
@@ -252,9 +251,9 @@ public class DiscoverBuilder {
                                     LOG.info("manual ports, change it to: {}", serverAddress);
                                 } else {
                                     // we need to find a relay, because there is a NAT in the way.
+                                	// we cannot use futureResponseTCP.responseMessage().recipient() as this may return also IPv6 addresses
                                     futureDiscover
-                                            .externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay {}, {}" + peerAddress, futureResponseTCP.responseMessage()
-                                                    .recipient().inetAddress(), seenAs.inetAddress());
+                                            .externalHost("We are most likely behind NAT, try to UPNP, NATPMP or relay {}, {}" + peerAddress, serverAddress.inetAddress(), seenAs.inetAddress());
                                     return;
                                 }
                             }
@@ -263,8 +262,24 @@ public class DiscoverBuilder {
                         // us
                         FutureResponse fr1 = peer.pingRPC().pingTCPProbe(peerAddress, cc,
                                 configuration);
+                        fr1.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+                            public void operationComplete(FutureResponse future) throws Exception {
+	                            if(future.isFailed()) {
+	                            	futureDiscover.failed("FutureDiscover (2): We need at least the TCP connection", future);
+	                            }
+                            }
+						});
                         FutureResponse fr2 = peer.pingRPC().pingUDPProbe(peerAddress, cc,
                                 configuration);
+                        fr2.addListener(new BaseFutureAdapter<FutureResponse>() {
+							@Override
+                            public void operationComplete(FutureResponse future) throws Exception {
+	                            if(future.isFailed()) {
+	                            	LOG.warn("FutureDiscover (2): UDP failed connection", future);
+	                            }
+                            }
+						});
                         // from here we probe, set the timeout here
                         futureDiscover.timeout(serverAddress, peer.connectionBean().timer(), discoverTimeoutSec);
                         return;
@@ -273,20 +288,11 @@ public class DiscoverBuilder {
                         return;
                     }
                 } else {
-                    futureDiscover.failed("FutureDiscover: We need at least the TCP connection",
+                    futureDiscover.failed("FutureDiscover (1): We need at least the TCP connection",
                             futureResponseTCP);
                     return;
                 }
             }
         });
-    }
-
-	public DiscoverBuilder senderAddress(PeerAddress senderAddress) {
-	    this.senderAddress = senderAddress;
-	    return this;
-    }
-	
-	public PeerAddress senderAddress() {
-	    return senderAddress;
     }
 }

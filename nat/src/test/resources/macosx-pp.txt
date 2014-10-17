@@ -1,0 +1,87 @@
+Routing tables
+
+Internet:
+Destination        Gateway            Flags        Refs      Use   Netif Expire
+default            130.60.156.1       UGSc           30        0     en0
+127                127.0.0.1          UCS             0        0     lo0
+127.0.0.1          127.0.0.1          UH              7    51994     lo0
+130.60.156/24      link#4             UCS            31        0     en0
+130.60.156.1       0:21:a0:50:86:0    UHLWIir        31        0     en0   1197
+130.60.156.25      0:3e:e1:c2:98:d4   UHLWI           0        2     en0    939
+130.60.156.35      0:1b:21:d3:a3:89   UHLWI           0        0     en0   1158
+130.60.156.58      18:3:73:3a:48:8a   UHLWI           0      527     en0    500
+130.60.156.65      20:c9:d0:2a:9b:ba  UHLWI           0        0     en0   1172
+130.60.156.68      0:5:cd:2c:7a:fd    UHLWI           0        0     en0   1152
+130.60.156.71      0:24:7e:da:7d:e0   UHLWI           0        0     en0   1055
+130.60.156.72      28:d2:44:9a:4b:e3  UHLWI           0        0     en0    345
+130.60.156.84      0:26:8:4:cf:e2     UHLWI           0        0     en0    989
+130.60.156.85      3c:7:54:7a:23:44   UHLWI           0        1     en0
+130.60.156.90      84:8f:69:ce:23:8b  UHLWI           0        0     en0    359
+130.60.156.92      b8:8d:12:56:73:3a  UHLWI           0        0     en0     80
+130.60.156.107     0:21:cc:cc:ae:be   UHLWI           0        0     en0   1156
+130.60.156.119     0:23:32:30:b0:40   UHLWI           0       74     en0   1200
+130.60.156.134     0:88:65:39:ff:26   UHLWI           0        0     en0    456
+130.60.156.136     c4:2c:3:3:7b:77    UHLWI           0        0     en0    493
+130.60.156.147     0:1b:a9:b0:42:52   UHLWI           0        0     en0   1117
+130.60.156.151     0:21:cc:cd:d3:2d   UHLWI           0        0     en0   1077
+130.60.156.153     50:67:f0:32:36:7f  UHLWI           0        4     en0   1160
+130.60.156.157     f0:de:f1:9e:a9:d1  UHLWIi          1      482     en0   1193
+130.60.156.160     0:50:b6:71:b0:5b   UHLWI           0        0     en0   1125
+130.60.156.161     127.0.0.1          UHS             0       25     lo0
+130.60.156.171     c8:60:0:a6:1e:8b   UHLWI           0        0     en0    723
+130.60.156.192     90:e2:ba:7:47:11   UHLWI           0        2     en0   1185
+130.60.156.195     f0:de:f1:c5:a0:31  UHLWI           0        0     en0   1122
+130.60.156.196     b8:6b:23:fa:4d:11  UHLWI           0        0     en0   1100
+130.60.156.197     0:18:a:d0:bf:50    UHLWI           0        0     en0   1186
+130.60.156.201     70:cd:60:aa:80:99  UHLWI           0        2     en0    286
+130.60.156.202     30:85:a9:95:a3:d2  UHLWI           0        0     en0   1184
+130.60.156.209     0:1f:33:ea:f4:6e   UHLWI           0      460     en0   1193
+130.60.156.255     ff:ff:ff:ff:ff:ff  UHLWbI          0        2     en0
+169.254            link#4             UCS             1        0     en0
+169.254.255.255    0:21:a0:50:86:0    UHLSW           0        0     en0
+
+Internet6:
+Destination                             Gateway                         Flags         Netif Expire
+::1                                     ::1                             UHL             lo0
+fe80::%lo0/64                           fe80::1%lo0                     UcI             lo0
+fe80::1%lo0                             link#1                          UHLI            lo0
+fe80::%en0/64                           link#4                          UCI             en0
+fe80::204:23ff:feb9:dd58%en0            0:4:23:b9:dd:58                 UHLWI           en0
+fe80::21b:63ff:fea2:e46%en0             0:1b:63:a2:e:46                 UHLWI           en0
+fe80::21c:c0ff:febe:1a44%en0            0:1c:c0:be:1a:44                UHLWI           en0
+fe80::21f:5bff:fe2f:ab3c%en0            0:1f:5b:2f:ab:3c                UHLWI           en0
+fe80::21f:5bff:fe37:cde8%en0            0:1f:5b:37:cd:e8                UHLWI           en0
+fe80::223:32ff:fe97:e985%en0            0:23:32:97:e9:85                UHLWI           en0
+fe80::223:dfff:fefd:ea44%en0            0:23:df:fd:ea:44                UHLWI           en0
+fe80::226:bbff:fe61:eca8%en0            0:26:bb:61:ec:a8                UHLWI           en0
+fe80::23e:e1ff:fec0:5c70%en0            0:3e:e1:c0:5c:70                UHLWIi          en0
+fe80::129a:ddff:fe42:9fec%en0           10:9a:dd:42:9f:ec               UHLWI           en0
+fe80::12dd:b1ff:fe9d:7aa6%en0           10:dd:b1:9d:7a:a6               UHLI            lo0
+fe80::12dd:b1ff:fea4:3c86%en0           10:dd:b1:a4:3c:86               UHLWI           en0
+fe80::12dd:b1ff:fef1:5317%en0           10:dd:b1:f1:53:17               UHLWI           en0
+fe80::22c9:d0ff:fe2a:9bba%en0           20:c9:d0:2a:9b:ba               UHLWIi          en0
+fe80::22c9:d0ff:fe2b:94e5%en0           20:c9:d0:2b:94:e5               UHLWI           en0
+fe80::3e07:54ff:fe4e:7cb9%en0           3c:7:54:4e:7c:b9                UHLWI           en0
+fe80::3e07:54ff:fe6d:abb3%en0           3c:7:54:6d:ab:b3                UHLWI           en0
+fe80::3e07:54ff:fe77:e392%en0           3c:7:54:77:e3:92                UHLWI           en0
+fe80::3e07:54ff:fe7a:2344%en0           3c:7:54:7a:23:44                UHLWI           en0
+fe80::6a5b:35ff:fead:b29f%en0           68:5b:35:ad:b2:9f               UHLWI           en0
+fe80::7211:24ff:fe8c:cfc1%en0           70:11:24:8c:cf:c1               UHLWI           en0
+fe80::72cd:60ff:feaa:8099%en0           70:cd:60:aa:80:99               UHLWI           en0
+fe80::aa20:66ff:fe1b:8f80%en0           a8:20:66:1b:8f:80               UHLWI           en0
+fe80::aa20:66ff:fe2b:113f%en0           a8:20:66:2b:11:3f               UHLWI           en0
+fe80::aa20:66ff:fe3f:900f%en0           a8:20:66:3f:90:f                UHLWI           en0
+fe80::ae7f:3eff:fee6:ae5%en0            ac:7f:3e:e6:a:e5                UHLWI           en0
+fe80::ba8d:12ff:fe56:734c%en0           b8:8d:12:56:73:4c               UHLWI           en0
+fe80::c62c:3ff:fe03:7b77%en0            c4:2c:3:3:7b:77                 UHLWI           en0
+fe80::c62c:3ff:fe0d:68e6%en0            c4:2c:3:d:68:e6                 UHLWI           en0
+fe80::ca2a:14ff:fe1f:2e15%en0           c8:2a:14:1f:2e:15               UHLWI           en0
+fe80::d6c9:efff:fe5f:e47e%en0           d4:c9:ef:5f:e4:7e               UHLWI           en0
+fe80::ea06:88ff:fecb:984b%en0           e8:6:88:cb:98:4b                UHLWI           en0
+fe80::%en1/64                           link#5                          UCI             en1
+ff01::%lo0/32                           ::1                             UmCI            lo0
+ff01::%en0/32                           link#4                          UmCI            en0
+ff01::%en1/32                           link#5                          UmCI            en1
+ff02::%lo0/32                           ::1                             UmCI            lo0
+ff02::%en0/32                           link#4                          UmCI            en0
+ff02::%en1/32                           link#5                          UmCI            en1

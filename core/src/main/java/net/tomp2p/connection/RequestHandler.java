@@ -280,6 +280,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         
         // support slow, unreachable devices which cannot respond instantly
         if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Type.PARTIALLY_OK) {
+        	System.err.println("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	// wait for the (real) answer of the unreachable peer.
         	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse);

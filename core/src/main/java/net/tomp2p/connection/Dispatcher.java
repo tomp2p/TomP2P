@@ -159,6 +159,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         if(message.sender().isSlow()) {
         	// This might be a late answer from a slow peer
         	if(pendingRequests.containsKey(message.messageId())) {
+        		System.err.println("Received late response from slow peer:" + message);
         		LOG.debug("Received late response from slow peer: {}", message);
         		FutureResponse futureResponse = pendingRequests.get(message.messageId());
         		futureResponse.response(message);

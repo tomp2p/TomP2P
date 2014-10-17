@@ -641,7 +641,7 @@ public class TestMessage {
 				Utils.isSameSets(m1.keyCollectionList(),
 						m2.keyCollectionList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyMapKeys640List(), m2.keyMapKeys640List()));
+				Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.longList(), m2.longList()));
 		

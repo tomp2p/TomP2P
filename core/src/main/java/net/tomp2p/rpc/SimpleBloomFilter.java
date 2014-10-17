@@ -96,11 +96,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	}
 
 	/**
-	 * Constructs a SimpleBloomFilter out of existing data. You must specify the
-	 * number of bits in the Bloom Filter, and also you should specify the
-	 * number of items you expect to add. The latter is used to choose some
-	 * optimal internal values to minimize the false-positive rate (which can be
-	 * estimated with expectedFalsePositiveRate()).
+	 * Constructs a SimpleBloomFilter out of existing data.
 	 * 
 	 * @param channelBuffer
 	 *            The byte buffer with the data

@@ -35,5 +35,9 @@ public class FutureDirect extends FutureWrapper2<FutureDirect, FutureResponse> {
             return buffer().object();
         }
     }
+    
+    public FutureResponse futureResponse() {
+    	return futureResponse;
+    }
 
 }

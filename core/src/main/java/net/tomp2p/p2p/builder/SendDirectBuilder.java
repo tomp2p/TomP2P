@@ -193,12 +193,12 @@ public class SendDirectBuilder implements ConnectionConfiguration, SendDirectBui
 			}
 
 		} else {
+			Utils.addReleaseListener(futureChannelCreator, request.futureResponse());
 			futureChannelCreator.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
 				@Override
 				public void operationComplete(final FutureChannelCreator future) throws Exception {
 					if (future.isSuccess()) {
 						final FutureResponse futureResponse = request.sendTCP(future.channelCreator());
-						Utils.addReleaseListener(future.channelCreator(), futureResponse);
 					} else {
 						request.futureResponse().failed("could not create channel", future);
 					}

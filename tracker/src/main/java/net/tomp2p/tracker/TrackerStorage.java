@@ -11,7 +11,6 @@ import java.util.SortedSet;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.message.TrackerData;
-import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.DefaultMaintenance;
 import net.tomp2p.peers.Maintainable;
 import net.tomp2p.peers.Number160;
@@ -42,15 +41,15 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	private PeerExchange peerExchange;
 
 	public TrackerStorage(int trackerTimoutSeconds, final int[] intervalSeconds,
-	        int replicationFactor, Peer peer, boolean verifyPeersOnTracker) {
+	        int replicationFactor, PeerMap peerMap, PeerAddress self, boolean verifyPeersOnTracker) {
 		dataMapUnverified = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE,
 		        true);
 		dataMap = new ConcurrentCacheMap<Number320, TrackerData>(trackerTimoutSeconds, TRACKER_CACHE_SIZE, true);
 		peerOffline = new ConcurrentCacheMap<Number160, Boolean>(trackerTimoutSeconds * 5, TRACKER_CACHE_SIZE, false);
 		this.trackerTimoutSeconds = trackerTimoutSeconds;
 		this.intervalSeconds = intervalSeconds;
-		this.self = peer.peerAddress();
-		this.peerMap = peer.peerBean().peerMap();
+		this.self = self;
+		this.peerMap = peerMap;
 		this.replicationFactor = replicationFactor;
 		this.verifyPeersOnTracker = verifyPeersOnTracker;
 	}
@@ -60,26 +59,45 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			return false;
 		}
 		// security check
-		Data oldData = findOld(key, peerAddress);
-		if (oldData!=null && oldData.publicKey()!=null && !oldData.publicKey().equals(publicKey)) {
-			return false;
+		Data oldDataUnverified = findOld(key, peerAddress, dataMapUnverified);
+		boolean isUnverified = false;
+		boolean isVerified = false;
+		if(oldDataUnverified != null) {
+			//security check
+			if (oldDataUnverified.publicKey()!=null && !oldDataUnverified.publicKey().equals(publicKey)) {
+				return false;
+			}
+			isUnverified = true;
+		} else {
+			Data oldData = findOld(key, peerAddress, dataMap);
+			if(oldData != null) {
+				//security check
+				if (oldData.publicKey()!=null && !oldData.publicKey().equals(publicKey)) {
+					return false;
+				}
+				isVerified = true;
+			}
 		}
+		
 		if(attachement == null) {
 			attachement = new Data();
 		}
 		// now store
 		attachement.publicKey(publicKey);
-		return add(key, new PeerStatatistic(peerAddress), verifyPeersOnTracker ? dataMapUnverified : dataMap, attachement);
+		final Map<Number320, TrackerData> dataMapToStore;
+		if(isUnverified) {
+			dataMapToStore = dataMapUnverified;
+		} else if (isVerified) {
+			dataMapToStore = dataMap;
+		} else if(verifyPeersOnTracker) {
+			dataMapToStore = dataMapUnverified;
+		} else {
+			dataMapToStore = dataMap;
+		}
+		return add(key, new PeerStatatistic(peerAddress), dataMapToStore, attachement);
 	}
 
-	private Data findOld(Number320 key, PeerAddress peerAddress) {
-		for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
-			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
-				if (entry2.getKey().peerAddress().equals(peerAddress)) {
-					return entry2.getValue();
-				}
-			}
-		}
+	private Data findOld(Number320 key, PeerAddress peerAddress, Map<Number320, TrackerData> dataMap) {
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
 			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (entry2.getKey().peerAddress().equals(peerAddress)) {
@@ -195,7 +213,11 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	private boolean remove(Number320 key, PeerStatatistic stat, Map<Number320, TrackerData> map) {
 		TrackerData trackerData = map.get(key);
 		if (trackerData != null) {
-			return trackerData.remove(stat.peerAddress().peerId()) != null;
+			boolean retVal = trackerData.remove(stat.peerAddress().peerId()) != null;
+			if(trackerData.peerAddresses().size() == 0) {
+				map.remove(key);
+			}
+			return retVal;
 		}
 		return false;
 	}
@@ -248,7 +270,8 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 			PeerStatatistic statToRemove = null;
 			for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
 				for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
-					if (entry2.getKey().peerAddress().equals(remotePeer)) {
+					PeerAddress tmp = entry2.getKey().peerAddress(); 
+					if (tmp.equals(remotePeer)) {
 						if (add(entry.getKey(), entry2.getKey(), dataMap, entry2.getValue())) {
 							// only remove from unverified if we could store to
 							// verified

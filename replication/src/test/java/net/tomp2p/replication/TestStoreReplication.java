@@ -28,6 +28,7 @@ import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.dht.StorageMemory;
 import net.tomp2p.futures.FutureChannelCreator;
+import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.p2p.ResponsibilityListener;
@@ -77,10 +78,10 @@ public class TestStoreReplication {
                 }
 
 				@Override
-                public void otherResponsible(Number160 locationKey, PeerAddress other) {
+                public FutureDone<?> otherResponsible(Number160 locationKey, PeerAddress other) {
 					System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
-	                
+	                return null;
                 }
             };
             
@@ -150,9 +151,10 @@ public class TestStoreReplication {
 
             ResponsibilityListener responsibilityListener = new ResponsibilityListener() {
                 @Override
-                public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+                public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
                     System.err.println("Other peer (" + other + ")is responsible for " + locationKey);
                     test1.incrementAndGet();
+                    return null;
                 }
 
                 @Override
@@ -977,8 +979,9 @@ public class TestStoreReplication {
 			final AtomicInteger replicateWe = new AtomicInteger(0);
 			ind.addResponsibilityListener(new ResponsibilityListener() {
 				@Override
-				public void otherResponsible(final Number160 locationKey, final PeerAddress other) {
+				public FutureDone<?> otherResponsible(final Number160 locationKey, final PeerAddress other) {
 					replicateOther.incrementAndGet();
+					return null;
 				}
 
 				@Override

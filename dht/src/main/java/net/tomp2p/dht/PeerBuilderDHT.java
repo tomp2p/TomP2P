@@ -63,6 +63,8 @@ public class PeerBuilderDHT {
 		if (storageLayer == null) {
 			storageLayer = new StorageLayer(storage);
 			storageLayer.start(peer.connectionBean().timer(), storageLayer.storageCheckIntervalMillis());
+		}
+		if (peer.peerBean().digestStorage() == null) {
 			peer.peerBean().digestStorage(storageLayer);
 		}
 		if (storageRPC == null) {

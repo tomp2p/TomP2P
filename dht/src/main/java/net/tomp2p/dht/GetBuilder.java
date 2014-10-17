@@ -64,6 +64,8 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
     private boolean bloomFilterAnd = true;
 
     private int returnNr = -1;
+    
+    private boolean fastGet = true;
 
     static {
         NUMBER_ZERO_CONTENT_KEYS.add(Number160.ZERO);
@@ -268,6 +270,20 @@ public class GetBuilder extends DHTBuilder<GetBuilder> implements SearchableBuil
 
     public boolean isRange() {
         return from != null && to != null;
+    }
+    
+    public boolean isFastGet() {
+        return fastGet;
+    }
+
+    public GetBuilder fastGet(boolean fastGet) {
+        this.fastGet = fastGet;
+        return this;
+    }
+
+    public GetBuilder fastGet() {
+        this.fastGet = true;
+        return this;
     }
 
     public FutureGet start() {

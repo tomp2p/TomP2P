@@ -60,7 +60,7 @@ public class StorageLayer implements DigestStorage {
 
 	// The number of PutStatus should never exceed 255.
 	public enum PutStatus {
-		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND
+		OK, FAILED_NOT_ABSENT, FAILED_SECURITY, FAILED, VERSION_FORK, NOT_FOUND, DELETED
 	};
 
 	// Hash of public key is always preferred
@@ -685,28 +685,22 @@ public class StorageLayer implements DigestStorage {
 	public void removeResponsibility(Number160 locationKey, boolean keepData) {
 		KeyLock<Number160>.RefCounterLock lock = responsibilityLock.lock(locationKey);
 		try {
-			if(!keepData) {
+			if (!keepData) {
 				backend.remove(
 						new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
 						new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
 						false);
-				}
+			}
         	backend.removeResponsibility(locationKey);
         } finally {
             responsibilityLock.unlock(lock);
         }
 	}
 
-	public void removeResponsibility(Number160 locationKey, Number160 peerId, boolean keepData) {
+	public void removeResponsibility(Number160 locationKey, Number160 peerId) {
 		KeyLock<Number160>.RefCounterLock lock1 = responsibilityLock.lock(peerId);
 		KeyLock<Number160>.RefCounterLock lock2 = responsibilityLock.lock(locationKey);
         try {
-        	if(!keepData) {
-        		backend.remove(
-        				new Number640(locationKey, Number160.ZERO, Number160.ZERO, Number160.ZERO),
-        				new Number640(locationKey, Number160.MAX_VALUE, Number160.MAX_VALUE, Number160.MAX_VALUE),
-        				false);
-        	}
         	backend.removeResponsibility(locationKey, peerId);
         } finally {
         	responsibilityLock.unlock(lock1);

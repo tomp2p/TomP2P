@@ -77,8 +77,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final int... val) {
         if (val.length > INT_ARRAY_SIZE) {
-            throw new IllegalArgumentException("Can only deal with arrays of smaller or equal "
-                    + INT_ARRAY_SIZE + ". Your array has " + val.length);
+            throw new IllegalArgumentException(String.format("Can only deal with arrays of size smaller or equal to %s. Provided array has %s length.", INT_ARRAY_SIZE, val.length));
         }
         this.val = new int[INT_ARRAY_SIZE];
         final int len = val.length;
@@ -88,7 +87,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a Key from a string. The string has to be of length 40 to fit into the backing array. Note that this
+     * Create a Key from a string. The string has to be of length 42 to fit into the backing array. Note that this
      * string is *always* in hexadecimal, there is no 0x... required before the number.
      * 
      * @param val
@@ -96,9 +95,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final String val) {
         if (val.length() > STRING_LENGTH) {
-            throw new IllegalArgumentException(
-                    "Can only deal with strings of size smaller or equal than 42. Your string has "
-                            + val.length());
+            throw new IllegalArgumentException(String.format("Can only deal with strings of size smaller or equal to %s. Provided string has %s length.", STRING_LENGTH, val.length()));
         }
         if (val.indexOf("0x") != 0) {
             throw new IllegalArgumentException(val
@@ -167,9 +164,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      */
     public Number160(final byte[] val, final int offset, final int length) {
         if (length > BYTE_ARRAY_SIZE) {
-            throw new IllegalArgumentException(
-                    "Can only deal with byte arrays of size smaller or equal than 20. Your array has "
-                            + length);
+            throw new IllegalArgumentException(String.format("Can only deal with byte arrays of size smaller or equal to %s. Provided array has %s length.", BYTE_ARRAY_SIZE, length));
         }
         this.val = new int[INT_ARRAY_SIZE];
         for (int i = length + offset - 1, j = BYTE_ARRAY_SIZE - 1, k = 0; i >= offset; i--, j--, k++) {
@@ -212,14 +207,14 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * @return The first (most significant 64bits)
+     * @return The first (most significant) 64bits
      */
     public long timestamp() {
         return ((this.val[0] & LONG_MASK) << Integer.SIZE) + (this.val[1] & LONG_MASK);
     }
     
     /**
-     * @return The lower 96 bits of the 160 bit number
+     * @return The lower (least significant) 96 bits
      */
     public Number160 number96() {
         return new Number160(0, 0, this.val[2], this.val[3], this.val[4]);
@@ -230,7 +225,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * 
      * @param key
      *            The second operand for the xor operation
-     * @return A new key with the resurt of the xor operation
+     * @return A new key with the result of the xor operation
      */
     public Number160 xor(final Number160 key) {
         final int[] result = new int[INT_ARRAY_SIZE];
@@ -294,7 +289,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * Shows the content in a human readable manner.
      * 
      * @param removeLeadingZero
-     *            Indicates of leading zeros should be removed
+     *            Indicates if leading zeros should be removed
      * @return A human readable representation of this key
      */
     public String toString(final boolean removeLeadingZero) {
@@ -430,9 +425,9 @@ public final class Number160 extends Number implements Comparable<Number160> {
      * @param integer2
      *            The integer to convert
      * @param removeLeadingZero
-     *            idicate if leading zeros should be ignored
+     *            indicate if leading zeros should be ignored
      * @param sb
-     *            The string bulider where to store the result
+     *            The string builder where to store the result
      */
     private static void toHex(final int integer2, final boolean removeLeadingZero, final StringBuilder sb) {
         // 4 bits form a char, thus we have 160/4=40 chars in a key, with an
@@ -465,11 +460,11 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a new Number160 from the long, which fills all the 160bit. A new random object will be created, thus, its
+     * Creates a new Number160 from the long, which fills all the 160 bits. A new random object will be created, thus, its
      * thread safe
      * 
      * @param longValue
-     *            The value to hash from
+     *            The value to hash from (seed)
      * @return A hash based on pseudo random, to fill the 160bits
      */
     public static Number160 createHash(final long longValue) {
@@ -478,7 +473,7 @@ public final class Number160 extends Number implements Comparable<Number160> {
     }
 
     /**
-     * Create a new Number160 using SHA1 on the string.
+     * Creates a new Number160 using SHA1 on the string.
      * 
      * @param string
      *            The value to hash from

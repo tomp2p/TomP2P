@@ -93,8 +93,8 @@ public class PingRPC extends DispatchHandler {
         this.enable = enable;
         this.wait = wait;
         if (register) {
-            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), this,
-            		RPC.Commands.PING.getNr());
+            connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(),
+            		peerBean.serverPeerAddress().peerId(), this, RPC.Commands.PING.getNr());
         }
     }
 
@@ -315,11 +315,13 @@ public class PingRPC extends DispatchHandler {
                             @Override
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
+                                	LOG.debug("fire UDP to {}", message.sender());
                                     FutureResponse futureResponse = fireUDP(message.sender(), future
                                             .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
+                                	Utils.addReleaseListener(future.channelCreator());
                                     LOG.warn("handleResponse for REQUEST_3 failed (UDP) {}",
                                             future.failedReason());
                                 }
@@ -331,11 +333,13 @@ public class PingRPC extends DispatchHandler {
                             @Override
                             public void operationComplete(final FutureChannelCreator future) throws Exception {
                                 if (future.isSuccess()) {
+                                	LOG.debug("fire TCP to {}", message.sender());
                                     FutureResponse futureResponse = fireTCP(message.sender(), future
                                             .channelCreator(), connectionBean().channelServer()
                                             .channelServerConfiguration());
                                     Utils.addReleaseListener(future.channelCreator(), futureResponse);
                                 } else {
+                                	Utils.addReleaseListener(future.channelCreator());
                                     LOG.warn("handleResponse for REQUEST_3 failed (TCP) {}",
                                             future.failedReason());
                                 }

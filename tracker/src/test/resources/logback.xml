@@ -17,7 +17,7 @@
   
   <!--  <logger name="net" level="TRACE"/> -->
   
-  <logger name="net.tomp2p.tracker.TrackerRPC" level="TRACE"/>
+  <!-- <logger name="net.tomp2p.tracker.TrackerRPC" level="TRACE"/> -->
   <!-- <logger name="net.tomp2p.p2p.MaintenanceTask" level="TRACE"/> -->
   <logger name="net.tomp2p.tracker.DistributedTracker" level="TRACE"/>
   

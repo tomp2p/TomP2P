@@ -22,6 +22,7 @@ import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
+import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 
@@ -58,8 +59,23 @@ public abstract class DispatchHandler {
         this.connectionBean = connectionBean;
     }
     
+    /**
+     * Registers all names on the dispatcher on behalf of the own peer
+     * @param names
+     */
     public void register(final int... names) {
-        connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), this, names);
+    	Number160 onBehalfOf = peerBean.serverPeerAddress().peerId();
+    	register(onBehalfOf, names);
+    }
+    
+    /**
+     * Registers all names on the dispatcher on behalf of the given peer
+      * @param onBehalfOf
+     * 			  The ioHandler can be registered for the own use of in behalf of another peer (e.g. in case of relay node).
+    * @param names
+     */
+    public void register(Number160 onBehalfOf, final int... names) {
+        connectionBean.dispatcher().registerIoHandler(peerBean.serverPeerAddress().peerId(), onBehalfOf, this, names);
     }
 
     /**

@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
-import java.util.SortedMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -46,7 +46,6 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DefaultBloomfilterFactory;
-import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.DirectDataRPC;
 import net.tomp2p.rpc.RPC;
@@ -59,6 +58,8 @@ import org.slf4j.LoggerFactory;
 
 public class DistributedHashTable {
     private static final Logger logger = LoggerFactory.getLogger(DistributedHashTable.class);
+    
+    private static final NavigableSet<PeerAddress> EMPTY_NAVIGABLE_SET = new TreeSet<PeerAddress>();
     
     public static final int REASON_CANCEL = 254;
     public static final int REASON_UNKOWN = 255;
@@ -93,7 +94,7 @@ public class DistributedHashTable {
                                 logger.debug("adding lkey={} on {}", builder.locationKey(),
                                         futureRouting.potentialHits());
                                 parallelRequests(builder.requestP2PConfiguration(),
-                                        futureRouting.potentialHits(), futureDHT, false,
+                                		EMPTY_NAVIGABLE_SET , futureRouting.potentialHits(), futureDHT, false,
                                         future.channelCreator(), new OperationMapper<FuturePut>() {
                                             Map<PeerAddress, Map<Number640, Byte>> rawData = new HashMap<PeerAddress, Map<Number640, Byte>>();
 
@@ -160,7 +161,7 @@ public class DistributedHashTable {
                                 logger.debug("storing lkey={} on {}", builder.locationKey(),
                                         futureRouting.potentialHits());
                                 parallelRequests(builder.requestP2PConfiguration(),
-                                        futureRouting.potentialHits(), futureDHT,
+                                		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futureDHT,
                                         builder.isCancelOnFinish(), future.channelCreator(),
                                         new OperationMapper<FutureSend>() {
                                             Map<PeerAddress, ByteBuf> rawChannels = new HashMap<PeerAddress, ByteBuf>();
@@ -243,7 +244,7 @@ public class DistributedHashTable {
                                         futureRouting.potentialHits());
 
                                 parallelRequests(putBuilder.requestP2PConfiguration(),
-                                        futureRouting.potentialHits(), futureDHT, false,
+                                		EMPTY_NAVIGABLE_SET, futureRouting.potentialHits(), futureDHT, false,
                                         future.channelCreator(), new OperationMapper<FuturePut>() {
 
                                             Map<PeerAddress, Map<Number640, Byte>> rawData = new HashMap<PeerAddress, Map<Number640, Byte>>();
@@ -314,7 +315,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet()? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
 
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -322,19 +323,16 @@ public class DistributedHashTable {
                         public void operationComplete(FutureRouting futureRouting) throws Exception {
                             if (futureRouting.isSuccess()) {
                                 logger.debug("found direct hits for get: {}", futureRouting.directHits());
-                                // this adjust is based on results from the routing process, if we find the same data on
-                                // 2
-                                // peers, we want to get it from one only. Unless its digest, then we want to know
-                                // exactly what is going on
-                                RequestP2PConfiguration p2pConfiguration2 = builder.isRange() ? builder
-                                        .requestP2PConfiguration() : adjustConfiguration(
-                                        builder.requestP2PConfiguration(),
-                                        futureRouting.directHitsDigest());
+                                      
+                                RequestP2PConfiguration p2pConfiguration2 = adjustConfiguration(builder.requestP2PConfiguration, 
+                                		futureRouting.potentialHits().size());
+                                        
                                 // store in direct hits
                                 parallelRequests(
                                         p2pConfiguration2,
-                                        builder.isRange() ? futureRouting.potentialHits() : futureRouting
-                                                .directHits(), futureDHT, true,
+                                        builder.isFastGet() ? futureRouting.directHits(): EMPTY_NAVIGABLE_SET,
+                                        futureRouting.potentialHits(),
+                                        futureDHT, true,
                                         future.channelCreator(), new OperationMapper<FutureGet>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawData = new HashMap<PeerAddress, Map<Number640, Data>>();
                                             Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
@@ -409,7 +407,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                 	fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet()? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
                     
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -421,8 +419,9 @@ public class DistributedHashTable {
                                 // store in direct hits
                                 parallelRequests(
                                         builder.requestP2PConfiguration(),
-                                        builder.isRange() ? futureRouting.potentialHits() : futureRouting
-                                                .directHits(), futureDHT, true,
+                                        builder.isFastGet() ? futureRouting.directHits(): EMPTY_NAVIGABLE_SET,
+                                        futureRouting.potentialHits(), 
+                                        futureDHT, true,
                                         future.channelCreator(), new OperationMapper<FutureDigest>() {
                                             Map<PeerAddress, DigestResult> rawDigest = new HashMap<PeerAddress, DigestResult>();
 
@@ -496,7 +495,7 @@ public class DistributedHashTable {
                 	
                 	final RoutingBuilder routingBuilder = createBuilder(builder);
                     fillRoutingBuilder(builder, routingBuilder);
-                	final FutureRouting futureRouting = routing.route(routingBuilder, Type.REQUEST_2, future.channelCreator());
+                	final FutureRouting futureRouting = routing.route(routingBuilder, builder.isFastGet() ? Type.REQUEST_2 : Type.REQUEST_1, future.channelCreator());
 
                     futureDHT.futureRouting(futureRouting);
                     futureRouting.addListener(new BaseFutureAdapter<FutureRouting>() {
@@ -507,12 +506,13 @@ public class DistributedHashTable {
                                 logger.debug("found direct hits for remove: {}",
                                         futureRouting.directHits());
 
-                                RequestP2PConfiguration p2pConfiguration2 = adjustConfiguration(
-                                        builder.requestP2PConfiguration(),
-                                        futureRouting.directHitsDigest());
+                                RequestP2PConfiguration p2pConfiguration2 = adjustConfiguration(builder.requestP2PConfiguration, 
+                                		futureRouting.potentialHits().size());
 
-                                parallelRequests(p2pConfiguration2, futureRouting.directHits(), futureDHT,
-                                        false, future.channelCreator(),
+                                parallelRequests(p2pConfiguration2, 
+                                		builder.isFastGet() ? futureRouting.directHits(): EMPTY_NAVIGABLE_SET,
+                                        futureRouting.potentialHits(),
+                                		futureDHT, false, future.channelCreator(),
                                         new OperationMapper<FutureRemove>() {
                                             Map<PeerAddress, Map<Number640, Data>> rawDataResult = new HashMap<PeerAddress, Map<Number640, Data>>();
 
@@ -580,7 +580,7 @@ public class DistributedHashTable {
      *            The operation that creates the request
      */
     public static <K extends FutureDHT<?>> K parallelRequests(final RequestP2PConfiguration p2pConfiguration,
-            final NavigableSet<PeerAddress> queue, final boolean cancleOnFinish,
+            final NavigableSet<PeerAddress> directHit, final NavigableSet<PeerAddress> potentialHit, final boolean cancleOnFinish,
             final FutureChannelCreator futureChannelCreator, final OperationMapper<K> operation,
             final K futureDHT) {
 
@@ -588,7 +588,7 @@ public class DistributedHashTable {
             @Override
             public void operationComplete(final FutureChannelCreator future) throws Exception {
                 if (future.isSuccess()) {
-                    parallelRequests(p2pConfiguration, queue, futureDHT, cancleOnFinish,
+                    parallelRequests(p2pConfiguration, directHit, potentialHit, futureDHT, cancleOnFinish,
                             future.channelCreator(), operation);
                     Utils.addReleaseListener(future.channelCreator(), futureDHT);
                 } else {
@@ -599,8 +599,9 @@ public class DistributedHashTable {
         return futureDHT;
     }
 
+    //TODO: have two queues, direct queue + potential queue.
     private static <K extends FutureDHT<?>> void parallelRequests(RequestP2PConfiguration p2pConfiguration,
-            NavigableSet<PeerAddress> queue, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
+    		NavigableSet<PeerAddress> directHit, NavigableSet<PeerAddress> potentialHit, K future, boolean cancleOnFinish, ChannelCreator channelCreator,
             OperationMapper<K> operation) {
         if (p2pConfiguration.minimumResults() == 0) {
             operation.response(future);
@@ -608,13 +609,13 @@ public class DistributedHashTable {
         }
         FutureResponse[] futures = new FutureResponse[p2pConfiguration.parallel()];
         // here we split min and pardiff, par=min+pardiff
-        loopRec(queue, p2pConfiguration.minimumResults(), new AtomicInteger(0),
+        loopRec(directHit, potentialHit, p2pConfiguration.minimumResults(), new AtomicInteger(0),
                 p2pConfiguration.maxFailure(), p2pConfiguration.parallelDiff(),
                 new AtomicReferenceArray<FutureResponse>(futures), future, cancleOnFinish, channelCreator,
                 operation);
     }
 
-    private static <K extends FutureDHT<?>> void loopRec(final NavigableSet<PeerAddress> queue,
+    private static <K extends FutureDHT<?>> void loopRec(final NavigableSet<PeerAddress> directHit, final NavigableSet<PeerAddress> potentialHit,
             final int min, final AtomicInteger nrFailure, final int maxFailure, final int parallelDiff,
             final AtomicReferenceArray<FutureResponse> futures, final K futureDHT,
             final boolean cancelOnFinish, final ChannelCreator channelCreator,
@@ -623,7 +624,10 @@ public class DistributedHashTable {
         int active = 0;
         for (int i = 0; i < min + parallelDiff; i++) {
             if (futures.get(i) == null) {
-                PeerAddress next = queue.pollFirst();
+                PeerAddress next = directHit.pollFirst();
+                if(next == null) {
+                	next = potentialHit.pollFirst();
+                }
                 if (next != null) {
                     active++;
                     FutureResponse futureResponse = operation.create(channelCreator, next);
@@ -660,7 +664,7 @@ public class DistributedHashTable {
                     }
                     operation.response(futureDHT);
                 } else {
-                    loopRec(queue, min - future.successCounter(), nrFailure, maxFailure, parallelDiff,
+                    loopRec(directHit, potentialHit, min - future.successCounter(), nrFailure, maxFailure, parallelDiff,
                             futures, futureDHT, cancelOnFinish, channelCreator, operation);
                 }
             }
@@ -719,9 +723,8 @@ public class DistributedHashTable {
      * @return The new RequestP2PConfiguration with the new minimum result
      */
     public static RequestP2PConfiguration adjustConfiguration(final RequestP2PConfiguration p2pConfiguration,
-            final SortedMap<PeerAddress, DigestInfo> directHitsDigest) {
+            final int size) {
 
-        int size = directHitsDigest.size();
         int requested = p2pConfiguration.minimumResults();
         if (size >= requested) {
             return p2pConfiguration;

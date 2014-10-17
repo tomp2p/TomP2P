@@ -401,7 +401,7 @@ public class TestMessage {
 		m1.buffer(new Buffer(Unpooled.buffer()));
 		Encoder e = new Encoder(null);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		e.write(buf, m1);
+		e.write(buf, m1, null);
 		Decoder d = new Decoder(null);
 		boolean header = d.decodeHeader(buf, new InetSocketAddress(0),
 				new InetSocketAddress(0));
@@ -641,7 +641,7 @@ public class TestMessage {
 				Utils.isSameSets(m1.keyCollectionList(),
 						m2.keyCollectionList()));
 		Assert.assertEquals(true,
-				Utils.isSameSets(m1.keyMapKeys640List(), m2.keyMapKeys640List()));
+				Utils.isSameSets(m1.keyMap640KeysList(), m2.keyMap640KeysList()));
 		Assert.assertEquals(true,
 				Utils.isSameSets(m1.longList(), m2.longList()));
 		

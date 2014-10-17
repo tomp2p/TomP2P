@@ -22,7 +22,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatatistic;
-import net.tomp2p.rcon.RconRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -31,11 +30,11 @@ import org.slf4j.LoggerFactory;
 
 public class RelayRPC extends DispatchHandler {
 
-	private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
-	private final ConnectionConfiguration config;
-	private final Peer peer;
+    private static final Logger LOG = LoggerFactory.getLogger(RelayRPC.class);
+    private final ConnectionConfiguration config;
+    private final Peer peer;
 
-	/**
+    /**
 	 * This variable is needed, because a relay overwrites every RPC of an
 	 * unreachable peer with another RPC called {@link RelayForwarderRPC}. This
 	 * variable is forwarded to the {@link RelayForwarderRPC} in order to
@@ -47,120 +46,118 @@ public class RelayRPC extends DispatchHandler {
 	private final RconRPC rconRPC;
 
 	/**
-	 * Register the RelayRPC. After the setup, the peer is ready to act as a
-	 * relay if asked by an unreachable peer.
-	 * 
-	 * @param peer
-	 *            The peer to register the RelayRPC
-	 * @return
-	 */
+     * Register the RelayRPC. After the setup, the peer is ready to act as a
+     * relay if asked by an unreachable peer.
+     * 
+     * @param peer
+     *            The peer to register the RelayRPC
+     * @return
+     */
 	public RelayRPC(Peer peer, RconRPC rconRPC) {
-		super(peer.peerBean(), peer.connectionBean());
-		register(RPC.Commands.RELAY.getNr());
-		this.peer = peer;
+        super(peer.peerBean(), peer.connectionBean());
+        register(RPC.Commands.RELAY.getNr());
+        this.peer = peer;
 		this.rconRPC = rconRPC;
-		config = new DefaultConnectionConfiguration();
-	}
+        config = new DefaultConnectionConfiguration();
+    }
 
-	/**
-	 * Send the peer map of an unreachable peer to a relay peer, so that the
-	 * relay peer can reply to neighbor requests on behalf of the unreachable
-	 * peer.
-	 * 
-	 * @param peerAddress
-	 *            The peer address of the relay peer
-	 * @param map
-	 *            The unreachable peer's peer map.
-	 * @param fcc
-	 * @return
-	 */
-	public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map,
-			final PeerConnection peerConnection) {
-		final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
-		message.keepAlive(true);
-		// TODO: neighbor size limit is 256, we might have more here
-		message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
-		final FutureResponse futureResponse = new FutureResponse(message);
+    /**
+     * Send the peer map of an unreachable peer to a relay peer, so that the
+     * relay peer can reply to neighbor requests on behalf of the unreachable
+     * peer.
+     * 
+     * @param peerAddress
+     *            The peer address of the relay peer
+     * @param map
+     *            The unreachable peer's peer map.
+     * @param fcc
+     * @return
+     */
+    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, final PeerConnection peerConnection) {
+        final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
+        message.keepAlive(true);
+        // TODO: neighbor size limit is 256, we might have more here
+        message.neighborsSet(new NeighborSet(-1, RelayUtils.flatten(map)));
+        final FutureResponse futureResponse = new FutureResponse(message);
 		return RelayUtils.sendSingle(peerConnection, futureResponse, peerBean(), connectionBean(), config);
-	}
+    }
 
-	/**
-	 * Forward a message through the open peer connection to the unreachable
-	 * peer.
-	 * 
-	 * @param peerConnection
-	 *            The open connection to the unreachable peer
-	 * @param buf
-	 *            Buffer of the message that needs to be forwarded to the
-	 *            unreachable peer
-	 * @return
-	 */
-	public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf) {
-		final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
-		message.keepAlive(true);
-		message.buffer(buf);
-		final FutureResponse futureResponse = new FutureResponse(message);
-		return RelayUtils.sendSingle(peerConnection, futureResponse, peerBean(), connectionBean(), config);
-	}
+    /**
+     * Forward a message through the open peer connection to the unreachable
+     * peer.
+     * 
+     * @param peerConnection
+     *            The open connection to the unreachable peer
+     * @param buf
+     *            Buffer of the message that needs to be forwarded to the
+     *            unreachable peer
+     * @return
+     */
+    public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf) {
+        final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
+        message.keepAlive(true);
+        message.buffer(buf);
+        final FutureResponse futureResponse = new FutureResponse(message);
+        return RelayUtils.sendSingle(peerConnection, futureResponse, peerBean(), connectionBean(), config);
+    }
 
-	/**
-	 * Set up a relay connection to a peer. If the peer that is asked to act as
-	 * relay is relayed itself, the request will be denied.
-	 * 
-	 * @param channelCreator
-	 * @param fpcshall
-	 *            FuturePeerConnection to the peer that shall act as a relay.
-	 * @return FutureDone with a peer connection to the newly set up relay peer
-	 */
-	public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc) {
-		final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
-		final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
-		message.keepAlive(true);
-		final FutureResponse futureResponse = new FutureResponse(message);
-		LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
+    /**
+     * Set up a relay connection to a peer. If the peer that is asked to act as
+     * relay is relayed itself, the request will be denied.
+     * 
+     * @param channelCreator
+     * @param fpcshall
+     *            FuturePeerConnection to the peer that shall act as a relay.
+     * @return FutureDone with a peer connection to the newly set up relay peer
+     */
+    public FutureDone<PeerConnection> setupRelay(final ChannelCreator channelCreator, FuturePeerConnection fpc) {
+        final FutureDone<PeerConnection> futureDone = new FutureDone<PeerConnection>();
+        final Message message = createMessage(fpc.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_1);
+        message.keepAlive(true);
+        final FutureResponse futureResponse = new FutureResponse(message);
+        LOG.debug("Setting up relay connection to peer {}, message {}", fpc.remotePeer(), message);
 
-		fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
-			public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
-				if (futurePeerConnection.isSuccess()) {
-					final PeerConnection peerConnection = futurePeerConnection.object();
+        fpc.addListener(new BaseFutureAdapter<FuturePeerConnection>() {
+            public void operationComplete(final FuturePeerConnection futurePeerConnection) throws Exception {
+                if (futurePeerConnection.isSuccess()) {
+                	final PeerConnection peerConnection = futurePeerConnection.object();
 					RelayUtils.sendSingle(peerConnection, futureResponse, peerBean(), connectionBean(), config).addListener(
 							new BaseFutureAdapter<FutureResponse>() {
-								public void operationComplete(FutureResponse future) throws Exception {
-									if (future.isSuccess()) {
-										futureDone.done(peerConnection);
-									} else {
-										futureDone.failed(future);
-									}
-								}
-							});
-				} else {
-					futureDone.failed(futurePeerConnection);
-				}
-			}
-		});
-		return futureDone;
-	}
+                        public void operationComplete(FutureResponse future) throws Exception {
+                            if (future.isSuccess()) {
+                                futureDone.done(peerConnection);
+                            } else {
+                                futureDone.failed(future);
+                            }
+                        }
+                    });
+                } else {
+                    futureDone.failed(futurePeerConnection);
+                }
+            }
+        });
+        return futureDone;
+    }
 
-	@Override
-	public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder)
-			throws Exception {
-		LOG.debug("received RPC message {}", message);
-		if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
-			handleSetup(message, peerConnection, responder);
-		} else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
-			handlePiggyBackMessage(message, responder);
-		} else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
-			handleMap(message, responder);
-		} else {
-			throw new IllegalArgumentException("Message content is wrong");
-		}
-	}
+    @Override
+    public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
+        LOG.debug("received RPC message {}", message);
+        if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
+            handleSetup(message, peerConnection, responder);
+        } else if (message.type() == Type.REQUEST_2 && message.command() == RPC.Commands.RELAY.getNr()) {
+            handlePiggyBackMessage(message, responder);
+        } else if (message.type() == Type.REQUEST_3 && message.command() == RPC.Commands.RELAY.getNr()) {
+            handleMap(message, responder);
+        } else {
+            throw new IllegalArgumentException("Message content is wrong");
+        }
+    }
 
-	public Peer peer() {
-		return this.peer;
-	}
+    public Peer peer() {
+        return this.peer;
+    }
 
-private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
+    private void handleSetup(Message message, final PeerConnection peerConnection, Responder responder) {
         
         if (peerBean().serverPeerAddress().isRelayed()) {
             // peer is behind a NAT as well -> deny request
@@ -176,19 +173,47 @@ private void handleSetup(Message message, final PeerConnection peerConnection, R
         responder.response(createResponseMessage(message, Type.OK));
     }
 
-    private void handlePiggyBackMessage(Message message, Responder responderToRelay) throws Exception {
+    private void handlePiggyBackMessage(Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0));
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
-        NoDirectResponse responder = new NoDirectResponse();
+        
+        final Message response = createResponseMessage(message, Type.OK);
+        final Responder responder = new Responder() {
+        	
+        	//TODO: add reply leak handler
+        	@Override
+        	public void response(Message responseMessage) {
+        		LOG.debug("Send reply message to relay peer: {}", responseMessage);
+        		try {
+	                response.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+                } catch (Exception e) {
+                	failed(Type.EXCEPTION, e.getMessage());
+	                e.printStackTrace();
+                }
+                responderToRelay.response(response);
+        	}
+
+			@Override
+            public void failed(Type type, String reason) {
+				responderToRelay.failed(type, reason);
+	            
+            }
+
+			@Override
+            public void responseFireAndForget() {
+				responderToRelay.responseFireAndForget();
+            }
+        };
         // TODO: Not sure what to do with the peer connection and sign
-        peer.connectionBean().dispatcher().associatedHandler(realMessage).handleResponse(realMessage, null, false, responder);
-        LOG.debug("Send reply message to relay peer: {}", responder.response());
-        Message response = createResponseMessage(message, Type.OK);
-        response.buffer(RelayUtils.encodeMessage(responder.response()));
-        responderToRelay.response(response);
+        DispatchHandler dispatchHandler = peer.connectionBean().dispatcher().associatedHandler(realMessage);
+        if(dispatchHandler == null) {
+        	responder.failed(Type.EXCEPTION, "handler not found, probably not relaying peer anymore");
+        } else {
+        	dispatchHandler.handleResponse(realMessage, null, false, responder);
+        }
     }
 
     /**

@@ -316,7 +316,30 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
     @Override
     public Collection<V> values() {
-        final Collection<V> retVal = new ArrayList<V>();
+        final Collection<V> retVal = new ArrayList<V>() {
+            private static final long serialVersionUID = 3769009451779243542L;
+
+			@Override
+        	public Iterator<V> iterator() {
+        		final Iterator<V> orig = super.iterator();
+        		return new Iterator<V>() {
+					@Override
+                    public boolean hasNext() {
+	                    return orig.hasNext();
+                    }
+
+					@Override
+                    public V next() {
+	                    return orig.next();
+                    }
+
+					@Override
+                    public void remove() {
+						throw new UnsupportedOperationException("cannot remove from values");
+                    }
+				};
+        	}
+        };
         for (final CacheMap<K, ExpiringObject> segment : segments) {
             synchronized (segment) {
                 final Iterator<ExpiringObject> iterator = segment.values().iterator();
@@ -339,7 +362,38 @@ public class ConcurrentCacheMap<K, V> implements ConcurrentMap<K, V> {
 
     @Override
     public Set<Map.Entry<K, V>> entrySet() {
-        final Set<Map.Entry<K, V>> retVal = new HashSet<Map.Entry<K, V>>();
+        final Set<Map.Entry<K, V>> retVal = new HashSet<Map.Entry<K, V>>() {
+            private static final long serialVersionUID = 3769009451779243542L;
+
+			@Override
+        	public Iterator<java.util.Map.Entry<K, V>> iterator() {
+				final Iterator<Map.Entry<K,V>> orig = super.iterator();
+        	    return new Iterator<Map.Entry<K,V>>() {
+
+        	    	private K currentKey = null;
+        	    	
+					@Override
+                    public boolean hasNext() {
+	                    return orig.hasNext();
+                    }
+
+					@Override
+                    public java.util.Map.Entry<K, V> next() {
+						java.util.Map.Entry<K, V> entry = orig.next();
+						currentKey = entry.getKey();
+						return entry;
+                    }
+
+					@Override
+                    public void remove() {
+	                    orig.remove();
+	                    if(currentKey != null) {
+	                    	ConcurrentCacheMap.this.remove(currentKey);
+	                    }
+                    }
+				};
+        	}
+        };
         for (final CacheMap<K, ExpiringObject> segment : segments) {
             synchronized (segment) {
                 final Iterator<Map.Entry<K, ExpiringObject>> iterator = segment.entrySet().iterator();

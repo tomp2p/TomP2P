@@ -5,6 +5,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -49,7 +50,7 @@ public class ExampleRelaySituation {
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleRelaySituation.class);
 
 	private static final int NUM_RELAY_PEERS = 4;
-	private static final int NUM_MOBILE_PEERS = 6;
+	private static final int NUM_MOBILE_PEERS = 4;
 	private static final int NUM_QUERY_PEERS = 10;
 
 	public static void main(String[] args) throws IOException, InterruptedException {
@@ -61,7 +62,7 @@ public class ExampleRelaySituation {
 			LOG.debug("{} is the GCM key used", args[0]);
 			gcmKey = args[0];
 
-			LOG.debug("{} is the sender ID used", args[0]);
+			LOG.debug("{} is the sender ID used", args[1]);
 			gcmSender = Long.valueOf(args[1]);
 		}
 
@@ -87,7 +88,7 @@ public class ExampleRelaySituation {
 	 */
 	private static final int PEER_MAP_UPDATE_INTERVAL_S = 60;
 	private static final String GCM_REGISTRATION_ID = "abc";
-	private static final RelayType RELAY_TYPE = RelayType.OPENTCP;
+	private static final RelayType RELAY_TYPE = RelayType.ANDROID;
 	private final String gcmKey;
 	private final long gcmSenderId;
 
@@ -107,7 +108,7 @@ public class ExampleRelaySituation {
 	/**
 	 * Holds active peers by each kind
 	 */
-	private final List<Peer> relays;
+	private final List<PeerNAT> relays;
 	private final List<PeerNAT> mobiles;
 	private final List<QueryNode> queries;
 
@@ -119,7 +120,7 @@ public class ExampleRelaySituation {
 		this.mobilePeers = mobilePeers;
 		this.queryPeers = queryPeers;
 
-		this.relays = new ArrayList<Peer>(relayPeers);
+		this.relays = new ArrayList<PeerNAT>(relayPeers);
 		this.mobiles = new ArrayList<PeerNAT>(mobilePeers);
 		this.queries = new ArrayList<QueryNode>(queryPeers);
 	}
@@ -132,10 +133,10 @@ public class ExampleRelaySituation {
 			Peer peer = new PeerBuilder(new Number160(RELAY_START_PORT + i)).ports(RELAY_START_PORT + i).start();
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			new PeerBuilderNAT(peer).androidRelayConfiguration(new AndroidRelayConfiguration().bufferAgeLimit(30 * 1000))
-					.start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).androidRelayConfiguration(
+					new AndroidRelayConfiguration().bufferAgeLimit(30 * 1000)).start();
 
-			relays.add(peer);
+			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
 		}
 
@@ -151,8 +152,8 @@ public class ExampleRelaySituation {
 
 			LOG.debug("Connecting to Relay now");
 			Set<PeerAddress> relayAddresses = new HashSet<PeerAddress>(relayPeers);
-			for (Peer relay : relays) {
-				relayAddresses.add(relay.peerAddress());
+			for (PeerNAT relay : relays) {
+				relayAddresses.add(relay.peer().peerAddress());
 			}
 
 			PeerBuilderNAT builder = new PeerBuilderNAT(peer).peerMapUpdateInterval(PEER_MAP_UPDATE_INTERVAL_S)
@@ -164,7 +165,7 @@ public class ExampleRelaySituation {
 			}
 
 			PeerNAT peerNat = builder.start();
-			FutureRelayNAT futureRelayNAT = peerNat.startRelay(relays.get(0).peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT futureRelayNAT = peerNat.startRelay(relays.get(0).peer().peerAddress()).awaitUninterruptibly();
 			if (!futureRelayNAT.isSuccess()) {
 				LOG.error("Cannot connect to Relay(s). Reason: {}", futureRelayNAT.failedReason());
 				return;
@@ -212,15 +213,33 @@ public class ExampleRelaySituation {
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
-					Random rnd = new Random();
-					Number160 peerID = mobiles.get(rnd.nextInt(mobilePeers)).peer().peerID();
 					try {
-						queryPeer.putGetSpecific(new Number640(peerID, Number160.ZERO, new Number160(rnd), Number160.ZERO));
+						queryPeer.putGetSpecific(new Number640(getRandomUnreachable().peerId(), Number160.ZERO,
+								new Number160(new Random()), Number160.ZERO));
 					} catch (Exception e) {
 						LOG.error("Cannot put / get / remove", e);
 					}
 				}
 			}, "Query node").start();
+		}
+	}
+
+	private PeerAddress getRandomUnreachable() {
+		Random rnd = new Random();
+		if (mobiles.isEmpty()) {
+			List<PeerNAT> relayCopy = new ArrayList<PeerNAT>(relays);
+			while (!relayCopy.isEmpty()) {
+				PeerNAT relay = relayCopy.remove(rnd.nextInt(relayCopy.size()));
+				Set<PeerAddress> unreachablePeers = relay.relayRPC().unreachablePeers();
+				Iterator<PeerAddress> iterator = unreachablePeers.iterator();
+				if (iterator.hasNext()) {
+					return iterator.next();
+				}
+			}
+			// no connected unreachable peer found
+			return null;
+		} else {
+			return mobiles.get(rnd.nextInt(mobilePeers)).peer().peerAddress();
 		}
 	}
 }

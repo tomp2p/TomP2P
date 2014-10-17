@@ -41,7 +41,7 @@ public class QueryNode {
 		this.peerDHT = peerDHT;
 		this.avgSleepTime = avgSleepTime;
 		this.avgBytes = avgBytes;
-		this.random = new Random(42L);
+		this.random = new Random();
 		this.validKeys = new ArrayList<Number160>();
 		this.routingConfig = new RoutingConfiguration(5, 1, 1);
 		this.requestConfig = new RequestP2PConfiguration(1, 1, 0);

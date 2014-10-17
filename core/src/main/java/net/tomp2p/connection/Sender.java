@@ -74,6 +74,7 @@ public class Sender {
 	private final List<PeerStatusListener> peerStatusListeners;
 	private final ChannelClientConfiguration channelClientConfiguration;
 	private final Dispatcher dispatcher;
+	private final SendBehavior sendBehavior;
 	private final Random random;
 
 	// this map caches all messages which are meant to be sent by a reverse connection setup
@@ -92,10 +93,11 @@ public class Sender {
 	 * @param concurrentHashMap 
 	 */
 	public Sender(final Number160 peerId, final List<PeerStatusListener> peerStatusListeners,
-	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher) {
+	        final ChannelClientConfiguration channelClientConfiguration, Dispatcher dispatcher, SendBehavior sendBehavior) {
 		this.peerStatusListeners = peerStatusListeners;
 		this.channelClientConfiguration = channelClientConfiguration;
 		this.dispatcher = dispatcher;
+		this.sendBehavior = sendBehavior;
 		this.random = new Random(peerId.hashCode());
 	}
 
@@ -148,17 +150,20 @@ public class Sender {
 			afterConnect(futureResponse, message, channelFuture, handler == null);
 		} else if (channelCreator != null) {
 			final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleTCPSeconds, handler == null);
-			// check relay
-			if (message.recipient().isRelayed()) {
-				// check if reverse connection is possible
-				if (!message.sender().isRelayed()) {
+			
+			switch (sendBehavior.tcpSendBehavior(message)) {
+				case DIRECT:
+					connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+					break;
+				case RCON:
 					handleRcon(handler, futureResponse, message, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler);
-				} else {
+					break;
+				case RELAY:
 					handleRelay(handler, futureResponse, message, channelCreator, idleTCPSeconds, connectTimeoutMillis, peerConnection, 
 							timeoutHandler);
-				}
-			} else {
-				connectAndSend(handler, futureResponse, channelCreator, connectTimeoutMillis, peerConnection, timeoutHandler, message);
+					break;
+				default:
+					throw new IllegalArgumentException("Illegal sending behavior");
 			}
 		}
 	}
@@ -516,31 +521,33 @@ public class Sender {
 		if (!isFireAndForget) {
 			handlers.put("handler", new Pair<EventExecutorGroup, ChannelHandler>(null, handler));
 		}
-		if (message.recipient().isRelayed() && message.command() != RPC.Commands.NEIGHBOR.getNr()
-		        && message.command() != RPC.Commands.PING.getNr()) {
-			LOG.warn(
-			        "Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers: {}",
-			        message);
-			futureResponse
-			        .failed("Tried to send UDP message to unreachable peers. Only TCP messages can be sent to unreachable peers");
-		} else {
+		
+		try {
 			final ChannelFuture channelFuture;
-			if (message.recipient().isRelayed()) {
-
-				List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
-				LOG.debug("send neighbor request to random relay peer {}", psa);
-				if (psa.size() > 0) {
-					PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
-					message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+			switch (sendBehavior.udpSendBehavior(message)) {
+				case DIRECT:
 					channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
-				} else {
-					futureResponse.failed("Peer is relayed, but no relay given");
-					return;
-				}
-			} else {
-				channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					break;
+				case RELAY:
+					List<PeerSocketAddress> psa = new ArrayList<>(message.recipient().peerSocketAddresses());
+					LOG.debug("send neighbor request to random relay peer {}", psa);
+					if (psa.size() > 0) {
+						PeerSocketAddress ps = psa.get(random.nextInt(psa.size()));
+						message.recipientRelay(message.recipient().changePeerSocketAddress(ps).changeRelayed(true));
+						channelFuture = channelCreator.createUDP(broadcast, handlers, futureResponse);
+					} else {
+						futureResponse.failed("Peer is relayed, but no relay given");
+						return;
+					}
+					break;
+				default:
+					throw new IllegalArgumentException("UDP messages are not allowed to send over RCON");
 			}
 			afterConnect(futureResponse, message, channelFuture, handler == null);
+		} catch (UnsupportedOperationException e) {
+			LOG.warn(e.getMessage());
+			futureResponse.failed(e);
+
 		}
 	}
 

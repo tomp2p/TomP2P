@@ -83,7 +83,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 
 	// inspired by https://github.com/magnuss/java-bloomfilter
 	public SimpleBloomFilter(final double falsePositiveProbability, final int expectedElements) {
-		final double c = Math.ceil(-(Math.log(falsePositiveProbability) / Math.log(2))) / Math.log(2);
+		final double c = Math.ceil(-(Math.log(falsePositiveProbability) / Math.log(2.0))) / Math.log(2.0);
 		this.expectedElements = expectedElements;
 		int tmpBitArraySize = (int) Math.ceil(c * expectedElements);
 		this.byteArraySize = ((tmpBitArraySize + 7) / 8);
@@ -102,7 +102,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	 *            The byte buffer with the data
 	 */
 	public SimpleBloomFilter(final ByteBuf channelBuffer) {
-		this.byteArraySize = channelBuffer.readUnsignedShort() - (SIZE_HEADER_ELEMENTS + SIZE_HEADER_LENGTH);
+		this.byteArraySize = channelBuffer.readUnsignedShort() - (SIZE_HEADER);
 		this.bitArraySize = byteArraySize * Byte.SIZE;
 		int expectedElements = channelBuffer.readInt();
 		this.expectedElements = expectedElements;

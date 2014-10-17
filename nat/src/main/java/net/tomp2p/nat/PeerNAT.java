@@ -137,14 +137,16 @@ public class PeerNAT {
 								.serverPeerAddress().changePorts(externalPorts.tcpPort(), externalPorts.udpPort())
 								.changeAddress(future.externalAddress());
 						
+						//set the new address regardless wheter it will succeed or not. 
+						// The discover will eventually check wheter the announced ip matches the one that it sees. 
+						peer.peerBean().serverPeerAddress(serverAddress);
+						
 						// test with discover again
-						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter()).senderAddress(serverAddress);
+						DiscoverBuilder builder = new DiscoverBuilder(peer).peerAddress(futureNAT.reporter());
 						builder.start().addListener(new BaseFutureAdapter<FutureDiscover>() {
 							@Override
 							public void operationComplete(FutureDiscover future) throws Exception {
 								if (future.isSuccess()) {
-									//change the server address to reflect the ports from the NAT device
-									peer.peerBean().serverPeerAddress(serverAddress);
 									futureNAT.done(future.peerAddress(), future.reporter());
 								} else {
 									// indicate relay

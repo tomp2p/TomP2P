@@ -1,8 +1,10 @@
 package net.tomp2p.tracker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
@@ -12,14 +14,23 @@ import net.tomp2p.storage.Data;
 
 public class UtilsTracker {
 	public static TrackerData limit(TrackerData peers, int size) {
-		Map<PeerStatatistic, Data> map = new HashMap<PeerStatatistic, Data>(peers.peerAddresses());
 		Map<PeerStatatistic, Data> retVal = new HashMap<PeerStatatistic, Data>(size);
-		int i = 0;
-		for (Iterator<Map.Entry<PeerStatatistic, Data>> it = map.entrySet().iterator(); it.hasNext() && i++ < size;) {
-			Map.Entry<PeerStatatistic, Data> entry = it.next();
-			retVal.put(entry.getKey(), entry.getValue());
+		
+		Random random = new Random();
+		List<PeerStatatistic> keys = new ArrayList<PeerStatatistic>(peers.peerAddresses().keySet());
+		
+		for(int i=0; i<size && !keys.isEmpty(); i++) {
+			PeerStatatistic key = keys.get( random.nextInt(keys.size()) );
+			Data value = peers.peerAddresses().get(key);
+			if(value != null) {
+				retVal.put(key, value);
+			} else {
+				//not there anymore
+				i--;
+			}
 		}
-		TrackerData data = new TrackerData(retVal);
+		
+		TrackerData data = new TrackerData(retVal, peers.peerAddresses().size() > size);
 		return data;
 	}
 

@@ -1,9 +1,7 @@
 package net.tomp2p.tracker;
 
 import java.security.PublicKey;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.SortedSet;
@@ -132,60 +130,38 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	@Override
 	public void peerInserted(PeerAddress remotePeer, boolean verified) {
 		if (verified) {
-			checkCloserFound(remotePeer, self);
-		}
-	}
-
-	@Override
-	public void peerRemoved(PeerAddress remotePeer, PeerStatatistic storedPeerAddress) {
-		// unlikely to happen, but we will remove the peer from the tracker.
-		// Most likely close peers are not part of the tracker
-		checkCloserRemoved(remotePeer, self);
-	}
-
-	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
-		// nothing to do
-	}
-
-	// 0-root replication
-	private void checkCloserRemoved(PeerAddress remotePeer, PeerAddress self) {
-		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
-			NavigableSet<PeerAddress> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
-			final boolean meClosest;
-			if (closePeers.size() > 1) {
-				meClosest = closePeers.first().equals(self);
-			} else {
-				meClosest = false;
-			}
-			if (meClosest && isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
-				List<PeerAddress> tmp = new ArrayList<PeerAddress>();
-				tmp.addAll(closePeers);
-				if (tmp.size() > replicationFactor && peerExchange != null) {
-					PeerAddress nextRemotePeer = tmp.get(replicationFactor - 1);
-					peerExchange.peerExchange(nextRemotePeer, entry.getKey(), entry.getValue());
+			for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
+				//if I have conetnt and I see a peer as a new responsible, push it.
+				if(isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
+					//limit the pushing peer to those that are responsible
+					if(isInReplicationRange(entry.getKey().locationKey(), self, replicationFactor)) {
+						peerExchange.peerExchange(remotePeer, entry.getKey(), entry.getValue());
+					}
 				}
 			}
 		}
 	}
 
-	// 0-root replication
-	private void checkCloserFound(PeerAddress remotePeer, PeerAddress self) {
+	@Override
+	public void peerRemoved(PeerAddress remotePeer, PeerStatatistic storedPeerAddress) {
+		// if a responsible peer is removed, and I see myself as a responsible, 
+		// I should push my content to a random responsible
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
-			NavigableSet<PeerAddress> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
-			closePeers.remove(remotePeer);
-			final boolean meClosest;
-			if (closePeers.size() > 1) {
-				meClosest = closePeers.first().equals(self);
-			} else {
-				meClosest = false;
-			}
-
-			if (meClosest && isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor) && peerExchange != null) {
-				// the other is even closer, so send data to that peer
-				peerExchange.peerExchange(remotePeer, entry.getKey(), entry.getValue());
+			//if I have conetnt and I see the removed peer as a responsible, push it.
+			if(isInReplicationRange(entry.getKey().locationKey(), remotePeer, replicationFactor)) {
+				//limit the pushing peer to those that are responsible
+				if(isInReplicationRange(entry.getKey().locationKey(), self, replicationFactor)) {
+					NavigableSet<PeerAddress> closePeers = peerMap.closePeers(entry.getKey().locationKey(), replicationFactor);
+					PeerAddress newResponsible = closePeers.headSet(remotePeer).last();
+					peerExchange.peerExchange(newResponsible, entry.getKey(), entry.getValue());
+				}
 			}
 		}
+	}
+
+	@Override
+	public void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
+		// nothing to do
 	}
 
 	private boolean isInReplicationRange(final Number160 locationKey, final PeerAddress peerAddress,

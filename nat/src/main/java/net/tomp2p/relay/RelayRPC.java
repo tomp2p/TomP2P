@@ -1,7 +1,9 @@
 package net.tomp2p.relay;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.connection.ConnectionConfiguration;
@@ -107,6 +109,17 @@ public class RelayRPC extends DispatchHandler {
 	public Peer peer() {
         return this.peer;
     }
+	
+	/**
+	 * @return all unreachable peers currently connected to this relay node
+	 */
+	public Set<PeerAddress> unreachablePeers() {
+		Set<PeerAddress> unreachablePeers = new HashSet<PeerAddress>(forwarders.size());
+		for (BaseRelayForwarderRPC forwarder : forwarders.values()) {
+			unreachablePeers.add(forwarder.unreachablePeerAddress());
+		}
+		return unreachablePeers;
+	}
 
     /**
      * Open a TCP connection to the unreachable peer

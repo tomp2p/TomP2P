@@ -93,20 +93,6 @@ public class Message {
     private int messageId;
     private int version;
     private Type type;
-    // commands so far:
-    // 0: PING
-    // 1: PUT
-    // 2: GET
-    // 3: ADD
-    // 4: REMOVE
-    // 5: NEIGHBORS
-    // 6: QUIT
-    // 7: DIRECT_DATA
-    // 8: TRACKER_ADD
-    // 9: TRACKER_GET
-    // 10: PEX
-    // 11: TASK
-    // 12: BROADCAST_DATA
     private byte command;
     private PeerAddress sender;
     private PeerAddress recipient;
@@ -128,12 +114,12 @@ public class Message {
     private List<Integer> integerList = null;
     private List<Long> longList = null;
     private List<KeyCollection> keyCollectionList = null;
-    private List<KeyMap640Keys> keyMap640ListKeys = null;
+    private List<KeyMap640Keys> keyMap640KeysList = null;
     private List<KeyMapByte> keyMapByteList = null;
     private List<Buffer> bufferList = null;
     private List<TrackerData> trackerDataList = null;
     private List<PublicKey> publicKeyList = null;
-    private List<PeerSocketAddress> peerSocketAddresses = null;
+    private List<PeerSocketAddress> peerSocketAddressList = null;
     private SignatureCodec signatureEncode = null;
     
     // this will not be transferred, status variables
@@ -706,31 +692,30 @@ public class Message {
         }
         return keyCollectionList.get(index);
     }
-
     
     public Message keyMap640Keys(final KeyMap640Keys keyMap) {
         if (!presetContentTypes) {
             contentType(Content.MAP_KEY640_KEYS);
         }
-        if (keyMap640ListKeys == null) {
-            keyMap640ListKeys = new ArrayList<KeyMap640Keys>(1);
+        if (keyMap640KeysList == null) {
+            keyMap640KeysList = new ArrayList<KeyMap640Keys>(1);
         }
-        keyMap640ListKeys.add(keyMap);
+        keyMap640KeysList.add(keyMap);
         return this;
     }
 
-    public List<KeyMap640Keys> keyMapKeys640List() {
-        if (keyMap640ListKeys == null) {
+    public List<KeyMap640Keys> keyMap640KeysList() {
+        if (keyMap640KeysList == null) {
             return Collections.emptyList();
         }
-        return keyMap640ListKeys;
+        return keyMap640KeysList;
     }
 
     public KeyMap640Keys keyMap640Keys(final int index) {
-        if (keyMap640ListKeys == null || index > keyMap640ListKeys.size() - 1) {
+        if (keyMap640KeysList == null || index > keyMap640KeysList.size() - 1) {
             return null;
         }
-        return keyMap640ListKeys.get(index);
+        return keyMap640KeysList.get(index);
     }
     
     public Message keyMapByte(final KeyMapByte keyMap) {
@@ -795,18 +780,18 @@ public class Message {
     	if (!presetContentTypes) {
             contentType(Content.SET_PEER_SOCKET);
         }
-    	if(this.peerSocketAddresses == null) {
-    		this.peerSocketAddresses = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
+    	if(this.peerSocketAddressList == null) {
+    		this.peerSocketAddressList = new ArrayList<PeerSocketAddress>(peerSocketAddresses.size());
     	}
-    	this.peerSocketAddresses.addAll(peerSocketAddresses);
+    	this.peerSocketAddressList.addAll(peerSocketAddresses);
         return this;
     }
 
     public List<PeerSocketAddress> peerSocketAddresses() {
-    	if (peerSocketAddresses == null) {
+    	if (peerSocketAddressList == null) {
             return Collections.emptyList();
         }
-        return peerSocketAddresses;
+        return peerSocketAddressList;
     }
     
     /*public PublicKey getPublicKey() {

@@ -843,13 +843,17 @@ public class Utils {
         if (set1 == null ^ set2 == null) {
             return false;
         }
-        if (set1.size() != set2.size()) {
+        // if set1 is not null, then set2 is not null (XOR)
+        if (set1 != null && (set1.size() != set2.size())) {
             return false;
         }
-        for (T obj : set1) {
-            if (!set2.contains(obj)) {
-                return false;
-            }
+        if (set1 != null)
+        {
+        	for (T obj : set1) {
+        		if (!set2.contains(obj)) {
+        			return false;
+        		}
+        	}
         }
         return true;
     }

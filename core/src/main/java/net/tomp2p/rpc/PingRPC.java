@@ -191,8 +191,8 @@ public class PingRPC extends DispatchHandler {
      * @return The future that will be triggered when we receive an answer or something fails.
      */
     public FutureResponse pingUDPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-            final ConnectionConfiguration configuration, PeerAddress senderAddress) {
-        final FutureResponse futureResponse = createDiscoverHandler(remotePeer, senderAddress);
+            final ConnectionConfiguration configuration) {
+        final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
         return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
                 .sendUDP(channelCreator);
     }
@@ -207,8 +207,8 @@ public class PingRPC extends DispatchHandler {
      * @return The future that will be triggered when we receive an answer or something fails.
      */
     public FutureResponse pingTCPDiscover(final PeerAddress remotePeer, final ChannelCreator channelCreator,
-            final ConnectionConfiguration configuration, PeerAddress senderAddress) {
-        final FutureResponse futureResponse = createDiscoverHandler(remotePeer, senderAddress);
+            final ConnectionConfiguration configuration) {
+        final FutureResponse futureResponse = createDiscoverHandler(remotePeer);
         return new RequestHandler<FutureResponse>(futureResponse, peerBean(), connectionBean(), configuration)
                 .sendTCP(channelCreator);
     }
@@ -270,14 +270,9 @@ public class PingRPC extends DispatchHandler {
      *            The destination peer
      * @return The future of this discover handler
      */
-    private FutureResponse createDiscoverHandler(final PeerAddress remotePeer, PeerAddress senderAddress) {
+    private FutureResponse createDiscoverHandler(final PeerAddress remotePeer) {
         final Message message = createMessage(remotePeer, RPC.Commands.PING.getNr(), Type.REQUEST_2);
-        if(senderAddress != null) {
-        	message.sender(senderAddress);
-        	message.neighborsSet(createNeighborSet(senderAddress));
-        } else {
-        	message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
-        }
+        message.neighborsSet(createNeighborSet(peerBean().serverPeerAddress()));
         return new FutureResponse(message);
     }
 

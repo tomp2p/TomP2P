@@ -141,7 +141,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 		this.k = (int) Math.ceil(hf);
 		if (hf < 1.0) {
 			LOG.warn(
-			        "bit size too small for storing all expected elements. For optimum result increase bf length to {}",
+			        "Bit size too small for storing all expected elements. For optimum result increase byteArraySize to {}",
 			        expectedElements / Math.log(2.0));
 		}
 		this.bitSet = bitSet;

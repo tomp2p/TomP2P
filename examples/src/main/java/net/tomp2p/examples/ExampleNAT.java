@@ -68,6 +68,12 @@ public class ExampleNAT {
 			System.out.println("failed " + fd.failedReason());
 		}
 		
+		if (fn.isSuccess()) {
+			System.out.println("NAT success: " + fn.peerAddress());
+		} else {
+			System.out.println("failed " + fn.failedReason());
+		}
+		
 		peer.shutdown();
 	}
 }

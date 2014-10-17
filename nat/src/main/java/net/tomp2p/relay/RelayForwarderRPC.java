@@ -24,6 +24,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
@@ -163,8 +164,9 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		// unreachable peer
 		message.restoreContentReferences();
 		final Buffer buf = RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-
-		FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf);
+		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(message.sender().inetAddress(), 0, 0);
+		
+		FutureResponse fr = relayRPC.forwardMessage(peerConnection, buf, peerSocketAddress);
 
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {

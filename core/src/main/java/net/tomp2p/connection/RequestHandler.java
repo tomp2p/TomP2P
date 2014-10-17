@@ -20,7 +20,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.MessageID;
-import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
 
@@ -265,11 +264,6 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
 		if (responseMessage.isOk() || responseMessage.isNotOk()) {
 			synchronized (peerBean.peerStatusListeners()) {
 				for (PeerStatusListener peerStatusListener : peerBean.peerStatusListeners()) {
-					if(responseMessage.sender().isRelayed() && !responseMessage.peerSocketAddresses().isEmpty()) {
-						//use the response message as we have up-to-date data for the relays
-						final PeerAddress remotePeer = responseMessage.sender().changePeerSocketAddresses(responseMessage.peerSocketAddresses());
-						responseMessage.sender(remotePeer);
-					}
 					peerStatusListener.peerFound(responseMessage.sender(), null, null);
 				}
 			}

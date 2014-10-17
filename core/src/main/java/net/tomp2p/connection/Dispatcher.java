@@ -151,11 +151,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
-            boolean isRelay = message.sender().isRelayed();
-            if(isRelay && !message.peerSocketAddresses().isEmpty()) {
-            	PeerAddress sender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
-            	message.sender(sender);
-            }
             LOG.debug("about to respond to {}", message);
             PeerConnection peerConnection = new PeerConnection(message.sender(), new DefaultChannelPromise(ctx.channel()).setSuccess(), heartBeatMillis);
             myHandler.forwardMessage(message, isUdp ? null : peerConnection, responder);
@@ -200,14 +195,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
         public void response(Message responseMessage) {
-        	
-        	if(responseMessage == null || responseMessage.sender() == null) {
-        		System.err.println("why");
-        	}
-        	if(responseMessage.sender().isRelayed()) {
-        		responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
-    		}
-        	
             Dispatcher.this.response(ctx, responseMessage);
         }
         

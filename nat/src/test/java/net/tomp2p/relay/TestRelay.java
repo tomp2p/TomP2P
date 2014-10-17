@@ -1,10 +1,13 @@
 package net.tomp2p.relay;
 
+import java.net.InetAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.dht.FutureGet;
@@ -31,6 +34,7 @@ import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
@@ -186,25 +190,45 @@ public class TestRelay {
          	PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
          	
          	FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
+         	System.err.println("master: "+master.peerAddress());
          	fbn.awaitUninterruptibly();
          	Assert.assertTrue(fbn.isSuccess());
             
             
-         	System.out.print("Send direct message to unreachable peer");
+         	System.out.print("Send direct message to unreachable peer " + unreachablePeer.peerAddress());
             final String request = "Hello ";
             final String response = "World!";
             
+            final AtomicBoolean test1 = new AtomicBoolean(false);
+            final AtomicBoolean test2 = new AtomicBoolean(false);
+            
+            //final Peer unr = unreachablePeer;
             unreachablePeer.objectDataReply(new ObjectDataReply() {
-                public Object reply(PeerAddress sender, Object request) throws Exception {
+                public Object reply(PeerAddress sender, Object obj) throws Exception {
+                	test1.set(obj.equals(request));
                     Assert.assertEquals(request.toString(), request);
+                    test2.set(sender.inetAddress().toString().indexOf("0.0.0.0")>=0);
+                    System.err.println("Got sender:"+sender);
+                    
+                    //this is too late here, so we cannot test this here
+                    //Collection<PeerSocketAddress> list = new ArrayList<PeerSocketAddress>();
+                    //list.add(new PeerSocketAddress(InetAddress.getByName("101.101.101.101"), 101, 101));
+                    //unr.peerBean().serverPeerAddress(unr.peerBean().serverPeerAddress().changePeerSocketAddresses(list));
+                    
                     return response;
                 }
             });
             
-            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true));
             
+            
+            //prevent rcon
+            Collection<PeerSocketAddress> list = new ArrayList<PeerSocketAddress>();
+            list.add(new PeerSocketAddress(InetAddress.getByName("10.10.10.10"), 10, 10));
+            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true).changePeerSocketAddresses(list));
+            System.err.println("initiator: "+peers[42].peerBean().serverPeerAddress());
+            System.err.println("unreachablePeer: "+unreachablePeer.peerAddress());
             FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
-            //fd.awaitUninterruptibly();
+            System.err.println("got msg from: "+fd.futureResponse().responseMessage().sender());
             Assert.assertEquals(response, fd.object());
             //make sure we did not receive it from the unreachable peer with port 13337
             //System.err.println(fd.getWrappedFuture());
@@ -212,7 +236,9 @@ public class TestRelay {
             //Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
             //TODO: this case is true for rcon
             Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
-            
+            Assert.assertTrue(test1.get());
+            Assert.assertFalse(test2.get());
+            Assert.assertEquals(fd.futureResponse().responseMessage().sender().peerSocketAddresses().size(), 5);
 
         } finally {
             if (unreachablePeer != null) {

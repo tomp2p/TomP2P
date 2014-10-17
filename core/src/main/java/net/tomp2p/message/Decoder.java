@@ -120,6 +120,15 @@ public class Decoder {
 			
 			final boolean donePayload = decodePayload(buf);
 			decodeSignature(buf, readerBefore, donePayload);
+			
+			if(donePayload) {
+				boolean isRelay = message.sender().isRelayed();
+				if(isRelay && !message.peerSocketAddresses().isEmpty()) {
+					PeerAddress tmpSender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
+					message.sender(tmpSender);
+	        	}
+			}
+			
 			// see https://github.com/netty/netty/issues/1976
 			buf.discardSomeReadBytes();
 			return donePayload;

@@ -43,7 +43,6 @@ public class RconRPC extends DispatchHandler {
 	private final Peer peer;
 	private final ConnectionConfiguration config;
 	private static final int POSITION_ZERO = 0;
-	private static final int MESSAGE_VERSION = 1;
 
 	public RconRPC(final Peer peer) {
 		super(peer.peerBean(), peer.connectionBean());

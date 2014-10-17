@@ -1,6 +1,7 @@
 package net.tomp2p.relay;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import net.tomp2p.message.NeighborSet;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.peers.PeerStatatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
@@ -93,10 +95,14 @@ public class RelayRPC extends DispatchHandler {
      *            unreachable peer
      * @return
      */
-    public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf) {
+    public FutureResponse forwardMessage(final PeerConnection peerConnection, final Buffer buf, final PeerSocketAddress peerSocketAddress) {
         final Message message = createMessage(peerConnection.remotePeer(), RPC.Commands.RELAY.getNr(), Type.REQUEST_2);
         message.keepAlive(true);
         message.buffer(buf);
+        Collection<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(1);
+        //this will be read RelayRPC.handlePiggyBackMessage
+        peerSocketAddresses.add(peerSocketAddress);
+        message.peerSocketAddresses(peerSocketAddresses);
         final FutureResponse futureResponse = new FutureResponse(message);
         return RelayUtils.sendSingle(peerConnection, futureResponse, peerBean(), connectionBean(), config);
     }
@@ -176,7 +182,23 @@ public class RelayRPC extends DispatchHandler {
     private void handlePiggyBackMessage(Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, new InetSocketAddress(0), new InetSocketAddress(0), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+        //this contains the real sender
+        Collection<PeerSocketAddress> peerSocketAddresses = message.peerSocketAddresses();
+        final InetSocketAddress sender;
+        if(!peerSocketAddresses.isEmpty()) {
+			sender = PeerSocketAddress.createSocketTCP(peerSocketAddresses.iterator().next());
+        } else {
+        	sender = new InetSocketAddress(0);
+        }
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+        
+        //we don't call the decoder where the relay address is handled, so we need to do this on our own.
+        boolean isRelay = realMessage.sender().isRelayed();
+        if(isRelay && !realMessage.peerSocketAddresses().isEmpty()) {
+        	PeerAddress tmpSender = realMessage.sender().changePeerSocketAddresses(realMessage.peerSocketAddresses());
+        	realMessage.sender(tmpSender);
+        }
+        
         LOG.debug("Received message from relay peer: {}", realMessage);
         realMessage.restoreContentReferences();
         
@@ -188,6 +210,9 @@ public class RelayRPC extends DispatchHandler {
         	public void response(Message responseMessage) {
         		LOG.debug("Send reply message to relay peer: {}", responseMessage);
         		try {
+        			if(responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
+        				responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
+        			}
 	                response.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
                 } catch (Exception e) {
                 	failed(Type.EXCEPTION, e.getMessage());
@@ -209,6 +234,11 @@ public class RelayRPC extends DispatchHandler {
         };
         // TODO: Not sure what to do with the peer connection and sign
         DispatchHandler dispatchHandler = peer.connectionBean().dispatcher().associatedHandler(realMessage);
+        //boolean isRelay = realMessage.sender().isRelayed();
+        /*if(isRelay && !realMessage.peerSocketAddresses().isEmpty()) {
+        	PeerAddress tmpSender = realMessage.sender().changePeerSocketAddresses(realMessage.peerSocketAddresses());
+        	realMessage.sender(tmpSender);
+        }*/
         if(dispatchHandler == null) {
         	responder.failed(Type.EXCEPTION, "handler not found, probably not relaying peer anymore");
         } else {

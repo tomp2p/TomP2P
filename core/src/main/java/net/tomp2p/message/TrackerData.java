@@ -25,7 +25,7 @@ import net.tomp2p.storage.Data;
 
 public class TrackerData {
 
-    public final static Data EMTPY_DATA = new Data(0, 0);
+    private final static Data EMTPY_DATA = new Data(0, 0);
 
     private final Map<PeerStatistic, Data> peerAddresses;
 

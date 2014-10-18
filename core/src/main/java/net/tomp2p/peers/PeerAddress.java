@@ -258,7 +258,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @param firewalledTCP
      *            Indicates if peer is not reachable via TCP
      * @param isRelay
-     *            Indicates if peer used as a relay
+     *            Indicates if peer is used as a relay
      * @param peerSocketAddresses
      *            the relay peers
      */
@@ -282,7 +282,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         } else {
             relaySize = peerSocketAddresses.size();
             if (relaySize > TYPE_BIT_SIZE) {
-                throw new IllegalArgumentException("Can only store up to 5 relay peers. Tried to store: " + relaySize);
+                throw new IllegalArgumentException(String.format("Can only store up to %s relay peers. Tried to store %s relay peers.", TYPE_BIT_SIZE , relaySize));
             }
             this.peerSocketAddresses = peerSocketAddresses;
             this.relayType = new BitSet(relaySize);

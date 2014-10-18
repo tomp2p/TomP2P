@@ -484,7 +484,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * @return The encoded relays. There are maximum 5 relays
+     * @return The encoded relays. There are maximal 5 relays.
      */
     public byte relays() {
         if (relaySize > 0) {
@@ -492,9 +492,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             byte types = Utils.createByte(relayType);
             result |= (byte) (types & MASK_1F);
             return result;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     @Override
@@ -512,7 +511,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public int compareTo(final PeerAddress nodeAddress) {
-        // the id determines if two peer are equal, the address does not matter
+        // the id determines if two peers are equal, the address does not matter
         return peerId.compareTo(nodeAddress.peerId);
     }
 
@@ -525,7 +524,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             return true;
         }
         PeerAddress pa = (PeerAddress) obj;
-        return peerId.equals((pa).peerId);
+        return peerId.equals(pa.peerId);
     }
 
     @Override

@@ -534,14 +534,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * @return TCP port
+     * @return UDP port
      */
     public int udpPort() {
         return peerSocketAddress.udpPort();
     }
 
     /**
-     * @return UDP port
+     * @return TCP port
      */
     public int tcpPort() {
         return peerSocketAddress.tcpPort();

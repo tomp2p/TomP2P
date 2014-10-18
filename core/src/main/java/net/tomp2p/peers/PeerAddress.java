@@ -586,7 +586,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * Create a new PeerAddress and change the relayed status.
 
      * @param isRelayed 
-     *           the new status
+     *           the new relay status
      * @return The newly created peer address
      */
     public PeerAddress changeRelayed(final boolean isRelayed) {
@@ -595,7 +595,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Create a new PeerAddress and change the firewallUDP status.
+     * Create a new PeerAddress and change the firewall UDP status.
      * 
      * @param firewalledUDP
      *            the new status
@@ -607,7 +607,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Create a new PeerAddress and change the firewalledTCP status.
+     * Create a new PeerAddress and change the firewall TCP status.
      * 
      * @param firewalledTCP
      *            the new status
@@ -721,7 +721,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * Calculates the size based on the two header bytes.
      * 
      * @param header
-     *            The header is in the lower 16 bits
+     *            The header in the lower 16 bits of this integer.
      * @return the expected size of the peer address
      */
     public static int size(final int header) {
@@ -736,7 +736,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @param options
      *            The option tells us if the inet address is IPv4 or IPv6
      * @param relays
-     *            The relays tells us how many relays we have and what type it is
+     *            The relays tells us how many relays we have and of what type they are.
      * @return returns the expected size of the peer address
      */
     public static int size(final int options, final int relays) {

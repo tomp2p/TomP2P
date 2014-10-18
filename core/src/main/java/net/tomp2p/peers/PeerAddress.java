@@ -412,7 +412,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         me[newOffset++] = relays();
         newOffset = peerId.toByteArray(me, newOffset);
 
-        // we store both the address of the peer and the relays. Currently this is not needed, as we don't consider
+        // we store both the addresses of the peer and the relays. Currently this is not needed, as we don't consider
         // asymmetric relays. But in future we may.
         newOffset = peerSocketAddress.toByteArray(me, newOffset);
 
@@ -437,16 +437,16 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Returns the socket address.
+     * Creates and returns the socket address using the TCP port.
      * 
-     * @return The socket address how to reach this peer
+     * @return The socket address how to reach this peer.
      */
     public InetSocketAddress createSocketTCP() {
         return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.tcpPort());
     }
 
     /**
-     * Returns the socket address.
+     * Creates and returns the socket address using the UDP port.
      * 
      * @return The socket address how to reach this peer
      */

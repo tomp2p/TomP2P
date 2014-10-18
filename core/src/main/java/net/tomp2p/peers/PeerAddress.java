@@ -37,7 +37,7 @@ import net.tomp2p.utils.Utils;
  * <pre>
  * 20 bytes - Number160
  * 2 bytes - Header 
- *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP
+ *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP, is relayed
  *  - 1 byte relays:
  *    - first 3 bits: number of relays (max 5.)
  *    - second 5 bits: if the 5 relays are IPv6 (bit set) or not (no bit set)
@@ -70,7 +70,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     //TODO: this may be used as a sixth relay peer
     private final PeerSocketAddress peerSocketAddress;
 
-    // connection info
+    // connection information
     private final boolean net6;
     private final boolean firewalledUDP;
     private final boolean firewalledTCP;
@@ -107,7 +107,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     
 
     /**
-     * Creates a new peeraddress, where the byte array has to be in the rigth format and in the right size. The new
+     * Creates a peer address, where the byte array has to be in the rigth format and in the right size. The new
      * offset can be accessed with offset().
      * 
      * @param me

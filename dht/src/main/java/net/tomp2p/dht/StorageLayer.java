@@ -164,6 +164,11 @@ public class StorageLayer implements DigestStorage {
 			}
 			
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
+			if (tmp.containsKey(key)) {
+				if (tmp.get(key).isDeleted()) {
+					return PutStatus.DELETED;
+				}
+			}
 			tmp.put(key, newData);
 			boolean versionFork = getLatestInternal(tmp).size() > 1;
 
@@ -247,6 +252,12 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	private Map<Number640, Data> getLatestInternal(NavigableMap<Number640, Data> tmp) {
+		// remove all tombstones
+		for (Iterator<Number640> it = tmp.keySet().iterator(); it.hasNext();) {
+	    	if (tmp.get(it.next()).isDeleted()) {
+	    		it.remove();
+	    	}
+	    }
 	    // delete all predecessors
 	    Map<Number640, Data> result = new HashMap<Number640, Data>();
 	    while (!tmp.isEmpty()) {

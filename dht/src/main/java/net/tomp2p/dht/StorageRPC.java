@@ -726,7 +726,7 @@ public class StorageRPC extends DispatchHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
-            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
+            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
             			&& replicationListener != null) {
             		replicationListener.dataInserted(
             				entry.getKey().locationKey());
@@ -749,7 +749,6 @@ public class StorageRPC extends DispatchHandler {
 		for (Map.Entry<Number640, Data> entry : toStore.dataMap().entrySet()) {
 			Enum<?> status = storageLayer.putConfirm(publicKey, entry.getKey(), entry.getValue());
 			result.put(entry.getKey(), (byte) status.ordinal());
-			
 			if ((status == PutStatus.OK || status == PutStatus.VERSION_FORK)
         			&& replicationListener != null) {
         		replicationListener.dataInserted(

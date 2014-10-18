@@ -44,6 +44,8 @@ import org.slf4j.LoggerFactory;
 public class StorageMemory implements Storage {
 
 	public static final int DEFAULT_STORAGE_CHECK_INTERVAL= 60 * 1000;
+	public static final int DEFAULT_MAX_VERSIONS= -1;
+
     private static final Logger LOG = LoggerFactory.getLogger(StorageMemory.class);
     
 
@@ -63,19 +65,46 @@ public class StorageMemory implements Storage {
     final private Map<Number160, Set<Number160>> responsibilityMapRev = new ConcurrentHashMap<Number160, Set<Number160>>();
     
     final int storageCheckIntervalMillis;
+    final int maxVersions;
     
     public StorageMemory() {
-    	this(DEFAULT_STORAGE_CHECK_INTERVAL);
+    	this(DEFAULT_STORAGE_CHECK_INTERVAL, DEFAULT_MAX_VERSIONS);
     }
     
     public StorageMemory(int storageCheckIntervalMillis) {
-    	this.storageCheckIntervalMillis = storageCheckIntervalMillis;
+    	this(storageCheckIntervalMillis, DEFAULT_MAX_VERSIONS);
     }
 
-    // Core
+    public StorageMemory(int storageCheckIntervalMillis, int maxVersions) {
+    	this.storageCheckIntervalMillis = storageCheckIntervalMillis;
+		this.maxVersions = maxVersions;
+	}
+
+	// Core
     @Override
     public boolean put(Number640 key, Data value) {
         dataMap.put(key, value);
+        if (maxVersions > 0) {
+        	NavigableMap<Number640, Data> versions = dataMap.subMap(
+				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
+				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.MAX_VALUE), true);
+        	for (int i = 0; i < versions.size() - maxVersions; i++) {
+        		Iterator<Number640> it = versions.navigableKeySet().iterator();
+        		if (it.hasNext()) {
+        			Number640 toRemove = it.next();
+        			remove(toRemove, false);
+        			removeTimeout(toRemove);
+        		}
+        	}
+    		if (!versions.isEmpty()) {
+    			while (versions.firstKey().versionKey().timestamp() + maxVersions  <= versions
+    					.lastKey().versionKey().timestamp()) {
+    				Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
+    				remove(entry.getKey(), false);
+    				removeTimeout(entry.getKey());
+    			}
+    		}
+        }
         return true;
     }
 

@@ -72,21 +72,21 @@ public class Encoder {
 
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
         NumberType next;
-        while ((next = message.contentRefencencs().peek()) != null) {
+        while ((next = message.contentReferences().peek()) != null) {
         	final int start = buf.writerIndex();
         	final Content content = next.content(); 
             switch (content) {
             case KEY:
                 buf.writeBytes(message.key(next.number()).toByteArray());
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case INTEGER:
                 buf.writeInt(message.intAt(next.number()));
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case LONG:
                 buf.writeLong(message.longAt(next.number()));
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case SET_NEIGHBORS:
                 NeighborSet neighborSet = message.neighborsSet(next.number());
@@ -95,7 +95,7 @@ public class Encoder {
                 for (PeerAddress neighbor : neighborSet.neighbors()) {
                     buf.writeBytes(neighbor.toByteArray());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case SET_PEER_SOCKET:
                 List<PeerSocketAddress> list = message.peerSocketAddresses();
@@ -105,12 +105,12 @@ public class Encoder {
                 	buf.writeByte(addr.isIPv4() ? 0:1);
                     buf.writeBytes(addr.toByteArray());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case BLOOM_FILTER:
                 SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.number());
                 simpleBloomFilter.toByteBuf(buf);
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case SET_KEY640:
                 // length
@@ -131,7 +131,7 @@ public class Encoder {
                         buf.writeBytes(key.versionKey().toByteArray());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.dataMap(next.number());
@@ -154,7 +154,7 @@ public class Encoder {
                         encodeData(buf, entry.getValue(), dataMap.isConvertMeta(), !message.isRequest());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_KEYS:
                 KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.number());
@@ -171,7 +171,7 @@ public class Encoder {
                         buf.writeBytes(basedOnKey.toByteArray());
                     }
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case MAP_KEY640_BYTE:
                 KeyMapByte keysMap = message.keyMapByte(next.number());
@@ -183,7 +183,7 @@ public class Encoder {
                     buf.writeBytes(entry.getKey().versionKey().toByteArray());
                     buf.writeByte(entry.getValue());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case BYTE_BUFFER:
                 Buffer buffer = message.buffer(next.number());
@@ -193,7 +193,7 @@ public class Encoder {
                 int readable = buffer.readable();
                 buf.writeBytes(buffer.buffer(), readable);
                 if (buffer.incRead(readable) == buffer.length()) {
-                    message.contentRefencencs().poll();
+                    message.contentReferences().poll();
                 } else if (message.isStreaming()) {
                     LOG.debug("we sent a partial message of length {}", readable);
                     return false;
@@ -212,7 +212,7 @@ public class Encoder {
                     Data data = entry.getValue().duplicate();
                     encodeData(buf, data, false, !message.isRequest());
                 }
-                message.contentRefencencs().poll();
+                message.contentReferences().poll();
                 break;
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
@@ -221,7 +221,7 @@ public class Encoder {
             case PUBLIC_KEY:
             	PublicKey publicKey = message.publicKey(next.number());
             	signatureFactory.encodePublicKey(publicKey, buf);
-            	message.contentRefencencs().poll();
+            	message.contentReferences().poll();
             	break;
             default:
             case USER1:

@@ -133,18 +133,16 @@ public class TestRelay {
 			Assert.assertTrue(otherPeersHaveRelay);
 
 			// wait for maintenance
-			Thread.sleep(3000);
+			Thread.sleep(uNat.peerMapUpdateInterval() * 1000);
 
 			boolean otherPeersMe = false;
 			for (Peer peer : peers) {
-
 				if (peer.peerBean().peerMap().all().contains(unreachablePeer.peerAddress())) {
 					System.err.println("check 2! " + peer.peerAddress());
 					otherPeersMe = true;
 				}
 			}
 			Assert.assertTrue(otherPeersMe);
-
 		} finally {
 			if (master != null) {
 				master.shutdown().await();
@@ -155,6 +153,9 @@ public class TestRelay {
 		}
 	}
 
+	/**
+	 * Tests sending a message from a reachable peer to an unreachable peer
+	 */
 	@Test
 	public void testRelaySendDirect() throws Exception {
 		final Random rnd = new Random(42);
@@ -170,26 +171,11 @@ public class TestRelay {
 				new PeerBuilderNAT(peer).start();
 			}
 
-			// Test setting up relay peers
-			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-			PeerAddress upa = unreachablePeer.peerBean().serverPeerAddress();
-			upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
-			unreachablePeer.peerBean().serverPeerAddress(upa);
-
-			// find neighbors
-			FutureBootstrap futureBootstrap = unreachablePeer.bootstrap().peerAddress(peers[0].peerAddress()).start();
-			futureBootstrap.awaitUninterruptibly();
-			Assert.assertTrue(futureBootstrap.isSuccess());
-
 			// setup relay
+			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
 			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(startRelay.isSuccess());
-
-			// find neighbors again
-			futureBootstrap = unreachablePeer.bootstrap().peerAddress(peers[0].peerAddress()).start();
-			futureBootstrap.awaitUninterruptibly();
-			Assert.assertTrue(futureBootstrap.isSuccess());
 
 			System.out.print("Send direct message to unreachable peer");
 			final String request = "Hello ";
@@ -205,6 +191,7 @@ public class TestRelay {
 			FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start()
 					.awaitUninterruptibly();
 			Assert.assertEquals(response, fd.object());
+			
 			// make sure we did receive it from the unreachable peer with id
 			Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
 		} finally {
@@ -217,6 +204,9 @@ public class TestRelay {
 		}
 	}
 
+	/**
+	 * Tests sending a message from an unreachable peer to another unreachable peer
+	 */
 	@Test
 	public void testRelaySendDirect2() throws Exception {
 		final Random rnd = new Random(42);
@@ -251,7 +241,7 @@ public class TestRelay {
                 }
             });
             
-            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true));
+            peers[42].peerBean().serverPeerAddress(peers[42].peerBean().serverPeerAddress().changeRelayed(true).changeFirewalledTCP(true).changeFirewalledUDP(true));
             
             FutureDirect fd = peers[42].sendDirect(unreachablePeer.peerAddress()).object(request).start().awaitUninterruptibly();
             //fd.awaitUninterruptibly();
@@ -262,6 +252,58 @@ public class TestRelay {
             //Assert.assertEquals(fd.wrappedFuture().responseMessage().senderSocket().getPort(), 4001);
             //TODO: this case is true for rcon
             Assert.assertEquals(unreachablePeer.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
+		} finally {
+			if (unreachablePeer != null) {
+				unreachablePeer.shutdown().await();
+			}
+			if (master != null) {
+				master.shutdown().await();
+			}
+		}
+	}
+	
+	/**
+	 * Tests sending a message from an unreachable peer to a reachable peer
+	 */
+	@Test
+	public void testRelaySendDirect3() throws Exception {
+		final Random rnd = new Random(42);
+		final int nrOfNodes = 100;
+		Peer master = null;
+		Peer unreachablePeer = null;
+		try {
+			// setup test peers
+			Peer[] peers = UtilsNAT.createNodes(nrOfNodes, rnd, 4001);
+			master = peers[0];
+			UtilsNAT.perfectRouting(peers);
+			for (Peer peer : peers) {
+				new PeerBuilderNAT(peer).start();
+			}
+
+			// setup relay
+			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
+			Assert.assertTrue(startRelay.isSuccess());
+
+			System.out.print("Send direct message from unreachable peer");
+			final String request = "Hello ";
+			final String response = "World!";
+
+			Peer receiver = peers[42];
+			receiver.objectDataReply(new ObjectDataReply() {
+				public Object reply(PeerAddress sender, Object request) throws Exception {
+					Assert.assertEquals(request.toString(), request);
+					return response;
+				}
+			});
+
+			FutureDirect fd = unreachablePeer.sendDirect(receiver.peerAddress()).object(request).start()
+					.awaitUninterruptibly();
+			Assert.assertEquals(response, fd.object());
+			
+			// make sure we did receive it from the unreachable peer with id
+			Assert.assertEquals(receiver.peerID(), fd.wrappedFuture().responseMessage().sender().peerId());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();
@@ -373,7 +415,6 @@ public class TestRelay {
 			Assert.assertFalse(slave.storageLayer().contains(
 					new Number640(slave.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
 			System.err.println("DONE!");
-
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

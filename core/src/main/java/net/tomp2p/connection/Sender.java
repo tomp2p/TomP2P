@@ -138,10 +138,6 @@ public class Sender {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
-		//we need to set the neighbors if we use relays
-		if(message.sender().isRelayed() && !message.sender().peerSocketAddresses().isEmpty()) {
-			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		}
 
 		final ChannelFuture channelFuture;
 		if (peerConnection != null && peerConnection.channelFuture() != null
@@ -494,10 +490,6 @@ public class Sender {
 			return;
 		}
 		removePeerIfFailed(futureResponse, message);
-
-		if (message.sender().isRelayed()) {
-			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		}
 
 		boolean isFireAndForget = handler == null;
 

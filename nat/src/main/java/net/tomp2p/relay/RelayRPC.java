@@ -1,5 +1,6 @@
 package net.tomp2p.relay;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,6 +16,7 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
 import net.tomp2p.relay.android.AndroidRelayConfiguration;
 import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
@@ -203,20 +205,40 @@ public class RelayRPC extends DispatchHandler {
      */
     private void handlePiggyBackedMessage(final Message message, final Responder responderToRelay) throws Exception {
         // TODO: check if we have right setup
+        
+        // this contains the real sender
+        Collection<PeerSocketAddress> peerSocketAddresses = message.peerSocketAddresses();
+        final InetSocketAddress sender;
+        if(!peerSocketAddresses.isEmpty()) {
+			sender = PeerSocketAddress.createSocketTCP(peerSocketAddresses.iterator().next());
+        } else {
+        	sender = new InetSocketAddress(0);
+        }
+        
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, message.recipientSocket(), message.senderSocket(), connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+        Message realMessage = RelayUtils.decodeMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
         LOG.debug("Received message from relay peer: {}", realMessage);
+        
+        // we don't call the decoder where the relay address is handled, so we need to do this on our own.
+        boolean isRelay = realMessage.sender().isRelayed();
+        if(isRelay && !realMessage.peerSocketAddresses().isEmpty()) {
+        	PeerAddress tmpSender = realMessage.sender().changePeerSocketAddresses(realMessage.peerSocketAddresses());
+        	realMessage.sender(tmpSender);
+        }
+        
         realMessage.restoreContentReferences();
         
         final Responder responder = new Responder() {
-        	
         	//TODO: add reply leak handler
         	@Override
         	public void response(Message responseMessage) {
         		Message envelope = createResponseMessage(message, Type.OK);
         		LOG.debug("Send reply message to relay peer: {}", responseMessage);
         		try {
-	                envelope.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+        			if(responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
+        				responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
+        			}
+        			envelope.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
                 } catch (Exception e) {
                 	LOG.error("Cannot piggyback the response", e);
                 	failed(Type.EXCEPTION, e.getMessage());

@@ -1,6 +1,8 @@
 package net.tomp2p.relay.tcp;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
@@ -11,6 +13,7 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.RelayUtils;
@@ -79,6 +82,11 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		// always keep the connection open
 		envelope.keepAlive(true);
 
+		// this will be read RelayRPC.handlePiggyBackMessage
+		Collection<PeerSocketAddress> peerSocketAddresses = new ArrayList<PeerSocketAddress>(1);
+		peerSocketAddresses.add(new PeerSocketAddress(message.sender().inetAddress(), 0, 0));
+		envelope.peerSocketAddresses(peerSocketAddresses);
+		
 		// holds the message that will be returned to he requester
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
 

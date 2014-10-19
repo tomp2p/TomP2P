@@ -42,6 +42,10 @@ public class Encoder {
 
         this.message = message;
         LOG.debug("message for outbound {}", message);
+        
+        if (message.sender().isRelayed() && message.peerSocketAddresses().isEmpty()) {
+        	message.peerSocketAddresses(message.sender().peerSocketAddresses());
+        }
 
         if (!header) {
             MessageHeaderCodec.encodeHeader(buf, message);

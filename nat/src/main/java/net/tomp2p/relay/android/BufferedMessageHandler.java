@@ -5,13 +5,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.List;
 
-import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.PeerConnection;
+import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
-import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
-import net.tomp2p.futures.FuturePeerConnection;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -85,7 +82,6 @@ public class BufferedMessageHandler {
 
 	/**
 	 * Respond to the original requester (not the relay).
-	 * TODO use relay as fallback
 	 * 
 	 * @author Nico Rutishauser
 	 *
@@ -94,35 +90,8 @@ public class BufferedMessageHandler {
 
 		@Override
 		public void response(final Message responseMessage) {
-			// send the response to the requester
 			LOG.debug("Send late response {}", responseMessage);
-			FuturePeerConnection futurePeerConnection = peer.createPeerConnection(responseMessage.recipient());
-			futurePeerConnection.addListener(new BaseFutureAdapter<FutureDone<PeerConnection>>() {
-				@Override
-				public void operationComplete(FutureDone<PeerConnection> futureDone) throws Exception {
-					if(futureDone.isSuccess()) {
-						sendThroughOpenConnection(responseMessage, futureDone.object());
-					} else {
-						LOG.error("Could not send late respose because could not open a peer connection");
-					}
-				}
-			});
-		}
-		
-		private void sendThroughOpenConnection(final Message responseMessage, final PeerConnection peerConnection) {
-			final FutureResponse futureResponse = new FutureResponse(responseMessage);
-			FutureChannelCreator futureChannelCreator2 = peerConnection.acquire(futureResponse);
-			futureChannelCreator2.addListener(new BaseFutureAdapter<FutureChannelCreator>() {
-				@Override
-				public void operationComplete(FutureChannelCreator future) throws Exception {
-					if (future.isSuccess()) {
-						peer.connectionBean().sender().sendTCP(AndroidDirectResponder.this, futureResponse, responseMessage, future.channelCreator(), ConnectionBean.DEFAULT_TCP_IDLE_SECONDS, ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP, peerConnection);
-					} else {
-						LOG.error("Could not acquire channel to send late response. Reason: {}", future.failedReason());
-						futureResponse.failed("Could not acquire channel to send late response");
-					}
-				}
-			});
+			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, responseMessage, new DefaultConnectionConfiguration());
 			
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
@@ -131,13 +100,12 @@ public class BufferedMessageHandler {
 						LOG.debug("Successfully sent late response to requester");
 					} else {
 						LOG.error("Late response could not be sent to requester. Reason: {}", future.failedReason());
+						// TODO use relay as fallback
 					}
-					// close the peer connection as soon as the message is sent (or failed to send)
-					peerConnection.close();
 				}
 			});
 		}
-
+		
 		@Override
 		public void failed(Type type, String reason) {
 			// TODO send a late message to the requester that the request failed
@@ -150,6 +118,7 @@ public class BufferedMessageHandler {
 
 		@Override
 		protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+			// not used at the moment, we don't send a confirmation to the unreachable peer for the late response
 			if(msg.isOk()) {
 				LOG.debug("Late message accepted by requester.");
 			} else {

@@ -49,9 +49,9 @@ public class ExampleRelaySituation {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ExampleRelaySituation.class);
 
-	private static final int NUM_RELAY_PEERS = 4;
-	private static final int NUM_MOBILE_PEERS = 4;
-	private static final int NUM_QUERY_PEERS = 10;
+	private static final int NUM_RELAY_PEERS = 1;
+	private static final int NUM_MOBILE_PEERS = 0;
+	private static final int NUM_QUERY_PEERS = 1;
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 		String gcmKey = null;

@@ -150,20 +150,20 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
+        if(!message.isRequest() && message.sender().isSlow()) {
+        	// This might be a late answer from a slow peer
+        	if(pendingRequests.containsKey(message.messageId())) {
+        		LOG.debug("Received late response from slow peer: {}", message);
+        		FutureResponse futureResponse = pendingRequests.get(message.messageId());
+        		futureResponse.response(message);
+        		return;
+        	}
+        }
+        
         if (!message.isRequest()) {
             LOG.debug("handing message to the next handler {}", message);
             ctx.fireChannelRead(message);
             return;
-        }
-        
-        if(message.sender().isSlow()) {
-        	// This might be a late answer from a slow peer
-        	if(pendingRequests.containsKey(message.messageId())) {
-        		System.err.println("Received late response from slow peer:" + message);
-        		LOG.debug("Received late response from slow peer: {}", message);
-        		FutureResponse futureResponse = pendingRequests.get(message.messageId());
-        		futureResponse.response(message);
-        	}
         }
 
         Responder responder = new DirectResponder(ctx, message);

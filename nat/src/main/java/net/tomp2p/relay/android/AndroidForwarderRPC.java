@@ -74,7 +74,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		}
 
 		LOG.debug("Added message {} to buffer and returning a partially ok", message);
-		return futureDone; //.done(response);
+		return futureDone.done(response);
 	}
 
 	/**

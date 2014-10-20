@@ -19,7 +19,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Type;
 import net.tomp2p.message.MessageID;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.RPC;
@@ -273,8 +272,7 @@ public class RequestHandler<K extends FutureResponse> extends SimpleChannelInbou
         }
         
         // support slow, unreachable devices which cannot respond instantly
-        if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Type.PARTIALLY_OK) {
-        	System.err.println("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
+        if(this.message.recipient().isRelayed() && this.message.recipient().isSlow() && responseMessage.type() == Message.Type.PARTIALLY_OK) {
         	LOG.debug("Received partially ok by the relay peer. Wait for answer of the unreachable peer.");
         	// wait for the (real) answer of the unreachable peer.
         	connectionBean.dispatcher().addPendingRequest(message.messageId(), futureResponse);

@@ -401,8 +401,7 @@ public class Sender {
 			handlers.put("heartbeat", new Pair<EventExecutorGroup, ChannelHandler>(null, heartBeat));
 		}
 
-		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers,
-		        futureResponse);
+		ChannelFuture channelFuture = channelCreator.createTCP(recipient, connectTimeoutMillis, handlers, futureResponse);
 
 		if (peerConnection != null && channelFuture != null) {
 			peerConnection.channelFuture(channelFuture);

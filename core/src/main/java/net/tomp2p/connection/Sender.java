@@ -274,7 +274,8 @@ public class Sender {
 	}
 
 	/**
-	 * TODO: document what is done here
+	 * Both peers are relayed, thus sending directly or over reverse connection
+	 * is not possible. Send the message to one of the receiver's relays.
 	 * 
 	 * @param handler
 	 * @param futureResponse
@@ -288,8 +289,7 @@ public class Sender {
 	private void handleRelay(final SimpleChannelInboundHandler<Message> handler, final FutureResponse futureResponse,
 	        final Message message, final ChannelCreator channelCreator, final int idleTCPSeconds,
 	        final int connectTimeoutMillis, final PeerConnection peerConnection, final TimeoutFactory timeoutHandler) {
-		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses(),
-		        pingBuilderFactory);
+		FutureDone<PeerSocketAddress> futurePing = pingFirst(message.recipient().peerSocketAddresses());
 		futurePing.addListener(new BaseFutureAdapter<FutureDone<PeerSocketAddress>>() {
 			@Override
 			public void operationComplete(final FutureDone<PeerSocketAddress> futureDone) throws Exception {
@@ -303,8 +303,8 @@ public class Sender {
 						@Override
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isFailed()) {
-								if (future.responseMessage() != null
-								        && future.responseMessage().type() != Message.Type.USER1) {
+								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.USER1) {
+									// remove the failed relay and try again
 									clearInactivePeerSocketAddress(futureDone);
 									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds,
 									        connectTimeoutMillis, peerConnection);
@@ -333,14 +333,12 @@ public class Sender {
 	}
 
 	/**
-	 * TODO: say what we are doing here
+	 * Ping all relays of the receiver. The first one answering is picked as the responsible relay for this message.
 	 * 
-	 * @param peerSocketAddresses
-	 * @param pingBuilder
+	 * @param peerSocketAddresses a collection of relay addresses
 	 * @return
 	 */
-	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses,
-	        PingBuilderFactory pingBuilderFactory) {
+	private FutureDone<PeerSocketAddress> pingFirst(Collection<PeerSocketAddress> peerSocketAddresses) {
 		final FutureDone<PeerSocketAddress> futureDone = new FutureDone<PeerSocketAddress>();
 
 		FuturePing[] forks = new FuturePing[peerSocketAddresses.size()];

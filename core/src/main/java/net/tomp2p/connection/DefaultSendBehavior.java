@@ -17,7 +17,8 @@ public class DefaultSendBehavior implements SendBehavior {
 		if (message.recipient().isRelayed()) {
 			// TODO check the message size. If > 1500bytes, use RCON, otherwise use Relay peer
 			if (message.sender().isRelayed()) {
-				// reverse connection is not possible
+				// reverse connection is not possible because both peers are relayed. Thus send the message to
+				// one of the receiver's relay peers
 				return SendMethod.RELAY;
 			} else {
 				return SendMethod.RCON;

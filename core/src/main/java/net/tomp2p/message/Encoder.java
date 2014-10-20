@@ -31,7 +31,7 @@ public class Encoder {
     private boolean resume = false;
     private Message message;
 
-    private SignatureFactory signatureFactory;
+    private final SignatureFactory signatureFactory;
 
     public Encoder(SignatureFactory signatureFactory) {
         this.signatureFactory = signatureFactory;
@@ -241,7 +241,7 @@ public class Encoder {
 		}
 		if(isReply) {
 			int ttl = (int) ((data.expirationMillis() - System.currentTimeMillis()) / 1000);
-			data.ttlSeconds(ttl < 0 ? 0:ttl);
+			data.ttlSeconds(ttl < 0 ? 0 : ttl);
 		}
 		final int startWriter = buf.writerIndex();
 	    data.encodeHeader(buf, signatureFactory);

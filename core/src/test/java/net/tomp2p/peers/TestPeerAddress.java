@@ -131,7 +131,6 @@ public class TestPeerAddress {
     public void testPeerAddress5() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -164,7 +163,6 @@ public class TestPeerAddress {
     public void testPeerAddress6() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -197,7 +195,6 @@ public class TestPeerAddress {
     public void testPeerAddress7() throws UnknownHostException {
 
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("1123:4567:89ab:cdef:0123:4567:89ab:cde1"),
                 RND.nextInt(BIT_16), RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),

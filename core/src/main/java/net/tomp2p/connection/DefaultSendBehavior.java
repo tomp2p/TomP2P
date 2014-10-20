@@ -15,12 +15,16 @@ public class DefaultSendBehavior implements SendBehavior {
 	@Override
 	public SendMethod tcpSendBehavior(Message message) {
 		if (message.recipient().isRelayed()) {
-			// TODO check the message size. If > 1500bytes, use RCON, otherwise use Relay peer
 			if (message.sender().isRelayed()) {
 				// reverse connection is not possible because both peers are relayed. Thus send the message to
 				// one of the receiver's relay peers
 				return SendMethod.RELAY;
+			} else if (message.recipient().isSlow()) {
+				// the recipient is a slow peer (i.e. a mobile device). Send it to the relay such that this
+				// one can handle latency and buffer multiple requests
+				return SendMethod.RELAY;
 			} else {
+				// TODO check the message size. If > 1500bytes, use RCON, otherwise use Relay peer
 				return SendMethod.RCON;
 			}
 		} else {

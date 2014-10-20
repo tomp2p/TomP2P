@@ -440,7 +440,6 @@ public class TestMessage {
 	@Test
 	public void testRelay() throws Exception {
 		Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -469,7 +468,6 @@ public class TestMessage {
 	@Test
 	public void testRelay2() throws Exception {	
         Collection<PeerSocketAddress> psa = new ArrayList<PeerSocketAddress>();
-        int i = 0;
         psa.add(new PeerSocketAddress(InetAddress.getByName("192.168.230.230"), RND.nextInt(BIT_16),
                 RND.nextInt(BIT_16)));
         psa.add(new PeerSocketAddress(InetAddress.getByName("2123:4567:89ab:cdef:0123:4567:89ab:cde2"),
@@ -495,18 +493,25 @@ public class TestMessage {
 		
 	}
 	
-//	@Test
-//	public void testRelayAddresses3() throws Exception { // encode
-//		Message m1 = Utils2.createDummyMessage();
-//		m1.setType(Message.Type.NOT_FOUND);
-//		PeerSocketAddress psa[] = {new PeerSocketAddress(InetAddress.getLocalHost(), 15, 17)};
-//		PeerAddress pa = new PeerAddress(Number160.ZERO, new PeerSocketAddress(InetAddress.getByName("localhost"), 13, 14), 
-//				true, true, true, psa);
-//		m1.setSender(pa);
-//		Message m2 = encodeDecode(m1);
-//		Assert.assertArrayEquals(m1.getSender().getPeerSocketAddresses(), m2.getSender().getPeerSocketAddresses());
-//		compareMessage(m1, m2);
-//	}
+	@Test
+	public void testRelayFlag() throws Exception { // encode
+		Message m1 = Utils2.createDummyMessage();
+		m1.sender(m1.sender().changeRelayed(true));
+		
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(m1.sender().isRelayed(), m2.sender().isRelayed());
+		compareMessage(m1, m2);
+	}
+	
+	@Test
+	public void testSlowFlag() throws Exception { // encode
+		Message m1 = Utils2.createDummyMessage();
+		m1.sender(m1.sender().changeSlow(true));
+		
+		Message m2 = encodeDecode(m1);
+		Assert.assertEquals(m1.sender().isSlow(), m2.sender().isSlow());
+		compareMessage(m1, m2);
+	}
 
 	/**
 	 * Encodes and decodes a message.

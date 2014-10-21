@@ -236,7 +236,7 @@ public class Encoder {
         return true;
     }
 
-	private int encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
+	private void encodeData(AlternativeCompositeByteBuf buf, Data data, boolean isConvertMeta, boolean isReply) throws InvalidKeyException, SignatureException, IOException {
 		if(isConvertMeta) {
 			data = data.duplicateMeta();
 		} else {
@@ -250,7 +250,6 @@ public class Encoder {
 	    data.encodeHeader(buf, signatureFactory);
 	    data.encodeBuffer(buf);
 	    data.encodeDone(buf, signatureFactory, message.privateKey());
-	    return buf.writerIndex() - startWriter;
     }
 
     public Message message() {

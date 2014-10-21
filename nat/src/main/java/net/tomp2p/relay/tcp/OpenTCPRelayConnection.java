@@ -8,7 +8,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.relay.BaseRelayConnection;
-import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class OpenTCPRelayConnection extends BaseRelayConnection {
 	@Override
 	public FutureResponse sendToRelay(Message message) {
 		message.keepAlive(true);
-		return RelayUtils.send(connection, peer.peerBean(), peer.connectionBean(), config, message);
+		return MessageUtils.send(connection, peer.peerBean(), peer.connectionBean(), config, message);
 	}
 
 	@Override

@@ -23,6 +23,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,7 +175,7 @@ public class RconRPC extends DispatchHandler {
 						final PeerConnection peerConnection = future.peerConnection();
 						
 						final Message readyMessage = createReadyForRequestMessage(message, peerConnection.remotePeer());
-						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
+						FutureResponse futureResponse = MessageUtils.send(peerConnection, peer.peerBean(),
 								peer.connectionBean(), config, readyMessage);
 						futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 							@Override
@@ -248,7 +249,7 @@ public class RconRPC extends DispatchHandler {
 			LOG.debug("This reverse connection is only used for sending a direct message {}", cachedMessage);
 
 			// send the message to the unreachable peer through the open channel
-			FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
+			FutureResponse futureResponse = MessageUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(), config,
 					cachedMessage);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override

@@ -51,6 +51,7 @@ public class QueryNode {
 	 * Start put / get / remove random keys
 	 */
 	public void putGetRandom() throws IOException, ClassNotFoundException {
+		sleep();
 		while (true) {
 			// put some data
 			if (random.nextBoolean()) {
@@ -77,6 +78,7 @@ public class QueryNode {
 	 * Start put / get / remove specific key
 	 */
 	public void putGetSpecific(Number640 key) throws IOException, ClassNotFoundException {
+		sleep();
 		while (true) {
 			put(key);
 			sleep();

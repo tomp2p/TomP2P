@@ -62,6 +62,9 @@ public final class Number640 extends Number implements Comparable<Number640> {
             throw new RuntimeException("contentKey cannot be null");
         }
         this.contentKey = contentKey;
+        if (versionKey == null) {
+            throw new RuntimeException("versionKey cannot be null");
+        }
         this.versionKey = versionKey;
     }
 

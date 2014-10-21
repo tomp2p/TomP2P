@@ -255,9 +255,7 @@ public class CountingBloomFilter<E> implements Set<E>, Serializable {
 
     @Override
     public int hashCode() {
-        // CHECKSTYLE:OFF
         int hash = 7;
-        // CHECKSTYLE:ON
         final int magic = 31;
         hash = magic * hash + Arrays.hashCode(intSet);
         hash = magic * hash + k;

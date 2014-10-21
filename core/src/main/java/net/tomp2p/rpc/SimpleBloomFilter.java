@@ -386,9 +386,7 @@ public class SimpleBloomFilter<E> implements Set<E>, Serializable {
 	@Override
 	public int hashCode() {
 		final int magic = 31;
-		// CHECKSTYLE:OFF
 		int hash = 7;
-		// CHECKSTYLE:ON
 		hash = magic * hash + bitSet.hashCode();
 		hash = magic * hash + k;
 		hash = magic * hash + expectedElements;

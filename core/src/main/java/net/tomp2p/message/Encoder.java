@@ -47,7 +47,7 @@ public class Encoder {
             MessageHeaderCodec.encodeHeader(buf, message);
             header = true;
         } else {
-            LOG.debug("send a follow up message {}", message);
+            LOG.debug("send a follow-up message {}", message);
             resume = true;
         }
 
@@ -63,7 +63,7 @@ public class Encoder {
             	if(signatureCodec == null) {
             		signatureCodec = signatureFactory.sign(message.privateKey(), buf);
             	}
-            	//in case of relay, we hava a signature, so we need to reuse this
+            	//in case of relay, we have a signature, so we need to reuse this
             	signatureCodec.write(buf);
             }
         }
@@ -71,7 +71,7 @@ public class Encoder {
     }
 
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
-        NumberType next;
+        ContentTypeIndex next;
         while ((next = message.contentReferences().peek()) != null) {
         	final int start = buf.writerIndex();
         	final Content content = next.content(); 
@@ -101,9 +101,10 @@ public class Encoder {
                 List<PeerSocketAddress> list = message.peerSocketAddresses();
                 // length
                 buf.writeByte(list.size());
-                for (PeerSocketAddress addr : list) {
-                	buf.writeByte(addr.isIPv4() ? 0:1);
-                    buf.writeBytes(addr.toByteArray());
+                for (PeerSocketAddress psa : list) {
+                	// IP version flag
+                	buf.writeByte(psa.isIPv4() ? 0:1);
+                    buf.writeBytes(psa.toByteArray());
                 }
                 message.contentReferences().poll();
                 break;
@@ -113,8 +114,8 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case SET_KEY640:
-                // length
                 KeyCollection keys = message.keyCollection(next.number());
+                // length
                 buf.writeInt(keys.size());
                 if (keys.isConvert()) {
                     for (Number160 key : keys.keysConvert()) {

@@ -38,7 +38,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     private final Number160 versionKey;
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number640 key from given location, domain, content and version keys.
      * 
      * @param locationKey
      *            The location key
@@ -46,6 +46,8 @@ public final class Number640 extends Number implements Comparable<Number640> {
      *            The domain key
      * @param contentKey
      *            The content key
+     * @param versionKey
+     * 			  The version key
      */
     public Number640(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey, final Number160 versionKey) {
         if (locationKey == null) {
@@ -64,12 +66,12 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number640 key from given location, domain and version keys.
      * 
      * @param key
      *            The location and domain key
-     * @param contentKey
-     *            The content key
+     * @param versionKey
+     *            The version key
      */
     public Number640(final Number480 key, final Number160 versionKey) {
         this(key.locationKey(), key.domainKey(), key.contentKey(), versionKey);
@@ -80,7 +82,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
 
     /**
-     * Constructor that creates a random 480bit number.
+     * Creates a new random Number640.
      * 
      * @param rnd
      *            The random class
@@ -111,7 +113,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
     
     /**
-     * @return The content key
+     * @return The version key
      */
     public Number160 versionKey() {
         return versionKey;

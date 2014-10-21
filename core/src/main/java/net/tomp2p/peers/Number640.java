@@ -66,10 +66,10 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
 
     /**
-     * Creates a new Number640 key from given location, domain and version keys.
+     * Creates a new Number640 key from given location, domain, content and version keys.
      * 
      * @param key
-     *            The location and domain key
+     *            The location, domain and content key
      * @param versionKey
      *            The version key
      */
@@ -77,6 +77,16 @@ public final class Number640 extends Number implements Comparable<Number640> {
         this(key.locationKey(), key.domainKey(), key.contentKey(), versionKey);
     }
     
+    /**
+     * Creates a new Number640 key from given location, domain, content and version keys.
+     * 
+     * @param key
+     *            The location and domain key
+     * @param contentKey
+     * 			  The content key
+     * @param versionKey
+     *            The version key
+     */
     public Number640(final Number320 key, final Number160 contentKey, final Number160 versionKey) {
         this(key.locationKey(), key.domainKey(), contentKey, versionKey);
     }

@@ -147,8 +147,12 @@ public final class Number640 extends Number implements Comparable<Number640> {
         }
         Number640 cmp = (Number640) obj;
         
-        return locationKey.equals(cmp.locationKey) && domainKey.equals(cmp.domainKey)
-                && contentKey.equals(cmp.contentKey);
+        boolean t1 = locationKey.equals(cmp.locationKey);
+        boolean t2 = domainKey.equals(cmp.domainKey);
+        boolean t3 = contentKey.equals(cmp.contentKey);
+        boolean t4 = versionKey.equals(cmp.versionKey);
+        
+        return t1 && t2 && t3 && t4;
     }
 
     @Override

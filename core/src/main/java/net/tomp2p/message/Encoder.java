@@ -71,7 +71,7 @@ public class Encoder {
     }
 
     private boolean loop(AlternativeCompositeByteBuf buf) throws InvalidKeyException, SignatureException, IOException {
-        ContentTypeIndex next;
+        MessageContentIndex next;
         while ((next = message.contentReferences().peek()) != null) {
         	final int start = buf.writerIndex();
         	final Content content = next.content(); 

@@ -77,19 +77,19 @@ public class Encoder {
         	final Content content = next.content(); 
             switch (content) {
             case KEY:
-                buf.writeBytes(message.key(next.number()).toByteArray());
+                buf.writeBytes(message.key(next.index()).toByteArray());
                 message.contentReferences().poll();
                 break;
             case INTEGER:
-                buf.writeInt(message.intAt(next.number()));
+                buf.writeInt(message.intAt(next.index()));
                 message.contentReferences().poll();
                 break;
             case LONG:
-                buf.writeLong(message.longAt(next.number()));
+                buf.writeLong(message.longAt(next.index()));
                 message.contentReferences().poll();
                 break;
             case SET_NEIGHBORS:
-                NeighborSet neighborSet = message.neighborsSet(next.number());
+                NeighborSet neighborSet = message.neighborsSet(next.index());
                 // length
                 buf.writeByte(neighborSet.size());
                 for (PeerAddress neighbor : neighborSet.neighbors()) {
@@ -109,12 +109,12 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case BLOOM_FILTER:
-                SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.number());
+                SimpleBloomFilter<Number160> simpleBloomFilter = message.bloomFilter(next.index());
                 simpleBloomFilter.toByteBuf(buf);
                 message.contentReferences().poll();
                 break;
             case SET_KEY640:
-                KeyCollection keys = message.keyCollection(next.number());
+                KeyCollection keys = message.keyCollection(next.index());
                 // length
                 buf.writeInt(keys.size());
                 if (keys.isConvert()) {
@@ -135,7 +135,7 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_DATA:
-                DataMap dataMap = message.dataMap(next.number());
+                DataMap dataMap = message.dataMap(next.index());
                 
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
@@ -158,7 +158,7 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_KEYS:
-                KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.number());
+                KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
                 buf.writeInt(keyMap640Keys.size());
                 for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
@@ -175,7 +175,7 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case MAP_KEY640_BYTE:
-                KeyMapByte keysMap = message.keyMapByte(next.number());
+                KeyMapByte keysMap = message.keyMapByte(next.index());
                 buf.writeInt(keysMap.size());
                 for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
@@ -187,7 +187,7 @@ public class Encoder {
                 message.contentReferences().poll();
                 break;
             case BYTE_BUFFER:
-                Buffer buffer = message.buffer(next.number());
+                Buffer buffer = message.buffer(next.index());
                 if (!resume) {
                     buf.writeInt(buffer.length());
                 }
@@ -205,7 +205,7 @@ public class Encoder {
                 }
                 break;
             case SET_TRACKER_DATA:
-                TrackerData trackerData = message.trackerData(next.number());
+                TrackerData trackerData = message.trackerData(next.index());
                 buf.writeByte(trackerData.peerAddresses().size()); // 1 bytes - length, max. 255
                 for (Map.Entry<PeerStatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
                 	byte[] me = entry.getKey().peerAddress().toByteArray();
@@ -220,7 +220,7 @@ public class Encoder {
                 message.setHintSign();
                 // then do the regular public key stuff
             case PUBLIC_KEY:
-            	PublicKey publicKey = message.publicKey(next.number());
+            	PublicKey publicKey = message.publicKey(next.index());
             	signatureFactory.encodePublicKey(publicKey, buf);
             	message.contentReferences().poll();
             	break;

@@ -82,7 +82,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
 
     /**
-     * Creates a new random Number640.
+     * Creates a new random Number640 key.
      * 
      * @param rnd
      *            The random class

@@ -136,7 +136,7 @@ public class Encoder {
                 break;
             case MAP_KEY640_DATA:
                 DataMap dataMap = message.dataMap(next.index());
-                
+                // legnth
                 buf.writeInt(dataMap.size());
                 if (dataMap.isConvert()) {
                     for (Entry<Number160, Data> entry : dataMap.dataMapConvert().entrySet()) {
@@ -159,15 +159,16 @@ public class Encoder {
                 break;
             case MAP_KEY640_KEYS:
                 KeyMap640Keys keyMap640Keys = message.keyMap640Keys(next.index());
+                // length
                 buf.writeInt(keyMap640Keys.size());
                 for (Entry<Number640, Collection<Number160>> entry : keyMap640Keys.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
                     buf.writeBytes(entry.getKey().domainKey().toByteArray());
                     buf.writeBytes(entry.getKey().contentKey().toByteArray());
                     buf.writeBytes(entry.getKey().versionKey().toByteArray());
-                    // write # of based on keys
+                    // write number of based-on keys
                     buf.writeByte(entry.getValue().size());
-                    // write based on keys
+                    // write based-on keys
                     for (Number160 basedOnKey : entry.getValue()) {
                         buf.writeBytes(basedOnKey.toByteArray());
                     }
@@ -176,6 +177,7 @@ public class Encoder {
                 break;
             case MAP_KEY640_BYTE:
                 KeyMapByte keysMap = message.keyMapByte(next.index());
+                // length
                 buf.writeInt(keysMap.size());
                 for (Entry<Number640, Byte> entry : keysMap.keysMap().entrySet()) {
                     buf.writeBytes(entry.getKey().locationKey().toByteArray());
@@ -196,12 +198,12 @@ public class Encoder {
                 if (buffer.incRead(readable) == buffer.length()) {
                     message.contentReferences().poll();
                 } else if (message.isStreaming()) {
-                    LOG.debug("we sent a partial message of length {}", readable);
+                    LOG.debug("Partial message of lengt {} sent.", readable);
                     return false;
                 } else {
-                    LOG.debug("Announced a larger buffer, but not in streaming mode. This is wrong.");
-                    throw new RuntimeException(
-                            "Announced a larger buffer, but not in streaming mode. This is wrong.");
+                	final String description = "Larger buffer has been announced, but not in message streaming mode. This is wrong.";
+                    LOG.error(description);
+                    throw new RuntimeException(description);
                 }
                 break;
             case SET_TRACKER_DATA:

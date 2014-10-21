@@ -31,8 +31,6 @@ public final class Number160 extends Number implements Comparable<Number160> {
     // This key has *always* 160 bit. Do not change.
     public static final int BITS = 160;
 
-    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
-
     private static final long LONG_MASK = 0xffffffffL;
 
     private static final int BYTE_MASK = 0xff;
@@ -60,6 +58,8 @@ public final class Number160 extends Number implements Comparable<Number160> {
     public static final Number160 ZERO = new Number160(0);
 
     public static final Number160 ONE = new Number160(1);
+
+    public static final Number160 MAX_VALUE = new Number160(new int[] { -1, -1, -1, -1, -1 });
 
     /**
      * Create a Key with value 0.

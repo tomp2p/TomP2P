@@ -193,6 +193,7 @@ public class Encoder {
                 if (!resume) {
                     buf.writeInt(buffer.length());
                 }
+                // length
                 int readable = buffer.readable();
                 buf.writeBytes(buffer.buffer(), readable);
                 if (buffer.incRead(readable) == buffer.length()) {
@@ -220,14 +221,13 @@ public class Encoder {
             case PUBLIC_KEY_SIGNATURE:
                 // flag to encode public key
                 message.setHintSign();
-                // then do the regular public key stuff
+                // then do the regular public key stuff -> no break
             case PUBLIC_KEY:
             	PublicKey publicKey = message.publicKey(next.index());
             	signatureFactory.encodePublicKey(publicKey, buf);
             	message.contentReferences().poll();
             	break;
             default:
-            case USER1:
                 throw new RuntimeException("Unknown type: " + next.content());
             }
             LOG.debug("wrote in encoder for {} {}", content, buf.writerIndex() - start);

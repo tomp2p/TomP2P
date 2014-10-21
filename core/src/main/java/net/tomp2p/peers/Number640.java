@@ -19,7 +19,7 @@ package net.tomp2p.peers;
 import java.util.Random;
 
 /**
- * This class stores the location, domain, and content key.
+ * This class stores the location, domain, content and version keys.
  * 
  * @author Thomas Bocek
  * 

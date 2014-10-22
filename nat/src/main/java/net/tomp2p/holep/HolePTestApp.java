@@ -8,6 +8,7 @@ import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureShutdown;
@@ -23,28 +24,61 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
 
 public class HolePTestApp {
-	
+
 	private static final int port = 4001;
 	private static final String PEER_1 = "peer1";
 	private static final String PEER_2 = "peer2";
-	
+
 	private Peer peer;
 	private PeerNAT pNAT;
-	private PeerDHT pDHT;
 	private PeerAddress masterPeerAddress;
 	private PeerAddress natPeerAddress;
 
 	public HolePTestApp() {
-		
+
 	}
 
 	public void startMasterPeer() throws Exception {
 		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
 		pNAT = new PeerBuilderNAT(peer).start();
-		pDHT = new PeerBuilderDHT(peer).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
 		System.err.println("IP: " + peer.peerAddress().inetAddress());
 		System.err.println("ID: " + peer.peerID());
+
+		// store own PeerAddress into storage
+		HolePStaticStorage.peerAdresses().put(peer.peerID(), peer.peerAddress());
+
+		peer.objectDataReply(new ObjectDataReply() {
+
+			@Override
+			public Object reply(PeerAddress sender, Object request) throws Exception {
+				Object reply = null;
+				int command = (Integer) request;
+				switch (command) {
+				case 0: {
+					HolePStaticStorage.peerAdresses().put(sender.peerId(), sender);
+					System.err.println("NEW PEERADDRESS STORED IN HOLEPSTATICSTORAGE!");
+					System.err.println(sender);
+					break;
+				} 
+				case 1: {
+					if (Number160.createHash(PEER_1).equals(sender.peerId())) {
+						reply = (Object) HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_2));
+						System.err.println("RETURNED PEERADDRESS OF PEER_2!");
+						System.err.println(sender);
+					} else {
+						reply = (Object) HolePStaticStorage.peerAdresses().get(Number160.createHash(PEER_1));
+						System.err.println("RETURNED PEERADDRESS OF PEER_1!");
+						System.err.println(sender);
+					}
+				}
+				default:
+					break;
+				}
+
+				return reply;
+			}
+		});
 	}
 
 	public void startPeer(String[] args) throws Exception {
@@ -63,7 +97,7 @@ public class HolePTestApp {
 
 		// setup relay
 		pNAT = new PeerBuilderNAT(peer).start();
-		
+
 		// set up 3 relays
 		// FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());
 		// futureRelay.awaitUninterruptibly();
@@ -83,57 +117,55 @@ public class HolePTestApp {
 		// do maintenance
 		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
 		// uNat.startRelayMaintenance(futureRelay);
+
+		// store own PeerAddress on Server
+		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(0)).start();
+		if (fd.isSuccess()) {
+			System.err.println("OWN PEERADDRESS STORED ON SERVER!");
+		} else {
+			System.err.println("COULD NOT STORE OWN PEERADDRESS ON SERVER!");
+		}
 	}
 
 	public void setObjectDataReply() {
 		peer.objectDataReply(new ObjectDataReply() {
-			
+
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				System.out.println("SUCCESS HIT");
 				System.out.println("Sender: " + sender.toString());
-				String req = (String) request;
-				System.err.println("Received Message: " + req);
-				String reply = "reply";
-				return (Object) reply;
+				natPeerAddress = (PeerAddress) request;
+				return null;
 			}
 		});
 	}
-	
+
 	public void runTextInterface() throws Exception {
 		System.out.println("Welcome to the textinterface of HolePTestApp!");
 		Scanner scan = new Scanner(System.in);
 		boolean exit = false;
-		
+
 		while (!exit) {
-			System.out.println("Choose a valid order. \n"
-					+ "		0 = Exit process \n"
-					+ "		1 = getNatPeerAddress() \n"
-					+ "		2 = putNATPeerAddress() \n"
-					+ "		3 = sendDirectMessage() \n"
-					+ "		4 = sendDirectNATMessage() \n"
-					+ "		5 = sendRelayNATMessage()");
+			System.out.println("Choose a valid order. \n" + "		0 = Exit process \n" + "		1 = getNatPeerAddress() CURRENTLY NOT WORKING! \n"
+					+ "		2 = putNATPeerAddress() CURRENTLY NOT WORKING! \n" + "		3 = sendDirectMessage() \n"
+					+ "		4 = sendDirectNATMessage() \n" + "		5 = sendRelayNATMessage()");
 			System.out.println();
 			int order = scan.nextInt();
 			System.out.println("You've entered the number " + order + ".");
 			switch (order) {
-			case 0: //end process
+			case 0: // end process
 				exit = true;
 				break;
-			case 1: //get PeerAddress of other peer
-				getNATPeerAddress();
-				break;
-			case 2: //put own PeerAddress of myself into DHT
-				putNATPeerAddress();
-			case 3: //send Message to peer not behind a NAT
+			case 3: // send Message to peer not behind a NAT
 				sendDirectMessage();
 				break;
-			case 4: //send Message to peer behind a NAT
+			case 4: // send Message to peer behind a NAT
 				sendDirectNATMessage();
 				break;
-			case 5: //send Relay message to get to the PeerAddress of one another
+			case 5: // send Relay message to get to the PeerAddress of one
+					// another
 				sendRelayNATMessage();
-			default: //start process again
+			default: // start process again
 				break;
 			}
 		}
@@ -144,11 +176,12 @@ public class HolePTestApp {
 	}
 
 	private void sendRelayNATMessage() {
-		PeerAddress p2 = new PeerAddress(Number160.createHash(PEER_2), peer.peerAddress().peerSocketAddress(), true, true, true, peer.peerAddress().peerSocketAddresses());
+		PeerAddress p2 = new PeerAddress(Number160.createHash(PEER_2), peer.peerAddress().peerSocketAddress(), true, true, true, peer
+				.peerAddress().peerSocketAddresses());
 		p2.changeAddress(masterPeerAddress.peerSocketAddress().inetAddress());
-		
+
 		peer.objectDataReply(new ObjectDataReply() {
-			
+
 			@Override
 			public Object reply(PeerAddress sender, Object request) throws Exception {
 				System.err.println(sender);
@@ -156,7 +189,7 @@ public class HolePTestApp {
 				return null;
 			}
 		});
-		
+
 		FutureDirect fd = peer.sendDirect(p2).object("Hello relay World!").start();
 		fd.awaitUninterruptibly(10000);
 		if (fd.isFailed()) {
@@ -166,40 +199,9 @@ public class HolePTestApp {
 		}
 	}
 
-	private void putNATPeerAddress() throws IOException {
-		//store id to DHT (important for finding other natPeer
-		pDHT = new PeerBuilderDHT(peer).start();
-		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
-		fp.awaitUninterruptibly();
-		if (!fp.isSuccess()) {
-			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
-		} else {
-			System.err.println("DHT PUT SUCCESS!");
-		}
-		
-	}
-	
-	private void getNATPeerAddress() {
-		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
-			getOtherNATPeerAddress(PEER_2);
-		} else {
-			getOtherNATPeerAddress(PEER_1);
-		}
-	}
-
-	private void getOtherNATPeerAddress(String peerId) {
-		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
-		fg.awaitUninterruptibly();
-		if (!fg.isSuccess()) {
-			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
-		} else {
-			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
-		}
-	}
-
 	private void sendDirectNATMessage() throws IOException {
 		setObjectDataReply();
-		
+
 		FutureDirect fd = peer.sendDirect(natPeerAddress).object("Hello World").start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {

@@ -79,7 +79,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 					LOG.debug("Successfully got the buffer from relay {}", relayAddress());
 					bufferedMessageHandler.handleBufferResponse(futureResponse.responseMessage(), futureDone);
 				} else {
-					LOG.error("Cannot get the buffer from relay {}. Reason: ", relayAddress(), futureResponse.failedReason());
+					LOG.error("Cannot get the buffer from relay {}. Reason: {}", relayAddress(), futureResponse.failedReason());
 					futureDone.failed(futureResponse);
 					failedToContactRelay();
 				}

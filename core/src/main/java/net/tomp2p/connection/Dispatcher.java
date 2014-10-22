@@ -162,8 +162,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         		FutureResponse futureResponse = pendingRequests.get(message.messageId());
         		Message realMessage = MessageUtils.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), signatureFactory);
         		futureResponse.response(realMessage);
-        		
-        		// TODO send ok, not fire and forget - style
+
+        		// send ok, not fire and forget - style
+        		response(ctx, DispatchHandler.createResponseMessage(message, Type.OK, message.recipient()));
         		return;
         	}
         }

@@ -15,8 +15,8 @@ import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.UtilsNAT;
+import net.tomp2p.utils.MessageUtils;
 
 import org.junit.Test;
 
@@ -40,9 +40,9 @@ public class TestBufferComposing {
 		Message second = UtilsNAT.createRandomMessage();
 		Message third = UtilsNAT.createRandomMessage();
 
-		Buffer firstBuffer = RelayUtils.encodeMessage(first, signature);
-		Buffer secondBuffer = RelayUtils.encodeMessage(second, signature);
-		Buffer thirdBuffer = RelayUtils.encodeMessage(third, signature);
+		Buffer firstBuffer = MessageUtils.encodeMessage(first, signature);
+		Buffer secondBuffer = MessageUtils.encodeMessage(second, signature);
+		Buffer thirdBuffer = MessageUtils.encodeMessage(third, signature);
 
 		// buffer the buffers
 		CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
@@ -69,17 +69,17 @@ public class TestBufferComposing {
 		assertEquals(thirdReceivedBuffer.readableBytes(), thirdBuffer.length());
 
 		// compare the buffers
-		Message firstReceived = RelayUtils.decodeMessage(new Buffer(firstReceivedBuffer), first.recipientSocket(),
+		Message firstReceived = MessageUtils.decodeMessage(new Buffer(firstReceivedBuffer), first.recipientSocket(),
 				first.senderSocket(), signature);
 		assertEquals(first.messageId(), firstReceived.messageId());
 		assertEquals(first.sender(), firstReceived.sender());
 
-		Message secondReceived = RelayUtils.decodeMessage(new Buffer(secondReceivedBuffer), second.recipientSocket(),
+		Message secondReceived = MessageUtils.decodeMessage(new Buffer(secondReceivedBuffer), second.recipientSocket(),
 				second.senderSocket(), signature);
 		assertEquals(second.messageId(), secondReceived.messageId());
 		assertEquals(second.sender(), secondReceived.sender());
 
-		Message thirdReceived = RelayUtils.decodeMessage(new Buffer(thirdReceivedBuffer), third.recipientSocket(),
+		Message thirdReceived = MessageUtils.decodeMessage(new Buffer(thirdReceivedBuffer), third.recipientSocket(),
 				third.senderSocket(), signature);
 		assertEquals(third.messageId(), thirdReceived.messageId());
 		assertEquals(third.sender(), thirdReceived.sender());

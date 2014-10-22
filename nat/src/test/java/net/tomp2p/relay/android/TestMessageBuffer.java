@@ -20,8 +20,8 @@ import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.MessageUtils;
 
 import org.junit.Test;
 
@@ -118,11 +118,11 @@ public class TestMessageBuffer {
 		
 		// buffer triggered by now, check the order
 		List<Buffer> content = listener.getBuffer();
-		assertEquals(first.messageId(), RelayUtils.decodeMessage(content.get(0), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(second.messageId(), RelayUtils.decodeMessage(content.get(1), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(third.messageId(), RelayUtils.decodeMessage(content.get(2), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(fourth.messageId(), RelayUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(fifth.messageId(), RelayUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(first.messageId(), MessageUtils.decodeMessage(content.get(0), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(second.messageId(), MessageUtils.decodeMessage(content.get(1), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(third.messageId(), MessageUtils.decodeMessage(content.get(2), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(fourth.messageId(), MessageUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		assertEquals(fifth.messageId(), MessageUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
 	}
 	
 	@Test

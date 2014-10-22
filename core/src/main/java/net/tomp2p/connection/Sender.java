@@ -494,6 +494,7 @@ public class Sender {
 		} else {
 			// do holepunching
 			prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
+			return;
 		}
 
 		boolean isFireAndForget = handler == null;
@@ -550,7 +551,7 @@ public class Sender {
 		// TODO jwa punch a hole into firewall
 		// TODO jwa store message to chachedRequests
 		cachedRequests.put(message.messageId(), futureResponse);
-		
+
 		// get Relay InetAddress from unreachable peer
 		Object[] relayInetAdresses = message.recipient().peerSocketAddresses().toArray();
 		PeerSocketAddress socketAddress = null;
@@ -562,7 +563,7 @@ public class Sender {
 			throw new IllegalArgumentException(
 					"There are no PeerSocketAdresses available for this relayed Peer. This should not be possible!");
 		}
-		
+
 		Message holePMessage = new Message();
 		holePMessage.sender(message.sender());
 		holePMessage.version(message.version());
@@ -575,6 +576,24 @@ public class Sender {
 
 		holePMessage.command(RPC.Commands.HOLEP.getNr());
 		holePMessage.type(Message.Type.REQUEST_1);
+
+		final FutureResponse holePResponse = new FutureResponse(holePMessage);
+
+		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;
+		final int nrTCPHandlers = 7; // 5 / 0.75
+		handlers = new LinkedHashMap<String, Pair<EventExecutorGroup, ChannelHandler>>(nrTCPHandlers);
+		final TimeoutFactory timeoutHandler = createTimeoutHandler(futureResponse, idleUDPSeconds, false);
+		handlers.put("timeout0", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.idleStateHandlerTomP2P()));
+		handlers.put("timeout1", new Pair<EventExecutorGroup, ChannelHandler>(null, timeoutHandler.timeHandler()));
+		handlers.put(
+				"decoder",
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2PSinglePacketUDP(channelClientConfiguration.signatureFactory())));
+		handlers.put(
+				"encoder",
+				new Pair<EventExecutorGroup, ChannelHandler>(null, new TomP2POutbound(false, channelClientConfiguration.signatureFactory())));
+
+		ChannelFuture channelFuture = channelCreator.createUDP(false, handlers, futureResponse);
+		afterConnect(futureResponse, holePMessage, channelFuture, false);
 	}
 
 	/**

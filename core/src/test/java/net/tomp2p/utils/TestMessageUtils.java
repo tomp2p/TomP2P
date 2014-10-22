@@ -47,8 +47,15 @@ public class TestMessageUtils {
 		message.recipientSocket(receiver.createSocketTCP());
 		
 		Buffer encoded = MessageUtils.encodeMessage(message, signatureFactory);
-		Message decoded = MessageUtils.decodeMessage(encoded, message.recipientSocket(), message.senderSocket(),
-				signatureFactory);
+		Message decoded = MessageUtils.decodeMessage(encoded, message.recipientSocket(), message.senderSocket(), signatureFactory);
 		Assert.assertEquals(message.peerSocketAddresses().size(), decoded.peerSocketAddresses().size());
+	}
+	
+	@Test
+	public void testEncodeDecodeString() {
+		String test = "dummy";
+		Buffer encoded = MessageUtils.encodeString(test);
+		String decoded = MessageUtils.decodeString(encoded);
+		Assert.assertEquals(test, decoded);
 	}
 }

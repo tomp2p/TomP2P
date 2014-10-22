@@ -16,6 +16,7 @@ import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
+import net.tomp2p.p2p.builder.SendDirectBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -211,7 +212,9 @@ public class HolePTestApp {
 	private void sendDirectMessage() throws IOException {
 		setObjectDataReply();
 
-		FutureDirect fd = peer.sendDirect(masterPeerAddress).object("Hello World").start();
+		peer.peerAddress().changeRelayed(true);
+		SendDirectBuilder sdb = peer.sendDirect(masterPeerAddress.changeRelayed(true)).forceUDP(true).forceTCP(false).object("Hello World");
+		FutureDirect fd = sdb.start();
 		fd.awaitUninterruptibly();
 		if (!fd.isSuccess()) {
 			System.err.println("SENDDIRECT-MESSAGE FAIL!");

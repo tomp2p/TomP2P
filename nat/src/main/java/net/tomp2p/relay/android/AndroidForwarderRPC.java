@@ -53,9 +53,15 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.mapUpdateIntervalMS = (int) (mapUpdateIntervalS * 1000 * 1.5);
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 
-		this.sender = new Sender(authenticationToken);
-		this.buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit(), this);
-		this.readyToSend = Collections.synchronizedList(new ArrayList<ByteBuf>());
+		sender = new Sender(authenticationToken);
+		readyToSend = Collections.synchronizedList(new ArrayList<ByteBuf>());
+
+		buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit());
+		addMessageBufferListener(this);
+	}
+	
+	public void addMessageBufferListener(MessageBufferListener listener) {
+		buffer.addListener(listener);
 	}
 
 	@Override
@@ -80,7 +86,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	/**
 	 * Tickle the device through Google Cloud Messaging
 	 */
-	private FutureDone<Void> sendTickleMessage() {
+	public FutureDone<Void> sendTickleMessage() {
 		// the collapse key is the relay's peerId
 		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
 				.collapseKey(relayPeerId().toString()).build();

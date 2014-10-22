@@ -32,7 +32,8 @@ public class TestMessageBuffer {
 	@Test
 	public void testReachCountLimit() throws InvalidKeyException, SignatureException, IOException {
 		CountingBufferListener listener = new CountingBufferListener();
-		MessageBuffer buffer = new MessageBuffer(3, Long.MAX_VALUE, Long.MAX_VALUE, listener);
+		MessageBuffer buffer = new MessageBuffer(3, Long.MAX_VALUE, Long.MAX_VALUE);
+		buffer.addListener(listener);
 
 		// create three messages
 		Message first = createMessage();
@@ -55,7 +56,8 @@ public class TestMessageBuffer {
 	@Test
 	public void testReachSizeLimit() throws InvalidKeyException, SignatureException, IOException {
 		CountingBufferListener listener = new CountingBufferListener();
-		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, 1, Long.MAX_VALUE, listener);
+		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, 1, Long.MAX_VALUE);
+		buffer.addListener(listener);
 
 		// create one message
 		buffer.addMessage(createMessage(), signature);
@@ -70,7 +72,8 @@ public class TestMessageBuffer {
 		long waitTime = 2000;
 
 		CountingBufferListener listener = new CountingBufferListener();
-		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, Long.MAX_VALUE, waitTime, listener);
+		MessageBuffer buffer = new MessageBuffer(Integer.MAX_VALUE, Long.MAX_VALUE, waitTime);
+		buffer.addListener(listener);
 
 		// create one message
 		buffer.addMessage(createMessage(), signature);
@@ -97,7 +100,8 @@ public class TestMessageBuffer {
 	@Test
 	public void testBufferOrder() throws InvalidKeyException, SignatureException, IOException, NoSuchAlgorithmException, InvalidKeySpecException {
 		CountingBufferListener listener = new CountingBufferListener();
-		MessageBuffer buffer = new MessageBuffer(5, Long.MAX_VALUE, Long.MAX_VALUE, listener);
+		MessageBuffer buffer = new MessageBuffer(5, Long.MAX_VALUE, Long.MAX_VALUE);
+		buffer.addListener(listener);
 
 		// create five messages
 		Message first = createMessage();
@@ -124,7 +128,8 @@ public class TestMessageBuffer {
 	@Test
 	public void testGarbageCollect() throws InvalidKeyException, SignatureException, IOException, InterruptedException {
 		CountingBufferListener listener = new CountingBufferListener();
-		MessageBuffer buffer = new MessageBuffer(2, Long.MAX_VALUE, Long.MAX_VALUE, listener);
+		MessageBuffer buffer = new MessageBuffer(2, Long.MAX_VALUE, Long.MAX_VALUE);
+		buffer.addListener(listener);
 
 		// create one message
 		buffer.addMessage(createMessage(), signature);

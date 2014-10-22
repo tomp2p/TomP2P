@@ -40,20 +40,24 @@ public class MessageBuffer {
 
 	private final AtomicInteger bufferCount;
 	private final AtomicLong bufferSize;
-	private final MessageBufferListener listener;
+	private final List<MessageBufferListener> listeners;
 
 	private final ByteBuf buffer;
 
 	private BufferAgeRunnable task;
 
-	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS, MessageBufferListener listener) {
+	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS) {
 		this.messageCountLimit = messageCountLimit;
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
-		this.listener = listener;
+		this.listeners = new ArrayList<MessageBufferListener>();
 		this.buffer = Unpooled.buffer();
 		this.bufferSize = new AtomicLong();
 		this.bufferCount = new AtomicInteger();
+	}
+	
+	public void addListener(MessageBufferListener listener) {
+		listeners.add(listener);
 	}
 
 	/**
@@ -131,8 +135,10 @@ public class MessageBuffer {
 			bufferSize.set(0);
 		}
 
-		// notify the listener with a copy of the buffer and the segmentation indices
-		listener.bufferFull(messageBuffer);
+		// notify the listeners with a copy of the buffer and the segmentation indices
+		for (MessageBufferListener listener : listeners) {
+			listener.bufferFull(messageBuffer);
+		}
 	}
 
 	private class BufferAgeRunnable implements Runnable {

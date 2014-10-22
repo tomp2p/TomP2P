@@ -88,14 +88,14 @@ public class StorageMemory implements Storage {
         	NavigableMap<Number640, Data> versions = dataMap.subMap(
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.ZERO), true,
 				new Number640(key.locationKey(), key.domainKey(), key.contentKey(), Number160.MAX_VALUE), true);
-        	for (int i = 0; i < versions.size() - maxVersions; i++) {
-        		Iterator<Number640> it = versions.navigableKeySet().iterator();
-        		if (it.hasNext()) {
-        			Number640 toRemove = it.next();
-        			remove(toRemove, false);
-        			removeTimeout(toRemove);
-        		}
-        	}
+			
+			while (!versions.isEmpty()
+			        && versions.firstKey().versionKey().timestamp() + maxVersions <= versions.lastKey().versionKey()
+			                .timestamp()) {
+				Map.Entry<Number640, Data> entry = versions.pollFirstEntry();
+				remove(entry.getKey(), false);
+				removeTimeout(entry.getKey());
+			}
         }
         return true;
     }

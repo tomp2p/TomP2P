@@ -71,7 +71,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>net.tomp2p.examples.ExampleNAT</mainClass>
+							<mainClass>net.tomp2p.examples.BasicUsecasesInWANTest</mainClass>
 							<addClasspath>true</addClasspath>
 							<classpathPrefix>libs/</classpathPrefix>
 						</manifest>

@@ -30,7 +30,7 @@ public class HolePTestApp {
 	
 	private Peer peer;
 	private PeerNAT pNAT;
-//	private PeerDHT pDHT;
+	private PeerDHT pDHT;
 	private PeerAddress masterPeerAddress;
 	private PeerAddress natPeerAddress;
 
@@ -41,7 +41,7 @@ public class HolePTestApp {
 	public void startMasterPeer() throws Exception {
 		peer = new PeerBuilder(Number160.createHash("master")).ports(port).start();
 		pNAT = new PeerBuilderNAT(peer).start();
-//		pDHT = new PeerBuilderDHT(peer).start();
+		pDHT = new PeerBuilderDHT(peer).start();
 		System.err.println("SERVER BOOTSTRAP SUCCESS!");
 		System.err.println("IP: " + peer.peerAddress().inetAddress());
 		System.err.println("ID: " + peer.peerID());
@@ -167,34 +167,34 @@ public class HolePTestApp {
 	}
 
 	private void putNATPeerAddress() throws IOException {
-//		//store id to DHT (important for finding other natPeer
-//		pDHT = new PeerBuilderDHT(peer).start();
-//		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
-//		fp.awaitUninterruptibly();
-//		if (!fp.isSuccess()) {
-//			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
-//		} else {
-//			System.err.println("DHT PUT SUCCESS!");
-//		}
+		//store id to DHT (important for finding other natPeer
+		pDHT = new PeerBuilderDHT(peer).start();
+		FuturePut fp = pDHT.put(peer.peerID()).object(new Data(peer.peerAddress())).start();
+		fp.awaitUninterruptibly();
+		if (!fp.isSuccess()) {
+			System.err.println("ERROR WHILE PUTTING THE PEERADDRESS INTO THE DHT!");
+		} else {
+			System.err.println("DHT PUT SUCCESS!");
+		}
 		
 	}
 	
 	private void getNATPeerAddress() {
-//		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
-//			getOtherNATPeerAddress(PEER_2);
-//		} else {
-//			getOtherNATPeerAddress(PEER_1);
-//		}
+		if (peer.peerAddress().peerId().toString().equals(Number160.createHash(PEER_1))) {
+			getOtherNATPeerAddress(PEER_2);
+		} else {
+			getOtherNATPeerAddress(PEER_1);
+		}
 	}
 
 	private void getOtherNATPeerAddress(String peerId) {
-//		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
-//		fg.awaitUninterruptibly();
-//		if (!fg.isSuccess()) {
-//			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
-//		} else {
-//			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
-//		}
+		FutureGet fg = pDHT.get(Number160.createHash(peerId)).start();
+		fg.awaitUninterruptibly();
+		if (!fg.isSuccess()) {
+			System.err.println("FUTUREGET FAIL WITH ARG " + peerId + "!");
+		} else {
+			System.err.println("FUTUREGET SUCCESS WITH ARG " + peerId + "!");
+		}
 	}
 
 	private void sendDirectNATMessage() throws IOException {

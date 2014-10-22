@@ -23,6 +23,7 @@ import net.tomp2p.relay.tcp.OpenTCPForwarderRPC;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -152,14 +153,14 @@ public class RelayRPC extends DispatchHandler {
             return;
         }
         
-		String registrationId = RelayUtils.decodeString(message.buffer(0));
+		String registrationId = MessageUtils.decodeString(message.buffer(0));
 		if(registrationId == null) {
 			LOG.error("Cannot decode the registrationID from the message");
             responder.response(createResponseMessage(message, Type.DENIED));
             return;
 		}
 		
-		String authenticationKey = RelayUtils.decodeString(message.buffer(1));
+		String authenticationKey = MessageUtils.decodeString(message.buffer(1));
 		if(authenticationKey == null) {
 			LOG.error("Cannot decode the authentication key from the messsage");
 			responder.response(createResponseMessage(message, Type.DENIED));
@@ -216,7 +217,7 @@ public class RelayRPC extends DispatchHandler {
         }
         
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+        Message realMessage = MessageUtils.decodeMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
         LOG.debug("Received message from relay peer: {}", realMessage);
         
         // we don't call the decoder where the relay address is handled, so we need to do this on our own.
@@ -238,7 +239,7 @@ public class RelayRPC extends DispatchHandler {
         			if(responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
         				responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
         			}
-        			envelope.buffer(RelayUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+        			envelope.buffer(MessageUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
                 } catch (Exception e) {
                 	LOG.error("Cannot piggyback the response", e);
                 	failed(Type.EXCEPTION, e.getMessage());

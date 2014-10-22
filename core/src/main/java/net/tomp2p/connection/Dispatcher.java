@@ -39,6 +39,7 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private final int p2pID;
     private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
+    private final SignatureFactory signatureFactory;
 
     /** copy on write map. The key {@link Number320} can be devided into two parts: first {@link Number160} is the peerID that registers,
      * the second {@link Number160} the peerID for which the ioHandler is registered. For example a relay peer can register a handler
@@ -74,19 +76,22 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	 * might arrive later. The key of the map is the expected message id.
 	 */
     private volatile Map<Integer, FutureResponse> pendingRequests = new HashMap<Integer, FutureResponse>();
+
     
     /**
      * Constructor.
      * 
      * @param p2pID
      *            the p2p ID the dispatcher is looking for in messages
+     * @param signatureFactory 
      * @param peerBean
      *            .
      */
-    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
+    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis, SignatureFactory signatureFactory) {
         this.p2pID = p2pID;
         this.peerBeanMaster = peerBeanMaster;
         this.heartBeatMillis = heartBeatMillis;
+		this.signatureFactory = signatureFactory;
     }
 
     /**
@@ -150,12 +155,15 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
-        if(!message.isRequest() && message.sender().isSlow()) {
+        if(message.sender().isSlow() && message.command() == Commands.RELAY.getNr() && message.type() == Type.REQUEST_1) {
         	// This might be a late answer from a slow peer
         	if(pendingRequests.containsKey(message.messageId())) {
         		LOG.debug("Received late response from slow peer: {}", message);
         		FutureResponse futureResponse = pendingRequests.get(message.messageId());
-        		futureResponse.response(message);
+        		Message realMessage = MessageUtils.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), signatureFactory);
+        		futureResponse.response(realMessage);
+        		
+        		// TODO send ok, not fire and forget - style
         		return;
         	}
         }

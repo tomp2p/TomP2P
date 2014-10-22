@@ -16,8 +16,8 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +73,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		try {
 			message.restoreContentReferences();
 			// add the message into the payload
-			envelope.buffer(RelayUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+			envelope.buffer(MessageUtils.encodeMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return new FutureDone<Message>().failed(e);
@@ -91,7 +91,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 		final FutureDone<Message> futureDone = new FutureDone<Message>();
 
 		// Forward a message through the open peer connection to the unreachable peer.
-		FutureResponse fr = RelayUtils.send(peerConnection, peerBean(), connectionBean(), config, envelope);
+		FutureResponse fr = MessageUtils.send(peerConnection, peerBean(), connectionBean(), config, envelope);
 		fr.addListener(new BaseFutureAdapter<FutureResponse>() {
 			public void operationComplete(FutureResponse future) throws Exception {
 				if (future.isSuccess()) {
@@ -105,7 +105,7 @@ public class OpenTCPForwarderRPC extends BaseRelayForwarderRPC {
 					}
 
 					Buffer buffer = future.responseMessage().buffer(0);
-					Message responseFromUnreachablePeer = RelayUtils.decodeMessage(buffer, recipientSocket, senderSocket, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+					Message responseFromUnreachablePeer = MessageUtils.decodeMessage(buffer, recipientSocket, senderSocket, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					responseFromUnreachablePeer.restoreContentReferences();
 					futureDone.done(responseFromUnreachablePeer);
 				} else {

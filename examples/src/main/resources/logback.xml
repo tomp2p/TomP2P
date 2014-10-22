@@ -10,6 +10,9 @@
 	
 	<!-- Loggers -->
 	<logger name="net.tomp2p" level="INFO" />
+	<logger name="net.tomp2p.relay" level="DEBUG" />
+	<logger name="net.tomp2p.connection.ChannelCreator" level="DEBUG" />
+	<logger name="net.tomp2p.connection.Dispatcher" level="DEBUG" />
 	<logger name="io.netty" level="WARN" /> <!-- mute netty library -->
 	
 	<!-- Examples -->

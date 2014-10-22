@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
-import net.tomp2p.relay.RelayUtils;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +70,7 @@ public class MessageBuffer {
 	public void addMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException,
 			SignatureException, IOException {
 		message.restoreContentReferences();
-		Buffer encodedMessage = RelayUtils.encodeMessage(message, signatureFactory);
+		Buffer encodedMessage = MessageUtils.encodeMessage(message, signatureFactory);
 		addMessage(encodedMessage);
 		LOG.debug("Added to the buffer: {}", message);
 	}

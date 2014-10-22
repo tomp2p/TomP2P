@@ -5,7 +5,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 
 import java.util.List;
 
-import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.Responder;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
@@ -14,8 +14,9 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
+import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +25,13 @@ public class BufferedMessageHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(BufferedMessageHandler.class);
 	private final Peer peer;
+	private final DispatchHandler dispatchHandler;
+	private final ConnectionConfiguration connectionConfig;
 
-	public BufferedMessageHandler(Peer peer) {
+	public BufferedMessageHandler(Peer peer, DispatchHandler dispatchHandler, ConnectionConfiguration connectionConfig) {
 		this.peer = peer;
+		this.dispatchHandler = dispatchHandler;
+		this.connectionConfig = connectionConfig;
 	}
 
 	/**
@@ -43,7 +48,7 @@ public class BufferedMessageHandler {
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
 			for (Buffer bufferedMessage : bufferedMessages) {
 				try {
-					Message message = RelayUtils.decodeMessage(bufferedMessage, bufferResponse.recipientSocket(),
+					Message message = MessageUtils.decodeMessage(bufferedMessage, bufferResponse.recipientSocket(),
 							bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 					processMessage(message);
 				} catch (Exception e) {
@@ -91,8 +96,17 @@ public class BufferedMessageHandler {
 		@Override
 		public void response(final Message responseMessage) {
 			LOG.debug("Send late response {}", responseMessage);
-			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, responseMessage, new DefaultConnectionConfiguration());
 			
+			// piggyback the late response. It will be unwrapped by the dispatcher
+			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_1);
+			envelope.messageId(responseMessage.messageId());
+			try {
+				envelope.buffer(MessageUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+			} catch (Exception e) {
+				LOG.error("Cannot wrap the late response into an envelope", e);
+			}
+			
+			FutureResponse futureResponse = MessageUtils.connectAndSend(peer, envelope, connectionConfig);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(FutureResponse future) throws Exception {

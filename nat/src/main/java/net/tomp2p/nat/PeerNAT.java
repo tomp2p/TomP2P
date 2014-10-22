@@ -29,9 +29,9 @@ import net.tomp2p.relay.PeerMapUpdateTask;
 import net.tomp2p.relay.RelayListener;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -413,7 +413,7 @@ public class PeerNAT {
 						final Message setUpMessage = createSetupMessage(relayPeerAddress, unreachablePeerAddress);
 
 						// send the message to the relay so it forwards it to the unreachable peer
-						FutureResponse futureResponse = RelayUtils.send(peerConnection, peer.peerBean(),
+						FutureResponse futureResponse = MessageUtils.send(peerConnection, peer.peerBean(),
 								peer.connectionBean(), config, setUpMessage);
 
 						// wait for the unreachable peer to answer

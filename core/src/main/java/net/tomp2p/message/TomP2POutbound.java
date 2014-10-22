@@ -84,7 +84,7 @@ public class TomP2POutbound extends ChannelOutboundHandlerAdapter {
                     ctx.writeAndFlush(buf, promise);
                 }
                 if (done) {
-                    message.done(true);
+                    message.setDone(true);
                     // we wrote the complete message, reset state
                     encoder.reset();
                 }

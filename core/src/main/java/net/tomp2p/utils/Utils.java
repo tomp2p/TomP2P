@@ -76,13 +76,13 @@ public class Utils {
     public static final int IPV4_BYTES = 4;
     public static final int IPV6_BYTES = 16;
     public static final int BYTE_BITS = 8;
-    public static final int MASK_FF = 0xff;
+    public static final int MASK_FF = 0xff;			// 1111 1111
     public static final int MASK_80 = 0x80;
-    public static final int INTEGER_BYTE_SIZE = 4;
-    public static final int LONG_BYTE_SIZE = 8;
-    public static final int BYTE_SIZE = 1;
-    public static final int SHORT_BYTE_SIZE = 2;
     public static final int MASK_0F = 0xf;
+    public static final int BYTE_BYTE_SIZE = 1;		//  8 bits
+    public static final int SHORT_BYTE_SIZE = 2;	// 16 bits
+    public static final int INTEGER_BYTE_SIZE = 4;	// 32 bits
+    public static final int LONG_BYTE_SIZE = 8;		// 64 bits
 	public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     public static ByteBuffer loadFile(File file) throws IOException {

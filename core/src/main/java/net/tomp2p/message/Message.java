@@ -978,7 +978,7 @@ public class Message {
      *            True if message decoding or encoding is done
      * @return This class
      */
-    public Message done(final boolean done) {
+    public Message setDone(final boolean done) {
         this.done = done;
         return this;
     }
@@ -988,8 +988,7 @@ public class Message {
      * @return This class
      */
     public Message setDone() {
-        this.done = true;
-        return this;
+        return setDone(true);
     }
 
     /**

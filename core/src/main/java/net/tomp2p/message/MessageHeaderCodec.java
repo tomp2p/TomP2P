@@ -77,7 +77,7 @@ public final class MessageHeaderCodec {
      * Decode a message header from a Netty buffer.
      * 
      * The format looks as follows: 28bit p2p version - 4bit message type - 32bit id - 8bit message command - 160bit
-     * sender id - 16bit tcp port - 16bit udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
+     * sender id - 16bit tcp port - 16bit udp port - 160bit recipient id - 32bit content types - 8bit options. In total,
      * the header is of size 58 bytes.
      * 
      * @param buffer

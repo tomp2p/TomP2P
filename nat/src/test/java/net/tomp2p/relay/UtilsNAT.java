@@ -36,13 +36,13 @@ import net.tomp2p.rpc.RPC.Commands;
 
 public class UtilsNAT {
 
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port) throws Exception {
-        return createNodesPeer(nrOfPeers, rnd, port, null);
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port) throws Exception {
+        return createNodesDHT(nrOfPeers, rnd, port, null);
     }
 
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture)
             throws Exception {
-        return createNodesPeer(nrOfPeers, rnd, port, automaticFuture, false);
+        return createNodesDHT(nrOfPeers, rnd, port, automaticFuture, false);
     }
 
     /**
@@ -59,7 +59,7 @@ public class UtilsNAT {
      * @throws Exception
      *             If the creation of nodes fail.
      */
-    public static PeerDHT[] createNodesPeer(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
+    public static PeerDHT[] createNodesDHT(int nrOfPeers, Random rnd, int port, AutomaticFuture automaticFuture,
             boolean maintenance) throws Exception {
         if (nrOfPeers < 1) {
             throw new IllegalArgumentException("Cannot create less than 1 peer");

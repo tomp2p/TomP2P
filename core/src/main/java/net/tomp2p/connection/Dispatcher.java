@@ -167,6 +167,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         		response(ctx, DispatchHandler.createResponseMessage(message, Type.OK, message.recipient()));
         		return;
         	}
+        	
+        	// TODO handle relayed-relayed. This could be a pending message for one of the relayed peers, not for this peer
         }
         
         if (!message.isRequest()) {

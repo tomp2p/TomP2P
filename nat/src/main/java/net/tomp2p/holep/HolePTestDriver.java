@@ -8,7 +8,7 @@ import ch.qos.logback.classic.Level;
 public class HolePTestDriver {
 
 	private static final Logger LOG = LoggerFactory.getLogger(HolePTestDriver.class);
-	
+
 	public static void main(String[] args) throws Exception {
 
 		// set Logger Level
@@ -18,22 +18,22 @@ public class HolePTestDriver {
 		LOG.warn("Logger with Level " + Level.WARN.toString() + " initialized");
 
 		HolePTestApp testApp = new HolePTestApp();
-		if (!checkArguments(args)) {
-			testApp.startMasterPeer();
-		} else {
-			testApp.startPeer(args);
-		}
-		testApp.runTextInterface();
-	}
 
-	private static boolean checkArguments(String[] args) {
-		if (args.length > 1) {
-			return true;
-		} else if (args.length == 1) {
+		switch (args.length) {
+		case 0:
+			testApp.startMasterPeer();
+			break;
+		case 2:
+			testApp.startNATPeer(args);
+			break;
+		case 3:
+			testApp.startNormalPeer(args);
+			break;
+		default:
 			throw new IllegalArgumentException(
 					"The Application can't start with the given arguments. The arguments have to be like this: \n args[0] = 192.168.2.xxx \n args[1] = \"id\n");
-		} else {
-			return false;
 		}
+
+		testApp.runTextInterface();
 	}
 }

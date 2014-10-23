@@ -488,15 +488,6 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 
-		if (message.sender().isRelayed()) { 
-			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		}
-		
-		if (message.recipient().isRelayed() && message.sender().isRelayed()) {
-			prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
-			return;
-		}
-
 		boolean isFireAndForget = handler == null;
 
 		final Map<String, Pair<EventExecutorGroup, ChannelHandler>> handlers;

@@ -209,7 +209,7 @@ public class RelayRPC extends DispatchHandler {
      * The unreachable peer received an envelope message with another message insice (piggypacked)
      */
     private void handlePiggyBackedMessage(final Message message, final Responder responderToRelay) throws Exception {
-        // TODO: check if we have right setup
+    	// TODO: check if we have right setup
         
         // this contains the real sender
         Collection<PeerSocketAddress> peerSocketAddresses = message.peerSocketAddresses();
@@ -255,7 +255,6 @@ public class RelayRPC extends DispatchHandler {
             }
         };
         
-        // TODO: Not sure what to do with the peer connection and sign
         DispatchHandler dispatchHandler = peer.connectionBean().dispatcher().associatedHandler(realMessage);
         if(dispatchHandler == null) {
         	responder.failed(Type.EXCEPTION, "handler not found, probably not relaying peer anymore");

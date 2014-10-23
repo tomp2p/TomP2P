@@ -97,8 +97,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	@Override
 	public final void handleResponse(Message message, PeerConnection peerConnection, boolean sign, final Responder responder)
 			throws Exception {
-		// TODO
-		// the sender should have the ip/port from the relay peer, the peerId
+		// TODO the sender should have the ip/port from the relay peer, the peerId
 		// from the unreachable peer, in order to have 6 relays instead of 5
 		handleResponse(message, responder);
 	}

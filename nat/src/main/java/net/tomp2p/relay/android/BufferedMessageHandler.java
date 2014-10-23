@@ -81,7 +81,7 @@ public class BufferedMessageHandler {
 
 		try {
 			LOG.debug("Handle buffered message {}", bufferedMessage);
-			handler.handleResponse(bufferedMessage, null, false, new AndroidDirectResponder());
+			handler.handleResponse(bufferedMessage, null, false, new AndroidDirectResponder(bufferedMessage));
 		} catch (Exception e) {
 			LOG.error("Cannot handle the buffered message {}", bufferedMessage, e);
 		}
@@ -95,6 +95,12 @@ public class BufferedMessageHandler {
 	 */
 	private class AndroidDirectResponder extends SimpleChannelInboundHandler<Message> implements Responder {
 
+		private final Message bufferedMessage;
+
+		public AndroidDirectResponder(Message bufferedMessage) {
+			this.bufferedMessage = bufferedMessage;
+		}
+		
 		@Override
 		public void response(final Message responseMessage) {
 			LOG.debug("Send late response {}", responseMessage);
@@ -116,7 +122,6 @@ public class BufferedMessageHandler {
 						LOG.debug("Successfully sent late response to requester");
 					} else {
 						LOG.error("Late response could not be sent to requester. Reason: {}", future.failedReason());
-						// TODO use relay as fallback
 					}
 				}
 			});
@@ -124,12 +129,14 @@ public class BufferedMessageHandler {
 		
 		@Override
 		public void failed(Type type, String reason) {
-			// TODO send a late message to the requester that the request failed
+			LOG.warn("Handling of buffered messages resulted in an error: {}", reason);
+			response(dispatchHandler.createResponseMessage(bufferedMessage, Type.EXCEPTION));
 		}
 
 		@Override
 		public void responseFireAndForget() {
-			// ignore fire and forget message
+			// respond through TCP anyway
+			response(dispatchHandler.createResponseMessage(bufferedMessage, Type.OK));
 		}
 
 		@Override

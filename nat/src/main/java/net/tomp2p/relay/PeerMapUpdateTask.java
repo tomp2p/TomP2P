@@ -81,7 +81,9 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 		}
 		updatePeerMap();
 
-		// TODO: add digest to the relay peer
+		if(relayRPC.peer().peerAddress().isSlow()) {
+			// TODO: add digest to the relay peer, but this can lead to consistency problems
+		}
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();

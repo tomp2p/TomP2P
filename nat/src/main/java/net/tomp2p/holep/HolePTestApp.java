@@ -167,9 +167,9 @@ public class HolePTestApp {
 					+ "		2 = putNATPeerAddress() CURRENTLY NOT WORKING! \n" + "		3 = sendDirectMessage() \n"
 					+ "		4 = sendDirectNATMessage() \n" + "		5 = getOtherPeerAddress()");
 			System.out.println();
-			int order = scan.nextInt();
-			System.out.println("You've entered the number " + order + ".");
-			switch (order) {
+			int command = scan.nextInt();
+			System.out.println("You've entered the number " + command + ".");
+			switch (command) {
 			case 0: // end process
 				exit = true;
 				break;

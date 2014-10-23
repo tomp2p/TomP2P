@@ -488,11 +488,11 @@ public class Sender {
 		}
 		removePeerIfFailed(futureResponse, message);
 
-		// check the need for hole punching and/or relaying
-		if (message.sender().isRelayed() && !message.recipient().isRelayed()) {
+		if (message.sender().isRelayed()) { 
 			message.peerSocketAddresses(message.sender().peerSocketAddresses());
-		} else {
-			// do holepunching
+		}
+		
+		if (message.recipient().isRelayed() && message.sender().isRelayed()) {
 			prepareHolePunch(handler, futureResponse, message, channelCreator, idleUDPSeconds, broadcast);
 			return;
 		}

@@ -469,8 +469,8 @@ public class Message {
      * @return True if this is a request, a regural or a fire and forget
      */
     public boolean isRequest() {
-        return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3
-                || type == Type.REQUEST_4 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
+				|| type == Type.REQUEST_5 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
     }
 
     /**

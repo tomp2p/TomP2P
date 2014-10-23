@@ -125,7 +125,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 						LOG.debug("Returing from relay to requester: {}", answerMessage);
 						responder.response(answerMessage);
 					} else {
-						responder.failed(Type.USER1, "Relaying message failed: " + future.failedReason());
+						responder.failed(Type.DENIED, "Relaying message failed: " + future.failedReason());
 					}
 				}
 			});

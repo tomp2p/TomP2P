@@ -303,7 +303,7 @@ public class Sender {
 						@Override
 						public void operationComplete(FutureResponse future) throws Exception {
 							if (future.isFailed()) {
-								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.USER1) {
+								if (future.responseMessage() != null && future.responseMessage().type() != Message.Type.DENIED) {
 									// remove the failed relay and try again
 									clearInactivePeerSocketAddress(futureDone);
 									sendTCP(handler, futureResponse, message, channelCreator, idleTCPSeconds,

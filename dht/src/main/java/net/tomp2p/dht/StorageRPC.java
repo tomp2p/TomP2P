@@ -726,7 +726,7 @@ public class StorageRPC extends DispatchHandler {
             // check the responsibility of the newly added data, do something
             // (notify) if we are responsible
             if (!entry.getValue().hasPrepareFlag()) {
-            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK)
+            	if ((putStatus == PutStatus.OK || putStatus == PutStatus.VERSION_FORK || putStatus == PutStatus.DELETED)
             			&& replicationListener != null) {
             		replicationListener.dataInserted(
             				entry.getKey().locationKey());

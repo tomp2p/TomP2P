@@ -105,8 +105,8 @@ public class BufferedMessageHandler {
 			LOG.debug("Send late response {}", responseMessage);
 			
 			// piggyback the late response. It will be unwrapped by the dispatcher
-			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_1);
-			envelope.messageId(responseMessage.messageId());
+			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_5);
+			envelope.intValue(responseMessage.messageId());
 			try {
 				envelope.buffer(MessageUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 			} catch (Exception e) {

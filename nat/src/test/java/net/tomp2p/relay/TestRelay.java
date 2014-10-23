@@ -53,6 +53,8 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class TestRelay {
 
+	private static final long GCM_MOCK_DELAY_MS = 100;
+	
 	private final RelayType relayType;
 	private final AndroidRelayConfiguration androidConfig;
 	private final GCMServerCredentials gcmServerCredentials;
@@ -99,10 +101,21 @@ public class TestRelay {
 						public void bufferFull(ByteBuf messageBuffer) {
 							for (BaseRelayConnection connection : unreachablePeer.currentRelays()) {
 								if (connection instanceof AndroidRelayConnection) {
-									AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;
+									final AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;
 									if(androidConnection.relayAddress().peerId().equals(forwarderRPC.relayPeerId())) {
-										System.err.println("Caught sending message over GCM from " + forwarderRPC.relayPeerId() + " to unreachable peer");
-										androidConnection.sendBufferRequest();
+										// start in a new thread
+										new Thread(new Runnable() {
+											@Override
+											public void run() {
+												System.err.println("Caught sending message over GCM from " + forwarderRPC.relayPeerId() + " to unreachable peer");
+												try {
+													Thread.sleep(GCM_MOCK_DELAY_MS);
+												} catch (InterruptedException e) {
+													// ignore
+												}
+												androidConnection.sendBufferRequest();
+											}
+										}, "GCM-Mock").start();
 									}
 								}
 							}

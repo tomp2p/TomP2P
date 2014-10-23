@@ -141,7 +141,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
@@ -155,30 +155,44 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             return;
         }
         
-        if(message.sender().isSlow() && message.command() == Commands.RELAY.getNr() && message.type() == Type.REQUEST_1) {
-        	// This might be a late answer from a slow peer
-        	if(pendingRequests.containsKey(message.messageId())) {
-        		LOG.debug("Received late response from slow peer: {}", message);
-        		FutureResponse futureResponse = pendingRequests.get(message.messageId());
-        		Message realMessage = MessageUtils.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), signatureFactory);
+        if (!message.isRequest()) {
+        	LOG.debug("handing message to the next handler {}", message);
+        	ctx.fireChannelRead(message);
+        	return;
+        }
+        
+        DispatchHandler myHandler = null;
+        if(message.sender().isSlow() && message.command() == Commands.RELAY.getNr() && message.type() == Type.REQUEST_5 && !message.intList().isEmpty() && !message.bufferList().isEmpty()) {
+        	// This is a late answer from a slow peer
+        	Message realMessage = MessageUtils.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), signatureFactory);
+        	LOG.debug("Received late response from slow peer: {}", realMessage);
+        	
+        	if(pendingRequests.containsKey(message.intAt(0))) {
+        		// we waited for this response, answer it
+        		FutureResponse futureResponse = pendingRequests.get(message.intAt(0));
         		futureResponse.response(realMessage);
 
         		// send ok, not fire and forget - style
         		response(ctx, DispatchHandler.createResponseMessage(message, Type.OK, message.recipient()));
         		return;
+        	} else {
+        		// handle relayed-relayed. This could be a pending message for one of the relayed peers, not for this peer
+        		LOG.debug("Forwarding late response to unreachable requester");
+        		Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(realMessage.command()));
+    			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
+    				if (entry.getKey().domainKey().equals(realMessage.recipient().peerId())) {
+    					 myHandler = entry.getValue();
+    					 // because buffer is re-encoded when forwarding it to unreachable
+    					 message.buffer(0).reset();
+    					 break;
+    				}
+    			}
         	}
-        	
-        	// TODO handle relayed-relayed. This could be a pending message for one of the relayed peers, not for this peer
-        }
-        
-        if (!message.isRequest()) {
-            LOG.debug("handing message to the next handler {}", message);
-            ctx.fireChannelRead(message);
-            return;
+        } else {
+        	 myHandler = associatedHandler(message);
         }
 
         Responder responder = new DirectResponder(ctx, message);
-        final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);
@@ -384,5 +398,15 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	public void addPendingRequest(int messageId, FutureResponse futureResponse) {
 		// TODO add timeout for the pending requests
 		pendingRequests.put(messageId, futureResponse);
+	}
+
+	/**
+	 * Finds a pending request or returns null
+	 * 
+	 * @param messageId the message id
+	 * @return the pending request or <code>null</code>
+	 */
+	public FutureResponse getPendingRequest(int messageId) {
+		return pendingRequests.get(messageId);
 	}
 }

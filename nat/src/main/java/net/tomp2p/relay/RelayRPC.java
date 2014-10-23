@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
@@ -104,6 +105,9 @@ public class RelayRPC extends DispatchHandler {
         } else if(message.type() == Type.REQUEST_4 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// An android unreachable peer requests the buffer
         	handleBufferRequest(message, responder);
+        } else if(message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
+        	// only the case when a unreachable peer makes a request to another slow, unreachable peer
+        	handleLateResponse(message, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -315,6 +319,34 @@ public class RelayRPC extends DispatchHandler {
 			}
 		} else {
 			responder.failed(Type.EXCEPTION, "This message type is intended for buffering forwarders only");
+		}
+	}
+    
+	/**
+	 * This peer did a request which was now finally answered by a slow peer. The message contains
+	 * (piggybacked) the response
+	 * 
+	 * @param message
+	 * @param responder
+	 */
+	private void handleLateResponse(Message message, Responder responder) {
+		try {
+			Message realResponse = MessageUtils
+					.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), connectionBean()
+							.channelServer().channelServerConfiguration().signatureFactory());
+			// search the cached requests for this response
+			FutureResponse pendingRequest = peer.connectionBean().dispatcher().getPendingRequest(realResponse.messageId());
+			if (pendingRequest == null) {
+				LOG.error("No pending request for this late response found");
+				responder.response(createResponseMessage(message, Type.NOT_FOUND));
+			} else {
+				LOG.debug("Successfully answered pending request {} with {}", pendingRequest.request(), realResponse);
+				pendingRequest.response(realResponse);
+				responder.response(createResponseMessage(message, Type.OK));
+			}
+		} catch (Exception e) {
+			LOG.error("Cannot decode the late response");
+			responder.response(createResponseMessage(message, Type.EXCEPTION));
 		}
 	}
 }

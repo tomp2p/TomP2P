@@ -14,7 +14,7 @@ import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
-import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.MessageUtils;
@@ -49,13 +49,8 @@ public class BufferedMessageHandler {
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
 			for (Buffer bufferedMessage : bufferedMessages) {
 				try {
-					Message message = MessageUtils.decodeMessage(bufferedMessage, bufferResponse.recipientSocket(),
+					Message message = RelayUtils.decodeRelayedMessage(bufferedMessage, bufferResponse.recipientSocket(),
 							bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-					boolean isRelay = message.sender().isRelayed();
-					if (isRelay && !message.peerSocketAddresses().isEmpty()) {
-						PeerAddress tmpSender = message.sender().changePeerSocketAddresses(message.peerSocketAddresses());
-						message.sender(tmpSender);
-					}
 					processMessage(message);
 				} catch (Exception e) {
 					// continue to process the buffers anyway

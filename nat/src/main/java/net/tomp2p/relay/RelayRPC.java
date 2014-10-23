@@ -221,17 +221,10 @@ public class RelayRPC extends DispatchHandler {
         }
         
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = MessageUtils.decodeMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-        LOG.debug("Received message from relay peer: {}", realMessage);
-        
-        // we don't call the decoder where the relay address is handled, so we need to do this on our own.
-        boolean isRelay = realMessage.sender().isRelayed();
-        if(isRelay && !realMessage.peerSocketAddresses().isEmpty()) {
-        	PeerAddress tmpSender = realMessage.sender().changePeerSocketAddresses(realMessage.peerSocketAddresses());
-        	realMessage.sender(tmpSender);
-        }
-        
+        Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
         realMessage.restoreContentReferences();
+
+        LOG.debug("Received message from relay peer: {}", realMessage);
         
         final Responder responder = new Responder() {
         	//TODO: add reply leak handler
@@ -331,9 +324,9 @@ public class RelayRPC extends DispatchHandler {
 	 */
 	private void handleLateResponse(Message message, Responder responder) {
 		try {
-			Message realResponse = MessageUtils
-					.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), connectionBean()
+			Message realResponse = RelayUtils.decodeRelayedMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), connectionBean()
 							.channelServer().channelServerConfiguration().signatureFactory());
+			
 			// search the cached requests for this response
 			FutureResponse pendingRequest = peer.connectionBean().dispatcher().getPendingRequest(realResponse.messageId());
 			if (pendingRequest == null) {

@@ -9,6 +9,8 @@ import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PutBuilder;
+import net.tomp2p.futures.BaseFuture;
+import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.futures.FutureShutdown;
@@ -75,7 +77,22 @@ public class HolePTestApp {
 				default:
 					break;
 				}
+				
+				if (reply != null) {
+					FutureDirect fd = peer.sendDirect(sender).object(reply).start();
+					fd.addListener(new BaseFutureAdapter<BaseFuture>() {
 
+						@Override
+						public void operationComplete(BaseFuture future) throws Exception {
+							if (future.isSuccess()) {
+								System.err.println("FD SUCCESS!");
+							} else {
+								System.err.println("FD FAIL!");
+							}
+						}
+					});
+				}
+				
 				return reply;
 			}
 		});
@@ -148,7 +165,7 @@ public class HolePTestApp {
 		while (!exit) {
 			System.out.println("Choose a valid order. \n" + "		0 = Exit process \n" + "		1 = getNatPeerAddress() CURRENTLY NOT WORKING! \n"
 					+ "		2 = putNATPeerAddress() CURRENTLY NOT WORKING! \n" + "		3 = sendDirectMessage() \n"
-					+ "		4 = sendDirectNATMessage() \n" + "		5 = sendRelayNATMessage()");
+					+ "		4 = sendDirectNATMessage() \n" + "		5 = getOtherPeerAddress()");
 			System.out.println();
 			int order = scan.nextInt();
 			System.out.println("You've entered the number " + order + ".");
@@ -175,22 +192,9 @@ public class HolePTestApp {
 		System.exit(0);
 	}
 
-	private void sendRelayNATMessage() {
-		PeerAddress p2 = new PeerAddress(Number160.createHash(PEER_2), peer.peerAddress().peerSocketAddress(), true, true, true, peer
-				.peerAddress().peerSocketAddresses());
-		p2.changeAddress(masterPeerAddress.peerSocketAddress().inetAddress());
-
-		peer.objectDataReply(new ObjectDataReply() {
-
-			@Override
-			public Object reply(PeerAddress sender, Object request) throws Exception {
-				System.err.println(sender);
-				natPeerAddress = sender;
-				return null;
-			}
-		});
-
-		FutureDirect fd = peer.sendDirect(p2).object("Hello relay World!").start();
+	private void sendRelayNATMessage(){
+		setObjectDataReply();
+		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(1)).start();
 		fd.awaitUninterruptibly(10000);
 		if (fd.isFailed()) {
 			System.err.println("NO RELAY SENDDIRECT COULD BE MADE!");

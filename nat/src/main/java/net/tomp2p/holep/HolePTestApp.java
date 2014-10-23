@@ -2,6 +2,8 @@ package net.tomp2p.holep;
 
 import java.io.IOException;
 import java.net.Inet4Address;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Scanner;
 
 import net.tomp2p.dht.FutureGet;
@@ -97,52 +99,8 @@ public class HolePTestApp {
 			}
 		});
 	}
-
-	public void startPeer(String[] args) throws Exception {
-		peer = new PeerBuilder(Number160.createHash(args[1])).ports(port).start();
-		PeerAddress bootstrapPeerAddress = new PeerAddress(Number160.createHash("master"), Inet4Address.getByName(args[0]), port, port);
-		masterPeerAddress = bootstrapPeerAddress;
-
-		// Set the isFirewalledUDP and isFirewalledTCP flags
-		PeerAddress upa = peer.peerBean().serverPeerAddress();
-		upa = upa.changeFirewalledTCP(true).changeFirewalledUDP(true);
-		peer.peerBean().serverPeerAddress(upa);
-
-		// find neighbors
-		FutureBootstrap futureBootstrap = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
-		futureBootstrap.awaitUninterruptibly();
-
-		// setup relay
-		pNAT = new PeerBuilderNAT(peer).start();
-
-		// set up 3 relays
-		// FutureRelay futureRelay = uNat.startSetupRelay(new FutureRelay());
-		// futureRelay.awaitUninterruptibly();
-		FutureRelayNAT frn = pNAT.startRelay(bootstrapPeerAddress);
-		frn.awaitUninterruptibly();
-
-		// find neighbors again
-		FutureBootstrap fb = peer.bootstrap().peerAddress(bootstrapPeerAddress).start();
-		fb.awaitUninterruptibly();
-		if (!fb.isSuccess()) {
-			System.err.println("ERROR WHILE NAT-BOOTSTRAPPING. THE APPLICATION WILL NOW SHUTDOWN!");
-			System.exit(1);
-		} else {
-			System.err.println("NAT-BOOTSTRAP SUCCESS!");
-		}
-
-		// do maintenance
-		// uNat.bootstrapBuilder(peer.bootstrap().peerAddress(bootstrapPeerAddress));
-		// uNat.startRelayMaintenance(futureRelay);
-
-		// store own PeerAddress on Server
-		FutureDirect fd = peer.sendDirect(masterPeerAddress).object(new Integer(0)).start();
-		if (fd.isSuccess()) {
-			System.err.println("OWN PEERADDRESS STORED ON SERVER!");
-		} else {
-			System.err.println("COULD NOT STORE OWN PEERADDRESS ON SERVER!");
-		}
-	}
+	
+	
 
 	public void setObjectDataReply() {
 		peer.objectDataReply(new ObjectDataReply() {
@@ -171,6 +129,7 @@ public class HolePTestApp {
 			System.out.println("You've entered the number " + command + ".");
 			switch (command) {
 			case 0: // end process
+				scan.close();
 				exit = true;
 				break;
 			case 3: // send Message to peer not behind a NAT

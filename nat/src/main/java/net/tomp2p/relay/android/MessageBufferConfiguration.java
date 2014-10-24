@@ -7,7 +7,7 @@ package net.tomp2p.relay.android;
  * @author Nico Rutishauser
  *
  */
-public class AndroidRelayConfiguration {
+public class MessageBufferConfiguration {
 
 	private int bufferCountLimit = 10;
 	private long bufferSizeLimit = Long.MAX_VALUE;
@@ -24,7 +24,7 @@ public class AndroidRelayConfiguration {
 	 * 
 	 * @param bufferCountLimit the maximal message count
 	 */
-	public AndroidRelayConfiguration bufferCountLimit(int bufferCountLimit) {
+	public MessageBufferConfiguration bufferCountLimit(int bufferCountLimit) {
 		this.bufferCountLimit = bufferCountLimit;
 		return this;
 	}
@@ -39,7 +39,7 @@ public class AndroidRelayConfiguration {
 	 * 
 	 * @param bufferSizeLimit the maximal buffer size in bytes
 	 */
-	public AndroidRelayConfiguration bufferSizeLimit(long bufferSizeLimit) {
+	public MessageBufferConfiguration bufferSizeLimit(long bufferSizeLimit) {
 		this.bufferSizeLimit = bufferSizeLimit;
 		return this;
 	}
@@ -54,7 +54,7 @@ public class AndroidRelayConfiguration {
 	 * 
 	 * @param bufferAgeLimit the maximum age of the content in the buffer in milliseconds
 	 */
-	public AndroidRelayConfiguration bufferAgeLimit(long bufferAgeLimit) {
+	public MessageBufferConfiguration bufferAgeLimit(long bufferAgeLimit) {
 		this.bufferAgeLimit = bufferAgeLimit;
 		return this;
 	}
@@ -68,7 +68,7 @@ public class AndroidRelayConfiguration {
 	 * 
 	 * @param gcmSendRetries the maximum number of attempts to try to reach the mobile device
 	 */
-	public AndroidRelayConfiguration gcmSendRetries(int gcmSendRetries) {
+	public MessageBufferConfiguration gcmSendRetries(int gcmSendRetries) {
 		this.gcmSendRetries = gcmSendRetries;
 		return this;
 	}

@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.BaseFuture;
@@ -23,8 +25,8 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.AndroidRelayConfiguration;
 import net.tomp2p.relay.android.GCMServerCredentials;
+import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,14 @@ public class ExampleRelaySituation {
 	private static final int QUERY_START_PORT = 6000;
 
 	/**
+	 * Relay buffer configuration
+	 */
+	private static final int MAX_MESSAGE_NUM = 10;
+	private static final long MAX_BUFFER_SIZE = Long.MAX_VALUE;
+	private static final long MAX_BUFFER_AGE = 10 * 1000;
+	private static final int GCM_SEND_RETIES = 5;
+	
+	/**
 	 * Unreachable peer configuration
 	 */
 	private static final int PEER_MAP_UPDATE_INTERVAL_S = 60;
@@ -112,6 +122,8 @@ public class ExampleRelaySituation {
 	private final List<PeerNAT> mobiles;
 	private final List<QueryNode> queries;
 
+	private final MessageBufferConfiguration bufferConfig;
+
 	public ExampleRelaySituation(int relayPeers, int mobilePeers, int queryPeers, String gcmKey, long gcmSenderId) {
 		this.gcmKey = gcmKey;
 		this.gcmSenderId = gcmSenderId;
@@ -123,6 +135,9 @@ public class ExampleRelaySituation {
 		this.relays = new ArrayList<PeerNAT>(relayPeers);
 		this.mobiles = new ArrayList<PeerNAT>(mobilePeers);
 		this.queries = new ArrayList<QueryNode>(queryPeers);
+		
+		bufferConfig = new MessageBufferConfiguration().bufferAgeLimit(MAX_BUFFER_AGE).bufferCountLimit(MAX_MESSAGE_NUM)
+				.bufferSizeLimit(MAX_BUFFER_SIZE).gcmSendRetries(GCM_SEND_RETIES);
 	}
 
 	public void setupPeers() throws IOException {
@@ -130,11 +145,10 @@ public class ExampleRelaySituation {
 		 * Init the relay peers first
 		 */
 		for (int i = 0; i < relayPeers; i++) {
-			Peer peer = new PeerBuilder(new Number160(RELAY_START_PORT + i)).ports(RELAY_START_PORT + i).start();
+			Peer peer = createPeer(RELAY_START_PORT + i);
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
-			PeerNAT peerNAT = new PeerBuilderNAT(peer).androidRelayConfiguration(
-					new AndroidRelayConfiguration().bufferAgeLimit(10 * 1000)).start();
+			PeerNAT peerNAT = new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
@@ -144,7 +158,7 @@ public class ExampleRelaySituation {
 		 * Then init the mobile peers
 		 */
 		for (int i = 0; i < mobilePeers; i++) {
-			Peer peer = new PeerBuilder(new Number160(MOBILE_START_PORT + i)).ports(MOBILE_START_PORT + i).start();
+			Peer peer = createPeer(MOBILE_START_PORT + i);
 			bootstrap(peer);
 
 			// start DHT capability
@@ -179,7 +193,7 @@ public class ExampleRelaySituation {
 		 * Finally init the query peers
 		 */
 		for (int i = 0; i < queryPeers; i++) {
-			Peer peer = new PeerBuilder(new Number160(QUERY_START_PORT + i)).ports(QUERY_START_PORT + i).start();
+			Peer peer = createPeer(QUERY_START_PORT + i);
 			bootstrap(peer);
 
 			PeerDHT peerDHT = new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("QUERY", false)).start();
@@ -188,6 +202,18 @@ public class ExampleRelaySituation {
 			queries.add(new QueryNode(peerDHT, MEDIUM_SLEEP_TIME_MS, MEDIUM_DATA_SIZE_BYTES));
 			LOG.debug("Query peer {} started", i);
 		}
+		
+	}
+
+	private Peer createPeer(int port) throws IOException {
+		ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+		csc.ports(new Ports(port, port));
+		csc.portsForwarding(new Ports(port, port));
+		csc.connectionTimeoutTCPMillis(10 * 1000);
+		csc.idleTCPSeconds(10);
+		csc.idleUDPSeconds(10);
+		
+		return new PeerBuilder(new Number160(port)).ports(port).channelServerConfiguration(csc).start();
 	}
 
 	private boolean bootstrap(Peer peer) throws UnknownHostException {

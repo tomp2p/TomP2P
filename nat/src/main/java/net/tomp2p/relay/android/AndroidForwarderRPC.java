@@ -35,7 +35,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
-	private final AndroidRelayConfiguration config;
+	private final MessageBufferConfiguration bufferConfig;
 	private final Sender sender;
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
@@ -43,10 +43,10 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private final List<ByteBuf> readyToSend;
 	private final AtomicLong lastUpdate;
 
-	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, AndroidRelayConfiguration config,
+	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
 			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
 		super(peer, unreachablePeer, RelayType.ANDROID);
-		this.config = config;
+		this.bufferConfig = bufferConfig;
 		this.registrationId = registrationId;
 
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
@@ -56,7 +56,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		sender = new Sender(authenticationToken);
 		readyToSend = Collections.synchronizedList(new ArrayList<ByteBuf>());
 
-		buffer = new MessageBuffer(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit());
+		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(), bufferConfig.bufferAgeLimit());
 		addMessageBufferListener(this);
 	}
 	
@@ -96,7 +96,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			public void run() {
 				try {
 					LOG.debug("Send GCM message to the device {}", registrationId);
-					Result result = sender.send(tickleMessage, registrationId, config.gcmSendRetries());
+					Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
 					if (result.getMessageId() == null) {
 						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
 						future.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());

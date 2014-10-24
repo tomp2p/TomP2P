@@ -13,7 +13,7 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayRPC;
 import net.tomp2p.relay.RelayType;
-import net.tomp2p.relay.android.AndroidRelayConfiguration;
+import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.GCMServerCredentials;
 
 public class PeerBuilderNAT {
@@ -28,7 +28,7 @@ public class PeerBuilderNAT {
 	private int peerMapUpdateInterval = -1;
 
 	private RelayType relayType = RelayType.OPENTCP;
-	private AndroidRelayConfiguration androidRelayConfig = new AndroidRelayConfiguration();
+	private MessageBufferConfiguration bufferConfig = new MessageBufferConfiguration();
 	private GCMServerCredentials gcmServerCredentials = new GCMServerCredentials();
 
 	public PeerBuilderNAT(Peer peer) {
@@ -108,18 +108,19 @@ public class PeerBuilderNAT {
 	/**
 	 * @return the android relay configuration.
 	 */
-	public AndroidRelayConfiguration androidRelayConfiguration() {
-		return androidRelayConfig;
+	public MessageBufferConfiguration bufferConfiguration() {
+		return bufferConfig;
 	}
 
 	/**
-	 * Set the android relay configuration. This needs to be set on relay nodes only, not on mobile peers.
+	 * Set the android relay buffer configuration. This needs to be set on relay nodes only, not on mobile peers.
+	 * It is only used with {@link RelayType#ANDROID}.
 	 * 
-	 * @param androidRelayConfig the configuration
+	 * @param bufferConfiguration the configuration
 	 * @return this instance
 	 */
-	public PeerBuilderNAT androidRelayConfiguration(AndroidRelayConfiguration androidRelayConfig) {
-		this.androidRelayConfig = androidRelayConfig;
+	public PeerBuilderNAT bufferConfiguration(MessageBufferConfiguration bufferConfiguration) {
+		this.bufferConfig = bufferConfiguration;
 		return this;
 	}
 
@@ -169,13 +170,13 @@ public class PeerBuilderNAT {
 	public PeerNAT start() {
 		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
 
-		if(androidRelayConfig == null) {
-			androidRelayConfig = new AndroidRelayConfiguration();
+		if(bufferConfig == null) {
+			bufferConfig = new MessageBufferConfiguration();
 		}
 		
 		final NATUtils natUtils = new NATUtils();
 		final RconRPC rconRPC = new RconRPC(peer);
-		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, androidRelayConfig, connectionConfiguration);
+		final RelayRPC relayRPC = new RelayRPC(peer, rconRPC, bufferConfig, connectionConfiguration);
 
 		if (failedRelayWaitTime == -1) {
 			failedRelayWaitTime = 60;

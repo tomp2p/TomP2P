@@ -208,7 +208,7 @@ public class RelayRPC extends DispatchHandler {
     /**
      * The unreachable peer received an envelope message with another message insice (piggypacked)
      */
-    private void handlePiggyBackedMessage(final Message message, final Responder responderToRelay) throws Exception {
+    private void handlePiggyBackedMessage(Message message, final Responder responderToRelay) throws Exception {
     	// TODO: check if we have right setup
         
         // this contains the real sender
@@ -226,11 +226,11 @@ public class RelayRPC extends DispatchHandler {
 
         LOG.debug("Received message from relay peer: {}", realMessage);
         
+        final Message envelope = createResponseMessage(message, Type.OK);
         final Responder responder = new Responder() {
         	//TODO: add reply leak handler
         	@Override
         	public void response(Message responseMessage) {
-        		Message envelope = createResponseMessage(message, Type.OK);
         		LOG.debug("Send reply message to relay peer: {}", responseMessage);
         		try {
         			if(responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {

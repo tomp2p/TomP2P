@@ -34,9 +34,12 @@ public class QueryNode {
 	private final List<Number160> validKeys;
 	private final RoutingConfiguration routingConfig;
 	private final RequestP2PConfiguration requestConfig;
-
 	private final PeerDHT peerDHT;
-
+	
+	private final DHTQueryStatistics putStats;
+	private final DHTQueryStatistics getStats;
+	private final DHTQueryStatistics rmvStats;
+	
 	public QueryNode(PeerDHT peerDHT, long avgSleepTime, int avgBytes) {
 		this.peerDHT = peerDHT;
 		this.avgSleepTime = avgSleepTime;
@@ -45,12 +48,15 @@ public class QueryNode {
 		this.validKeys = new ArrayList<Number160>();
 		this.routingConfig = new RoutingConfiguration(5, 1, 1);
 		this.requestConfig = new RequestP2PConfiguration(1, 1, 0);
+		this.putStats = new DHTQueryStatistics();
+		this.getStats = new DHTQueryStatistics();
+		this.rmvStats = new DHTQueryStatistics();
 	}
 
 	/**
 	 * Start put / get / remove random keys
 	 */
-	public void putGetRandom() throws IOException, ClassNotFoundException {
+	public void queryRandom() throws IOException, ClassNotFoundException {
 		sleep();
 		while (true) {
 			// put some data
@@ -71,13 +77,15 @@ public class QueryNode {
 				remove(validKeys.get(random.nextInt(validKeys.size())));
 				sleep();
 			}
+			
+			printStats();
 		}
 	}
 
 	/**
 	 * Start put / get / remove specific key
 	 */
-	public void putGetSpecific(Number640 key) throws IOException, ClassNotFoundException {
+	public void querySpecific(Number640 key) throws IOException, ClassNotFoundException {
 		sleep();
 		while (true) {
 			put(key);
@@ -88,7 +96,18 @@ public class QueryNode {
 
 			remove(key);
 			sleep();
+			
+			printStats();
 		}
+	}
+	
+	private void printStats() {
+		StringBuilder sb = new StringBuilder("*************************\n");
+		sb.append("Stats of peer ").append(peerDHT.peer().peerID()).append(": \n");
+		sb.append("PUT: ").append(putStats.getAverageTime()).append("ms | ").append(putStats.getSuccessRate()).append("\n");
+		sb.append("GET: ").append(getStats.getAverageTime()).append("ms | ").append(getStats.getSuccessRate()).append("\n");
+		sb.append("RMV: ").append(rmvStats.getAverageTime()).append("ms | ").append(rmvStats.getSuccessRate());
+		System.out.println(sb.toString());
 	}
 
 	private void put(Number160 key) {
@@ -98,9 +117,12 @@ public class QueryNode {
 
 	public boolean put(Number640 key) {
 		Data data = generateRandomData();
+		putStats.start();
 		FuturePut futurePut = peerDHT.put(key.locationKey()).domainKey(key.domainKey()).versionKey(key.versionKey())
-				.data(data, key.contentKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
+				.data(key.contentKey(), data).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
+		putStats.finished(futurePut.isSuccess());
+		
 		LOG.debug("Put of {} bytes is success = {}. Reason: {}", data.length(), futurePut.isSuccess(),
 				futurePut.failedReason());
 		return futurePut.isSuccess();
@@ -116,9 +138,11 @@ public class QueryNode {
 	}
 
 	public Data get(Number640 key) {
+		getStats.start();
 		FutureGet futureGet = peerDHT.get(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
 				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
+		getStats.finished(futureGet.isSuccess());
 		LOG.debug("Get is success {}. Reason: {}", futureGet.isSuccess(), futureGet.failedReason());
 
 		if (futureGet.data() != null) {
@@ -138,9 +162,11 @@ public class QueryNode {
 	}
 
 	public boolean remove(Number640 key) {
+		rmvStats.start();
 		FutureRemove remove = peerDHT.remove(key.locationKey()).contentKey(key.contentKey()).domainKey(key.domainKey())
 				.versionKey(key.versionKey()).routingConfiguration(routingConfig).requestP2PConfiguration(requestConfig)
 				.start().awaitUninterruptibly();
+		rmvStats.finished(remove.isSuccess());
 		LOG.debug("Remove is success {}. Reason: {}", remove.isSuccess(), remove.failedReason());
 
 		return remove.isSuccess();

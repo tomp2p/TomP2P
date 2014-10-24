@@ -134,7 +134,7 @@ public class ExampleRelaySituation {
 			// Note: Does not work if relay does not have a PeerDHT
 			new PeerBuilderDHT(peer).storageLayer(new LoggingStorageLayer("RELAY", false)).start();
 			PeerNAT peerNAT = new PeerBuilderNAT(peer).androidRelayConfiguration(
-					new AndroidRelayConfiguration().bufferAgeLimit(30 * 1000)).start();
+					new AndroidRelayConfiguration().bufferAgeLimit(10 * 1000)).start();
 
 			relays.add(peerNAT);
 			LOG.debug("Relay peer {} started", i);
@@ -214,7 +214,7 @@ public class ExampleRelaySituation {
 				@Override
 				public void run() {
 					try {
-						queryPeer.putGetSpecific(new Number640(getRandomUnreachable().peerId(), Number160.ZERO,
+						queryPeer.querySpecific(new Number640(getRandomUnreachable().peerId(), Number160.ZERO,
 								new Number160(new Random()), Number160.ZERO));
 					} catch (Exception e) {
 						LOG.error("Cannot put / get / remove", e);

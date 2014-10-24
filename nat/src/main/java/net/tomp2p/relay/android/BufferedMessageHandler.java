@@ -55,6 +55,8 @@ public class BufferedMessageHandler {
 				} catch (Exception e) {
 					// continue to process the buffers anyway
 					LOG.error("Cannot decode the buffer {}", bufferedMessage, e);
+				} finally {
+					bufferedMessage.buffer().release();
 				}
 			}
 
@@ -130,7 +132,7 @@ public class BufferedMessageHandler {
 		@Override
 		public void failed(Type type, String reason) {
 			LOG.warn("Handling of buffered messages resulted in an error: {}", reason);
-			response(dispatchHandler.createResponseMessage(bufferedMessage, Type.EXCEPTION));
+			response(dispatchHandler.createResponseMessage(bufferedMessage, type));
 		}
 
 		@Override

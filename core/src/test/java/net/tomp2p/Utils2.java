@@ -63,7 +63,24 @@ public class Utils2 {
                 "127.0.0.1", 8003, 8004, (byte) 0, Type.REQUEST_1, firewallUDP, firewallTCP);
     }
 
-    public static PeerAddress createAddress(Number160 id) throws UnknownHostException {
+    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSendor,
+	        int udpPortSender, Number160 idRecipien, String inetRecipient, int tcpPortRecipient,
+	        int udpPortRecipient, byte command, Type type, boolean firewallUDP, boolean firewallTCP)
+	        throws UnknownHostException {
+	    Message message = new Message();
+	    PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSendor, udpPortSender, firewallUDP,
+	            firewallTCP);
+	    message.sender(n1);
+	    //
+	    PeerAddress n2 = createAddress(idRecipien, inetRecipient, tcpPortRecipient, udpPortRecipient,
+	            firewallUDP, firewallTCP);
+	    message.recipient(n2);
+	    message.type(type);
+	    message.command(command);
+	    return message;
+	}
+
+	public static PeerAddress createAddress(Number160 id) throws UnknownHostException {
         return createAddress(id, "127.0.0.1", 8005, 8006, false, false);
     }
 
@@ -86,23 +103,6 @@ public class Utils2 {
         PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false,
                 PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
         return n1;
-    }
-
-    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSendor,
-            int udpPortSender, Number160 idRecipien, String inetRecipient, int tcpPortRecipient,
-            int udpPortRecipient, byte command, Type type, boolean firewallUDP, boolean firewallTCP)
-            throws UnknownHostException {
-        Message message = new Message();
-        PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSendor, udpPortSender, firewallUDP,
-                firewallTCP);
-        message.sender(n1);
-        //
-        PeerAddress n2 = createAddress(idRecipien, inetRecipient, tcpPortRecipient, udpPortRecipient,
-                firewallUDP, firewallTCP);
-        message.recipient(n2);
-        message.type(type);
-        message.command(command);
-        return message;
     }
 
     public static Peer[] createNodes(int nrOfPeers, Random rnd, int port) throws Exception {

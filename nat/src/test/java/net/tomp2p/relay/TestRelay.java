@@ -758,14 +758,14 @@ public class TestRelay {
 			UtilsNAT.perfectRouting(peers);
 			
 			// wait for relay setup
-			Thread.sleep(4000);
+			Thread.sleep(6000);
 			
 			mockGCM(peers, uNat1);
 			mockGCM(peers, uNat2);
 			UtilsNAT.perfectRouting(peers);
 
 			// wait for maintenance to kick in
-			Thread.sleep(4000);
+			Thread.sleep(6000);
 
 			printMapStatus(unreachablePeer1, peers);
 			printMapStatus(unreachablePeer2, peers);

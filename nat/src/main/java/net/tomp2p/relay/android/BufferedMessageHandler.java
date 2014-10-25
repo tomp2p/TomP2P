@@ -105,17 +105,16 @@ public class BufferedMessageHandler {
 		
 		@Override
 		public void response(final Message responseMessage) {
-			LOG.debug("Send late response {}", responseMessage);
-			
 			// piggyback the late response. It will be unwrapped by the dispatcher
 			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_5);
-			envelope.intValue(responseMessage.messageId());
 			try {
 				envelope.buffer(MessageUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 			} catch (Exception e) {
 				LOG.error("Cannot wrap the late response into an envelope", e);
+				return;
 			}
 			
+			LOG.debug("Sending late response {} in an envelope {}", responseMessage, envelope);
 			FutureResponse futureResponse = MessageUtils.connectAndSend(peer, envelope, connectionConfig);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override

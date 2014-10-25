@@ -8,8 +8,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.tomp2p.connection.ConnectionConfiguration;
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Responder;
+import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
@@ -79,7 +81,7 @@ public class RelayRPC extends DispatchHandler {
      */
     @Override
     public void handleResponse(final Message message, PeerConnection peerConnection, final boolean sign, Responder responder) throws Exception {
-        LOG.debug("received RPC message {}", message);
+        LOG.debug("Received RPC message {}", message);
         if (message.type() == Type.REQUEST_1 && message.command() == RPC.Commands.RELAY.getNr()) {
         	// The relay peer receives the setup message from the unreachable peer
         	if(message.intList().isEmpty()) {
@@ -106,8 +108,8 @@ public class RelayRPC extends DispatchHandler {
         	// An android unreachable peer requests the buffer
         	handleBufferRequest(message, responder);
         } else if(message.type() == Type.REQUEST_5 && message.command() == RPC.Commands.RELAY.getNr()) {
-        	// only the case when a unreachable peer makes a request to another slow, unreachable peer
-        	handleLateResponse(message, responder);
+        	// A late response
+        	handleLateResponse(message, peerConnection, sign, responder);
         } else {
             throw new IllegalArgumentException("Message content is wrong");
         }
@@ -116,6 +118,22 @@ public class RelayRPC extends DispatchHandler {
 	public Peer peer() {
         return this.peer;
     }
+	
+	/**
+	 * Convenience method
+	 * @return the signature factory
+	 */
+	private SignatureFactory signatureFactory() {
+		return connectionBean().channelServer().channelServerConfiguration().signatureFactory();
+	}
+	
+	/**
+	 * Convenience method
+	 * @return the dispatcher of this peer
+	 */
+	private Dispatcher dispatcher() {
+		return peer().connectionBean().dispatcher();
+	}
 	
 	/**
 	 * @return all unreachable peers currently connected to this relay node
@@ -192,12 +210,12 @@ public class RelayRPC extends DispatchHandler {
 				// We must register the rconRPC for every unreachable peer that
 				// we serve as a relay. Without this registration, no reverse
 				// connection setup is possible.
-				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), rconRPC, command.getNr());
+				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), rconRPC, command.getNr());
 			} else if (command == RPC.Commands.RELAY) {
-				// don't register the relay command
-				continue;
+				// Register this class to handle all relay messages (currently used when a slow message arrives)
+				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), this, command.getNr());
 			} else {
-				peer.connectionBean().dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), forwarder, command.getNr());
+				dispatcher().registerIoHandler(peer.peerID(), forwarder.unreachablePeerId(), forwarder, command.getNr());
 			}
 		}
 		
@@ -221,7 +239,7 @@ public class RelayRPC extends DispatchHandler {
         }
         
         Buffer requestBuffer = message.buffer(0);
-        Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer, message.recipientSocket(), sender, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+        Message realMessage = RelayUtils.decodeRelayedMessage(requestBuffer, message.recipientSocket(), sender, signatureFactory());
         realMessage.restoreContentReferences();
 
         LOG.debug("Received message from relay peer: {}", realMessage);
@@ -236,7 +254,7 @@ public class RelayRPC extends DispatchHandler {
         			if(responseMessage.sender().isRelayed() && !responseMessage.sender().peerSocketAddresses().isEmpty()) {
         				responseMessage.peerSocketAddresses(responseMessage.sender().peerSocketAddresses());
         			}
-        			envelope.buffer(MessageUtils.encodeMessage(responseMessage, connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+        			envelope.buffer(MessageUtils.encodeMessage(responseMessage, signatureFactory()));
                 } catch (Exception e) {
                 	LOG.error("Cannot piggyback the response", e);
                 	failed(Type.EXCEPTION, e.getMessage());
@@ -255,7 +273,7 @@ public class RelayRPC extends DispatchHandler {
             }
         };
         
-        DispatchHandler dispatchHandler = peer.connectionBean().dispatcher().associatedHandler(realMessage);
+        DispatchHandler dispatchHandler = dispatcher().associatedHandler(realMessage);
         if(dispatchHandler == null) {
         	responder.failed(Type.EXCEPTION, "handler not found, probably not relaying peer anymore");
         } else {
@@ -315,30 +333,53 @@ public class RelayRPC extends DispatchHandler {
 	}
     
 	/**
-	 * This peer did a request which was now finally answered by a slow peer. The message contains
-	 * (piggybacked) the response
-	 * 
-	 * @param message
+	 * There are two possibilites for this case:
+	 * <ol>
+	 * 	<li>This peer did a request which was now finally answered by a slow peer.</li>
+	 * 	<li>This is the relay peer of the requester which now receives the late response</li>
+	 * </ol>
+	 * @param message contains the (piggybacked) response
 	 * @param responder
+	 * @param peerConnection
+	 * @param sign
 	 */
-	private void handleLateResponse(Message message, Responder responder) {
+	private void handleLateResponse(Message message, PeerConnection peerConnection, boolean sign, Responder responder) {
+		if(!message.sender().isSlow() ||  message.bufferList().isEmpty()) {
+            throw new IllegalArgumentException("Late response does not come from slow peer or does not contain the buffered message");
+    	}
+		
+		Message realMessage = null;
 		try {
-			Message realResponse = RelayUtils.decodeRelayedMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), connectionBean()
-							.channelServer().channelServerConfiguration().signatureFactory());
-			
-			// search the cached requests for this response
-			FutureResponse pendingRequest = peer.connectionBean().dispatcher().getPendingRequest(realResponse.messageId());
-			if (pendingRequest == null) {
-				LOG.error("No pending request for this late response found");
-				responder.response(createResponseMessage(message, Type.NOT_FOUND));
-			} else {
-				LOG.debug("Successfully answered pending request {} with {}", pendingRequest.request(), realResponse);
-				pendingRequest.response(realResponse);
-				responder.response(createResponseMessage(message, Type.OK));
-			}
+			realMessage = RelayUtils.decodeRelayedMessage(message.buffer(0), message.recipientSocket(),
+					message.senderSocket(), signatureFactory());
 		} catch (Exception e) {
-			LOG.error("Cannot decode the late response");
+			LOG.error("Cannot decode the late response", e);
 			responder.response(createResponseMessage(message, Type.EXCEPTION));
 		}
+
+		LOG.debug("Received late response from slow peer: {}", realMessage);
+			// only the case when a unreachable peer makes a request to another slow, unreachable peer
+			Map<Integer, FutureResponse> pendingRequests = dispatcher().getPendingRequests();
+			FutureResponse pendingRequest = pendingRequests.remove(realMessage.messageId());
+			if (pendingRequest != null) {
+				// we waited for this response, answer it
+				pendingRequest.response(realMessage);
+
+				// send ok, not fire and forget - style
+				LOG.debug("Successfully answered pending request {} with {}", pendingRequest.request(), realMessage);
+				responder.response(createResponseMessage(message, Type.OK, message.recipient()));
+			} else {
+				// handle Relayed <--> Relayed.
+				// This could be a pending message for one of the relayed peers, not for this peer
+				BaseRelayForwarderRPC forwarder = forwarders.get(realMessage.recipient().peerId());
+				if (forwarder == null) {
+					LOG.error("Forwarder for the relayed peer not found. Cannot send late response {}", realMessage);
+					responder.response(createResponseMessage(message, Type.NOT_FOUND));
+				} else {
+					 // because buffer is re-encoded when forwarding it to unreachable
+					message.buffer(0).reset();
+					forwarder.forwardToUnreachable(message);
+				}
+			}
 	}
 }

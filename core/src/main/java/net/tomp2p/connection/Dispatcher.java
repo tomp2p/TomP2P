@@ -39,7 +39,6 @@ import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +61,6 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     private final int p2pID;
     private final PeerBean peerBeanMaster;
     private final int heartBeatMillis;
-    private final SignatureFactory signatureFactory;
 
     /** copy on write map. The key {@link Number320} can be devided into two parts: first {@link Number160} is the peerID that registers,
      * the second {@link Number160} the peerID for which the ioHandler is registered. For example a relay peer can register a handler
@@ -87,11 +85,10 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * @param peerBean
      *            .
      */
-    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis, SignatureFactory signatureFactory) {
+    public Dispatcher(final int p2pID, final PeerBean peerBeanMaster, final int heartBeatMillis) {
         this.p2pID = p2pID;
         this.peerBeanMaster = peerBeanMaster;
         this.heartBeatMillis = heartBeatMillis;
-		this.signatureFactory = signatureFactory;
     }
 
     /**
@@ -161,38 +158,8 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         	return;
         }
         
-        DispatchHandler myHandler = null;
-        if(message.sender().isSlow() && message.command() == Commands.RELAY.getNr() && message.type() == Type.REQUEST_5 && !message.intList().isEmpty() && !message.bufferList().isEmpty()) {
-        	// This is a late answer from a slow peer
-        	Message realMessage = MessageUtils.decodeMessage(message.buffer(0), message.recipientSocket(), message.senderSocket(), signatureFactory);
-        	LOG.debug("Received late response from slow peer: {}", realMessage);
-        	
-        	if(pendingRequests.containsKey(message.intAt(0))) {
-        		// we waited for this response, answer it
-        		FutureResponse futureResponse = pendingRequests.get(message.intAt(0));
-        		futureResponse.response(realMessage);
-
-        		// send ok, not fire and forget - style
-        		response(ctx, DispatchHandler.createResponseMessage(message, Type.OK, message.recipient()));
-        		return;
-        	} else {
-        		// handle relayed-relayed. This could be a pending message for one of the relayed peers, not for this peer
-        		LOG.debug("Forwarding late response to unreachable requester");
-        		Map<Number320, DispatchHandler> map = searchHandler(Integer.valueOf(realMessage.command()));
-    			for (Map.Entry<Number320, DispatchHandler> entry : map.entrySet()) {
-    				if (entry.getKey().domainKey().equals(realMessage.recipient().peerId())) {
-    					 myHandler = entry.getValue();
-    					 // because buffer is re-encoded when forwarding it to unreachable
-    					 message.buffer(0).reset();
-    					 break;
-    				}
-    			}
-        	}
-        } else {
-        	 myHandler = associatedHandler(message);
-        }
-
         Responder responder = new DirectResponder(ctx, message);
+        DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);
@@ -401,12 +368,9 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	}
 
 	/**
-	 * Finds a pending request or returns null
-	 * 
-	 * @param messageId the message id
-	 * @return the pending request or <code>null</code>
+	 * @return all pending requests
 	 */
-	public FutureResponse getPendingRequest(int messageId) {
-		return pendingRequests.get(messageId);
+	public Map<Integer, FutureResponse> getPendingRequests() {
+		return pendingRequests;
 	}
 }

@@ -19,9 +19,9 @@ package net.tomp2p.p2p.builder;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.connection.RequestHandler;
@@ -169,8 +169,8 @@ public class PingBuilder {
     //FutureLateJoin<FutureResponse> 
     private FuturePing pingBroadcast(final int port) {
     	final FuturePing futurePing = new FuturePing();
-        final Bindings bindings = peer.connectionBean().sender().channelClientConfiguration().bindingsOutgoing();
-        final int size = bindings.broadcastAddresses().size();
+        final DiscoverResults discoverResults = peer.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
+        final int size = discoverResults.existingBroadcastAddresses().size();
         final FutureLateJoin<FutureResponse> futureLateJoin = new FutureLateJoin<FutureResponse>(size, 1);
         if (size > 0) {
 
@@ -181,8 +181,7 @@ public class PingBuilder {
                 public void operationComplete(FutureChannelCreator future) throws Exception {
                     if (future.isSuccess()) {
                         addPingListener(futurePing, futureLateJoin);
-                        for (int i = 0; i < size; i++) {
-                            final InetAddress broadcastAddress = bindings.broadcastAddresses().get(i);
+                        for (InetAddress broadcastAddress: discoverResults.existingBroadcastAddresses()) {
                             final PeerAddress peerAddress = new PeerAddress(Number160.ZERO, broadcastAddress,
                                     port, port);
                             FutureResponse validBroadcast = peer.pingRPC().pingBroadcastUDP(

@@ -13,6 +13,7 @@ import java.util.TreeSet;
 import net.tomp2p.Utils2;
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelCreator;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.futures.BaseFuture;
 import net.tomp2p.futures.FutureChannelCreator;
 import net.tomp2p.futures.FutureDone;
@@ -695,6 +696,11 @@ public class TestRouting {
             master = new PeerBuilder(new Number160(rnd)).ports(4000).start();
             client = new PeerBuilder(new Number160(rnd)).ports(4001).start();
 
+            DiscoverResults dr = master.connectionBean().channelServer().discoverNetworks().currentDiscoverResults();
+            if(dr.existingBroadcastAddresses().size() == 0) {
+            	System.err.println("this test does not work if none of your interfaces supports broadcast");
+            }
+            
             BaseFuture tmp = client.ping().broadcast().port(4000).start();
             tmp.awaitUninterruptibly();
             System.err.println(tmp.failedReason());
@@ -717,8 +723,8 @@ public class TestRouting {
         Peer client = null;
         try {
         	Bindings b = new Bindings().addInterface("lo");
-        	master = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4002).start();
-            client = new PeerBuilder(new Number160(rnd)).externalBindings(b).ports(4001).start();
+        	master = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4002).start();
+            client = new PeerBuilder(new Number160(rnd)).bindings(b).ports(4001).start();
             BaseFuture tmp = client.ping().broadcast().port(4001).start();
             tmp.awaitUninterruptibly();
             Assert.assertEquals(false, tmp.isSuccess());

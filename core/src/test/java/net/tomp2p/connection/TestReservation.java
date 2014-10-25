@@ -73,15 +73,18 @@ public class TestReservation {
 	public void createSink() throws IOException {
 		Bindings bindings = new Bindings().addAddress(InetAddress.getByName("127.0.0.1"));
 		ChannelServerConficuration c = new ChannelServerConficuration();
-		c.bindingsIncoming(bindings);
+		c.bindings(bindings);
 		c.ports(new Ports(PORT, PORT));
 		c.pipelineFilter(new MyPipeLine());
 		final EventLoopGroup bossGroup = new NioEventLoopGroup(0,
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
     	workerGroup = new NioEventLoopGroup(0,
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
-		cs = new ChannelServer(bossGroup, workerGroup, c, null, null);
-		cs.startup();
+		cs = new ChannelServer(bossGroup, workerGroup, c, null, null, null);
+		
+		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConficuration());
+		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConficuration());
+		
 	}
 
 	/**

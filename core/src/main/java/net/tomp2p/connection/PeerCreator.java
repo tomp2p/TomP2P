@@ -100,11 +100,7 @@ public class PeerCreator {
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
 		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
 		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,
-		        dispatcher, peerBean.peerStatusListeners());
-		if(!channelServer.startup()) {
-			shutdownNetty();
-			throw new IOException("Cannot bind to TCP or UDP port.");
-		}
+		        dispatcher, peerBean.peerStatusListeners(), timer);
 		
 		//connection bean
 		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher);
@@ -231,11 +227,14 @@ public class PeerCreator {
 	private static PeerAddress findPeerAddress(final Number160 peerId,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ChannelServerConficuration channelServerConficuration) throws IOException {
-		final String status = DiscoverNetworks.discoverInterfaces(channelClientConfiguration.bindingsOutgoing());
+		final DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(
+				channelClientConfiguration.bindings());
+		final String status = discoverResults.status();
 		if (LOG.isInfoEnabled()) {
 			LOG.info("Status of external search: " + status);
 		}
-		InetAddress outsideAddress = channelClientConfiguration.bindingsOutgoing().foundAddress();
+		//this is just a guess and will be changed once discovery is done
+		InetAddress outsideAddress = discoverResults.foundAddress();
 		if(outsideAddress == null) {
 			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 		}

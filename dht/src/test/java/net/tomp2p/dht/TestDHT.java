@@ -1322,8 +1322,8 @@ public class TestDHT {
 		try {
 			// setup (step 1)
 			Bindings b = new Bindings().addInterface("lo");
-			p1 = new PeerBuilder(new Number160(rnd)).ports(4001).externalBindings(b).start();
-			p2 = new PeerBuilder(new Number160(rnd)).ports(4002).externalBindings(b).start();
+			p1 = new PeerBuilder(new Number160(rnd)).ports(4001).bindings(b).start();
+			p2 = new PeerBuilder(new Number160(rnd)).ports(4002).bindings(b).start();
 			FutureBootstrap fb = p2.bootstrap().peerAddress(p1.peerAddress()).start();
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(true, fb.isSuccess());

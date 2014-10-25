@@ -35,7 +35,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     private PipelineFilter pipelineFilter = null;
 
     //interface bindings
-    private Bindings bindingsIncoming = null;
+    private Bindings bindings = null;
 
     private SignatureFactory signatureFactory = null;
 
@@ -230,13 +230,13 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
         return this;
     }
 
-    public ChannelServerConficuration bindingsIncoming(Bindings bindingsIncoming) {
-        this.bindingsIncoming = bindingsIncoming;
+    public ChannelServerConficuration bindings(Bindings bindings) {
+        this.bindings = bindings;
         return this;
     }
     
-    public Bindings bindingsIncoming() {
-        return bindingsIncoming;
+    public Bindings bindings() {
+        return bindings;
     }
     
     

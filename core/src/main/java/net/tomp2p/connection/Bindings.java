@@ -15,11 +15,7 @@
  */
 package net.tomp2p.connection;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,74 +38,7 @@ public class Bindings {
     private final List<String> interfaceHints = new ArrayList<String>(1);
     private final List<StandardProtocolFamily> protocolHint = new ArrayList<StandardProtocolFamily>(1);
 
-    // here are the found address stored. This is not set by the user
-    private final List<InetAddress> foundBroadcastAddresses = new ArrayList<InetAddress>(1);
-    // here are the found address stored. This is not set by the user
-    private final List<Inet4Address> foundAddresses4 = new ArrayList<Inet4Address>(1);
-    // here are the found address stored. This is not set by the user
-    private final List<Inet6Address> foundAddresses6 = new ArrayList<Inet6Address>(1);
-
-    /**
-     * Adds an address that we want to listen to. If the address is not found,
-     * it will be ignored
-     * 
-     * @param address
-     *            The current class
-     * @return The bindings (this)
-     */
-    Bindings addFoundAddress(final InetAddress address) {
-        if (address == null) {
-            throw new IllegalArgumentException("Cannot add null");
-        }
-        if (address instanceof Inet4Address) {
-            foundAddresses4.add((Inet4Address) address);
-        } else if (address instanceof Inet6Address) {
-            foundAddresses6.add((Inet6Address) address);
-        } else {
-            throw new IllegalArgumentException("Unknown address family " + address.getClass());
-        }
-        return this;
-    }
     
-    boolean containsAddress(final InetAddress address) {
-        boolean contains = foundAddresses4.contains(address);
-        if(contains) {
-            return true;
-        } else {
-            return foundAddresses6.contains(address);
-        }
-    }
-
-    /**
-     * Returns a list of InetAddresses to listen to. First Inet4Addresses, then
-     * Inet6Addresses are present in the list. This returns the matching
-     * addresses from DiscoverNetworks.
-     * 
-     * @return A list of InetAddresses to listen to
-     */
-    public List<InetAddress> foundAddresses() {
-        // first return ipv4, then ipv6
-        final List<InetAddress> listenAddresses2 = new ArrayList<InetAddress>(foundAddresses4.size() + foundAddresses6.size());
-        listenAddresses2.addAll(foundAddresses4);
-        listenAddresses2.addAll(foundAddresses6);
-        return listenAddresses2;
-    }
-    
-    public InetAddress foundAddress() {
-    	List<InetAddress> addresses = foundAddresses();
-    	if(addresses.isEmpty()) {
-    		return null;
-    	}
-	    return addresses.get(0);
-    }
-    
-    /**
-     * @return A list of broadcast addresses.
-     */
-    public List<InetAddress> broadcastAddresses() {
-        return foundBroadcastAddresses;
-    }
-
     /**
      * Adds an address that we want to listen to. If the address is not found,
      * it will be ignored
@@ -175,9 +104,6 @@ public class Bindings {
     public void clear() {
         interfaceHints.clear();
         addresses.clear();
-        foundAddresses4.clear();
-        foundAddresses6.clear();
-        foundBroadcastAddresses.clear();
     }
 
     /**
@@ -231,35 +157,5 @@ public class Bindings {
      */
     public boolean containsInterface(final String name) {
         return interfaceHints.contains(name);
-    }
-
-    /**
-     * Adds the results from an other binding. This is useful because you can
-     * add within one Bindings hints only with "and", with add() you have the
-     * option "or" as well. E.g., Bindings b1 = new Bindings(IPv4, eth0);
-     * Bindings b2 = new Bindings(IPv6, eth1); b2.add(b1) -> this will bind to
-     * all IPv4 addresses on eth0 and all IPv6 addresses on eth1
-     * 
-     * @param other
-     *            The other instance to get the results from
-     * @return The same instance
-     */
-    public Bindings add(final Bindings other) {
-        this.foundAddresses4.addAll(other.foundAddresses4);
-        this.foundAddresses6.addAll(other.foundAddresses6);
-        this.foundBroadcastAddresses.addAll(other.foundBroadcastAddresses);
-        return this;
-    }
-
-    public SocketAddress wildCardSocket() {
-        if(!isListenAll()) {
-            if(foundAddresses4.size()>0) {
-                return new InetSocketAddress(foundAddresses4.get(0), 0);
-            }
-            if(foundAddresses6.size()>0) {
-                return new InetSocketAddress(foundAddresses6.get(0), 0);
-            }
-        }
-        return new InetSocketAddress(0);
     }
 }

@@ -24,6 +24,7 @@ import net.tomp2p.connection.ChannelCreator;
 import net.tomp2p.connection.ConnectionConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.connection.DiscoverNetworks;
+import net.tomp2p.connection.DiscoverResults;
 import net.tomp2p.connection.Ports;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -232,10 +233,12 @@ public class DiscoverBuilder {
                             // check if we have this interface in that we can
                             // listen to
                             Bindings bindings2 = new Bindings().addAddress(seenAs.inetAddress());
-                            String status = DiscoverNetworks.discoverInterfaces(bindings2);
+                          
+                            DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(bindings2);
+                            String status = discoverResults.status();
                             LOG.info("2nd interface discovery: {}", status);
-                            if (bindings2.foundAddresses().size() > 0
-                                    && bindings2.foundAddresses().contains(seenAs.inetAddress())) {
+                            if (discoverResults.newAddresses().size() > 0
+                                    && discoverResults.newAddresses().contains(seenAs.inetAddress())) {
                                 serverAddress = serverAddress.changeAddress(seenAs.inetAddress());
                                 peer.peerBean().serverPeerAddress(serverAddress);
                                 LOG.info("we were having the wrong interface, change it to: {}", serverAddress);

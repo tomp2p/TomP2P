@@ -503,6 +503,7 @@ public class TestRelay {
 					break;
 				}
 			}
+			Assert.assertNotNull(found);
 
 			// wait for at least one map update task (5s)
 			Thread.sleep(5000);
@@ -611,8 +612,12 @@ public class TestRelay {
 			System.err.println("DONE!");
 
 		} finally {
-			master.shutdown().await();
-			unreachablePeer.shutdown().await();
+			if(master != null) {
+				master.shutdown().await();
+			}
+			if(unreachablePeer != null) {
+				unreachablePeer.shutdown().await();
+			}
 		}
 	}
 
@@ -723,8 +728,12 @@ public class TestRelay {
 			System.err.println("DONE!");
 
 		} finally {
-			master.shutdown().await();
-			unreachablePeer.shutdown().await();
+			if(master != null) {
+				master.shutdown().await();
+			}
+			if(unreachablePeer != null) {
+				unreachablePeer.shutdown().await();
+			}
 		}
 	}
 
@@ -798,9 +807,15 @@ public class TestRelay {
 			System.err.println("DONE!");
 
 		} finally {
-			master.shutdown().await();
-			unreachablePeer1.shutdown().await();
-			unreachablePeer2.shutdown().await();
+			if(master != null) {
+				master.shutdown().await();
+			}
+			if(unreachablePeer1 != null) {
+				unreachablePeer1.shutdown().await();
+			}
+			if(unreachablePeer2 != null) {
+				unreachablePeer2.shutdown().await();
+			}
 		}
 	}
 
@@ -877,9 +892,15 @@ public class TestRelay {
              System.err.println("DONE!");
              
          } finally {
-             master.shutdown().await();
-             unreachablePeer1.shutdown().await();
-             unreachablePeer2.shutdown().await();
+        	 if(master != null) {
+ 				master.shutdown().await();
+ 			}
+ 			if(unreachablePeer1 != null) {
+ 				unreachablePeer1.shutdown().await();
+ 			}
+ 			if(unreachablePeer2 != null) {
+ 				unreachablePeer2.shutdown().await();
+ 			}
          }
     }
 	
@@ -914,6 +935,10 @@ public class TestRelay {
 	}
 
 	private Collection<PeerAddress> getNeighbors(Peer peer) {
+		if(peer == null) {
+			return Collections.emptyList();
+		}
+		
 		Map<Number320, DispatchHandler> handlers = peer.connectionBean().dispatcher().searchHandler(5);
 		for (Map.Entry<Number320, DispatchHandler> entry : handlers.entrySet()) {
 			if (entry.getValue() instanceof BaseRelayForwarderRPC) {

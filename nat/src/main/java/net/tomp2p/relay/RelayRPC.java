@@ -354,8 +354,9 @@ public class RelayRPC extends DispatchHandler {
 		} catch (Exception e) {
 			LOG.error("Cannot decode the late response", e);
 			responder.response(createResponseMessage(message, Type.EXCEPTION));
+			return;
 		}
-
+		
 		LOG.debug("Received late response from slow peer: {}", realMessage);
 			// only the case when a unreachable peer makes a request to another slow, unreachable peer
 			Map<Integer, FutureResponse> pendingRequests = dispatcher().getPendingRequests();

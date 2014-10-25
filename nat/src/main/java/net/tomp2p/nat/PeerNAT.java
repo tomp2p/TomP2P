@@ -470,15 +470,15 @@ public class PeerNAT {
 	 * @param timeoutSeconds
 	 */
 	private void checkRconPreconditions(final PeerAddress relayPeerAddress, final PeerAddress unreachablePeerAddress) {
+		if (relayPeerAddress == null || unreachablePeerAddress == null) {
+			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
+		}
+		
 		// If we are already a relay of the unreachable peer, we shouldn't use a
 		// reverse connection setup. It just doesn't make sense!
 		if (peer.peerAddress().peerId().equals(relayPeerAddress.peerId())) {
 			throw new IllegalStateException(
 					"We are alredy a relay for the target peer. We shouldn't use a reverse connection to connect to the targeted peer!");
-		}
-
-		if (relayPeerAddress == null || unreachablePeerAddress == null) {
-			throw new IllegalArgumentException("either the relay PeerAddress or the unreachablePeerAddress or both was/were null!");
 		}
 	}
 }

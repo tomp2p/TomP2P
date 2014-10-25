@@ -5,6 +5,7 @@ import io.netty.buffer.Unpooled;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DataBuffer {
@@ -185,7 +186,7 @@ public class DataBuffer {
 
 	@Override
 	public int hashCode() {
-		return toByteBuffer().hashCode();
+		return Arrays.hashCode(toByteBuffer());
 	}
 
 	@Override

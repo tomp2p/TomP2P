@@ -44,6 +44,12 @@ public class RSASignatureCodec implements SignatureCodec{
 	    return 128;
     }
 	
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(encodedData);
+	}
+	
 	@Override
 	public boolean equals(Object obj) {
 		if (!(obj instanceof RSASignatureCodec)) {

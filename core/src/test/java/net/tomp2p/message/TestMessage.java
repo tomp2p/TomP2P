@@ -485,10 +485,10 @@ public class TestMessage {
         Message m1 = Utils2.createDummyMessage();
         Collection<PeerAddress> tmp = new ArrayList<PeerAddress>();
         tmp.add(pa3);
-        m1.neighborsSet(new NeighborSet(10, tmp));
+        m1.neighborsSet(new NeighborSet(100, tmp));
         
         Message m2 = encodeDecode(m1);
-		Assert.assertEquals(tmp, m2.peerSocketAddresses());
+		Assert.assertEquals(tmp, m2.neighborsSetList().get(0).neighbors());
 		compareMessage(m1, m2);
 		
 	}

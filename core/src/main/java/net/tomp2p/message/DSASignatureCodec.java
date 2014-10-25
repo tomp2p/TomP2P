@@ -132,6 +132,11 @@ public class DSASignatureCodec implements SignatureCodec {
 	}
 
 	@Override
+	public int hashCode() {
+		return number1.hashCode() ^ number2.hashCode();
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		if (!(obj instanceof DSASignatureCodec)) {
 			return false;

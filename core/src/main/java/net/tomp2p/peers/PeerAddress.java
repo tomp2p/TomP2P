@@ -293,7 +293,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             this.relayType = new BitSet(relaySize);
         }
         int index = 0;
-        for(PeerSocketAddress psa : peerSocketAddresses) {
+        for(PeerSocketAddress psa : this.peerSocketAddresses) {
             boolean isIPV6 = psa.inetAddress() instanceof Inet6Address;
             this.relayType.set(index, isIPV6);
             size += psa.size();

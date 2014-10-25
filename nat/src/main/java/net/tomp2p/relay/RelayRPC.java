@@ -189,12 +189,11 @@ public class RelayRPC extends DispatchHandler {
 	        return;
 		}
 		
-		int mapUpdateInterval = RelayType.ANDROID.defaultMapUpdateInterval();
-		if(message.intAt(1) == null) {
-			LOG.warn("Android device did not send the peer map update interval. Take default of {}s", mapUpdateInterval);
-		} else {
-			mapUpdateInterval = message.intAt(1);
-			LOG.debug("Android device sent map update interval of {}s", mapUpdateInterval);
+		Integer mapUpdateInterval = message.intAt(1);
+		if(mapUpdateInterval == null) {
+			LOG.error("Android device did not send the peer map update interval.");
+			responder.response(createResponseMessage(message, Type.DENIED));
+	        return;
 		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);

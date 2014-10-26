@@ -63,7 +63,7 @@ public class TestDotNetInterop {
 	public void testDecodeInt() throws Exception {
 		
 		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[from.length()];
+		byte[] fileContent = new byte[13 * 4];
 		try {
 			fis.read(fileContent);
 		}
@@ -73,16 +73,37 @@ public class TestDotNetInterop {
 		
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
-		int minVal = buf.readInt();
-		int zero = buf.readInt();
-		int maxVal = buf.readInt();
+		int val1 = buf.readInt();
+		int val2 = buf.readInt();
+		int val3 = buf.readInt();
+		int val4 = buf.readInt();
+		int val5 = buf.readInt();
+		int val6 = buf.readInt();
+		int val7 = buf.readInt();
+		int val8 = buf.readInt();
+		int val9 = buf.readInt();
+		int val10 = buf.readInt();
+		int val11 = buf.readInt();
+		int val12 = buf.readInt();
+		int val13 = buf.readInt();
 		
-		Assert.assertTrue(minVal == Integer.MIN_VALUE);
-		Assert.assertTrue(zero == 0);
-		Assert.assertTrue(maxVal == Integer.MAX_VALUE);
+		Assert.assertTrue(val1 == Integer.MIN_VALUE);
+		Assert.assertTrue(val2 == -256);
+		Assert.assertTrue(val3 == -255);
+		Assert.assertTrue(val4 == -128);
+		Assert.assertTrue(val5 == -127);
+		Assert.assertTrue(val6 == -1);
+		Assert.assertTrue(val7 == 0);
+		Assert.assertTrue(val8 == 1);
+		Assert.assertTrue(val9 == 127);
+		Assert.assertTrue(val10 == 128);
+		Assert.assertTrue(val11 == 255);
+		Assert.assertTrue(val12 == 256);
+		Assert.assertTrue(val13 == Integer.MAX_VALUE);
 		
 	}
 	
+	@Ignore
 	@Test
 	public void testEncodeLong() throws Exception {
 		
@@ -113,13 +134,13 @@ public class TestDotNetInterop {
 			fos.close();
 		}
 	}
-	
+
 	@Ignore
 	@Test
 	public void testDecodeLong() throws Exception {
 		
 		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[from.length()];
+		byte[] fileContent = new byte[13 * 8];
 		try {
 			fis.read(fileContent);
 		}
@@ -129,13 +150,33 @@ public class TestDotNetInterop {
 		
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
-		long minVal = buf.readLong();
-		long zero = buf.readLong();
-		long maxVal = buf.readLong();
+		long val1 = buf.readLong();
+		long val2 = buf.readLong();
+		long val3 = buf.readLong();
+		long val4 = buf.readLong();
+		long val5 = buf.readLong();
+		long val6 = buf.readLong();
+		long val7 = buf.readLong();
+		long val8 = buf.readLong();
+		long val9 = buf.readLong();
+		long val10 = buf.readLong();
+		long val11 = buf.readLong();
+		long val12 = buf.readLong();
+		long val13 = buf.readLong();
 		
-		Assert.assertTrue(minVal == Long.MIN_VALUE);
-		Assert.assertTrue(zero == 0);
-		Assert.assertTrue(maxVal == Long.MAX_VALUE);
+		Assert.assertTrue(val1 == Long.MIN_VALUE);
+		Assert.assertTrue(val2 == (long)-256);
+		Assert.assertTrue(val3 == (long)-255);
+		Assert.assertTrue(val4 == (long)-128);
+		Assert.assertTrue(val5 == (long)-127);
+		Assert.assertTrue(val6 == (long)-1);
+		Assert.assertTrue(val7 == (long)0);
+		Assert.assertTrue(val8 == (long)1);
+		Assert.assertTrue(val9 == (long)127);
+		Assert.assertTrue(val10 == (long)128);
+		Assert.assertTrue(val11 == (long)255);
+		Assert.assertTrue(val12 == (long)256);
+		Assert.assertTrue(val13 == Long.MAX_VALUE);
 	}
 	
 	@Ignore

@@ -31,10 +31,21 @@ public class TestDotNetInterop {
 	public void testEncodeInt()throws Exception {
 
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
-		buf.writeInt(Integer.MIN_VALUE); //-2147483648
-		buf.writeInt(0);
-		buf.writeInt(Integer.MAX_VALUE); // 2147483647
 
+		buf.writeInt(Integer.MIN_VALUE);	//-2147483648
+		buf.writeInt(-256);
+		buf.writeInt(-255);
+		buf.writeInt(-128);
+		buf.writeInt(-127);
+		buf.writeInt(-1);
+		buf.writeInt(0);
+		buf.writeInt(1);
+		buf.writeInt(127);
+		buf.writeInt(128);
+		buf.writeInt(255);
+		buf.writeInt(256);
+		buf.writeInt(Integer.MAX_VALUE);	// 2147483647
+		
 		byte[] bytes = buf.array();
 		
 		File file = new File(to);
@@ -72,16 +83,25 @@ public class TestDotNetInterop {
 		
 	}
 	
-	@Ignore
 	@Test
 	public void testEncodeLong() throws Exception {
 		
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		ByteBuf buf = Unpooled.buffer();
 		
-		buf.writeLong(Long.MIN_VALUE); //-923372036854775808
+		buf.writeLong(Long.MIN_VALUE);	//-923372036854775808
+		buf.writeLong(-256);
+		buf.writeLong(-255);
+		buf.writeLong(-128);
+		buf.writeLong(-127);
+		buf.writeLong(-1);
 		buf.writeLong(0);
-		buf.writeLong(Long.MAX_VALUE); // 923372036854775807
-
+		buf.writeLong(1);
+		buf.writeLong(127);
+		buf.writeLong(128);
+		buf.writeLong(255);
+		buf.writeLong(256);
+		buf.writeLong(Long.MAX_VALUE);	// 923372036854775807
+		
 		byte[] bytes = buf.array();
 		
 		File file = new File(to);

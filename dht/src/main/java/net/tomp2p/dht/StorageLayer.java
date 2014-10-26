@@ -148,12 +148,12 @@ public class StorageLayer implements DigestStorage {
 	public Enum<?> put(final Number640 key, Data newData, PublicKey publicKey, boolean putIfAbsent,
 	        boolean domainProtection) {
 		boolean retVal = false;
-		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationDomainAndContentKey());
+		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationAndDomainAndContentKey());
 		try {
 			if (!securityDomainCheck(key.locationAndDomainKey(), publicKey, publicKey, domainProtection)) {
 				return PutStatus.FAILED_SECURITY;
 			}
-			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
 			        newData.isProtectedEntry())) {
 				return PutStatus.FAILED_SECURITY;
 			}
@@ -197,7 +197,7 @@ public class StorageLayer implements DigestStorage {
 			if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
 				return new Pair<Data, Enum<?>>(null, PutStatus.FAILED_SECURITY);
 			}
-			if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
+			if (!canClaimEntry(key.locationAndDomainAndContentKey(), publicKey)) {
 				return new Pair<Data, Enum<?>>(null, PutStatus.FAILED_SECURITY);
 			}
 			if (!backend.contains(key)) {
@@ -241,7 +241,7 @@ public class StorageLayer implements DigestStorage {
 	}
 
 	public Map<Number640, Data> getLatestVersion(Number640 key) {
-		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationDomainAndContentKey());
+		KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(key.locationAndDomainAndContentKey());
 		try {
 			NavigableMap<Number640, Data> tmp = backend.subMap(key.minVersionKey(), key.maxVersionKey(), -1, true);
 			removePrepared(tmp);
@@ -287,7 +287,7 @@ public class StorageLayer implements DigestStorage {
 		}
 		// remove all predecessor versions recursively
 		for (Number160 basedOnKey : version.basedOnSet()) {
-			deletePredecessors(new Number640(key.locationDomainAndContentKey(), basedOnKey), sortedMap);
+			deletePredecessors(new Number640(key.locationAndDomainAndContentKey(), basedOnKey), sortedMap);
 		}
 	}
 
@@ -364,7 +364,7 @@ public class StorageLayer implements DigestStorage {
 			return lock;
 		} else if (!from.versionKey().equals(to.versionKey())) {
 			// location, domain, and content key are the same, rest is different
-			KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationDomainAndContentKey());
+			KeyLock<Number480>.RefCounterLock lock = dataLock480.lock(from.locationAndDomainAndContentKey());
 			return lock;
 		} else {
 			KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(from);
@@ -383,7 +383,7 @@ public class StorageLayer implements DigestStorage {
 				if (!canClaimDomain(key.locationAndDomainKey(), publicKey)) {
 					return null;
 				}
-				if (!canClaimEntry(key.locationDomainAndContentKey(), publicKey)) {
+				if (!canClaimEntry(key.locationAndDomainAndContentKey(), publicKey)) {
 					return null;
 				}
 			}
@@ -736,7 +736,7 @@ public class StorageLayer implements DigestStorage {
 		boolean found = false;
 		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
 		try {
-			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
 			        newData.isProtectedEntry())) {
 				return PutStatus.FAILED_SECURITY;
 			}
@@ -776,7 +776,7 @@ public class StorageLayer implements DigestStorage {
 		boolean found = false;
 		KeyLock<Number640>.RefCounterLock lock = dataLock640.lock(key);
 		try {
-			if (!securityEntryCheck(key.locationDomainAndContentKey(), publicKey, newData.publicKey(),
+			if (!securityEntryCheck(key.locationAndDomainAndContentKey(), publicKey, newData.publicKey(),
 					newData.isProtectedEntry())) {
 				return PutStatus.FAILED_SECURITY;
 			}

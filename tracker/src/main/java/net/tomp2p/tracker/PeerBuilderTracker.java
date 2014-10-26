@@ -15,7 +15,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 import net.tomp2p.utils.Utils;
 
@@ -163,7 +163,7 @@ public class PeerBuilderTracker {
 
 		@Override
 		public boolean put(Number320 key, TrackerData trackerData, PeerAddress referrer) {
-			for (Map.Entry<PeerStatatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
+			for (Map.Entry<PeerStatistic, Data> entry : trackerData.peerAddresses().entrySet()) {
 				trackerStorage.put(key, entry.getKey().peerAddress(), null, entry.getValue());
 			}
 			return false;
@@ -180,15 +180,15 @@ public class PeerBuilderTracker {
 			if (trackerData == null) {
 				return null;
 			}
-			Collection<PeerStatatistic> peerStatatistics = trackerData.peerAddresses().keySet();
+			Collection<PeerStatistic> peerStatatistics = trackerData.peerAddresses().keySet();
 			if (peerStatatistics == null || peerStatatistics.size() == 0) {
 				return null;
 			}
-			peerStatatistics.remove(new PeerStatatistic(self));
+			peerStatatistics.remove(new PeerStatistic(self));
 			if (peerStatatistics.size() == 0) {
 				return null;
 			}
-			PeerStatatistic peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
+			PeerStatistic peerStatatistic = Utils.pollRandom(peerStatatistics, rnd);
 			return new TrackerTriple().key(key).data(trackerData).remotePeer(peerStatatistic.peerAddress());
 		}
 

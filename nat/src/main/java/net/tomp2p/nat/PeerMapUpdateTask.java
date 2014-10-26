@@ -14,7 +14,7 @@ import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.relay.DistributedRelay;
 import net.tomp2p.relay.FutureRelay;
 import net.tomp2p.relay.RelayRPC;
@@ -70,7 +70,7 @@ class PeerMapUpdateTask extends TimerTask {
 		fb.addListener(new BaseFutureAdapter<FutureBootstrap>() {
 			public void operationComplete(FutureBootstrap future) throws Exception {
 				if (future.isSuccess()) {
-					List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap()
+					List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap()
 					        .peerMapVerified();
 					final Collection<PeerConnection> relays;
 					synchronized (distributedRelay.relayAddresses()) {

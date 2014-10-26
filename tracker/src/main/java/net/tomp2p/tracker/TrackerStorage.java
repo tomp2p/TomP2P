@@ -16,7 +16,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DigestInfo;
 import net.tomp2p.storage.Data;
@@ -92,12 +92,12 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		} else {
 			dataMapToStore = dataMap;
 		}
-		return add(key, new PeerStatatistic(peerAddress), dataMapToStore, attachement);
+		return add(key, new PeerStatistic(peerAddress), dataMapToStore, attachement);
 	}
 
 	private Data findOld(Number320 key, PeerAddress peerAddress, Map<Number320, TrackerData> dataMap) {
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
-			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+			for (Map.Entry<PeerStatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (entry2.getKey().peerAddress().equals(peerAddress)) {
 					return entry2.getValue();
 				}
@@ -116,9 +116,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	}
 
 	@Override
-	public PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
+	public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
 		for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
-			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+			for (Map.Entry<PeerStatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (DefaultMaintenance.needMaintenance(entry2.getKey(), intervalSeconds)) {
 					return entry2.getKey();
 				}
@@ -143,7 +143,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	}
 
 	@Override
-	public void peerRemoved(PeerAddress remotePeer, PeerStatatistic storedPeerAddress) {
+	public void peerRemoved(PeerAddress remotePeer, PeerStatistic storedPeerAddress) {
 		// if a responsible peer is removed, and I see myself as a responsible, 
 		// I should push my content to a random responsible
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
@@ -160,7 +160,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	}
 
 	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
+	public void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
 		// nothing to do
 	}
 
@@ -171,10 +171,10 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		return tmp.headSet(peerAddress).size() < replicationFactor;
 	}
 
-	private boolean add(Number320 key, PeerStatatistic stat, Map<Number320, TrackerData> map, Data attachement) {
+	private boolean add(Number320 key, PeerStatistic stat, Map<Number320, TrackerData> map, Data attachement) {
 		TrackerData trackerData = map.get(key);
 		if (trackerData == null) {
-			trackerData = new TrackerData(new ConcurrentCacheMap<PeerStatatistic, Data>(trackerTimoutSeconds,
+			trackerData = new TrackerData(new ConcurrentCacheMap<PeerStatistic, Data>(trackerTimoutSeconds,
 			        TRACKER_CACHE_SIZE, true));
 			map.put(key, trackerData);
 		}
@@ -186,7 +186,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		}
 	}
 
-	private boolean remove(Number320 key, PeerStatatistic stat, Map<Number320, TrackerData> map) {
+	private boolean remove(Number320 key, PeerStatistic stat, Map<Number320, TrackerData> map) {
 		TrackerData trackerData = map.get(key);
 		if (trackerData != null) {
 			boolean retVal = trackerData.remove(stat.peerAddress().peerId()) != null;
@@ -210,9 +210,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 	public boolean peerFailed(PeerAddress remotePeer, PeerException reason) {
 		peerOffline.put(remotePeer.peerId(), Boolean.TRUE);
 		Number320 keyToRemove = null;
-		PeerStatatistic statToRemove = null;
+		PeerStatistic statToRemove = null;
 		for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
-			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+			for (Map.Entry<PeerStatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (entry2.getKey().peerAddress().equals(remotePeer)) {
 					keyToRemove = entry.getKey();
 					statToRemove = entry2.getKey();
@@ -224,7 +224,7 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		}
 		//
 		for (Map.Entry<Number320, TrackerData> entry : dataMap.entrySet()) {
-			for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+			for (Map.Entry<PeerStatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 				if (entry2.getKey().peerAddress().equals(remotePeer)) {
 					keyToRemove = entry.getKey();
 					statToRemove = entry2.getKey();
@@ -243,9 +243,9 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		if (firsthand) {
 			peerOffline.remove(remotePeer.peerId());
 			Number320 keyToRemove = null;
-			PeerStatatistic statToRemove = null;
+			PeerStatistic statToRemove = null;
 			for (Map.Entry<Number320, TrackerData> entry : dataMapUnverified.entrySet()) {
-				for (Map.Entry<PeerStatatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
+				for (Map.Entry<PeerStatistic, Data> entry2 : entry.getValue().peerAddresses().entrySet()) {
 					PeerAddress tmp = entry2.getKey().peerAddress(); 
 					if (tmp.equals(remotePeer)) {
 						if (add(entry.getKey(), entry2.getKey(), dataMap, entry2.getValue())) {
@@ -281,12 +281,12 @@ public class TrackerStorage implements Maintainable, PeerMapChangeListener, Peer
 		TrackerData trackerData = dataMap.get(new Number320(locationKey, domainKey));
 		if(trackerData!=null) {
 			if(contentKey!=null) {
-				Map.Entry<PeerStatatistic, Data> entry = trackerData.get(contentKey);
+				Map.Entry<PeerStatistic, Data> entry = trackerData.get(contentKey);
 				if(entry!=null) {
 					return new DigestInfo(Number160.ZERO, contentKey, 1);
 				}
 			} else {
-				for(PeerStatatistic peerStatatistic: trackerData.peerAddresses().keySet()) {
+				for(PeerStatistic peerStatatistic: trackerData.peerAddresses().keySet()) {
 					contentDigest = contentDigest.xor(peerStatatistic.peerAddress().peerId());
 					counter++;
 				}

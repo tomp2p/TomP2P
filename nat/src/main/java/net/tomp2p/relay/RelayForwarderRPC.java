@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
+import net.tomp2p.connection.Dispatcher;
 import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.Responder;
@@ -25,7 +26,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
@@ -49,7 +50,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 
 	// connection to unreachable peer
 	private final PeerConnection peerConnection;
-	private List<Map<Number160, PeerStatatistic>> peerMap = null;
+	private List<Map<Number160, PeerStatistic>> peerMap = null;
 	private volatile PeerAddress unreachablePeer;
 	private final RelayRPC relayRPC;
 
@@ -238,18 +239,18 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
     }
 	
 	public Collection<PeerAddress> all() {
-		Collection<PeerStatatistic> result1 = new ArrayList<PeerStatatistic>();
-		for(Map<Number160, PeerStatatistic> map:peerMap) {
+		Collection<PeerStatistic> result1 = new ArrayList<PeerStatistic>();
+		for(Map<Number160, PeerStatistic> map:peerMap) {
 			result1.addAll(map.values());
 		}
 		Collection<PeerAddress> result2 = new ArrayList<PeerAddress>();
-	    for(PeerStatatistic peerStatatistic:result1) {
+	    for(PeerStatistic peerStatatistic:result1) {
 	    	result2.add(peerStatatistic.peerAddress());
 	    }
 	    return result2;
     }
 
-	public void setMap(List<Map<Number160, PeerStatatistic>> peerMap) {
+	public void setMap(List<Map<Number160, PeerStatistic>> peerMap) {
 	    this.peerMap = peerMap;
     }
 

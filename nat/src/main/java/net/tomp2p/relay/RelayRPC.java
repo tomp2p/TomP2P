@@ -23,7 +23,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 
@@ -75,7 +75,7 @@ public class RelayRPC extends DispatchHandler {
      * @param fcc
      * @return
      */
-    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatatistic>> map, final PeerConnection peerConnection) {
+    public FutureResponse sendPeerMap(PeerAddress peerAddress, List<Map<Number160, PeerStatistic>> map, final PeerConnection peerConnection) {
         final Message message = createMessage(peerAddress, RPC.Commands.RELAY.getNr(), Type.REQUEST_3);
         message.keepAlive(true);
         // TODO: neighbor size limit is 256, we might have more here

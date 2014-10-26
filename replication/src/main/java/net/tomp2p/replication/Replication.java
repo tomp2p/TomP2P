@@ -33,7 +33,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -422,7 +422,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     }
 
     @Override
-    public void peerRemoved(final PeerAddress peerAddress, final PeerStatatistic peerStatatistic) {
+    public void peerRemoved(final PeerAddress peerAddress, final PeerStatistic peerStatatistic) {
         if (!isReplication()) {
             return;
         }
@@ -498,7 +498,7 @@ public class Replication implements PeerMapChangeListener, ReplicationListener {
     }
 
     @Override
-    public void peerUpdated(final PeerAddress peerAddress, final PeerStatatistic peerStatatistic) {
+    public void peerUpdated(final PeerAddress peerAddress, final PeerStatistic peerStatatistic) {
         // do nothing
     }
 

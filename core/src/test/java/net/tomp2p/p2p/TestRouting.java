@@ -28,6 +28,7 @@ import net.tomp2p.utils.Pair;
 import net.tomp2p.utils.Utils;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -554,6 +555,7 @@ public class TestRouting {
         }
     }
 
+    @Ignore
     @Test
     public void testRoutingConcurrently() throws Exception {
         for (int i = 0; i < 3; i++) {

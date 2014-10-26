@@ -167,8 +167,8 @@ public final class DiscoverNetworks {
 				DiscoverResults discoverResults = discoverNetwork(networkInterface, existingAddressesOld, 
 						existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6());
 				sb.append(discoverResults.status()).append(",");
-				existingAddresses.addAll(discoverResults.existingAddresses());
-				existingBroadcastAddresses.addAll(discoverResults.existingBroadcastAddresses());
+				addIfNotPresent(existingAddresses, discoverResults.existingAddresses());
+				addIfNotPresent(existingBroadcastAddresses, discoverResults.existingBroadcastAddresses());
 				
 			} else {
 				if (bindings.containsInterface(networkInterface.getName())) {
@@ -176,8 +176,8 @@ public final class DiscoverNetworks {
 					DiscoverResults discoverResults = discoverNetwork(networkInterface, existingAddressesOld, 
 							existingBroadcastAddressesOld, bindings.isIPv4(), bindings.isIPv6()); 
 					sb.append(discoverResults.status()).append(",");
-					existingAddresses.addAll(discoverResults.existingAddresses());
-					existingBroadcastAddresses.addAll(discoverResults.existingBroadcastAddresses());
+					addIfNotPresent(existingAddresses, discoverResults.existingAddresses());
+					addIfNotPresent(existingBroadcastAddresses, discoverResults.existingBroadcastAddresses());
 				} else {
 					sb.append(" -").append(networkInterface.getName()).append(",");
 				}
@@ -220,6 +220,15 @@ public final class DiscoverNetworks {
 		return discoverResults;
 	}
 
+	private static void addIfNotPresent(Collection<InetAddress> existingAddresses,
+            Collection<InetAddress> existingAddresses2) {
+		for(InetAddress inet:existingAddresses2) {
+			if(!existingAddresses.contains(inet)) {
+				existingAddresses.add(inet);
+			}
+		}
+    }
+
 	/**
 	 * Discovers network interfaces and addresses.
 	 * 
@@ -250,15 +259,21 @@ public final class DiscoverNetworks {
 			}
 			InetAddress inet = iface.getAddress();
 			if (iface.getBroadcast() != null) {
-				foundBroadcastAddresses2.add(iface.getBroadcast());
+				if(!foundBroadcastAddresses2.contains(iface.getBroadcast())) {
+					foundBroadcastAddresses2.add(iface.getBroadcast());
+				}
 			}
 
 			if (inet instanceof Inet4Address && isIPv4) {
 				sb.append(inet).append(",");
-				foundAddresses2.add(inet);
+				if(!foundAddresses2.contains(inet)) {
+					foundAddresses2.add(inet);
+				}
 			} else if (inet instanceof Inet6Address && isIPv6) {
 				sb.append(inet).append(",");
-				foundAddresses2.add(inet);
+				if(!foundAddresses2.contains(inet)) {
+					foundAddresses2.add(inet);
+				}
 			}
 		}
 		sb.deleteCharAt(sb.length() - 1);

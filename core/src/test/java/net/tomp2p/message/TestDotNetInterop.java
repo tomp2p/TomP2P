@@ -181,14 +181,46 @@ public class TestDotNetInterop {
 	
 	@Ignore
 	@Test
-	public void testEncodeByte() {
+	public void testEncodeByte() throws Exception {
 		
+		ByteBuf buf = Unpooled.buffer();
+		
+		for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) // -128 ... 127
+		{
+			buf.writeByte(i);			
+		}
+		
+		byte[] bytes = buf.array();
+		
+		File file = new File(to);
+		FileOutputStream fos = new FileOutputStream(file);
+		try {
+			fos.write(bytes);
+		}
+		finally {
+			fos.close();
+		}
 	}
 	
-	@Ignore
 	@Test
-	public void testDecodeByte() {
+	public void testDecodeByte() throws Exception {
 		
+		FileInputStream fis = new FileInputStream(from);
+		byte[] fileContent = new byte[256];
+		try {
+			fis.read(fileContent);
+		}
+		finally {
+			fis.close();
+		}
+		
+		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
+		
+		for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) // -128 ... 127
+		{
+			byte b = buf.readByte();
+			Assert.assertTrue(i == b);
+		}
 	}
 	
 	@Ignore

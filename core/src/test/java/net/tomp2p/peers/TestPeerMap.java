@@ -480,7 +480,7 @@ public class TestPeerMap {
         
         peerMap.peerFound(pa2, pa1, null);
         List<PeerAddress> notInterested = new ArrayList<PeerAddress>();
-        PeerStatatistic peerStatatistic = peerMap.nextForMaintenance(notInterested);
+        PeerStatistic peerStatatistic = peerMap.nextForMaintenance(notInterested);
         notInterested.add(peerStatatistic.peerAddress());
         Assert.assertEquals(peerStatatistic.peerAddress(), pa2);
         peerStatatistic = peerMap.nextForMaintenance(notInterested);

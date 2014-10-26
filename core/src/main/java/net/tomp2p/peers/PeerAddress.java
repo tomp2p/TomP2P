@@ -37,7 +37,7 @@ import net.tomp2p.utils.Utils;
  * <pre>
  * 20 bytes - Number160
  * 2 bytes - Header 
- *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP
+ *  - 1 byte options: IPv6, firewalled UDP, firewalled TCP, is relayed
  *  - 1 byte relays:
  *    - first 3 bits: number of relays (max 5.)
  *    - second 5 bits: if the 5 relays are IPv6 (bit set) or not (no bit set)
@@ -63,18 +63,18 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private static final int FIREWALL_UDP = 2;
     private static final int FIREWALL_TCP = 4;
     // indicates that a relay is used.
-    private static final int IS_RELAYED = 8;
+    private static final int RELAYED = 8;
 
     // network information
     private final Number160 peerId;
     //TODO: this may be used as a sixth relay peer
     private final PeerSocketAddress peerSocketAddress;
 
-    // connection info
+    // connection information
     private final boolean net6;
     private final boolean firewalledUDP;
     private final boolean firewalledTCP;
-    private final boolean isRelayed;
+    private final boolean relayed;
 
     // we can make the hash final as it never changes, and this class is used
     // multiple times in maps. A new peer is always added to the peermap, so
@@ -107,7 +107,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     
 
     /**
-     * Creates a new peeraddress, where the byte array has to be in the rigth format and in the right size. The new
+     * Creates a peer address, where the byte array has to be in the rigth format and in the right size. The new
      * offset can be accessed with offset().
      * 
      * @param me
@@ -134,7 +134,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = (options & NET6) > 0;
         this.firewalledUDP = (options & FIREWALL_UDP) > 0;
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
-        this.isRelayed = (options & IS_RELAYED) > 0;
+        this.relayed = (options & RELAYED) > 0;
         final int relays = me[offset++] & Utils.MASK_FF;
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -187,7 +187,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = (options & NET6) > 0;
         this.firewalledUDP = (options & FIREWALL_UDP) > 0;
         this.firewalledTCP = (options & FIREWALL_TCP) > 0;
-        this.isRelayed = (options & IS_RELAYED) > 0;
+        this.relayed = (options & RELAYED) > 0;
         final int relays = channelBuffer.readUnsignedByte();
         // first: three bits are the size 1,2,4
         // 000 means no relays
@@ -258,7 +258,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @param firewalledTCP
      *            Indicates if peer is not reachable via TCP
      * @param isRelay
-     *            Indicates if peer used as a relay
+     *            Indicates if peer is used as a relay
      * @param peerSocketAddresses
      *            the relay peers
      */
@@ -272,7 +272,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         this.net6 = peerSocketAddress.inetAddress() instanceof Inet6Address;
         this.firewalledUDP = firewalledUDP;
         this.firewalledTCP = firewalledTCP;
-        this.isRelayed = isRelayed;
+        this.relayed = isRelayed;
         // header + TCP port + UDP port
         size += HEADER_SIZE + PORTS_SIZE + (net6 ? Utils.IPV6_BYTES : Utils.IPV4_BYTES);
         if (peerSocketAddresses == null) {
@@ -282,7 +282,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         } else {
             relaySize = peerSocketAddresses.size();
             if (relaySize > TYPE_BIT_SIZE) {
-                throw new IllegalArgumentException("Can only store up to 5 relay peers. Tried to store: " + relaySize);
+                throw new IllegalArgumentException(String.format("Can only store up to %s relay peers. Tried to store %s relay peers.", TYPE_BIT_SIZE , relaySize));
             }
             this.peerSocketAddresses = peerSocketAddresses;
             this.relayType = new BitSet(relaySize);
@@ -412,7 +412,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         me[newOffset++] = relays();
         newOffset = peerId.toByteArray(me, newOffset);
 
-        // we store both the address of the peer and the relays. Currently this is not needed, as we don't consider
+        // we store both the addresses of the peer and the relays. Currently this is not needed, as we don't consider
         // asymmetric relays. But in future we may.
         newOffset = peerSocketAddress.toByteArray(me, newOffset);
 
@@ -437,16 +437,16 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Returns the socket address.
+     * Creates and returns the socket address using the TCP port.
      * 
-     * @return The socket address how to reach this peer
+     * @return The socket address how to reach this peer.
      */
     public InetSocketAddress createSocketTCP() {
         return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.tcpPort());
     }
 
     /**
-     * Returns the socket address.
+     * Creates and returns the socket address using the UDP port.
      * 
      * @return The socket address how to reach this peer
      */
@@ -477,14 +477,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         if (firewalledTCP) {
             result |= FIREWALL_TCP;
         }
-        if (isRelayed) {
-            result |= IS_RELAYED;
+        if (relayed) {
+            result |= RELAYED;
         }
         return result;
     }
 
     /**
-     * @return The encoded relays. There are maximum 5 relays
+     * @return The encoded relays. There are maximal 5 relays.
      */
     public byte relays() {
         if (relaySize > 0) {
@@ -492,9 +492,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             byte types = Utils.createByte(relayType);
             result |= (byte) (types & MASK_1F);
             return result;
-        } else {
-            return 0;
         }
+        return 0;
     }
 
     @Override
@@ -502,7 +501,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         StringBuilder sb = new StringBuilder("paddr[");
         return sb.append(peerId.toString()).append(peerSocketAddress.toString())
         		.append("]/relay(")
-        		.append(isRelayed)
+        		.append(relayed)
         		.append(",")
         		.append(peerSocketAddresses.size())
         		.append(")=")
@@ -512,7 +511,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     @Override
     public int compareTo(final PeerAddress nodeAddress) {
-        // the id determines if two peer are equal, the address does not matter
+        // the id determines if two peers are equal, the address does not matter
         return peerId.compareTo(nodeAddress.peerId);
     }
 
@@ -525,7 +524,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             return true;
         }
         PeerAddress pa = (PeerAddress) obj;
-        return peerId.equals((pa).peerId);
+        return peerId.equals(pa.peerId);
     }
 
     @Override
@@ -535,14 +534,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * @return TCP port
+     * @return UDP port
      */
     public int udpPort() {
         return peerSocketAddress.udpPort();
     }
 
     /**
-     * @return UDP port
+     * @return TCP port
      */
     public int tcpPort() {
         return peerSocketAddress.tcpPort();
@@ -580,14 +579,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return If this peer address is used as a relay
      */
     public boolean isRelayed() {
-        return isRelayed;
+        return relayed;
     }
     
     /**
      * Create a new PeerAddress and change the relayed status.
 
      * @param isRelayed 
-     *           the new status
+     *           the new relay status
      * @return The newly created peer address
      */
     public PeerAddress changeRelayed(final boolean isRelayed) {
@@ -596,26 +595,26 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Create a new PeerAddress and change the firewallUDP status.
+     * Create a new PeerAddress and change the firewall UDP status.
      * 
      * @param firewalledUDP
      *            the new status
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledUDP(final boolean firewalledUDP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed,
                 peerSocketAddresses);
     }
 
     /**
-     * Create a new PeerAddress and change the firewalledTCP status.
+     * Create a new PeerAddress and change the firewall TCP status.
      * 
      * @param firewalledTCP
      *            the new status
      * @return The newly created peer address
      */
     public PeerAddress changeFirewalledTCP(final boolean firewalledTCP) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed,
                 peerSocketAddresses);
     }
 
@@ -630,7 +629,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changePorts(final int tcpPort, final int udpPort) {
         return new PeerAddress(peerId, new PeerSocketAddress(peerSocketAddress.inetAddress(), tcpPort,
-                udpPort), firewalledTCP, firewalledUDP, isRelayed, peerSocketAddresses);
+                udpPort), firewalledTCP, firewalledUDP, relayed, peerSocketAddresses);
     }
 
     /**
@@ -642,7 +641,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress changeAddress(final InetAddress inetAddress) {
         return new PeerAddress(peerId, new PeerSocketAddress(inetAddress, peerSocketAddress.tcpPort(),
-                peerSocketAddress.udpPort()), firewalledTCP, firewalledUDP, isRelayed, peerSocketAddresses);
+                peerSocketAddress.udpPort()), firewalledTCP, firewalledUDP, relayed, peerSocketAddresses);
     }
 
     /**
@@ -653,17 +652,17 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return The newly created peer address
      */
     public PeerAddress changePeerId(final Number160 peerId) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed,
                 peerSocketAddresses);
     }
     
     public PeerAddress changePeerSocketAddresses(Collection<PeerSocketAddress> peerSocketAddresses) {
-        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+        return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed,
                 peerSocketAddresses);
     }
     
     public PeerAddress changePeerSocketAddress(PeerSocketAddress peerSocketAddress) {
-    	return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, isRelayed,
+    	return new PeerAddress(peerId, peerSocketAddress, firewalledTCP, firewalledUDP, relayed,
                 peerSocketAddresses);
     }
 
@@ -715,14 +714,14 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @return True if it is used as a relay
      */
     private static boolean isRelay(final int options) {
-        return ((options & Utils.MASK_FF) & IS_RELAYED) > 0;
+        return ((options & Utils.MASK_FF) & RELAYED) > 0;
     }
 
     /**
      * Calculates the size based on the two header bytes.
      * 
      * @param header
-     *            The header is in the lower 16 bits
+     *            The header in the lower 16 bits of this integer.
      * @return the expected size of the peer address
      */
     public static int size(final int header) {
@@ -737,7 +736,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @param options
      *            The option tells us if the inet address is IPv4 or IPv6
      * @param relays
-     *            The relays tells us how many relays we have and what type it is
+     *            The relays tells us how many relays we have and of what type they are.
      * @return returns the expected size of the peer address
      */
     public static int size(final int options, final int relays) {

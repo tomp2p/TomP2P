@@ -14,7 +14,7 @@ import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.peers.Maintainable;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class MaintenanceTask implements Runnable {
                 return;
             }
             for (Maintainable maintainable : maintainables) {
-                PeerStatatistic peerStatatistic = maintainable.nextForMaintenance(runningFutures.values());
+                PeerStatistic peerStatatistic = maintainable.nextForMaintenance(runningFutures.values());
                 if(peerStatatistic == null) {
                     continue;
                 }

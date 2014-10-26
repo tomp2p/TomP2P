@@ -48,7 +48,6 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
 
     private final CountDownLatch listenersFinished = new CountDownLatch(1);
 
-    // CHECKSTYLE:OFF
     protected final Object lock;
 
     // set the ready flag if operation completed
@@ -59,7 +58,6 @@ public abstract class BaseFutureImpl<K extends BaseFuture> implements BaseFuture
     protected FutureType type = FutureType.INIT;
 
     protected String reason = "unknown";
-    // CHECKSTYLE:ON
 
     private K self;
 

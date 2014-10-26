@@ -60,9 +60,7 @@ public final class MessageHeaderCodec {
      * @return The buffer passed as an argument
      */
     public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
-        // CHECKSTYLE:OFF
         final int versionAndType = message.version() << 4 | (message.type().ordinal() & 0xf);
-        // CHECKSTYLE:ON
         buffer.writeInt(versionAndType); // 4
         buffer.writeInt(message.messageId()); // 8
         buffer.writeByte(message.command()); // 9
@@ -71,9 +69,7 @@ public final class MessageHeaderCodec {
         buffer.writeShort((short) message.sender().udpPort()); // 33
         buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
         buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
-        // CHECKSTYLE:OFF
         buffer.writeByte((message.sender().options() << 4) | message.options()); // 58
-        // CHECKSTYLE:ON
         return buffer;
     }
 
@@ -97,10 +93,8 @@ public final class MessageHeaderCodec {
         LOG.debug("Decode message, recipient={}, sender={}", recipient, sender);
         final Message message = new Message();
         final int versionAndType = buffer.readInt();
-        // CHECKSTYLE:OFF
         message.version(versionAndType >>> 4);
         message.type(Type.values()[(versionAndType & 0xf)]);
-        // CHECKSTYLE:ON
         message.messageId(buffer.readInt());
         final int command = buffer.readUnsignedByte();
         message.command((byte) command);
@@ -115,10 +109,8 @@ public final class MessageHeaderCodec {
         // set the address as we see it, important for port forwarding
         // identification
         final int options = buffer.readUnsignedByte();
-        // CHECKSTYLE:OFF
         message.options(options & 0xf);
         final int senderOptions = options >>> 4;
-        // CHECKSTYLE:ON
         final PeerAddress peerAddress = new PeerAddress(senderID, sender.getAddress(), portTCP, portUDP,
                 senderOptions);
         message.sender(peerAddress);
@@ -151,14 +143,10 @@ public final class MessageHeaderCodec {
         int result = 0;
         for (int i = 0; i < Message.CONTENT_TYPE_LENGTH / 2; i++) {
             if (contentTypes[i * 2] != null) {
-                // CHECKSTYLE:OFF
                 result |= (contentTypes[i * 2].ordinal() << (i * 8));
-                // CHECKSTYLE:ON
             }
             if (contentTypes[(i * 2) + 1] != null) {
-                // CHECKSTYLE:OFF
                 result |= ((contentTypes[(i * 2) + 1].ordinal() << 4) << (i * 8));
-                // CHECKSTYLE:ON
             }
         }
         return result;
@@ -172,7 +160,6 @@ public final class MessageHeaderCodec {
      * @param message 
      * @return The decoded content types
      */
-    // CHECKSTYLE:OFF
     public static Content[] decodeContentTypes(int contentTypes, Message message) {
         Content[] result = new Content[Message.CONTENT_TYPE_LENGTH];
         for (int i = 0; i < Message.CONTENT_TYPE_LENGTH; i++) {
@@ -182,7 +169,6 @@ public final class MessageHeaderCodec {
                 message.setHintSign();
             }
             contentTypes >>>= 4;
-            // CHECKSTYLE:ON
         }
         return result;
     }

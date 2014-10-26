@@ -39,7 +39,7 @@ public interface PeerMapChangeListener {
      * @param storedPeerAddress
      *            Contains information statistical information
      */
-    void peerRemoved(PeerAddress peerAddress, PeerStatatistic storedPeerAddress);
+    void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress);
 
     /**
      * This method is called if a peer is updated.
@@ -49,5 +49,5 @@ public interface PeerMapChangeListener {
      * @param storedPeerAddress
      *            Contains information statistical information
      */
-    void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress);
+    void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress);
 }

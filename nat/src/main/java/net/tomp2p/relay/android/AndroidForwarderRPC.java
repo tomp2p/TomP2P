@@ -3,9 +3,6 @@ package net.tomp2p.relay.android;
 import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.futures.FutureDone;
@@ -40,10 +37,9 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
 	private final MessageBuffer buffer;
-	private final List<Message> readyToSend;
 	private final AtomicLong lastUpdate;
 
-	// holds the current request. When completed, the android device requested the buffered messages
+	// holds the current request. When completed, the android device collected the buffered messages
 	private FutureDone<Void> pendingRequest;
 
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
@@ -57,7 +53,6 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 
 		sender = new Sender(authenticationToken);
-		readyToSend = Collections.synchronizedList(new ArrayList<Message>());
 
 		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
 				bufferConfig.bufferAgeLimit());
@@ -117,16 +112,12 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 				}
 			}
 		}, "Send-GCM-Tickle-Message").start();
-		
+
 		// TODO watch the pending request and if it takes too long, answer all buffered messages with an error
 	}
 
 	@Override
-	public void bufferFull(List<Message> messageBuffer) {
-		synchronized (readyToSend) {
-			readyToSend.addAll(messageBuffer);
-		}
-		
+	public void bufferFull() {
 		if (pendingRequest == null || pendingRequest.isCompleted()) {
 			// no current pending request or the last one is finished
 			pendingRequest = new FutureDone<Void>();
@@ -143,20 +134,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * @return the buffer containing all buffered messages
 	 */
 	public Buffer collectBufferedMessages() {
-		if(pendingRequest != null) {
+		// the mobile device seems to be alive
+		lastUpdate.set(System.currentTimeMillis());
+
+		if (pendingRequest != null) {
 			// finish the pending request
 			pendingRequest.done();
 		}
-		
-		ByteBuf buffer;
-		synchronized (readyToSend) {
-			buffer = RelayUtils.composeMessageBuffer(readyToSend, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-			readyToSend.clear();
-		}
 
-		// the mobile device seems to be alive
-		lastUpdate.set(System.currentTimeMillis());
-		return new Buffer(buffer);
+		ByteBuf byteBuffer = RelayUtils.composeMessageBuffer(buffer.collectBuffer(), connectionBean().channelServer()
+				.channelServerConfiguration().signatureFactory());
+		return new Buffer(byteBuffer);
 	}
 
 	@Override

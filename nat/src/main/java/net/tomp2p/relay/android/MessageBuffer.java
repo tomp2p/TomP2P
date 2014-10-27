@@ -21,6 +21,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Buffers messages for the unreachable peers. This class is thread-safe.
+ * If the buffer is full, the {@link MessageBufferListener}s are triggered. In the mean time, another list
+ * holds the previously buffered messages, until the buffer is collected.
  * 
  * @author Nico Rutishauser
  *
@@ -38,6 +40,7 @@ public class MessageBuffer {
 	private final List<MessageBufferListener> listeners;
 
 	private final List<Message> buffer;
+	private final List<Message> collectedBuffer;
 
 	private BufferAgeRunnable task;
 
@@ -47,6 +50,7 @@ public class MessageBuffer {
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
 		this.listeners = new ArrayList<MessageBufferListener>();
 		this.buffer = Collections.synchronizedList(new ArrayList<Message>());
+		this.collectedBuffer = Collections.synchronizedList(new ArrayList<Message>());
 		this.bufferSize = new AtomicLong();
 	}
 
@@ -98,7 +102,7 @@ public class MessageBuffer {
 				// cancel such that it does not notify the listener twice
 				task.cancel();
 			}
-			notifyAndClear();
+			notifyAndCollect();
 		}
 	}
 
@@ -107,22 +111,50 @@ public class MessageBuffer {
 	 * allowed buffer size or the maximally allowed age of the first buffer entry. Otherwise
 	 * <code>false</code>.
 	 */
-	private void notifyAndClear() {
-		List<Message> copy;
+	private void notifyAndCollect() {
+		collect();
+		
+		// notify the listeners with a copy of the buffer and the segmentation indices
+		for (MessageBufferListener listener : listeners) {
+			listener.bufferFull();
+		}
+	}
+	
+	/**
+	 * Moves all currently buffered messages in the collected buffer
+	 */
+	private void collect() {
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				LOG.warn("Buffer is empty. Listener won't be notified.");
 				return;
 			}
-			copy = new ArrayList<Message>(buffer);
+			
+			synchronized (collectedBuffer) {
+				collectedBuffer.addAll(buffer);
+			}
 			buffer.clear();
 			bufferSize.set(0);
 		}
+	}
 
-		// notify the listeners with a copy of the buffer and the segmentation indices
-		for (MessageBufferListener listener : listeners) {
-			listener.bufferFull(copy);
+	/**
+	 * Returns all buffered messages since the last time {@link #collectBuffer()} was called. The buffer is
+	 * cleared.
+	 * 
+	 * @return all buffered messages
+	 */
+	public List<Message> collectBuffer() {
+		// probably new messages have been buffered in the meantime
+		collect();
+		
+		List<Message> copy;
+		synchronized (collectedBuffer) {
+			copy = new ArrayList<Message>(collectedBuffer);
+			collectedBuffer.clear();
 		}
+		
+		return copy;
 	}
 
 	private class BufferAgeRunnable implements Runnable {
@@ -137,7 +169,7 @@ public class MessageBuffer {
 		public void run() {
 			if (!cancelled.get()) {
 				LOG.debug("Buffer age exceeds the limit of {}ms", bufferAgeLimitMS);
-				notifyAndClear();
+				notifyAndCollect();
 			}
 		}
 

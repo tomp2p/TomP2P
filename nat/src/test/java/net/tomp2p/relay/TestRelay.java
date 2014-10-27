@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -21,7 +20,6 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
-import net.tomp2p.message.Message;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -98,7 +96,7 @@ public class TestRelay {
 					forwarderRPC.addMessageBufferListener(new MessageBufferListener() {
 
 						@Override
-						public void bufferFull(List<Message> messageBuffer) {
+						public void bufferFull() {
 							for (BaseRelayConnection connection : unreachablePeer.currentRelays()) {
 								if (connection instanceof AndroidRelayConnection) {
 									final AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;

@@ -71,7 +71,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
-	private final ChannelServerConficuration channelServerConfiguration;
+	private final ChannelServerConfiguration channelServerConfiguration;
 	private final Dispatcher dispatcher;
 	private final List<PeerStatusListener> peerStatusListeners;
 	
@@ -94,7 +94,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 * @throws IOException
 	 *             If device discovery failed.
 	 */
-	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConficuration channelServerConfiguration, final Dispatcher dispatcher,
+	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher,
 	        final List<PeerStatusListener> peerStatusListeners, final ScheduledExecutorService timer) throws IOException {
 		this.bossGroup = bossGroup;
 		this.workerGroup = workerGroup;
@@ -121,7 +121,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	/**
 	 * @return The channel server configuration.
 	 */
-	public ChannelServerConficuration channelServerConfiguration() {
+	public ChannelServerConfiguration channelServerConfiguration() {
 		return channelServerConfiguration;
 	}
 	
@@ -195,7 +195,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupUDP(final InetSocketAddress listenAddresses, final ChannelServerConficuration config) {
+	boolean startupUDP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config) {
 		Bootstrap b = new Bootstrap();
 		b.group(workerGroup);
 		b.channel(NioDatagramChannel.class);
@@ -230,7 +230,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	 *            Can create handlers to be attached to this port
 	 * @return True if startup was successful
 	 */
-	boolean startupTCP(final InetSocketAddress listenAddresses, final ChannelServerConficuration config) {
+	boolean startupTCP(final InetSocketAddress listenAddresses, final ChannelServerConfiguration config) {
 		ServerBootstrap b = new ServerBootstrap();
 		b.group(bossGroup, workerGroup);
 		b.channel(NioServerSocketChannel.class);

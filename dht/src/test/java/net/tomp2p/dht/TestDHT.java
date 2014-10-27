@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.Bindings;
 import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.PeerException;
 import net.tomp2p.connection.PeerException.AbortCause;
 import net.tomp2p.futures.BaseFuture;
@@ -1463,7 +1463,7 @@ public class TestDHT {
 			ChannelClientConfiguration ccc1 = PeerBuilder.createDefaultChannelClientConfiguration();
 			ccc1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
 
-			ChannelServerConficuration ccs1 = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelServerConfiguration ccs1 = PeerBuilder.createDefaultChannelServerConfiguration();
 			ccs1.pipelineFilter(new PeerBuilder.EventExecutorGroupFilter(eventExecutorGroup));
 
 			master = new PeerBuilderDHT(new PeerBuilder(new Number160(rnd)).ports(4001).channelClientConfiguration(ccc1)

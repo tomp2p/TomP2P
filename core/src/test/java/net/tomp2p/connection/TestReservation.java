@@ -72,7 +72,7 @@ public class TestReservation {
 	@Before
 	public void createSink() throws IOException {
 		Bindings bindings = new Bindings().addAddress(InetAddress.getByName("127.0.0.1"));
-		ChannelServerConficuration c = new ChannelServerConficuration();
+		ChannelServerConfiguration c = new ChannelServerConfiguration();
 		c.bindings(bindings);
 		c.ports(new Ports(PORT, PORT));
 		c.pipelineFilter(new MyPipeLine());
@@ -82,8 +82,8 @@ public class TestReservation {
     	        new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "worker-server - "));
 		cs = new ChannelServer(bossGroup, workerGroup, c, null, null, null);
 		
-		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConficuration());
-		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConficuration());
+		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
+		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
 		
 	}
 

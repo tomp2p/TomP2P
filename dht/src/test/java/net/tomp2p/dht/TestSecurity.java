@@ -12,11 +12,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.crypto.Cipher;
 
-import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.connection.DSASignatureFactory;
-import net.tomp2p.connection.RSASignatureFactory;
-import net.tomp2p.connection.SignatureFactory;
+import net.tomp2p.connection.*;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.dht.StorageLayer.ProtectionEnable;
 import net.tomp2p.dht.StorageLayer.ProtectionMode;
 import net.tomp2p.message.RSASignatureCodec;
@@ -1146,7 +1143,7 @@ public class TestSecurity {
 		// replace default signature factories
 		ChannelClientConfiguration clientConfig = PeerBuilder.createDefaultChannelClientConfiguration();
 		clientConfig.signatureFactory(factory);
-		ChannelServerConficuration serverConfig = PeerBuilder.createDefaultChannelServerConfiguration();
+		ChannelServerConfiguration serverConfig = PeerBuilder.createDefaultChannelServerConfiguration();
 		serverConfig.signatureFactory(factory);
 
 		KeyPair keyPairPeer1 = gen.generateKeyPair();

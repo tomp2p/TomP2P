@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Encodes and decodes the header using a Netty Buffer.
+ * Encodes and decodes the header of a {@link Message} sing a Netty Buffer.
  * 
  * @author Thomas Bocek
  * 
@@ -49,17 +49,17 @@ public final class MessageHeaderCodec {
     /**
      * Encodes the message object.
      * 
-     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit id - 8bit message command - 160bit
-     * sender id - 16bit tcp port - 16bit udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
+     * The format looks as follows: 28bit p2p version - 4bit message type - 32bit message id - 8bit message command - 160bit
+     * sender id - 16bit sender tcp port - 16bit sender udp port - 160bit recipient id - 32bit content types - 8bit options. It total,
      * the header is of size 58 bytes.
      * 
      * @param buffer
      *            The Netty buffer to fill
      * @param message
-     *            The message with the header that will be serialized
+     *            The message with the header that will be encoded
      * @return The buffer passed as an argument
      */
-    public static ByteBuf encodeHeader(final ByteBuf buffer, final Message message) {
+    public static void encodeHeader(final ByteBuf buffer, final Message message) {
         final int versionAndType = message.version() << 4 | (message.type().ordinal() & 0xf);
         buffer.writeInt(versionAndType); // 4
         buffer.writeInt(message.messageId()); // 8
@@ -70,7 +70,6 @@ public final class MessageHeaderCodec {
         buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
         buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
         buffer.writeByte((message.sender().options() << 4) | message.options()); // 58
-        return buffer;
     }
 
     /**

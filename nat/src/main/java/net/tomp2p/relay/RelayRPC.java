@@ -318,7 +318,7 @@ public class RelayRPC extends DispatchHandler {
 			try {
 				Message response = createResponseMessage(message, Type.OK);
 				// add all buffered messages
-				response.buffer(androidForwarder.getBufferedMessages());
+				response.buffer(androidForwarder.collectBufferedMessages());
 				
 				LOG.debug("Responding all buffered messages to Android device {}", message.sender());
 				responder.response(response);

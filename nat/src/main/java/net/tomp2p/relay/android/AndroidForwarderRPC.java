@@ -90,15 +90,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	/**
 	 * Tickle the device through Google Cloud Messaging
 	 */
-	public void sendTickleMessage() {
-		if (pendingRequest == null || pendingRequest.isCompleted()) {
-			// no current pending request or the last one is finished
-			pendingRequest = new FutureDone<Void>();
-		} else {
-			LOG.debug("A GCM message is already sent but not answered yet. Skip to send another.");
-			return;
-		}
-
+	private void sendTickleMessage() {
 		// the collapse key is the relay's peerId
 		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
 				.collapseKey(relayPeerId().toString()).delayWhileIdle(false).build();
@@ -134,7 +126,14 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		synchronized (readyToSend) {
 			readyToSend.addAll(messageBuffer);
 		}
-		sendTickleMessage();
+		
+		if (pendingRequest == null || pendingRequest.isCompleted()) {
+			// no current pending request or the last one is finished
+			pendingRequest = new FutureDone<Void>();
+			sendTickleMessage();
+		} else {
+			LOG.debug("A GCM message is already sent but not answered yet. Skip to send another.");
+		}
 	}
 
 	/**
@@ -143,9 +142,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * 
 	 * @return the buffer containing all buffered messages
 	 */
-	public Buffer getBufferedMessages() {
-		// finish the pending request
-		pendingRequest.done();
+	public Buffer collectBufferedMessages() {
+		if(pendingRequest != null) {
+			// finish the pending request
+			pendingRequest.done();
+		}
 		
 		ByteBuf buffer;
 		synchronized (readyToSend) {
@@ -153,6 +154,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			readyToSend.clear();
 		}
 
+		// the mobile device seems to be alive
 		lastUpdate.set(System.currentTimeMillis());
 		return new Buffer(buffer);
 	}

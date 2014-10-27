@@ -1,7 +1,5 @@
 package net.tomp2p.relay;
 
-import io.netty.buffer.ByteBuf;
-
 import java.net.InetAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -10,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -22,6 +21,7 @@ import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
+import net.tomp2p.message.Message;
 import net.tomp2p.nat.FutureRelayNAT;
 import net.tomp2p.nat.PeerBuilderNAT;
 import net.tomp2p.nat.PeerNAT;
@@ -37,9 +37,9 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
-import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.AndroidRelayConnection;
 import net.tomp2p.relay.android.GCMServerCredentials;
+import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.MessageBufferListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.ObjectDataReply;
@@ -98,7 +98,7 @@ public class TestRelay {
 					forwarderRPC.addMessageBufferListener(new MessageBufferListener() {
 
 						@Override
-						public void bufferFull(ByteBuf messageBuffer) {
+						public void bufferFull(List<Message> messageBuffer) {
 							for (BaseRelayConnection connection : unreachablePeer.currentRelays()) {
 								if (connection instanceof AndroidRelayConnection) {
 									final AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;

@@ -43,6 +43,9 @@ public class MessageUtils {
 		// only static methods
 	}
 	
+	/**
+	 * Encodes a message into a buffer, such that it can be used as a message payload (piggybacked), stored, etc.
+	 */
 	public static Buffer encodeMessage(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
 		Encoder e = new Encoder(signatureFactory);
 		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
@@ -50,6 +53,9 @@ public class MessageUtils {
 		return new Buffer(buf);
 	}
 
+	/**
+	 * Decodes a message which was encoded using {{@link #encodeMessage(Message, SignatureFactory)}}.
+	 */
 	public static Message decodeMessage(Buffer buf, InetSocketAddress recipient, InetSocketAddress sender, SignatureFactory signatureFactory)
 	        throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException, IOException {
 		Decoder d = new Decoder(signatureFactory);
@@ -58,6 +64,17 @@ public class MessageUtils {
 		final boolean donePayload = d.decodePayload(buf.buffer());
 		d.decodeSignature(buf.buffer(), readerBefore, donePayload);
 		return d.message();
+	}
+	
+	/**
+	 * Calculates the size of the message
+	 */
+	public static int getMessageSize(Message message, SignatureFactory signatureFactory) throws InvalidKeyException, SignatureException, IOException {
+		// TODO instead of real encoding, calculate it using the content references
+		int size = encodeMessage(message, signatureFactory).length();
+		message.restoreContentReferences();
+		message.restoreBuffers();
+		return size;
 	}
 
 	/**

@@ -377,7 +377,7 @@ public class RelayRPC extends DispatchHandler {
 					responder.response(createResponseMessage(message, Type.NOT_FOUND));
 				} else {
 					 // because buffer is re-encoded when forwarding it to unreachable
-					message.buffer(0).reset();
+					message.restoreBuffers();
 					forwarder.forwardToUnreachable(message);
 				}
 			}

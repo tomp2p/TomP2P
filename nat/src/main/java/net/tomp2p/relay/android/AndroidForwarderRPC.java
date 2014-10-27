@@ -1,7 +1,6 @@
 package net.tomp2p.relay.android;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayForwarderRPC;
 import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.RelayUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +40,11 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
 	private final MessageBuffer buffer;
-	private final List<ByteBuf> readyToSend;
+	private final List<Message> readyToSend;
 	private final AtomicLong lastUpdate;
+
+	// holds the current request. When completed, the android device requested the buffered messages
+	private FutureDone<Void> pendingRequest;
 
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
 			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
@@ -54,12 +57,13 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 
 		sender = new Sender(authenticationToken);
-		readyToSend = Collections.synchronizedList(new ArrayList<ByteBuf>());
+		readyToSend = Collections.synchronizedList(new ArrayList<Message>());
 
-		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(), bufferConfig.bufferAgeLimit());
+		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
+				bufferConfig.bufferAgeLimit());
 		addMessageBufferListener(this);
 	}
-	
+
 	public void addMessageBufferListener(MessageBufferListener listener) {
 		buffer.addListener(listener);
 	}
@@ -86,11 +90,18 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	/**
 	 * Tickle the device through Google Cloud Messaging
 	 */
-	public FutureDone<Void> sendTickleMessage() {
+	public void sendTickleMessage() {
+		if (pendingRequest == null || pendingRequest.isCompleted()) {
+			// no current pending request or the last one is finished
+			pendingRequest = new FutureDone<Void>();
+		} else {
+			LOG.debug("A GCM message is already sent but not answered yet. Skip to send another.");
+			return;
+		}
+
 		// the collapse key is the relay's peerId
 		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
-				.collapseKey(relayPeerId().toString()).build();
-		final FutureDone<Void> future = new FutureDone<Void>();
+				.collapseKey(relayPeerId().toString()).delayWhileIdle(false).build();
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -99,30 +110,29 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 					Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
 					if (result.getMessageId() == null) {
 						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
-						future.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
-					} else if (result.getCanonicalRegistrationId() != null) {
-						LOG.debug("Update the registration id {} to canonical name {}", registrationId,
-								result.getCanonicalRegistrationId());
-						registrationId = result.getCanonicalRegistrationId();
-						future.done();
+						pendingRequest.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
 					} else {
 						LOG.debug("Successfully sent the message over GCM");
-						future.done();
+						if (result.getCanonicalRegistrationId() != null) {
+							LOG.debug("Update the registration id {} to canonical name {}", registrationId,
+									result.getCanonicalRegistrationId());
+							registrationId = result.getCanonicalRegistrationId();
+						}
 					}
 				} catch (IOException e) {
 					LOG.error("Cannot send tickle message to device {}", registrationId, e);
-					future.failed(e);
+					pendingRequest.failed(e);
 				}
 			}
 		}, "Send-GCM-Tickle-Message").start();
-
-		return future;
+		
+		// TODO watch the pending request and if it takes too long, answer all buffered messages with an error
 	}
 
 	@Override
-	public void bufferFull(ByteBuf messageBuffer) {
+	public void bufferFull(List<Message> messageBuffer) {
 		synchronized (readyToSend) {
-			readyToSend.add(messageBuffer);
+			readyToSend.addAll(messageBuffer);
 		}
 		sendTickleMessage();
 	}
@@ -134,13 +144,12 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * @return the buffer containing all buffered messages
 	 */
 	public Buffer getBufferedMessages() {
-		ByteBuf buffer = Unpooled.buffer();
+		// finish the pending request
+		pendingRequest.done();
+		
+		ByteBuf buffer;
 		synchronized (readyToSend) {
-			for (ByteBuf rts : readyToSend) {
-				buffer.writeBytes(rts);
-				rts.release();
-			}
-
+			buffer = RelayUtils.composeMessageBuffer(readyToSend, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 			readyToSend.clear();
 		}
 

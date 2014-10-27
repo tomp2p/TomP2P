@@ -1,10 +1,8 @@
 package net.tomp2p.relay.android;
 
 import static org.junit.Assert.assertEquals;
-import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -15,13 +13,11 @@ import java.util.Random;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
-import net.tomp2p.message.Buffer;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.MessageUtils;
 
 import org.junit.Test;
 
@@ -117,12 +113,12 @@ public class TestMessageBuffer {
 		buffer.addMessage(fifth, signature);
 		
 		// buffer triggered by now, check the order
-		List<Buffer> content = listener.getBuffer();
-		assertEquals(first.messageId(), MessageUtils.decodeMessage(content.get(0), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(second.messageId(), MessageUtils.decodeMessage(content.get(1), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(third.messageId(), MessageUtils.decodeMessage(content.get(2), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(fourth.messageId(), MessageUtils.decodeMessage(content.get(3), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
-		assertEquals(fifth.messageId(), MessageUtils.decodeMessage(content.get(4), new InetSocketAddress(0), new InetSocketAddress(0), signature).messageId());
+		List<Message> content = listener.getBuffer();
+		assertEquals(first.messageId(), content.get(0).messageId());
+		assertEquals(second.messageId(),content.get(1).messageId());
+		assertEquals(third.messageId(), content.get(2).messageId());
+		assertEquals(fourth.messageId(), content.get(3).messageId());
+		assertEquals(fifth.messageId(), content.get(4).messageId());
 	}
 	
 	@Test
@@ -143,7 +139,7 @@ public class TestMessageBuffer {
 		// buffer triggered two messages
 		assertEquals(2, listener.getBuffer().size());
 	}
-
+	
 	/**
 	 * Creates a message with random content
 	 */
@@ -160,18 +156,18 @@ public class TestMessageBuffer {
 	
 	private class CountingBufferListener implements MessageBufferListener {
 
-		private final List<Buffer> buffer;
+		private final List<Message> buffer;
 		private int bufferFullTriggerCount;
 
 		public CountingBufferListener() {
-			this.buffer = new ArrayList<Buffer>();
+			this.buffer = new ArrayList<Message>();
 			this.bufferFullTriggerCount = 0;
 		}
 
 		@Override
-		public void bufferFull(ByteBuf messageBuffer) {
+		public void bufferFull(List<Message> messageBuffer) {
 			// instantly decompose since we don't need to send it here
-			this.buffer.addAll(MessageBuffer.decomposeCompositeBuffer(messageBuffer));
+			this.buffer.addAll(messageBuffer);
 			bufferFullTriggerCount++;
 		}
 
@@ -179,7 +175,7 @@ public class TestMessageBuffer {
 			return bufferFullTriggerCount;
 		}
 
-		public List<Buffer> getBuffer() {
+		public List<Message> getBuffer() {
 			return buffer;
 		}
 	}

@@ -1,6 +1,8 @@
 package net.tomp2p.relay.android;
 
-import io.netty.buffer.ByteBuf;
+import java.util.List;
+
+import net.tomp2p.message.Message;
 
 public interface MessageBufferListener {
 
@@ -8,9 +10,7 @@ public interface MessageBufferListener {
 	 * Notification when the buffer at the relay peer is full. Use
 	 * {@link MessageBuffer#decomposeCompositeBuffer(ByetBuf)} to decompose the buffer
 	 * 
-	 * @param messageBuffer composite of all buffered messages. Alternating, there's an integer and then a
-	 *            message encoded in it. The integer indicates the size of the message. This makes it possible
-	 *            to decompose the messages afterwards.
+	 * @param message List of all messages
 	 */
-	void bufferFull(ByteBuf messageBuffer);
+	void bufferFull(List<Message> message);
 }

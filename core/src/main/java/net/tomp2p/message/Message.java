@@ -412,6 +412,16 @@ public class Message {
 			refs.put(contentType, index + 1);
 		}
 	}
+	
+	/**
+	 * Restores all buffers such that they can be re-read (e.g. used for encoding). If the message does not
+	 * have any buffer, this method does nothing.
+	 */
+	public void restoreBuffers() {
+		for (Buffer buffer : bufferList()) {
+			buffer.reset();
+		}
+	}
 
     /**
      * Sets or replaces the content type at a specific index.

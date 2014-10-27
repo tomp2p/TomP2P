@@ -45,19 +45,11 @@ public class BufferedMessageHandler {
 		Buffer buffer = bufferResponse.buffer(0);
 		if (buffer != null) {
 			// decompose the large buffer into a buffer for each message
-			List<Buffer> bufferedMessages = MessageBuffer.decomposeCompositeBuffer(buffer.buffer());
+			List<Message> bufferedMessages = RelayUtils.decomposeCompositeBuffer(buffer.buffer(), bufferResponse.recipientSocket(),
+					bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
 			LOG.debug("Received {} buffered messages", bufferedMessages.size());
-			for (Buffer bufferedMessage : bufferedMessages) {
-				try {
-					Message message = RelayUtils.decodeRelayedMessage(bufferedMessage, bufferResponse.recipientSocket(),
-							bufferResponse.senderSocket(), peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory());
-					processMessage(message);
-				} catch (Exception e) {
-					// continue to process the buffers anyway
-					LOG.error("Cannot decode the buffer {}", bufferedMessage, e);
-				} finally {
-					bufferedMessage.buffer().release();
-				}
+			for (Message bufferedMessage : bufferedMessages) {
+					processMessage(bufferedMessage);
 			}
 
 			futureDone.done();

@@ -90,59 +90,60 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	 * Tickle the device through Google Cloud Messaging
 	 * @param list 
 	 */
-	private void sendTickleMessage(List<Message> bufferedMessages) {
-		final FutureGCM futureGCM = new FutureGCM(bufferedMessages);
-		
+	private void sendTickleMessage(final FutureGCM futureGCM) {
+		// the collapse key is the relay's peerId
+		final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
+				.collapseKey(relayPeerId().toString()).delayWhileIdle(false).build();
+
+		// start in a separate thread since the sender is blocking
+		connectionBean().timer().submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					LOG.debug("Send GCM message to the device {}", registrationId);
+					Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
+					if (result.getMessageId() == null) {
+						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
+						futureGCM.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
+					} else {
+						LOG.debug("Successfully sent the message over GCM");
+						if (result.getCanonicalRegistrationId() != null) {
+							LOG.debug("Update the registration id {} to canonical name {}", registrationId,
+									result.getCanonicalRegistrationId());
+							registrationId = result.getCanonicalRegistrationId();
+						}
+					}
+				} catch (IOException e) {
+					LOG.error("Cannot send tickle message to device {}", registrationId, e);
+					futureGCM.failed(e);
+				}
+			}
+		}, "Send-GCM-Tickle-Message");
+	}
+
+	@Override
+	public void bufferFull(List<Message> messages) {
+		final FutureGCM futureGCM = new FutureGCM(messages);
 		boolean sendTickle = pendingRequests.isEmpty();
 		pendingRequests.add(futureGCM);
-		
-		if(sendTickle) {
-			// the collapse key is the relay's peerId
-			final com.google.android.gcm.server.Message tickleMessage = new com.google.android.gcm.server.Message.Builder()
-			.collapseKey(relayPeerId().toString()).delayWhileIdle(false).build();
-			
-			// start in a separate thread since the sender is blocking
-			connectionBean().timer().submit(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						LOG.debug("Send GCM message to the device {}", registrationId);
-						Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
-						if (result.getMessageId() == null) {
-							LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
-							futureGCM.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());
-						} else {
-							LOG.debug("Successfully sent the message over GCM");
-							if (result.getCanonicalRegistrationId() != null) {
-								LOG.debug("Update the registration id {} to canonical name {}", registrationId,
-										result.getCanonicalRegistrationId());
-								registrationId = result.getCanonicalRegistrationId();
-							}
-						}
-					} catch (IOException e) {
-						LOG.error("Cannot send tickle message to device {}", registrationId, e);
-						futureGCM.failed(e);
-					}
-				}
-			}, "Send-GCM-Tickle-Message");
+
+		if (sendTickle) {
+			sendTickleMessage(futureGCM);
 		} else {
 			LOG.debug("Another tickle message is already on the way to the mobile device");
 		}
-		
+
 		// watch the pending request and if it takes too long, answer all buffered messages with an error
 		connectionBean().timer().schedule(new Runnable() {
 			@Override
 			public void run() {
+				// remove it, not that they are denied and still delivered to the device
+				pendingRequests.remove(futureGCM);
 				for (Message message : futureGCM.buffer()) {
 					// TODO deny the pending request because it took too long
 				}
 			}
 		}, mapUpdateIntervalMS, TimeUnit.MILLISECONDS);
-	}
-
-	@Override
-	public void bufferFull(List<Message> messages) {
-		sendTickleMessage(messages);
 	}
 
 	/**

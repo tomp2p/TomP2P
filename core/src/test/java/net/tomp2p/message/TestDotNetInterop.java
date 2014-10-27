@@ -7,20 +7,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
-import net.tomp2p.storage.AlternativeCompositeByteBuf;
-
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
 /***
- * These tests have to be done manually as they exceed the boundary of the Java platform.
+ * These tests check the binary encoding/decoding of data types between Java and .NET.
+ * They have to be run manually as they exceed the boundary of the Java platform.
+ * Thus, these tests are @Ignore by default.
  * 
  * @author Christian Lüthold
  *
  */
 public class TestDotNetInterop {
 
+	// specify a local file path where the platforms can interchange their bytes
+	
 	//private final String from = "D:/Desktop/interop/bytes-NET-encoded.txt";
 	//private final String to = "D:/Desktop/interop/bytes-JAVA-encoded.txt";
 	private final String from = "C:/Users/Christian/Desktop/interop/bytes-NET-encoded.txt";
@@ -30,7 +32,7 @@ public class TestDotNetInterop {
 	@Test
 	public void testEncodeInt()throws Exception {
 
-		AlternativeCompositeByteBuf buf = AlternativeCompositeByteBuf.compBuffer();
+		ByteBuf buf = Unpooled.buffer();
 
 		buf.writeInt(Integer.MIN_VALUE);	//-2147483648
 		buf.writeInt(-256);
@@ -202,6 +204,7 @@ public class TestDotNetInterop {
 		}
 	}
 	
+	@Ignore
 	@Test
 	public void testDecodeByte() throws Exception {
 		
@@ -225,13 +228,51 @@ public class TestDotNetInterop {
 	
 	@Ignore
 	@Test
-	public void testEncodeBytes() {
+	public void testEncodeBytes() throws Exception {
 		
+		ByteBuf buf = Unpooled.buffer();
+		
+		byte[] byteArray = new byte[256];
+		for (int i = 0, b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; i++, b++)
+		{
+			byteArray[i] = (byte)b;
+		}
+		
+		buf.writeBytes(byteArray);
+		
+		byte[] bytes = buf.array();
+		
+		File file = new File(to);
+		FileOutputStream fos = new FileOutputStream(file);
+		try {
+			fos.write(bytes);
+		}
+		finally {
+			fos.close();
+		}
 	}
 	
 	@Ignore
 	@Test
-	public void testDecodeBytes() {
+	public void testDecodeBytes() throws Exception {
 		
+		FileInputStream fis = new FileInputStream(from);
+		byte[] fileContent = new byte[256];
+		try {
+			fis.read(fileContent);
+		}
+		finally {
+			fis.close();
+		}
+		
+		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
+		
+		byte[] byteArray = new byte[256];
+		buf.readBytes(byteArray);
+		
+		for (int i = 0, b = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++, b++)
+		{
+			Assert.assertTrue(b == byteArray[i]);
+		}
 	}
 }

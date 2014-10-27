@@ -104,9 +104,9 @@ public class QueryNode {
 	private void printStats() {
 		StringBuilder sb = new StringBuilder("*************************\n");
 		sb.append("Stats of peer ").append(peerDHT.peer().peerID()).append(": \n");
-		sb.append("PUT: ").append(putStats.getAverageTime()).append("ms | ").append(putStats.getSuccessRate()).append("\n");
-		sb.append("GET: ").append(getStats.getAverageTime()).append("ms | ").append(getStats.getSuccessRate()).append("\n");
-		sb.append("RMV: ").append(rmvStats.getAverageTime()).append("ms | ").append(rmvStats.getSuccessRate());
+		sb.append("PUT:  count: ").append(putStats.getCount()).append(" | avgtime: ").append(putStats.getAverageTime()).append("ms | success: ").append(putStats.getSuccessRate()).append("\n");
+		sb.append("GET:  count: ").append(putStats.getCount()).append(" | avgtime: ").append(getStats.getAverageTime()).append("ms | success: ").append(getStats.getSuccessRate()).append("\n");
+		sb.append("RMV:  count: ").append(putStats.getCount()).append(" | avgtime: ").append(rmvStats.getAverageTime()).append("ms | success: ").append(rmvStats.getSuccessRate());
 		System.out.println(sb.toString());
 	}
 

@@ -50,4 +50,8 @@ public class DHTQueryStatistics {
 		
 		return total / times.size();
 	}
+	
+	public int getCount() {
+		return times.size();
+	}
 }

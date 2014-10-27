@@ -1,4 +1,4 @@
-package net.tomp2p.message;
+package net.tomp2p.interop;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

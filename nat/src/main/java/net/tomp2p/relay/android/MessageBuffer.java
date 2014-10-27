@@ -40,7 +40,6 @@ public class MessageBuffer {
 	private final List<MessageBufferListener> listeners;
 
 	private final List<Message> buffer;
-	private final List<Message> collectedBuffer;
 
 	private BufferAgeRunnable task;
 
@@ -50,7 +49,6 @@ public class MessageBuffer {
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
 		this.listeners = new ArrayList<MessageBufferListener>();
 		this.buffer = Collections.synchronizedList(new ArrayList<Message>());
-		this.collectedBuffer = Collections.synchronizedList(new ArrayList<Message>());
 		this.bufferSize = new AtomicLong();
 	}
 
@@ -102,7 +100,7 @@ public class MessageBuffer {
 				// cancel such that it does not notify the listener twice
 				task.cancel();
 			}
-			notifyAndCollect();
+			notifyAndClear();
 		}
 	}
 
@@ -111,50 +109,23 @@ public class MessageBuffer {
 	 * allowed buffer size or the maximally allowed age of the first buffer entry. Otherwise
 	 * <code>false</code>.
 	 */
-	private void notifyAndCollect() {
-		collect();
-		
-		// notify the listeners with a copy of the buffer and the segmentation indices
-		for (MessageBufferListener listener : listeners) {
-			listener.bufferFull();
-		}
-	}
-	
-	/**
-	 * Moves all currently buffered messages in the collected buffer
-	 */
-	private void collect() {
+	private void notifyAndClear() {
+		List<Message> copy;
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				LOG.warn("Buffer is empty. Listener won't be notified.");
 				return;
 			}
 			
-			synchronized (collectedBuffer) {
-				collectedBuffer.addAll(buffer);
-			}
+			copy = new ArrayList<Message>(buffer);
 			buffer.clear();
 			bufferSize.set(0);
 		}
-	}
-
-	/**
-	 * Returns all buffered messages since the last time {@link #collectBuffer()} was called. The buffer is
-	 * cleared.
-	 * 
-	 * @return all buffered messages
-	 */
-	public List<Message> collectBuffer() {
-		// probably new messages have been buffered in the meantime
-		collect();
 		
-		List<Message> copy;
-		synchronized (collectedBuffer) {
-			copy = new ArrayList<Message>(collectedBuffer);
-			collectedBuffer.clear();
+		// notify the listeners with a copy of the buffer and the segmentation indices
+		for (MessageBufferListener listener : listeners) {
+			listener.bufferFull(copy);
 		}
-		
-		return copy;
 	}
 
 	private class BufferAgeRunnable implements Runnable {
@@ -169,7 +140,7 @@ public class MessageBuffer {
 		public void run() {
 			if (!cancelled.get()) {
 				LOG.debug("Buffer age exceeds the limit of {}ms", bufferAgeLimitMS);
-				notifyAndCollect();
+				notifyAndClear();
 			}
 		}
 

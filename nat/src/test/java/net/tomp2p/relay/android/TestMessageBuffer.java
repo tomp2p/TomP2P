@@ -7,6 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -40,11 +41,12 @@ public class TestMessageBuffer {
 
 		// buffer did not trigger yet
 		assertEquals(0, listener.getTriggerCount());
+		assertEquals(0, listener.getBuffer().size());
 
 		// buffer triggered now
 		buffer.addMessage(third, signature);
 		assertEquals(1, listener.getTriggerCount());
-		assertEquals(3, buffer.collectBuffer().size());
+		assertEquals(3, listener.getBuffer().size());
 	}
 
 	@Test
@@ -58,7 +60,7 @@ public class TestMessageBuffer {
 
 		// buffer triggered already
 		assertEquals(1, listener.getTriggerCount());
-		assertEquals(1, buffer.collectBuffer().size());
+		assertEquals(1, listener.getBuffer().size());
 	}
 
 	@Test
@@ -74,20 +76,21 @@ public class TestMessageBuffer {
 
 		// buffer did not trigger yet
 		assertEquals(0, listener.getTriggerCount());
+		assertEquals(0, listener.getBuffer().size());
 
 		// wait for the given time and slightly longer
 		Thread.sleep((long) (waitTime * 1.5));
 
 		// buffer triggered already
 		assertEquals(1, listener.getTriggerCount());
-		assertEquals(1, buffer.collectBuffer().size());
+		assertEquals(1, listener.getBuffer().size());
 
 		// wait again
 		Thread.sleep((long) (waitTime * 1.5));
 
 		// test that buffer did not trigger again
 		assertEquals(1, listener.getTriggerCount());
-		assertEquals(0, buffer.collectBuffer().size());
+		assertEquals(1, listener.getBuffer().size());
 	}
 
 	@Test
@@ -110,7 +113,7 @@ public class TestMessageBuffer {
 		buffer.addMessage(fifth, signature);
 		
 		// buffer triggered by now, check the order
-		List<Message> content = buffer.collectBuffer();
+		List<Message> content = listener.getBuffer();
 		assertEquals(first.messageId(), content.get(0).messageId());
 		assertEquals(second.messageId(),content.get(1).messageId());
 		assertEquals(third.messageId(), content.get(2).messageId());
@@ -134,7 +137,7 @@ public class TestMessageBuffer {
 		buffer.addMessage(createMessage(), signature);
 				
 		// buffer triggered two messages
-		assertEquals(2, buffer.collectBuffer().size());
+		assertEquals(2, listener.getBuffer().size());
 	}
 	
 	/**
@@ -153,20 +156,27 @@ public class TestMessageBuffer {
 	
 	private class CountingBufferListener implements MessageBufferListener {
 
+		private final List<Message> buffer;
 		private int bufferFullTriggerCount;
 
 		public CountingBufferListener() {
+			this.buffer = new ArrayList<Message>();
 			this.bufferFullTriggerCount = 0;
 		}
 
 		@Override
-		public void bufferFull() {
+		public void bufferFull(List<Message> messages) {
 			// instantly decompose since we don't need to send it here
+			this.buffer.addAll(messages);
 			bufferFullTriggerCount++;
 		}
 
 		public int getTriggerCount() {
 			return bufferFullTriggerCount;
+		}
+
+		public List<Message> getBuffer() {
+			return buffer;
 		}
 	}
 }

@@ -57,11 +57,9 @@ public class PeerCreator {
 	private final List<PeerCreator> childConnections = new ArrayList<PeerCreator>();
 
 	private final EventLoopGroup workerGroup;
-
 	private final EventLoopGroup bossGroup;
 
 	private final boolean master;
-
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
@@ -79,8 +77,8 @@ public class PeerCreator {
 	 *            used for listening for incoming connections
 	 * @param channelClientConfiguration
 	 *            The client side configuration
-	 * @param peerStatusListeners
-	 *            The status listener for offline peers
+	 * @param timer
+	 *            The timer
 	 * @throws IOException
 	 *             If the startup of listening to connections failed
 	 */
@@ -88,7 +86,6 @@ public class PeerCreator {
 	        final ChannelServerConfiguration channelServerConfiguration,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ScheduledExecutorService timer) throws IOException {
-		//peer bean
 		peerBean = new PeerBean(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConfiguration);
 		peerBean.serverPeerAddress(self);

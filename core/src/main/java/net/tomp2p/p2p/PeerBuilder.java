@@ -114,7 +114,7 @@ public class PeerBuilder {
 
 
 	/**
-	 * Creates a peermaker with the peer ID and an empty key pair.
+	 * Creates a PeerBuilder with the peer ID and an empty key pair.
 	 * 
 	 * @param peerId
 	 *            The peer Id
@@ -124,15 +124,15 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Creates a peermaker with the key pair and generates out of this key pair
+	 * Creates a PeerBuilder with the key pair and generates out of this key pair
 	 * the peer ID.
 	 * 
 	 * @param keyPair
 	 *            The public private key
 	 */
 	public PeerBuilder(final KeyPair keyPair) {
-		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 		this.keyPair = keyPair;
+		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 	}
 
 	/**
@@ -142,7 +142,6 @@ public class PeerBuilder {
 	 * @throws IOException .
 	 */
 	public Peer start() throws IOException {
-
 		boolean isBehindFirewallSet = false;
 		if (behindFirewall == null) {
 			behindFirewall = false;
@@ -197,7 +196,6 @@ public class PeerBuilder {
 		}
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			
 		}
 
 		if (masterPeer == null && scheduledExecutorService == null) {
@@ -215,7 +213,7 @@ public class PeerBuilder {
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
-		peerBean.addPeerStatusListeners(peerMap);
+		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 

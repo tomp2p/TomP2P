@@ -79,7 +79,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 		peerConnection.closeFuture().addListener(new BaseFutureAdapter<FutureDone<Void>>() {
 			@Override
             public void operationComplete(FutureDone<Void> future) throws Exception {
-				peer.peerBean().removePeerStatusListeners(RelayForwarderRPC.this);
+				peer.peerBean().removePeerStatusListener(RelayForwarderRPC.this);
 				peer.connectionBean().dispatcher().removeIoHandler(peer.peerID(), unreachablePeer.peerId());
             }
 		});
@@ -124,7 +124,7 @@ public class RelayForwarderRPC extends DispatchHandler implements PeerStatusList
 						.registerIoHandler(peer.peerID(), peerConnection.remotePeer().peerId(), rconRPC, RPC.Commands.RCON.getNr());
 			}
 		}
-		peer.peerBean().addPeerStatusListeners(this);
+		peer.peerBean().addPeerStatusListener(this);
 	}
 	
 	public static void register(PeerConnection peerConnection, Peer peer, RelayRPC relayRPC, RconRPC rconRPC) {

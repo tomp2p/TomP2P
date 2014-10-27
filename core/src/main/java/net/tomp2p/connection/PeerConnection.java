@@ -57,7 +57,7 @@ public class PeerConnection {
      * @param cc
      *            The channel creator where we can open a TCP connection
      * @param heartBeatMillis
-     *            The heartBeatMillis
+     *            The heart beat in milliseconds
      */
     public PeerConnection(PeerAddress remotePeer, ChannelCreator cc, int heartBeatMillis) {
         this.remotePeer = remotePeer;
@@ -77,7 +77,7 @@ public class PeerConnection {
      * @param channelFuture
      *            The channel future of an already open TCP connection
      * @param heartBeatMillis
-     *            The heartBeatMillis
+     *            The heart beat in milliseconds
      */
     public PeerConnection(PeerAddress remotePeer, ChannelFuture channelFuture, int heartBeatMillis) {
         this.remotePeer = remotePeer;

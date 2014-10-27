@@ -59,10 +59,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public static final int MAX_RELAYS = 5;
     private static final long serialVersionUID = -1316622724169272306L;
 
-    private static final int NET6 = 1;
-    private static final int FIREWALL_UDP = 2;
-    private static final int FIREWALL_TCP = 4;
-    // indicates that a relay is used.
+    private static final int NET6 = 1;			// 0001
+    private static final int FIREWALL_UDP = 2;	// 0010
+    private static final int FIREWALL_TCP = 4;	// 0100
+    // indicates that a relay is used.			// 1000
     private static final int RELAYED = 8;
 
     // network information
@@ -102,8 +102,8 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     private static final int PORTS_SIZE = 4;
 
     // used for the relay bit shifting
-    private static final int MASK_1F = 0x1f;
-    private static final int MASK_7 = 0x7;
+    private static final int MASK_1F = 0x1f;	// 0001 1111
+    private static final int MASK_07 = 0x7;		// 0000 0111
     
 
     /**
@@ -146,7 +146,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // 110 is not used
         // 111 is not used
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
-        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         this.relayType = Utils.createBitSet(b);
         // now comes the ID
@@ -199,7 +199,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
         // 110 is not used
         // 111 is not used
         // second: five bits indicate if IPv6 or IPv4 -> in total we can save 5 addresses
-        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        this.relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         this.relayType = Utils.createBitSet(b);
         // now comes the ID
@@ -748,7 +748,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
             size += Utils.IPV4_BYTES;
         }
         // count the relays
-        final int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_7;
+        final int relaySize = (relays >>> TYPE_BIT_SIZE) & MASK_07;
         final byte b = (byte) (relays & MASK_1F);
         final BitSet relayType = Utils.createBitSet(b);
         for (int i = 0; i < relaySize; i++) {

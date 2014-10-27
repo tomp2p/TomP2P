@@ -111,7 +111,7 @@ public class PeerSocketAddress implements Serializable {
     }
     
     public int size() {
-    	return 2 + 2 + (isIPv4()?Utils.IPV4_BYTES:Utils.IPV6_BYTES);
+    	return size(isIPv4());
     }
     
     public static int size(boolean isIPv4) {

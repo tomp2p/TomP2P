@@ -63,10 +63,10 @@ public class Decoder {
 	private int peerSocketAddressSize = -1;
 	private List<PeerSocketAddress> peerSocketAddresses = null;
 
-	private int keyCollectionsSize = -1;
-	private KeyCollection keyCollections = null;
+	private int keyCollectionSize = -1;
+	private KeyCollection keyCollection = null;
 
-	private int mapsSize = -1;
+	private int mapSize = -1;
 	private DataMap dataMap = null;
 	private Data data = null;
 	private Number640 key = null;
@@ -295,16 +295,16 @@ public class Decoder {
 				peerSocketAddresses = null;
 				break;
 			case SET_KEY640:
-				if (keyCollectionsSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (keyCollectionSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
-				if (keyCollectionsSize == -1) {
-					keyCollectionsSize = buf.readInt();
+				if (keyCollectionSize == -1) {
+					keyCollectionSize = buf.readInt();
 				}
-				if (keyCollections == null) {
-					keyCollections = new KeyCollection(new ArrayList<Number640>(keyCollectionsSize));
+				if (keyCollection == null) {
+					keyCollection = new KeyCollection(new ArrayList<Number640>(keyCollectionSize));
 				}
-				for (int i = keyCollections.size(); i < keyCollectionsSize; i++) {
+				for (int i = keyCollection.size(); i < keyCollectionSize; i++) {
 					if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
 							+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
 						return false;
@@ -318,22 +318,22 @@ public class Decoder {
 					Number160 contentKey = new Number160(me2);
 					buf.readBytes(me2);
 					Number160 versionKey = new Number160(me2);
-					keyCollections.add(new Number640(locationKey, domainKey, contentKey, versionKey));
+					keyCollection.add(new Number640(locationKey, domainKey, contentKey, versionKey));
 				}
-				message.keyCollection(keyCollections);
+				message.keyCollection(keyCollection);
 				lastContent = contentTypes.poll();
-				keyCollectionsSize = -1;
-				keyCollections = null;
+				keyCollectionSize = -1;
+				keyCollection = null;
 				break;
 			case MAP_KEY640_DATA:
-				if (mapsSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
+				if (mapSize == -1 && buf.readableBytes() < Utils.INTEGER_BYTE_SIZE) {
 					return false;
 				}
-				if (mapsSize == -1) {
-					mapsSize = buf.readInt();
+				if (mapSize == -1) {
+					mapSize = buf.readInt();
 				}
 				if (dataMap == null) {
-					dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapsSize));
+					dataMap = new DataMap(new HashMap<Number640, Data>(2 * mapSize));
 				}
 				if (data != null) {
 					if (!data.decodeBuffer(buf)) {
@@ -345,7 +345,7 @@ public class Decoder {
 					data = null;
 					key = null;
 				}
-				for (int i = dataMap.size(); i < mapsSize; i++) {
+				for (int i = dataMap.size(); i < mapSize; i++) {
 					if (key == null) {
 						if (buf.readableBytes() < Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE
 								+ Number160.BYTE_ARRAY_SIZE + Number160.BYTE_ARRAY_SIZE) {
@@ -385,7 +385,7 @@ public class Decoder {
 
 				message.setDataMap(dataMap);
 				lastContent = contentTypes.poll();
-				mapsSize = -1;
+				mapSize = -1;
 				dataMap = null;
 				break;
 			case MAP_KEY640_KEYS:
@@ -488,8 +488,7 @@ public class Decoder {
 				if (remaining != 0) {
 					int read = buffer.transferFrom(buf, remaining);
 					if(read != remaining) {
-						LOG.debug("we are still looking for data, indicate that we are not finished yet, "
-								+ "read = {}, size = {}", buffer.alreadyTransferred(), bufferSize);
+						LOG.debug("Still looking for data. Indicating that its not finished yet. Read = {}, Size = {}.", buffer.alreadyTransferred(), bufferSize);
 						return false;
 					}
 				}
@@ -558,25 +557,22 @@ public class Decoder {
 				trackerDataSize = -1;
 				trackerData = null;
 				break;
-
-			case PUBLIC_KEY:
+			case PUBLIC_KEY: // fall-through
 			case PUBLIC_KEY_SIGNATURE:
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if(content == Content.PUBLIC_KEY_SIGNATURE) {
 					if (receivedPublicKey == PeerBuilder.EMPTY_PUBLICKEY) {
-						throw new InvalidKeyException("The public key cannot be empty");
+						throw new InvalidKeyException("The public key cannot be empty.");
 					}
 				}
 				if (receivedPublicKey == null) {
 					return false;
 				}
+				
 				message.publicKey(receivedPublicKey);
 				lastContent = contentTypes.poll();
 				break;
-				
 			default:
-			case USER1:
-			case EMPTY:
 				break;
 			}
 		}
@@ -600,9 +596,9 @@ public class Decoder {
 		message = null;
 		neighborSize = -1;
 		neighborSet = null;
-		keyCollectionsSize = -1;
-		keyCollections = null;
-		mapsSize = -1;
+		keyCollectionSize = -1;
+		keyCollection = null;
+		mapSize = -1;
 		dataMap = null;
 		data = null;
 		keyMap640KeysSize = -1;

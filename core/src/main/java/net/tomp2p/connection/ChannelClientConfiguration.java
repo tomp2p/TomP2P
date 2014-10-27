@@ -84,7 +84,7 @@ public class ChannelClientConfiguration {
     }
 
     /**
-     * @return Set the filter for the pipeline, where the user can add / remove or change filters
+     * @return The filter for the pipeline, where the user can add / remove or change filters
      */
     public PipelineFilter pipelineFilter() {
         return pipelineFilter;
@@ -117,10 +117,18 @@ public class ChannelClientConfiguration {
         return this;
     }
 
+    /**
+     * @return The bindings
+     */
     public Bindings bindings() {
         return bindings;
     }
-    
+
+    /**
+     * @param bindings
+     *            The bindings
+     * @return This class
+     */
     public ChannelClientConfiguration bindings(Bindings bindings) {
         this.bindings = bindings;
         return this;

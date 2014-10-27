@@ -100,8 +100,7 @@ public class PeerBuilder {
 	private int udpPort = -1;
 	private int tcpPortForwarding = -1;
 	private int udpPortForwarding = -1;
-	private Bindings interfaceBindings = null;
-	private Bindings externalBindings = null;
+	private Bindings bindings = null;
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
 	private ChannelServerConficuration channelServerConfiguration = null;
@@ -155,22 +154,40 @@ public class PeerBuilder {
 	 */
 	public Peer start() throws IOException {
 
+		boolean isBehindFirewallSet = false;
 		if (behindFirewall == null) {
 			behindFirewall = false;
+		} else {
+			isBehindFirewallSet = true;
 		}
 
+		boolean isTcpPortSet = false;
+		if (tcpPort == -1) {
+			tcpPort = Ports.DEFAULT_PORT;
+		} else {
+			isTcpPortSet = true;
+		}
+		
+		boolean isUdpPortSet = false;
+		if (udpPort == -1) {
+			udpPort = Ports.DEFAULT_PORT;
+		} else {
+			isUdpPortSet = true;
+		}
+		
 		if (channelServerConfiguration == null) {
 			channelServerConfiguration = createDefaultChannelServerConfiguration();
-			channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding));
-			if (tcpPort == -1) {
-				tcpPort = Ports.DEFAULT_PORT;
-			}
-			if (udpPort == -1) {
-				udpPort = Ports.DEFAULT_PORT;
-			}
-			channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
+		} 
+		
+		//post config
+		if(isBehindFirewallSet) {
 			channelServerConfiguration.behindFirewall(behindFirewall);
 		}
+		if(isTcpPortSet || isUdpPortSet) {
+			channelServerConfiguration.ports(new Ports(tcpPort, udpPort));
+		}
+		
+		channelServerConfiguration.portsForwarding(new Ports(tcpPortForwarding, udpPortForwarding));
 		
 		if (channelClientConfiguration == null) {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();
@@ -183,14 +200,12 @@ public class PeerBuilder {
 		}
 		
 		
-		if (interfaceBindings == null) {
-			interfaceBindings = new Bindings();
+		if (bindings == null) {
+			bindings = new Bindings();
+		} else {
+			channelServerConfiguration.bindings(bindings);
+			channelClientConfiguration.bindings(bindings);
 		}
-		channelServerConfiguration.bindingsIncoming(interfaceBindings);
-		if (externalBindings == null) {
-			externalBindings = new Bindings();
-		}
-		channelClientConfiguration.bindingsOutgoing(externalBindings);
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
 			
@@ -290,7 +305,7 @@ public class PeerBuilder {
 
 	public static ChannelServerConficuration createDefaultChannelServerConfiguration() {
 		ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
-		channelServerConfiguration.bindingsIncoming(new Bindings());
+		channelServerConfiguration.bindings(new Bindings());
 		//these two values may be overwritten in the peer builder
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
 		channelServerConfiguration.portsForwarding(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
@@ -302,7 +317,7 @@ public class PeerBuilder {
 
 	public static ChannelClientConfiguration createDefaultChannelClientConfiguration() {
 		ChannelClientConfiguration channelClientConfiguration = new ChannelClientConfiguration();
-		channelClientConfiguration.bindingsOutgoing(new Bindings());
+		channelClientConfiguration.bindings(new Bindings());
 		channelClientConfiguration.maxPermitsPermanentTCP(MAX_PERMITS_PERMANENT_TCP);
 		channelClientConfiguration.maxPermitsTCP(MAX_PERMITS_TCP);
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
@@ -382,27 +397,12 @@ public class PeerBuilder {
 	}
 
 	public PeerBuilder bindings(Bindings bindings) {
-		this.interfaceBindings = bindings;
-		this.externalBindings = bindings;
+		this.bindings = bindings;
 		return this;
 	}
 
-	public Bindings interfaceBindings() {
-		return interfaceBindings;
-	}
-
-	public PeerBuilder interfaceBindings(Bindings interfaceBindings) {
-		this.interfaceBindings = interfaceBindings;
-		return this;
-	}
-
-	public Bindings externalBindings() {
-		return externalBindings;
-	}
-
-	public PeerBuilder externalBindings(Bindings externalBindings) {
-		this.externalBindings = externalBindings;
-		return this;
+	public Bindings bindings() {
+		return bindings;
 	}
 
 	public PeerMap peerMap() {

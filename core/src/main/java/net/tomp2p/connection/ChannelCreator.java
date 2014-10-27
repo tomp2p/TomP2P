@@ -33,6 +33,7 @@ import io.netty.util.concurrent.EventExecutorGroup;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -82,8 +83,6 @@ public class ChannelCreator {
 	private final FutureDone<Void> futureChannelCreationDone;
 
 	private final ChannelClientConfiguration channelClientConfiguration;
-
-	private final Bindings externalBindings;
 	
 	private EventExecutorGroup handlerExecutor;
 
@@ -117,7 +116,6 @@ public class ChannelCreator {
 		this.semaphoreUPD = new Semaphore(maxPermitsUDP);
 		this.semaphoreTCP = new Semaphore(maxPermitsTCP);
 		this.channelClientConfiguration = channelClientConfiguration;
-		this.externalBindings = channelClientConfiguration.bindingsOutgoing();
 	}
 
 	/**
@@ -158,7 +156,7 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture = b.bind(externalBindings.wildCardSocket());
+			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
@@ -203,7 +201,7 @@ public class ChannelCreator {
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
 			addHandlers(b, channelHandlers2);
 
-			ChannelFuture channelFuture = b.connect(socketAddress, externalBindings.wildCardSocket());
+			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);

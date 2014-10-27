@@ -33,7 +33,7 @@ import net.tomp2p.message.TrackerData;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
@@ -79,12 +79,12 @@ public class TrackerRPC extends DispatchHandler {
 		RequestHandler<FutureResponse> requestHandler = new RequestHandler<FutureResponse>(futureResponse, peerBean(),
 		        connectionBean(), builder);
 
-		TrackerData trackerData = new TrackerData(new HashMap<PeerStatatistic, Data>());
+		TrackerData trackerData = new TrackerData(new HashMap<PeerStatistic, Data>());
 		PeerAddress peerAddressToAnnounce = builder.peerAddressToAnnounce();
 		if (peerAddressToAnnounce == null) {
 			peerAddressToAnnounce = peerBean().serverPeerAddress();
 		}
-		trackerData.put(new PeerStatatistic(peerAddressToAnnounce), builder.attachement());
+		trackerData.put(new PeerStatistic(peerAddressToAnnounce), builder.attachement());
 		trackerData = UtilsTracker.limit(trackerData, TrackerRPC.MAX_MSG_SIZE_UDP);
 		message.trackerData(trackerData);
 
@@ -138,7 +138,7 @@ public class TrackerRPC extends DispatchHandler {
 						return;
 					}
 
-					for (Map.Entry<PeerStatatistic, Data> trackerData : tmp.peerAddresses().entrySet()) {
+					for (Map.Entry<PeerStatistic, Data> trackerData : tmp.peerAddresses().entrySet()) {
 						// we don't know the public key, since this is not first
 						// hand information. TTL will be set in tracker storage,
 						// so don't worry about it here.
@@ -194,7 +194,7 @@ public class TrackerRPC extends DispatchHandler {
 			if (trackerData.size() != 1) {
 				responseMessage.type(Message.Type.EXCEPTION);
 			} else {
-				Map.Entry<PeerStatatistic, Data> entry = trackerData.peerAddresses().entrySet().iterator().next();
+				Map.Entry<PeerStatistic, Data> entry = trackerData.peerAddresses().entrySet().iterator().next();
 				if (!trackerStorage.put(new Number320(locationKey, domainKey), entry.getKey().peerAddress(), publicKey,
 				        entry.getValue())) {
 					responseMessage.type(Message.Type.DENIED);

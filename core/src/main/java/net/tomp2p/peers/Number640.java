@@ -19,7 +19,7 @@ package net.tomp2p.peers;
 import java.util.Random;
 
 /**
- * This class stores the location, domain, and content key.
+ * This class stores the location, domain, content and version keys.
  * 
  * @author Thomas Bocek
  * 
@@ -38,7 +38,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     private final Number160 versionKey;
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number640 key from given location, domain, content and version keys.
      * 
      * @param locationKey
      *            The location key
@@ -46,6 +46,8 @@ public final class Number640 extends Number implements Comparable<Number640> {
      *            The domain key
      * @param contentKey
      *            The content key
+     * @param versionKey
+     * 			  The version key
      */
     public Number640(final Number160 locationKey, final Number160 domainKey, final Number160 contentKey, final Number160 versionKey) {
         if (locationKey == null) {
@@ -60,27 +62,40 @@ public final class Number640 extends Number implements Comparable<Number640> {
             throw new RuntimeException("contentKey cannot be null");
         }
         this.contentKey = contentKey;
+        if (versionKey == null) {
+            throw new RuntimeException("versionKey cannot be null");
+        }
         this.versionKey = versionKey;
     }
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number640 key from given location, domain, content and version keys.
      * 
      * @param key
-     *            The location and domain key
-     * @param contentKey
-     *            The content key
+     *            The location, domain and content key
+     * @param versionKey
+     *            The version key
      */
     public Number640(final Number480 key, final Number160 versionKey) {
         this(key.locationKey(), key.domainKey(), key.contentKey(), versionKey);
     }
     
+    /**
+     * Creates a new Number640 key from given location, domain, content and version keys.
+     * 
+     * @param key
+     *            The location and domain key
+     * @param contentKey
+     * 			  The content key
+     * @param versionKey
+     *            The version key
+     */
     public Number640(final Number320 key, final Number160 contentKey, final Number160 versionKey) {
         this(key.locationKey(), key.domainKey(), contentKey, versionKey);
     }
 
     /**
-     * Constructor that creates a random 480bit number.
+     * Creates a new random Number640 key.
      * 
      * @param rnd
      *            The random class
@@ -111,7 +126,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
     }
     
     /**
-     * @return The content key
+     * @return The version key
      */
     public Number160 versionKey() {
         return versionKey;
@@ -131,8 +146,13 @@ public final class Number640 extends Number implements Comparable<Number640> {
             return true;
         }
         Number640 cmp = (Number640) obj;
-        return locationKey.equals(cmp.locationKey) && domainKey.equals(cmp.domainKey)
-                && contentKey.equals(cmp.contentKey);
+        
+        boolean t1 = locationKey.equals(cmp.locationKey);
+        boolean t2 = domainKey.equals(cmp.domainKey);
+        boolean t3 = contentKey.equals(cmp.contentKey);
+        boolean t4 = versionKey.equals(cmp.versionKey);
+        
+        return t1 && t2 && t3 && t4;
     }
 
     @Override
@@ -205,7 +225,7 @@ public final class Number640 extends Number implements Comparable<Number640> {
         return new Number320(locationKey, domainKey);
     }
     
-    public Number480 locationDomainAndContentKey() {
+    public Number480 locationAndDomainAndContentKey() {
         return new Number480(locationKey, domainKey, contentKey);
     }
 }

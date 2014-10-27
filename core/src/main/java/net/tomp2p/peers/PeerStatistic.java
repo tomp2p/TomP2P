@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Thomas Bocek
  * 
  */
-public class PeerStatatistic implements Serializable {
+public class PeerStatistic implements Serializable {
     
 	private static final long serialVersionUID = -6225586345726672194L;
 
@@ -47,7 +47,7 @@ public class PeerStatatistic implements Serializable {
      * @param peerAddress
      *            The peer address that belongs to this statistics
      */
-    public PeerStatatistic(final PeerAddress peerAddress) {
+    public PeerStatistic(final PeerAddress peerAddress) {
         if (peerAddress == null) {
             throw new IllegalArgumentException("PeerAddress cannot be null");
         }
@@ -137,10 +137,10 @@ public class PeerStatatistic implements Serializable {
         if(obj == this) {
         	return true;
         }
-        if(!(obj instanceof PeerStatatistic)) {
+        if(!(obj instanceof PeerStatistic)) {
         	return false;
         }
-        PeerStatatistic p = (PeerStatatistic) obj;
+        PeerStatistic p = (PeerStatistic) obj;
         return p.peerId.equals(peerId);
     }
 }

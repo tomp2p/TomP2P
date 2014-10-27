@@ -39,8 +39,8 @@ public class DefaultMaintenance implements Maintenance {
     private final int peerUrgency;
     private final int[] intervalSeconds;
 
-    private final List<Map<Number160, PeerStatatistic>> peerMapVerified;
-    private final List<Map<Number160, PeerStatatistic>> peerMapNonVerified;
+    private final List<Map<Number160, PeerStatistic>> peerMapVerified;
+    private final List<Map<Number160, PeerStatistic>> peerMapNonVerified;
     private final ConcurrentCacheMap<Number160, PeerAddress> offlineMap;
     private final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap;
     private final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap;
@@ -63,8 +63,8 @@ public class DefaultMaintenance implements Maintenance {
      *            The number of intervals to test a peer. The longer a peer is available the less often we need to check
      * 
      */
-    private DefaultMaintenance(final List<Map<Number160, PeerStatatistic>> peerMapVerified,
-            final List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
+    private DefaultMaintenance(final List<Map<Number160, PeerStatistic>> peerMapVerified,
+            final List<Map<Number160, PeerStatistic>> peerMapNonVerified,
             final ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
             final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, 
             final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap, final int peerUrgency,
@@ -99,8 +99,8 @@ public class DefaultMaintenance implements Maintenance {
     }
 
     @Override
-    public Maintenance init(final List<Map<Number160, PeerStatatistic>> peerMapVerified,
-            final List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
+    public Maintenance init(final List<Map<Number160, PeerStatistic>> peerMapVerified,
+            final List<Map<Number160, PeerStatistic>> peerMapNonVerified,
             final ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
             final ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, 
             final ConcurrentCacheMap<Number160, PeerAddress> exceptionMap) {
@@ -116,14 +116,14 @@ public class DefaultMaintenance implements Maintenance {
      * 
      * @return The next most important peer to check if its still alive.
      */
-    public PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
+    public PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses) {
         if (peerMapVerified == null || peerMapNonVerified == null || offlineMap == null 
                 || shutdownMap == null || exceptionMap == null) {
             throw new IllegalArgumentException("did not initialize this maintenance class");
         }
         int peersBefore = 0;
         for (int i = 0; i < Number160.BITS; i++) {
-            final Map<Number160, PeerStatatistic> mapVerified = peerMapVerified.get(i);
+            final Map<Number160, PeerStatistic> mapVerified = peerMapVerified.get(i);
             boolean urgent = false;
             synchronized (mapVerified) {
                 final int size = mapVerified.size();
@@ -131,15 +131,15 @@ public class DefaultMaintenance implements Maintenance {
                 urgent = isUrgent(i, size, peersBefore);
             }
             if (urgent) {
-                final Map<Number160, PeerStatatistic> mapNonVerified = peerMapNonVerified.get(i);
-                final PeerStatatistic readyForMaintenance = next(mapNonVerified);
+                final Map<Number160, PeerStatistic> mapNonVerified = peerMapNonVerified.get(i);
+                final PeerStatistic readyForMaintenance = next(mapNonVerified);
                 if (readyForMaintenance != null
                         && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
                     LOG.debug("check peer {} from the non verified map",readyForMaintenance.peerAddress());
                     return readyForMaintenance;
                 }
             }
-            final PeerStatatistic readyForMaintenance = next(mapVerified);
+            final PeerStatistic readyForMaintenance = next(mapVerified);
             if (readyForMaintenance != null
                     && !notInterestedAddresses.contains(readyForMaintenance.peerAddress())) {
                 return readyForMaintenance;
@@ -155,9 +155,9 @@ public class DefaultMaintenance implements Maintenance {
      *            The bag with all the peers
      * @return A peer that needs maintenance
      */
-    private PeerStatatistic next(final Map<Number160, PeerStatatistic> map) {
+    private PeerStatistic next(final Map<Number160, PeerStatistic> map) {
         synchronized (map) {
-            for (PeerStatatistic peerStatatistic : map.values()) {
+            for (PeerStatistic peerStatatistic : map.values()) {
                 if (needMaintenance(peerStatatistic, intervalSeconds)) {
                     return peerStatatistic;
                 }
@@ -189,7 +189,7 @@ public class DefaultMaintenance implements Maintenance {
      *            The peer with its statistics
      * @return True if the peer needs a maintenance check
      */
-    public static boolean needMaintenance(final PeerStatatistic peerStatatistic, final int[] intervalSeconds) {
+    public static boolean needMaintenance(final PeerStatistic peerStatatistic, final int[] intervalSeconds) {
         final int onlineSec = peerStatatistic.onlineTime() / 1000;
         int index;
         if (onlineSec <= 0) {

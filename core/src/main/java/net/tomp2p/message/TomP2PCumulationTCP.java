@@ -68,11 +68,14 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 				moreData = cumulation.readableBytes() > 0;
 				ctx.fireChannelRead(decoder.prepareFinish());
 			} else {
+				if(decoder.message() == null) {
+					//wait for more data. This may happen if we don't get the first 58 bytes, 
+					//which is the size of the header.
+					return;
+				}
 				// this id was the same as the last and the last message already
 				// finished the parsing. So this message
 				// is finished as well although it may send only partial data.
-				//TODO testBroadcast
-				//if(decoder.message() != null) {
 				if (lastId == decoder.message().messageId()) {
 					finished = true;
 					moreData = cumulation.readableBytes() > 0;

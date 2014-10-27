@@ -140,11 +140,11 @@ public class Utils2 {
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
             peers[0] = new PeerBuilder(peerId)
                     .ports(port).enableMaintenance(maintenance)
-                    .externalBindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
+                    .bindings(bindings).peerMap(peerMap).start().addAutomaticFuture(automaticFuture);
         } else {
         	Number160 peerId = new Number160(rnd);
         	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).externalBindings(bindings)
+            peers[0] = new PeerBuilder(peerId).enableMaintenance(maintenance).bindings(bindings)
                    .peerMap(peerMap).ports(port).start();
         }
 
@@ -154,12 +154,12 @@ public class Utils2 {
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId));
                 peers[i] = new PeerBuilder(peerId)
                         .masterPeer(peers[0])
-                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).externalBindings(bindings).start().addAutomaticFuture(automaticFuture);
+                        .enableMaintenance(maintenance).enableMaintenance(maintenance).peerMap(peerMap).bindings(bindings).start().addAutomaticFuture(automaticFuture);
             } else {
             	Number160 peerId = new Number160(rnd);
             	PeerMap peerMap = new PeerMap(new PeerMapConfiguration(peerId).peerNoVerification());
                 peers[i] = new PeerBuilder(peerId).enableMaintenance(maintenance)
-                        .externalBindings(bindings).peerMap(peerMap).masterPeer(peers[0])
+                        .bindings(bindings).peerMap(peerMap).masterPeer(peers[0])
                         .start();
             }
         }

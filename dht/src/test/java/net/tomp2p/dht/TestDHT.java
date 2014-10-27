@@ -51,7 +51,7 @@ import net.tomp2p.peers.Number480;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.DigestResult;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.RawDataReply;
@@ -976,7 +976,7 @@ public class TestDHT {
 			UtilsDHT2.perfectRoutingIndirect(peers);
 			// do testing
 
-			PeerStatatistic peerStatatistic = master.peerBean().peerMap()
+			PeerStatistic peerStatatistic = master.peerBean().peerMap()
 			        .nextForMaintenance(new ArrayList<PeerAddress>());
 			Assert.assertNotEquals(master.peerAddress(), peerStatatistic.peerAddress());
 			Thread.sleep(10000);
@@ -1322,8 +1322,8 @@ public class TestDHT {
 		try {
 			// setup (step 1)
 			Bindings b = new Bindings().addInterface("lo");
-			p1 = new PeerBuilder(new Number160(rnd)).ports(4001).externalBindings(b).start();
-			p2 = new PeerBuilder(new Number160(rnd)).ports(4002).externalBindings(b).start();
+			p1 = new PeerBuilder(new Number160(rnd)).ports(4001).bindings(b).start();
+			p2 = new PeerBuilder(new Number160(rnd)).ports(4002).bindings(b).start();
 			FutureBootstrap fb = p2.bootstrap().peerAddress(p1.peerAddress()).start();
 			fb.awaitUninterruptibly();
 			Assert.assertEquals(true, fb.isSuccess());

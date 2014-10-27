@@ -19,5 +19,4 @@ public interface SignatureCodec {
 	SignatureCodec read(ByteBuf buf);
 
 	int signatureSize();
-
 }

@@ -12,7 +12,7 @@ import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -136,7 +136,7 @@ public class TestTrackerStorage {
 		Number320 n320 = new Number320(Number160.ZERO, Number160.ZERO);
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
-		PeerStatatistic ps = trackerStorage.nextForMaintenance(null);
+		PeerStatistic ps = trackerStorage.nextForMaintenance(null);
 		Assert.assertEquals(ps.peerAddress().peerId(), self);	
 	}
 	
@@ -151,7 +151,7 @@ public class TestTrackerStorage {
 		Number320 n320 = new Number320(Number160.ZERO, Number160.ZERO);
 
 		trackerStorage.put(n320, selfAddress, null, new Data("test"));
-		PeerStatatistic ps = trackerStorage.nextForMaintenance(null);
+		PeerStatistic ps = trackerStorage.nextForMaintenance(null);
 		trackerStorage.peerFound(selfAddress, null, null);
 		ps = trackerStorage.nextForMaintenance(null);
 		Assert.assertNull(ps);

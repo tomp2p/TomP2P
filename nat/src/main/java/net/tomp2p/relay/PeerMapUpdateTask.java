@@ -16,7 +16,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMapChangeListener;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.rpc.RPC;
 
 import org.slf4j.Logger;
@@ -104,12 +104,12 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	}
 
 	@Override
-	public void peerRemoved(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
+	public void peerRemoved(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
 		updated.set(true);
 	}
 
 	@Override
-	public void peerUpdated(PeerAddress peerAddress, PeerStatatistic storedPeerAddress) {
+	public void peerUpdated(PeerAddress peerAddress, PeerStatistic storedPeerAddress) {
 		updated.set(true);
 	}
 
@@ -122,7 +122,7 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 * Bootstrap to get the latest peer map and then update all relays with the newest version
 	 */
 	private void updatePeerMap() {
-		List<Map<Number160, PeerStatatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
+		List<Map<Number160, PeerStatistic>> peerMapVerified = relayRPC.peer().peerBean().peerMap().peerMapVerified();
 
 		// send the map to all relay peers
 		for (final BaseRelayConnection relay : distributedRelay.relays()) {
@@ -140,7 +140,7 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 * @param map
 	 *            The unreachable peer's peer map.
 	 */
-	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatatistic>> map) {
+	private void sendPeerMap(final BaseRelayConnection connection, List<Map<Number160, PeerStatistic>> map) {
 		LOG.debug("Sending current routing table to relay {}", connection.relayAddress());
 
 		final Message message = relayRPC

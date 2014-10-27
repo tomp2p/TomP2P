@@ -19,7 +19,7 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.peers.PeerStatusListener;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.NeighborRPC;
@@ -48,7 +48,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 
 	private final Number160 relayPeerId;
 	private PeerAddress unreachablePeer;
-	private List<Map<Number160, PeerStatatistic>> peerMap = null;
+	private List<Map<Number160, PeerStatistic>> peerMap = null;
 
 	public BaseRelayForwarderRPC(Peer peer, PeerAddress unreachablePeer, RelayType relayType) {
 		super(peer.peerBean(), peer.connectionBean());
@@ -69,7 +69,7 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 		// not handled here
 		return false;
 	}
-	
+
 	@Override
 	public final boolean peerFound(PeerAddress remotePeer, PeerAddress referrer, PeerConnection peerConnection) {
 		if (referrer == null || remotePeer.equals(referrer)) {
@@ -78,19 +78,20 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 
 			if (remotePeer.peerId().equals(unreachablePeerId()) && remotePeer.isRelayed()) {
 				// we got new information about this peer, e.g. its active relays
-				LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer, referrer);
+				LOG.trace("Update the unreachable peer to {} based on {}, ref {}", unreachablePeerAddress(), remotePeer,
+						referrer);
 				this.unreachablePeer = remotePeer;
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
+
 	public final Number160 relayPeerId() {
 		return relayPeerId;
 	}
-	
+
 	/**
 	 * Receive a message at the relay server from a given peer
 	 */
@@ -149,13 +150,13 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	 * @param sender
 	 */
 	private void handlePing(Message message, Responder responder) {
-		Message response = createResponseMessage(message, isAlive() ? Type.OK : Type.EXCEPTION,
-				unreachablePeerAddress());
+		Message response = createResponseMessage(message, isAlive() ? Type.OK : Type.EXCEPTION, unreachablePeerAddress());
 		responder.response(response);
 	}
-	
+
 	/**
 	 * Checks whether the relayed peer is still alive.
+	 * 
 	 * @return
 	 */
 	protected abstract boolean isAlive();
@@ -220,11 +221,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 			return peerAddresses;
 		}
 
-		Collection<PeerStatatistic> statistics = new ArrayList<PeerStatatistic>();
-		for (Map<Number160, PeerStatatistic> map : peerMap) {
+		Collection<PeerStatistic> statistics = new ArrayList<PeerStatistic>();
+		for (Map<Number160, PeerStatistic> map : peerMap) {
 			statistics.addAll(map.values());
 		}
-		for (PeerStatatistic peerStatatistic : statistics) {
+		for (PeerStatistic peerStatatistic : statistics) {
 			peerAddresses.add(peerStatatistic.peerAddress());
 		}
 		return peerAddresses;
@@ -233,11 +234,11 @@ public abstract class BaseRelayForwarderRPC extends DispatchHandler implements P
 	/**
 	 * Update the peerMap of the unreachable peer
 	 */
-	public final void setPeerMap(List<Map<Number160, PeerStatatistic>> peerMap) {
+	public final void setPeerMap(List<Map<Number160, PeerStatistic>> peerMap) {
 		this.peerMap = peerMap;
 		peerMapUpdated();
 	}
-	
+
 	/**
 	 * Is called when the unreachable peer sent an update to the relay peer
 	 */

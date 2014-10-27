@@ -18,7 +18,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.MessageUtils;
 
 public class RelayUtils {
@@ -27,7 +27,7 @@ public class RelayUtils {
 		// only static methods
 	}
 
-	public static List<Map<Number160, PeerStatatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
+	public static List<Map<Number160, PeerStatistic>> unflatten(Collection<PeerAddress> map, PeerAddress sender) {
 		PeerMapConfiguration peerMapConfiguration = new PeerMapConfiguration(sender.peerId());
 		PeerMap peerMap = new PeerMap(peerMapConfiguration);
 		for (PeerAddress peerAddress : map) {
@@ -36,10 +36,10 @@ public class RelayUtils {
 		return peerMap.peerMapVerified();
 	}
 
-	public static Collection<PeerAddress> flatten(List<Map<Number160, PeerStatatistic>> maps) {
+	public static Collection<PeerAddress> flatten(List<Map<Number160, PeerStatistic>> maps) {
 		Collection<PeerAddress> result = new ArrayList<PeerAddress>();
-		for (Map<Number160, PeerStatatistic> map : maps) {
-			for (PeerStatatistic peerStatatistic : map.values()) {
+		for (Map<Number160, PeerStatistic> map : maps) {
+			for (PeerStatistic peerStatatistic : map.values()) {
 				result.add(peerStatatistic.peerAddress());
 			}
 		}

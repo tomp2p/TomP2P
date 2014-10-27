@@ -44,14 +44,14 @@ public interface Maintenance {
      * @param shutdownMap The map with the peers that friendly quit
      * @return A new or the same maintenance class
      */
-    Maintenance init(List<Map<Number160, PeerStatatistic>> peerMapVerified,
-            List<Map<Number160, PeerStatatistic>> peerMapNonVerified,
+    Maintenance init(List<Map<Number160, PeerStatistic>> peerMapVerified,
+            List<Map<Number160, PeerStatistic>> peerMapNonVerified,
             ConcurrentCacheMap<Number160, PeerAddress> offlineMap, 
             ConcurrentCacheMap<Number160, PeerAddress> shutdownMap, ConcurrentCacheMap<Number160, PeerAddress> exceptionMap);
 
     /**
      * @return The next peer that needs maintenance or null if no maintenance is needed
      */
-    PeerStatatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses);
+    PeerStatistic nextForMaintenance(Collection<PeerAddress> notInterestedAddresses);
 
 }

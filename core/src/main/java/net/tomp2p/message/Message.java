@@ -160,7 +160,7 @@ public class Message {
     // Payload:
     // we can send 8 types
     private Content[] contentTypes = new Content[CONTENT_TYPE_LENGTH];
-    private final Queue<NumberType> contentRefencencs = new LinkedList<NumberType>();
+    private final Queue<MessageContentIndex> contentReferences = new LinkedList<MessageContentIndex>();
 
     // ********* Here comes the payload objects ************
     // The content lists:
@@ -359,7 +359,7 @@ public class Message {
                     throw new IllegalStateException("The public key needs to be the first to be set");
                 }
                 contentTypes[i] = contentType;
-                contentRefencencs.add(new NumberType(reference, contentType));
+                contentReferences.add(new MessageContentIndex(reference, contentType));
                 return this;
             } else if (contentTypes[i] == contentType) {
                 reference++;
@@ -408,7 +408,7 @@ public class Message {
 				index = refs.get(contentType);
 			}
 			
-			contentRefencencs.add(new NumberType(index, contentType));
+			contentReferences.add(new MessageContentIndex(index, contentType));
 			refs.put(contentType, index + 1);
 		}
 	}
@@ -442,15 +442,15 @@ public class Message {
     /**
      * @return The serialized content and references to the respective arrays
      */
-    public Queue<NumberType> contentRefencencs() {
-        return contentRefencencs;
+    public Queue<MessageContentIndex> contentReferences() {
+        return contentReferences;
     }
 
     /**
      * @return True if we have content and not only the header
      */
     public boolean hasContent() {
-        return contentRefencencs.size() > 0 || content;
+        return contentReferences.size() > 0 || content;
     }
 
     /**

@@ -767,7 +767,8 @@ public class Utils {
     }
 
     /**
-     * Convert a BitSet to a byte. Cannot use relayType.toByteArray()[0]; since its only available in 1.7
+     * Convert a BitSet to a byte. (Only takes the first 8 bits.)
+     * Cannot use relayType.toByteArray()[0]; since its only available in 1.7
      * 
      * @param bitSet
      *            The bit set

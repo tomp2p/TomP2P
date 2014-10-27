@@ -74,9 +74,7 @@ public class TestBloomFilter {
         cbs.add("abd");
         cbs.add("abe");
 
-        // CHECKSTYLE:OFF
         Assert.assertEquals(3, cbs.approximateCount("abc"));
-        // CHECKSTYLE:ON
         Assert.assertEquals(1, cbs.approximateCount("abd"));
         Assert.assertEquals(0, cbs.approximateCount("abg"));
 

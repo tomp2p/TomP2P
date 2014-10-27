@@ -79,7 +79,7 @@ public class DistributedRelay {
 	}
 
 	/**
-	 * Returns addresses of current relay peers
+	 * Returns connections to current relay peers
 	 * 
 	 * @return List of PeerAddresses of the relay peers (copy)
 	 */

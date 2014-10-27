@@ -32,7 +32,7 @@ public final class Number320 extends Number implements Comparable<Number320> {
     private final Number160 domainKey;
 
     /**
-     * Constructor with a given location key and domain key.
+     * Creates a new Number320 key from given location and domain keys.
      * 
      * @param locationKey
      *            The location key

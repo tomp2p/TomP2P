@@ -19,7 +19,7 @@ package net.tomp2p.peers;
 import java.util.Random;
 
 /**
- * This class stores the location, domain, and content key.
+ * This class stores the location, domain and content key.
  * 
  * @author Thomas Bocek
  * 
@@ -36,7 +36,7 @@ public final class Number480 extends Number implements Comparable<Number480> {
     private final Number160 contentKey;
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number480 key from given location, domain and content keys.
      * 
      * @param locationKey
      *            The location key
@@ -61,7 +61,7 @@ public final class Number480 extends Number implements Comparable<Number480> {
     }
 
     /**
-     * Constructor with a given location key, domain, and content key.
+     * Creates a new Number480 key from given location, domain and content keys.
      * 
      * @param key
      *            The location and domain key
@@ -73,7 +73,7 @@ public final class Number480 extends Number implements Comparable<Number480> {
     }
 
     /**
-     * Constructor that creates a random 480bit number.
+     * Creates a new random Number480 key.
      * 
      * @param rnd
      *            The random class

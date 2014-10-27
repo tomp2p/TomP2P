@@ -44,7 +44,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.utils.Utils;
 
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class DistributedTracker {
 					        .domainKey()));
 					NavigableSet<PeerAddress> queue = new TreeSet<PeerAddress>(PeerMap.createComparator(stableRandom));
 					if(peers != null && peers.peerAddresses()!=null) {
-						for (PeerStatatistic peerAddress : peers.peerAddresses().keySet()) {
+						for (PeerStatistic peerAddress : peers.peerAddresses().keySet()) {
 							queue.add(peerAddress.peerAddress());
 						}
 					}
@@ -260,10 +260,10 @@ public class DistributedTracker {
 					}
 					TrackerData newDataMap = futureResponse.responseMessage().trackerData(0);
 					if (newDataMap != null) {
-						Collection<PeerStatatistic> newPeers = newDataMap.peerAddresses().keySet();
+						Collection<PeerStatistic> newPeers = newDataMap.peerAddresses().keySet();
 						mergeDiff(secondaryQueue, newPeers, alreadyAsked, queueToAsk);
 						storeResult(peerOnTracker, newDataMap, futureResponse.request().recipient(), knownPeers);
-						for(PeerStatatistic peerStatatistic:newPeers) {
+						for(PeerStatistic peerStatatistic:newPeers) {
 							secondaryQueue.add(peerStatatistic.peerAddress());
 						}
 					}
@@ -381,12 +381,12 @@ public class DistributedTracker {
 	 *            Those peer we have already asked or are already in the queue
 	 * @return True, if new information has been added to queueToAsk
 	 */
-	private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerStatatistic> newPeers,
+	private static boolean mergeDiff(Set<PeerAddress> queueToAsk, Collection<PeerStatistic> newPeers,
 	        Collection<PeerAddress> knownPeers1, Collection<PeerAddress> knownPeers2) {
 		// result will be small, so we chose an array list.
 
 		Collection<PeerAddress> newPeers2 = new ArrayList<PeerAddress>();
-		for (PeerStatatistic peerStatatistic : newPeers) {
+		for (PeerStatistic peerStatatistic : newPeers) {
 			newPeers2.add(peerStatatistic.peerAddress());
 		}
 

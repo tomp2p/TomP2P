@@ -16,7 +16,7 @@ import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number320;
 import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.peers.PeerStatatistic;
+import net.tomp2p.peers.PeerStatistic;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
@@ -53,7 +53,7 @@ public class TestPeerExchange {
             Number320 key = new Number320(locationKey, domainKey);
             
             sender.trackerStorage().put(key, recv1.peerAddress(), null, new Data("test"));
-            PeerStatatistic ps = sender.trackerStorage().nextForMaintenance(new ArrayList<PeerAddress>());
+            PeerStatistic ps = sender.trackerStorage().nextForMaintenance(new ArrayList<PeerAddress>());
             FuturePing fp = sender.peer().ping().peerAddress(ps.peerAddress()).start().awaitListeners();
             Assert.assertEquals(true, fp.isSuccess());
             

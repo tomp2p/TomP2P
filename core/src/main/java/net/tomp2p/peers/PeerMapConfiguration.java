@@ -47,7 +47,6 @@ public class PeerMapConfiguration {
      */
     public PeerMapConfiguration(final Number160 self) {
         this.self = self;
-        // CHECKSTYLE:OFF
         bagSizeVerified = 10;
         bagSizeOverflow = 10;
         offlineTimeout = 60;
@@ -56,7 +55,6 @@ public class PeerMapConfiguration {
         offlineCount = 3;
         maintenance = new DefaultMaintenance(4, new int[] { 2, 4, 8, 16, 32, 64 });
         peerVerification = true;
-        // CHECKSTYLE:ON
     }
 
     /**

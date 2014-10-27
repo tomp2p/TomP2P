@@ -60,7 +60,7 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class PeerBuilder {
-	public static final PublicKey EMPTY_PUBLICKEY = new PublicKey() {
+	public static final PublicKey EMPTY_PUBLIC_KEY = new PublicKey() {
 		private static final long serialVersionUID = 4041565007522454573L;
 
 		@Override
@@ -79,7 +79,7 @@ public class PeerBuilder {
 		}
 	};
 
-	private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLICKEY, null);
+	private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit

@@ -24,7 +24,6 @@ import net.tomp2p.relay.android.AndroidRelayConnection;
 import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.tcp.OpenTCPRelayConnection;
 import net.tomp2p.rpc.RPC;
-import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -288,8 +287,8 @@ public class DistributedRelay {
 				return futureDone.failed("Invalid GCM configuration");
 			} else {
 				// add the registration ID, the GCM authentication key and the map update interval
-				message.buffer(MessageUtils.encodeString(gcmServerCredentials.registrationId()));
-				message.buffer(MessageUtils.encodeString(gcmServerCredentials.senderAuthenticationKey()));
+				message.buffer(RelayUtils.encodeString(gcmServerCredentials.registrationId()));
+				message.buffer(RelayUtils.encodeString(gcmServerCredentials.senderAuthenticationKey()));
 				message.intValue(mapUpdateInterval);
 			}
 		}
@@ -303,7 +302,7 @@ public class DistributedRelay {
 					final PeerConnection peerConnection = futurePeerConnection.object();
 
 					// send the message
-					FutureResponse response = MessageUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
+					FutureResponse response = RelayUtils.send(peerConnection, peer.peerBean(), peer.connectionBean(),
 							config, message);
 					response.addListener(new BaseFutureAdapter<FutureResponse>() {
 						public void operationComplete(FutureResponse future) throws Exception {

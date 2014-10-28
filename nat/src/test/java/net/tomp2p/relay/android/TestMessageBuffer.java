@@ -9,15 +9,11 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import net.tomp2p.connection.DSASignatureFactory;
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Message;
-import net.tomp2p.message.Message.Type;
-import net.tomp2p.peers.Number160;
-import net.tomp2p.peers.PeerAddress;
-import net.tomp2p.rpc.RPC.Commands;
+import net.tomp2p.relay.UtilsNAT;
 
 import org.junit.Test;
 
@@ -32,9 +28,9 @@ public class TestMessageBuffer {
 		buffer.addListener(listener);
 
 		// create three messages
-		Message first = createMessage();
-		Message second = createMessage();
-		Message third = createMessage();
+		Message first = UtilsNAT.createRandomMessage();
+		Message second = UtilsNAT.createRandomMessage();
+		Message third = UtilsNAT.createRandomMessage();
 
 		buffer.addMessage(first, signature);
 		buffer.addMessage(second, signature);
@@ -56,7 +52,7 @@ public class TestMessageBuffer {
 		buffer.addListener(listener);
 
 		// create one message
-		buffer.addMessage(createMessage(), signature);
+		buffer.addMessage(UtilsNAT.createRandomMessage(), signature);
 
 		// buffer triggered already
 		assertEquals(1, listener.getTriggerCount());
@@ -72,7 +68,7 @@ public class TestMessageBuffer {
 		buffer.addListener(listener);
 
 		// create one message
-		buffer.addMessage(createMessage(), signature);
+		buffer.addMessage(UtilsNAT.createRandomMessage(), signature);
 
 		// buffer did not trigger yet
 		assertEquals(0, listener.getTriggerCount());
@@ -100,11 +96,11 @@ public class TestMessageBuffer {
 		buffer.addListener(listener);
 
 		// create five messages
-		Message first = createMessage();
-		Message second = createMessage();
-		Message third = createMessage();
-		Message fourth = createMessage();
-		Message fifth = createMessage();
+		Message first = UtilsNAT.createRandomMessage();
+		Message second = UtilsNAT.createRandomMessage();
+		Message third = UtilsNAT.createRandomMessage();
+		Message fourth = UtilsNAT.createRandomMessage();
+		Message fifth = UtilsNAT.createRandomMessage();
 
 		buffer.addMessage(first, signature);
 		buffer.addMessage(second, signature);
@@ -128,30 +124,16 @@ public class TestMessageBuffer {
 		buffer.addListener(listener);
 
 		// create one message
-		buffer.addMessage(createMessage(), signature);
+		buffer.addMessage(UtilsNAT.createRandomMessage(), signature);
 
 		// garbage collect
 		System.gc();
 
 		// create another message
-		buffer.addMessage(createMessage(), signature);
+		buffer.addMessage(UtilsNAT.createRandomMessage(), signature);
 				
 		// buffer triggered two messages
 		assertEquals(2, listener.getBuffer().size());
-	}
-	
-	/**
-	 * Creates a message with random content
-	 */
-	private Message createMessage() {
-		Random rnd = new Random();
-
-		Message message = new Message();
-		message.command(Commands.values()[rnd.nextInt(Commands.values().length)].getNr());
-		message.type(Type.values()[rnd.nextInt(Type.values().length)]);
-		message.recipient(new PeerAddress(new Number160(rnd)));
-		message.sender(new PeerAddress(new Number160(rnd)));
-		return message;
 	}
 	
 	private class CountingBufferListener implements MessageBufferListener {

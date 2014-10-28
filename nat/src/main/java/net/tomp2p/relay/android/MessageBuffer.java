@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.connection.SignatureFactory;
 import net.tomp2p.message.Message;
-import net.tomp2p.utils.MessageUtils;
+import net.tomp2p.relay.RelayUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,7 +73,7 @@ public class MessageBuffer {
 			buffer.add(message);
 		}
 
-		bufferSize.addAndGet(MessageUtils.getMessageSize(message, signatureFactory));
+		bufferSize.addAndGet(RelayUtils.getMessageSize(message, signatureFactory));
 
 		LOG.debug("Added to the buffer: {}", message);
 		checkFull();

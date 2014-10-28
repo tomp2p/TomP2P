@@ -144,7 +144,7 @@ public class Message {
 		/**
 		 * Still unused
 		 */
-		USER2
+		RESERVED1
 	};
 
     // Header:
@@ -383,10 +383,8 @@ public class Message {
 	public void restoreContentReferences() {
 		Map<Content, Integer> refs = new HashMap<Content, Integer>(contentTypes.length * 2);
 		for (Content contentType : contentTypes) {
-			if (contentType == Content.EMPTY) {
+			if (contentType == Content.EMPTY || contentType == null) {
 				return;
-			} else if(contentType == null) {
-				continue;
 			}
 			
 			int index = 0;

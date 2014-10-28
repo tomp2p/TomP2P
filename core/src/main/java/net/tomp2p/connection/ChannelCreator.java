@@ -43,6 +43,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import net.tomp2p.futures.FutureDone;
 import net.tomp2p.futures.FutureResponse;
+import net.tomp2p.message.Message;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.utils.Pair;
 
 import org.slf4j.Logger;
@@ -127,10 +129,12 @@ public class ChannelCreator {
 	 *            Sets this channel to be able to broadcast
 	 * @param channelHandlers
 	 *            The handlers to set
+	 * @param futureResponse
+	 * 			  the response
 	 * @return The channel future object or null if we are shut down
 	 */
 	public ChannelFuture createUDP(final boolean broadcast,
-	        final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
+			final Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers, FutureResponse futureResponse) {
 		readUDP.lock();
 		try {
 			if (shutdownUDP) {
@@ -172,7 +176,8 @@ public class ChannelCreator {
 	 *            The timeout for establishing a TCP connection
 	 * @param channelHandlers
 	 *            The handlers to set
-	 * @param futureResponse 
+	 * @param futureResponse
+	 * 			  the response
 	 * @return The channel future object or null if we are shut down.
 	 */
 	public ChannelFuture createTCP(final SocketAddress socketAddress, final int connectionTimeoutMillis,
@@ -243,6 +248,8 @@ public class ChannelCreator {
 	 *            The channel future
 	 * @param semaphore
 	 *            The semaphore to decrease
+	 * @param futureResponse
+	 * 			  The response to fire when the channel is closed. If the response is <code>null</code>, nothing will be done.
 	 * @return The same future that was passed as an argument
 	 */
 	private ChannelFuture setupCloseListener(final ChannelFuture channelFuture, final Semaphore semaphore, final FutureResponse futureResponse) {
@@ -258,7 +265,14 @@ public class ChannelCreator {
 					@Override
 					public void run() {
 						semaphore.release();
-						futureResponse.responseNow();
+						
+						Message request = futureResponse.request();
+						if(request.recipient().isSlow() && request.command() != Commands.PING.getNr() && request.command() != Commands.NEIGHBOR.getNr()) {
+							// If the request goes to a slow peer, the channel can be closed until the response arrives
+							LOG.debug("Ignoring channel close event because recipient is slow peer");
+						} else {
+							futureResponse.responseNow();
+						}
 					}
 				};
 				if (handlerExecutor == null) {
@@ -352,6 +366,4 @@ public class ChannelCreator {
 	    sb.append(semaphoreUPD);
 	    return sb.toString();
 	}
-
-	
 }

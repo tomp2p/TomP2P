@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.tomp2p.connection.PeerException.AbortCause;
+import net.tomp2p.futures.FutureResponse;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.peers.Number160;
@@ -66,12 +67,21 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
      * on behalf of another peer.
      */
     private volatile Map<Number320, Map<Integer, DispatchHandler>> ioHandlers = new HashMap<Number320, Map<Integer, DispatchHandler>>();
+    
+	/**
+	 * Map that stores requests that are not answered yet. Normally, the {@link RequestHandler} handles
+	 * responses, however, in case the asked peer has {@link PeerAddress#isSlow()} set to true, the answer
+	 * might arrive later. The key of the map is the expected message id.
+	 */
+    private volatile Map<Integer, FutureResponse> pendingRequests = new HashMap<Integer, FutureResponse>();
 
+    
     /**
      * Constructor.
      * 
      * @param p2pID
      *            the p2p ID the dispatcher is looking for in messages
+     * @param signatureFactory 
      * @param peerBean
      *            .
      */
@@ -128,7 +138,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void channelRead0(final ChannelHandlerContext ctx, final Message message) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx, Message message) throws Exception {
         LOG.debug("received request {} from channel {}", message, ctx.channel());
         if (message.version() != p2pID) {
             LOG.error("Wrong version. We are looking for {} but we got {}, received: {}", p2pID,
@@ -141,12 +151,13 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
             }
             return;
         }
+        
         if (!message.isRequest()) {
-            LOG.debug("handing message to the next handler {}", message);
-            ctx.fireChannelRead(message);
-            return;
+        	LOG.debug("handing message to the next handler {}", message);
+        	ctx.fireChannelRead(message);
+        	return;
         }
-
+        
         Responder responder = new DirectResponder(ctx, message);
         final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
@@ -206,8 +217,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         
         @Override
 		public void responseFireAndForget() {
-            LOG.debug("The reply handler was a fire-and-forget handler, "
-                    + "we don't send any message back! {}", requestMessage);    
+            LOG.debug("The reply handler was a fire-and-forget handler, we don't send any message back! {}", requestMessage);    
            if (!(ctx.channel() instanceof DatagramChannel)) {
                LOG.warn("There is no TCP fire and forget, use UDP in that case {}", requestMessage);
                throw new RuntimeException("There is no TCP fire and forget, use UDP in that case.");
@@ -343,5 +353,24 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
 	public Map<Integer, DispatchHandler> searchHandlerMap(Number160 peerId, Number160 onBehalfOf) {
 		Map<Integer, DispatchHandler> ioHandlerMap = ioHandlers.get(new Number320(peerId, onBehalfOf));
 		return ioHandlerMap;
+	}
+	
+	/**
+	 * Add a new pending request. If slow peers answer, this map will be checked for an entry
+	 * 
+	 * @param messageId the message id
+	 * @param futureResponse the future to respond as soon as a (satisfying) response from the slow peer
+	 *            arrived.
+	 */
+	public void addPendingRequest(int messageId, FutureResponse futureResponse) {
+		// TODO add timeout for the pending requests
+		pendingRequests.put(messageId, futureResponse);
+	}
+
+	/**
+	 * @return all pending requests
+	 */
+	public Map<Integer, FutureResponse> getPendingRequests() {
+		return pendingRequests;
 	}
 }

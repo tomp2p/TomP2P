@@ -79,15 +79,17 @@ public class PeerCreator {
 	 *            used for listening for incoming connections
 	 * @param channelClientConfiguration
 	 *            The client side configuration
-	 * @param peerStatusListeners
-	 *            The status listener for offline peers
+	 * @param timer
+	 *            The executor service
+	 * @param sendBehavior
+	 * 			  The sending behavior for direct messages
 	 * @throws IOException
-	 *             If the startup of listening to connections failed
+	 *            If the startup of listening to connections failed
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
 	        final ChannelServerConficuration channelServerConficuration,
 	        final ChannelClientConfiguration channelClientConfiguration,
-	        final ScheduledExecutorService timer) throws IOException {
+	        final ScheduledExecutorService timer, SendBehavior sendBehavior) throws IOException {
 		//peer bean
 		peerBean = new PeerBean(keyPair);
 		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
@@ -103,7 +105,7 @@ public class PeerCreator {
 		        dispatcher, peerBean.peerStatusListeners(), timer);
 		
 		//connection bean
-		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher);
+		Sender sender = new Sender(peerId, peerBean.peerStatusListeners(), channelClientConfiguration, dispatcher, sendBehavior);
 		Reservation reservation = new Reservation(workerGroup, channelClientConfiguration);
 		connectionBean = new ConnectionBean(p2pId, dispatcher, sender, channelServer, reservation,
 		        channelClientConfiguration, timer);
@@ -241,7 +243,7 @@ public class PeerCreator {
 		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
 				ports().tcpPort(), channelServerConficuration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
-		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
+		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false, false,
 		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
 		return self;
 	}

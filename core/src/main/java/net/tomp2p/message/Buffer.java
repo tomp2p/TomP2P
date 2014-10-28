@@ -104,6 +104,6 @@ public class Buffer {
 
 	public void reset() {
 		read=0;
-		
+		buffer.resetReaderIndex();
 	}
 }

@@ -69,7 +69,8 @@ public final class MessageHeaderCodec {
         buffer.writeShort((short) message.sender().udpPort()); // 33
         buffer.writeBytes(message.recipient().peerId().toByteArray()); // 53
         buffer.writeInt(encodeContentTypes(message.contentTypes())); // 57
-        buffer.writeByte((message.sender().options() << 4) | message.options()); // 58
+        // three bits for the message options, 5 bits for the sender options
+        buffer.writeByte((message.sender().options() << 3) | message.options()); // 58
         return buffer;
     }
 
@@ -109,8 +110,9 @@ public final class MessageHeaderCodec {
         // set the address as we see it, important for port forwarding
         // identification
         final int options = buffer.readUnsignedByte();
-        message.options(options & 0xf);
-        final int senderOptions = options >>> 4;
+        // three bits for the message options, 5 bits for the sender options
+		message.options(options & 0x7);
+        final int senderOptions = options >>> 3;
         final PeerAddress peerAddress = new PeerAddress(senderID, sender.getAddress(), portTCP, portUDP,
                 senderOptions);
         message.sender(peerAddress);

@@ -16,12 +16,10 @@ import net.tomp2p.rpc.ObjectDataReply;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestRelay {
-    final private static Random rnd = new Random(42L);
-    private static final Logger LOG = LoggerFactory.getLogger(TestRelay.class);
+    private final static Random rnd = new Random(42L);
+
     @Test
     public void testPeerConnection() throws Exception {
         Peer master = null;

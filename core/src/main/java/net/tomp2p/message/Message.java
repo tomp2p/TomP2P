@@ -29,10 +29,12 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Random;
 
+import net.tomp2p.connection.PeerConnection;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.RPC;
+import net.tomp2p.rpc.RPC.Commands;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
@@ -60,34 +62,90 @@ public class Message {
     /**
      * 1 x 4 bit.
      */
-    public enum Type {
-        // REQUEST_1 is the normal request
-        // REQUEST_2 for GET returns the extended digest (hashes of all stored
-        // data)
-        // REQUEST_3 for GET returns a Bloom filter
-        // REQUEST_4 for GET returns a range (min/max)
-        // REQUEST_2 for PUT/ADD/COMPARE_PUT means protect domain
-        // REQUEST_3 for PUT means put if absent
-        // REQUEST_3 for COMPARE_PUT means partial (partial means that put those
-        // data that match compare, ignore others)
-        // REQUEST_4 for PUT means protect domain and put if absent
-        // REQUEST_4 for COMPARE_PUT means partial and protect domain
-        // REQUEST_2 for REMOVE means send back results
-        // REQUEST_2 for RAW_DATA means serialize object
-        // *** NEIGHBORS has four different cases
-        // REQUEST_1 for NEIGHBORS means check for put (no digest) for tracker
-        // and storage
-        // REQUEST_2 for NEIGHBORS means check for get (with digest) for storage
-        // REQUEST_3 for NEIGHBORS means check for get (with digest) for tracker
-        // REQUEST_4 for NEIGHBORS means check for put (with digest) for task
-        // REQUEST_FF_1 for PEX means fire and forget, coming from mesh
-        // REQUEST_FF_1 for PEX means fire and forget, coming from primary
-        // REQUEST_1 for TASK is submit new task
-        // REQUEST_2 for TASK is status
-        // REQUEST_3 for TASK is send back result
-        REQUEST_1, REQUEST_2, REQUEST_3, REQUEST_4, REQUEST_FF_1, REQUEST_FF_2, OK, 
-        PARTIALLY_OK, NOT_FOUND, DENIED, UNKNOWN_ID, EXCEPTION, CANCEL, USER1, USER2
-    };
+	public enum Type {
+		/**
+		 * <ul>
+		 * <li>the normal request</li>
+		 * <li>for {@link Commands#NEIGHBOR} means check for put (no digest) for tracker and storage</li>
+		 * <li>for TASK is submit new task</li>
+		 * <li>for {@link Commands#RELAY} is for setup</li>
+		 * <li>for {@link Commands#RCON} means forward reverse connection to unreachable peer</li>
+		 * </ul>
+		 */
+		REQUEST_1,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#GET} returns the extended digest (hashes of all stored data)</li>
+		 * <li>for {@link Commands#PUT}/{@link Commands#ADD}/COMPARE_PUT means protect domain</li>
+		 * <li>for {@link Commands#REMOVE} means send back results</li>
+		 * <li>for RAW_DATA means serialize object</li>
+		 * <li>for {@link Commands#NEIGHBOR} means check for get (with digest) for storage</li>
+		 * <li>for TASK is status</li>
+		 * <li>for {@link Commands#RELAY} means send piggybacked message</li>
+		 * <li>for {@link Commands#RCON} open TCP channel and transmit {@link PeerConnection}</li>
+		 * </ul>
+		 */
+		REQUEST_2,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#GET} returns a Bloom filter</li>
+		 * <li>for {@link Commands#PUT} means put if absent</li>
+		 * <li>for COMPARE_PUT means partial (partial means that put those data that match compare, ignore
+		 * others)</li>
+		 * <li>for TASK is send back result</li>
+		 * <li>for {@link Commands#RELAY} means update the routing table</li>
+		 * <li>for {@link Commands#RCON} use open {@link PeerConnection} to transmit original message</li>
+		 * </ul>
+		 */
+		REQUEST_3,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#GET} returns a range (min/max)</li>
+		 * <li>for {@link Commands#PUT} for PUT means protect domain and put if absent</li>
+		 * <li>for COMPARE_PUT means partial and protect domain</li>
+		 * <li>for {@link Commands#NEIGHBOR} means check for put (with digest) for task</li>
+		 * <li>for {@link Commands#RELAY} fetch the buffer from the relay peer (Android only)</li>
+		 * </ul>
+		 */
+		REQUEST_4,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#RELAY} means that a late response arrived at the relay peer (slow peers
+		 * only)</li>
+		 * </ul>
+		 */
+		REQUEST_5,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#PEX} means fire and forget, coming from mesh</li>
+		 * </ul>
+		 */
+		REQUEST_FF_1,
+
+		/**
+		 * <ul>
+		 * <li>for {@link Commands#PEX} means fire and forget, coming from primary</li>
+		 * </ul>
+		 */
+		REQUEST_FF_2,
+		OK,
+		PARTIALLY_OK,
+		NOT_FOUND,
+		DENIED,
+		UNKNOWN_ID,
+		EXCEPTION,
+		CANCEL,
+		
+		/**
+		 * Still unused
+		 */
+		RESERVED1
+	};
 
     // Header:
     private int messageId;
@@ -325,7 +383,7 @@ public class Message {
 	public void restoreContentReferences() {
 		Map<Content, Integer> refs = new HashMap<Content, Integer>(contentTypes.length * 2);
 		for (Content contentType : contentTypes) {
-			if (contentType == Content.EMPTY) {
+			if (contentType == Content.EMPTY || contentType == null) {
 				return;
 			}
 			
@@ -350,6 +408,16 @@ public class Message {
 			
 			contentReferences.add(new MessageContentIndex(index, contentType));
 			refs.put(contentType, index + 1);
+		}
+	}
+	
+	/**
+	 * Restores all buffers such that they can be re-read (e.g. used for encoding). If the message does not
+	 * have any buffer, this method does nothing.
+	 */
+	public void restoreBuffers() {
+		for (Buffer buffer : bufferList()) {
+			buffer.reset();
 		}
 	}
 
@@ -409,8 +477,8 @@ public class Message {
      * @return True if this is a request, a regural or a fire and forget
      */
     public boolean isRequest() {
-        return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3
-                || type == Type.REQUEST_4 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
+		return type == Type.REQUEST_1 || type == Type.REQUEST_2 || type == Type.REQUEST_3 || type == Type.REQUEST_4
+				|| type == Type.REQUEST_5 || type == Type.REQUEST_FF_1 || type == Type.REQUEST_FF_2;
     }
 
     /**

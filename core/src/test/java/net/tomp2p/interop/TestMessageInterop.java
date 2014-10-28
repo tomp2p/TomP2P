@@ -10,7 +10,6 @@ import org.junit.Test;
 
 public class TestMessageInterop extends TestInteropBase {
 
-	@Ignore
 	@Test
 	public void testMessageEncode() throws Exception {
 

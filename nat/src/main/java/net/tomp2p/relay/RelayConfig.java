@@ -62,7 +62,13 @@ public class RelayConfig {
 	
 	@Override
 	public String toString() {
-		return type.toString();
+		StringBuilder sb = new StringBuilder(type.toString());
+		sb.append("[Interval:").append(peerMapUpdateInterval).append("s");
+		if(bufferConfiguration != null) {
+			sb.append(", GCM-Buffered");
+		}
+		sb.append("]");
+		return sb.toString();
 	}
 
 	/**

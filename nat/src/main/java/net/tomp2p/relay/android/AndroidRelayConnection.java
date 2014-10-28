@@ -62,6 +62,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	 * @return when the buffer request is done
 	 */
 	public FutureDone<Void> sendBufferRequest() {
+		LOG.debug("Sending buffer request to relay {}", relayAddress());
 		final FutureDone<Void> futureDone = new FutureDone<Void>();
 
 		Message message = dispatchHandler.createMessage(relayAddress(), Commands.RELAY.getNr(), Type.REQUEST_4);

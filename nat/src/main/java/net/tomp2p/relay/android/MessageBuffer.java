@@ -39,8 +39,23 @@ public class MessageBuffer<T> {
 
 	private BufferAgeRunnable task;
 
-	public MessageBuffer(int messageCountLimit, long bufferSizeLimit, long bufferAgeLimitMS) {
-		this.messageCountLimit = messageCountLimit;
+	/**
+	 * Create a new buffer using the configuration
+	 * @param config the buffer limit configuration
+	 */
+	public MessageBuffer(MessageBufferConfiguration config) {
+		this(config.bufferCountLimit(), config.bufferSizeLimit(), config.bufferAgeLimit());
+	}
+
+	/**
+	 * Create a new buffer with given limits
+	 * 
+	 * @param bufferCountLimit the number of messages
+	 * @param bufferSizeLimit the size of all messages (in bytes)
+	 * @param bufferAgeLimitMS the maximum age of the oldest message
+	 */
+	public MessageBuffer(int bufferCountLimit, long bufferSizeLimit, long bufferAgeLimitMS) {
+		this.messageCountLimit = bufferCountLimit;
 		this.bufferSizeLimit = bufferSizeLimit;
 		this.bufferAgeLimitMS = bufferAgeLimitMS;
 		this.listeners = new ArrayList<MessageBufferListener<T>>();
@@ -59,8 +74,7 @@ public class MessageBuffer<T> {
 	 * @throws SignatureException
 	 * @throws InvalidKeyException
 	 */
-	public void addMessage(T message, long messageSize) throws InvalidKeyException,
-			SignatureException, IOException {
+	public void addMessage(T message, long messageSize) {
 		synchronized (buffer) {
 			if (buffer.isEmpty()) {
 				task = new BufferAgeRunnable();

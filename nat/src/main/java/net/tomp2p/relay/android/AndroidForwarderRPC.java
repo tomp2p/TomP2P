@@ -59,8 +59,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.sender = new Sender(authenticationToken);
 		this.pendingRequests = Collections.synchronizedList(new ArrayList<FutureGCM>());
 		
-		buffer = new MessageBuffer<Message>(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
-				bufferConfig.bufferAgeLimit());
+		buffer = new MessageBuffer<Message>(bufferConfig);
 		addBufferListener(this);
 	}
 

@@ -3,6 +3,7 @@ package net.tomp2p.relay;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +23,8 @@ import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidRelayConnection;
 import net.tomp2p.relay.android.GCMMessageHandler;
+import net.tomp2p.relay.android.MessageBuffer;
+import net.tomp2p.relay.android.MessageBufferListener;
 import net.tomp2p.relay.tcp.OpenTCPRelayConnection;
 import net.tomp2p.rpc.RPC;
 
@@ -53,7 +56,8 @@ public class DistributedRelay implements GCMMessageHandler {
 	private final Collection<RelayListener> relayListeners;
 	private final RelayConfig relayConfig;
 
-
+	// optional field, only when an android device and buffering is requested
+	private MessageBuffer<String> gcmBuffer;
 
 	/**
 	 * @param peer
@@ -78,6 +82,21 @@ public class DistributedRelay implements GCMMessageHandler {
 		relays = Collections.synchronizedList(new ArrayList<BaseRelayConnection>());
 		failedRelays = new ConcurrentCacheSet<PeerAddress>(failedRelayWaitTime);
 		relayListeners = Collections.synchronizedList(new ArrayList<RelayListener>(1));
+		
+		// buffering is currently only allowed at Android devices
+		if(relayConfig.type() == RelayType.ANDROID && relayConfig.bufferConfiguration() != null) {
+			gcmBuffer = new MessageBuffer<String>(relayConfig.bufferConfiguration());
+			gcmBuffer.addListener(new MessageBufferListener<String>() {
+				
+				@Override
+				public void bufferFull(List<String> messages) {
+					Set<String> relayIds = new HashSet<String>(messages);
+					for (String peerId : relayIds) {
+						sendBufferRequest(peerId);
+					}
+				}
+			});
+		}
 	}
 
 	/**
@@ -419,23 +438,35 @@ public class DistributedRelay implements GCMMessageHandler {
 	}
 
 	@Override
-	public void onGCMMessageArrival(String collapseKey) {
-		// TODO buffering
-
-		AndroidRelayConnection connection = null;
-		for (BaseRelayConnection relayConnection : relays()) {
-			String peerId = relayConnection.relayAddress().peerId().toString();
-			if (peerId.equals(collapseKey) && relayConnection instanceof AndroidRelayConnection) {
-				LOG.debug("Found connection to the relay peer {}", peerId);
-				connection = (AndroidRelayConnection) relayConnection;
-				break;
-			}
-		}
-		if (connection == null) {
-			LOG.warn("No connection to relay {} found. Ignoring the message.", collapseKey);
-			return;
+	public void onGCMMessageArrival(String peerId) {
+		if(relayConfig.type() != RelayType.ANDROID) {
+			throw new UnsupportedOperationException("Must be of type 'Android' to access this method");
 		}
 		
-		connection.sendBufferRequest();
+		if(gcmBuffer == null) {
+			LOG.trace("GCM messages are unbuffered. Ask relay {} for messages now", peerId);
+			sendBufferRequest(peerId);
+		} else {
+			LOG.trace("Add the GCM message into the buffer before processing it.");
+			gcmBuffer.addMessage(peerId, 1);
+		}
+	}
+	
+	/**
+	 * Helper method to find the correct connection for the given peerId and sends the request to get the
+	 * buffered messages
+	 * 
+	 * @param relayPeerId the id of the peer as a String
+	 */
+	private void sendBufferRequest(String relayPeerId) {
+		for (BaseRelayConnection relayConnection : relays()) {
+			String peerId = relayConnection.relayAddress().peerId().toString();
+			if (peerId.equals(relayPeerId) && relayConnection instanceof AndroidRelayConnection) {
+				((AndroidRelayConnection) relayConnection).sendBufferRequest();
+				return;
+			}
+		}
+
+		LOG.warn("No connection to relay {} found. Ignoring the message.", relayPeerId);
 	}
 }

@@ -76,9 +76,9 @@ public class Utils {
     public static final int IPV4_BYTES = 4;
     public static final int IPV6_BYTES = 16;
     public static final int BYTE_BITS = 8;
-    public static final int MASK_FF = 0xff;			// 1111 1111
-    public static final int MASK_80 = 0x80;
-    public static final int MASK_0F = 0xf;
+    public static final int MASK_0F = 0xf;			// 00000000 00000000 00000000 00001111
+    public static final int MASK_80 = 0x80;			// 00000000 00000000 00000000 10000000
+    public static final int MASK_FF = 0xff;			// 00000000 00000000 00000000 11111111
     public static final int BYTE_BYTE_SIZE = 1;		//  8 bits
     public static final int SHORT_BYTE_SIZE = 2;	// 16 bits
     public static final int INTEGER_BYTE_SIZE = 4;	// 32 bits

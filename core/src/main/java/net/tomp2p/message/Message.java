@@ -36,8 +36,8 @@ import net.tomp2p.rpc.RPC;
 import net.tomp2p.rpc.SimpleBloomFilter;
 
 /**
- * The message is in binary format in TomP2P. It is defined as follows and has several header and payload fields. Since
- * we do the serialization manually, we do not need a serialization field.
+ * The message is in binary format in TomP2P. It has several header and payload fields. Since
+ * we do the serialization/encoding manually, we do not need a serialization field.
  * 
  * @author Thomas Bocek
  */
@@ -184,7 +184,7 @@ public class Message {
     }
 
     /**
-     * Determines if its a request oCommandr reply, and what kind of reply (error, warning states).
+     * Determines if its a request or command reply, and what kind of reply (error, warning states).
      * 
      * @return Type of the message
      */
@@ -461,7 +461,7 @@ public class Message {
     }
 
     /**
-     * @return The option from the last byte of the header
+     * @return The options from the last byte of the header
      */
     public int options() {
         return options;

@@ -31,7 +31,7 @@ import com.google.android.gcm.server.Sender;
  * @author Nico Rutishauser
  *
  */
-public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener {
+public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements MessageBufferListener<Message> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
@@ -39,7 +39,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	private final Sender sender;
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
-	private final MessageBuffer buffer;
+	private final MessageBuffer<Message> buffer;
 	private final AtomicLong lastUpdate;
 
 	// holds the current requests
@@ -58,12 +58,12 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.sender = new Sender(authenticationToken);
 		this.pendingRequests = Collections.synchronizedList(new ArrayList<FutureGCM>());
 		
-		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
+		buffer = new MessageBuffer<Message>(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
 				bufferConfig.bufferAgeLimit());
-		addMessageBufferListener(this);
+		addBufferListener(this);
 	}
 
-	public void addMessageBufferListener(MessageBufferListener listener) {
+	public void addBufferListener(MessageBufferListener<Message> listener) {
 		buffer.addListener(listener);
 	}
 
@@ -76,7 +76,8 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		response.sender(unreachablePeerAddress());
 
 		try {
-			buffer.addMessage(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+			int messageSize = RelayUtils.getMessageSize(message, connectionBean().channelServer().channelServerConfiguration().signatureFactory());
+			buffer.addMessage(message, messageSize);
 		} catch (Exception e) {
 			LOG.error("Cannot encode the message", e);
 			return futureDone.done(createResponseMessage(message, Type.EXCEPTION));

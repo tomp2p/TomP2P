@@ -101,7 +101,7 @@ public class TestRelay {
 				if (entry.getValue() instanceof AndroidForwarderRPC && !mockedForwarders.contains(entry.getValue())) {
 					final AndroidForwarderRPC forwarderRPC = (AndroidForwarderRPC) entry.getValue();
 					// make sure every forwarder only has one of these listeners
-					forwarderRPC.addMessageBufferListener(new MessageBufferListener() {
+					forwarderRPC.addBufferListener(new MessageBufferListener<Message>() {
 
 						@Override
 						public void bufferFull(List<Message> bufferedMessages) {

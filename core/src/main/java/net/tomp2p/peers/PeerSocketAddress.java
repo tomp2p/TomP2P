@@ -57,7 +57,7 @@ public class PeerSocketAddress implements Serializable {
      * This constructor is used mostly internally as the offset is stored as well.
      * 
      * @param inetAddress
-     *            The InetAddress of the peer. Can be IPv6 or IPv4
+     *            The InetAddress of the peer. Can be IPv4 or IPv6
      * @param tcpPort
      *            The TCP port
      * @param udpPort
@@ -73,6 +73,84 @@ public class PeerSocketAddress implements Serializable {
     }
 
     /**
+	 * Converts a byte array into a PeerSocketAddress.
+	 * 
+	 * @param me
+	 *            The byte array
+	 * @param isIPv4
+	 *            Whether its IPv4 or IPv6
+	 * @param offsetOriginal
+	 *            The offset from where to start reading in the array
+	 * @return the PeerSocketAddress and the new offset
+	 */
+	public static PeerSocketAddress create(final byte[] me, final boolean isIPv4, final int offsetOriginal) {
+	    int offset = offsetOriginal;
+	    final int tcpPort = ((me[offset++] & Utils.MASK_FF) << Utils.BYTE_BITS) + (me[offset++] & Utils.MASK_FF);
+	    final int udpPort = ((me[offset++] & Utils.MASK_FF) << Utils.BYTE_BITS) + (me[offset++] & Utils.MASK_FF);
+
+	    final InetAddress address;
+	    if (isIPv4) {
+	        address = Utils.inet4FromBytes(me, offset);
+	        offset += Utils.IPV4_BYTES;
+	    } else {
+	        address = Utils.inet6FromBytes(me, offset);
+	        offset += Utils.IPV6_BYTES;
+	    }
+	    return new PeerSocketAddress(address, tcpPort, udpPort, offset);
+	}
+
+	/**
+	 * Decodes a PeerSocketAddress from a Netty buffer.
+	 * 
+	 * @param buf
+	 *            The Netty buffer
+	 * @param isIPv4
+	 *            Whether the address is IPv4 or IPv6
+	 * @return the PeerSocketAddress and the new offset
+	 */
+	public static PeerSocketAddress create(final ByteBuf buf, final boolean isIPv4) {
+	    final int tcpPort = buf.readUnsignedShort();
+	    final int udpPort = buf.readUnsignedShort();
+
+	    final InetAddress address;
+	    final byte[] me;
+	    if (isIPv4) {
+	        me = new byte[Utils.IPV4_BYTES];
+	        buf.readBytes(me);
+	        address = Utils.inet4FromBytes(me, 0);
+	    } else {
+	        me = new byte[Utils.IPV6_BYTES];
+	        buf.readBytes(me);
+	        address = Utils.inet6FromBytes(me, 0);
+	    }
+	    return new PeerSocketAddress(address, tcpPort, udpPort, buf.readerIndex());
+	}
+
+	/**
+	 * Creates the socket address to reach this peer with TCP.
+	 * 
+	 * @param peerSocketAddress
+	 * 				The peer's PeerSocketAddress
+	 * 
+	 * @return The socket address to reach this peer with TCP.
+	 */
+	public static InetSocketAddress createSocketTCP(PeerSocketAddress peerSocketAddress) {
+	    return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.tcpPort());
+	}
+
+	/**
+	 * Creates the socket address to reach this peer with UDP.
+	 * 
+	 * @param peerSocketAddress
+	 * 				The peer's PeerSocketAddress
+	 * 
+	 * @return The socket address to reach this peer with UDP.
+	 */
+	public static InetSocketAddress createSocketUDP(PeerSocketAddress peerSocketAddress) {
+	    return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.udpPort());
+	}
+
+	/**
      * @return The inernet address, which is IPv4 or IPv6.
      */
     public InetAddress inetAddress() {
@@ -173,86 +251,11 @@ public class PeerSocketAddress implements Serializable {
         StringBuilder sb = new StringBuilder("[");
         sb.append(inetAddress);
         if(tcpPort == udpPort) {
-        	return sb.append(",").append(tcpPort).append("]").toString();
+        	sb.append(",").append(tcpPort);
         } else {
-        	return sb.append(",t:").append(tcpPort).append(",u:").append(udpPort).append("]").toString();
+        	sb.append(",t:").append(tcpPort).append(",u:").append(udpPort);
         }
-    }
-
-    /**
-     * Converts an byte array into a peer socket address.
-     * 
-     * @param me
-     *            The byte array
-     * @param isIPv4
-     *            Indicates if its IPv4 or IPv6
-     * @param offsetOriginal
-     *            The offset where to start reading in the array
-     * @return the PeerSocketAddress and the new offset
-     */
-    public static PeerSocketAddress create(final byte[] me, final boolean isIPv4, final int offsetOriginal) {
-        int offset = offsetOriginal;
-        final int portTCP = ((me[offset++] & Utils.MASK_FF) << Utils.BYTE_BITS) + (me[offset++] & Utils.MASK_FF);
-        final int portUDP = ((me[offset++] & Utils.MASK_FF) << Utils.BYTE_BITS) + (me[offset++] & Utils.MASK_FF);
-        //
-        final InetAddress address;
-        if (isIPv4) {
-            address = Utils.inet4FromBytes(me, offset);
-            // IPv4 is 32 bit
-            offset += Utils.IPV4_BYTES;
-        } else {
-            address = Utils.inet6FromBytes(me, offset);
-            // IPv6 is 128 bit
-            offset += Utils.IPV6_BYTES;
-        }
-        return new PeerSocketAddress(address, portTCP, portUDP, offset);
-    }
-
-    /**
-     * Converts an ChannelBuffer into a peer socket address.
-     * 
-     * @param ch
-     *            The channel buffer
-     * @param isIPv4
-     *            if the IP is v4 or v6
-     * @return the PeerSocketAddress and the new offset
-     */
-    public static PeerSocketAddress create(final ByteBuf ch, final boolean isIPv4) {
-        final int portTCP = ch.readUnsignedShort();
-        final int portUDP = ch.readUnsignedShort();
-        //
-        final InetAddress address;
-        final byte[] me;
-        if (isIPv4) {
-            // IPv4 is 32 bit
-            me = new byte[Utils.IPV4_BYTES];
-            ch.readBytes(me);
-            address = Utils.inet4FromBytes(me, 0);
-        } else {
-            // IPv6 is 128 bit
-            me = new byte[Utils.IPV6_BYTES];
-            ch.readBytes(me);
-            address = Utils.inet6FromBytes(me, 0);
-        }
-        return new PeerSocketAddress(address, portTCP, portUDP, ch.readerIndex());
-    }
-    
-    /**
-     * Returns the socket address.
-     * 
-     * @return The socket address how to reach this peer
-     */
-    public static InetSocketAddress createSocketTCP(PeerSocketAddress peerSocketAddress) {
-        return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.tcpPort());
-    }
-
-    /**
-     * Returns the socket address.
-     * 
-     * @return The socket address how to reach this peer
-     */
-    public static InetSocketAddress createSocketUDP(PeerSocketAddress peerSocketAddress) {
-        return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.udpPort());
+        return sb.append("]").toString();
     }
 
     @Override

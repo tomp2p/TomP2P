@@ -300,16 +300,16 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * Facade for PeerAddress(Number160, PeerSocketAddress, boolean, boolean, boolean, Collection-PeerSocketAddress>).
      * 
      * @param peerId
      *            The id of the peer
      * @param inetAddress
-     *            The inetAddress of the peer, how to reach this peer
+     *            The internet address of the peer
      * @param tcpPort
-     *            The TCP port how to reach the peer
+     *            The TCP port of the peer
      * @param udpPort
-     *            The UDP port how to reach the peer
+     *            The UDP port of the peer
      */
     public PeerAddress(final Number160 peerId, final InetAddress inetAddress, final int tcpPort,
             final int udpPort) {
@@ -319,6 +319,26 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
 
     /**
      * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * 
+     * @param id
+     *            The id of the peer
+     * @param inetAddress
+     *            The address of the peer, how to reach this peer
+     * @param tcpPort
+     *            The TCP port how to reach the peer
+     * @param udpPort
+     *            The UDP port how to reach the peer
+     * @param options
+     *            The options for the created PeerAddress.
+     */
+    public PeerAddress(final Number160 id, final InetAddress inetAddress, final int tcpPort,
+            final int udpPort, final int options) {
+        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options),
+                isFirewalledUDP(options), isRelay(options), EMPTY_PEER_SOCKET_ADDRESSES);
+    }
+    
+    /**
+     * Facade for PeerAddress(Number160, InetAddress, int, int).
      * 
      * @param id
      *            The id of the peer
@@ -338,7 +358,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     }
 
     /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
+     * Facade for PeerAddress(Number160, InetAddress, int, int).
      * 
      * @param id
      *            The id of the peer
@@ -347,26 +367,6 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      */
     public PeerAddress(final Number160 id, final InetSocketAddress inetSocketAddress) {
         this(id, inetSocketAddress.getAddress(), inetSocketAddress.getPort(), inetSocketAddress.getPort());
-    }
-
-    /**
-     * Facade for {@link #PeerAddress(Number160, InetAddress, int, int, boolean, boolean, PeerSocketAddress[])}.
-     * 
-     * @param id
-     *            The id of the peer
-     * @param inetAddress
-     *            The address of the peer, how to reach this peer
-     * @param tcpPort
-     *            The TCP port how to reach the peer
-     * @param udpPort
-     *            The UDP port how to reach the peer
-     * @param options
-     *            Set options
-     */
-    public PeerAddress(final Number160 id, final InetAddress inetAddress, final int tcpPort,
-            final int udpPort, final int options) {
-        this(id, new PeerSocketAddress(inetAddress, tcpPort, udpPort), isFirewalledTCP(options),
-                isFirewalledUDP(options), isRelay(options), EMPTY_PEER_SOCKET_ADDRESSES);
     }
 
     /**

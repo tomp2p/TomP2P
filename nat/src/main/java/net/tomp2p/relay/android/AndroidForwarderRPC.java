@@ -4,8 +4,8 @@ import io.netty.buffer.ByteBuf;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.tomp2p.futures.FutureDone;
@@ -56,7 +56,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		this.lastUpdate = new AtomicLong(System.currentTimeMillis());
 		
 		this.sender = new Sender(authenticationToken);
-		this.pendingRequests = new ArrayList<FutureGCM>();
+		this.pendingRequests = Collections.synchronizedList(new ArrayList<FutureGCM>());
 		
 		buffer = new MessageBuffer(bufferConfig.bufferCountLimit(), bufferConfig.bufferSizeLimit(),
 				bufferConfig.bufferAgeLimit());
@@ -124,26 +124,17 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 	@Override
 	public void bufferFull(List<Message> messages) {
 		final FutureGCM futureGCM = new FutureGCM(messages);
-		boolean sendTickle = pendingRequests.isEmpty();
-		pendingRequests.add(futureGCM);
+		boolean sendTickle;
+		synchronized (pendingRequests) {
+			sendTickle = pendingRequests.isEmpty();
+			pendingRequests.add(futureGCM);
+		}
 
 		if (sendTickle) {
 			sendTickleMessage(futureGCM);
 		} else {
 			LOG.debug("Another tickle message is already on the way to the mobile device");
 		}
-
-		// watch the pending request and if it takes too long, answer all buffered messages with an error
-		connectionBean().timer().schedule(new Runnable() {
-			@Override
-			public void run() {
-				// remove it, not that they are denied and still delivered to the device
-				pendingRequests.remove(futureGCM);
-				for (Message message : futureGCM.buffer()) {
-					// TODO deny the pending request because it took too long
-				}
-			}
-		}, mapUpdateIntervalMS, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -157,11 +148,13 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 		lastUpdate.set(System.currentTimeMillis());
 
 		List<Message> messages = new ArrayList<Message>();
-		for (FutureGCM futureGCM : pendingRequests) {
-			messages.addAll(futureGCM.buffer());
-			futureGCM.done();
+		synchronized (pendingRequests) {
+			for (FutureGCM futureGCM : pendingRequests) {
+				messages.addAll(futureGCM.buffer());
+				futureGCM.done();
+			}
+			pendingRequests.clear();
 		}
-		pendingRequests.clear();
 		
 		ByteBuf byteBuffer = RelayUtils.composeMessageBuffer(messages, connectionBean().channelServer()
 				.channelServerConfiguration().signatureFactory());

@@ -24,6 +24,7 @@ import net.tomp2p.p2p.builder.BootstrapBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.Number640;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.RelayType;
 import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * The firewalled nodes are relayed by the relay nodes. The query nodes try to make put / get / remove
  * requests on these nodes.
  * 
- * The Google Cloud Messaging Authentication Key is required as argument when using {@link RelayType#ANDROID}
+ * The Google Cloud Messaging Authentication Key is required as argument when using {@link RelayConfig#ANDROID}
  * 
  * @author Nico Rutishauser
  * 
@@ -96,7 +97,6 @@ public class ExampleRelaySituation {
 	/**
 	 * Unreachable peer configuration
 	 */
-	private static final int PEER_MAP_UPDATE_INTERVAL_S = 60;
 	private static final String GCM_REGISTRATION_ID = "abc";
 	private static final RelayType RELAY_TYPE = RelayType.ANDROID;
 	private final String gcmKey;
@@ -170,16 +170,18 @@ public class ExampleRelaySituation {
 				relayAddresses.add(relay.peer().peerAddress());
 			}
 
-			PeerBuilderNAT builder = new PeerBuilderNAT(peer).peerMapUpdateInterval(PEER_MAP_UPDATE_INTERVAL_S)
-					.relays(relayAddresses).relayType(RELAY_TYPE);
+			RelayConfig config;
+			PeerBuilderNAT builder = new PeerBuilderNAT(peer).relays(relayAddresses);
 			if (RELAY_TYPE == RelayType.ANDROID) {
 				GCMServerCredentials gcmCredentials = new GCMServerCredentials().senderAuthenticationKey(gcmKey)
 						.senderId(gcmSenderId).registrationId(GCM_REGISTRATION_ID);
-				builder.gcmServerCredentials(gcmCredentials);
+				config = RelayConfig.Android(gcmCredentials);
+			} else {
+				config = RelayConfig.OpenTCP();
 			}
 
 			PeerNAT peerNat = builder.start();
-			FutureRelayNAT futureRelayNAT = peerNat.startRelay(relays.get(0).peer().peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT futureRelayNAT = peerNat.startRelay(config, relays.get(0).peer().peerAddress()).awaitUninterruptibly();
 			if (!futureRelayNAT.isSuccess()) {
 				LOG.error("Cannot connect to Relay(s). Reason: {}", futureRelayNAT.failedReason());
 				return;

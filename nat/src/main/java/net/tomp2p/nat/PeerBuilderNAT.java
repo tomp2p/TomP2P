@@ -12,9 +12,8 @@ import net.tomp2p.p2p.Shutdown;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.RconRPC;
 import net.tomp2p.relay.RelayRPC;
-import net.tomp2p.relay.RelayType;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
-import net.tomp2p.relay.android.GCMServerCredentials;
 
 public class PeerBuilderNAT {
 
@@ -25,11 +24,8 @@ public class PeerBuilderNAT {
 
 	private int failedRelayWaitTime = -1;
 	private int maxFail = -1;
-	private int peerMapUpdateInterval = -1;
 
-	private RelayType relayType = RelayType.OPENTCP;
 	private MessageBufferConfiguration bufferConfig = new MessageBufferConfiguration();
-	private GCMServerCredentials gcmServerCredentials = new GCMServerCredentials();
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -89,23 +85,6 @@ public class PeerBuilderNAT {
 	}
 
 	/**
-	 * Set the kind of relaying. For example mobile devices need special treatment
-	 * to save energy. The type needs to be set at the peer behind the NAT only
-	 * (not the relay peer).
-	 */
-	public PeerBuilderNAT relayType(RelayType relayType) {
-		this.relayType = relayType;
-		return this;
-	}
-
-	/**
-	 * @return the kind of relaying.
-	 */
-	public RelayType relayType() {
-		return relayType;
-	}
-
-	/**
 	 * @return the android relay configuration.
 	 */
 	public MessageBufferConfiguration bufferConfiguration() {
@@ -114,7 +93,7 @@ public class PeerBuilderNAT {
 
 	/**
 	 * Set the android relay buffer configuration. This needs to be set on relay nodes only, not on mobile peers.
-	 * It is only used with {@link RelayType#ANDROID}.
+	 * It is only used with {@link RelayConfig#ANDROID}.
 	 * 
 	 * @param bufferConfiguration the configuration
 	 * @return this instance
@@ -122,49 +101,6 @@ public class PeerBuilderNAT {
 	public PeerBuilderNAT bufferConfiguration(MessageBufferConfiguration bufferConfiguration) {
 		this.bufferConfig = bufferConfiguration;
 		return this;
-	}
-
-	/**
-	 * Set the Google Cloud Messaging server credentials. A GCM server can handle 4.
-	 * If this peer is a unreachable Android device, the {@link GCMServerCredentials} must be provided.
-	 * 
-	 * @param gcmServerCredentials
-	 *            the GCM server credentials
-	 * @return this instance
-	 */
-	public PeerBuilderNAT gcmServerCredentials(GCMServerCredentials gcmServerCredentials) {
-		this.gcmServerCredentials = gcmServerCredentials;
-		return this;
-	}
-
-	/**
-	 * @return the currently configured {@link GCMServerCredentials}. If this peer is an unreachable
-	 * Android device, these credentials need to be provided.
-	 */
-	public GCMServerCredentials gcmServerCredentials() {
-		return gcmServerCredentials;
-	}
-
-	/**
-	 * Defines the time interval of sending the peer map of the unreachable peer
-	 * to its relays. The routing requests are not relayed to the unreachable
-	 * peer but handled by the relay peers. Therefore, the relay peers should
-	 * always have an up-to-date peer map of the relayed peer
-	 * 
-	 * @param peerMapUpdateInterval
-	 *            interval of updates in seconds
-	 * @return this instance
-	 */
-	public PeerBuilderNAT peerMapUpdateInterval(int peerMapUpdateInterval) {
-		this.peerMapUpdateInterval = peerMapUpdateInterval;
-		return this;
-	}
-
-	/**
-	 * @return the peer map update interval in seconds
-	 */
-	public int peerMapUpdateInterval() {
-		return peerMapUpdateInterval;
 	}
 
 	public PeerNAT start() {
@@ -190,14 +126,6 @@ public class PeerBuilderNAT {
 			manualRelays = Collections.emptyList();
 		}
 
-		if (relayType == null) {
-			relayType = RelayType.OPENTCP;
-		}
-		
-		if (peerMapUpdateInterval == -1) {
-			peerMapUpdateInterval = relayType.defaultMapUpdateInterval();
-		}
-		
 		peer.addShutdownListener(new Shutdown() {
 			@Override
 			public BaseFuture shutdown() {
@@ -206,7 +134,7 @@ public class PeerBuilderNAT {
 			}
 		});
 
-		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime, maxFail, peerMapUpdateInterval,
-				manualPorts, relayType, gcmServerCredentials, connectionConfiguration);
+		return new PeerNAT(peer, natUtils, relayRPC, manualRelays, failedRelayWaitTime, maxFail,
+				manualPorts, connectionConfiguration);
 	}
 }

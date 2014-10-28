@@ -1,6 +1,7 @@
 package net.tomp2p.examples;
 
 import java.io.IOException;
+
 import net.tomp2p.connection.Ports;
 import net.tomp2p.dht.*;
 import net.tomp2p.futures.FutureDirect;
@@ -14,8 +15,10 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.p2p.PeerBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
+import net.tomp2p.relay.RelayConfig;
 import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
+
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -231,7 +234,7 @@ public class BasicUsecasesInWANTest
                 }
                 else
                 {
-                    FutureRelayNAT futureRelayNAT = peerNAT.startRelay(futureDiscover, futureNAT);
+                    FutureRelayNAT futureRelayNAT = peerNAT.startRelay(RelayConfig.OpenTCP(), futureDiscover, futureNAT);
                     futureRelayNAT.awaitUninterruptibly();
                     if (futureRelayNAT.isSuccess())
                     {

@@ -38,7 +38,6 @@ import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
 import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.relay.android.AndroidForwarderRPC;
-import net.tomp2p.relay.android.AndroidRelayConnection;
 import net.tomp2p.relay.android.GCMServerCredentials;
 import net.tomp2p.relay.android.MessageBufferConfiguration;
 import net.tomp2p.relay.android.MessageBufferListener;
@@ -47,43 +46,42 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.Assume;
 
 @RunWith(Parameterized.class)
 public class TestRelay {
 
 	private static final long DEFAULT_GCM_MOCK_DELAY_MS = 100;
+	private static final GCMServerCredentials gcmServerCredentials = new GCMServerCredentials().registrationId("dummy-registration-id").senderAuthenticationKey("dummy-auth-key").senderId(12345l);
 	
-	private final RelayType relayType;
+	private final RelayConfig relayConfig;
 	private long gcmMockDelayMS;
 
-	private final MessageBufferConfiguration androidConfig;
-	private final GCMServerCredentials gcmServerCredentials;
+	private final MessageBufferConfiguration bufferConfig;
 
 
 	@SuppressWarnings("rawtypes")
 	@Parameterized.Parameters(name = "{0}")
 	public static Collection data() {
-		return Arrays.asList(new Object[][] { { RelayType.OPENTCP }, { RelayType.ANDROID } });
+		return Arrays.asList(new Object[][] { { RelayConfig.OpenTCP() }, { RelayConfig.Android(gcmServerCredentials) } });
 	}
 	
-	public TestRelay(RelayType relayType) {
-		this.relayType = relayType;
+	public TestRelay(RelayConfig relayType) {
+		this.relayConfig = relayType;
 		this.gcmMockDelayMS = DEFAULT_GCM_MOCK_DELAY_MS;
 		
 		// create objects required for android
-		this.androidConfig = new MessageBufferConfiguration().bufferCountLimit(1);
-		this.gcmServerCredentials = new GCMServerCredentials().registrationId("dummy-registration-id").senderAuthenticationKey("dummy-auth-key").senderId(12345l);
+		this.bufferConfig = new MessageBufferConfiguration().bufferCountLimit(1);
 	}
 	
 	/**
 	 * Mocks the GCM functionality, making it able to test without an Android device
 	 */
 	private void mockGCM(Peer[] peers, final PeerNAT unreachablePeer) {
-		if(relayType != RelayType.ANDROID) {
+		if(relayConfig.type() != RelayType.ANDROID) {
 			// nothing to do
 			return;
 		}
@@ -105,26 +103,20 @@ public class TestRelay {
 
 						@Override
 						public void bufferFull(List<Message> bufferedMessages) {
-							for (BaseRelayConnection connection : unreachablePeer.currentRelays()) {
-								if (connection instanceof AndroidRelayConnection) {
-									final AndroidRelayConnection androidConnection = (AndroidRelayConnection) connection;
-									if(androidConnection.relayAddress().peerId().equals(forwarderRPC.relayPeerId())) {
-										// start in a new thread
-										new Thread(new Runnable() {
-											@Override
-											public void run() {
-												System.err.println("Caught sending message over GCM from " + forwarderRPC.relayPeerId() + " to unreachable peer");
-												try {
-													Thread.sleep(gcmMockDelayMS);
-												} catch (InterruptedException e) {
-													// ignore
-												}
-												androidConnection.sendBufferRequest();
-											}
-										}, "GCM-Mock").start();
-									}
-								}
+							System.err.println("Caught sending message over GCM from " + forwarderRPC.relayPeerId() + " to unreachable peer");
+							try {
+								Thread.sleep(gcmMockDelayMS);
+							} catch (InterruptedException e) {
+								// ignore
 							}
+
+							// start in a new thread
+							new Thread(new Runnable() {
+								@Override
+								public void run() {
+									unreachablePeer.onGCMMessageArrival(forwarderRPC.relayPeerId().toString());
+								}
+							}, "GCM-Mock").start();
 						}
 					});
 					
@@ -155,7 +147,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
@@ -167,8 +159,8 @@ public class TestRelay {
 			Assert.assertTrue(futureBootstrap.isSuccess());
 
 			// setup relay
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(relayConfig, peers[0].peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(startRelay.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -198,7 +190,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
@@ -213,8 +205,8 @@ public class TestRelay {
 			Assert.assertTrue(futureBootstrap.isSuccess());
 
 			// setup relay
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(5).start();
-			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(relayConfig.peerMapUpdateInterval(5), peers[0].peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(startRelay.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -243,7 +235,7 @@ public class TestRelay {
 			Assert.assertTrue(otherPeersHaveRelay);
 
 			// wait for maintenance
-			Thread.sleep(uNat.peerMapUpdateInterval() * 1000);
+			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
 
 			boolean otherPeersMe = false;
 			for (Peer peer : peers) {
@@ -279,13 +271,13 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer1 = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-			PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			FutureRelayNAT fbn = uNat1.startRelay(master.peerAddress());
+			PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1).start();
+			FutureRelayNAT fbn = uNat1.startRelay(relayConfig, master.peerAddress());
 			fbn.awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 			mockGCM(peers, uNat1);
@@ -316,8 +308,8 @@ public class TestRelay {
             
             
             unreachablePeer2 = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13338).start();
-			PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			fbn = uNat2.startRelay(peers[42].peerAddress());
+			PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2).start();
+			fbn = uNat2.startRelay(relayConfig, peers[42].peerAddress());
 
 			
 			fbn.awaitUninterruptibly();
@@ -326,7 +318,7 @@ public class TestRelay {
 
 			//prevent rcon
 			Collection<PeerSocketAddress> list = unreachablePeer2.peerBean().serverPeerAddress().peerSocketAddresses();
-			if(list.size() >= relayType.maxRelayCount()) {
+			if(list.size() >= relayConfig.type().maxRelayCount()) {
 				Iterator<PeerSocketAddress> iterator = list.iterator();
 				iterator.next();
 				iterator.remove();
@@ -349,7 +341,7 @@ public class TestRelay {
             
             Assert.assertTrue(test1.get());
             Assert.assertFalse(test2.get());
-            Assert.assertEquals(relayType.maxRelayCount(), fd.futureResponse().responseMessage().sender().peerSocketAddresses().size());
+            Assert.assertEquals(relayConfig.type().maxRelayCount(), fd.futureResponse().responseMessage().sender().peerSocketAddresses().size());
 		} finally {
 			if (unreachablePeer1 != null) {
 				unreachablePeer1.shutdown().await();
@@ -378,13 +370,13 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// setup relay
 			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(relayConfig, peers[0].peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(startRelay.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -430,13 +422,13 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 			
 			// setup relay
 			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(relayConfig, peers[0].peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(startRelay.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -480,7 +472,7 @@ public class TestRelay {
 			master = peers[0];
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
@@ -495,8 +487,8 @@ public class TestRelay {
 			Assert.assertTrue(futureBootstrap.isSuccess());
 
 			// setup relay and lower the update interval to 5s
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(5).start();
-			FutureRelayNAT startRelay = uNat.startRelay(peers[0].peerAddress());
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT startRelay = uNat.startRelay(relayConfig.peerMapUpdateInterval(5), peers[0].peerAddress());
 			FutureRelay frNAT = startRelay.awaitUninterruptibly().futureRelay();
 			Assert.assertTrue(startRelay.isSuccess());
 			mockGCM(peers, uNat);
@@ -523,7 +515,7 @@ public class TestRelay {
 				System.err.println("pc:" + relay.relayAddress());
 			}
 
-			Assert.assertEquals(relayType.maxRelayCount(), frNAT.relays().size());
+			Assert.assertEquals(relayConfig.type().maxRelayCount(), frNAT.relays().size());
 
 			// Shut down a peer
 			peers[nrOfNodes - 1].shutdown().await();
@@ -535,10 +527,10 @@ public class TestRelay {
 			 * heartbeat and the routing table of the relay peers are also
 			 * updated periodically
 			 */
-			Thread.sleep(uNat.peerMapUpdateInterval() * 1000);
+			Thread.sleep(relayConfig.peerMapUpdateInterval() * 1000);
 
 			Assert.assertEquals(nrOfNeighbors - 3, getNeighbors(found).size());
-			Assert.assertEquals(relayType.maxRelayCount(), frNAT.relays().size());
+			Assert.assertEquals(relayConfig.type().maxRelayCount(), frNAT.relays().size());
 		} finally {
 			if (unreachablePeer != null) {
 				unreachablePeer.shutdown().await();
@@ -559,7 +551,7 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
 			}
 			PeerMapConfiguration pmc = new PeerMapConfiguration(Number160.createHash(rnd.nextInt()));
 			slave = new PeerBuilderDHT(new PeerBuilder(Number160.ONE).peerMap(new PeerMap(pmc)).ports(13337).start())
@@ -603,14 +595,14 @@ public class TestRelay {
 		try {
 			PeerDHT[] peers = UtilsNAT.createNodesDHT(1, rnd, 4000);
 			master = peers[0]; // the relay peer
-			new PeerBuilderNAT(master.peer()).bufferConfiguration(androidConfig).start();
+			new PeerBuilderNAT(master.peer()).bufferConfiguration(bufferConfig).start();
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
 			mockGCM(peers, uNat);
 
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 
 			System.err.println("DONE!");
@@ -635,15 +627,15 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start())
 					.start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
 
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -684,17 +676,17 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start())
 					.start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
 
 			// bootstrap
 			unreachablePeer.peer().bootstrap().peerAddress(master.peerAddress()).start();
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -744,18 +736,18 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
-			PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
-			FutureRelayNAT fbn1 = uNat1.startRelay(master.peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).start();
+			FutureRelayNAT fbn1 = uNat1.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn1.isSuccess());
 
 			unreachablePeer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13338).start()).start();
-			PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
-			FutureRelayNAT fbn2 = uNat2.startRelay(master.peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).start();
+			FutureRelayNAT fbn2 = uNat2.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn2.isSuccess());
 
 			peers[8] = unreachablePeer1;
@@ -826,7 +818,7 @@ public class TestRelay {
              master = peers[0]; // the relay peer
             
              for(PeerDHT peer:peers) {
- 				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+ 				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
              }
              
              KeyPairGenerator gen = KeyPairGenerator.getInstance("DSA");
@@ -836,14 +828,14 @@ public class TestRelay {
              // Test setting up relay peers
              unreachablePeer1 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair1).ports(13337).start()).start();
              unreachablePeer1.peer().peerBean().serverPeerAddress(unreachablePeer1.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
-             PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
-             FutureRelayNAT fbn1 = uNat1.startRelay(master.peerAddress()).awaitUninterruptibly();
+             PeerNAT uNat1 = new PeerBuilderNAT(unreachablePeer1.peer()).start();
+             FutureRelayNAT fbn1 = uNat1.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
              Assert.assertTrue(fbn1.isSuccess());
 
              unreachablePeer2 = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).keyPair(pair2).ports(13338).start()).start();
              unreachablePeer2.peer().peerBean().serverPeerAddress(unreachablePeer2.peer().peerAddress().changeFirewalledTCP(true).changeFirewalledUDP(true));
-             PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
-             FutureRelayNAT fbn2 = uNat2.startRelay(master.peerAddress()).awaitUninterruptibly();
+             PeerNAT uNat2 = new PeerBuilderNAT(unreachablePeer2.peer()).start();
+             FutureRelayNAT fbn2 = uNat2.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
              Assert.assertTrue(fbn2.isSuccess());
 
              peers[8] = unreachablePeer1;
@@ -903,7 +895,7 @@ public class TestRelay {
 	@Test
 	public void testRelaySlowPeer() throws Exception {
 		// test is only for slow relay types
-		Assume.assumeTrue(relayType.isSlow());
+		Assume.assumeTrue(relayConfig.type().isSlow());
 		
 		int slowResponseTimeoutS = 3;
 		this.gcmMockDelayMS = 5000;
@@ -916,14 +908,14 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (PeerDHT peer : peers) {
-				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).start();
 
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(relayConfig.peerMapUpdateInterval(3), master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -964,13 +956,13 @@ public class TestRelay {
 			master = peers[0]; // the relay peer
 			UtilsNAT.perfectRouting(peers);
 			for (Peer peer : peers) {
-				new PeerBuilderNAT(peer).bufferConfiguration(androidConfig).start();
+				new PeerBuilderNAT(peer).bufferConfiguration(bufferConfig).start();
 			}
 
 			// Test setting up relay peers
 			unreachablePeer = new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start();
-			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).start();
+			FutureRelayNAT fbn = uNat.startRelay(relayConfig, master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 		} finally {
 			if (master != null) {

@@ -22,8 +22,8 @@ import java.net.UnknownHostException;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
-import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.dht.PeerBuilderDHT;
+import net.tomp2p.dht.PeerDHT;
 import net.tomp2p.message.Message;
 import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.AutomaticFuture;

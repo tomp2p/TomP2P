@@ -3,10 +3,6 @@ package net.tomp2p.interop;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,15 +15,8 @@ import org.junit.Test;
  * @author Christian Lüthold
  *
  */
-public class TestDotNetInterop {
+public class TestDotNetInterop extends TestInteropBase {
 
-	// specify a local file path where the platforms can interchange their bytes
-	
-	//private final String from = "D:/Desktop/interop/bytes-NET-encoded.txt";
-	//private final String to = "D:/Desktop/interop/bytes-JAVA-encoded.txt";
-	private final String from = "C:/Users/Christian/Desktop/interop/bytes-NET-encoded.txt";
-	private final String to = "C:/Users/Christian/Desktop/interop/bytes-JAVA-encoded.txt";
-	
 	@Ignore
 	@Test
 	public void testEncodeInt()throws Exception {
@@ -49,30 +38,14 @@ public class TestDotNetInterop {
 		buf.writeInt(Integer.MAX_VALUE);	// 2147483647
 		
 		byte[] bytes = buf.array();
-		
-		File file = new File(to);
-		FileOutputStream fos = new FileOutputStream(file);
-		try {
-			fos.write(bytes);
-		}
-		finally {
-			fos.close();
-		}
+		writeToFile(bytes);
 	}
 	
 	@Ignore
 	@Test
 	public void testDecodeInt() throws Exception {
 		
-		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[13 * 4];
-		try {
-			fis.read(fileContent);
-		}
-		finally {
-			fis.close();
-		}
-		
+		byte[] fileContent = readFromFile(13 * 4);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
 		int val1 = buf.readInt();
@@ -126,30 +99,14 @@ public class TestDotNetInterop {
 		buf.writeLong(Long.MAX_VALUE);	// 923372036854775807
 		
 		byte[] bytes = buf.array();
-		
-		File file = new File(to);
-		FileOutputStream fos = new FileOutputStream(file);
-		try {
-			fos.write(bytes);
-		}
-		finally {
-			fos.close();
-		}
+		writeToFile(bytes);
 	}
 
 	@Ignore
 	@Test
 	public void testDecodeLong() throws Exception {
 		
-		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[13 * 8];
-		try {
-			fis.read(fileContent);
-		}
-		finally {
-			fis.close();
-		}
-		
+		byte[] fileContent = readFromFile(13 * 8);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
 		long val1 = buf.readLong();
@@ -193,30 +150,14 @@ public class TestDotNetInterop {
 		}
 		
 		byte[] bytes = buf.array();
-		
-		File file = new File(to);
-		FileOutputStream fos = new FileOutputStream(file);
-		try {
-			fos.write(bytes);
-		}
-		finally {
-			fos.close();
-		}
+		writeToFile(bytes);
 	}
 	
 	@Ignore
 	@Test
 	public void testDecodeByte() throws Exception {
 		
-		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[256];
-		try {
-			fis.read(fileContent);
-		}
-		finally {
-			fis.close();
-		}
-		
+		byte[] fileContent = readFromFile(256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
 		for (int i = Byte.MIN_VALUE; i <= Byte.MAX_VALUE; i++) // -128 ... 127
@@ -241,30 +182,14 @@ public class TestDotNetInterop {
 		buf.writeBytes(byteArray);
 		
 		byte[] bytes = buf.array();
-		
-		File file = new File(to);
-		FileOutputStream fos = new FileOutputStream(file);
-		try {
-			fos.write(bytes);
-		}
-		finally {
-			fos.close();
-		}
+		writeToFile(bytes);
 	}
 	
 	@Ignore
 	@Test
 	public void testDecodeBytes() throws Exception {
 		
-		FileInputStream fis = new FileInputStream(from);
-		byte[] fileContent = new byte[256];
-		try {
-			fis.read(fileContent);
-		}
-		finally {
-			fis.close();
-		}
-		
+		byte[] fileContent = readFromFile(256);
 		ByteBuf buf = Unpooled.copiedBuffer(fileContent);
 		
 		byte[] byteArray = new byte[256];

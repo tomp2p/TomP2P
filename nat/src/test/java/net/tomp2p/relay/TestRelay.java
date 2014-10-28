@@ -19,6 +19,7 @@ import net.tomp2p.dht.FutureGet;
 import net.tomp2p.dht.FuturePut;
 import net.tomp2p.dht.PeerBuilderDHT;
 import net.tomp2p.dht.PeerDHT;
+import net.tomp2p.dht.PutBuilder;
 import net.tomp2p.futures.FutureBootstrap;
 import net.tomp2p.futures.FutureDirect;
 import net.tomp2p.message.Message;
@@ -49,15 +50,19 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.Assume;
 
 @RunWith(Parameterized.class)
 public class TestRelay {
 
-	private static final long GCM_MOCK_DELAY_MS = 100;
+	private static final long DEFAULT_GCM_MOCK_DELAY_MS = 100;
 	
 	private final RelayType relayType;
+	private long gcmMockDelayMS;
+
 	private final MessageBufferConfiguration androidConfig;
 	private final GCMServerCredentials gcmServerCredentials;
+
 
 	@SuppressWarnings("rawtypes")
 	@Parameterized.Parameters(name = "{0}")
@@ -67,6 +72,7 @@ public class TestRelay {
 	
 	public TestRelay(RelayType relayType) {
 		this.relayType = relayType;
+		this.gcmMockDelayMS = DEFAULT_GCM_MOCK_DELAY_MS;
 		
 		// create objects required for android
 		this.androidConfig = new MessageBufferConfiguration().bufferCountLimit(1);
@@ -109,7 +115,7 @@ public class TestRelay {
 											public void run() {
 												System.err.println("Caught sending message over GCM from " + forwarderRPC.relayPeerId() + " to unreachable peer");
 												try {
-													Thread.sleep(GCM_MOCK_DELAY_MS);
+													Thread.sleep(gcmMockDelayMS);
 												} catch (InterruptedException e) {
 													// ignore
 												}
@@ -600,13 +606,11 @@ public class TestRelay {
 			new PeerBuilderNAT(master.peer()).bufferConfiguration(androidConfig).start();
 
 			// Test setting up relay peers
-			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start())
-					.start();
+			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
 			mockGCM(peers, uNat);
 
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
-			fbn.awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 
 			System.err.println("DONE!");
@@ -639,8 +643,7 @@ public class TestRelay {
 					.start();
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
 
-			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress());
-			fbn.awaitUninterruptibly();
+			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
 			mockGCM(peers, uNat);
 
@@ -649,8 +652,7 @@ public class TestRelay {
 
 			printMapStatus(unreachablePeer, peers);
 
-			FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).start()
-					.awaitUninterruptibly();
+			FuturePut futurePut = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).start().awaitUninterruptibly();
 			// the relayed one is the slowest, so we need to wait for it!
 			futurePut.futureRequests().awaitUninterruptibly();
 			System.err.println(futurePut.failedReason());
@@ -717,16 +719,10 @@ public class TestRelay {
 			Assert.assertTrue(unreachablePeer.storageLayer().contains(
 					new Number640(unreachablePeer.peerID(), Number160.ZERO, Number160.ZERO, Number160.ZERO)));
 
-			FutureGet futureGet = peers[8].get(unreachablePeer.peerID()).routingConfiguration(r).requestP2PConfiguration(rp)
-					.start();
-			futureGet.awaitUninterruptibly();
+			FutureGet futureGet = peers[8].get(unreachablePeer.peerID()).routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
 			Assert.assertTrue(futureGet.isSuccess());
 
-			// we cannot see the peer in futurePut.rawResult, as the relayed is the slowest and we finish
-			// earlier than that.
-
 			System.err.println("DONE!");
-
 		} finally {
 			if(master != null) {
 				master.shutdown().await();
@@ -875,7 +871,6 @@ public class TestRelay {
              
              FuturePut futurePut = unreachablePeer1.put(unreachablePeer2.peerID()).data(new Data("hello")).sign().routingConfiguration(r).requestP2PConfiguration(rp).start().awaitUninterruptibly();
              //the relayed one is the slowest, so we need to wait for it!
-             futurePut.awaitUninterruptibly();
              futurePut.futureRequests().awaitUninterruptibly();
              System.err.println(futurePut.failedReason());
              
@@ -904,6 +899,61 @@ public class TestRelay {
          }
     }
 	
+
+	@Test
+	public void testRelaySlowPeer() throws Exception {
+		// test is only for slow relay types
+		Assume.assumeTrue(relayType.isSlow());
+		
+		int slowResponseTimeoutS = 3;
+		this.gcmMockDelayMS = 5000;
+		
+		final Random rnd = new Random(42);
+		PeerDHT master = null;
+		PeerDHT unreachablePeer = null;
+		try {
+			PeerDHT[] peers = UtilsNAT.createNodesDHT(10, rnd, 4000);
+			master = peers[0]; // the relay peer
+			UtilsNAT.perfectRouting(peers);
+			for (PeerDHT peer : peers) {
+				new PeerBuilderNAT(peer.peer()).bufferConfiguration(androidConfig).start();
+			}
+
+			// Test setting up relay peers
+			unreachablePeer = new PeerBuilderDHT(new PeerBuilder(Number160.createHash(rnd.nextInt())).ports(13337).start()).start();
+			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer.peer()).relayType(relayType).gcmServerCredentials(gcmServerCredentials).peerMapUpdateInterval(3).start();
+
+			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
+			Assert.assertTrue(fbn.isSuccess());
+			mockGCM(peers, uNat);
+
+			// wait for maintenance to kick in
+			Thread.sleep(4000);
+
+			RoutingConfiguration r = new RoutingConfiguration(5, 1, 1);
+            RequestP2PConfiguration rp = new RequestP2PConfiguration(1, 1, 0);
+            
+			PutBuilder builder = peers[8].put(unreachablePeer.peerID()).data(new Data("hello")).routingConfiguration(r).requestP2PConfiguration(rp);
+			// make the timeout very small, such that the mobile device is too slow to answer the request
+			builder.slowResponseTimeoutSeconds(slowResponseTimeoutS);
+			FuturePut futurePut = builder.start().awaitUninterruptibly();
+			// the relayed one is the slowest, so we need to wait for it!
+			futurePut.futureRequests().awaitUninterruptibly();
+
+			System.err.println(futurePut.failedReason());
+			// should be run into a timeout
+			Assert.assertFalse(futurePut.isSuccess());
+
+		} finally {
+			if (master != null) {
+				master.shutdown().await();
+			}
+			if (unreachablePeer != null) {
+				unreachablePeer.shutdown().await();
+			}
+		}
+	}
+	
 	@Test
 	public void testVeryFewPeers() throws Exception {
 		final Random rnd = new Random(42);
@@ -922,8 +972,6 @@ public class TestRelay {
 			PeerNAT uNat = new PeerBuilderNAT(unreachablePeer).relayType(relayType).gcmServerCredentials(gcmServerCredentials).start();
 			FutureRelayNAT fbn = uNat.startRelay(master.peerAddress()).awaitUninterruptibly();
 			Assert.assertTrue(fbn.isSuccess());
-			mockGCM(peers, uNat);
-
 		} finally {
 			if (master != null) {
 				master.shutdown().await();

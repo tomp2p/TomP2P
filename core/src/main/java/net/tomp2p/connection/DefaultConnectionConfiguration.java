@@ -134,7 +134,9 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
 	
 	/**
 	 * @param slowResponseTimeoutSeconds the amount of seconds a requester waits for the final answer of a
-	 *            slow peer. If the slow peer does not answer within this time, the request fails.
+	 *            slow peer. If the slow peer does not answer within this time, the request fails. Make sure
+	 *            that this timeout is smaller than the maximum buffer age at the relay peer. Otherwise, a
+	 *            timeout is very likely.
 	 * @return This class
 	 */
 	public DefaultConnectionConfiguration slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {

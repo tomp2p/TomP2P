@@ -8,10 +8,10 @@ public abstract class TestInteropBase {
 
 	// specify a local file path where the platforms can interchange their bytes
 	
-	//protected final String from = "D:/Desktop/interop/bytes-NET-encoded.txt";
-	//protected final String to = "D:/Desktop/interop/bytes-JAVA-encoded.txt";
-	protected final String from = "C:/Users/Christian/Desktop/interop/bytes-NET-encoded.txt";
-	protected final String to = "C:/Users/Christian/Desktop/interop/bytes-JAVA-encoded.txt";
+	protected final String from = "D:/Desktop/interop/bytes-NET-encoded.txt";
+	protected final String to = "D:/Desktop/interop/bytes-JAVA-encoded.txt";
+	//protected final String from = "C:/Users/Christian/Desktop/interop/bytes-NET-encoded.txt";
+	//protected final String to = "C:/Users/Christian/Desktop/interop/bytes-JAVA-encoded.txt";
 	
 	protected byte[] readFromFile(int fileSize) throws Exception {
 		

@@ -363,7 +363,7 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
      * @param id
      *            The id of the peer
      * @param inetSocketAddress
-     *            The socket address of the peer, how to reach this peer. Both UPD and TCP will be set to the same port
+     *            The socket address of the peer, how to reach this peer. Both TCP and UDP will be set to the same port
      */
     public PeerAddress(final Number160 id, final InetSocketAddress inetSocketAddress) {
         this(id, inetSocketAddress.getAddress(), inetSocketAddress.getPort(), inetSocketAddress.getPort());

@@ -63,16 +63,16 @@ public class Utils2 {
                 "127.0.0.1", 8003, 8004, (byte) 0, Type.REQUEST_1, firewallUDP, firewallTCP);
     }
 
-    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSendor,
-	        int udpPortSender, Number160 idRecipien, String inetRecipient, int tcpPortRecipient,
+    public static Message createDummyMessage(Number160 idSender, String inetSender, int tcpPortSender,
+	        int udpPortSender, Number160 idRecipient, String inetRecipient, int tcpPortRecipient,
 	        int udpPortRecipient, byte command, Type type, boolean firewallUDP, boolean firewallTCP)
 	        throws UnknownHostException {
 	    Message message = new Message();
-	    PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSendor, udpPortSender, firewallUDP,
+	    PeerAddress n1 = createAddress(idSender, inetSender, tcpPortSender, udpPortSender, firewallUDP,
 	            firewallTCP);
 	    message.sender(n1);
 	    //
-	    PeerAddress n2 = createAddress(idRecipien, inetRecipient, tcpPortRecipient, udpPortRecipient,
+	    PeerAddress n2 = createAddress(idRecipient, inetRecipient, tcpPortRecipient, udpPortRecipient,
 	            firewallUDP, firewallTCP);
 	    message.recipient(n2);
 	    message.type(type);

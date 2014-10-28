@@ -1,6 +1,7 @@
 package net.tomp2p.relay;
 
 import net.tomp2p.relay.android.GCMServerCredentials;
+import net.tomp2p.relay.android.MessageBufferConfiguration;
 
 /**
  * Holds multiple relay types with their configuration
@@ -12,6 +13,7 @@ public class RelayConfig {
 
 	private final RelayType type;
 	private final GCMServerCredentials gcmServerCredentials;
+	private final MessageBufferConfiguration bufferConfiguration;
 
 	// configurable
 	private int peerMapUpdateInterval;
@@ -23,25 +25,44 @@ public class RelayConfig {
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null, 0);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, 0, null);
 	}
 
 	/**
-	 * Creates an Android relay configuration
+	 * Creates an Android relay configuration. The messages at the relayed peer are not buffered.
 	 * 
 	 * @param gcmServerCredentials to be able to communicate over Google Cloud Messaging
 	 * @return
 	 */
 	public static RelayConfig Android(GCMServerCredentials gcmServerCredentials) {
-		return new RelayConfig(RelayType.ANDROID, 60, gcmServerCredentials, 5);
+		return Android(gcmServerCredentials, null);
+	}
+
+	/**
+	 * Creates an Android relay configuration having a buffer for received GCM messages.
+	 * 
+	 * @param gcmServerCredentials to be able to communicate over Google Cloud Messaging
+	 * @param bufferConfiguration to buffer received GCM messages. Having multiple relays, this can help to
+	 *            reduce battery consumption.
+	 * @return
+	 */
+	public static RelayConfig Android(GCMServerCredentials gcmServerCredentials,
+			MessageBufferConfiguration bufferConfiguration) {
+		return new RelayConfig(RelayType.ANDROID, 60, gcmServerCredentials, 5, bufferConfiguration);
 	}
 
 	private RelayConfig(RelayType type, int peerMapUpdateInterval, GCMServerCredentials gcmServerCredentials,
-			int gcmSendRetries) {
+			int gcmSendRetries, MessageBufferConfiguration bufferConfiguration) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.gcmServerCredentials = gcmServerCredentials;
 		this.gcmSendRetries = gcmSendRetries;
+		this.bufferConfiguration = bufferConfiguration;
+	}
+	
+	@Override
+	public String toString() {
+		return type.toString();
 	}
 
 	/**
@@ -100,5 +121,14 @@ public class RelayConfig {
 	public RelayConfig gcmSendRetries(int gcmSendRetries) {
 		this.gcmSendRetries = gcmSendRetries;
 		return this;
+	}
+
+	/**
+	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
+	 * 
+	 * @return the configuration for the GCM message buffer at the mobile device.
+	 */
+	public MessageBufferConfiguration bufferConfiguration() {
+		return bufferConfiguration;
 	}
 }

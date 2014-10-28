@@ -41,7 +41,6 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 
 	// status whether the map has been updated in the meantime
 	private final AtomicBoolean updated;
-	private RelayConfig relayType;
 
 	/**
 	 * Create a new peer map update task.
@@ -55,13 +54,12 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 * @param relayType 
 	 */
 	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay,
-			Collection<PeerAddress> manualRelays, int maxFail, RelayConfig relayType) {
+			Collection<PeerAddress> manualRelays, int maxFail) {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
 		this.manualRelays = manualRelays;
 		this.maxFail = maxFail;
-		this.relayType = relayType;
 
 		// register to peer map events
 		this.updated = new AtomicBoolean(true);
@@ -90,7 +88,7 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();
-		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail, relayType);
+		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
 	}
 

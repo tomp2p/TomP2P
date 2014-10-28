@@ -159,7 +159,7 @@ public class Dispatcher extends SimpleChannelInboundHandler<Message> {
         }
         
         Responder responder = new DirectResponder(ctx, message);
-        DispatchHandler myHandler = associatedHandler(message);
+        final DispatchHandler myHandler = associatedHandler(message);
         if (myHandler != null) {
             boolean isUdp = ctx.channel() instanceof DatagramChannel;
             LOG.debug("about to respond to {}", message);

@@ -17,7 +17,6 @@ import net.tomp2p.p2p.Peer;
 import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,14 +99,14 @@ public class BufferedMessageHandler {
 			// piggyback the late response. It will be unwrapped by the dispatcher
 			Message envelope = dispatchHandler.createMessage(responseMessage.recipient(), Commands.RELAY.getNr(), Type.REQUEST_5);
 			try {
-				envelope.buffer(MessageUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
+				envelope.buffer(RelayUtils.encodeMessage(responseMessage, peer.connectionBean().channelServer().channelServerConfiguration().signatureFactory()));
 			} catch (Exception e) {
 				LOG.error("Cannot wrap the late response into an envelope", e);
 				return;
 			}
 			
 			LOG.debug("Sending late response {} in an envelope {}", responseMessage, envelope);
-			FutureResponse futureResponse = MessageUtils.connectAndSend(peer, envelope, connectionConfig);
+			FutureResponse futureResponse = RelayUtils.connectAndSend(peer, envelope, connectionConfig);
 			futureResponse.addListener(new BaseFutureAdapter<FutureResponse>() {
 				@Override
 				public void operationComplete(FutureResponse future) throws Exception {

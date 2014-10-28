@@ -9,9 +9,9 @@ import net.tomp2p.message.Message.Type;
 import net.tomp2p.p2p.Peer;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.relay.BaseRelayConnection;
+import net.tomp2p.relay.RelayUtils;
 import net.tomp2p.rpc.DispatchHandler;
 import net.tomp2p.rpc.RPC.Commands;
-import net.tomp2p.utils.MessageUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +52,7 @@ public class AndroidRelayConnection extends BaseRelayConnection {
 	@Override
 	public FutureResponse sendToRelay(Message message) {
 		// send it over a newly opened connection
-		return MessageUtils.connectAndSend(peer, message, config);
+		return RelayUtils.connectAndSend(peer, message, config);
 	}
 
 	/**

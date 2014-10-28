@@ -18,6 +18,7 @@ package net.tomp2p.relay;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Random;
 
 import net.tomp2p.connection.Bindings;
@@ -32,6 +33,7 @@ import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerAddress;
 import net.tomp2p.peers.PeerMap;
 import net.tomp2p.peers.PeerMapConfiguration;
+import net.tomp2p.peers.PeerSocketAddress;
 import net.tomp2p.rpc.RPC.Commands;
 
 public class UtilsNAT {
@@ -199,7 +201,19 @@ public class UtilsNAT {
         }
         System.err.println("perfect routing done.");
     }
+
+    public static PeerAddress createAddress() throws UnknownHostException {
+        return createAddress(new Number160("0x5678"), "127.0.0.1", 8005, 8006, false, false);
+    }
     
+    public static PeerAddress createAddress(Number160 idSender, String inetSender, int tcpPortSender,
+            int udpPortSender, boolean firewallUDP, boolean firewallTCP) throws UnknownHostException {
+        InetAddress inetSend = InetAddress.getByName(inetSender);
+        PeerSocketAddress peerSocketAddress = new PeerSocketAddress(inetSend, tcpPortSender, udpPortSender);
+        PeerAddress n1 = new PeerAddress(idSender, peerSocketAddress, firewallTCP, firewallUDP, false, false,
+                PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
+        return n1;
+    }
 
 	/**
 	 * Creates a message with random content

@@ -3,13 +3,8 @@ package net.tomp2p.peers;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Random;
 
 import net.tomp2p.Utils2;
-import net.tomp2p.p2p.Peer;
-import net.tomp2p.p2p.Statistics;
-import net.tomp2p.storage.Data;
 
 import org.junit.Assert;
 import org.junit.Test;

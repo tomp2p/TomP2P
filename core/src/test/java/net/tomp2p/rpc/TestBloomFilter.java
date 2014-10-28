@@ -16,10 +16,11 @@
 
 package net.tomp2p.rpc;
 
-import java.util.Random;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
+import java.util.Random;
+
 import net.tomp2p.peers.Number160;
 
 import org.junit.Assert;

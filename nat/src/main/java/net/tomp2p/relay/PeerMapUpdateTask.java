@@ -1,6 +1,5 @@
 package net.tomp2p.relay;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
@@ -36,8 +35,6 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	private final RelayRPC relayRPC;
 	private final BootstrapBuilder bootstrapBuilder;
 	private final DistributedRelay distributedRelay;
-	private final Collection<PeerAddress> manualRelays;
-	private final int maxFail;
 
 	// status whether the map has been updated in the meantime
 	private final AtomicBoolean updated;
@@ -53,13 +50,10 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 	 *            set of the relay addresses
 	 * @param relayType 
 	 */
-	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay,
-			Collection<PeerAddress> manualRelays, int maxFail) {
+	public PeerMapUpdateTask(RelayRPC relayRPC, BootstrapBuilder bootstrapBuilder, DistributedRelay distributedRelay) {
 		this.relayRPC = relayRPC;
 		this.bootstrapBuilder = bootstrapBuilder;
 		this.distributedRelay = distributedRelay;
-		this.manualRelays = manualRelays;
-		this.maxFail = maxFail;
 
 		// register to peer map events
 		this.updated = new AtomicBoolean(true);
@@ -88,7 +82,7 @@ public class PeerMapUpdateTask extends TimerTask implements PeerMapChangeListene
 
 		// try to add more relays
 		final FutureRelay futureRelay2 = new FutureRelay();
-		distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
+		distributedRelay.setupRelays(futureRelay2);
 		relayRPC.peer().notifyAutomaticFutures(futureRelay2);
 	}
 

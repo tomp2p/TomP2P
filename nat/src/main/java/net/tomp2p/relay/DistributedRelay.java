@@ -47,24 +47,31 @@ public class DistributedRelay implements GCMMessageHandler {
 
 	private final List<BaseRelayConnection> relays;
 	private final Set<PeerAddress> failedRelays;
+	private final int maxFail;
+	private final Collection<PeerAddress> manualRelays;
 
 	private final Collection<RelayListener> relayListeners;
 	private final RelayConfig relayConfig;
+
+
 
 	/**
 	 * @param peer
 	 *            the unreachable peer
 	 * @param relayRPC
 	 *            the relay RPC
+	 * @param maxFail 
 	 * @param relayConfig 
 	 * @param maxRelays
 	 *            maximum number of relay peers to set up
 	 * @param relayType
 	 *            the kind of the relay connection
 	 */
-	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, ConnectionConfiguration config, RelayConfig relayConfig) {
+	public DistributedRelay(final Peer peer, RelayRPC relayRPC, int failedRelayWaitTime, int maxFail, Collection<PeerAddress> manualRelays, ConnectionConfiguration config, RelayConfig relayConfig) {
 		this.peer = peer;
 		this.relayRPC = relayRPC;
+		this.maxFail = maxFail;
+		this.manualRelays = manualRelays;
 		this.config = config;
 		this.relayConfig = relayConfig;
 
@@ -115,7 +122,7 @@ public class DistributedRelay implements GCMMessageHandler {
 	 * 
 	 * @return RelayFuture containing a {@link DistributedRelay} instance
 	 */
-	public FutureRelay setupRelays(final FutureRelay futureRelay, final Collection<PeerAddress> manualRelays, final int maxFail) {
+	public FutureRelay setupRelays(final FutureRelay futureRelay) {
 		final List<PeerAddress> relayCandidates;
 		if (manualRelays.isEmpty()) {
 			// Get the neighbors of this peer that could possibly act as relays. Relay
@@ -131,7 +138,7 @@ public class DistributedRelay implements GCMMessageHandler {
 		}
 
 		filterRelayCandidates(relayCandidates);
-		setupPeerConnections(futureRelay, relayCandidates, maxFail);
+		setupPeerConnections(futureRelay, relayCandidates);
 		return futureRelay;
 	}
 
@@ -169,7 +176,7 @@ public class DistributedRelay implements GCMMessageHandler {
 
 	 * @return FutureDone
 	 */
-	private void setupPeerConnections(final FutureRelay futureRelay, List<PeerAddress> relayCandidates, final int maxFail) {
+	private void setupPeerConnections(final FutureRelay futureRelay, List<PeerAddress> relayCandidates) {
 		final int nrOfRelays = Math.min(relayConfig.type().maxRelayCount() - relays.size(), relayCandidates.size());
 		if (nrOfRelays > 0) {
 			LOG.debug("Setting up {} relays", nrOfRelays);
@@ -178,7 +185,7 @@ public class DistributedRelay implements GCMMessageHandler {
 			FutureDone<PeerConnection>[] futureDones = new FutureDone[nrOfRelays];
 			AtomicReferenceArray<FutureDone<PeerConnection>> relayConnectionFutures = new AtomicReferenceArray<FutureDone<PeerConnection>>(
 					futureDones);
-			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, nrOfRelays, futureRelay, 0, maxFail, new StringBuilder());
+			setupPeerConnectionsRecursive(relayConnectionFutures, relayCandidates, nrOfRelays, futureRelay, 0, new StringBuilder());
 		} else {
 			if (relayCandidates.isEmpty()) {
 				// no candidates
@@ -205,7 +212,7 @@ public class DistributedRelay implements GCMMessageHandler {
 	 */
 	private void setupPeerConnectionsRecursive(final AtomicReferenceArray<FutureDone<PeerConnection>> futures,
 			final List<PeerAddress> relayCandidates, final int numberOfRelays, final FutureRelay futureRelay,
-			final int fail, final int maxFail, final StringBuilder status) {
+			final int fail, final StringBuilder status) {
 		int active = 0;
 		for (int i = 0; i < numberOfRelays; i++) {
 			if (futures.get(i) == null) {
@@ -243,7 +250,7 @@ public class DistributedRelay implements GCMMessageHandler {
 					updatePeerAddress();
 					futureRelay.done(relays());
 				} else if (!peer.isShutdown()) {
-					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay, fail + 1, maxFail,
+					setupPeerConnectionsRecursive(futures, relayCandidates, numberOfRelays, futureRelay, fail + 1,
 							status.append(futureForkJoin.failedReason()).append(" "));
 				} else {
 					futureRelay.failed(futureForkJoin);

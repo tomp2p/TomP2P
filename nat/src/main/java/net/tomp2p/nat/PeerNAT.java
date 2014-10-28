@@ -218,7 +218,7 @@ public class PeerNAT {
 	}
 
 	private DistributedRelay startSetupRelay(FutureRelay futureRelay, final RelayConfig relayConfig) {
-		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, config, relayConfig);
+		final DistributedRelay distributedRelay = new DistributedRelay(peer, relayRPC, failedRelayWaitTime, maxFail, manualRelays, config, relayConfig);
 		
 		// close the relay connection when the peer is shutdown
 		peer.addShutdownListener(new Shutdown() {
@@ -234,18 +234,18 @@ public class PeerNAT {
 			public void relayFailed(PeerAddress relayAddress) {
 				// one failed, add new one
 				final FutureRelay futureRelay2 = new FutureRelay();
-				distributedRelay.setupRelays(futureRelay2, manualRelays, maxFail);
+				distributedRelay.setupRelays(futureRelay2);
 				peer.notifyAutomaticFutures(futureRelay2);
 			}
 		});
 
-		distributedRelay.setupRelays(futureRelay, manualRelays, maxFail);
+		distributedRelay.setupRelays(futureRelay);
 		return distributedRelay;
 	}
 	
 	private Shutdown startRelayMaintenance(final FutureRelay futureRelay, BootstrapBuilder bootstrapBuilder,
 			DistributedRelay distributedRelay, int peerMapUpdateInterval) {
-		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder, distributedRelay, manualRelays, maxFail);
+		final PeerMapUpdateTask peerMapUpdateTask = new PeerMapUpdateTask(relayRPC, bootstrapBuilder, distributedRelay);
 		peer.connectionBean().timer().scheduleAtFixedRate(peerMapUpdateTask, 0, peerMapUpdateInterval, TimeUnit.SECONDS);
 
 		final Shutdown shutdown = new Shutdown() {

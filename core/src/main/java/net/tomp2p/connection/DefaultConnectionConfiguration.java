@@ -29,6 +29,7 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
     private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
     private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
     private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+    private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
     @Override
     public int idleTCPSeconds() {
@@ -124,4 +125,20 @@ public class DefaultConnectionConfiguration implements ConnectionConfiguration {
         this.forceUDP = true;
         return this;
     }
+    
+
+	@Override
+	public int slowResponseTimeoutSeconds() {
+		return slowResponseTimeoutSeconds;
+	}
+	
+	/**
+	 * @param slowResponseTimeoutSeconds the amount of seconds a requester waits for the final answer of a
+	 *            slow peer. If the slow peer does not answer within this time, the request fails.
+	 * @return This class
+	 */
+	public DefaultConnectionConfiguration slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
+		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
+		return this;
+	}
 }

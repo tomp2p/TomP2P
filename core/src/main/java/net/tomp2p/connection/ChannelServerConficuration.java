@@ -31,6 +31,7 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
     private int idleTCPSeconds = ConnectionBean.DEFAULT_TCP_IDLE_SECONDS;
     private int idleUDPSeconds = ConnectionBean.DEFAULT_UDP_IDLE_SECONDS;
     private int connectionTimeoutTCPMillis = ConnectionBean.DEFAULT_CONNECTION_TIMEOUT_TCP;
+    private int slowResponseTimeoutSeconds = ConnectionBean.DEFAULT_SLOW_RESPONSE_TIMEOUT_SECONDS;
 
     private PipelineFilter pipelineFilter = null;
 
@@ -266,4 +267,14 @@ public class ChannelServerConficuration implements ConnectionConfiguration {
 	    this.heartBeatMillis = heartBeatMillis;
 	    return this;
     }
+
+	@Override
+	public int slowResponseTimeoutSeconds() {
+		return slowResponseTimeoutSeconds;
+	}
+	
+	public ChannelServerConficuration slowResponseTimeoutSeconds(final int slowResponseTimeoutSeconds) {
+		this.slowResponseTimeoutSeconds = slowResponseTimeoutSeconds;
+		return this;
+	}
 }

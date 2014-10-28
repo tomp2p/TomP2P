@@ -137,7 +137,7 @@ public class ExampleRelaySituation {
 		this.queries = new ArrayList<QueryNode>(queryPeers);
 		
 		bufferConfig = new MessageBufferConfiguration().bufferAgeLimit(MAX_BUFFER_AGE).bufferCountLimit(MAX_MESSAGE_NUM)
-				.bufferSizeLimit(MAX_BUFFER_SIZE).gcmSendRetries(GCM_SEND_RETIES);
+				.bufferSizeLimit(MAX_BUFFER_SIZE);
 	}
 
 	public void setupPeers() throws IOException {
@@ -175,7 +175,7 @@ public class ExampleRelaySituation {
 			if (RELAY_TYPE == RelayType.ANDROID) {
 				GCMServerCredentials gcmCredentials = new GCMServerCredentials().senderAuthenticationKey(gcmKey)
 						.senderId(gcmSenderId).registrationId(GCM_REGISTRATION_ID);
-				config = RelayConfig.Android(gcmCredentials);
+				config = RelayConfig.Android(gcmCredentials).gcmSendRetries(GCM_SEND_RETIES);
 			} else {
 				config = RelayConfig.OpenTCP();
 			}

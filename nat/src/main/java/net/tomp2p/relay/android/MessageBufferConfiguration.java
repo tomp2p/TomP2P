@@ -12,7 +12,6 @@ public class MessageBufferConfiguration {
 	private int bufferCountLimit = 10;
 	private long bufferSizeLimit = Long.MAX_VALUE;
 	private long bufferAgeLimit = 5 * 60 * 1000; // 5 minutes
-	private int gcmSendRetries = 5;
 
 	public int bufferCountLimit() {
 		return bufferCountLimit;
@@ -58,19 +57,4 @@ public class MessageBufferConfiguration {
 		this.bufferAgeLimit = bufferAgeLimit;
 		return this;
 	}
-
-	public int gcmSendRetries() {
-		return gcmSendRetries;
-	}
-
-	/**
-	 * The number of retries to send a message over GCM to the mobile device.
-	 * 
-	 * @param gcmSendRetries the maximum number of attempts to try to reach the mobile device
-	 */
-	public MessageBufferConfiguration gcmSendRetries(int gcmSendRetries) {
-		this.gcmSendRetries = gcmSendRetries;
-		return this;
-	}
-
 }

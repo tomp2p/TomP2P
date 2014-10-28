@@ -15,29 +15,33 @@ public class RelayConfig {
 
 	// configurable
 	private int peerMapUpdateInterval;
-	
+	private int gcmSendRetries;
+
 	/**
 	 * Creates a TCP relay configuration
+	 * 
 	 * @return
 	 */
 	public static RelayConfig OpenTCP() {
-		return new RelayConfig(RelayType.OPENTCP, 15, null);
+		return new RelayConfig(RelayType.OPENTCP, 15, null, 0);
 	}
 
 	/**
 	 * Creates an Android relay configuration
+	 * 
 	 * @param gcmServerCredentials to be able to communicate over Google Cloud Messaging
 	 * @return
 	 */
 	public static RelayConfig Android(GCMServerCredentials gcmServerCredentials) {
-		return new RelayConfig(RelayType.ANDROID, 60, gcmServerCredentials);
+		return new RelayConfig(RelayType.ANDROID, 60, gcmServerCredentials, 5);
 	}
 
-	private RelayConfig(RelayType type, int peerMapUpdateInterval,
-			GCMServerCredentials gcmServerCredentials) {
+	private RelayConfig(RelayType type, int peerMapUpdateInterval, GCMServerCredentials gcmServerCredentials,
+			int gcmSendRetries) {
 		this.type = type;
 		this.peerMapUpdateInterval = peerMapUpdateInterval;
 		this.gcmServerCredentials = gcmServerCredentials;
+		this.gcmSendRetries = gcmSendRetries;
 	}
 
 	/**
@@ -46,7 +50,7 @@ public class RelayConfig {
 	public RelayType type() {
 		return type;
 	}
-	
+
 	/**
 	 * Get the peer map update interval
 	 */
@@ -76,5 +80,25 @@ public class RelayConfig {
 	 */
 	public GCMServerCredentials gcmServerCredentials() {
 		return gcmServerCredentials;
+	}
+
+	/**
+	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
+	 * 
+	 * @return the number of retires sending a GCM message
+	 */
+	public int gcmSendRetries() {
+		return gcmSendRetries;
+	}
+
+	/**
+	 * <strong>Only used for {@link RelayConfig#ANDROID}</strong><br>
+	 * 
+	 * @param gcmSendRetries the number of retries sending a GCM message
+	 * @return this instance
+	 */
+	public RelayConfig gcmSendRetries(int gcmSendRetries) {
+		this.gcmSendRetries = gcmSendRetries;
+		return this;
 	}
 }

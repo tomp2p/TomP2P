@@ -35,20 +35,21 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 
 	private static final Logger LOG = LoggerFactory.getLogger(AndroidForwarderRPC.class);
 
-	private final MessageBufferConfiguration bufferConfig;
 	private final Sender sender;
 	private String registrationId;
 	private final int mapUpdateIntervalMS;
+	private final int gcmSendRetries;
 	private final MessageBuffer<Message> buffer;
 	private final AtomicLong lastUpdate;
 
 	// holds the current requests
 	private List<FutureGCM> pendingRequests;
 
+
 	public AndroidForwarderRPC(Peer peer, PeerAddress unreachablePeer, MessageBufferConfiguration bufferConfig,
-			String authenticationToken, String registrationId, int mapUpdateIntervalS) {
+			int gcmSendRetries, String authenticationToken, String registrationId, int mapUpdateIntervalS) {
 		super(peer, unreachablePeer, RelayType.ANDROID);
-		this.bufferConfig = bufferConfig;
+		this.gcmSendRetries = gcmSendRetries;
 		this.registrationId = registrationId;
 
 		// stretch the update interval by factor 1.5 to be tolerant for slow messages
@@ -102,7 +103,7 @@ public class AndroidForwarderRPC extends BaseRelayForwarderRPC implements Messag
 			public void run() {
 				try {
 					LOG.debug("Send GCM message to the device {}", registrationId);
-					Result result = sender.send(tickleMessage, registrationId, bufferConfig.gcmSendRetries());
+					Result result = sender.send(tickleMessage, registrationId, gcmSendRetries);
 					if (result.getMessageId() == null) {
 						LOG.error("Could not send the tickle messge. Reason: {}", result.getErrorCodeName());
 						futureGCM.failed("Cannot send message over GCM. Reason: " + result.getErrorCodeName());

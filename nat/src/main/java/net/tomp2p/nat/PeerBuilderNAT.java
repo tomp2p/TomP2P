@@ -26,6 +26,7 @@ public class PeerBuilderNAT {
 	private int maxFail = -1;
 
 	private MessageBufferConfiguration bufferConfig = new MessageBufferConfiguration();
+	private int gcmSendRetries = -1;
 
 	public PeerBuilderNAT(Peer peer) {
 		this.peer = peer;
@@ -103,6 +104,24 @@ public class PeerBuilderNAT {
 		return this;
 	}
 
+	/**
+	 * @return the number of retries to send a message over GCM to the mobile device.
+	 */
+	public int gcmSendRetries() {
+		return gcmSendRetries;
+	}
+
+	/**
+	 * The number of retries to send a message over GCM to the mobile device.
+	 * 
+	 * @param gcmSendRetries the maximum number of attempts to try to reach the mobile device
+	 * @return this instance
+	 */
+	public PeerBuilderNAT gcmSendRetries(int gcmSendRetries) {
+		this.gcmSendRetries = gcmSendRetries;
+		return this;
+	}
+	
 	public PeerNAT start() {
 		ConnectionConfiguration connectionConfiguration = new DefaultConnectionConfiguration();
 
@@ -124,6 +143,10 @@ public class PeerBuilderNAT {
 
 		if (manualRelays == null) {
 			manualRelays = Collections.emptyList();
+		}
+		
+		if(gcmSendRetries == -1) {
+			gcmSendRetries = 5;
 		}
 
 		peer.addShutdownListener(new Shutdown() {

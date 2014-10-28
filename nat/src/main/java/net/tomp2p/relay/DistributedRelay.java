@@ -281,6 +281,7 @@ public class DistributedRelay {
 				message.buffer(RelayUtils.encodeString(relayConfig.gcmServerCredentials().registrationId()));
 				message.buffer(RelayUtils.encodeString(relayConfig.gcmServerCredentials().senderAuthenticationKey()));
 				message.intValue(relayConfig.peerMapUpdateInterval());
+				message.intValue(relayConfig.gcmSendRetries());
 			}
 		}
 

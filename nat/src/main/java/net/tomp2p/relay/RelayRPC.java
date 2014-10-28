@@ -194,9 +194,16 @@ public class RelayRPC extends DispatchHandler {
 			responder.response(createResponseMessage(message, Type.DENIED));
 	        return;
 		}
+		
+		Integer gcmSendRetries = message.intAt(2);
+		if(gcmSendRetries == null) {
+			LOG.error("Android device did not send the number of GCM send retries");
+			responder.response(createResponseMessage(message, Type.DENIED));
+	        return;
+		}
         
 		LOG.debug("Hello Android device! You'll be relayed over GCM. {}", message);
-		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig, authenticationKey, registrationId, mapUpdateInterval);
+		AndroidForwarderRPC forwarderRPC = new AndroidForwarderRPC(peer, peerConnection.remotePeer(), bufferConfig, gcmSendRetries, authenticationKey, registrationId, mapUpdateInterval);
 		registerRelayForwarder(forwarderRPC);
 		
         responder.response(createResponseMessage(message, Type.OK));

@@ -57,11 +57,9 @@ public class PeerCreator {
 	private final List<PeerCreator> childConnections = new ArrayList<PeerCreator>();
 
 	private final EventLoopGroup workerGroup;
-
 	private final EventLoopGroup bossGroup;
 
 	private final boolean master;
-
 
 	private final FutureDone<Void> futureServerDone = new FutureDone<Void>();
 
@@ -74,23 +72,22 @@ public class PeerCreator {
 	 *            The id of this peer
 	 * @param keyPair
 	 *            The key pair or null
-	 * @param channelServerConficuration
+	 * @param channelServerConfiguration
 	 *            The server configuration to create the channel server that is
 	 *            used for listening for incoming connections
 	 * @param channelClientConfiguration
 	 *            The client side configuration
-	 * @param peerStatusListeners
-	 *            The status listener for offline peers
+	 * @param timer
+	 *            The timer
 	 * @throws IOException
 	 *             If the startup of listening to connections failed
 	 */
 	public PeerCreator(final int p2pId, final Number160 peerId, final KeyPair keyPair,
-	        final ChannelServerConficuration channelServerConficuration,
+	        final ChannelServerConfiguration channelServerConfiguration,
 	        final ChannelClientConfiguration channelClientConfiguration,
 	        final ScheduledExecutorService timer) throws IOException {
-		//peer bean
 		peerBean = new PeerBean(keyPair);
-		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConficuration);
+		PeerAddress self = findPeerAddress(peerId, channelClientConfiguration, channelServerConfiguration);
 		peerBean.serverPeerAddress(self);
 		LOG.info("Visible address to other peers: {}", self);
 		
@@ -98,8 +95,8 @@ public class PeerCreator {
 		workerGroup = new NioEventLoopGroup(0, new DefaultThreadFactory(ConnectionBean.THREAD_NAME
 		        + "worker-client/server - "));
 		bossGroup = new NioEventLoopGroup(2, new DefaultThreadFactory(ConnectionBean.THREAD_NAME + "boss - "));
-		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConficuration.heartBeatMillis());
-		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConficuration,
+		Dispatcher dispatcher = new Dispatcher(p2pId, peerBean, channelServerConfiguration.heartBeatMillis());
+		final ChannelServer channelServer = new ChannelServer(bossGroup, workerGroup, channelServerConfiguration,
 		        dispatcher, peerBean.peerStatusListeners(), timer);
 		
 		//connection bean
@@ -216,7 +213,7 @@ public class PeerCreator {
 	/**
 	 * Creates the {@link PeerAddress} based on the network discovery that was
 	 * done in
-	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConficuration)}.
+	 * {@link #ChannelServer(Bindings, int, int, ChannelServerConfiguration)}.
 	 * 
 	 * @param peerId
 	 *            The id of this peer
@@ -226,7 +223,7 @@ public class PeerCreator {
 	 */
 	private static PeerAddress findPeerAddress(final Number160 peerId,
 	        final ChannelClientConfiguration channelClientConfiguration,
-	        final ChannelServerConficuration channelServerConficuration) throws IOException {
+	        final ChannelServerConfiguration channelServerConfiguration) throws IOException {
 		final DiscoverResults discoverResults = DiscoverNetworks.discoverInterfaces(
 				channelClientConfiguration.bindings());
 		final String status = discoverResults.status();
@@ -238,10 +235,10 @@ public class PeerCreator {
 		if(outsideAddress == null) {
 			throw new IOException("Not listening to anything. Maybe your binding information is wrong.");
 		}
-		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConficuration.
-				ports().tcpPort(), channelServerConficuration.ports().udpPort());
+		final PeerSocketAddress peerSocketAddress = new PeerSocketAddress(outsideAddress, channelServerConfiguration.
+				ports().tcpPort(), channelServerConfiguration.ports().udpPort());
 		final PeerAddress self = new PeerAddress(peerId, peerSocketAddress,
-		        channelServerConficuration.isBehindFirewall(), channelServerConficuration.isBehindFirewall(), false,
+		        channelServerConfiguration.isBehindFirewall(), channelServerConfiguration.isBehindFirewall(), false,
 		        PeerAddress.EMPTY_PEER_SOCKET_ADDRESSES);
 		return self;
 	}

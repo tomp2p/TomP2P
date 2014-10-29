@@ -74,7 +74,14 @@ public class Bindings {
         interfaceHints.add(interfaceHint);
         return this;
     }
-    
+
+    /**
+     * 
+     * @param protocolFamily
+     *              The protocol family, e.g. StandardProtocolFamily.INET or StandardProtocolFamily.INET6
+     * 
+     * @return The same instance
+     */
     public Bindings addProtocol(StandardProtocolFamily protocolFamily) {
         if (protocolFamily == null) {
             throw new IllegalArgumentException("Cannot add null");
@@ -104,27 +111,30 @@ public class Bindings {
     public void clear() {
         interfaceHints.clear();
         addresses.clear();
+        
+        //TODO MK: I assume it should also clear protocolHint?
+        protocolHint.clear();
     }
 
     /**
-     * @return Checks if the user sets any addresses
+     * @return Checks if the user has set addresses to anything (not set to a specific)
      */
     public boolean anyAddresses() {
-        return addresses.size() == 0;
+        return addresses.isEmpty();
     }
 
     /**
-     * @return Checks if the user sets any interfaces
+     * @return Checks if the user has set interfaces to anything (not set to a specific)
      */
     public boolean anyInterfaces() {
-        return interfaceHints.size() == 0;
+        return interfaceHints.isEmpty();
     }
 
     /**
-     * @return Checks if the user sets any protocols
+     * @return Checks if the user has set protocols to anything (not set to a specific)
      */
     public boolean anyProtocols() {
-        return protocolHint.size() == 0;
+        return protocolHint.isEmpty();
     }
 
     /**

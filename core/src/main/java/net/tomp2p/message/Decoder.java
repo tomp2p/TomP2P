@@ -385,7 +385,7 @@ public class Decoder {
 					}
 					// if we have signed the message, set the public key anyway, but only if we indicated so
 					if (message.isSign() && message.publicKey(0) != null && data.hasPublicKey() 
-							&& (data.publicKey() == null || data.publicKey() == PeerBuilder.EMPTY_PUBLICKEY)) {
+							&& (data.publicKey() == null || data.publicKey() == PeerBuilder.EMPTY_PUBLIC_KEY)) {
 						data.publicKey(message.publicKey(0));
 					}
 					data = null;
@@ -572,7 +572,7 @@ public class Decoder {
 			case PUBLIC_KEY_SIGNATURE:
 				receivedPublicKey = signatureFactory.decodePublicKey(buf);
 				if(content == Content.PUBLIC_KEY_SIGNATURE) {
-					if (receivedPublicKey == PeerBuilder.EMPTY_PUBLICKEY) {
+					if (receivedPublicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
 						throw new InvalidKeyException("The public key cannot be empty");
 					}
 				}

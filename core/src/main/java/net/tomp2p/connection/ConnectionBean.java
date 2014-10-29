@@ -58,8 +58,6 @@ public class ConnectionBean {
      *            The connection reservation that is responsible for resource management
      * @param resourceConfiguration
      *            The configuration that is responsible for the resource numbers
-     * @param natUtils
-     *            The NAT helper tools
      * @param timer
      *            The timer for the discovery process
      */

@@ -72,7 +72,7 @@ public class RSASignatureFactory implements SignatureFactory {
 		buf.skipBytes(2);
 
 		if (len <= 0) {
-			return PeerBuilder.EMPTY_PUBLICKEY;
+			return PeerBuilder.EMPTY_PUBLIC_KEY;
 		}
 
 		byte me[] = new byte[len];

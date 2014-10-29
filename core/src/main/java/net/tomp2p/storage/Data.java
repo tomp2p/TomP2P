@@ -353,7 +353,7 @@ public class Data {
 
 	public boolean decodeDone(final ByteBuf buf, PublicKey publicKey, SignatureFactory signatureFactory) {
 		if (signed) {
-			if(publicKey == PeerBuilder.EMPTY_PUBLICKEY) {
+			if(publicKey == PeerBuilder.EMPTY_PUBLIC_KEY) {
 				this.publicKey = publicKey;	
 			}
 			signature = signatureFactory.signatureCodec();

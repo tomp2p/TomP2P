@@ -47,6 +47,8 @@ public class HeartBeat extends ChannelDuplexHandler {
      *            read nor write was performed for the specified period of time. Specify {@code 0} to disable.
      * @param unit
      *            the {@link TimeUnit} of {@code readerIdleTime}, {@code writeIdleTime}, and {@code allIdleTime}
+     * @param pingBuilderFactory
+     *            the pingBuilderFactory
      */
     public HeartBeat(long allIdleTime, TimeUnit unit, PingBuilderFactory pingBuilderFactory) {
         if (unit == null) {

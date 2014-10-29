@@ -15,7 +15,7 @@ import java.util.Random;
 import java.util.SortedMap;
 
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.DefaultConnectionConfiguration;
 import net.tomp2p.dht.StorageLayer.PutStatus;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -784,7 +784,7 @@ public class TestStorageDHT {
         ChannelCreator cc = null;
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
+            ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
@@ -838,7 +838,7 @@ public class TestStorageDHT {
         ChannelCreator cc = null;
         try {
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
+            ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();
@@ -947,7 +947,7 @@ public class TestStorageDHT {
         try {
 
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConficuration css = PeerBuilder.createDefaultChannelServerConfiguration();
+            ChannelServerConfiguration css = PeerBuilder.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = new PeerBuilderDHT(pm1.start()).storage(storeSender).start();

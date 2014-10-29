@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.tomp2p.connection.ChannelClientConfiguration;
 import net.tomp2p.connection.ChannelCreator;
-import net.tomp2p.connection.ChannelServerConficuration;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.connection.PipelineFilter;
 import net.tomp2p.futures.BaseFutureAdapter;
 import net.tomp2p.futures.FutureChannelCreator;
@@ -52,7 +52,7 @@ public class TestDirect {
         try {
 
             PeerBuilder pm1 = new PeerBuilder(new Number160("0x50")).p2pId(55).ports(2424);
-            ChannelServerConficuration css = pm1.createDefaultChannelServerConfiguration();
+            ChannelServerConfiguration css = pm1.createDefaultChannelServerConfiguration();
             css.idleTCPSeconds(Integer.MAX_VALUE);
             pm1.channelServerConfiguration(css);
             sender = pm1.start();
@@ -271,7 +271,7 @@ public class TestDirect {
 					return retVal;
 				}
 			};
-			ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);
@@ -331,7 +331,7 @@ public class TestDirect {
 					return retVal;
 				}
 			};
-			ChannelServerConficuration csc = PeerBuilder.createDefaultChannelServerConfiguration();
+			ChannelServerConfiguration csc = PeerBuilder.createDefaultChannelServerConfiguration();
 			ChannelClientConfiguration ccc = PeerBuilder.createDefaultChannelClientConfiguration();
 			csc.pipelineFilter(pf);
 			ccc.pipelineFilter(pf);

@@ -46,9 +46,6 @@ import net.tomp2p.rpc.ObjectDataReply;
 import net.tomp2p.rpc.PingRPC;
 import net.tomp2p.rpc.QuitRPC;
 import net.tomp2p.rpc.RawDataReply;
-//import net.tomp2p.rpc.TaskRPC;
-
-
 
 /**
  * This is the main class to start DHT operations. This class makes use of the build pattern and for each DHT operation,
@@ -234,11 +231,12 @@ public class Peer {
      * Opens a TCP connection and keeps it open. The user can provide the idle timeout, which means that the connection
      * gets closed after that time of inactivity. If the other peer goes offline or closes the connection (due to
      * inactivity), further requests with this connections reopens the connection. This methods blocks until a
-     * connection can be reserver.
+     * connection can be reserved.
      * 
      * @param destination
      *            The end-point to connect to
-     * @param idleTCPMillis
+     * @param heartBeatMillis
+     *            // TODO update doc
      *            time in milliseconds after a connection gets closed if idle, -1 if it should remain always open until
      *            the user closes the connection manually.
      * @return A class that needs to be passed to those methods that should use the already open connection. If the

@@ -29,16 +29,8 @@ import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import net.tomp2p.connection.Bindings;
-import net.tomp2p.connection.ChannelClientConfiguration;
-import net.tomp2p.connection.ChannelServerConficuration;
-import net.tomp2p.connection.ConnectionBean;
-import net.tomp2p.connection.DSASignatureFactory;
-import net.tomp2p.connection.PeerBean;
-import net.tomp2p.connection.PeerCreator;
-import net.tomp2p.connection.PingBuilderFactory;
-import net.tomp2p.connection.PipelineFilter;
-import net.tomp2p.connection.Ports;
+import net.tomp2p.connection.*;
+import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
@@ -60,7 +52,7 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class PeerBuilder {
-	public static final PublicKey EMPTY_PUBLICKEY = new PublicKey() {
+	public static final PublicKey EMPTY_PUBLIC_KEY = new PublicKey() {
 		private static final long serialVersionUID = 4041565007522454573L;
 
 		@Override
@@ -79,7 +71,7 @@ public class PeerBuilder {
 		}
 	};
 
-	private static final KeyPair EMPTY_KEYPAIR = new KeyPair(EMPTY_PUBLICKEY, null);
+	private static final KeyPair EMPTY_KEY_PAIR = new KeyPair(EMPTY_PUBLIC_KEY, null);
 	// if the permits are chosen too high, then we might run into timeouts as we
 	// cant handle that many connections
 	// withing the time limit
@@ -101,7 +93,7 @@ public class PeerBuilder {
 	private Bindings bindings = null;
 	private PeerMap peerMap = null;
 	private Peer masterPeer = null;
-	private ChannelServerConficuration channelServerConfiguration = null;
+	private ChannelServerConfiguration channelServerConfiguration = null;
 	private ChannelClientConfiguration channelClientConfiguration = null;
 	private Boolean behindFirewall = null;
 	private BroadcastHandler broadcastHandler;
@@ -122,7 +114,7 @@ public class PeerBuilder {
 
 
 	/**
-	 * Creates a peermaker with the peer ID and an empty key pair.
+	 * Creates a PeerBuilder with the peer ID and an empty key pair.
 	 * 
 	 * @param peerId
 	 *            The peer Id
@@ -132,15 +124,15 @@ public class PeerBuilder {
 	}
 
 	/**
-	 * Creates a peermaker with the key pair and generates out of this key pair
+	 * Creates a PeerBuilder with the key pair and generates out of this key pair
 	 * the peer ID.
 	 * 
 	 * @param keyPair
 	 *            The public private key
 	 */
 	public PeerBuilder(final KeyPair keyPair) {
-		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 		this.keyPair = keyPair;
+		this.peerId = Utils.makeSHAHash(keyPair.getPublic().getEncoded());
 	}
 
 	/**
@@ -150,7 +142,6 @@ public class PeerBuilder {
 	 * @throws IOException .
 	 */
 	public Peer start() throws IOException {
-
 		boolean isBehindFirewallSet = false;
 		if (behindFirewall == null) {
 			behindFirewall = false;
@@ -190,7 +181,7 @@ public class PeerBuilder {
 			channelClientConfiguration = createDefaultChannelClientConfiguration();
 		}
 		if (keyPair == null) {
-			keyPair = EMPTY_KEYPAIR;
+			keyPair = EMPTY_KEY_PAIR;
 		}
 		if (p2pID == -1) {
 			p2pID = 1;
@@ -205,7 +196,6 @@ public class PeerBuilder {
 		}
 		if (peerMap == null) {
 			peerMap = new PeerMap(new PeerMapConfiguration(peerId));
-			
 		}
 
 		if (masterPeer == null && scheduledExecutorService == null) {
@@ -223,7 +213,7 @@ public class PeerBuilder {
 		final Peer peer = new Peer(p2pID, peerId, peerCreator);
 
 		PeerBean peerBean = peerCreator.peerBean();
-		peerBean.addPeerStatusListeners(peerMap);
+		peerBean.addPeerStatusListener(peerMap);
 		
 		ConnectionBean connectionBean = peerCreator.connectionBean();
 
@@ -296,8 +286,8 @@ public class PeerBuilder {
 		return peer;
 	}
 
-	public static ChannelServerConficuration createDefaultChannelServerConfiguration() {
-		ChannelServerConficuration channelServerConfiguration = new ChannelServerConficuration();
+	public static ChannelServerConfiguration createDefaultChannelServerConfiguration() {
+		ChannelServerConfiguration channelServerConfiguration = new ChannelServerConfiguration();
 		channelServerConfiguration.bindings(new Bindings());
 		//these two values may be overwritten in the peer builder
 		channelServerConfiguration.ports(new Ports(Ports.DEFAULT_PORT, Ports.DEFAULT_PORT));
@@ -416,11 +406,11 @@ public class PeerBuilder {
 		return this;
 	}
 
-	public ChannelServerConficuration channelServerConfiguration() {
+	public ChannelServerConfiguration channelServerConfiguration() {
 		return channelServerConfiguration;
 	}
 
-	public PeerBuilder channelServerConfiguration(ChannelServerConficuration channelServerConfiguration) {
+	public PeerBuilder channelServerConfiguration(ChannelServerConfiguration channelServerConfiguration) {
 		this.channelServerConfiguration = channelServerConfiguration;
 		return this;
 	}

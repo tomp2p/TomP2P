@@ -501,8 +501,8 @@ public class AlternativeCompositeByteBuf extends ByteBuf {
 			}
 			
 			if(readerIndex >= c.endOffset()) {
-				iterator.remove();
 				c.buf.release();
+				iterator.remove();
 				isOffsetAdjustment = true;
 				int adjust = c.endOffset() - c.offset;
 				setIndex0(readerIndex - adjust, writerIndex - adjust);

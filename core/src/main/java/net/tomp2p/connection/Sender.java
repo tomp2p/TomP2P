@@ -418,7 +418,7 @@ public class Sender {
 		ChannelPipeline pipeline = channelFuture.channel().pipeline();
 
 		// we need to replace the handler if this comes from the peer that
-		// create a peerconnection, otherwise we
+		// create a peerConnection, otherwise we
 		// need to add a handler
 		addOrReplace(pipeline, "dispatcher", "handler", handler);
 		// uncomment this if the recipient should also heartbeat
@@ -643,8 +643,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param cause
-	 *            The response message
 	 */
 	private void reportFailed(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -662,8 +660,6 @@ public class Sender {
 	 *            The future to set the response
 	 * @param close
 	 *            The close future
-	 * @param responseMessage
-	 *            The response message
 	 */
 	private void reportMessage(final FutureResponse futureResponse, final ChannelFuture close) {
 		close.addListener(new GenericFutureListener<ChannelFuture>() {

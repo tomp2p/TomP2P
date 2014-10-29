@@ -82,18 +82,24 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	
 	private boolean shutdown = false;
 
-	/**
-	 * Sets parameters and starts network device discovery.
-	 * 
-	 * @param channelServerConfiguration
-	 *            The server configuration, that contains e.g. the handlers
-	 * @param dispatcher
-	 *            The shared dispatcher
-	 * @param peerStatusListeners
-	 *            The status listener for offline peers
-	 * @throws IOException
-	 *             If device discovery failed.
-	 */
+    /**
+     * Sets parameters and starts network device discovery.
+     * 
+     * @param bossGroup
+     * 
+     * @param workerGroup
+     * 
+     * @param channelServerConfiguration
+     *              The server configuration, that contains e.g. the handlers
+     * @param dispatcher
+     *              The shared dispatcher
+     * @param peerStatusListeners
+     *              The status listener for offline peers
+     * @param timer
+     * 
+     * @throws IOException
+     *               If device discovery failed.
+     */
 	public ChannelServer(final EventLoopGroup bossGroup, final EventLoopGroup workerGroup, final ChannelServerConfiguration channelServerConfiguration, final Dispatcher dispatcher,
 	        final List<PeerStatusListener> peerStatusListeners, final ScheduledExecutorService timer) throws IOException {
 		this.bossGroup = bossGroup;
@@ -126,7 +132,7 @@ public final class ChannelServer implements DiscoverNetworkListener{
 	}
 	
 	@Override
-    public void dicoverNetwork(DiscoverResults discoverResults) {
+    public void discoverNetwork(DiscoverResults discoverResults) {
 		if (!channelServerConfiguration.isDisableBind()) {
 			synchronized (ChannelServer.this) {
 				if (shutdown) {

@@ -22,7 +22,7 @@ package net.tomp2p.futures;
  */
 public interface BaseFuture extends Cancel {
     /**
-     * The first state is always INIT and will always end in either OK, FAILED, or CANCEl.
+     * The first state is always INIT and will always end in either OK, FAILED, or CANCEL.
      */
     public enum FutureType {
         INIT, OK, FAILED
@@ -89,7 +89,7 @@ public interface BaseFuture extends Cancel {
     boolean isFailed();
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and set the reason
      * 
      * @param reason
      *            The reason of failure
@@ -98,7 +98,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(String reason);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and set the reason based
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and set the reason based
      * on the origin BaseFuture.
      * 
      * @param origin
@@ -108,7 +108,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(BaseFuture origin);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and append the reason
      * based on the origin BaseFuture.
      * 
      * @param reason
@@ -120,7 +120,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(String reason, BaseFuture origin);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and append the reason
      * based on the origin BaseFuture.
      * 
      * @param t
@@ -130,7 +130,7 @@ public interface BaseFuture extends Cancel {
     BaseFuture failed(final Throwable t);
 
     /**
-     * Sets the failed flat to true and the completed flag to true. This will notify listeners and append the reason
+     * Sets the failed flag to true and the completed flag to true. This will notify listeners and append the reason
      * based on the origin BaseFuture.
      * 
      * @param reason
@@ -151,7 +151,7 @@ public interface BaseFuture extends Cancel {
     /**
      * If the type is not OK, then something unexpected happened.
      * 
-     * @return The fail type
+     * @return The type
      */
     FutureType type();
 

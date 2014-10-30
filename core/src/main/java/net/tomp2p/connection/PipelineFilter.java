@@ -32,7 +32,7 @@ public interface PipelineFilter {
     /**
      * Filter the handlers. If no filtering should happen, return the same array.
      * 
-     * @param handlers
+     * @param channelHandlers
      *            The created handlers by tomp2p
      * @param tcp
      *            True if the connection is TCP, false for UDP

@@ -43,7 +43,7 @@ public class HeartBeat extends ChannelDuplexHandler {
      * Creates a new instance firing {@link IdleStateEvent}s.
      * 
      * @param allIdleTime
-     *            an {@link IdleStateEvent} whose state is {@link IdleState#ALL_IDLE} will be triggered when neither
+     *            a ping will be triggered when neither
      *            read nor write was performed for the specified period of time. Specify {@code 0} to disable.
      * @param unit
      *            the {@link TimeUnit} of {@code readerIdleTime}, {@code writeIdleTime}, and {@code allIdleTime}
@@ -153,7 +153,7 @@ public class HeartBeat extends ChannelDuplexHandler {
 
         lastReadTime = lastWriteTime = System.currentTimeMillis();
         
-        heartBeatFuture = loop.scheduleAtFixedRate(new Heartbeating(ctx), timeToHeartBeatMillis, timeToHeartBeatMillis, TimeUnit.MILLISECONDS);
+        heartBeatFuture = loop.scheduleAtFixedRate(new HeartBeating(ctx), timeToHeartBeatMillis, timeToHeartBeatMillis, TimeUnit.MILLISECONDS);
     }
     
     private void destroy() {
@@ -165,11 +165,11 @@ public class HeartBeat extends ChannelDuplexHandler {
         }
     }
 
-    private final class Heartbeating implements Runnable {
+    private final class HeartBeating implements Runnable {
 
         private final ChannelHandlerContext ctx;
 
-        Heartbeating(ChannelHandlerContext ctx) {
+        HeartBeating(ChannelHandlerContext ctx) {
             this.ctx = ctx;
         }
 

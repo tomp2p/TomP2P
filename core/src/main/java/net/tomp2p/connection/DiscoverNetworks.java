@@ -67,7 +67,10 @@ public final class DiscoverNetworks {
 			public void run() {
 				try {
 					discoverResults = discoverInterfaces(bindings, discoverResults);
-					if(!discoverResults.isEmpty()) {
+					if(discoverResults.isListenAny()) {
+						future.cancel(false);
+						notifyDiscoverNetwork(discoverResults);
+					} else if(!discoverResults.isEmpty()) {
 						notifyDiscoverNetwork(discoverResults);
 					}
 					if(firstRun) {
@@ -218,7 +221,7 @@ public final class DiscoverNetworks {
 		}
 		
 		DiscoverResults discoverResults = new DiscoverResults(newAddresses, newBroadcastAddresses, 
-				removedFoundAddresses, removedFoundBroadcastAddresses, existingAddresses, existingBroadcastAddresses, sb.toString());
+				removedFoundAddresses, removedFoundBroadcastAddresses, existingAddresses, existingBroadcastAddresses, bindings.isListenAny(), sb.toString());
 		return discoverResults;
 	}
 
@@ -287,7 +290,7 @@ public final class DiscoverNetworks {
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append(")");
 		DiscoverResults discoverResults = new DiscoverResults(null, null,
-				null, null, foundAddresses2, foundBroadcastAddresses2, sb.toString());
+				null, null, foundAddresses2, foundBroadcastAddresses2, false, sb.toString());
 
 		return discoverResults;
 	}

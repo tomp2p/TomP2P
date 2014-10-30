@@ -151,12 +151,12 @@ public class ChannelCreator {
 			// Here we need to bind, as opposed to the TCP, were we connect if
 			// we do a connect, we cannot receive
 			// broadcast messages
-			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(0));
+			final ChannelFuture channelFuture = b.bind(new InetSocketAddress(channelClientConfiguration.senderUDP(), 0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreUPD, futureResponse);
 			return channelFuture;
-		} finally {
+        } finally {
 			readUDP.unlock();
 		}
 	}
@@ -196,7 +196,7 @@ public class ChannelCreator {
 			Map<String, Pair<EventExecutorGroup, ChannelHandler>> channelHandlers2 = channelClientConfiguration.pipelineFilter().filter(channelHandlers, true, true);
 			addHandlers(b, channelHandlers2);
 
-			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(0));
+			ChannelFuture channelFuture = b.connect(socketAddress, new InetSocketAddress(channelClientConfiguration.senderTCP(), 0));
 
 			recipients.add(channelFuture.channel());
 			setupCloseListener(channelFuture, semaphoreTCP, futureResponse);

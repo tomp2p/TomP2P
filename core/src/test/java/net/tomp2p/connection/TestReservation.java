@@ -83,7 +83,7 @@ public class TestReservation {
 		cs = new ChannelServer(bossGroup, workerGroup, c, null, null, null);
 		
 		cs.startupTCP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
-		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration());
+		cs.startupUDP(new InetSocketAddress("127.0.0.1", 7070), new ChannelServerConfiguration(), false);
 		
 	}
 

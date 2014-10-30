@@ -453,6 +453,10 @@ public final class PeerAddress implements Comparable<PeerAddress>, Serializable 
     public InetSocketAddress createSocketUDP() {
         return new InetSocketAddress(peerSocketAddress.inetAddress(), peerSocketAddress.udpPort());
     }
+    
+    public InetSocketAddress createSocketUDP(int port) {
+        return new InetSocketAddress(peerSocketAddress.inetAddress(), port);
+    }
 
     /**
      * The id of the peer. A peer cannot change its id.

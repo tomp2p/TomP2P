@@ -20,6 +20,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import net.tomp2p.connection.*;
-import net.tomp2p.connection.ChannelServerConfiguration;
 import net.tomp2p.p2p.builder.PingBuilder;
 import net.tomp2p.peers.Number160;
 import net.tomp2p.peers.PeerMap;
@@ -52,6 +52,13 @@ import net.tomp2p.utils.Utils;
  * 
  */
 public class PeerBuilder {
+	
+	static {
+		System.setProperty("java.net.preferIPv4Stack" , "true");
+		//or use -Djava.net.preferIPv4Stack=true in the command line. This is required to make broadcasting work. See
+		//https://issues.jboss.org/browse/MODCLUSTER-327 or https://code.google.com/p/kryonet/issues/detail?id=29
+	}
+	
 	public static final PublicKey EMPTY_PUBLIC_KEY = new PublicKey() {
 		private static final long serialVersionUID = 4041565007522454573L;
 
@@ -306,6 +313,8 @@ public class PeerBuilder {
 		channelClientConfiguration.maxPermitsUDP(MAX_PERMITS_UDP);
 		channelClientConfiguration.pipelineFilter(new DefaultPipelineFilter());
 		channelClientConfiguration.signatureFactory(new DSASignatureFactory());
+		channelClientConfiguration.senderTCP(new InetSocketAddress(0).getAddress());
+		channelClientConfiguration.senderUDP(new InetSocketAddress(0).getAddress());
 		return channelClientConfiguration;
 	}
 

@@ -33,6 +33,7 @@ public class TomP2PSinglePacketUDP extends ChannelInboundHandlerAdapter {
         }
 
         final DatagramPacket d = (DatagramPacket) msg;
+        LOG.debug("got UDP message {}", d);
         final ByteBuf buf = d.content();
         final InetSocketAddress sender = d.sender();
         final InetSocketAddress recipient = d.recipient();

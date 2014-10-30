@@ -38,6 +38,7 @@ public class Bindings {
     private final List<String> interfaceHints = new ArrayList<String>(1);
     private final List<StandardProtocolFamily> protocolHint = new ArrayList<StandardProtocolFamily>(1);
 
+    private boolean listenAny = false;
     
     /**
      * Adds an address that we want to listen to. If the address is not found,
@@ -117,13 +118,6 @@ public class Bindings {
     }
 
     /**
-     * @return Checks if the user has set addresses to anything (not set to a specific)
-     */
-    public boolean anyAddresses() {
-        return addresses.isEmpty();
-    }
-
-    /**
      * @return Checks if the user has set interfaces to anything (not set to a specific)
      */
     public boolean anyInterfaces() {
@@ -152,11 +146,23 @@ public class Bindings {
     }
 
     /**
-     * @return Checks if the user sets anything at all
+     * @return Checks if the user wants to listen to a wildcard address
      */
-    public boolean isListenAll() {
-        return anyProtocols() && anyInterfaces() && anyAddresses();
+    public boolean isListenAny() {
+        return listenAny;
     }
+    
+    public Bindings listenAny() {
+    	setListenAny(true);
+    	return this;
+    }
+    
+    public Bindings setListenAny(boolean listenAny) {
+    	this.listenAny = listenAny;
+    	return this;
+    }
+    
+    
 
     /**
      * Checks if the user provided an interface hint.

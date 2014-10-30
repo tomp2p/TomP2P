@@ -49,6 +49,8 @@ public class TomP2PCumulationTCP extends ChannelInboundHandlerAdapter {
 			LOG.error("Error in TCP decoding", t);
             throw new Exception(t);
 		} finally {
+			//the cumulation buffer now maintains the buffer buf, so we can release it here
+			buf.release();
 			if (!cumulation.isReadable()) {
                 cumulation.release();
                 cumulation = null;
